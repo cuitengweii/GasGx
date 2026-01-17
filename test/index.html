@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GasGx - Natural Gas Power Mining</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -33,43 +32,37 @@
     <style>
         :root { color-scheme: dark; }
         body { background-color: #0F0F0F; color: #F8F8F8; font-family: 'Inter', sans-serif; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0F0F0F; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .gas-card { background-color: rgba(32, 32, 32, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
         
-        /* Mega Menu */
-        .mega-menu { display: none; position: absolute; top: 100%; left: 0; width: 100%; background-color: #151515; border-top: 1px solid rgba(255, 255, 255, 0.1); padding: 1.5rem 0; box-shadow: 0 20px 40px rgba(0,0,0,0.5); z-index: 40; }
+        /* 修复后的 Mega Menu 样式 */
+        .mega-menu { display: none; position: absolute; top: 100%; left: 0; width: 100%; background-color: #151515; border-top: 1px solid rgba(255, 255, 255, 0.1); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 2rem 0; z-index: 1000; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
         .group:hover .mega-menu { display: block; animation: slideDown 0.2s ease-out; }
-        .dropdown-menu { display: none; position: absolute; top: 100%; min-width: 220px; background-color: #151515; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0 0 8px 8px; padding: 0.5rem 0; z-index: 40; }
+        .dropdown-menu { display: none; position: absolute; top: 100%; min-width: 220px; background-color: #151515; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0 0 8px 8px; padding: 0.5rem 0; z-index: 1000; }
         .group:hover .dropdown-menu { display: block; animation: slideDown 0.2s ease-out; }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .nav-item-link { position: relative; padding: 1.5rem 0.5rem; color: #94a3b8; transition: color 0.3s; white-space: nowrap; }
+        .nav-item-link { position: relative; padding: 1.5rem 0.5rem; color: #94a3b8; transition: color 0.3s; white-space: nowrap; display: flex; align-items: center; gap: 4px; font-weight: 500; cursor: pointer; }
         .nav-item-link:hover { color: #5DD62C; }
-        
-        /* Map Styles */
+
+        /* 地图专用样式 */
         #map-container { background: radial-gradient(circle at 50% 50%, #0b1019 0%, #050505 50%, #000000 100%); position: relative; overflow: hidden; cursor: grab; }
         .country { transition: fill 0.3s, stroke 0.3s; fill-opacity: 0.9; stroke-width: 0.5px; filter: url(#solid-bevel); cursor: pointer; }
         .map-has-highlight .country { fill-opacity: 0.2; filter: grayscale(100%); }
         .map-has-highlight .country.highlighted { fill-opacity: 1 !important; stroke: #fff !important; stroke-width: 2px !important; filter: url(#active-glow) !important; }
-        .globe-sphere { fill: url(#globeGradient); pointer-events: none; }
-        .globe-halo { fill: url(#galaxyHaloGradient); pointer-events: none; filter: blur(5px); }
-        .map-info-box { position: absolute; pointer-events: none; background: rgba(10, 15, 20, 0.9); border-left: 3px solid #5DD62C; backdrop-filter: blur(20px); padding: 16px; border-radius: 4px; font-size: 11px; z-index: 150; opacity: 0; transition: opacity 0.3s; width: 320px; border: 1px solid rgba(255,255,255,0.1); }
+        .map-info-box { position: absolute; pointer-events: none; background: rgba(10, 15, 20, 0.95); border: 1px solid rgba(255,255,255,0.1); border-left: 3px solid #5DD62C; backdrop-filter: blur(20px); padding: 16px; border-radius: 4px; font-size: 11px; z-index: 150; opacity: 0; transition: opacity 0.3s; width: 320px; }
         .map-info-box.active { opacity: 1; pointer-events: auto; }
         .dim-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 4px 0; }
         .btc-star { width: 10px; height: 10px; fill: #5DD62C; }
         .btc-star.inactive { fill: #444; }
-        .list-item-hover { transition: 0.3s; border-left: 2px solid transparent; }
+        .list-item-hover { transition: 0.3s; border-left: 3px solid transparent; }
         .list-item-active { background: rgba(93, 214, 44, 0.1); border-left-color: #5DD62C !important; }
+        .mobile-submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
     </style>
 </head>
-<body>
+<body class="flex flex-col min-h-screen">
 
     <header class="fixed top-0 w-full z-50 gas-card h-16">
-        <div class="max-w-[1800px] mx-auto px-4 h-full flex justify-between items-center">
+        <div class="max-w-[1800px] mx-auto px-4 h-full flex justify-between items-center relative">
             <div class="flex items-center gap-3">
                 <a href="/index.html" class="flex items-center gap-2 group">
                     <h1 class="text-2xl font-bold tracking-wider text-gas-green">GasGx</h1>
@@ -78,7 +71,9 @@
                     <span id="header-tagline" class="text-gas-green text-xs font-bold"></span>
                 </div>
             </div>
-            <nav id="desktop-nav" class="hidden lg:flex items-center justify-center gap-6 h-full flex-1"></nav>
+
+            <nav id="desktop-nav" class="hidden lg:flex items-center justify-center gap-2 h-full flex-1"></nav>
+
             <div class="flex items-center gap-4">
                 <div id="auth-area" class="hidden md:flex items-center">
                     <button id="auth-login-btn" onclick="window.AuthApp.signIn()" class="bg-gas-green text-black px-4 py-1.5 rounded-full font-bold text-xs shadow-glow">Login</button>
@@ -92,22 +87,27 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex bg-[#111] rounded-full p-1 border border-white/10">
+                <div class="flex bg-[#111] rounded-full p-1 border border-white/10 shrink-0">
                     <button onclick="window.app.setLanguage('zh')" id="btn-lang-zh" class="px-2 py-1 rounded-full text-[10px]">CN</button>
                     <button onclick="window.app.setLanguage('en')" id="btn-lang-en" class="px-2 py-1 rounded-full text-[10px]">EN</button>
                     <button onclick="window.app.setLanguage('ru')" id="btn-lang-ru" class="px-2 py-1 rounded-full text-[10px]">RU</button>
                 </div>
+                <button id="mobile-menu-btn" onclick="window.app.toggleMobileMenu()" class="lg:hidden p-2 text-white"><i class="fa-solid fa-bars"></i></button>
             </div>
         </div>
     </header>
 
+    <div id="mobile-menu-container" class="fixed inset-0 z-[60] bg-[#111] transform translate-x-full pt-20 px-4 transition-transform lg:hidden overflow-y-auto">
+        <nav id="mobile-nav-content" class="flex flex-col space-y-2 pb-10"></nav>
+    </div>
+
     <main class="flex-grow pt-16 h-screen flex overflow-hidden">
-        <div class="w-[240px] bg-[#0a0a0a] border-r border-white/10 flex flex-col shrink-0">
+        <div class="w-[240px] bg-[#0a0a0a] border-r border-white/10 flex flex-col shrink-0 z-20">
             <div class="p-4 border-b border-white/5 text-center">
-                <h2 class="text-gas-green font-bold text-[10px] uppercase tracking-widest" data-i18n="top_producers">Ranking</h2>
+                <h2 class="text-gas-green font-bold text-[10px] uppercase tracking-widest" data-i18n="top_producers">Total Ranking</h2>
             </div>
             <div id="country-list" class="flex-1 overflow-y-auto custom-scrollbar p-1"></div>
-            <div class="p-3 bg-[#050505] text-[9px] text-gray-500 space-y-2 border-t border-white/5">
+            <div class="p-3 bg-[#050505] text-[9px] text-gray-500 space-y-1.5 border-t border-white/5">
                 <div class="flex items-center gap-2"><div class="w-2 h-2 bg-gas-legal"></div><span data-i18n="legend_legal">Legal</span></div>
                 <div class="flex items-center gap-2"><div class="w-2 h-2 bg-gas-grey"></div><span data-i18n="legend_restricted">Restricted</span></div>
                 <div class="flex items-center gap-2"><div class="w-2 h-2 bg-gas-illegal"></div><span data-i18n="legend_banned">Banned</span></div>
@@ -122,46 +122,55 @@
             </div>
             <svg style="width:0;height:0;position:absolute">
                 <defs>
-                    <filter id="solid-bevel"><feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/><feOffset in="blur" dx="1" dy="1"/><feComposite in2="SourceAlpha" operator="in" result="spec"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-                    <filter id="active-glow"><feGaussianBlur stdDeviation="4" result="blur"/><feFlood flood-color="#5DD62C" flood-opacity="0.6"/><feComposite in2="blur" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                    <filter id="solid-bevel"><feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/><feOffset in="blur" dx="1" dy="1"/><feComposite in2="SourceAlpha" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                    <filter id="active-glow"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#5DD62C" flood-opacity="0.8"/><feComposite in2="blur" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                     <radialGradient id="galaxyHaloGradient"><stop offset="50%" stop-color="#000"/><stop offset="100%" stop-color="#1e40af" stop-opacity="0"/></radialGradient>
                     <radialGradient id="globeGradient"><stop offset="80%" stop-color="#0a0a0a"/><stop offset="100%" stop-color="#1c1c1c"/></radialGradient>
                     <filter id="line-glow"><feGaussianBlur stdDeviation="1" result="blur"/><feFlood flood-color="#5DD62C" flood-opacity="0.5"/><feComposite in2="blur" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                 </defs>
             </svg>
+            <div class="absolute bottom-4 left-4 text-[9px] text-gray-600 pointer-events-none z-50">
+                <i class="fa-solid fa-hand-pointer mr-1"></i> <span data-i18n="drag_to_rotate">Drag to Rotate</span>
+            </div>
         </div>
     </main>
 
     <div id="detail-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-[200]">
-        <div class="bg-[#1a1a1a] border border-gas-green/30 w-full max-w-4xl h-[85vh] rounded-2xl flex flex-col overflow-hidden">
-            <div class="p-6 border-b border-white/10 flex justify-between items-center">
+        <div class="bg-[#1a1a1a] border border-gas-green/30 w-full max-w-4xl h-[85vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-[#121212]">
                 <h2 id="modal-title" class="text-2xl font-bold"></h2>
-                <button onclick="document.getElementById('detail-modal').classList.add('hidden')" class="text-gray-500 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <button onclick="document.getElementById('detail-modal').classList.add('hidden')" class="text-gray-500 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-2xl"></i></button>
             </div>
-            <div class="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-6 custom-scrollbar">
-                <div class="space-y-4">
-                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
-                        <div class="text-xs text-gray-400" data-i18n="gas_production">Production</div>
-                        <div id="modal-vol" class="text-xl font-bold font-mono"></div>
+            <div class="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8 custom-scrollbar">
+                <div class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-[#222] p-4 rounded-xl border border-white/5">
+                            <div class="text-[10px] text-gray-500 uppercase font-bold mb-1" data-i18n="gas_production">Production</div>
+                            <div id="modal-vol" class="text-xl font-bold font-mono text-white"></div>
+                        </div>
+                        <div class="bg-[#222] p-4 rounded-xl border border-white/5">
+                            <div class="text-[10px] text-gray-500 uppercase font-bold mb-1" data-i18n="score">Total Score</div>
+                            <div id="modal-score-val" class="text-xl font-bold font-mono text-gas-green"></div>
+                        </div>
                     </div>
-                    <div class="bg-[#181818] p-4 rounded-xl" id="modal-dims-container"></div>
+                    <div class="bg-[#181818] p-4 rounded-xl border border-white/5" id="modal-dims-container"></div>
                 </div>
-                <div class="space-y-4">
-                    <div class="p-4 rounded-xl border border-gas-green/20 bg-gas-green/5"><h4 class="text-gas-green font-bold text-xs mb-2" data-i18n="pros">PROS</h4><p id="modal-pros" class="text-sm text-gray-300"></p></div>
-                    <div class="p-4 rounded-xl border border-red-900/20 bg-red-900/5"><h4 class="text-red-500 font-bold text-xs mb-2" data-i18n="cons">CONS</h4><p id="modal-cons" class="text-sm text-gray-300"></p></div>
-                    <div class="p-4 rounded-xl border border-white/10 bg-white/5"><h4 class="text-white font-bold text-xs mb-2" data-i18n="advice">ADVICE</h4><p id="modal-advice" class="text-sm text-gray-400 italic"></p></div>
+                <div class="space-y-6">
+                    <div class="p-5 rounded-xl border border-gas-green/20 bg-gas-green/5"><h4 class="text-gas-green font-bold text-xs mb-3 flex items-center gap-2"><i class="fa-solid fa-thumbs-up"></i> <span data-i18n="pros">PROS</span></h4><p id="modal-pros" class="text-sm text-gray-300 leading-relaxed"></p></div>
+                    <div class="p-5 rounded-xl border border-red-900/20 bg-red-900/5"><h4 class="text-red-500 font-bold text-xs mb-3 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="cons">CONS</span></h4><p id="modal-cons" class="text-sm text-gray-300 leading-relaxed"></p></div>
+                    <div class="p-5 rounded-xl border border-white/10 bg-white/5"><h4 class="text-white font-bold text-xs mb-3 flex items-center gap-2"><i class="fa-solid fa-lightbulb text-yellow-400"></i> <span data-i18n="advice">ADVICE</span></h4><p id="modal-advice" class="text-sm text-gray-400 italic leading-relaxed"></p></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <footer class="bg-[#0a0a0a] border-t border-white/10 p-8 z-10">
-        <div class="max-w-[1800px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer class="bg-[#0a0a0a] border-t border-white/10 p-10 z-10">
+        <div class="max-w-[1800px] mx-auto grid grid-cols-1 md:grid-cols-5 gap-10">
             <div class="md:col-span-1">
-                <span class="text-2xl font-bold text-gas-green">GasGx</span>
-                <p class="text-xs text-gray-500 mt-2" data-i18n="footerTagline"></p>
+                <span class="text-2xl font-bold text-gas-green tracking-tighter">GasGx</span>
+                <p class="text-xs text-gray-500 mt-4 leading-relaxed" data-i18n="footerTagline">Making natural gas power mining easier globally.</p>
             </div>
-            <div id="footer-links" class="md:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+            <div id="footer-links" class="md:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-8"></div>
         </div>
     </footer>
 
@@ -169,65 +178,64 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         const firebaseConfig = { apiKey: "AIzaSyBUEXdeSB7Ue0gkwcXN3j76ymyCbngxufY", authDomain: "gasgxmining.firebaseapp.com", projectId: "gasgxmining", storageBucket: "gasgxmining.firebasestorage.app", messagingSenderId: "465579060005", appId: "1:465579060005:web:ee20cb21ed58020c4a88cc", measurementId: "G-ZHNSQ29181" };
-        const fbApp = initializeApp(firebaseConfig);
-        const auth = getAuth(fbApp);
-        const provider = new GoogleAuthProvider();
-        
-        window.AuthApp = {
-            signIn: async () => { try { await signInWithPopup(auth, provider); } catch(e) { alert("Login Error"); } },
-            signOut: async () => { try { await signOut(auth); } catch(e) {} }
-        };
-
+        const fbApp = initializeApp(firebaseConfig); const auth = getAuth(fbApp); const provider = new GoogleAuthProvider();
+        window.AuthApp = { signIn: async () => { try { await signInWithPopup(auth, provider); } catch(e) { alert("Login Error"); } }, signOut: async () => { try { await signOut(auth); } catch(e) {} } };
         onAuthStateChanged(auth, (user) => {
-            const lBtn = document.getElementById('auth-login-btn');
-            const uProf = document.getElementById('auth-user-profile');
-            if (user) {
-                lBtn.classList.add('hidden'); uProf.classList.remove('hidden');
-                document.getElementById('auth-user-avatar').src = user.photoURL;
-                document.getElementById('dropdown-username').innerText = user.displayName;
-            } else {
-                lBtn.classList.remove('hidden'); uProf.classList.add('hidden');
-            }
+            const lBtn = document.getElementById('auth-login-btn'); const uProf = document.getElementById('auth-user-profile');
+            if (user) { lBtn.classList.add('hidden'); uProf.classList.remove('hidden'); document.getElementById('auth-user-avatar').src = user.photoURL; document.getElementById('dropdown-username').innerText = user.displayName; } 
+            else { lBtn.classList.remove('hidden'); uProf.classList.add('hidden'); }
         });
     </script>
 
     <script>
-        // --- 1. FULL GAS_DATA (21+ Countries) ---
+        // --- 1. 数据定义 (完整 25+ 国家) ---
         const GAS_DATA = [
-            { cn: "美国", en: "United States", ru: "США", status: "legal", score: 42, vol: 967.3, dims: [5,4,4,5,4,4,4,4,4,4], mining: { cn: "合法/监管", en: "Legal/Regulated", ru: "Легально" }, pros: { cn: "资源极其丰富，基建成熟。", en: "Extreme resources, mature infra.", ru: "Богатые ресурсы." }, cons: { cn: "竞争激烈。", en: "High competition.", ru: "Высокая конкуренция." }, advice: { cn: "首选大规模布局。", en: "Primary choice for scale.", ru: "Лучший выбор." } },
-            { cn: "加拿大", en: "Canada", ru: "Канада", status: "legal", score: 39, vol: 178.7, dims: [3,3,4,5,4,4,4,4,4,4], mining: { cn: "合法", en: "Legal", ru: "Легально" }, pros: { cn: "政策极其稳定。", en: "Stable policy.", ru: "Стабильная политика." }, cons: { cn: "运维成本高。", en: "High OpEx.", ru: "Высокие затраты." }, advice: { cn: "适合中长期投资。", en: "Good for long term.", ru: "Для долгосрочных инвестиций." } },
-            { cn: "澳大利亚", en: "Australia", ru: "Австралия", status: "legal", score: 37, vol: 142.1, dims: [3,2,4,5,4,4,4,4,3,4], mining: { cn: "合法", en: "Legal", ru: "Легально" }, pros: { cn: "伴生气资源丰富。", en: "Rich flare gas.", ru: "Много факельного газа." }, cons: { cn: "气源分散。", en: "Dispersed gas.", ru: "Разрозненные ресурсы." }, advice: { cn: "关注偏远地区项目。", en: "Focus on remote sites.", ru: "Для удаленных площадок." } },
-            { cn: "俄罗斯", en: "Russia", ru: "Россия", status: "grey", score: 32.5, vol: 701.0, dims: [5,5,2,4,2,2,2,3,4.5,3], mining: { cn: "受限", en: "Restricted", ru: "Ограничено" }, pros: { cn: "能源价格极低。", en: "Cheap energy.", ru: "Дешевая энергия." }, cons: { cn: "政治风险。", en: "Political risk.", ru: "Политические риски." }, advice: { cn: "高风险高回报。", en: "High risk high return.", ru: "Высокий риск." } },
-            { cn: "土库曼斯坦", en: "Turkmenistan", ru: "Туркменистан", status: "legal", score: 31, vol: 83.6, dims: [3,4,4,3,3,3,2,3,4,2], mining: { cn: "合法", en: "Legal", ru: "Легально" }, pros: { cn: "资源体量大。", en: "Large resources.", ru: "Большие ресурсы." }, cons: { cn: "透明度低。", en: "Low transparency.", ru: "Низкая прозрачность." }, advice: { cn: "需政府合作。", en: "Need Gov support.", ru: "Нужна поддержка правительства." } },
-            { cn: "阿联酋", en: "United Arab Emirates", ru: "ОАЭ", status: "legal", score: 29.5, vol: 62.9, dims: [2,2,4,5,3,1,3,3,3.5,3], mining: { cn: "合法", en: "Legal", ru: "Легально" }, pros: { cn: "资本友好。", en: "Capital friendly.", ru: "Дружелюбный капитал." }, cons: { cn: "极端高温。", en: "Extreme heat.", ru: "Жара." }, advice: { cn: "适合液冷项目。", en: "Hydro-cooling recommended.", ru: "Рекомендуется гидроохлаждение." } },
-            { cn: "伊朗", en: "Iran", ru: "Иран", status: "grey", score: 24, vol: 237.6, dims: [4,5,2,2,1,2,1,1,5,1], mining: { cn: "严管", en: "Strict", ru: "Строго" }, pros: { cn: "气价全球最低。", en: "Lowest gas cost.", ru: "Самый дешевый газ." }, cons: { cn: "制裁风险。", en: "Sanctions risk.", ru: "Санкции." }, advice: { cn: "谨慎对待。", en: "Use caution.", ru: "Осторожно." } },
-            { cn: "中国", en: "China", ru: "Китай", status: "illegal", score: 18, vol: 179.3, dims: [3,2,1,5,3,3,2,2,2,3], mining: { cn: "禁止", en: "Banned", ru: "Запрещено" }, pros: { cn: "无优势。", en: "None.", ru: "Нет." }, cons: { cn: "全面封杀。", en: "Total ban.", ru: "Запрет." }, advice: { cn: "不推荐。", en: "Not recommended.", ru: "Не рекомендуется." } }
-            // ... (其余国家以此类推，前端会自动回退到英文)
+            { cn: "美国", en: "United States", ru: "США", status: "legal", score: 42, vol: 967.3, dims: [5,4,4,5,4,4,4,4,4,4], mining: { cn: "合法/合规", en: "Legal/Regulated", ru: "Легально" }, pros: { cn: "资源极其丰富，基建极其成熟，资本流动性强。", en: "Extreme resources, mature infra, strong liquidity.", ru: "Огромные ресурсы, развитая инфраструктура." }, cons: { cn: "由于市场成熟，能源价格波动受市场影响大。", en: "Market price volatility.", ru: "Колебания рыночных цен." }, advice: { cn: "首选大规模、长期合规布局。", en: "Best for large scale long-term projects.", ru: "Лучший выбор для крупных проектов." } },
+            { cn: "加拿大", en: "Canada", ru: "Канада", status: "legal", score: 39, vol: 178.7, dims: [3,3,4,5,4,4,4,4,4,4], mining: { cn: "合法", en: "Legal", ru: "Легально" }, pros: { cn: "政策极其稳定，阿尔伯塔省伴生气资源丰富。", en: "Stable policy, rich flare gas in Alberta.", ru: "Стабильная политика, много попутного газа." }, cons: { cn: "极寒气候对设备有要求。", en: "Extreme cold weather.", ru: "Суровый климат." }, advice: { cn: "适合追求高确定性的中长期资方。", en: "Ideal for long-term certain stability.", ru: "Для долгосрочных инвестиций." } },
+            { cn: "澳大利亚", en: "Australia", ru: "Австралия", status: "legal", score: 37, vol: 142.1, dims: [3,2,4,5,4,4,4,4,3,4], mining: { cn: "合法", en: "Legal", ru: "Легально" }, pros: { cn: "偏远地区气源丰富。", en: "Rich gas in remote areas.", ru: "Газ в удаленных районах." }, cons: { cn: "劳动力成本极高。", en: "Very high labor costs.", ru: "Высокая стоимость труда." }, advice: { cn: "建议采用高度自动化的集装箱方案。", en: "Use highly automated container solutions.", ru: "Рекомендуется автоматизация." } },
+            { cn: "俄罗斯", en: "Russia", ru: "Россия", status: "grey", score: 32.5, vol: 701.0, dims: [5,5,2,4,2,2,2,3,4.5,3], mining: { cn: "局部受限", en: "Restricted", ru: "Ограничено" }, pros: { cn: "气价全球领先廉价，气候利于散热。", en: "Cheap gas, cold climate.", ru: "Дешевый газ, холодный климат." }, cons: { cn: "地缘政治与资金汇兑风险。", en: "Geopolitical and payment risks.", ru: "Геополитические риски." }, advice: { cn: "仅建议有本地强力背景的资方参与。", en: "Only for locals with strong background.", ru: "Только при наличии местных связей." } },
+            { cn: "土库曼斯坦", en: "Turkmenistan", ru: "Туркменистан", status: "legal", score: 31, vol: 83.6, dims: [3,4,4,3,3,3,2,3,4,2], mining: { cn: "合法/合规", en: "Legal", ru: "Легально" }, pros: { cn: "天然气体量巨大且廉价。", en: "Massive cheap gas.", ru: "Огромные запасы дешевого газа." }, cons: { cn: "政策透明度低。", en: "Low transparency.", ru: "Низкая прозрачность." }, advice: { cn: "适合有政府层面合作基础的项目。", en: "Gov-level cooperation recommended.", ru: "Рекомендуется госсотрудничество." } },
+            { cn: "阿联酋", en: "UAE", ru: "ОАЭ", status: "legal", score: 29.5, vol: 62.9, dims: [2,2,4,5,3,1,3,3,3.5,3], mining: { cn: "合法", en: "Legal", ru: "Легально" }, pros: { cn: "自贸区政策极其优厚。", en: "Great Free Zone policies.", ru: "Отличные условия в СЭЗ." }, cons: { cn: "极端高温散热成本高。", en: "Extreme heat cooling cost.", ru: "Жара, дорогое охлаждение." }, advice: { cn: "必须采用液冷或高效率风冷系统。", en: "Hydro-cooling is mandatory.", ru: "Обязательно гидроохлаждение." } },
+            { cn: "哈萨克斯坦", en: "Kazakhstan", ru: "Казахстан", status: "grey", score: 28, vol: 32.0, dims: [2,3,3,3,2,4,2,2,3,2], mining: { cn: "征税监管", en: "Taxed/Regulated", ru: "Налоги" }, pros: { cn: "伴生气利用政策明确。", en: "Clear flare gas usage rules.", ru: "Ясные правила для газа." }, cons: { cn: "税务政策时有波动。", en: "Tax policy fluctuations.", ru: "Изменения в налогах." }, advice: { cn: "重点考察气源合同的稳定性。", en: "Check gas contract stability.", ru: "Проверяйте газовые контракты." } },
+            { cn: "卡塔尔", en: "Qatar", ru: "Катар", status: "grey", score: 28.5, vol: 167.5, dims: [3,3,2,4,3,1,2,2,4.5,4], mining: { cn: "谨慎对待", en: "Caution", ru: "Осторожно" }, pros: { cn: "能源极度丰沛。", en: "Vast energy sources.", ru: "Огромная энергия." }, cons: { cn: "对挖矿立场不明确。", en: "Unclear crypto stance.", ru: "Неясная позиция по крипто." }, advice: { cn: "观望政策进一步明朗。", en: "Wait for clearer signals.", ru: "Ждите четких сигналов." } },
+            { cn: "阿根廷", en: "Argentina", ru: "Аргентина", status: "legal", score: 28, vol: 41.2, dims: [2,2,4,3,2,3,3,3,3,3], mining: { cn: "合法", en: "Legal", ru: "Легально" }, pros: { cn: "Vaca Muerta地区资源潜力大。", en: "Vaca Muerta potential.", ru: "Потенциал Вака Муэрта." }, cons: { cn: "汇率波动剧烈。", en: "Currency volatility.", ru: "Волатильность валюты." }, advice: { cn: "需做好金融对冲方案。", en: "Hedge currency risks.", ru: "Хеджируйте валютные риски." } },
+            { cn: "伊朗", en: "Iran", ru: "Иран", status: "grey", score: 24, vol: 237.6, dims: [4,5,2,2,1,2,1,1,5,1], mining: { cn: "严控/牌照制", en: "Strict/Licensed", ru: "Лицензии" }, pros: { cn: "能源价格极低。", en: "World's lowest gas cost.", ru: "Самый дешевый газ." }, cons: { cn: "国际制裁风险及限电。", en: "Sanctions and power cuts.", ru: "Санкции и отключения." }, advice: { cn: "不建议普通国际资方进入。", en: "Not for general investors.", ru: "Не для рядовых инвесторов." } },
+            { cn: "中国", en: "China", ru: "Китай", status: "illegal", score: 18, vol: 179.3, dims: [3,2,1,5,3,3,2,2,2,3], mining: { cn: "禁止", en: "Banned", ru: "Запрещено" }, pros: { cn: "基建全球领先。", en: "Leading infra.", ru: "Топ инфраструктура." }, cons: { cn: "法律明确禁止挖矿。", en: "Total legal ban.", ru: "Полный запрет." }, advice: { cn: "绝对不建议在境内开展。", en: "Absolutely not recommended.", ru: "Категорически не рекомендуется." } }
         ];
 
         const DIMENSION_DEFS = [
-            { cn: "资源丰富度", en: "Resource", ru: "Ресурсы" }, { cn: "成本竞争力", en: "Cost", ru: "Стоимость" }, { cn: "挖矿政策", en: "Policy", ru: "Политика" }, { cn: "电力基建", en: "Grid", ru: "Сеть" }, { cn: "政策稳定性", en: "Stability", ru: "Стабильность" },
-            { cn: "气候适应性", en: "Climate", ru: "Климат" }, { cn: "监管透明度", en: "Transp.", ru: "Прозрачность" }, { cn: "市场准入", en: "Entry", ru: "Вход" }, { cn: "运营成本", en: "OpEx", ru: "OpEx" }, { cn: "投资安全", en: "Safety", ru: "Безопасность" }
+            { cn: "资源丰富度", en: "Resources", ru: "Ресурсы" }, { cn: "成本竞争力", en: "Cost", ru: "Стоимость" }, { cn: "政策友好度", en: "Policy", ru: "Политика" }, { cn: "基建完善度", en: "Infra", ru: "Сеть" }, { cn: "政策稳定性", en: "Stability", ru: "Стабильность" },
+            { cn: "气候适应性", en: "Climate", ru: "Климат" }, { cn: "监管透明度", en: "Transp.", ru: "Прозрачность" }, { cn: "市场准入", en: "Entry", ru: "Вход" }, { cn: "运营成本", en: "OpEx", ru: "OpEx" }, { cn: "投资安全性", en: "Safety", ru: "Безопасность" }
         ];
 
         const NavData = [
-            { title: "首页", path: "/index.html", type: "link" },
-            { title: "解决方案", path: "/solutions", type: "menu", children: [
-                { title: "油气井/伴生气发电", path: "#" }, { title: "工业园区", path: "#" }, { title: "数据中心", path: "#" }
+            { title: {cn:"首页", en:"Home", ru:"Главная"}, path: "/index.html", type: "link" },
+            { title: {cn:"解决方案", en:"Solutions", ru:"Решения"}, type: "menu", children: [
+                { title: {cn:"油田伴生气发电", en:"Flare Gas Power", ru:"Попутный газ"}, path: "#" },
+                { title: {cn:"分布式工业能源", en:"Distributed Energy", ru:"Энергия"}, path: "#" },
+                { title: {cn:"算力中心电力", en:"Computing Power", ru:"Майнинг"}, path: "#" }
             ]},
-            { title: "机型库", path: "/products", type: "mega", sections: [
-                { header: "按功率", items: [ {title: "500kW以下", path: "#"}, {title: "1MW以上", path: "#"} ]},
-                { header: "按品牌", items: [ {title: "全部品牌", path: "#"}, {title: "中国制造", path: "#"} ]}
+            { title: {cn:"机型库", en:"Products", ru:"Продукты"}, type: "mega", sections: [
+                { header: {cn:"按功率分类", en:"By Power", ru:"Мощность"}, items: [{title:{cn:"< 500kW", en:"< 500kW", ru:"< 500кВт"}, path:"#"}, {title:{cn:"> 1MW", en:"> 1MW", ru:"> 1МВт"}, path:"#"}] },
+                { header: {cn:"按品牌分类", en:"By Brand", ru:"Бренды"}, items: [{title:{cn:"中国制造", en:"Made in China", ru:"Китай"}, path:"#"}, {title:{cn:"欧美进口", en:"Imported", ru:"Импорт"}, path:"#"}] }
             ]},
-            { title: "排行榜", path: "/rankings", type: "mega", sections: [
-                { header: "性能榜", items: [ {title: "综合性能TOP", path: "#"} ]}
+            { title: {cn:"排行榜", en:"Rankings", ru:"Рейтинги"}, type: "mega", sections: [
+                { header: {cn:"国家排名", en:"Global Countries", ru:"Страны"}, items: [{title:{cn:"综合评分榜", en:"Total Score", ru:"Общий счет"}, path:"#"}, {title:{cn:"低成本榜", en:"Low Cost", ru:"Цена"}, path:"#"}] }
             ]}
         ];
 
+        const AppConfig = {
+            i18n: {
+                zh: { tagline: "天然气发电挖矿助手", footerTagline: "让全球天然气发电挖矿更简单", auth_login: "登录", top_producers: "综合评分榜", gas_production: "天然气年产量", score: "综合评分", pros: "优势", cons: "劣势", advice: "建议", legend_legal: "合规", legend_restricted: "受限", legend_banned: "禁止", drag_to_rotate: "拖动旋转" },
+                en: { tagline: "Natural Gas Power Mining Assistant", footerTagline: "Making Global Gas Power Mining Simple", auth_login: "Login", top_producers: "Top Ranking", gas_production: "Gas Production", score: "Total Score", pros: "PROS", cons: "CONS", advice: "ADVICE", legend_legal: "Legal", legend_restricted: "Restricted", legend_banned: "Banned", drag_to_rotate: "Drag to rotate" },
+                ru: { tagline: "Ассистент по майнингу", footerTagline: "Упрощение майнинга на газе", auth_login: "Войти", top_producers: "Рейтинг", gas_production: "Добыча газа", score: "Оценка", pros: "Плюсы", cons: "Минусы", advice: "Совет", legend_legal: "Легально", legend_restricted: "Лимиты", legend_banned: "Запрет", drag_to_rotate: "Вращать" }
+            },
+            statusColors: { 'legal': '#5DD62C', 'grey': '#9ca3af', 'illegal': '#ef4444' }
+        };
+
+        // --- 2. 逻辑引擎 ---
         window.app = {
-            currentLang: 'en',
-            rotationTimer: null, projection: null, projectionAir: null, geoGenerator: null, svg: null,
-            width: 0, height: 0, countries: [], activeData: null, lastElapsed: 0,
+            currentLang: 'en', rotationTimer: null, projection: null, projectionAir: null, geoGenerator: null, svg: null, countries: [], activeData: null,
             dragVelocity: { x: 0, y: 0 }, friction: 0.95, autoRotateSpeed: 0.2,
 
             init() {
@@ -238,20 +246,26 @@
                 this.renderLeaderboard();
             },
 
-            // --- Nav Logic ---
+            setLanguage(l) { this.currentLang = l; this.updateStaticText(); this.renderNav(); this.renderFooter(); this.renderLeaderboard(); this.redrawGlobe(); },
+            t(k) { return AppConfig.i18n[this.currentLang][k] || k; },
+            getText(o) { if(!o) return ""; return o[this.currentLang] || o['en'] || ""; },
+            getName(d) { return (this.currentLang === 'zh') ? d.cn : ((this.currentLang === 'ru') ? d.ru : d.en); },
+
+            // 深度适配 Header 渲染
             renderNav() {
                 const nav = document.getElementById('desktop-nav'); nav.innerHTML = '';
                 NavData.forEach((item, idx) => {
+                    const title = this.getText(item.title);
                     let html = `<div class="group h-full flex items-center relative cursor-pointer">`;
                     if (item.type === 'link') {
-                        html = `<a href="${item.path}" class="nav-item-link text-sm font-medium">${item.title}</a>`;
+                        html = `<a href="${item.path}" class="nav-item-link text-sm font-medium">${title}</a>`;
                     } else if (item.type === 'menu') {
-                        html += `<span class="nav-item-link text-sm font-medium">${item.title} <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i></span>`;
-                        html += `<div class="dropdown-menu absolute left-0 top-full p-2">${item.children.map(c => `<a href="${c.path}" class="block px-4 py-2 text-xs text-gray-400 hover:text-gas-green">${c.title}</a>`).join('')}</div>`;
+                        html += `<span class="nav-item-link text-sm font-medium">${title} <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i></span>`;
+                        html += `<div class="dropdown-menu absolute left-0 top-full p-2">${item.children.map(c => `<a href="${c.path}" class="block px-4 py-2 text-xs text-gray-400 hover:text-gas-green">${this.getText(c.title)}</a>`).join('')}</div>`;
                         html += `</div>`;
                     } else if (item.type === 'mega') {
-                        html = `<div class="group flex items-center cursor-pointer h-full"><span class="nav-item-link text-sm font-medium">${item.title} <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i></span>`;
-                        const sections = item.sections.map(s => `<div class="col-span-1"><h3 class="text-gas-green text-xs font-bold uppercase border-b border-white/5 pb-2 mb-3">${s.header}</h3><ul>${s.items.map(i => `<li><a href="${i.path}" class="text-[11px] text-gray-400 hover:text-gas-green py-1 block">${i.title}</a></li>`).join('')}</ul></div>`).join('');
+                        html = `<div class="group flex items-center cursor-pointer h-full"><span class="nav-item-link text-sm font-medium">${title} <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i></span>`;
+                        const sections = item.sections.map(s => `<div><h3 class="text-gas-green text-xs font-bold uppercase mb-3 border-b border-white/5 pb-2">${this.getText(s.header)}</h3><ul>${s.items.map(i => `<li><a href="${i.path}" class="text-[11px] text-gray-400 hover:text-gas-green py-1 block">${this.getText(i.title)}</a></li>`).join('')}</ul></div>`).join('');
                         html += `<div class="mega-menu absolute left-0 w-full"><div class="max-w-[1200px] mx-auto grid grid-cols-4 gap-8 px-4">${sections}</div></div></div>`;
                     }
                     nav.innerHTML += html;
@@ -260,15 +274,14 @@
 
             renderFooter() {
                 const fc = document.getElementById('footer-links'); fc.innerHTML = '';
-                NavData.filter(i => i.title !== '首页').forEach(item => {
+                NavData.filter(i => i.type !== 'link').forEach(item => {
                     let content = '';
-                    if (item.type === 'menu') content = item.children.map(c => `<a href="${c.path}" class="text-gray-500 hover:text-gas-green text-[11px] block mb-1">${c.title}</a>`).join('');
-                    else if (item.type === 'mega') content = item.sections.map(s => `<div class="mb-2"><span class="text-gas-green text-[10px] font-bold">${s.header}:</span> ${s.items.map(i => `<a href="${i.path}" class="text-gray-500 ml-1 text-[11px]">${i.title}</a>`).join(' | ')}</div>`).join('');
-                    fc.innerHTML += `<div class="flex flex-col"><h4 class="text-white text-xs font-bold mb-4 border-l-2 border-gas-green pl-2">${item.title}</h4>${content}</div>`;
+                    if (item.type === 'menu') content = item.children.map(c => `<a href="${c.path}" class="text-gray-500 hover:text-gas-green text-[11px] block mb-1">${this.getText(c.title)}</a>`).join('');
+                    else if (item.type === 'mega') content = item.sections.map(s => `<div class="mb-3"><span class="text-gas-green text-[10px] font-bold block mb-1">${this.getText(s.header)}</span>${s.items.map(i => `<a href="${i.path}" class="text-gray-500 hover:text-gas-green text-[11px] mr-2 underline underline-offset-4 decoration-white/5">${this.getText(i.title)}</a>`).join('')}</div>`).join('');
+                    fc.innerHTML += `<div class="flex flex-col"><h4 class="text-white text-xs font-bold mb-4 border-l-2 border-gas-green pl-2">${this.getText(item.title)}</h4>${content}</div>`;
                 });
             },
 
-            // --- Visualization Logic ---
             init3DGlobe() {
                 const c = document.getElementById('map-container'); this.width = c.clientWidth; this.height = c.clientHeight;
                 this.svg = d3.select("#map-container").append("svg").attr("width", this.width).attr("height", this.height).style("position", "absolute").on("click", () => this.resetMap());
@@ -283,15 +296,15 @@
                     this.svg.append("path").datum({type: "Sphere"}).attr("class", "globe-sphere").attr("d", this.geoGenerator);
                     this.svg.append("g").selectAll("path").data(this.countries).enter().append("path").attr("d", this.geoGenerator).attr("class", "country")
                         .attr("id", d => `country-${d.properties.name.replace(/\s+/g, '-')}`)
-                        .attr("fill", d => { const dt = GAS_DATA.find(i => i.en === d.properties.name); return dt ? AppData.statusColors[dt.status] : "#1a1a1a"; })
+                        .attr("fill", d => { const dt = GAS_DATA.find(i => i.en === d.properties.name); return dt ? AppConfig.statusColors[dt.status] : "#1a1a1a"; })
+                        .attr("stroke", "#000").attr("stroke-width", 0.5)
                         .on("click", (e, d) => { e.stopPropagation(); this.highlightCountry(d.properties.name, true); });
                     const elements = this.svg.append("g").attr("class", "globe-elements-group");
                     GAS_DATA.forEach(cd => {
                         const geo = this.countries.find(c => c.properties.name === cd.en); if(!geo) return;
                         const gr = elements.append("g").datum({ coordinates: d3.geoCentroid(geo), data: cd }).attr("class", "btc-icon-group").on("click", (e, d) => { e.stopPropagation(); this.highlightCountry(cd.en, true); });
-                        gr.append("path").attr("class", "beam-line").attr("stroke", AppData.statusColors[cd.status]);
-                        const w = gr.append("g").attr("transform", "translate(-16, -32)");
-                        w.append("circle").attr("cx", 16).attr("cy", 16).attr("r", 14).attr("fill", "#000");
+                        gr.append("path").attr("class", "beam-line").attr("stroke", AppConfig.statusColors[cd.status]).attr("filter", "url(#line-glow)");
+                        const w = gr.append("g").attr("transform", "translate(-16, -32)"); w.append("circle").attr("cx", 16).attr("cy", 16).attr("r", 14).attr("fill", "#000");
                         w.append("path").attr("class", "icon-lightning").attr("d", "M16 5 L19 14 H16 L18 24 L11 14 H14 L12 5 Z").attr("fill", "#fff");
                         gr.append("text").attr("class", "country-label").attr("text-anchor", "middle").attr("dy", "12").attr("fill", "#fff").text(this.getName(cd));
                     });
@@ -304,7 +317,8 @@
                 if(!this.svg) return; this.svg.selectAll("path.country").attr("d", this.geoGenerator); this.drawStars(this.projection.rotate());
                 const self = this; this.svg.selectAll(".country-label").text(function(d){ return self.getName(d3.select(this.parentNode).datum().data); });
                 this.svg.selectAll(".btc-icon-group").each(function(d){
-                    const c = window.app.projection.invert([window.app.width/2, window.app.height/2 + 50]); if(d3.geoDistance(d.coordinates, c) > 1.57) d3.select(this).style("display", "none");
+                    const geoAngle = d3.geoDistance(d.coordinates, window.app.projection.invert([window.app.width/2, window.app.height/2+50]));
+                    if(geoAngle > 1.57) d3.select(this).style("display", "none");
                     else { d3.select(this).style("display", "block"); const s = window.app.projection(d.coordinates); const a = window.app.projectionAir(d.coordinates); d3.select(this).attr("transform", `translate(${a[0]},${a[1]})`); d3.select(this).select(".beam-line").attr("d", `M${s[0]-a[0]},${s[1]-a[1]} L0,0`); }
                 });
                 this.updateInfoBox();
@@ -319,30 +333,26 @@
                 if(rotate) { const p = d3.geoCentroid(f); const r = d3.interpolate(this.projection.rotate(), [-p[0], -p[1]]); d3.transition().duration(1000).tween("rotate", () => (t) => { this.projection.rotate(r(t)); this.projectionAir.rotate(r(t)); this.redrawGlobe(); }); } else this.redrawGlobe();
             },
 
-            resetMap() { this.activeData = null; d3.select('#map-container').classed('map-has-highlight', false); d3.selectAll('.country').classed('highlighted', false); document.getElementById('map-info-box').style.opacity=0; const hl = document.getElementById('hud-layer'); while(hl.firstChild) hl.removeChild(hl.firstChild); document.querySelectorAll('.list-item-hover').forEach(e => e.classList.remove('list-item-active')); },
+            resetMap() { this.activeData = null; d3.select('#map-container').classed('map-has-highlight', false); d3.selectAll('.country').classed('highlighted', false); document.getElementById('map-info-box').style.opacity=0; const hl = document.getElementById('hud-layer'); while(hl?.firstChild) hl.removeChild(hl.firstChild); document.querySelectorAll('.list-item-hover').forEach(e => e.classList.remove('list-item-active')); },
 
             updateInfoBox() {
                 if(!this.activeData){ const hl = document.getElementById('hud-layer'); while(hl?.firstChild) hl.removeChild(hl.firstChild); return; }
                 const ib = document.getElementById('map-info-box'); const hl = document.getElementById('hud-layer'); while(hl.firstChild) hl.removeChild(hl.firstChild);
-                const d = this.activeData.data; const c = AppData.statusColors[d.status]; const a = this.projectionAir(d3.geoCentroid(this.activeData.geo));
+                const d = this.activeData.data; const c = AppConfig.statusColors[d.status]; const a = this.projectionAir(d3.geoCentroid(this.activeData.geo));
                 if(d3.geoDistance(d3.geoCentroid(this.activeData.geo), this.projectionAir.invert([this.width/2, this.height/2+50])) > 1.57) { ib.style.opacity=0; return; }
-                const stars = (s) => Array(5).fill(0).map((_,i)=>`<svg class="btc-star ${i<Math.floor(s)?'':'inactive'}" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`).join('');
-                ib.innerHTML = `<div class="font-bold text-gas-green mb-2">${this.getName(d)} (Score: ${d.score})</div><div class="text-[10px] text-gray-400 mb-2">${this.getText(d.mining)}</div><div class="space-y-1">${d.dims.slice(0,5).map((s,i)=>`<div class="dim-row"><span>${this.getText(DIMENSION_DEFS[i])}</span><div class="flex">${stars(s)}</div></div>`).join('')}</div><button onclick="window.app.openDetailModal('${d.en}')" class="mt-3 w-full bg-gas-green text-black py-1 rounded font-bold text-[10px]">View Details</button>`;
+                ib.innerHTML = `<div class="font-bold text-gas-green mb-2">${this.getName(d)} (Score: ${d.score})</div><div class="text-[10px] text-gray-400 mb-2">${this.getText(d.mining)}</div><div class="space-y-1">${d.dims.slice(0,5).map((s,i)=>`<div class="dim-row"><span>${this.getText(DIMENSION_DEFS[i])}</span><div class="flex">${Array(5).fill(0).map((_,j)=>`<svg class="btc-star ${j<Math.floor(s)?'':'inactive'}" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`).join('')}</div></div>`).join('')}</div><button onclick="window.app.openDetailModal('${d.en}')" class="mt-3 w-full bg-gas-green text-black py-1.5 rounded font-bold text-[10px]">View Details</button>`;
                 const bx = a[0] > this.width/2 ? (this.width/2 + this.projection.scale() + 20) : (this.width/2 - this.projection.scale() - 340);
                 ib.style.left = bx+'px'; ib.style.top = (a[1]-100)+'px'; ib.style.opacity=1; ib.style.borderColor = c;
             },
 
-            openDetailModal(en) { const d = GAS_DATA.find(i=>i.en===en); if(!d) return; document.getElementById('modal-title').innerText = this.getName(d); document.getElementById('modal-vol').innerText = d.vol+' Bcm'; document.getElementById('modal-pros').innerText = this.getText(d.pros); document.getElementById('modal-cons').innerText = this.getText(d.cons); document.getElementById('modal-advice').innerText = this.getText(d.advice); document.getElementById('detail-modal').classList.remove('hidden'); },
+            openDetailModal(en) { const d = GAS_DATA.find(i=>i.en===en); if(!d) return; document.getElementById('modal-title').innerText = this.getName(d); document.getElementById('modal-vol').innerText = d.vol+' Bcm'; document.getElementById('modal-score-val').innerText = d.score; document.getElementById('modal-pros').innerText = this.getText(d.pros); document.getElementById('modal-cons').innerText = this.getText(d.cons); document.getElementById('modal-advice').innerText = this.getText(d.advice); document.getElementById('modal-dims-container').innerHTML = d.dims.map((s,i)=>`<div class="dim-row"><span>${this.getText(DIMENSION_DEFS[i])}</span><div class="flex gap-1">${Array(5).fill(0).map((_,j)=>`<svg class="w-3 h-3 ${j<Math.floor(s)?'fill-gas-green':'fill-gray-700'}" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`).join('')}</div></div>`).join(''); document.getElementById('detail-modal').classList.remove('hidden'); },
 
-            renderLeaderboard() { const l = document.getElementById('country-list'); l.innerHTML = [...GAS_DATA].sort((a,b)=>b.score-a.score).map((d,i)=>`<div id="list-item-${d.en.replace(/\s+/g, '-')}" onclick="window.app.highlightCountry('${d.en}', true)" class="list-item-hover flex items-center gap-2 p-2 cursor-pointer mb-1 border-l-2"><div class="text-[10px] w-4 text-center text-gray-500">#${i+1}</div><div class="flex-1 text-xs font-bold text-gray-400">${this.getName(d)}</div><div class="text-xs font-mono text-white">${d.score}</div></div>`).join(''); },
+            renderLeaderboard() { const l = document.getElementById('country-list'); l.innerHTML = [...GAS_DATA].sort((a,b)=>b.score-a.score).map((d,i)=>`<div id="list-item-${d.en.replace(/\s+/g, '-')}" onclick="window.app.highlightCountry('${d.en}', true)" class="list-item-hover flex items-center gap-2 p-2.5 cursor-pointer mb-1 border-l-2 bg-white/[0.02] hover:bg-white/[0.05]"><div class="text-[10px] w-4 text-center font-mono ${i<3?'text-gas-green':'text-gray-600'}">#${i+1}</div><div class="flex-1 text-xs font-bold text-gray-400">${this.getName(d)}</div><div class="text-xs font-mono text-white">${d.score}</div></div>`).join(''); },
 
-            setLanguage(l) { this.currentLang = l; this.updateStaticText(); this.renderNav(); this.renderFooter(); this.renderLeaderboard(); this.redrawGlobe(); },
-            t(k) { return AppData.i18n[this.currentLang][k] || k; },
-            getText(o) { return this.currentLang === 'zh' ? o.cn : (this.currentLang === 'ru' ? o.ru : o.en); },
-            getName(d) { return this.currentLang === 'zh' ? d.cn : (this.currentLang === 'ru' ? d.ru : d.en); },
             updateStaticText() { document.getElementById('header-tagline').innerText = this.t('tagline'); document.querySelectorAll('[data-i18n]').forEach(e => { const k = e.getAttribute('data-i18n'); e.innerText = this.t(k); }); },
-            initStars() { const c = document.getElementById('starfield'); const ctx = c.getContext('2d'); c.width = this.width; c.height = this.height; const stars = Array(1000).fill(0).map(()=>({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*0.8, a:Math.random()})); this.drawStars = (r) => { ctx.clearRect(0,0,c.width,c.height); ctx.fillStyle="#fff"; stars.forEach(s => { ctx.globalAlpha = s.a; ctx.beginPath(); ctx.arc((s.x+r[0]*0.1)%c.width, s.y, s.r, 0, Math.PI*2); ctx.fill(); }); }; },
+            initStars() { const c = document.getElementById('starfield'); const ctx = c.getContext('2d'); c.width = this.width; c.height = this.height; const stars = Array(1200).fill(0).map(()=>({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*0.8, a:Math.random()})); this.drawStars = (r) => { ctx.clearRect(0,0,c.width,c.height); ctx.fillStyle="#fff"; stars.forEach(s => { ctx.globalAlpha = s.a; ctx.beginPath(); ctx.arc((s.x+r[0]*0.1)%c.width, s.y, s.r, 0, Math.PI*2); ctx.fill(); }); }; },
             startRotation() { if(this.rotationTimer) this.rotationTimer.stop(); this.rotationTimer = d3.timer(() => { const r = this.projection.rotate(); this.projection.rotate([r[0]+this.autoRotateSpeed, r[1]]); this.projectionAir.rotate([r[0]+this.autoRotateSpeed, r[1]]); this.redrawGlobe(); }); },
+            toggleMobileMenu() { const m = document.getElementById('mobile-menu-container'); m.classList.toggle('translate-x-full'); },
             captureAndShare() { window.scrollTo(0,0); html2canvas(document.body).then(c => { const a = document.createElement('a'); a.download = 'GasGx.png'; a.href = c.toDataURL(); a.click(); }); }
         };
 
