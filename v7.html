@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx - Natural Gas Power Mining</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome 6.5.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- html2canvas for Screenshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- D3.js & TopoJSON -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson-client@3"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8',
+                            legal: '#5DD62C', 
+                            grey: '#9ca3af',  
+                            illegal: '#ef4444', 
+                            land: '#1a2e15',
+                            ocean: '#050505',
+                            rank1: '#FFD700', 
+                            rank2: '#C0C0C0', 
+                            rank3: '#CD7F32'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* Glass Card */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* --- MAP STYLES --- */
+        #map-container {
+            background: radial-gradient(circle at 50% 50%, #151515 0%, #000 100%);
+            position: relative;
+            overflow: hidden;
+            cursor: grab;
+        }
+        #map-container:active { cursor: grabbing; }
+        
+        /* 3D Plate Effect */
+        .country {
+            transition: fill 0.3s ease, stroke 0.3s ease, opacity 0.5s ease, filter 0.3s ease;
+            filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.5)); /* Basic depth */
+        }
+        
+        /* Spotlight Effect with Enhanced 3D */
+        .map-has-highlight .country { opacity: 0.15; stroke: #222; filter: none; }
+        .map-has-highlight .country.highlighted {
+            opacity: 1 !important; 
+            stroke: #fff !important;
+            stroke-width: 1.5px !important;
+            /* Strong 3D Glow + Drop Shadow */
+            filter: drop-shadow(0 0 15px rgba(93, 214, 44, 0.4)) drop-shadow(2px 4px 6px rgba(0,0,0,0.8));
+            z-index: 10;
+        }
+        
+        .globe-glow { fill: url(#globeGradient); pointer-events: none; }
+        .globe-elements-group { pointer-events: none; transition: opacity 0.2s; }
+        
+        /* Beam Style */
+        .beam-line {
+            fill: none;
+            stroke-width: 2px;
+            stroke-opacity: 0.8;
+            stroke-dasharray: 4,2; 
+            filter: drop-shadow(0 0 4px #5DD62C);
+            animation: beamFlow 1s linear infinite;
+        }
+        @keyframes beamFlow {
+            from { stroke-dashoffset: 6; }
+            to { stroke-dashoffset: 0; }
+        }
+        
+        .country-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            fill: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+            opacity: 0.9;
+        }
+
+        /* HUD Info Box */
+        .map-info-box {
+            position: absolute;
+            pointer-events: none; /* Default none */
+            background: rgba(10, 15, 20, 0.75); 
+            border: 1px solid rgba(93, 214, 44, 0.4);
+            border-left: 3px solid #5DD62C;
+            backdrop-filter: blur(12px);
+            padding: 14px 18px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #fff;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            z-index: 150; /* Higher Z-Index */
+            opacity: 0;
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 280px;
+        }
+        .map-info-box.active { 
+            opacity: 1; 
+            pointer-events: auto; /* Enable clicks when active */
+        }
+
+        /* Full Detail Modal */
+        #detail-modal {
+            z-index: 200;
+            transition: opacity 0.3s ease;
+        }
+        #detail-modal.hidden { pointer-events: none; opacity: 0; }
+        #detail-modal:not(.hidden) { pointer-events: auto; opacity: 1; }
+
+        /* Dimensions Table */
+        .dim-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3px;
+            font-size: 10px;
+            color: #94a3b8;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 2px;
+        }
+        .dim-stars { display: flex; gap: 2px; }
+        .btc-star { width: 9px; height: 9px; fill: #5DD62C; }
+        .btc-star.inactive { fill: #444; }
+
+        /* Sidebar Item Styles */
+        .list-item-hover { transition: all 0.3s; border-right: 2px solid transparent; }
+        .list-item-hover:hover { background: rgba(255, 255, 255, 0.05); }
+        .list-item-active {
+            background: linear-gradient(90deg, rgba(93, 214, 44, 0.15) 0%, transparent 100%);
+            border-left-color: #5DD62C !important;
+        }
+        .list-item-dimmed { opacity: 0.3; }
+
+        /* Rank Colors */
+        .text-rank-1 { color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+        .text-rank-2 { color: #C0C0C0; text-shadow: 0 0 5px rgba(192, 192, 192, 0.5); }
+        .text-rank-3 { color: #CD7F32; text-shadow: 0 0 5px rgba(205, 127, 50, 0.5); }
+
+        /* Icon Animation */
+        .power-pulse { animation: powerPulse 2s infinite alternate; }
+        @keyframes powerPulse { from { opacity: 0.6; filter: drop-shadow(0 0 2px #fff); } to { opacity: 1; filter: drop-shadow(0 0 8px #5DD62C); } }
+        .ring-spin { animation: spin 8s linear infinite; transform-origin: 16px 16px; }
+        @keyframes spin { from {transform: rotate(0deg);} to {transform: rotate(360deg);} }
+
+        /* --- NAV & FOOTER STYLES --- */
+        .mega-menu { display: none; position: absolute; top: 100%; left: 0; width: 100%; background-color: #151515; border-top: 1px solid rgba(255,255,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 1.5rem 0; box-shadow: 0 20px 40px rgba(0,0,0,0.5); z-index: 40; }
+        .group:hover .mega-menu { display: block; animation: slideDown 0.2s ease-out; }
+        .dropdown-menu { display: none; position: absolute; top: 100%; min-width: 220px; background-color: #151515; border: 1px solid rgba(255,255,255,0.1); border-radius: 0 0 8px 8px; padding: 0.5rem 0; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 40; }
+        .group:hover .dropdown-menu { display: block; animation: slideDown 0.2s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .nav-item-link { position: relative; padding: 1.5rem 0.5rem; color: #94a3b8; transition: color 0.3s; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+        .nav-item-link:hover { color: #5DD62C; }
+        .nav-item-link::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background-color: #5DD62C; transition: width 0.3s; }
+        .nav-item-link:hover::after { width: 100%; }
+        .footer-link { color: #94a3b8; transition: all 0.2s; font-size: 0.8rem; white-space: nowrap; }
+        .footer-link:hover { color: #5DD62C; }
+        #mobile-menu-container { transition: transform 0.3s ease-in-out; }
+        .mobile-submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .footer-accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        @keyframes floatPulse { 0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); } 100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); } }
+        .float-btn { animation: floatPulse 2s infinite; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative overflow-hidden">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 gas-card h-16 transition-all duration-300">
+        <div class="max-w-[1800px] mx-auto px-4 h-full flex justify-between items-center relative">
+            <div class="flex items-center gap-3 w-auto shrink-0 mr-4">
+                <a href="/index.html" class="flex items-center gap-2 group">
+                    <h1 class="text-2xl font-bold tracking-wider text-gas-green hover:text-white transition-colors cursor-pointer">GasGx</h1>
+                </a>
+                <div class="flex flex-col justify-center border-l border-gray-700 pl-2 md:pl-3 h-6 md:h-8">
+                    <span id="header-tagline" class="text-gas-green text-[10px] md:text-xs font-bold tracking-wide leading-tight">Natural Gas Power Mining Assistant</span>
+                </div>
+            </div>
+            <nav id="desktop-nav" class="hidden lg:flex items-center justify-center gap-2 xl:gap-6 h-full flex-1"></nav>
+            <div class="flex items-center gap-4 w-auto shrink-0 justify-end ml-4">
+                <div class="hidden md:flex relative items-center">
+                    <button id="auth-login-btn" onclick="window.AuthApp.signIn()" class="hidden flex items-center gap-2 text-xs font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-4 py-1.5 shadow-glow hover:shadow-glow-strong transform hover:scale-105 active:scale-95">
+                        <i class="fa-brands fa-google"></i>
+                        <span data-i18n="auth_login">Login</span>
+                    </button>
+                    <div id="auth-user-profile" class="hidden items-center gap-2 cursor-pointer group relative h-full">
+                        <div class="relative py-3">
+                            <img id="auth-user-avatar" src="" alt="User" class="w-9 h-9 rounded-full border-2 border-gas-green p-0.5 transition-transform group-hover:scale-105">
+                            <div class="absolute bottom-3 right-0 w-2.5 h-2.5 bg-gas-green rounded-full border-2 border-[#151515]"></div>
+                        </div>
+                        <div class="absolute right-0 top-full pt-1 w-48 hidden group-hover:block z-[60]">
+                            <div class="bg-[#151515] border border-white/10 rounded-xl shadow-2xl py-2 mt-1">
+                                <div class="px-4 py-2 border-b border-white/5 mb-1">
+                                    <span class="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Account</span>
+                                    <div id="dropdown-username" class="text-xs text-white font-bold truncate mt-1">User</div>
+                                </div>
+                                <button onclick="window.AuthApp.signOut()" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors flex items-center">
+                                    <i class="fa-solid fa-right-from-bracket mr-2"></i> <span data-i18n="auth_logout">Logout</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden sm:flex items-center gap-1 bg-[#111] border border-white/10 rounded-full px-1 py-1">
+                    <button onclick="window.app.setLanguage('zh')" id="btn-lang-zh" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">CN</button>
+                    <button onclick="window.app.setLanguage('en')" id="btn-lang-en" class="px-2 py-1 rounded-full text-[10px] font-bold transition-all w-8 text-center text-black bg-gas-green shadow-glow">EN</button>
+                    <button onclick="window.app.setLanguage('ru')" id="btn-lang-ru" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">RU</button>
+                </div>
+                <button id="mobile-menu-btn" onclick="window.app.toggleMobileMenu()" class="lg:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu-container" class="fixed inset-0 z-40 bg-[#111] transform translate-x-full pt-20 px-4 pb-8 overflow-y-auto lg:hidden">
+        <div class="flex justify-center gap-4 mb-6 border-b border-white/10 pb-4">
+            <div class="flex items-center gap-2 bg-[#222] border border-white/10 rounded-full px-1 py-1">
+                <button onclick="window.app.setLanguage('zh')" id="mob-btn-lang-zh" class="px-4 py-2 rounded-full text-xs font-bold transition-all text-gray-400">CN</button>
+                <button onclick="window.app.setLanguage('en')" id="mob-btn-lang-en" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-black bg-gas-green">EN</button>
+                <button onclick="window.app.setLanguage('ru')" id="mob-btn-lang-ru" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-gray-400">RU</button>
+            </div>
+        </div>
+        <div class="mb-6 border-b border-white/10 pb-4 flex justify-center">
+             <button id="mob-auth-login-btn" onclick="window.AuthApp.signIn()" class="hidden w-full max-w-xs py-3 rounded-lg bg-gas-green text-black font-bold flex items-center justify-center gap-2 shadow-glow">
+                <i class="fa-brands fa-google"></i>
+                <span data-i18n="auth_login">Login with Google</span>
+            </button>
+             <div id="mob-auth-user-profile" class="hidden flex items-center justify-between w-full max-w-xs px-2">
+                <div class="flex items-center gap-3">
+                     <img id="mob-auth-user-avatar" src="" class="w-10 h-10 rounded-full border border-gas-green">
+                     <div class="flex flex-col">
+                         <span class="text-xs text-gray-400">Welcome,</span>
+                         <span id="mob-auth-username" class="text-sm text-white font-bold">User</span>
+                     </div>
+                </div>
+                <button onclick="window.AuthApp.signOut()" class="text-xs text-red-400 hover:text-red-300 border border-red-900/50 bg-red-900/20 px-3 py-1.5 rounded">
+                    <span data-i18n="auth_logout">Logout</span>
+                </button>
+             </div>
+        </div>
+        <nav id="mobile-nav-content" class="flex flex-col space-y-1"></nav>
+    </div>
+
+    <!-- MAIN CONTENT: Full Screen 3D Globe Dashboard -->
+    <main class="flex-grow pt-16 w-full relative h-screen flex flex-col overflow-hidden">
+        
+        <div class="relative w-full flex-grow flex flex-col md:flex-row bg-[#000] overflow-hidden">
+            
+            <!-- Left Sidebar -->
+            <div class="w-full md:w-[220px] h-[30%] md:h-full bg-[#0a0a0a] border-r border-white/10 flex flex-col relative z-20 shrink-0 shadow-2xl">
+                <div class="p-3 border-b border-white/5 bg-[#121212] flex justify-center">
+                    <h2 class="text-gas-green font-bold text-[10px] uppercase tracking-widest flex items-center gap-1">
+                        <i class="fa-solid fa-trophy"></i>
+                        <span data-i18n="top_producers">Total Score Ranking</span>
+                    </h2>
+                </div>
+                
+                <div id="country-list" class="flex-1 p-1 space-y-0.5 overflow-y-auto custom-scrollbar bg-[#080808]">
+                    <!-- JS Generated List Items -->
+                </div>
+                
+                <div class="p-2 border-t border-white/5 bg-[#050505] text-[9px] text-gray-500 flex flex-col gap-1.5 pl-3 pb-3">
+                    <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm bg-gas-legal shadow-[0_0_5px_#5DD62C]"></div> Legal / High Score</div>
+                    <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm bg-gas-grey"></div> Restricted</div>
+                    <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm bg-gas-illegal"></div> Banned</div>
+                </div>
+            </div>
+
+            <!-- Right Map Area -->
+            <div class="flex-1 h-[70%] md:h-full relative bg-[#000] overflow-hidden">
+                <div id="map-container" class="w-full h-full">
+                    <svg id="hud-layer" style="position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 50;"></svg>
+                    
+                    <svg style="position: absolute; width: 0; height: 0;">
+                        <defs>
+                            <!-- Metallic Gradient for Icon -->
+                            <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#eee;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#999;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#555;stop-opacity:1" />
+                            </linearGradient>
+                            <!-- Electric Blue Glow -->
+                            <radialGradient id="electricBlue" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" style="stop-color:#fff;stop-opacity:1" />
+                                <stop offset="30%" style="stop-color:#00ffff;stop-opacity:0.8" />
+                                <stop offset="100%" style="stop-color:#0055ff;stop-opacity:0" />
+                            </radialGradient>
+                            <!-- Globe Atmosphere -->
+                            <radialGradient id="globeGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                                <stop offset="80%" stop-color="#050505" stop-opacity="1"/>
+                                <stop offset="100%" stop-color="#151515" stop-opacity="1"/>
+                            </radialGradient>
+                            <!-- Drop Shadow for 3D Plate -->
+                            <filter id="plateShadow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+                                <feOffset dx="1" dy="2" result="offsetblur"/>
+                                <feFlood flood-color="rgba(0,0,0,0.5)"/>
+                                <feComposite in2="offsetblur" operator="in"/>
+                                <feMerge>
+                                    <feMergeNode/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                    </svg>
+
+                    <!-- Info Box -->
+                    <div id="map-info-box" class="map-info-box"></div>
+
+                    <div id="map-loading" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div class="flex flex-col items-center gap-3">
+                            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-gas-green"></i>
+                            <span class="text-sm text-gray-400">Loading Mining Data...</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="absolute top-4 right-4 flex gap-3 pointer-events-none z-10">
+                    <div class="bg-black/80 backdrop-blur-md border border-gas-green/30 rounded-lg px-3 py-1.5 text-right shadow-[0_0_15px_rgba(93,214,44,0.1)]">
+                        <div class="text-[9px] text-gray-400 uppercase tracking-wider">Analysis Scope</div>
+                        <div class="text-lg font-bold text-white font-mono">25+ <span class="text-[10px] text-gas-green">Countries</span></div>
+                    </div>
+                </div>
+                
+                <div class="absolute bottom-4 left-4 text-[9px] text-gray-600 pointer-events-none md:left-[240px] z-50">
+                    <i class="fa-solid fa-hand-pointer mr-1"></i> Drag to Rotate
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Detail Modal (Full Report) -->
+    <div id="detail-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 lg:p-8">
+        <div class="bg-[#1a1a1a] border border-gas-green/50 w-full max-w-4xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative">
+            
+            <!-- Modal Header -->
+            <div class="bg-[#121212] border-b border-white/10 p-6 flex justify-between items-start shrink-0">
+                <div>
+                    <h2 id="modal-title" class="text-3xl font-bold text-white mb-2">COUNTRY NAME</h2>
+                    <div class="flex gap-4 text-sm">
+                        <div class="flex items-center gap-2"><span class="text-gray-400">Rank:</span> <span id="modal-rank" class="text-gas-green font-mono font-bold text-lg">#1</span></div>
+                        <div class="flex items-center gap-2"><span class="text-gray-400">Total Score:</span> <span id="modal-score" class="text-white font-mono font-bold text-lg">42</span></div>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('detail-modal').classList.add('hidden')" class="text-gray-400 hover:text-white transition-colors p-2">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body (Scrollable) -->
+            <div class="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    
+                    <!-- Left: Basic Stats & Dimensions -->
+                    <div class="space-y-6">
+                        <!-- Key Metrics -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-[#222] p-4 rounded-xl border border-white/5">
+                                <div class="text-xs text-gray-400 mb-1">Gas Production</div>
+                                <div id="modal-vol" class="text-xl font-bold text-white font-mono">-- Bcm</div>
+                            </div>
+                            <div class="bg-[#222] p-4 rounded-xl border border-white/5">
+                                <div class="text-xs text-gray-400 mb-1">Policy Status</div>
+                                <div id="modal-policy" class="text-sm font-bold text-white">--</div>
+                            </div>
+                        </div>
+
+                        <!-- 10 Dimensions Chart -->
+                        <div class="bg-[#181818] p-5 rounded-xl border border-white/5">
+                            <h3 class="text-sm font-bold text-white mb-4 border-b border-white/5 pb-2">10-Dimension Analysis</h3>
+                            <div id="modal-dims-container" class="space-y-2">
+                                <!-- JS Injected -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Text Analysis -->
+                    <div class="space-y-6">
+                        <!-- Pros -->
+                        <div class="bg-[#142810] p-5 rounded-xl border border-gas-green/30">
+                            <h3 class="text-gas-green font-bold text-sm mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-thumbs-up"></i> Advantages
+                            </h3>
+                            <p id="modal-pros" class="text-sm text-gray-300 leading-relaxed">--</p>
+                        </div>
+
+                        <!-- Cons -->
+                        <div class="bg-[#2a1212] p-5 rounded-xl border border-red-900/50">
+                            <h3 class="text-red-400 font-bold text-sm mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Risks & Disadvantages
+                            </h3>
+                            <p id="modal-cons" class="text-sm text-gray-300 leading-relaxed">--</p>
+                        </div>
+
+                        <!-- Advice -->
+                        <div class="bg-[#222] p-5 rounded-xl border-l-4 border-white/20">
+                            <h3 class="text-white font-bold text-sm mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-lightbulb text-yellow-400"></i> Investment Advice
+                            </h3>
+                            <p id="modal-advice" class="text-sm text-gray-400 leading-relaxed italic">--</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-[#0a0a0a] border-t border-white/10 mt-auto pt-6 pb-6 relative z-10 shrink-0">
+        <div class="max-w-[1800px] mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl font-bold text-gas-green">GasGx</span>
+                    <span class="text-xs text-gray-500">|</span>
+                    <p class="text-xs text-gray-400 font-medium" data-i18n="footerTagline">Making natural gas power mining easier</p>
+                </div>
+                <div class="flex items-center gap-6 text-xs text-gray-600">
+                    <span>© 2026 GasGx.</span>
+                    <a href="#" class="hover:text-gas-green transition-colors"><i class="fa-solid fa-shield-halved mr-1"></i>Privacy</a>
+                    <a href="mailto:contact@gasgx.com" class="hover:text-gas-green transition-colors"><i class="fa-solid fa-envelope mr-1"></i>Contact</a>
+                </div>
+            </div>
+            <div id="footer-links" class="hidden"></div>
+        </div>
+    </footer>
+
+    <button onclick="window.app.captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group">
+        <i class="fa-solid fa-camera text-xl"></i>
+    </button>
+
+    <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-check text-2xl text-gas-green"></i></div>
+                <h3 class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3>
+            </div>
+            <button onclick="window.app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        const firebaseConfig = { apiKey: "AIzaSyBUEXdeSB7Ue0gkwcXN3j76ymyCbngxufY", authDomain: "gasgxmining.firebaseapp.com", projectId: "gasgxmining", storageBucket: "gasgxmining.firebasestorage.app", messagingSenderId: "465579060005", appId: "1:465579060005:web:ee20cb21ed58020c4a88cc", measurementId: "G-ZHNSQ29181" };
+        const fbApp = initializeApp(firebaseConfig);
+        const auth = getAuth(fbApp);
+        const provider = new GoogleAuthProvider();
+        const els = { loginBtn: document.getElementById('auth-login-btn'), userProfile: document.getElementById('auth-user-profile'), userAvatar: document.getElementById('auth-user-avatar'), dropdownUsername: document.getElementById('dropdown-username'), mobLoginBtn: document.getElementById('mob-auth-login-btn'), mobUserProfile: document.getElementById('mob-auth-user-profile'), mobUserAvatar: document.getElementById('mob-auth-user-avatar'), mobUsername: document.getElementById('mob-auth-username') };
+        window.AuthApp = {
+            signIn: async () => { try { await signInWithPopup(auth, provider); } catch (error) { console.error(error); alert("Login failed."); } },
+            signOut: async () => { try { await signOut(auth); } catch (error) { console.error(error); } }
+        };
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                if(els.loginBtn) { els.loginBtn.classList.add('hidden'); els.loginBtn.classList.remove('flex'); }
+                if(els.userProfile) { els.userProfile.classList.remove('hidden'); els.userProfile.classList.add('flex'); }
+                if(els.userAvatar) els.userAvatar.src = user.photoURL || 'https://via.placeholder.com/32';
+                if(els.dropdownUsername) els.dropdownUsername.innerText = user.displayName;
+                if(els.mobLoginBtn) els.mobLoginBtn.classList.add('hidden');
+                if(els.mobUserProfile) { els.mobUserProfile.classList.remove('hidden'); els.mobUserProfile.classList.add('flex'); }
+                if(els.mobUserAvatar) els.mobUserAvatar.src = user.photoURL;
+                if(els.mobUsername) els.mobUsername.innerText = user.displayName;
+            } else {
+                if(els.loginBtn) { els.loginBtn.classList.remove('hidden'); els.loginBtn.classList.add('flex'); }
+                if(els.userProfile) { els.userProfile.classList.add('hidden'); els.userProfile.classList.remove('flex'); }
+                if(els.mobLoginBtn) els.mobLoginBtn.classList.remove('hidden');
+                if(els.mobUserProfile) { els.mobUserProfile.classList.add('hidden'); els.mobUserProfile.classList.remove('flex'); }
+            }
+        });
+    </script>
+
+    <script>
+        // --- 1. GLOBAL DATASET (V7.0 Fully Loaded) ---
+        const GAS_DATA = [
+            { 
+                cn: "美国", en: "United States of America", status: "legal", score: 42, vol: 967.3, 
+                dims: [5,4,4,5,4,4,4,4,4,4], mining: "合法/受监管",
+                pros: "天然气资源极其丰富（年产量967.3十亿立方米），能充分满足发电需求；天然气成本极具竞争力，发电成本优势明显；挖矿政策友好（合法/受监管），监管环境稳定，适合长期投资；电力基础设施完善，并网发电便利，运营稳定性高。",
+                cons: "暂无明显劣势，整体投资环境良好。",
+                advice: "强烈推荐：各维度表现优异，天然气资源丰富，政策环境友好，基础设施完善，是天然气发电挖矿的理想选择，适合大规模投资布局。"
+            },
+            { 
+                cn: "加拿大", en: "Canada", status: "legal", score: 39, vol: 178.7, 
+                dims: [3,3,4,5,4,4,4,4,4,4], mining: "合法/受监管",
+                pros: "天然气资源丰富，发电原料供应稳定；天然气成本合理，发电经济性较好；挖矿政策友好（合法/受监管），监管环境稳定，适合长期投资；电力基础设施完善，并网发电便利，运营稳定性高。",
+                cons: "暂无明显劣势，整体投资环境良好。",
+                advice: "推荐：综合表现优秀，核心维度（资源、政策、基建）表现良好，风险可控，适合中大规模投资，建议优先考虑。"
+            },
+            { 
+                cn: "澳大利亚", en: "Australia", status: "legal", score: 37, vol: 142.1, 
+                dims: [3,2,4,5,4,4,4,4,3,4], mining: "合法/受监管",
+                pros: "天然气资源丰富，发电原料供应稳定；挖矿政策友好（合法/受监管），监管环境稳定，适合长期投资；电力基础设施完善，并网发电便利，运营稳定性高。",
+                cons: "天然气成本较高，发电经济性一般，需控制成本。",
+                advice: "推荐：综合表现较好，政策和基建优势明显，但需注意天然气成本控制，适合有成本控制能力的投资者。"
+            },
+            { 
+                cn: "墨西哥", en: "Mexico", status: "legal", score: 35, vol: 27.1, 
+                dims: [2,1,4,5,4,4,4,4,3,4], mining: "合法/受监管",
+                pros: "挖矿政策友好（合法/受监管），监管环境稳定，适合长期投资；电力基础设施完善，并网发电便利，运营稳定性高。",
+                cons: "天然气资源一般，可能存在供应缺口或依赖进口；天然气成本较高，发电经济性一般，需控制成本。",
+                advice: "谨慎推荐：政策和基建环境良好，但资源和成本方面存在劣势，需综合评估项目经济性。"
+            },
+            { cn: "挪威", en: "Norway", status: "legal", score: 34.5, vol: 112.0, dims: [3,1,4,5,3.5,4,4,4,2,4], mining: "合法/受监管", pros: "政策环境极其稳定", cons: "电价较高，挖矿成本压力大", advice: "适合追求极高稳定性的高净值投资者" },
+            { cn: "英国", en: "United Kingdom", status: "legal", score: 33.5, vol: 32.5, dims: [2,1,4,5,3.5,4,4,4,2,4], mining: "合法/受监管", pros: "金融市场成熟", cons: "能源成本极高", advice: "适合技术验证型项目" },
+            { cn: "荷兰", en: "Netherlands", status: "legal", score: 33.5, vol: 32.9, dims: [2,1,4,5,3.5,4,4,4,2,4], mining: "合法/受监管", pros: "基础设施一流", cons: "环保法规极其严格", advice: "需高度关注合规成本" },
+            { cn: "新西兰", en: "New Zealand", status: "legal", score: 33, vol: 7.0, dims: [1,1,4,5,4,4,4,4,2,4], mining: "合法/受监管", pros: "政策友好", cons: "资源匮乏，规模受限", advice: "适合小型试点项目" },
+            { cn: "俄罗斯", en: "Russia", status: "grey", score: 32.5, vol: 701.0, dims: [5,5,2,4,2,2,2,3,4.5,3], mining: "受限/分地区管控", pros: "天然气极度丰富且廉价", cons: "地缘政治风险高，制裁影响资金流转", advice: "高风险高回报，仅适合有强力本地资源的资方" },
+            { cn: "马来西亚", en: "Malaysia", status: "legal", score: 31, vol: 75.0, dims: [2,2,4,4,3,3,3,3,3,4], mining: "合法/受监管", pros: "合规环境较好", cons: "热带气候需增加散热成本", advice: "适合布局，需优化散热方案" },
+            { cn: "土库曼斯坦", en: "Turkmenistan", status: "legal", score: 31, vol: 83.6, dims: [3,4,4,3,3,3,2,3,4,2], mining: "合法/受监管", pros: "资源丰富，成本低", cons: "政策透明度低，市场准入难", advice: "适合有政府关系的投资者" },
+            { cn: "泰国", en: "Thailand", status: "legal", score: 30, vol: 38.4, dims: [2,1,4,4,3,3,3,3,3,4], mining: "合法/受监管", pros: "政策逐渐明朗", cons: "能源依赖进口，成本较高", advice: "观望为主" },
+            { cn: "阿联酋", en: "United Arab Emirates", status: "legal", score: 29.5, vol: 62.9, dims: [2,2,4,5,3,1,3,3,3.5,3], mining: "合法/局部", pros: "自贸区政策友好，资本充裕", cons: "高温气候，散热成本极高", advice: "适合液冷矿场项目" },
+            { cn: "沙特阿拉伯", en: "Saudi Arabia", status: "grey", score: 29, vol: 114.0, dims: [3,3,3,4,3,1,3,2,4,3], mining: "合法/灰色地带", pros: "能源极其廉价", cons: "监管不明确，高温环境", advice: "等待政策进一步明朗" },
+            { cn: "卡塔尔", en: "Qatar", status: "grey", score: 28.5, vol: 167.5, dims: [3,3,2,4,3,1,2,2,4.5,4], mining: "受限", pros: "LNG大国，能源无限", cons: "对加密货币持谨慎态度", advice: "政策风险较大" },
+            { cn: "阿根廷", en: "Argentina", status: "legal", score: 28, vol: 41.2, dims: [2,2,4,3,2,3,3,3,3,3], mining: "合法/受监管", pros: "Vaca Muerta 页岩气资源丰富", cons: "经济通胀高，汇率波动大", advice: "需做足汇率对冲" },
+            { cn: "乌兹别克斯坦", en: "Uzbekistan", status: "legal", score: 28, vol: 46.9, dims: [2,3,4,3,2,3,2,3,4,2], mining: "受监管", pros: "政府鼓励合法挖矿", cons: "冬季限电严重", advice: "适合作为补充基地" },
+            { cn: "印度", en: "India", status: "legal", score: 27, vol: 27.7, dims: [2,1,4,3,3,3,3,3,2,3], mining: "合法/政策不明", pros: "市场巨大", cons: "税收极高 (30% + 1% TDS)", advice: "目前税收环境下利润空间极小" },
+            { cn: "巴西", en: "Brazil", status: "legal", score: 24.5, vol: 25.4, dims: [2,1,4,3,2.5,3,2,2,3,2], mining: "合法/受监管", pros: "可再生能源丰富", cons: "税收复杂", advice: "需寻找绿色能源激励项目" },
+            { cn: "伊朗", en: "Iran", status: "grey", score: 24, vol: 237.6, dims: [4,5,2,2,1,2,1,1,5,1], mining: "受限/需牌照", pros: "电费全球最低", cons: "制裁、强制关停风险高", advice: "极高风险，不推荐一般投资者" },
+            { cn: "中国", en: "China", status: "illegal", score: 18, vol: 179.3, dims: [3,2,1,5,3,3,2,2,2,3], mining: "全国性禁止", pros: "基建全球领先", cons: "全面禁止挖矿", advice: "绝对不推荐" }
+        ];
+
+        const DIMENSION_NAMES = [
+            "资源丰富度 (Resource)", "成本竞争力 (Cost)", "挖矿政策 (Policy)", "电力基建 (Grid)", "政策稳定性 (Stable)", 
+            "气候适应性 (Climate)", "监管透明度 (Transp.)", "市场准入 (Entry)", "运营成本 (OpEx)", "投资安全 (Safety)"
+        ];
+
+        const AppData = {
+            navigation: [
+                { title: "首页", path: "/index.html", type: "link" },
+                { title: "解决方案", path: "/solutions", type: "menu", children: [] },
+                { title: "机型库", path: "/products", type: "mega", sections: [] }
+            ],
+            i18n: {
+                zh: { tagline: "天然气发电挖矿助手", footerTagline: "让天然气发电挖矿更简单", auth_login: "登录", top_producers: "综合评分排名" },
+                en: { tagline: "Natural Gas Power Mining Assistant", footerTagline: "Making natural gas power mining easier", auth_login: "Login", top_producers: "Overall Ranking" }
+            },
+            statusColors: {
+                'legal': '#5DD62C',  
+                'grey': '#9ca3af',   
+                'illegal': '#ef4444' 
+            }
+        };
+
+        window.app = {
+            currentLang: 'en',
+            isMobileMenuOpen: false,
+            rotationTimer: null, 
+            projection: null,
+            projectionAir: null, 
+            geoGenerator: null,
+            svg: null,
+            width: 0,
+            height: 0,
+            countries: [],
+            activeData: null, 
+            lastElapsed: 0,
+
+            init() {
+                this.renderNav();
+                this.updateStaticText();
+                this.init3DGlobe(); 
+                this.renderLeaderboard();
+            },
+
+            // --- DEEP LINKING ---
+            highlightCountry(countryName) {
+                const data = GAS_DATA.find(d => d.en === countryName);
+                const feature = this.countries.find(f => f.properties.name === countryName);
+                
+                if (!feature || !data) return;
+
+                if(this.rotationTimer) this.rotationTimer.stop();
+
+                document.querySelectorAll('.list-item-hover').forEach(el => {
+                    el.classList.remove('list-item-active');
+                    el.classList.add('list-item-dimmed');
+                });
+                const activeItem = document.getElementById(`list-item-${countryName.replace(/\s+/g, '-')}`);
+                if (activeItem) {
+                    activeItem.classList.add('list-item-active');
+                    activeItem.classList.remove('list-item-dimmed');
+                }
+
+                d3.select('#map-container').classed('map-has-highlight', true);
+                d3.selectAll('.country').classed('highlighted', false);
+                d3.select(`#country-${countryName.replace(/\s+/g, '-')}`).classed('highlighted', true);
+
+                const p = d3.geoCentroid(feature);
+                const r = d3.interpolate(this.projection.rotate(), [-p[0], -p[1]]);
+
+                this.activeData = { data: data, geo: feature };
+
+                d3.transition()
+                    .duration(1500)
+                    .ease(d3.easeCubicOut) 
+                    .tween("rotate", () => {
+                        return (t) => {
+                            const rot = r(t);
+                            this.projection.rotate(rot);
+                            this.projectionAir.rotate(rot); 
+                            this.redrawGlobe();
+                        };
+                    });
+            },
+
+            // --- HUD LOGIC (OFFSET TO SIDE) ---
+            updateInfoBox() {
+                if (!this.activeData) return;
+                
+                const infoBox = document.getElementById('map-info-box');
+                const hudLayer = document.getElementById('hud-layer');
+                while (hudLayer.firstChild) { hudLayer.removeChild(hudLayer.firstChild); }
+
+                const centroid = d3.geoCentroid(this.activeData.geo);
+                const airPos = this.projectionAir(centroid);
+                
+                const center = this.projectionAir.invert([this.width/2, this.height/2]);
+                const dist = d3.geoDistance(centroid, center);
+                
+                if (dist > 1.57) { 
+                    infoBox.style.opacity = 0;
+                    infoBox.style.pointerEvents = 'none';
+                } else if (airPos) {
+                    const data = this.activeData.data;
+                    const color = AppData.statusColors[data.status];
+                    
+                    // Generate Bitcoin Stars
+                    const generateStars = (score) => {
+                        let html = '';
+                        for(let i=0; i<5; i++) {
+                            const active = i < Math.floor(score);
+                            // SVG Bitcoin Star: A pentagram star
+                            html += `
+                            <svg class="btc-star ${active?'':'inactive'}" viewBox="0 0 24 24">
+                                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                            </svg>`;
+                        }
+                        return html;
+                    };
+
+                    let dimHtml = '';
+                    data.dims.forEach((score, idx) => {
+                        dimHtml += `
+                        <div class="dim-row">
+                            <span>${DIMENSION_NAMES[idx]}</span>
+                            <div class="dim-stars">${generateStars(score)}</div>
+                        </div>`;
+                    });
+                    
+                    infoBox.innerHTML = `
+                        <div class="flex items-center justify-between mb-3 pb-2 border-b" style="border-color:${color}50">
+                            <div class="font-bold text-white text-sm uppercase tracking-wider">${data.cn}</div>
+                            <div class="text-xs font-mono font-bold" style="color:${color}">Score: ${data.score}</div>
+                        </div>
+                        
+                        <!-- Mining Policy Badge with 'More' Button -->
+                        <div class="mb-3 flex justify-between items-center bg-white/5 p-2 rounded border border-white/5">
+                            <div>
+                                <div class="text-[10px] text-gray-400 mb-0.5">Policy Status</div>
+                                <div class="text-xs font-bold text-white flex items-center gap-1">
+                                    <div class="w-1.5 h-1.5 rounded-full" style="background:${color}"></div>
+                                    ${data.mining}
+                                </div>
+                            </div>
+                            <button id="btn-full-report" onclick="window.app.openDetailModal('${data.en}')" class="px-2 py-1 bg-gas-green hover:bg-white text-black text-[10px] font-bold rounded transition-colors flex items-center gap-1 pointer-events-auto" style="cursor: pointer;">
+                                <i class="fa-solid fa-file-lines"></i> 完整报告
+                            </button>
+                        </div>
+
+                        <div class="mb-3 space-y-1 text-xs">
+                            <div class="flex justify-between"><span class="text-gray-400">Gas Vol:</span> <span class="text-white font-mono">${data.vol} Bcm</span></div>
+                        </div>
+                        <div class="pt-2 border-t border-white/10">
+                            ${dimHtml}
+                        </div>
+                    `;
+                    
+                    // --- SMART POSITIONING (Avoid Occlusion) ---
+                    // Fixed Offset: Right + Top
+                    const boxX = airPos[0] + 100; 
+                    const boxY = airPos[1] - 80;
+                    
+                    infoBox.style.borderColor = color;
+                    infoBox.style.left = boxX + 'px';
+                    infoBox.style.top = boxY + 'px';
+                    infoBox.classList.add('active');
+                    infoBox.style.opacity = 1;
+
+                    // Draw Angled Connector Line
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    // Path: Icon Center -> Elbow -> Box Edge
+                    const pathD = `M ${airPos[0]} ${airPos[1]} L ${boxX - 20} ${boxY + 20} L ${boxX} ${boxY + 20}`;
+                    line.setAttribute('d', pathD);
+                    line.setAttribute('stroke', color);
+                    line.setAttribute('stroke-width', '1.5');
+                    line.setAttribute('fill', 'none');
+                    line.setAttribute('opacity', '0.7');
+                    line.setAttribute('filter', 'url(#glow)');
+                    hudLayer.appendChild(line);
+                }
+            },
+
+            // --- FULL DETAIL MODAL ---
+            openDetailModal(countryName) {
+                const data = GAS_DATA.find(d => d.en === countryName);
+                if(!data) return;
+
+                document.getElementById('modal-title').innerText = data.cn;
+                document.getElementById('modal-score').innerText = data.score;
+                document.getElementById('modal-rank').innerText = `#${GAS_DATA.findIndex(d => d.en === countryName) + 1}`;
+                document.getElementById('modal-vol').innerText = `${data.vol} Bcm`;
+                document.getElementById('modal-policy').innerText = data.mining;
+                
+                // Color Logic
+                const color = AppData.statusColors[data.status];
+                document.getElementById('modal-policy').style.color = color;
+
+                // Fill Dimensions
+                const dimsContainer = document.getElementById('modal-dims-container');
+                dimsContainer.innerHTML = '';
+                
+                const generateStars = (score) => {
+                    let html = '';
+                    for(let i=0; i<5; i++) {
+                        const active = i < Math.floor(score);
+                        html += `<svg class="w-3 h-3 ${active?'fill-gas-green':'fill-gray-700'}" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`;
+                    }
+                    return html;
+                };
+
+                data.dims.forEach((score, idx) => {
+                    dimsContainer.innerHTML += `
+                    <div class="flex justify-between items-center text-xs py-2 border-b border-white/5 last:border-0">
+                        <span class="text-gray-400">${DIMENSION_NAMES[idx]}</span>
+                        <div class="flex gap-1">${generateStars(score)}</div>
+                    </div>`;
+                });
+
+                // Fill Text Analysis
+                document.getElementById('modal-pros').innerText = data.pros || "暂无数据";
+                document.getElementById('modal-cons').innerText = data.cons || "暂无数据";
+                document.getElementById('modal-advice').innerText = data.advice || "暂无建议";
+
+                // Show Modal
+                document.getElementById('detail-modal').classList.remove('hidden');
+            },
+
+            // --- D3 3D GLOBE ---
+            async init3DGlobe() {
+                const container = document.getElementById('map-container');
+                const loading = document.getElementById('map-loading');
+                this.width = container.clientWidth;
+                this.height = container.clientHeight;
+
+                this.svg = d3.select("#map-container")
+                    .append("svg")
+                    .attr("width", this.width)
+                    .attr("height", this.height)
+                    .style("position", "absolute");
+
+                this.projection = d3.geoOrthographic()
+                    .scale(this.height / 2.2) 
+                    .translate([this.width / 2, this.height / 2])
+                    .clipAngle(90);
+
+                this.projectionAir = d3.geoOrthographic()
+                    .scale(this.height / 2.2 * 1.35) 
+                    .translate([this.width / 2, this.height / 2])
+                    .clipAngle(90);
+
+                this.geoGenerator = d3.geoPath().projection(this.projection);
+
+                try {
+                    const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
+                    this.countries = topojson.feature(world, world.objects.countries).features;
+                    loading.style.display = 'none';
+
+                    // 1. Globe
+                    this.svg.append("path").datum({type: "Sphere"}).attr("class", "globe-glow").attr("d", this.geoGenerator).attr("fill", "#050505");
+
+                    // 2. Countries
+                    const g = this.svg.append("g");
+                    g.selectAll("path").data(this.countries).enter().append("path")
+                        .attr("d", this.geoGenerator)
+                        .attr("class", "country")
+                        .attr("id", d => `country-${d.properties.name.replace(/\s+/g, '-')}`)
+                        .attr("fill", d => {
+                            const data = GAS_DATA.find(item => item.en === d.properties.name);
+                            return data ? AppData.statusColors[data.status] : "#1a2e15"; 
+                        })
+                        .attr("stroke", d => {
+                            const data = GAS_DATA.find(item => item.en === d.properties.name);
+                            return data ? AppData.statusColors[data.status] : "#24401d";
+                        })
+                        .attr("stroke-width", "0.5px")
+                        .on("click", (e, d) => this.highlightCountry(d.properties.name));
+
+                    // 3. Floating Engine Icons
+                    const floatingGroup = this.svg.append("g").attr("class", "globe-elements-group");
+                    
+                    // LIGHTNING/POWER SVG
+                    // A 3D-looking metallic orb with a lightning bolt
+                    
+                    GAS_DATA.forEach(countryData => {
+                        const countryGeo = this.countries.find(c => c.properties.name === countryData.en);
+                        if (!countryGeo) return;
+                        
+                        const centroid = d3.geoCentroid(countryGeo);
+                        const group = floatingGroup.append("g")
+                            .datum({ coordinates: centroid, data: countryData })
+                            .attr("class", "btc-icon-group");
+
+                        // Beam
+                        group.append("path").attr("class", "beam-line").attr("stroke", AppData.statusColors[countryData.status]);
+
+                        // Power Icon Group
+                        const iconGroup = group.append("g").attr("transform", "translate(-16, -32)");
+                        
+                        // Outer Ring (Static)
+                        iconGroup.append("circle")
+                            .attr("cx", 16).attr("cy", 16).attr("r", 14)
+                            .attr("fill", "url(#metalGrad)")
+                            .attr("stroke", "#333").attr("stroke-width", 1);
+                            
+                        // Glowing Core (Pulsing)
+                        iconGroup.append("circle")
+                            .attr("cx", 16).attr("cy", 16).attr("r", 8)
+                            .attr("fill", "url(#electricBlue)")
+                            .attr("class", "power-pulse");
+
+                        // Lightning Bolt (Static Overlay)
+                        iconGroup.append("path")
+                            .attr("d", "M16 4L19 14H16L18 24L11 12H14L12 4Z") // Lightning Shape
+                            .attr("fill", "#fff")
+                            .attr("stroke", "#0099ff")
+                            .attr("stroke-width", "0.5")
+                            .attr("style", "filter: drop-shadow(0 0 2px #fff)");
+
+                        // Orbiting Ring (Spinning)
+                        iconGroup.append("ellipse")
+                            .attr("cx", 16).attr("cy", 16).attr("rx", 16).attr("ry", 6)
+                            .attr("fill", "none")
+                            .attr("stroke", "#00ffff")
+                            .attr("stroke-width", "1")
+                            .attr("opacity", "0.5")
+                            .attr("class", "ring-spin");
+
+                        // Country Label
+                        group.append("text")
+                            .attr("class", "country-label")
+                            .attr("text-anchor", "middle")
+                            .attr("dy", "15") 
+                            .text(countryData.cn);
+                    });
+
+                    // 4. Drag
+                    const drag = d3.drag()
+                        .on("start", () => { if(this.rotationTimer) this.rotationTimer.stop(); })
+                        .on("drag", (event) => {
+                            const rotate = this.projection.rotate();
+                            const k = 75 / this.projection.scale();
+                            const newRot = [rotate[0] + event.dx * k, rotate[1] - event.dy * k];
+                            this.projection.rotate(newRot);
+                            this.projectionAir.rotate(newRot); 
+                            this.redrawGlobe();
+                        });
+                    this.svg.call(drag);
+
+                    // 5. Auto Rotation
+                    this.rotationTimer = d3.timer((elapsed) => {
+                        const dt = elapsed - this.lastElapsed;
+                        this.lastElapsed = elapsed;
+                        const velocity = 0.005; 
+                        const rotate = this.projection.rotate();
+                        const newRot = [rotate[0] + velocity * dt, rotate[1]];
+                        this.projection.rotate(newRot);
+                        this.projectionAir.rotate(newRot); 
+                        this.redrawGlobe();
+                    });
+
+                } catch (error) { console.error("Map Error:", error); }
+            },
+
+            redrawGlobe() {
+                this.svg.selectAll("path.country").attr("d", this.geoGenerator);
+                this.svg.selectAll(".btc-icon-group").each(function(d) {
+                    const center = window.app.projection.invert([window.app.width/2, window.app.height/2]);
+                    const geoAngle = d3.geoDistance(d.coordinates, center);
+                    if (geoAngle > 1.57) {
+                        d3.select(this).style("opacity", 0);
+                    } else {
+                        d3.select(this).style("opacity", 1);
+                        const surfacePos = window.app.projection(d.coordinates);
+                        const airPos = window.app.projectionAir(d.coordinates);
+                        if (surfacePos && airPos) {
+                            d3.select(this).attr("transform", `translate(${airPos[0]}, ${airPos[1]})`);
+                            const relX = surfacePos[0] - airPos[0];
+                            const relY = surfacePos[1] - airPos[1];
+                            d3.select(this).select(".beam-line").attr("d", `M${relX},${relY} L0,0`);
+                        }
+                    }
+                });
+                this.updateInfoBox(); // Keep HUD synced
+            },
+
+            // --- SIDEBAR ---
+            renderLeaderboard() {
+                const list = document.getElementById('country-list');
+                const sortedData = [...GAS_DATA].sort((a,b) => b.score - a.score); 
+                
+                list.innerHTML = sortedData.map((item, index) => {
+                    const color = AppData.statusColors[item.status];
+                    
+                    // Icons for Top 3
+                    let rankIcon = `<div class="text-[9px] font-mono text-gray-600 w-4 text-center">#${index+1}</div>`;
+                    if (index === 0) rankIcon = `<i class="fa-solid fa-crown text-rank-1 w-4 text-center text-xs"></i>`;
+                    if (index === 1) rankIcon = `<i class="fa-solid fa-medal text-rank-2 w-4 text-center text-xs"></i>`;
+                    if (index === 2) rankIcon = `<i class="fa-solid fa-medal text-rank-3 w-4 text-center text-xs"></i>`;
+
+                    return `
+                    <div id="list-item-${item.en.replace(/\s+/g, '-')}" 
+                         onclick="window.app.highlightCountry('${item.en}')"
+                         class="list-item-hover flex items-center gap-2 p-2 rounded bg-transparent border-l-2 border-transparent cursor-pointer mb-1">
+                        ${rankIcon}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-1.5 h-1.5 rounded-full" style="background:${color}; box-shadow: 0 0 5px ${color}"></div>
+                                <div class="text-xs font-bold text-gray-300 group-hover:text-white truncate">${item.cn}</div>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <div class="text-xs font-mono font-bold text-white group-hover:text-gas-green flex flex-col items-end">
+                                <span>${item.score}</span>
+                                <span class="text-[8px] text-gray-600 font-normal">Score</span>
+                            </div>
+                        </div>
+                    </div>
+                `}).join('');
+            },
+
+            setLanguage(lang) { /* ... */ },
+            t(key) { return AppData.i18n[this.currentLang][key] || key; },
+            updateStaticText() { document.querySelectorAll('[data-i18n]').forEach(el => { el.innerText = this.t(el.getAttribute('data-i18n')); }); },
+            renderNav() { const nav = document.getElementById('desktop-nav'); nav.innerHTML = AppData.navigation.map(item => `<a href="${item.path}" class="nav-item-link font-medium text-sm"><span>${item.title}</span></a>`).join(''); },
+            toggleMobileMenu() { const menu = document.getElementById('mobile-menu-container'); this.isMobileMenuOpen = !this.isMobileMenuOpen; menu.classList.toggle('translate-x-full'); },
+            captureAndShare() { window.scrollTo(0, 0); html2canvas(document.body).then(canvas => { const link = document.createElement('a'); link.download = 'GasGx-Globe.png'; link.href = canvas.toDataURL(); link.click(); }); },
+            closeModal() { document.getElementById('shareModal').classList.add('hidden'); }
+        };
+
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', () => window.app.init()); } else { window.app.init(); }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Compliance - GasGx Natural Gas Power Mining</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome 6.5.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- html2canvas for Screenshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                    },
+                    // Added Animation Definition
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* Card Frosted Effect */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Mega Menu Animation */
+        .mega-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: #151515;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .mega-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        /* Dropdown Menu Animation */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            min-width: 220px;
+            background-color: #151515;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0 0 8px 8px;
+            padding: 0.5rem 0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .dropdown-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-item-link:hover { color: #5DD62C; }
+        
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after { width: 100%; }
+
+        /* Footer Link Hover */
+        .footer-link {
+            color: #94a3b8;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .footer-link:hover {
+            color: #5DD62C;
+        }
+
+        /* Mobile Menu Styles */
+        #mobile-menu-container {
+            transition: transform 0.3s ease-in-out;
+        }
+        .mobile-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        /* Footer Accordion (Mobile) */
+        .footer-accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        /* Floating Share Button Animation */
+        @keyframes floatPulse {
+            0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); }
+        }
+        .float-btn {
+            animation: floatPulse 2s infinite;
+        }
+
+        /* Custom Tab Styles */
+        .country-tab.active {
+            background-color: rgba(93, 214, 44, 0.1);
+            color: #5DD62C;
+            border-color: #5DD62C;
+            border-bottom: 2px solid #5DD62C;
+        }
+        .country-tab {
+            border-bottom: 2px solid transparent;
+        }
+        .info-card {
+            transition: all 0.3s ease;
+        }
+        .info-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(93, 214, 44, 0.3);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 gas-card h-16 transition-all duration-300 border-b-0">
+        <div class="max-w-[1800px] mx-auto px-4 h-full flex justify-between items-center relative">
+            
+            <!-- Left: Logo + Tagline -->
+            <div class="flex items-center gap-3 w-auto shrink-0 mr-4">
+                <a href="/index.html" class="flex items-center gap-2 group">
+                    <h1 class="text-2xl font-bold tracking-wider text-gas-green hover:text-white transition-colors cursor-pointer">GasGx</h1>
+                </a>
+                
+                <!-- Tagline: Header (Desktop) -->
+                <div class="hidden md:flex flex-col justify-center border-l border-gray-700 pl-3 h-8">
+                    <span id="header-tagline" class="text-gas-green text-xs font-bold tracking-wide">Natural Gas Power Mining Assistant</span>
+                </div>
+            </div>
+
+            <!-- Center: Desktop Navigation -->
+            <nav id="desktop-nav" class="hidden lg:flex items-center justify-center gap-2 xl:gap-6 h-full flex-1">
+                <!-- JS Generated -->
+            </nav>
+
+            <!-- Right: Language & Mobile Toggle -->
+            <div class="flex items-center gap-4 w-auto shrink-0 justify-end ml-4">
+                <!-- Language Switcher (Desktop) -->
+                <div class="hidden sm:flex items-center gap-1 bg-[#111] border border-white/10 rounded-full px-1 py-1">
+                    <button onclick="app.setLanguage('zh')" id="btn-lang-zh" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">CN</button>
+                    <button onclick="app.setLanguage('en')" id="btn-lang-en" class="px-2 py-1 rounded-full text-[10px] font-bold transition-all w-8 text-center text-black bg-gas-green shadow-glow">EN</button>
+                    <button onclick="app.setLanguage('ru')" id="btn-lang-ru" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">RU</button>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" onclick="app.toggleMobileMenu()" class="lg:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation Overlay -->
+    <div id="mobile-menu-container" class="fixed inset-0 z-40 bg-[#111] transform translate-x-full pt-20 px-4 pb-8 overflow-y-auto lg:hidden">
+        <!-- Mobile Lang Switcher -->
+        <div class="flex justify-center gap-4 mb-6 border-b border-white/10 pb-4">
+            <div class="flex items-center gap-2 bg-[#222] border border-white/10 rounded-full px-1 py-1">
+                <button onclick="app.setLanguage('zh')" id="mob-btn-lang-zh" class="px-4 py-2 rounded-full text-xs font-bold transition-all text-gray-400">CN</button>
+                <button onclick="app.setLanguage('en')" id="mob-btn-lang-en" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-black bg-gas-green">EN</button>
+                <button onclick="app.setLanguage('ru')" id="mob-btn-lang-ru" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-gray-400">RU</button>
+            </div>
+        </div>
+        
+        <nav id="mobile-nav-content" class="flex flex-col space-y-1">
+            <!-- JS Generated Mobile Nav -->
+        </nav>
+    </div>
+
+    <!-- MAIN CONTENT START -->
+    <main class="flex-grow pt-24 pb-12 px-4 w-full max-w-[1600px] mx-auto">
+        
+        <!-- Page Header -->
+        <div class="mb-10 text-center relative">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4"><span class="text-gas-green">Global</span> Compliance Policy</h1>
+            <p class="text-gray-400 max-w-2xl mx-auto" data-i18n="complianceIntro">Comprehensive guide to natural gas power mining regulations, taxation, and operational standards across key jurisdictions.</p>
+            <div class="w-24 h-1 bg-gas-green mx-auto mt-6 rounded-full shadow-[0_0_10px_rgba(93,214,44,0.5)]"></div>
+        </div>
+
+        <!-- Country Tabs -->
+        <div class="flex flex-wrap justify-center gap-2 mb-8 border-b border-white/10 pb-1">
+            <button onclick="pageApp.setCountry('usa')" class="country-tab active px-6 py-3 rounded-t-lg text-gray-400 hover:text-white font-bold transition-all flex items-center gap-2" id="tab-usa">
+                <img src="https://flagcdn.com/w40/us.png" class="w-5 h-auto rounded-sm" alt="USA"> <span data-i18n="countryUSA">USA</span>
+            </button>
+            <button onclick="pageApp.setCountry('canada')" class="country-tab px-6 py-3 rounded-t-lg text-gray-400 hover:text-white font-bold transition-all flex items-center gap-2" id="tab-canada">
+                <img src="https://flagcdn.com/w40/ca.png" class="w-5 h-auto rounded-sm" alt="Canada"> <span data-i18n="countryCanada">Canada</span>
+            </button>
+            <button onclick="pageApp.setCountry('russia')" class="country-tab px-6 py-3 rounded-t-lg text-gray-400 hover:text-white font-bold transition-all flex items-center gap-2" id="tab-russia">
+                <img src="https://flagcdn.com/w40/ru.png" class="w-5 h-auto rounded-sm" alt="Russia"> <span data-i18n="countryRussia">Russia</span>
+            </button>
+            <button onclick="pageApp.setCountry('kazakhstan')" class="country-tab px-6 py-3 rounded-t-lg text-gray-400 hover:text-white font-bold transition-all flex items-center gap-2" id="tab-kazakhstan">
+                <img src="https://flagcdn.com/w40/kz.png" class="w-5 h-auto rounded-sm" alt="Kazakhstan"> <span data-i18n="countryKazakhstan">Kazakhstan</span>
+            </button>
+            <button onclick="pageApp.setCountry('indonesia')" class="country-tab px-6 py-3 rounded-t-lg text-gray-400 hover:text-white font-bold transition-all flex items-center gap-2" id="tab-indonesia">
+                <img src="https://flagcdn.com/w40/id.png" class="w-5 h-auto rounded-sm" alt="Indonesia"> <span data-i18n="countryIndonesia">Indonesia</span>
+            </button>
+        </div>
+
+        <!-- Dynamic Content Container -->
+        <div id="country-content" class="animate-fade-in min-h-[400px]">
+            <!-- JS Injects Content Here -->
+        </div>
+
+    </main>
+    <!-- MAIN CONTENT END -->
+
+    <!-- Footer -->
+    <footer class="bg-[#0a0a0a] border-t border-white/10 mt-auto pt-10 pb-8 relative z-10">
+        <div class="max-w-[1800px] mx-auto px-6">
+            
+            <!-- Footer Top Row: Brand & Contact -->
+            <div class="flex flex-col md:flex-row justify-between items-start mb-8 pb-6 border-b border-white/5">
+                <div class="mb-6 md:mb-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-2xl font-bold text-gas-green">GasGx</span>
+                    </div>
+                    <p class="text-sm text-gray-400 font-medium" data-i18n="footerTagline">Making natural gas power mining easier</p>
+                </div>
+                <div class="flex flex-col md:items-end space-y-2">
+                    <h4 class="text-white font-bold text-sm uppercase tracking-wider mb-1" data-i18n="联系我们">Contact Us</h4>
+                    <a href="mailto:contact@gasgx.com" class="text-sm text-gray-400 hover:text-gas-green flex items-center gap-2 transition-colors">
+                        <i class="fa-solid fa-envelope"></i> contact@gasgx.com
+                    </a>
+                    <div class="text-sm text-gray-400 flex items-center gap-2">
+                        <i class="fa-brands fa-weixin"></i> <span class="hover:text-gas-green cursor-pointer">www_gasgx_com</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Links -->
+            <div id="footer-links" class="mb-10 space-y-2">
+                <!-- JS Generated -->
+            </div>
+
+            <!-- Bottom: Copyright & Social -->
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-white/5">
+                <div class="text-xs text-gray-600">
+                    © 2026 GasGx. All rights reserved.
+                </div>
+                <div class="flex gap-4">
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-tiktok text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-linkedin text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-facebook text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-weixin text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-x-twitter text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-youtube text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-telegram text-lg"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Floating Canvas-Style Share Button -->
+    <button onclick="app.captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group" title="Share Snapshot">
+        <i class="fa-solid fa-camera text-xl"></i>
+    </button>
+
+    <!-- Back to Top -->
+    <button onclick="window.scrollTo({top:0, behavior:'smooth'})" id="backToTopBtn" class="fixed bottom-6 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-[0_0_15px_rgba(93,214,44,0.5)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-95 opacity-0">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-check text-2xl text-gas-green"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3>
+                <p class="text-sm text-gray-400">Full page captured successfully.</p>
+            </div>
+            <button onclick="app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- 1. Base App Data ---
+        const AppData = {
+            navigation: [
+                { title: "首页", path: "/index.html", type: "link", icon: "fa-solid fa-house" },
+                {
+                    title: "解决方案",
+                    path: "/solutions",
+                    type: "menu",
+                    children: [
+                        { title: "油气井/伴生气发电", path: "/solutions/oilfield" },
+                        { title: "工业园区与分布式能源", path: "/solutions/industrial" },
+                        { title: "数据中心 / 挖矿电力", path: "/solutions/mining" },
+                        { title: "热电联供 CHP", path: "/solutions/chp" }
+                    ]
+                },
+                {
+                    title: "机型库",
+                    path: "/products",
+                    type: "mega",
+                    sections: [
+                        {
+                            header: "按功率分类",
+                            items: [
+                                { title: "小于 500 kW", path: "/products/power-range/0-500kw" },
+                                { title: "500 – 1,000 kW", path: "/products/power-range/500-1000kw" },
+                                { title: "1 MW 以上", path: "/products/power-range/1mw-plus" }
+                            ]
+                        },
+                        {
+                            header: "按冷却方式",
+                            items: [
+                                { title: "风冷", path: "/products/cooling/air" },
+                                { title: "液冷", path: "/products/cooling/liquid" }
+                            ]
+                        },
+                        {
+                            header: "按气源类型",
+                            items: [
+                                { title: "天然气", path: "/products/gas/natural" },
+                                { title: "伴生气", path: "/products/gas/associated" },
+                                { title: "低甲烷值气", path: "/products/gas/low-methane" }
+                            ]
+                        },
+                        {
+                            header: "按部署形式",
+                            items: [
+                                { title: "集装箱机组", path: "/products/deployment/container" },
+                                { title: "一体化机组 AIS", path: "/products/deployment/ais" },
+                                { title: "滑撬式机组", path: "/products/deployment/skid" }
+                            ]
+                        },
+                        {
+                            header: "按品牌",
+                            items: [
+                                { title: "全部品牌", path: "/products/brands" },
+                                { title: "中国生产", path: "/products/brands/china" },
+                                { title: "海外生产", path: "/products/brands/overseas" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "排行榜",
+                    path: "/rankings",
+                    type: "mega",
+                    gridCols: "grid-cols-6",
+                    sections: [
+                        {
+                            header: "性能榜",
+                            items: [
+                                { title: "综合性能 TOP 榜", path: "/rankings/performance" },
+                                { title: "高效率榜", path: "/rankings/efficiency" },
+                                { title: "天然气内燃机发电效率排行榜", path: "/rankings/engine-efficiency" },
+                                { title: "天然气内燃机热效率排行榜", path: "/rankings/thermal-efficiency" },
+                                { title: "天然气内燃机耗气量排行榜", path: "/rankings/gas-consumption" }
+                            ]
+                        },
+                        {
+                            header: "经济性榜",
+                            items: [
+                                { title: "最佳 ROI 榜", path: "/rankings/roi" },
+                                { title: "最低发电成本 LCOE 榜", path: "/rankings/lcoe" },
+                                { title: "天然气内燃机折旧排行榜", path: "/rankings/depreciation" },
+                                { title: "天然气内燃机投资回报率排行榜", path: "/rankings/engine-roi" }
+                            ]
+                        },
+                        {
+                            header: "可靠性榜",
+                            items: [
+                                { title: "高可靠机组榜", path: "/rankings/reliability" },
+                                { title: "最长 MTBF 榜", path: "/rankings/mtbf" },
+                                { title: "天然气内燃机保养时间排行榜", path: "/rankings/maintenance-interval" },
+                                { title: "天然气内燃机备件保障排行榜", path: "/rankings/spare-parts" }
+                            ]
+                        },
+                        {
+                            header: "品质与环保榜",
+                            items: [
+                                { title: "天然气内燃机排放排行榜", path: "/rankings/emissions" },
+                                { title: "天然气内燃机噪音排行榜", path: "/rankings/noise" }
+                            ]
+                        },
+                        {
+                            header: "系统能力榜",
+                            items: [
+                                { title: "天然气内燃机发电机排行榜", path: "/rankings/generator" },
+                                { title: "天然气内燃机控制系统排行榜", path: "/rankings/control-system" }
+                            ]
+                        },
+                        {
+                            header: "区域榜",
+                            items: [
+                                { title: "美国市场榜", path: "/rankings/usa" },
+                                { title: "加拿大市场榜", path: "/rankings/canada" },
+                                { title: "中东市场榜", path: "/rankings/middle-east" },
+                                { title: "俄罗斯市场榜", path: "/rankings/russia" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "应用场景",
+                    path: "/use-cases",
+                    type: "menu",
+                    children: [
+                        { title: "油气井 / 伴生气", path: "/use-cases/oilfield" },
+                        { title: "工业与园区能源", path: "/use-cases/industrial" },
+                        { title: "挖矿 / 数据中心", path: "/use-cases/mining" },
+                        { title: "CHP 热电联供", path: "/use-cases/chp" }
+                    ]
+                },
+                {
+                    title: "工具箱",
+                    path: "/tools",
+                    type: "mega",
+                    gridCols: "grid-cols-5",
+                    sections: [
+                        {
+                            header: "经济测算工具",
+                            items: [
+                                { title: "LCOE 成本计算器", path: "/tools/lcoe-calculator" },
+                                { title: "ROI 回报估算器", path: "/tools/roi" },
+                                { title: "燃气发电挖矿收益计算器", path: "/tools/mining-power-calc" },
+                                { title: "蒙特卡洛模拟盈利分析", path: "/tools/monte-carlo-profit" },
+                                { title: "天然气发电耗气成本分析", path: "/tools/gas-cost-analysis" }
+                            ]
+                        },
+                        {
+                            header: "工程与技术工具",
+                            items: [
+                                { title: "气质适配工具", path: "/tools/gas-fit" },
+                                { title: "排放估算工具", path: "/tools/emission" },
+                                { title: "气体分析计算器", path: "/tools/gas-analyzer" },
+                                { title: "能电转换计算器", path: "/tools/energy-conversion" },
+                                { title: "天然气主要成分热值表", path: "/tools/gas-composition-heat" }
+                            ]
+                        },
+                        {
+                            header: "项目与选型工具",
+                            items: [
+                                { title: "站点匹配向导", path: "/tools/site-fit" },
+                                { title: "气源所在地分析", path: "/tools/gas-location-analysis" },
+                                { title: "燃气发动机选型与运营经济性", path: "/tools/engine-selection" },
+                                { title: "天然气发电机机油消耗率", path: "/tools/oil-consumption" },
+                                { title: "车机 VS 工业机 10MW 对比分析", path: "/tools/vehicle-vs-industrial-10mw" },
+                                { title: "多机型对比 3 年运营数据", path: "/tools/3y-compare" }
+                            ]
+                        },
+                        {
+                            header: "矿工专区（托管与算力分析）",
+                            items: [
+                                { title: "挖矿收益计算器", path: "/tools/mining-income-calculator" },
+                                { title: "矿机盈利能力计算器", path: "/tools/miner-profitability" },
+                                { title: "矿机选购速查", path: "/tools/miner-buying-guide" }
+                            ]
+                        },
+                        {
+                            header: "全球支持与合规",
+                            items: [
+                                { title: "加拿大 AECO 天然气价格预测", path: "/tools/aeco-price-forecast" },
+                                { title: "全球物流运输推荐", path: "/tools/global-logistics" },
+                                { title: "全球合规政策", path: "/tools/global-compliance" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "资料中心",
+                    path: "/resources",
+                    type: "mega",
+                    gridCols: "grid-cols-4",
+                    sections: [
+                        {
+                            header: "文档",
+                            items: [
+                                { title: "白皮书", path: "/resources/whitepapers" },
+                                { title: "行业报告", path: "/resources/reports" }
+                            ]
+                        },
+                        {
+                            header: "案例",
+                            items: [
+                                { title: "全部案例", path: "/resources/case-studies" },
+                                { title: "按区域查看", path: "/resources/case-studies/regions" },
+                                { title: "按场景查看", path: "/resources/case-studies/scenarios" }
+                            ]
+                        },
+                        {
+                            header: "技术库",
+                            items: [
+                                { title: "技术参数表", path: "/resources/datasheets" },
+                                { title: "认证与合规文件", path: "/resources/certifications" }
+                            ]
+                        },
+                        {
+                            header: "媒体与支持",
+                            items: [
+                                { title: "视频与教程", path: "/resources/videos" },
+                                { title: "常见问答 FAQ", path: "/resources/faq" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "服务支持",
+                    path: "/support",
+                    type: "menu",
+                    children: [
+                        { title: "服务网络", path: "/support/network" },
+                        { title: "技术支持", path: "/support/tech" },
+                        { title: "售后与保养", path: "/support/service" }
+                    ]
+                },
+                {
+                    title: "关于我们",
+                    path: "/about",
+                    type: "menu",
+                    children: [
+                        { title: "公司介绍", path: "/about/company" },
+                        { title: "联系我们", path: "/about/contact" }
+                    ]
+                }
+            ],
+            // Core UI Strings (Footer, Nav)
+            i18n: {
+                zh: {
+                    tagline: "天然气发电挖矿助手",
+                    footerTagline: "让天然气发电挖矿更简单",
+                    complianceIntro: "天然气发电挖矿全球法规、税务及运营标准综合指南。",
+                    countryUSA: "美国", countryCanada: "加拿大", countryRussia: "俄罗斯", countryKazakhstan: "哈萨克斯坦", countryIndonesia: "印度尼西亚",
+                    // ... (Include nav items from original if needed, omitted here for brevity but app.t fallback works)
+                    "首页": "首页", "解决方案": "解决方案", "联系我们": "联系我们"
+                },
+                en: {
+                    tagline: "Natural Gas Power Mining Assistant",
+                    footerTagline: "Making natural gas power mining easier",
+                    complianceIntro: "Comprehensive guide to natural gas power mining regulations, taxation, and operational standards across key jurisdictions.",
+                    countryUSA: "USA", countryCanada: "Canada", countryRussia: "Russia", countryKazakhstan: "Kazakhstan", countryIndonesia: "Indonesia",
+                    "首页": "Home", "解决方案": "Solutions", "联系我们": "Contact Us", "关于我们": "About Us", "工具箱": "Tools", "资料中心": "Resources", "服务支持": "Support", "机型库": "Products", "排行榜": "Rankings", "应用场景": "Use Cases"
+                },
+                ru: {
+                    tagline: "Помощник по газовому майнингу",
+                    footerTagline: "Майнинг на газе проще",
+                    complianceIntro: "Полное руководство по правилам, налогообложению и стандартам эксплуатации газового майнинга.",
+                    countryUSA: "США", countryCanada: "Канада", countryRussia: "Россия", countryKazakhstan: "Казахстан", countryIndonesia: "Индонезия",
+                    "首页": "Главная", "解决方案": "Решения", "联系我们": "Контакты", "关于我们": "О нас", "工具箱": "Инструменты", "资料中心": "Ресурсы", "服务支持": "Поддержка", "机型库": "Продукты", "排行榜": "Рейтинги", "应用场景": "Кейсы"
+                }
+            }
+        };
+
+        // --- 2. Country Specific Data ---
+        const CountryData = {
+            usa: {
+                en: {
+                    tax: "Crypto is property (IRS). NY has proposed excise tax. Texas offers flare gas tax exemptions (HB 591) for on-site use.",
+                    permits: "Federal (FERC) for grid connect. State (RRC in Texas) for gas use. Air permits (TCEQ) required for engines.",
+                    env: "Strict EPA limits on NOx/CO. Texas 'Rule 32' allows flaring exceptions for power generation.",
+                    power: "ERCOT (Texas) allows participation in Demand Response. High efficiency gensets preferred.",
+                    corp: "LLC is common. Texas has strong private property/mineral rights. Easy registration.",
+                    land: "Mineral rights often separate from surface rights. 'Implied Easement' issues can arise.",
+                    special: "No specific mining license needed, but large loads must register with ERCOT.",
+                    links: [{name: "Texas RRC", url: "#"}, {name: "IRS Crypto Guide", url: "#"}]
+                },
+                zh: {
+                    tax: "加密货币视为财产 (IRS)。纽约提议消费税。德克萨斯 HB 591 为现场使用伴生气提供税收减免。",
+                    permits: "并网需联邦(FERC)许可。用气需州级(德州RRC)许可。内燃机需空气排放许可(TCEQ)。",
+                    env: "EPA 对 NOx/CO 限制严格。德州 'Rule 32' 允许通过发电申请火炬气豁免。",
+                    power: "德州 ERCOT 允许参与需求响应(DR)。推荐高效率发电机组。",
+                    corp: "LLC 公司形式常见。德州私有财产/矿权保护强。注册简便。",
+                    land: "矿权与地表权常分离。需注意“默示地役权”纠纷。",
+                    special: "无需特定挖矿牌照，但大负荷需向电网注册。",
+                    links: [{name: "德州铁路委员会 RRC", url: "#"}, {name: "IRS 税务指南", url: "#"}]
+                },
+                ru: {
+                    tax: "Крипта — имущество (IRS). Налог в Нью-Йорке. Техас (HB 591) дает льготы за утилизацию ПНГ.",
+                    permits: "Федеральные (FERC) и штатные (RRC в Техасе) разрешения. Экологические лицензии (TCEQ).",
+                    env: "Строгие нормы EPA (NOx/CO). 'Rule 32' в Техасе разрешает генерацию на ПНГ.",
+                    power: "ERCOT (Техас) позволяет участвовать в Demand Response. Нужны эффективные ГПУ.",
+                    corp: "LLC популярны. Сильная защита частной собственности в Техасе. Регистрация простая.",
+                    land: "Права на недра отделены от земли. Возможны споры по сервитутам.",
+                    special: "Лицензия на майнинг не нужна, но крупная нагрузка регистрируется в ERCOT.",
+                    links: [{name: "RRC Техас", url: "#"}, {name: "Налоги IRS", url: "#"}]
+                }
+            },
+            canada: {
+                en: {
+                    tax: "CRA taxes mining as business income. No GST charged on mining (so no ITC claims on power costs).",
+                    permits: "Provincial (e.g., Alberta AER). AUC approval needed for power plants > 10MW.",
+                    env: "Carbon pricing (TIER in Alberta) applies. Methane reduction rules are strict.",
+                    power: "AESO (Alberta) regulates grid. High demand for off-grid stranded gas solutions.",
+                    corp: "Corporation or Partnership. Alberta Advantage (low corp tax).",
+                    land: "Crown land requires surface dispositions. Freehold mineral rights tax applies.",
+                    special: "No specific crypto license, but FINTRAC registration required for exchanges.",
+                    links: [{name: "Alberta AER", url: "#"}, {name: "CRA Crypto Tax", url: "#"}]
+                },
+                zh: {
+                    tax: "CRA 将挖矿视为商业收入征税。挖矿本身不收 GST（因此无法抵扣电力成本的进项税）。",
+                    permits: "省级管理（如艾伯塔 AER）。大于 10MW 电站需 AUC 批准。",
+                    env: "适用碳定价（艾伯塔 TIER）。甲烷减排规则严格。",
+                    power: "艾伯塔 AESO 管理电网。离网搁浅气解决方案需求大。",
+                    corp: "公司或合伙制。艾伯塔省企业税较低。",
+                    land: "皇冠土地需申请地表处置权。适用 freehold 矿权税。",
+                    special: "无特定挖矿牌照，但交易所由 FINTRAC 监管。",
+                    links: [{name: "艾伯塔能源监管局 AER", url: "#"}, {name: "加拿大税务局 CRA", url: "#"}]
+                },
+                ru: {
+                    tax: "CRA облагает майнинг как бизнес. Нет GST на майнинг (нет возврата НДС за электричество).",
+                    permits: "Провинциальные (AER Альберта). Одобрение AUC для станций > 10МВт.",
+                    env: "Углеродный налог (TIER). Строгие правила по сокращению метана.",
+                    power: "AESO регулирует сеть. Популярен офф-грид майнинг на скважинах.",
+                    corp: "Корпорация или партнерство. Низкий налог в Альберте.",
+                    land: "Госземли требуют разрешений. Налог на частные права на недра.",
+                    special: "Лицензии нет, но биржи регистрируются в FINTRAC.",
+                    links: [{name: "AER Альберта", url: "#"}, {name: "Налоги CRA", url: "#"}]
+                }
+            },
+            russia: {
+                en: {
+                    tax: "Mining taxed as profit/income. New penalties for illegal mining. No VAT on crypto sales.",
+                    permits: "MANDATORY registration in Ministry of Digital Dev registry (Nov 2024 Law).",
+                    env: "Standard industrial emissions norms. Flared gas utilization encouraged.",
+                    power: "Cannot combine mining with grid dispatch/transmission. Regional power quotas apply.",
+                    corp: "LLC (OOO) preferred. Mining is now a legally defined economic activity.",
+                    land: "Industrial zones or lease of land near wellheads.",
+                    special: "Advertising crypto is BANNED. Use as payment is BANNED. Reporting to Tax Service required.",
+                    links: [{name: "Ministry of Digital", url: "#"}, {name: "Federal Tax Service", url: "#"}]
+                },
+                zh: {
+                    tax: "挖矿按利润/所得税征收。非法挖矿有新刑罚。加密货币销售免增值税。",
+                    permits: "必须在数码发展部名录注册（2024年11月新法）。",
+                    env: "标准工业排放规范。鼓励利用火炬气。",
+                    power: "挖矿主体不得从事电网调度/输电业务。受区域电力配额限制。",
+                    corp: "推荐有限责任公司 (OOO)。挖矿现为法定经济活动。",
+                    land: "工业区或租赁井口附近土地。",
+                    special: "禁止宣传加密货币。禁止作为支付手段。需向税务局报告钱包地址。",
+                    links: [{name: "俄罗斯数码发展部", url: "#"}, {name: "联邦税务局", url: "#"}]
+                },
+                ru: {
+                    tax: "Налог на прибыль/доход. Новые штрафы за нелегальный майнинг. Нет НДС на продажу крипты.",
+                    permits: "ОБЯЗАТЕЛЬНАЯ регистрация в реестре Минцифры (закон от 11.2024).",
+                    env: "Стандартные нормы выбросов. Утилизация ПНГ поощряется.",
+                    power: "Запрет совмещать майнинг с диспетчеризацией/передачей энергии. Региональные квоты.",
+                    corp: "ООО. Майнинг признан экономической деятельностью.",
+                    land: "Промзоны или аренда у скважин.",
+                    special: "Реклама крипты ЗАПРЕЩЕНА. Прием платежей ЗАПРЕЩЕН. Отчеты в ФНС.",
+                    links: [{name: "Минцифры РФ", url: "#"}, {name: "ФНС России", url: "#"}]
+                }
+            },
+            kazakhstan: {
+                en: {
+                    tax: "Digital Mining Fee: 1 Tenge/kWh (tiered). Corp Tax 20%. Astana Hub offers 0% tax (pay 1% royalty).",
+                    permits: "Class I License (Infrastructure Owner) or Class II (Renters) mandated by Ministry.",
+                    env: "Strict emission permits. Green energy use lowers mining fee.",
+                    power: "Grid quotas strictly limited. Self-generation (gas) is highly preferred and safer.",
+                    corp: "AIFC registration recommended for tax benefits. LLP structure.",
+                    land: "Designated industrial zones or private agreements with oilfields.",
+                    special: "Must report hardware/income to AFM. Illegal mining assets confiscated.",
+                    links: [{name: "AIFC Astana Hub", url: "#"}, {name: "Ministry of Digital Dev", url: "#"}]
+                },
+                zh: {
+                    tax: "数字挖矿费：1 坚戈/kWh（阶梯制）。企业税 20%。阿斯塔纳中心 (Astana Hub) 0% 税负（仅付 1% 版权税）。",
+                    permits: "必须持有 I 类（基建拥有者）或 II 类（租户）牌照。",
+                    env: "严格排放许可。使用绿色能源可降低挖矿费率。",
+                    power: "电网配额严格受限。强烈推荐自备电厂（燃气）模式。",
+                    corp: "建议在 AIFC 注册以获税务优惠。有限合伙 (LLP)。",
+                    land: "指定工业区或与油田签订私人协议。",
+                    special: "必须向 AFM 报告硬件和收入。非法挖矿资产将被没收。",
+                    links: [{name: "阿斯塔纳国际金融中心", url: "#"}, {name: "哈萨克斯坦数码部", url: "#"}]
+                },
+                ru: {
+                    tax: "Плата за майнинг: 1 тенге/кВтч. Налог 20%. Astana Hub: 0% налоги (роялти 1%).",
+                    permits: "Лицензия I класса (инфраструктура) или II класса (аренда).",
+                    env: "Строгие эко-разрешения. 'Зеленая' энергия снижает ставку платы.",
+                    power: "Квоты сети ограничены. Своя генерация (газ) предпочтительна.",
+                    corp: "Регистрация в МФЦА (AIFC) для льгот. ТОО.",
+                    land: "Индустриальные зоны или аренда у недропользователей.",
+                    special: "Отчеты в АФМ. Конфискация оборудования за нелегальный майнинг.",
+                    links: [{name: "МФЦА Astana Hub", url: "#"}, {name: "МЦРИАП РК", url: "#"}]
+                }
+            },
+            indonesia: {
+                en: {
+                    tax: "VAT: 0.11% on crypto sale. Income Tax: 0.1%. Mining Corp Tax: 22%.",
+                    permits: "OJK License required for exchanges. Industrial Business License (IUI) for generation.",
+                    env: "AMDAL (Env Impact Analysis) required for power plants. Carbon tax emerging.",
+                    power: "PLN has monopoly on distribution, but 'Wilus' permits allow captive power (self-use).",
+                    corp: "Must form a PT PMA (Foreign Investment Company) if foreign owned. High capital requirements.",
+                    land: "Industrial Estate preferred. Land title (HGB) system.",
+                    special: "Crypto is legal ASSET, illegal PAYMENT. Regulated by Bappebti -> OJK transition.",
+                    links: [{name: "OJK Indonesia", url: "#"}, {name: "Bappebti", url: "#"}]
+                },
+                zh: {
+                    tax: "增值税：交易额 0.11%。所得税：0.1%。矿企企业所得税：22%。",
+                    permits: "交易所需 OJK 牌照。发电需工业经营许可 (IUI)。",
+                    env: "电站需 AMDAL 环境影响分析。碳税政策正在浮现。",
+                    power: "PLN 垄断配电，但 'Wilus' 许可允许自备电厂（自用）。",
+                    corp: "外资需注册 PT PMA（外商投资公司）。资本门槛较高。",
+                    land: "首选工业园区。土地使用权 (HGB) 制度。",
+                    special: "加密货币作为资产合法，作为支付非法。监管正由 Bappebti 移交至 OJK。",
+                    links: [{name: "印尼金融服务管理局 OJK", url: "#"}, {name: "Bappebti", url: "#"}]
+                },
+                ru: {
+                    tax: "НДС: 0.11% с продажи. Налог на доход: 0.1%. Корп. налог: 22%.",
+                    permits: "Лицензия OJK для бирж. Лицензия IUI для генерации.",
+                    env: "AMDAL (ОВОС) обязателен для станций. Вводится углеродный налог.",
+                    power: "Монополия PLN, но разрешения 'Wilus' допускают свою генерацию.",
+                    corp: "Нужна PT PMA (Иностранная компания). Высокий уставной капитал.",
+                    land: "Промзоны. Система прав на землю HGB.",
+                    special: "Крипта — АКТИВ (легально), ПЛАТЕЖ (нелегально). Переход под надзор OJK.",
+                    links: [{name: "OJK Индонезия", url: "#"}, {name: "Bappebti", url: "#"}]
+                }
+            }
+        };
+
+        // --- 3. Page Logic ---
+        const pageApp = {
+            currentCountry: 'usa',
+            
+            setCountry(code) {
+                this.currentCountry = code;
+                
+                // Update Tabs
+                document.querySelectorAll('.country-tab').forEach(btn => btn.classList.remove('active', 'border-gas-green', 'text-white'));
+                const activeBtn = document.getElementById(`tab-${code}`);
+                if(activeBtn) activeBtn.classList.add('active', 'text-white');
+                
+                // Render Content
+                this.renderContent();
+            },
+
+            renderContent() {
+                const lang = app.currentLang; // Get global lang
+                
+                // Safety check
+                if (!CountryData[this.currentCountry] || !CountryData[this.currentCountry][lang]) {
+                    console.error("Missing data for", this.currentCountry, lang);
+                    return;
+                }
+
+                const data = CountryData[this.currentCountry][lang];
+                const container = document.getElementById('country-content');
+
+                // Labels
+                const labels = {
+                    tax: { en: "Crypto Tax & Incentives", zh: "加密货币税收与激励", ru: "Налоги и льготы" },
+                    permits: { en: "Permits & Licensing", zh: "建设与运营许可", ru: "Лицензии и разрешения" },
+                    env: { en: "Environment & Emissions", zh: "环境与排放标准", ru: "Экология и выбросы" },
+                    power: { en: "Power & Efficiency", zh: "能源效率与并网", ru: "Энергетика и эффективность" },
+                    corp: { en: "Company & Land", zh: "公司注册与土地", ru: "Компания и земля" },
+                    special: { en: "Special Mining Rules", zh: "加密挖矿专项规定", ru: "Спец. правила майнинга" },
+                    links: { en: "Official Resources", zh: "官方信息链接", ru: "Официальные ресурсы" }
+                };
+
+                const L = labels; // shorthand
+
+                container.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+                        
+                        <!-- Card 1: Tax -->
+                        <div class="gas-card p-6 rounded-xl info-card group border-t-4 border-t-gas-green">
+                            <div class="w-12 h-12 bg-gas-green/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-gas-green/20 transition-colors">
+                                <i class="fa-solid fa-file-invoice-dollar text-xl text-gas-green"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-white mb-2">${L.tax[lang]}</h3>
+                            <p class="text-sm text-gray-400 leading-relaxed">${data.tax}</p>
+                        </div>
+
+                        <!-- Card 2: Permits -->
+                        <div class="gas-card p-6 rounded-xl info-card group border-t-4 border-t-blue-500">
+                            <div class="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
+                                <i class="fa-solid fa-scroll text-xl text-blue-400"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-white mb-2">${L.permits[lang]}</h3>
+                            <p class="text-sm text-gray-400 leading-relaxed">${data.permits}</p>
+                        </div>
+
+                        <!-- Card 3: Environment -->
+                        <div class="gas-card p-6 rounded-xl info-card group border-t-4 border-t-green-600">
+                            <div class="w-12 h-12 bg-green-600/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-600/20 transition-colors">
+                                <i class="fa-solid fa-leaf text-xl text-green-500"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-white mb-2">${L.env[lang]}</h3>
+                            <p class="text-sm text-gray-400 leading-relaxed">${data.env}</p>
+                        </div>
+
+                        <!-- Card 4: Power -->
+                        <div class="gas-card p-6 rounded-xl info-card group border-t-4 border-t-yellow-500">
+                            <div class="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-yellow-500/20 transition-colors">
+                                <i class="fa-solid fa-bolt text-xl text-yellow-400"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-white mb-2">${L.power[lang]}</h3>
+                            <p class="text-sm text-gray-400 leading-relaxed">${data.power}</p>
+                        </div>
+
+                        <!-- Card 5: Corp -->
+                        <div class="gas-card p-6 rounded-xl info-card group border-t-4 border-t-purple-500">
+                            <div class="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-500/20 transition-colors">
+                                <i class="fa-solid fa-building text-xl text-purple-400"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-white mb-2">${L.corp[lang]}</h3>
+                            <p class="text-sm text-gray-400 leading-relaxed">${data.corp}</p>
+                        </div>
+
+                        <!-- Card 6: Special -->
+                        <div class="gas-card p-6 rounded-xl info-card group border-t-4 border-t-red-500">
+                            <div class="w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-red-500/20 transition-colors">
+                                <i class="fa-solid fa-triangle-exclamation text-xl text-red-400"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-white mb-2">${L.special[lang]}</h3>
+                            <p class="text-sm text-gray-400 leading-relaxed">${data.special}</p>
+                        </div>
+
+                    </div>
+
+                    <!-- Links Section -->
+                    <div class="mt-8 bg-[#151515] rounded-xl p-6 border border-white/5 animate-fade-in" style="animation-delay: 0.1s">
+                        <h4 class="text-white font-bold mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-link text-gas-subtext"></i> ${L.links[lang]}
+                        </h4>
+                        <div class="flex flex-wrap gap-4">
+                            ${data.links.map(l => `
+                                <a href="${l.url}" class="px-4 py-2 bg-white/5 hover:bg-gas-green hover:text-black rounded text-sm text-gas-green transition-all border border-gas-green/20 flex items-center gap-2">
+                                    ${l.name} <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-70"></i>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        };
+
+        // --- 4. Main App (Matches index_header_footer.html logic) ---
+        const app = {
+            currentLang: 'en',
+            isMobileMenuOpen: false,
+
+            init() {
+                this.renderNav();
+                this.renderFooter();
+                this.updateStaticText();
+                pageApp.renderContent(); // Initial Render of Page Specific Content
+
+                window.onscroll = () => {
+                    const btn = document.getElementById('backToTopBtn');
+                    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                        btn.classList.remove('translate-y-20', 'opacity-0');
+                    } else {
+                        btn.classList.add('translate-y-20', 'opacity-0');
+                    }
+                };
+            },
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                
+                ['zh', 'en', 'ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+                    
+                    const activeClass = "text-black bg-gas-green shadow-glow font-bold";
+                    const inactiveClass = "text-gas-subtext hover:text-white hover:bg-white/5 font-medium";
+                    const mobActiveClass = "text-black bg-gas-green font-bold";
+                    const mobInactiveClass = "text-gray-400 font-medium";
+
+                    if (btn) btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center ${l === lang ? activeClass : inactiveClass}`;
+                    if (mobBtn) mobBtn.className = `px-4 py-2 rounded-full text-xs transition-all ${l === lang ? mobActiveClass : mobInactiveClass}`;
+                });
+
+                this.renderNav();
+                this.renderMobileNav();
+                this.renderFooter();
+                this.updateStaticText();
+                
+                // CRITICAL: Re-render page content when lang changes
+                pageApp.renderContent();
+            },
+
+            t(key) {
+                // Fallback to English if translation missing
+                const dict = AppData.i18n[this.currentLang] || AppData.i18n['en'];
+                return (dict && dict[key]) ? dict[key] : key;
+            },
+
+            toggleMobileMenu() {
+                this.isMobileMenuOpen = !this.isMobileMenuOpen;
+                const menu = document.getElementById('mobile-menu-container');
+                const btnIcon = document.querySelector('#mobile-menu-btn i');
+                
+                if (this.isMobileMenuOpen) {
+                    menu.classList.remove('translate-x-full');
+                    btnIcon.classList.remove('fa-bars');
+                    btnIcon.classList.add('fa-xmark');
+                    document.body.style.overflow = 'hidden';
+                    this.renderMobileNav();
+                } else {
+                    menu.classList.add('translate-x-full');
+                    btnIcon.classList.remove('fa-xmark');
+                    btnIcon.classList.add('fa-bars');
+                    document.body.style.overflow = '';
+                }
+            },
+
+            toggleMobileSubmenu(id) {
+                const el = document.getElementById(id);
+                const icon = document.getElementById(`icon-${id}`);
+                if (el.style.maxHeight) { el.style.maxHeight = null; icon.classList.remove('rotate-180'); } 
+                else { el.style.maxHeight = el.scrollHeight + "px"; icon.classList.add('rotate-180'); }
+            },
+
+            toggleFooter(id) {
+                const el = document.getElementById(id);
+                const icon = document.getElementById(`footer-icon-${id}`);
+                if (el.style.maxHeight) { 
+                    el.style.maxHeight = null; 
+                    icon.classList.remove('fa-minus', 'text-gas-green'); 
+                    icon.classList.add('fa-plus'); 
+                } else { 
+                    el.style.maxHeight = el.scrollHeight + "px"; 
+                    icon.classList.remove('fa-plus'); 
+                    icon.classList.add('fa-minus', 'text-gas-green'); 
+                }
+            },
+
+            renderNav() {
+                const navContainer = document.getElementById('desktop-nav');
+                navContainer.innerHTML = '';
+                const totalItems = AppData.navigation.length;
+
+                AppData.navigation.forEach((item, index) => {
+                    if (item.type === 'link') {
+                        navContainer.innerHTML += `
+                            <a href="${item.path}" class="nav-item-link font-medium text-sm"><span>${this.t(item.title)}</span></a>
+                        `;
+                    }
+                    else if (item.type === 'menu' || item.type === 'mega') {
+                        let dropContent = '';
+                        let isMega = item.type === 'mega';
+                        const isRightAligned = index >= totalItems - 3;
+                        const posClass = isRightAligned ? 'right-0' : 'left-0';
+                        
+                        if (isMega) {
+                            const gridClass = item.gridCols || 'grid-cols-5';
+                            const sectionsHtml = item.sections.map((section, idx) => {
+                                const isLast = idx === item.sections.length - 1;
+                                const borderClass = isLast ? '' : 'border-r border-white/5';
+                                const itemsHtml = section.items.map(subItem => `
+                                    <li class="mb-2"><a href="${subItem.path}" class="text-gray-400 hover:text-gas-green text-xs flex items-center gap-2 transition-colors"><i class="fa-solid fa-angle-right text-[10px] opacity-50"></i>${this.t(subItem.title)}</a></li>
+                                `).join('');
+                                return `<div class="col-span-1 space-y-4 ${borderClass} px-2"><h3 class="text-gas-green font-bold text-sm uppercase tracking-wider mb-3 border-b border-white/5 pb-2">${this.t(section.header)}</h3><ul>${itemsHtml}</ul></div>`;
+                            }).join('');
+                            dropContent = `<div class="mega-menu"><div class="max-w-[1800px] mx-auto px-4 grid ${gridClass} gap-6">${sectionsHtml}</div></div>`;
+                        } else {
+                            const childrenHtml = item.children.map(child => `<a href="${child.path}" class="block px-4 py-2 text-sm text-gray-400 hover:text-gas-green hover:bg-white/5 whitespace-nowrap">${this.t(child.title)}</a>`).join('');
+                            dropContent = `<div class="dropdown-menu ${posClass}">${childrenHtml}</div>`;
+                        }
+
+                        const parentPos = isMega ? '' : 'relative';
+                        navContainer.innerHTML += `
+                            <div class="group h-full flex items-center cursor-pointer ${parentPos}">
+                                <span class="nav-item-link font-medium text-sm"><span>${this.t(item.title)}</span> <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i></span>
+                                ${dropContent}
+                            </div>
+                        `;
+                    }
+                });
+            },
+
+            renderMobileNav() {
+                const container = document.getElementById('mobile-nav-content');
+                container.innerHTML = '';
+                AppData.navigation.forEach((item, index) => {
+                    if (item.type === 'link') {
+                        container.innerHTML += `<a href="${item.path}" class="block py-4 border-b border-white/10 text-lg font-medium hover:text-gas-green">${this.t(item.title)}</a>`;
+                    } else {
+                        const subId = `mob-sub-${index}`;
+                        let subItemsHtml = '';
+                        if (item.type === 'menu') {
+                            subItemsHtml = item.children.map(child => `<a href="${child.path}" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">${this.t(child.title)}</a>`).join('');
+                        } else if (item.type === 'mega') {
+                            subItemsHtml = item.sections.map(sec => `<div class="py-2"><h4 class="text-gas-green text-xs font-bold uppercase mb-2 pl-4">${this.t(sec.header)}</h4>${sec.items.map(sub => `<a href="${sub.path}" class="block py-2 pl-6 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">${this.t(sub.title)}</a>`).join('')}</div>`).join('');
+                        }
+                        container.innerHTML += `<div class="border-b border-white/10"><button onclick="app.toggleMobileSubmenu('${subId}')" class="w-full py-4 flex justify-between items-center text-lg font-medium hover:text-gas-green focus:outline-none"><span>${this.t(item.title)}</span><i id="icon-${subId}" class="fa-solid fa-chevron-down text-sm transition-transform duration-300"></i></button><div id="${subId}" class="mobile-submenu"><div class="pb-4 space-y-1">${subItemsHtml}</div></div></div>`;
+                    }
+                });
+            },
+
+            renderFooter() {
+                const footerContainer = document.getElementById('footer-links');
+                footerContainer.innerHTML = '';
+                AppData.navigation.forEach((item, idx) => {
+                    if (item.title === '首页') return;
+                    let contentHtml = '', desktopContentHtml = '';
+                    const footerSubId = `footer-sub-${idx}`;
+                    
+                    if (item.type === 'menu') {
+                        const links = item.children.map(child => `<a href="${child.path}" class="footer-link hover:text-gas-green text-gray-400 mr-4 mb-2 inline-block">${this.t(child.title)}</a>`).join('');
+                        contentHtml = `<div class="flex flex-wrap">${links}</div>`;
+                    } else if (item.type === 'mega') {
+                        const desktopSections = item.sections.map(section => {
+                            const secLinks = section.items.map(sub => `<a href="${sub.path}" class="hover:text-gas-green text-gray-400 ml-2 text-xs">${this.t(sub.title)}</a>`).join('<span class="text-gray-700 mx-1">|</span>');
+                            return `<div class="flex items-baseline mr-6 mb-2"><span class="text-gas-green text-xs font-bold uppercase mr-1 whitespace-nowrap">${this.t(section.header)}:</span><div class="flex flex-wrap">${secLinks}</div></div>`;
+                        }).join('');
+                        const mobileLinks = item.sections.map(sec => sec.items.map(sub => `<a href="${sub.path}" class="footer-link block pl-2 border-l border-white/10 hover:border-gas-green mb-1">${this.t(sub.title)}</a>`).join('')).join('');
+                        contentHtml = `<div class="flex flex-col">${mobileLinks}</div>`;
+                        desktopContentHtml = `<div class="flex flex-wrap items-center">${desktopSections}</div>`;
+                    }
+                    const finalDesktopHtml = desktopContentHtml || contentHtml;
+                    footerContainer.innerHTML += `<div class="w-full border-b border-white/5 last:border-0"><div class="hidden md:flex py-4 items-start"><div class="w-32 lg:w-48 shrink-0"><h4 class="text-white font-bold text-sm border-l-2 border-gas-green pl-3">${this.t(item.title)}</h4></div><div class="flex-1">${finalDesktopHtml}</div></div><div class="md:hidden"><button onclick="app.toggleFooter('${footerSubId}')" class="w-full flex justify-between items-center py-3 text-sm font-bold text-white focus:outline-none"><span class="border-l-2 border-gas-green pl-3">${this.t(item.title)}</span><i id="footer-icon-${footerSubId}" class="fa-solid fa-plus text-xs text-gray-500 transition-transform duration-300"></i></button><div id="${footerSubId}" class="footer-accordion-content"><div class="pt-2 pl-4 pb-4 text-gray-400">${contentHtml}</div></div></div></div>`;
+                });
+            },
+
+            captureAndShare() {
+                window.scrollTo(0, 0);
+                const watermark = document.createElement('div');
+                watermark.id = 'temp-watermark';
+                Object.assign(watermark.style, { position: 'absolute', top: 0, left: 0, width: '100%', height: document.body.scrollHeight + 'px', zIndex: 9999, pointerEvents: 'none', display: 'flex', flexWrap: 'wrap', alignContent: 'space-around', justifyContent: 'space-around', overflow: 'hidden', opacity: '0.15' });
+                const textHtml = `<div style="text-align:center; transform: rotate(-30deg); margin: 100px;"><div style="font-size: 24px; font-weight: bold; color: #5DD62C;">www.gasgx.com</div><div style="font-size: 16px; color: #fff;">Global Compliance Guide</div></div>`;
+                watermark.innerHTML = textHtml.repeat(Math.ceil(document.body.scrollHeight / 400) * 3);
+                document.body.appendChild(watermark);
+
+                setTimeout(() => {
+                    html2canvas(document.body, { backgroundColor: '#0F0F0F', scrollY: 0, useCORS: true, scale: 2 }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = 'GasGx-Compliance-Policy.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        document.body.removeChild(watermark);
+                        const modal = document.getElementById('shareModal');
+                        modal.classList.remove('hidden');
+                        setTimeout(() => modal.querySelector('div').classList.remove('scale-95', 'opacity-0'), 10);
+                    }).catch(err => { console.error(err); if(document.getElementById('temp-watermark')) document.body.removeChild(watermark); });
+                }, 500);
+            },
+
+            closeModal() {
+                const modal = document.getElementById('shareModal');
+                const content = modal.querySelector('div');
+                content.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            },
+
+            updateStaticText() {
+                const taglineEl = document.getElementById('header-tagline');
+                const footerTaglineEl = document.querySelector('[data-i18n="footerTagline"]');
+                if(taglineEl) taglineEl.innerText = this.t('tagline');
+                if(footerTaglineEl) footerTaglineEl.innerText = this.t('footerTagline');
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (key !== 'tagline' && key !== 'footerTagline') { el.innerText = this.t(key); }
+                });
+            }
+        };
+
+        // EXPOSE TO GLOBAL SCOPE to ensure inline onclick handlers work
+        window.app = app;
+        window.pageApp = pageApp;
+
+        // Start
+        app.init();
+    </script>
+</body>
+</html>

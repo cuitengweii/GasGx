@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx - Natural Gas Power Calculator</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome 6.5.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- html2canvas for Screenshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        },
+                        neutral: {
+                            850: '#1f1f1f',
+                            900: '#171717',
+                            950: '#0a0a0a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* 卡片磨砂效果 */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Mega Menu 动画 */
+        .mega-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: #151515;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .mega-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        /* Dropdown Menu 动画 */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            min-width: 220px;
+            background-color: #151515;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0 0 8px 8px;
+            padding: 0.5rem 0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .dropdown-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-item-link:hover { color: #5DD62C; }
+        
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after { width: 100%; }
+
+        /* Footer Link Hover */
+        .footer-link {
+            color: #94a3b8;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .footer-link:hover {
+            color: #5DD62C;
+        }
+
+        /* Mobile Menu Styles */
+        #mobile-menu-container {
+            transition: transform 0.3s ease-in-out;
+        }
+        .mobile-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        /* Footer Accordion (Mobile) */
+        .footer-accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        /* Floating Share Button Animation */
+        @keyframes floatPulse {
+            0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); }
+        }
+        .float-btn {
+            animation: floatPulse 2s infinite;
+        }
+
+        /* -----------------------------------------------------------------
+           CALCULATOR SPECIFIC STYLES
+           ----------------------------------------------------------------- */
+        .glass-panel {
+            background: rgba(23, 23, 23, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #5DD62C;
+            cursor: pointer;
+            margin-top: -8px; 
+            box-shadow: 0 0 10px rgba(93, 214, 44, 0.5);
+            border: 2px solid #0a0a0a;
+        }
+        input[type=range]::-moz-range-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #5DD62C;
+            cursor: pointer;
+            border: 2px solid #0a0a0a;
+            box-shadow: 0 0 10px rgba(93, 214, 44, 0.5);
+        }
+
+        .input-group:focus-within label {
+            color: #5DD62C;
+        }
+        
+        .input-group:focus-within input {
+            border-color: rgba(93, 214, 44, 0.5);
+            box-shadow: 0 0 0 2px rgba(93, 214, 44, 0.2);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative selection:bg-gas-green/30">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 gas-card h-16 transition-all duration-300">
+        <div class="max-w-[1800px] mx-auto px-4 h-full flex justify-between items-center relative">
+            
+            <!-- Left: Logo + Tagline -->
+            <div class="flex items-center gap-3 w-auto shrink-0 mr-4">
+                <a href="/index.html" target="_blank" class="flex items-center gap-2 group">
+                    <h1 class="text-2xl font-bold tracking-wider text-gas-green hover:text-white transition-colors cursor-pointer">GasGx</h1>
+                </a>
+                
+                <!-- Tagline: Header (Desktop) -->
+                <div class="hidden md:flex flex-col justify-center border-l border-gray-700 pl-3 h-8">
+                    <span id="header-tagline" class="text-gas-green text-xs font-bold tracking-wide">Natural Gas Power Mining Assistant</span>
+                </div>
+            </div>
+
+            <!-- Center: Desktop Navigation -->
+            <nav id="desktop-nav" class="hidden lg:flex items-center justify-center gap-2 xl:gap-6 h-full flex-1">
+                <!-- JS Generated -->
+            </nav>
+
+            <!-- Right: Language & Mobile Toggle -->
+            <div class="flex items-center gap-4 w-auto shrink-0 justify-end ml-4">
+                <!-- Language Switcher (Desktop) -->
+                <div class="hidden sm:flex items-center gap-1 bg-[#111] border border-white/10 rounded-full px-1 py-1">
+                    <!-- 修复：默认激活 CN 按钮 -->
+                    <button onclick="app.setLanguage('zh')" id="btn-lang-zh" class="px-2 py-1 rounded-full text-[10px] font-bold transition-all w-8 text-center text-black bg-gas-green shadow-glow">CN</button>
+                    <button onclick="app.setLanguage('en')" id="btn-lang-en" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">EN</button>
+                    <button onclick="app.setLanguage('ru')" id="btn-lang-ru" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">RU</button>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" onclick="app.toggleMobileMenu()" class="lg:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation Overlay -->
+    <div id="mobile-menu-container" class="fixed inset-0 z-40 bg-[#111] transform translate-x-full pt-20 px-4 pb-8 overflow-y-auto lg:hidden">
+        <!-- Mobile Lang Switcher -->
+        <div class="flex justify-center gap-4 mb-6 border-b border-white/10 pb-4">
+            <div class="flex items-center gap-2 bg-[#222] border border-white/10 rounded-full px-1 py-1">
+                <!-- 修复：默认激活 CN 按钮 (Mobile) -->
+                <button onclick="app.setLanguage('zh')" id="mob-btn-lang-zh" class="px-4 py-2 rounded-full text-xs font-bold transition-all text-black bg-gas-green">CN</button>
+                <button onclick="app.setLanguage('en')" id="mob-btn-lang-en" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-gray-400">EN</button>
+                <button onclick="app.setLanguage('ru')" id="mob-btn-lang-ru" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-gray-400">RU</button>
+            </div>
+        </div>
+        
+        <nav id="mobile-nav-content" class="flex flex-col space-y-1">
+            <!-- JS Generated Mobile Nav -->
+        </nav>
+    </div>
+
+    <!-- Main Content Area: Calculator -->
+    <main class="flex-grow pt-24 pb-12 px-4 w-full">
+        <div class="max-w-5xl mx-auto space-y-6">
+            
+            <!-- Calculator Header -->
+            <div class="flex flex-col md:flex-row items-start md:items-center md:space-x-4 mb-6 md:mb-10 pt-2">
+                <div class="p-3 bg-gradient-to-br from-gas-green to-gas-darkGreen rounded-2xl shadow-lg shadow-gas-green/20 mb-3 md:mb-0 ring-1 ring-white/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 md:w-8 md:h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight" data-i18n="calcTitle">天然气能源计算器</h1>
+                    <p class="text-neutral-400 text-sm flex items-center mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 mr-1.5 text-gas-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                        <span data-i18n="calcSubtitle">High Efficiency Energy Converter</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                
+                <!-- 左侧：输入控制区 -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="glass-panel rounded-3xl p-5 md:p-6 shadow-xl">
+                        
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-lg font-semibold flex items-center text-gas-green">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                <span data-i18n="calcMode">计算模式</span>
+                            </h2>
+                        </div>
+
+                        <!-- 模式切换 Tabs -->
+                        <div class="bg-neutral-950 p-1 rounded-xl flex mb-6 border border-neutral-800">
+                            <button id="mode-forward-btn" onclick="calcApp.setMode('forward')" class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 text-white bg-neutral-800 shadow-sm border border-neutral-700">
+                                <span data-i18n="modeFwd">正向: 气 → 电</span>
+                            </button>
+                            <button id="mode-reverse-btn" onclick="calcApp.setMode('reverse')" class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 text-neutral-400 hover:text-white">
+                                <span data-i18n="modeRev">反向: 电 → 气</span>
+                            </button>
+                        </div>
+
+                        <!-- 动态输入区 -->
+                        <div class="mb-8 input-group transition-colors duration-200">
+                            <label id="input-label" class="block text-sm font-medium text-neutral-400 mb-2 transition-colors" data-i18n="labelGas">
+                                天然气量 (Mcf)
+                            </label>
+                            <div class="relative">
+                                <input
+                                    id="main-input"
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value="10"
+                                    oninput="calcApp.calculate()"
+                                    class="w-full pl-4 pr-16 py-4 bg-neutral-950 border border-neutral-800 rounded-xl outline-none transition-all text-xl font-mono text-white placeholder-neutral-700"
+                                />
+                                <div id="input-unit" class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 font-bold text-sm pointer-events-none font-mono">
+                                    Mcf
+                                </div>
+                            </div>
+                            <div id="input-hint" class="text-xs text-neutral-600 mt-2 ml-1" data-i18n="hintGas">
+                                输入每小时流量或总量
+                            </div>
+                        </div>
+
+                        <!-- 效率滑块 -->
+                        <div class="mb-8">
+                            <div class="flex justify-between items-end mb-4">
+                                <label class="block text-sm font-medium text-neutral-400" data-i18n="labelEff">
+                                    发电机转换效率
+                                </label>
+                                <div class="flex items-center bg-gas-green/20 px-3 py-1 rounded-lg border border-gas-green/20">
+                                    <span id="efficiency-display" class="text-gas-green font-bold font-mono text-lg">
+                                        35%
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="relative h-6 flex items-center">
+                                <input
+                                    id="efficiency-slider"
+                                    type="range"
+                                    min="10"
+                                    max="65"
+                                    step="0.5"
+                                    value="35"
+                                    oninput="calcApp.updateEfficiencyDisplay(); calcApp.calculate()"
+                                    class="w-full h-2 rounded-full appearance-none z-10 relative"
+                                />
+                                <!-- 滑块背景轨道 -->
+                                <div class="absolute left-0 right-0 h-2 rounded-full overflow-hidden pointer-events-none bg-neutral-800">
+                                    <div class="h-full bg-gradient-to-r from-red-900/40 via-yellow-900/40 to-green-900/40 w-full opacity-50"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between text-[10px] uppercase tracking-wider text-neutral-600 mt-2 font-medium">
+                                <span data-i18n="labelLow">低效 (10%)</span>
+                                <span data-i18n="labelHigh">高效 (65%)</span>
+                            </div>
+                        </div>
+
+                        <!-- 高级设置 -->
+                        <div class="pt-6 border-t border-neutral-800/50">
+                            <details class="group">
+                                <summary class="flex items-center cursor-pointer text-sm text-neutral-500 hover:text-gas-green transition select-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                    <span data-i18n="labelAdv">高级设置：热值 (BTU/cf)</span>
+                                </summary>
+                                <div class="mt-4 bg-neutral-950/50 p-4 rounded-xl border border-neutral-800 animate-fade-in">
+                                    <label class="block text-xs font-medium text-neutral-500 mb-2" data-i18n="labelHeat">
+                                        天然气热值 (默认 1027)
+                                    </label>
+                                    <input
+                                        id="heat-value-input"
+                                        type="number"
+                                        value="1027"
+                                        oninput="calcApp.calculate()"
+                                        class="w-full px-4 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-sm text-white focus:ring-1 focus:ring-gas-green outline-none"
+                                    />
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+
+                    <!-- 公式说明 -->
+                    <div class="bg-neutral-900/50 rounded-2xl p-5 border border-white/5">
+                        <h3 class="text-neutral-300 font-medium mb-2 text-xs uppercase tracking-widest flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 mr-2 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+                            <span data-i18n="formulaTitle">Core Formula</span>
+                        </h3>
+                        <p id="formula-text" class="text-neutral-500 text-xs leading-relaxed font-mono">
+                            Power = (Mcf × 1000 × BTU/cf) ÷ 3412.14 × η
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 右侧：结果展示区 -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="bg-neutral-900 rounded-3xl shadow-2xl border border-neutral-800 overflow-hidden flex flex-col h-full">
+                        
+                        <!-- 顶部数字展示区 -->
+                        <div class="bg-gradient-to-b from-neutral-800 to-neutral-900 p-6 md:p-8 border-b border-neutral-800 relative overflow-hidden">
+                            <!-- 背景光效 -->
+                            <div class="absolute top-0 right-0 w-64 h-64 bg-gas-green/10 blur-[80px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
+                            
+                            <h2 id="result-title" class="text-sm font-medium text-neutral-400 uppercase tracking-widest flex items-center mb-4 relative z-10">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2 text-gas-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3.19M15 6h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-3.19"/><line x1="23" y1="13" x2="23" y2="11"/><polyline points="11 6 7 12 13 12 9 18"/></svg>
+                                <span data-i18n="resultTitle">Output Estimation</span>
+                            </h2>
+                            
+                            <div class="relative z-10 transition-opacity duration-300" id="result-container">
+                                <div class="flex flex-col md:flex-row md:items-baseline">
+                                    <span id="main-result" class="text-5xl md:text-7xl font-bold tracking-tight text-white drop-shadow-[0_0_15px_rgba(93,214,44,0.3)] font-mono">
+                                        0.0
+                                    </span>
+                                    <span id="main-unit" class="md:ml-4 text-xl md:text-2xl text-gas-green font-medium mt-2 md:mt-0 font-mono">kWh</span>
+                                </div>
+                                <div class="mt-3 flex items-center space-x-2">
+                                    <span id="secondary-unit-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-800 text-neutral-400 border border-neutral-700">MWh</span>
+                                    <span id="secondary-result" class="text-neutral-400 text-sm font-mono">
+                                        0.000
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 详细数据区 -->
+                        <div class="p-6 md:p-8 flex-grow flex flex-col justify-between space-y-8 bg-neutral-900">
+                            
+                            <!-- 能量流图示 -->
+                            <div class="space-y-5">
+                                <h3 class="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-4" data-i18n="energyAnalysis">Energy Analysis</h3>
+                                
+                                <!-- 能量条容器 -->
+                                <div id="energy-bars">
+                                    <!-- 内容由 JS 动态生成 -->
+                                </div>
+                            </div>
+
+                            <!-- 场景数据卡片 Grid -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="bg-neutral-800/50 p-4 rounded-xl border border-neutral-700/50 hover:bg-neutral-800 transition-colors">
+                                    <div class="flex items-center mb-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-indigo-400 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M15.54 8.46l-8.4 8.61"></path><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M20 12h2"></path><path d="M2 12h2"></path></svg>
+                                        <span id="card-1-title" class="text-xs text-neutral-400 uppercase font-bold" data-i18n="card1Title">Total Heat Input</span>
+                                    </div>
+                                    <div class="text-xl font-bold text-indigo-300 font-mono">
+                                        <span id="card-1-value">0.0</span> <span class="text-sm font-normal text-indigo-400/60" id="card-1-unit">MMBtu</span>
+                                    </div>
+                                    <div class="text-[10px] text-neutral-500 mt-1" id="card-1-desc" data-i18n="card1Desc">Total chemical energy</div>
+                                </div>
+
+                                <div class="bg-neutral-800/50 p-4 rounded-xl border border-neutral-700/50 hover:bg-neutral-800 transition-colors">
+                                    <div class="flex items-center mb-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-orange-400 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18v-8a2 2 0 0 0-2-2h-2.5l-3-4-3 4H5a2 2 0 0 0-2 2z"></path><path d="M9 11V9a3 3 0 0 1 3-3 3 3 0 0 1 3 3v2"></path></svg>
+                                        <span id="card-2-title" class="text-xs text-neutral-400 uppercase font-bold" data-i18n="card2Title">Equiv. Homes</span>
+                                    </div>
+                                    <div class="text-xl font-bold text-orange-300 font-mono">
+                                        <span id="card-2-value">0</span>
+                                    </div>
+                                    <div class="text-[10px] text-neutral-500 mt-1" id="card-2-desc" data-i18n="card2Desc">Assuming 1.2 kW avg load</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 底部 Footer -->
+                    <div class="text-[10px] text-neutral-600 text-center px-4 leading-relaxed" data-i18n="disclaimer">
+                        * 估算仅供参考。Standard Heat Value: 1027 BTU/cf. Conversion: 1 kWh = 3412.14 BTU. 
+                        <br class="hidden md:block"/> 
+                        Actual output varies by altitude, temperature, and gas composition.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#0a0a0a] border-t border-white/10 mt-auto pt-10 pb-8 relative z-10">
+        <div class="max-w-[1800px] mx-auto px-6">
+            
+            <!-- Footer Top Row: Brand & Contact -->
+            <div class="flex flex-col md:flex-row justify-between items-start mb-8 pb-6 border-b border-white/5">
+                <!-- Left: Logo & Tagline -->
+                <div class="mb-6 md:mb-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-2xl font-bold text-gas-green">GasGx</span>
+                    </div>
+                    <p class="text-sm text-gray-400 font-medium" data-i18n="footerTagline">Making natural gas power mining easier</p>
+                </div>
+
+                <!-- Right: Contact Info -->
+                <div class="flex flex-col md:items-end space-y-2">
+                    <h4 class="text-white font-bold text-sm uppercase tracking-wider mb-1" data-i18n="联系我们">Contact Us</h4>
+                    <a href="mailto:contact@gasgx.com" class="text-sm text-gray-400 hover:text-gas-green flex items-center gap-2 transition-colors">
+                        <i class="fa-solid fa-envelope"></i> contact@gasgx.com
+                    </a>
+                    <div class="text-sm text-gray-400 flex items-center gap-2">
+                        <i class="fa-brands fa-weixin"></i> <span class="hover:text-gas-green cursor-pointer">www_gasgx_com</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Links: Row Layout (Desktop) / Accordion (Mobile) -->
+            <div id="footer-links" class="mb-10 space-y-2">
+                <!-- JS Generated -->
+            </div>
+
+            <!-- Bottom: Copyright & Social -->
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-white/5">
+                <div class="text-xs text-gray-600">
+                    © 2026 GasGx. All rights reserved.
+                </div>
+
+                <div class="flex gap-4">
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-tiktok text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-linkedin text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-facebook text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-weixin text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-x-twitter text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-youtube text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-telegram text-lg"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Floating Canvas-Style Share Button (Right Side) -->
+    <button onclick="app.captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group" title="Share Snapshot">
+        <i class="fa-solid fa-camera text-xl"></i>
+        <!-- Tooltip -->
+        <span class="absolute right-14 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
+            Share Page
+        </span>
+    </button>
+
+    <!-- Back to Top -->
+    <button onclick="window.scrollTo({top:0, behavior:'smooth'})" id="backToTopBtn" class="fixed bottom-6 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-[0_0_15px_rgba(93,214,44,0.5)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-95 opacity-0" id="shareModalContent">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-check text-2xl text-gas-green"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3>
+                <p class="text-sm text-gray-400">Full page captured successfully.</p>
+            </div>
+            <button onclick="app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        const AppData = {
+            navigation: [
+                { title: "首页", path: "/index.html", type: "link", icon: "fa-solid fa-house" },
+                {
+                    title: "解决方案",
+                    path: "/solutions",
+                    type: "menu",
+                    children: [
+                        { title: "油气井/伴生气发电", path: "/solutions/oilfield" },
+                        { title: "工业园区与分布式能源", path: "/solutions/industrial" },
+                        { title: "数据中心 / 挖矿电力", path: "/solutions/mining" },
+                        { title: "热电联供 CHP", path: "/solutions/chp" }
+                    ]
+                },
+                {
+                    title: "机型库",
+                    path: "/products",
+                    type: "mega",
+                    sections: [
+                        {
+                            header: "按功率分类",
+                            items: [
+                                { title: "小于 500 kW", path: "/products/power-range/0-500kw" },
+                                { title: "500 – 1,000 kW", path: "/products/power-range/500-1000kw" },
+                                { title: "1 MW 以上", path: "/products/power-range/1mw-plus" }
+                            ]
+                        },
+                        {
+                            header: "按冷却方式",
+                            items: [
+                                { title: "风冷", path: "/products/cooling/air" },
+                                { title: "液冷", path: "/products/cooling/liquid" }
+                            ]
+                        },
+                        {
+                            header: "按气源类型",
+                            items: [
+                                { title: "天然气", path: "/products/gas/natural" },
+                                { title: "伴生气", path: "/products/gas/associated" },
+                                { title: "低甲烷值气", path: "/products/gas/low-methane" }
+                            ]
+                        },
+                        {
+                            header: "按部署形式",
+                            items: [
+                                { title: "集装箱机组", path: "/products/deployment/container" },
+                                { title: "一体化机组 AIS", path: "/products/deployment/ais" },
+                                { title: "滑撬式机组", path: "/products/deployment/skid" }
+                            ]
+                        },
+                        {
+                            header: "按品牌",
+                            items: [
+                                { title: "全部品牌", path: "/products/brands" },
+                                { title: "中国生产", path: "/products/brands/china" },
+                                { title: "海外生产", path: "/products/brands/overseas" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "排行榜",
+                    path: "/rankings",
+                    type: "mega",
+                    gridCols: "grid-cols-6",
+                    sections: [
+                        {
+                            header: "性能榜",
+                            items: [
+                                { title: "综合性能 TOP 榜", path: "/rankings/performance" },
+                                { title: "高效率榜", path: "/rankings/efficiency" },
+                                { title: "天然气内燃机发电效率排行榜", path: "/rankings/engine-efficiency" },
+                                { title: "天然气内燃机热效率排行榜", path: "/rankings/thermal-efficiency" },
+                                { title: "天然气内燃机耗气量排行榜", path: "/rankings/gas-consumption" }
+                            ]
+                        },
+                        {
+                            header: "经济性榜",
+                            items: [
+                                { title: "最佳 ROI 榜", path: "/rankings/roi" },
+                                { title: "最低发电成本 LCOE 榜", path: "/rankings/lcoe" },
+                                { title: "天然气内燃机折旧排行榜", path: "/rankings/depreciation" },
+                                { title: "天然气内燃机投资回报率排行榜", path: "/rankings/engine-roi" }
+                            ]
+                        },
+                        {
+                            header: "可靠性榜",
+                            items: [
+                                { title: "高可靠机组榜", path: "/rankings/reliability" },
+                                { title: "最长 MTBF 榜", path: "/rankings/mtbf" },
+                                { title: "天然气内燃机保养时间排行榜", path: "/rankings/maintenance-interval" },
+                                { title: "天然气内燃机备件保障排行榜", path: "/rankings/spare-parts" }
+                            ]
+                        },
+                        {
+                            header: "品质与环保榜",
+                            items: [
+                                { title: "天然气内燃机排放排行榜", path: "/rankings/emissions" },
+                                { title: "天然气内燃机噪音排行榜", path: "/rankings/noise" }
+                            ]
+                        },
+                        {
+                            header: "系统能力榜",
+                            items: [
+                                { title: "天然气内燃机发电机排行榜", path: "/rankings/generator" },
+                                { title: "天然气内燃机控制系统排行榜", path: "/rankings/control-system" }
+                            ]
+                        },
+                        {
+                            header: "区域榜",
+                            items: [
+                                { title: "美国市场榜", path: "/rankings/usa" },
+                                { title: "加拿大市场榜", path: "/rankings/canada" },
+                                { title: "中东市场榜", path: "/rankings/middle-east" },
+                                { title: "俄罗斯市场榜", path: "/rankings/russia" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "应用场景",
+                    path: "/use-cases",
+                    type: "menu",
+                    children: [
+                        { title: "油气井 / 伴生气", path: "/use-cases/oilfield" },
+                        { title: "工业与园区能源", path: "/use-cases/industrial" },
+                        { title: "挖矿 / 数据中心", path: "/use-cases/mining" },
+                        { title: "CHP 热电联供", path: "/use-cases/chp" }
+                    ]
+                },
+                {
+                    title: "工具箱",
+                    path: "/tools",
+                    type: "mega",
+                    gridCols: "grid-cols-5",
+                    sections: [
+                        {
+                            header: "经济测算工具",
+                            items: [
+                                { title: "LCOE 成本计算器", path: "/tools/lcoe-calculator" },
+                                { title: "ROI 回报估算器", path: "/tools/roi" },
+                                { title: "燃气发电挖矿收益计算器", path: "/tools/mining-power-calc" },
+                                { title: "蒙特卡洛模拟盈利分析", path: "/tools/monte-carlo-profit" },
+                                { title: "天然气发电耗气成本分析", path: "/tools/gas-cost-analysis" }
+                            ]
+                        },
+                        {
+                            header: "工程与技术工具",
+                            items: [
+                                { title: "气质适配工具", path: "/tools/gas-fit" },
+                                { title: "排放估算工具", path: "/tools/emission" },
+                                { title: "气体分析计算器", path: "/tools/gas-analyzer" },
+                                { title: "能电转换计算器", path: "/tools/energy-conversion" },
+                                { title: "天然气主要成分热值表", path: "/tools/gas-composition-heat" }
+                            ]
+                        },
+                        {
+                            header: "项目与选型工具",
+                            items: [
+                                { title: "站点匹配向导", path: "/tools/site-fit" },
+                                { title: "气源所在地分析", path: "/tools/gas-location-analysis" },
+                                { title: "燃气发动机选型与运营经济性", path: "/tools/engine-selection" },
+                                { title: "天然气发电机机油消耗率", path: "/tools/oil-consumption" },
+                                { title: "车机 VS 工业机 10MW 对比分析", path: "/tools/vehicle-vs-industrial-10mw" },
+                                { title: "多机型对比 3 年运营数据", path: "/tools/3y-compare" }
+                            ]
+                        },
+                        {
+                            header: "矿工专区（托管与算力分析）",
+                            items: [
+                                { title: "挖矿收益计算器", path: "/tools/mining-income-calculator" },
+                                { title: "矿机盈利能力计算器", path: "/tools/miner-profitability" },
+                                { title: "矿机选购速查", path: "/tools/miner-buying-guide" }
+                            ]
+                        },
+                        {
+                            header: "全球支持与合规",
+                            items: [
+                                { title: "加拿大 AECO 天然气价格预测", path: "/tools/aeco-price-forecast" },
+                                { title: "全球物流运输推荐", path: "/tools/global-logistics" },
+                                { title: "全球合规政策", path: "/tools/global-compliance" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "资料中心",
+                    path: "/resources",
+                    type: "mega",
+                    gridCols: "grid-cols-4",
+                    sections: [
+                        {
+                            header: "文档",
+                            items: [
+                                { title: "白皮书", path: "/resources/whitepapers" },
+                                { title: "行业报告", path: "/resources/reports" }
+                            ]
+                        },
+                        {
+                            header: "案例",
+                            items: [
+                                { title: "全部案例", path: "/resources/case-studies" },
+                                { title: "按区域查看", path: "/resources/case-studies/regions" },
+                                { title: "按场景查看", path: "/resources/case-studies/scenarios" }
+                            ]
+                        },
+                        {
+                            header: "技术库",
+                            items: [
+                                { title: "技术参数表", path: "/resources/datasheets" },
+                                { title: "认证与合规文件", path: "/resources/certifications" }
+                            ]
+                        },
+                        {
+                            header: "媒体与支持",
+                            items: [
+                                { title: "视频与教程", path: "/resources/videos" },
+                                { title: "常见问答 FAQ", path: "/resources/faq" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "服务支持",
+                    path: "/support",
+                    type: "menu",
+                    children: [
+                        { title: "服务网络", path: "/support/network" },
+                        { title: "技术支持", path: "/support/tech" },
+                        { title: "售后与保养", path: "/support/service" }
+                    ]
+                },
+                {
+                    title: "关于我们",
+                    path: "/about",
+                    type: "menu",
+                    children: [
+                        { title: "公司介绍", path: "/about/company" },
+                        { title: "联系我们", path: "/about/contact" }
+                    ]
+                }
+            ],
+
+            i18n: {
+                zh: {
+                    tagline: "天然气发电挖矿助手",
+                    footerTagline: "让天然气发电挖矿更简单",
+                    // --- Calculator Specific ---
+                    calcTitle: "天然气能源计算器",
+                    calcSubtitle: "High Efficiency Energy Converter",
+                    calcMode: "计算模式",
+                    modeFwd: "正向: 气 → 电",
+                    modeRev: "反向: 电 → 气",
+                    labelGas: "天然气量 (Mcf)",
+                    labelPower: "目标发电量 (kWh)",
+                    hintGas: "输入每小时流量或总量",
+                    hintPower: "输入您期望的电力输出",
+                    labelEff: "发电机转换效率",
+                    labelLow: "低效 (10%)",
+                    labelHigh: "高效 (65%)",
+                    labelAdv: "高级设置：热值 (BTU/cf)",
+                    labelHeat: "天然气热值 (默认 1027)",
+                    formulaTitle: "计算公式",
+                    resultTitle: "发电产出估算",
+                    resultTitleRev: "燃料需求估算 (Gas)",
+                    energyAnalysis: "能量流分析",
+                    card1Title: "总热值输入",
+                    card1TitleRev: "所需热能输入",
+                    card1Desc: "Total chemical energy",
+                    card1DescRev: "Required Input Energy",
+                    card2Title: "等效供电户数",
+                    card2TitleRev: "预估燃料成本",
+                    card2Desc: "假设单户 1.2kW 负荷",
+                    card2DescRev: "假设 $3.50/Mcf",
+                    disclaimer: "* 估算仅供参考。标准热值: 1027 BTU/cf. 换算: 1 kWh = 3412.14 BTU。<br>实际产出受海拔、温度和气体成分影响。",
+                    unitGas: "气",
+                    unitKwh: "电",
+                    labelInputGas: "Input Energy (Gas)",
+                    labelUsefulPower: "有效电力",
+                    labelTargetPower: "目标电力",
+                    labelWasteHeat: "热损耗",
+                    // --- Header/Nav (Full) ---
+                    "首页": "首页",
+                    "解决方案": "解决方案",
+                    "机型库": "机型库",
+                    "排行榜": "排行榜",
+                    "应用场景": "应用场景",
+                    "工具箱": "工具箱",
+                    "资料中心": "资料中心",
+                    "服务支持": "服务支持",
+                    "关于我们": "关于我们",
+                    "联系我们": "联系我们"
+                },
+                en: {
+                    tagline: "Natural Gas Power Mining Assistant",
+                    footerTagline: "Making natural gas power mining easier",
+                    // --- Calculator Specific ---
+                    calcTitle: "Gas Power Calculator",
+                    calcSubtitle: "High Efficiency Energy Converter",
+                    calcMode: "Calculation Mode",
+                    modeFwd: "Forward: Gas → Power",
+                    modeRev: "Reverse: Power → Gas",
+                    labelGas: "Gas Amount (Mcf)",
+                    labelPower: "Target Power (kWh)",
+                    hintGas: "Input hourly flow or total amount",
+                    hintPower: "Input desired power output",
+                    labelEff: "Generator Efficiency",
+                    labelLow: "Low (10%)",
+                    labelHigh: "High (65%)",
+                    labelAdv: "Advanced: Heat Value (BTU/cf)",
+                    labelHeat: "Heat Value (Default 1027)",
+                    formulaTitle: "Core Formula",
+                    resultTitle: "Output Estimation",
+                    resultTitleRev: "Fuel Requirement (Gas)",
+                    energyAnalysis: "Energy Analysis",
+                    card1Title: "Total Heat Input",
+                    card1TitleRev: "Required Heat Input",
+                    card1Desc: "Total chemical energy",
+                    card1DescRev: "Required Input Energy",
+                    card2Title: "Equiv. Homes",
+                    card2TitleRev: "Est. Fuel Cost",
+                    card2Desc: "Assuming 1.2 kW avg load",
+                    card2DescRev: "Assuming $3.50/Mcf",
+                    disclaimer: "* Estimate only. Standard Heat Value: 1027 BTU/cf. Conversion: 1 kWh = 3412.14 BTU.<br>Actual output varies by altitude, temperature, and gas composition.",
+                    unitGas: "Gas",
+                    unitKwh: "Elec",
+                    labelInputGas: "Input Energy (Gas)",
+                    labelUsefulPower: "Useful Power",
+                    labelTargetPower: "Target Power",
+                    labelWasteHeat: "Waste Heat",
+                    // --- Header/Nav (Full) ---
+                    "首页": "Home",
+                    "解决方案": "Solutions",
+                    "机型库": "Products",
+                    "排行榜": "Rankings",
+                    "应用场景": "Use Cases",
+                    "工具箱": "Tools",
+                    "资料中心": "Resources",
+                    "服务支持": "Support",
+                    "关于我们": "About Us",
+                    "联系我们": "Contact Us",
+                    "油气井/伴生气发电": "Oil & Gas Power",
+                    "工业园区与分布式能源": "Industrial Power",
+                    "数据中心 / 挖矿电力": "Data Center / Mining",
+                    "热电联供 CHP": "CHP Cogeneration",
+                    "按功率分类": "By Power",
+                    "按冷却方式": "By Cooling",
+                    "按气源类型": "By Gas Type",
+                    "按部署形式": "By Deployment",
+                    "按品牌": "By Brand",
+                    "小于 500 kW": "< 500 kW",
+                    "500 – 1,000 kW": "500 – 1,000 kW",
+                    "1 MW 以上": "1 MW+",
+                    "风冷": "Air Cooled",
+                    "液冷": "Liquid Cooled",
+                    "天然气": "Natural Gas",
+                    "伴生气": "Associated Gas",
+                    "低甲烷值气": "Low Methane Gas",
+                    "集装箱机组": "Containerized",
+                    "一体化机组 AIS": "Integrated (AIS)",
+                    "滑撬式机组": "Skid Mounted",
+                    "全部品牌": "All Brands",
+                    "中国生产": "Made in China",
+                    "海外生产": "Overseas Brands",
+                    "性能榜": "Performance",
+                    "经济性榜": "Economics",
+                    "可靠性榜": "Reliability",
+                    "品质与环保榜": "Quality & Eco",
+                    "系统能力榜": "System Cap.",
+                    "区域榜": "Regions",
+                    "综合性能 TOP 榜": "Top Performance",
+                    "高效率榜": "High Efficiency",
+                    "天然气内燃机发电效率排行榜": "Elec. Efficiency Rank",
+                    "天然气内燃机热效率排行榜": "Thermal Efficiency Rank",
+                    "天然气内燃机耗气量排行榜": "Gas Consumption Rank",
+                    "最佳 ROI 榜": "Best ROI",
+                    "最低发电成本 LCOE 榜": "Lowest LCOE",
+                    "天然气内燃机折旧排行榜": "Depreciation Rank",
+                    "天然气内燃机投资回报率排行榜": "ROI Rank",
+                    "高可靠机组榜": "High Reliability",
+                    "最长 MTBF 榜": "Longest MTBF",
+                    "天然气内燃机保养时间排行榜": "Maintenance Interval Rank",
+                    "天然气内燃机备件保障排行榜": "Spare Parts Rank",
+                    "天然气内燃机排放排行榜": "Emission Rank",
+                    "天然气内燃机噪音排行榜": "Noise Rank",
+                    "天然气内燃机发电机排行榜": "Generator Rank",
+                    "天然气内燃机控制系统排行榜": "Control System Rank",
+                    "美国市场榜": "USA Market",
+                    "加拿大市场榜": "Canada Market",
+                    "中东市场榜": "Middle East Market",
+                    "俄罗斯市场榜": "Russia Market",
+                    "油气井 / 伴生气": "Oilfield / Associated Gas",
+                    "工业与园区能源": "Industrial & Park",
+                    "挖矿 / 数据中心": "Mining / Data Center",
+                    "CHP 热电联供": "CHP",
+                    "经济测算工具": "Economic Tools",
+                    "工程与技术工具": "Engineering Tools",
+                    "项目与选型工具": "Selection Tools",
+                    "矿工专区（托管与算力分析）": "Miners Zone",
+                    "全球支持与合规": "Global Support",
+                    "LCOE 成本计算器": "LCOE Calculator",
+                    "ROI 回报估算器": "ROI Estimator",
+                    "燃气发电挖矿收益计算器": "Gas Mining Revenue",
+                    "蒙特卡洛模拟盈利分析": "Monte Carlo Sim",
+                    "天然气发电耗气成本分析": "Gas Cost Analysis",
+                    "气质适配工具": "Gas Fit Tool",
+                    "排放估算工具": "Emission Estimator",
+                    "气体分析计算器": "Gas Analyzer",
+                    "能电转换计算器": "Energy Conversion",
+                    "天然气主要成分热值表": "Heat Value Table",
+                    "站点匹配向导": "Site Fit Wizard",
+                    "气源所在地分析": "Location Analysis",
+                    "燃气发动机选型与运营经济性": "Engine Selection & Econ",
+                    "天然气发电机机油消耗率": "Oil Consumption",
+                    "车机 VS 工业机 10MW 对比分析": "Vehicle vs Ind. (10MW)",
+                    "多机型对比 3 年运营数据": "3-Year Ops Data",
+                    "挖矿收益计算器": "Mining Revenue Calc",
+                    "矿机盈利能力计算器": "Miner Profitability",
+                    "矿机选购速查": "Miner Buyer Guide",
+                    "加拿大 AECO 天然气价格预测": "AECO Price Forecast",
+                    "全球物流运输推荐": "Global Logistics",
+                    "全球合规政策": "Global Compliance",
+                    "文档": "Documents",
+                    "案例": "Case Studies",
+                    "技术库": "Tech Library",
+                    "媒体与支持": "Media & Support",
+                    "白皮书": "Whitepapers",
+                    "行业报告": "Industry Reports",
+                    "全部案例": "All Cases",
+                    "按区域查看": "By Region",
+                    "按场景查看": "By Scenario",
+                    "技术参数表": "Datasheets",
+                    "认证与合规文件": "Certifications",
+                    "视频与教程": "Videos & Tutorials",
+                    "常见问答 FAQ": "FAQ",
+                    "服务网络": "Service Network",
+                    "技术支持": "Tech Support",
+                    "售后与保养": "After-sales",
+                    "公司介绍": "Company Profile"
+                },
+                ru: {
+                    tagline: "Помощник по газовому майнингу",
+                    footerTagline: "Майнинг на газе проще",
+                    // --- Calculator Specific ---
+                    calcTitle: "Калькулятор Энергии",
+                    calcSubtitle: "Высокоэффективный Конвертер",
+                    calcMode: "Режим расчета",
+                    modeFwd: "Газ → Ток",
+                    modeRev: "Ток → Газ",
+                    labelGas: "Объем газа (Mcf)",
+                    labelPower: "Целевая мощность (кВт·ч)",
+                    hintGas: "Введите почасовой расход или итог",
+                    hintPower: "Желаемая выходная мощность",
+                    labelEff: "КПД Генератора",
+                    labelLow: "Низк (10%)",
+                    labelHigh: "Выс (65%)",
+                    labelAdv: "Доп: Теплотворность (BTU/cf)",
+                    labelHeat: "Теплотворность (1027 по умолч.)",
+                    formulaTitle: "Формула",
+                    resultTitle: "Оценка Выработки",
+                    resultTitleRev: "Потребность в Топливе",
+                    energyAnalysis: "Анализ Энергии",
+                    card1Title: "Ввод Тепла",
+                    card1TitleRev: "Треб. Ввод Тепла",
+                    card1Desc: "Полная хим. энергия",
+                    card1DescRev: "Требуемая энергия",
+                    card2Title: "Дома (экв.)",
+                    card2TitleRev: "Оценка Затрат",
+                    card2Desc: "Нагрузка 1.2 кВт",
+                    card2DescRev: "При $3.50/Mcf",
+                    disclaimer: "* Только оценка. Стандарт: 1027 BTU/cf. 1 кВт·ч = 3412.14 BTU.<br>Зависит от высоты, темп. и состава газа.",
+                    unitGas: "Газ",
+                    unitKwh: "Эл.",
+                    labelInputGas: "Ввод Энергии (Газ)",
+                    labelUsefulPower: "Полезная Мощн.",
+                    labelTargetPower: "Целевая Мощн.",
+                    labelWasteHeat: "Потери Тепла",
+                    // --- Header/Nav (Full) ---
+                    "首页": "Главная",
+                    "解决方案": "Решения",
+                    "机型库": "Продукты",
+                    "排行榜": "Рейтинги",
+                    "应用场景": "Кейсы",
+                    "工具箱": "Инструменты",
+                    "资料中心": "Ресурсы",
+                    "服务支持": "Поддержка",
+                    "关于我们": "О нас",
+                    "联系我们": "Контакты",
+                    "油气井/伴生气发电": "Нефтегаз",
+                    "工业园区与分布式能源": "Пром. энергия",
+                    "数据中心 / 挖矿电力": "Майнинг",
+                    "热电联供 CHP": "Когенерация",
+                    "按功率分类": "По мощности",
+                    "按冷却方式": "По охлаждению",
+                    "按气源类型": "По типу газа",
+                    "按部署形式": "По типу",
+                    "按品牌": "По бренду",
+                    "小于 500 kW": "< 500 кВт",
+                    "500 – 1,000 kW": "500 – 1,000 кВт",
+                    "1 MW 以上": "1 МВт+",
+                    "风冷": "Воздушное",
+                    "液冷": "Жидкостное",
+                    "天然气": "Природный газ",
+                    "伴生气": "Попутный газ",
+                    "低甲烷值气": "Низкий метан",
+                    "集装箱机组": "Контейнерные",
+                    "一体化机组 AIS": "Интегрированные",
+                    "滑撬式机组": "На раме",
+                    "全部品牌": "Все бренды",
+                    "中国生产": "Китай",
+                    "海外生产": "Зарубежные",
+                    "性能榜": "Производ.",
+                    "经济性榜": "Экономика",
+                    "可靠性榜": "Надежность",
+                    "品质与环保榜": "Качество",
+                    "系统能力榜": "Системы",
+                    "区域榜": "Регионы",
+                    "综合性能 TOP 榜": "Топ прозвод.",
+                    "高效率榜": "Выс. эффективность",
+                    "天然气内燃机发电效率排行榜": "Эл. КПД",
+                    "天然气内燃机热效率排行榜": "Тепл. КПД",
+                    "天然气内燃机耗气量排行榜": "Расход газа",
+                    "最佳 ROI 榜": "Лучший ROI",
+                    "最低发电成本 LCOE 榜": "Мин. LCOE",
+                    "天然气内燃机折旧排行榜": "Амортизация",
+                    "天然气内燃机投资回报率排行榜": "Рейтинг ROI",
+                    "高可靠机组榜": "Надежность",
+                    "最长 MTBF 榜": "Макс. MTBF",
+                    "天然气内燃机保养时间排行榜": "Интервал ТО",
+                    "天然气内燃机备件保障排行榜": "Запчасти",
+                    "天然气内燃机排放排行榜": "Выбросы",
+                    "天然气内燃机噪音排行榜": "Шум",
+                    "天然气内燃机发电机排行榜": "Генераторы",
+                    "天然气内燃机控制系统排行榜": "Системы упр.",
+                    "美国市场榜": "Рынок США",
+                    "加拿大市场榜": "Рынок Канады",
+                    "中东市场榜": "Ближний Восток",
+                    "俄罗斯市场榜": "Рынок РФ",
+                    "油气井 / 伴生气": "Нефтегаз",
+                    "工业与园区能源": "Пром. зоны",
+                    "挖矿 / 数据中心": "Майнинг ЦОД",
+                    "CHP 热电联供": "ТЭЦ",
+                    "经济测算工具": "Экономика",
+                    "工程与技术工具": "Инжиниринг",
+                    "项目与选型工具": "Подбор",
+                    "矿工专区（托管与算力分析）": "Майнерам",
+                    "全球支持与合规": "Поддержка",
+                    "LCOE 成本计算器": "LCOE Кальк.",
+                    "ROI 回报估算器": "ROI Оценка",
+                    "燃气发电挖矿收益计算器": "Доход майнинга",
+                    "蒙特卡洛模拟盈利分析": "Монте-Карло",
+                    "天然气发电耗气成本分析": "Затраты на газ",
+                    "气质适配工具": "Анализ газа",
+                    "排放估算工具": "Выбросы",
+                    "气体分析计算器": "Газовый анализ",
+                    "能电转换计算器": "Конвертер",
+                    "天然气主要成分热值表": "Таблица тепла",
+                    "站点匹配向导": "Подбор площадки",
+                    "气源所在地分析": "Локация",
+                    "燃气发动机选型与运营经济性": "Выбор двигателя",
+                    "天然气发电机机油消耗率": "Расход масла",
+                    "车机 VS 工业机 10MW 对比分析": "Авто vs Пром",
+                    "多机型对比 3 年运营数据": "Данные за 3 года",
+                    "挖矿收益计算器": "Доходность",
+                    "矿机盈利能力计算器": "Рентабельность",
+                    "矿机选购速查": "Выбор майнера",
+                    "加拿大 AECO 天然气价格预测": "Прогноз AECO",
+                    "全球物流运输推荐": "Логистика",
+                    "全球合规政策": "Комплаенс",
+                    "文档": "Документы",
+                    "案例": "Кейсы",
+                    "技术库": "Тех. база",
+                    "媒体与支持": "Медиа",
+                    "白皮书": "Whitepapers",
+                    "行业报告": "Отчеты",
+                    "全部案例": "Все кейсы",
+                    "按区域查看": "По регионам",
+                    "按场景查看": "По сценариям",
+                    "技术参数表": "Спецификации",
+                    "认证与合规文件": "Сертификаты",
+                    "视频与教程": "Видео",
+                    "常见问答 FAQ": "FAQ",
+                    "服务网络": "Сервис",
+                    "技术支持": "Техподдержка",
+                    "售后与保养": "Обслуживание",
+                    "公司介绍": "О компании"
+                }
+            }
+        };
+
+        // Calculator Logic Namespace
+        const calcApp = {
+            state: {
+                mode: 'forward',
+                inputValue: 10,
+                efficiency: 35,
+                heatValue: 1027
+            },
+            
+            BTU_TO_KWH: 3412.14,
+            
+            fmt(num, decimals = 2) {
+                return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+            },
+
+            setMode(newMode) {
+                this.state.mode = newMode;
+                const btnForward = document.getElementById('mode-forward-btn');
+                const btnReverse = document.getElementById('mode-reverse-btn');
+                const activeClass = "text-white bg-neutral-800 shadow-sm border border-neutral-700";
+                const inactiveClass = "text-neutral-400 hover:text-white border-transparent";
+
+                if (newMode === 'forward') {
+                    btnForward.className = btnForward.className.replace(inactiveClass, "") + " " + activeClass;
+                    btnReverse.className = "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 " + inactiveClass;
+                    if(this.state.inputValue > 10000) this.state.inputValue = 10;
+                } else {
+                    btnReverse.className = btnReverse.className.replace(inactiveClass, "") + " " + activeClass;
+                    btnForward.className = "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 " + inactiveClass;
+                }
+                
+                document.getElementById('main-input').value = this.state.inputValue;
+                this.updateUIText(); // Update labels based on mode + lang
+                this.calculate();
+            },
+
+            updateEfficiencyDisplay() {
+                this.state.efficiency = parseFloat(document.getElementById('efficiency-slider').value);
+                document.getElementById('efficiency-display').innerText = this.state.efficiency + '%';
+            },
+
+            updateUIText() {
+                // Determine text based on Mode AND Current Language
+                const t = (k) => app.t(k); // Use global app translator
+                
+                const label = document.getElementById('input-label');
+                const unit = document.getElementById('input-unit');
+                const hint = document.getElementById('input-hint');
+                const formula = document.getElementById('formula-text');
+                const resultTitle = document.getElementById('result-title');
+                const secondaryBadge = document.getElementById('secondary-unit-badge');
+
+                // Dynamic SVG icons
+                const iconPower = `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2 text-gas-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3.19M15 6h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-3.19"/><line x1="23" y1="13" x2="23" y2="11"/><polyline points="11 6 7 12 13 12 9 18"/></svg>`;
+                const iconGas = `<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2 text-gas-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`;
+
+                if (this.state.mode === 'forward') {
+                    label.innerText = t('labelGas');
+                    unit.innerText = "Mcf";
+                    hint.innerText = t('hintGas');
+                    formula.innerText = "Power = (Mcf × 1000 × BTU/cf) ÷ 3412.14 × η";
+                    resultTitle.innerHTML = iconPower + t('resultTitle');
+                    secondaryBadge.innerText = "MWh";
+                } else {
+                    label.innerText = t('labelPower');
+                    unit.innerText = "kWh";
+                    hint.innerText = t('hintPower');
+                    formula.innerText = "Mcf = (kWh × 3412.14) ÷ (η × 1000 × BTU/cf)";
+                    resultTitle.innerHTML = iconGas + t('resultTitleRev');
+                    secondaryBadge.innerText = "cf";
+                }
+            },
+
+            calculate() {
+                const t = (k) => app.t(k);
+                
+                // Get Inputs
+                this.state.inputValue = parseFloat(document.getElementById('main-input').value) || 0;
+                this.state.heatValue = parseFloat(document.getElementById('heat-value-input').value) || 1027;
+                this.state.efficiency = parseFloat(document.getElementById('efficiency-slider').value);
+
+                // Elements
+                const mainResult = document.getElementById('main-result');
+                const mainUnit = document.getElementById('main-unit');
+                const secResult = document.getElementById('secondary-result');
+                const card1Val = document.getElementById('card-1-value');
+                const card1Unit = document.getElementById('card-1-unit');
+                const card1Title = document.getElementById('card-1-title');
+                const card1Desc = document.getElementById('card-1-desc');
+                const card2Val = document.getElementById('card-2-value');
+                const card2Title = document.getElementById('card-2-title');
+                const card2Desc = document.getElementById('card-2-desc');
+                
+                let totalBtu = 0;
+                let finalOutput = 0;
+                let inputEnergyKwhEq = 0;
+
+                if (this.state.mode === 'forward') {
+                    totalBtu = this.state.inputValue * 1000 * this.state.heatValue;
+                    inputEnergyKwhEq = totalBtu / this.BTU_TO_KWH;
+                    finalOutput = inputEnergyKwhEq * (this.state.efficiency / 100);
+                    
+                    mainResult.innerText = this.fmt(finalOutput, 1);
+                    mainUnit.innerText = "kWh";
+                    secResult.innerText = this.fmt(finalOutput / 1000, 3);
+                    
+                    card1Title.innerText = t('card1Title');
+                    card1Val.innerText = this.fmt(totalBtu / 1000000, 2);
+                    card1Unit.innerText = "MMBtu";
+                    card1Desc.innerText = t('card1Desc');
+
+                    card2Title.innerText = t('card2Title');
+                    card2Val.innerText = Math.floor(finalOutput / 1.2);
+                    card2Desc.innerText = t('card2Desc');
+
+                    this.renderBars(inputEnergyKwhEq, finalOutput, this.state.efficiency, "kWh", t('labelUsefulPower'));
+
+                } else {
+                    const targetKwh = this.state.inputValue;
+                    inputEnergyKwhEq = targetKwh / (this.state.efficiency / 100);
+                    totalBtu = inputEnergyKwhEq * this.BTU_TO_KWH;
+                    finalOutput = totalBtu / (this.state.heatValue * 1000);
+                    
+                    mainResult.innerText = this.fmt(finalOutput, 2);
+                    mainUnit.innerText = "Mcf";
+                    secResult.innerText = this.fmt(finalOutput * 1000, 0);
+                    
+                    card1Title.innerText = t('card1TitleRev');
+                    card1Val.innerText = this.fmt(totalBtu / 1000000, 2);
+                    card1Unit.innerText = "MMBtu";
+                    card1Desc.innerText = t('card1DescRev');
+
+                    card2Title.innerText = t('card2TitleRev');
+                    card2Val.innerText = "$" + this.fmt(finalOutput * 3.5, 2);
+                    card2Desc.innerText = t('card2DescRev');
+
+                    this.renderBars(inputEnergyKwhEq, targetKwh, this.state.efficiency, "kWh", t('labelTargetPower'));
+                }
+            },
+
+            renderBars(totalInput, usefulOutput, efficiency, unit, typeLabel) {
+                const container = document.getElementById('energy-bars');
+                const lossPercent = 100 - efficiency;
+                const t = (k) => app.t(k);
+                
+                container.innerHTML = `
+                    <div class="relative mb-6">
+                        <div class="flex mb-2 items-center justify-between text-xs">
+                            <span class="text-neutral-300 font-medium">${t('labelInputGas')}</span>
+                            <span class="text-neutral-500 font-mono">${this.fmt(totalInput, 0)} kWh eq.</span>
+                        </div>
+                        <div class="h-2 rounded-full bg-neutral-800 overflow-hidden">
+                            <div class="h-full bg-blue-500 w-full rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center -my-3 opacity-30 mb-3">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="rotate-90 md:rotate-0 w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </div>
+
+                    <div class="relative">
+                        <div class="flex mb-2 items-center justify-between text-xs">
+                            <div class="flex space-x-4 w-full">
+                                <span class="text-gas-green font-medium flex items-center">
+                                    <span class="w-2 h-2 rounded-full bg-gas-green mr-2"></span>
+                                    ${typeLabel} (${efficiency}%)
+                                </span>
+                                <span class="text-red-400 font-medium flex items-center ml-auto">
+                                    <span class="w-2 h-2 rounded-full bg-red-500 mr-2"></span>
+                                    ${t('labelWasteHeat')} (${lossPercent}%)
+                                </span>
+                            </div>
+                        </div>
+                        <div class="h-4 rounded-full bg-neutral-800 overflow-hidden flex">
+                            <div style="width: ${efficiency}%" class="h-full bg-gas-green shadow-[0_0_15px_rgba(93,214,44,0.4)] relative z-10 transition-all duration-500 ease-out"></div>
+                            <div style="width: ${lossPercent}%" class="h-full bg-red-900/50 border-l border-neutral-900/50 transition-all duration-500 ease-out flex items-center justify-center relative">
+                                <div class="absolute inset-0 w-full h-full opacity-20" style="background-image: radial-gradient(#ef4444 1px, transparent 1px); background-size: 4px 4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        };
+
+        const app = {
+            currentLang: 'zh', // Default to ZH as original tool was ZH
+            isMobileMenuOpen: false,
+
+            init() {
+                this.renderNav();
+                this.renderFooter();
+                this.updateStaticText();
+                
+                // Init Calculator
+                calcApp.calculate();
+                
+                window.onscroll = () => {
+                    const btn = document.getElementById('backToTopBtn');
+                    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                        btn.classList.remove('translate-y-20', 'opacity-0');
+                    } else {
+                        btn.classList.add('translate-y-20', 'opacity-0');
+                    }
+                };
+            },
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                ['zh', 'en', 'ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+                    
+                    const activeClass = "text-black bg-gas-green shadow-glow font-bold";
+                    const inactiveClass = "text-gas-subtext hover:text-white hover:bg-white/5 font-medium";
+                    const mobActiveClass = "text-black bg-gas-green font-bold";
+                    const mobInactiveClass = "text-gray-400 font-medium";
+
+                    if (btn) btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center ${l === lang ? activeClass : inactiveClass}`;
+                    if (mobBtn) mobBtn.className = `px-4 py-2 rounded-full text-xs transition-all ${l === lang ? mobActiveClass : mobInactiveClass}`;
+                });
+
+                this.renderNav();
+                this.renderMobileNav();
+                this.renderFooter();
+                this.updateStaticText();
+                
+                // Update Calculator UI immediately
+                calcApp.updateUIText();
+                calcApp.calculate();
+            },
+
+            t(key) {
+                const dict = AppData.i18n[this.currentLang];
+                return (dict && dict[key]) ? dict[key] : key;
+            },
+
+            updateStaticText() {
+                const taglineEl = document.getElementById('header-tagline');
+                const footerTaglineEl = document.querySelector('[data-i18n="footerTagline"]');
+                
+                if(taglineEl) taglineEl.innerText = this.t('tagline');
+                if(footerTaglineEl) footerTaglineEl.innerHTML = this.t('footerTagline');
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (key !== 'tagline' && key !== 'footerTagline') { 
+                        el.innerHTML = this.t(key);
+                    }
+                });
+            },
+
+            toggleMobileMenu() {
+                this.isMobileMenuOpen = !this.isMobileMenuOpen;
+                const menu = document.getElementById('mobile-menu-container');
+                const btnIcon = document.querySelector('#mobile-menu-btn i');
+                
+                if (this.isMobileMenuOpen) {
+                    menu.classList.remove('translate-x-full');
+                    btnIcon.classList.remove('fa-bars');
+                    btnIcon.classList.add('fa-xmark');
+                    document.body.style.overflow = 'hidden';
+                    this.renderMobileNav();
+                } else {
+                    menu.classList.add('translate-x-full');
+                    btnIcon.classList.remove('fa-xmark');
+                    btnIcon.classList.add('fa-bars');
+                    document.body.style.overflow = '';
+                }
+            },
+
+            toggleMobileSubmenu(id) {
+                const el = document.getElementById(id);
+                const icon = document.getElementById(`icon-${id}`);
+                if (el.style.maxHeight) {
+                    el.style.maxHeight = null;
+                    icon.classList.remove('rotate-180');
+                } else {
+                    el.style.maxHeight = el.scrollHeight + "px";
+                    icon.classList.add('rotate-180');
+                }
+            },
+
+            toggleFooter(id) {
+                const el = document.getElementById(id);
+                const icon = document.getElementById(`footer-icon-${id}`);
+                if (el.style.maxHeight) {
+                    el.style.maxHeight = null;
+                    icon.classList.remove('fa-minus');
+                    icon.classList.add('fa-plus');
+                    icon.classList.remove('text-gas-green');
+                } else {
+                    el.style.maxHeight = el.scrollHeight + "px";
+                    icon.classList.remove('fa-plus');
+                    icon.classList.add('fa-minus');
+                    icon.classList.add('text-gas-green');
+                }
+            },
+
+            renderNav() {
+                const navContainer = document.getElementById('desktop-nav');
+                navContainer.innerHTML = '';
+                const totalItems = AppData.navigation.length;
+
+                AppData.navigation.forEach((item, index) => {
+                    if (item.type === 'link') {
+                        navContainer.innerHTML += `
+                            <a href="${item.path}" target="_blank" class="nav-item-link font-medium text-sm">
+                                <span>${this.t(item.title)}</span>
+                            </a>
+                        `;
+                    }
+                    else if (item.type === 'menu' || item.type === 'mega') {
+                        let dropContent = '';
+                        let isMega = item.type === 'mega';
+                        
+                        // Positioning Fix: Align Right for last 3 items to avoid overflow
+                        const isRightAligned = index >= totalItems - 3;
+                        const posClass = isRightAligned ? 'right-0' : 'left-0';
+                        
+                        if (isMega) {
+                            const gridClass = item.gridCols || 'grid-cols-5';
+                            const sectionsHtml = item.sections.map((section, idx) => {
+                                const isLast = idx === item.sections.length - 1;
+                                const borderClass = isLast ? '' : 'border-r border-white/5';
+                                const itemsHtml = section.items.map(subItem => `
+                                    <li class="mb-2">
+                                        <a href="${subItem.path}" target="_blank" class="text-gray-400 hover:text-gas-green text-xs flex items-center gap-2 transition-colors">
+                                            <i class="fa-solid fa-angle-right text-[10px] opacity-50"></i>
+                                            ${this.t(subItem.title)}
+                                        </a>
+                                    </li>
+                                `).join('');
+                                return `<div class="col-span-1 space-y-4 ${borderClass} px-2">
+                                            <h3 class="text-gas-green font-bold text-sm uppercase tracking-wider mb-3 border-b border-white/5 pb-2">${this.t(section.header)}</h3>
+                                            <ul>${itemsHtml}</ul>
+                                        </div>`;
+                            }).join('');
+                            // Mega Menu requires STATIC parent to align full width to header
+                            dropContent = `<div class="mega-menu"><div class="max-w-[1800px] mx-auto px-4 grid ${gridClass} gap-6">${sectionsHtml}</div></div>`;
+                        } else {
+                            const childrenHtml = item.children.map(child => `
+                                <a href="${child.path}" target="_blank" class="block px-4 py-2 text-sm text-gray-400 hover:text-gas-green hover:bg-white/5 whitespace-nowrap">${this.t(child.title)}</a>
+                            `).join('');
+                            dropContent = `<div class="dropdown-menu ${posClass}">${childrenHtml}</div>`;
+                        }
+
+                        // Determine position class for parent
+                        // Mega Menu needs STATIC parent so it aligns to Header
+                        // Dropdown needs RELATIVE parent
+                        const parentPos = isMega ? '' : 'relative';
+
+                        navContainer.innerHTML += `
+                            <div class="group h-full flex items-center cursor-pointer ${parentPos}">
+                                <span class="nav-item-link font-medium text-sm">
+                                    <span>${this.t(item.title)}</span> <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
+                                </span>
+                                ${dropContent}
+                            </div>
+                        `;
+                    }
+                });
+            },
+
+            renderMobileNav() {
+                const container = document.getElementById('mobile-nav-content');
+                container.innerHTML = '';
+                
+                AppData.navigation.forEach((item, index) => {
+                    if (item.type === 'link') {
+                        container.innerHTML += `
+                            <a href="${item.path}" target="_blank" class="block py-4 border-b border-white/10 text-lg font-medium hover:text-gas-green">
+                                ${this.t(item.title)}
+                            </a>
+                        `;
+                    } else {
+                        const subId = `mob-sub-${index}`;
+                        let subItemsHtml = '';
+                        
+                        if (item.type === 'menu') {
+                            subItemsHtml = item.children.map(child => `
+                                <a href="${child.path}" target="_blank" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">
+                                    ${this.t(child.title)}
+                                </a>
+                            `).join('');
+                        } else if (item.type === 'mega') {
+                            subItemsHtml = item.sections.map(sec => `
+                                <div class="py-2">
+                                    <h4 class="text-gas-green text-xs font-bold uppercase mb-2 pl-4">${this.t(sec.header)}</h4>
+                                    ${sec.items.map(sub => `
+                                        <a href="${sub.path}" target="_blank" class="block py-2 pl-6 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">
+                                            ${this.t(sub.title)}
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            `).join('');
+                        }
+
+                        container.innerHTML += `
+                            <div class="border-b border-white/10">
+                                <button onclick="app.toggleMobileSubmenu('${subId}')" class="w-full py-4 flex justify-between items-center text-lg font-medium hover:text-gas-green focus:outline-none">
+                                    <span>${this.t(item.title)}</span>
+                                    <i id="icon-${subId}" class="fa-solid fa-chevron-down text-sm transition-transform duration-300"></i>
+                                </button>
+                                <div id="${subId}" class="mobile-submenu">
+                                    <div class="pb-4 space-y-1">
+                                        ${subItemsHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            },
+
+            renderFooter() {
+                const footerContainer = document.getElementById('footer-links');
+                footerContainer.innerHTML = '';
+
+                AppData.navigation.forEach((item, idx) => {
+                    if (item.title === '首页') return;
+
+                    let contentHtml = '';
+                    let desktopContentHtml = '';
+                    const footerSubId = `footer-sub-${idx}`;
+
+                    // --- 1. Content Generation ---
+                    
+                    if (item.type === 'menu') {
+                        // Desktop & Mobile Link List
+                        const links = item.children.map(child => `
+                            <a href="${child.path}" target="_blank" class="footer-link hover:text-gas-green text-gray-400 mr-4 mb-2 inline-block">
+                                ${this.t(child.title)}
+                            </a>
+                        `).join('');
+                        contentHtml = `<div class="flex flex-wrap">${links}</div>`;
+                    } 
+                    else if (item.type === 'mega') {
+                        // For Mega: We format nicely for Desktop Row
+                        // Format: [Header]: Link Link | [Header]: Link Link
+                        const desktopSections = item.sections.map(section => {
+                            const secTitle = this.t(section.header);
+                            const secLinks = section.items.map(sub => `
+                                <a href="${sub.path}" target="_blank" class="hover:text-gas-green text-gray-400 ml-2 text-xs">
+                                    ${this.t(sub.title)}
+                                </a>
+                            `).join('<span class="text-gray-700 mx-1">|</span>');
+                            
+                            return `
+                                <div class="flex items-baseline mr-6 mb-2">
+                                    <span class="text-gas-green text-xs font-bold uppercase mr-1 whitespace-nowrap">${secTitle}:</span>
+                                    <div class="flex flex-wrap">${secLinks}</div>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        // Simple list for mobile accordion
+                        const mobileLinks = item.sections.map(sec => 
+                            sec.items.map(sub => 
+                                `<a href="${sub.path}" target="_blank" class="footer-link block pl-2 border-l border-white/10 hover:border-gas-green mb-1">${this.t(sub.title)}</a>`
+                            ).join('')
+                        ).join('');
+
+                        contentHtml = `<div class="flex flex-col">${mobileLinks}</div>`; // Mobile content
+                        desktopContentHtml = `<div class="flex flex-wrap items-center">${desktopSections}</div>`; // Desktop content
+                    }
+
+                    // --- 2. HTML Structure ---
+
+                    // Use desktopContentHtml if available (for Mega), otherwise use generic contentHtml
+                    const finalDesktopHtml = desktopContentHtml || contentHtml;
+
+                    footerContainer.innerHTML += `
+                        <div class="w-full border-b border-white/5 last:border-0">
+                            <!-- Desktop View: Horizontal Row Layout -->
+                            <div class="hidden md:flex py-4 items-start">
+                                <div class="w-32 lg:w-48 shrink-0">
+                                    <h4 class="text-white font-bold text-sm border-l-2 border-gas-green pl-3">
+                                        ${this.t(item.title)}
+                                    </h4>
+                                </div>
+                                <div class="flex-1">
+                                    ${finalDesktopHtml}
+                                </div>
+                            </div>
+
+                            <!-- Mobile View: Accordion -->
+                            <div class="md:hidden">
+                                <button onclick="app.toggleFooter('${footerSubId}')" class="w-full flex justify-between items-center py-3 text-sm font-bold text-white focus:outline-none">
+                                    <span class="border-l-2 border-gas-green pl-3">${this.t(item.title)}</span>
+                                    <i id="footer-icon-${footerSubId}" class="fa-solid fa-plus text-xs text-gray-500 transition-transform duration-300"></i>
+                                </button>
+                                <div id="${footerSubId}" class="footer-accordion-content">
+                                    <div class="pt-2 pl-4 pb-4 text-gray-400">
+                                        ${contentHtml} 
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            },
+
+            captureAndShare() {
+                window.scrollTo(0, 0);
+                const watermark = document.createElement('div');
+                watermark.id = 'temp-watermark';
+                Object.assign(watermark.style, {
+                    position: 'absolute', top: 0, left: 0, width: '100%', height: document.body.scrollHeight + 'px',
+                    zIndex: 9999, pointerEvents: 'none', display: 'flex', flexWrap: 'wrap', 
+                    alignContent: 'space-around', justifyContent: 'space-around', overflow: 'hidden', opacity: '0.15'
+                });
+                const textHtml = `<div style="text-align:center; transform: rotate(-30deg); margin: 100px;">
+                                    <div style="font-size: 24px; font-weight: bold; color: #5DD62C;">GasGx Calculator</div>
+                                    <div style="font-size: 16px; color: #fff;">${new Date().toLocaleDateString()}</div>
+                                  </div>`;
+                watermark.innerHTML = textHtml.repeat(Math.ceil(document.body.scrollHeight / 400) * 3);
+                document.body.appendChild(watermark);
+
+                setTimeout(() => {
+                    html2canvas(document.body, {
+                        backgroundColor: '#0F0F0F',
+                        scrollY: 0,
+                        useCORS: true,
+                        scale: 1.5,
+                        ignoreElements: (element) => element.classList.contains('float-btn') 
+                    }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = 'GasGx-Calculator-Snapshot.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        document.body.removeChild(watermark);
+                        const modal = document.getElementById('shareModal');
+                        modal.classList.remove('hidden');
+                        setTimeout(() => modal.querySelector('div').classList.remove('scale-95', 'opacity-0'), 10);
+                    }).catch(err => {
+                        console.error(err);
+                        if(document.getElementById('temp-watermark')) document.body.removeChild(watermark);
+                    });
+                }, 500);
+            },
+
+            closeModal() {
+                const modal = document.getElementById('shareModal');
+                const content = modal.querySelector('div');
+                content.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+        };
+
+        // Start
+        app.init();
+    </script>
+</body>
+</html>

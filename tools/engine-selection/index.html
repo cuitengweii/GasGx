@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx - Natural Gas Power Mining</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome 6.5.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- html2canvas for Screenshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        },
+                        // Aliases for React Component Compatibility
+                        gasBlack: '#0F0F0F',
+                        gasCard: '#202020',
+                        gasGreen: '#5DD62C',
+                        gasGreenDeep: '#337418',
+                        gasText: '#F8F8F8',
+                        gasSubText: '#94a3b8',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'inner-input': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.6)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* 卡片磨砂效果 */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Mega Menu 动画 */
+        .mega-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: #151515;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .mega-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        /* Dropdown Menu 动画 */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            min-width: 220px;
+            background-color: #151515;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0 0 8px 8px;
+            padding: 0.5rem 0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .dropdown-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-item-link:hover { color: #5DD62C; }
+        
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after { width: 100%; }
+
+        /* Footer Link Hover */
+        .footer-link {
+            color: #94a3b8;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .footer-link:hover {
+            color: #5DD62C;
+        }
+
+        /* Mobile Menu Styles */
+        #mobile-menu-container {
+            transition: transform 0.3s ease-in-out;
+        }
+        .mobile-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        /* Footer Accordion (Mobile) */
+        .footer-accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        /* Floating Share Button Animation */
+        @keyframes floatPulse {
+            0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); }
+        }
+        .float-btn {
+            animation: floatPulse 2s infinite;
+        }
+
+        /* React Specific Utilities */
+        .input-glow:focus {
+            box-shadow: 0 0 0 1px #5DD62C, 0 0 15px rgba(93, 214, 44, 0.2);
+            border-color: #5DD62C;
+        }
+        .glass-card-react {
+            background-color: rgba(32, 32, 32, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 gas-card h-16 transition-all duration-300">
+        <div class="max-w-[1800px] mx-auto px-4 h-full flex justify-between items-center relative">
+            
+            <!-- Left: Logo + Tagline -->
+            <div class="flex items-center gap-3 w-auto shrink-0 mr-4">
+                <a href="/index.html" target="_blank" class="flex items-center gap-2 group">
+                    <h1 class="text-2xl font-bold tracking-wider text-gas-green hover:text-white transition-colors cursor-pointer">GasGx</h1>
+                </a>
+                
+                <!-- Tagline: Header (Desktop) -->
+                <div class="hidden md:flex flex-col justify-center border-l border-gray-700 pl-3 h-8">
+                    <span id="header-tagline" class="text-gas-green text-xs font-bold tracking-wide">Natural Gas Power Mining Assistant</span>
+                </div>
+            </div>
+
+            <!-- Center: Desktop Navigation -->
+            <nav id="desktop-nav" class="hidden lg:flex items-center justify-center gap-2 xl:gap-6 h-full flex-1">
+                <!-- JS Generated -->
+            </nav>
+
+            <!-- Right: Language & Mobile Toggle -->
+            <div class="flex items-center gap-4 w-auto shrink-0 justify-end ml-4">
+                <!-- Language Switcher (Desktop) -->
+                <div class="hidden sm:flex items-center gap-1 bg-[#111] border border-white/10 rounded-full px-1 py-1">
+                    <button onclick="app.setLanguage('zh')" id="btn-lang-zh" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">CN</button>
+                    <button onclick="app.setLanguage('en')" id="btn-lang-en" class="px-2 py-1 rounded-full text-[10px] font-bold transition-all w-8 text-center text-black bg-gas-green shadow-glow">EN</button>
+                    <button onclick="app.setLanguage('ru')" id="btn-lang-ru" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">RU</button>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" onclick="app.toggleMobileMenu()" class="lg:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation Overlay -->
+    <div id="mobile-menu-container" class="fixed inset-0 z-40 bg-[#111] transform translate-x-full pt-20 px-4 pb-8 overflow-y-auto lg:hidden">
+        <!-- Mobile Lang Switcher -->
+        <div class="flex justify-center gap-4 mb-6 border-b border-white/10 pb-4">
+            <div class="flex items-center gap-2 bg-[#222] border border-white/10 rounded-full px-1 py-1">
+                <button onclick="app.setLanguage('zh')" id="mob-btn-lang-zh" class="px-4 py-2 rounded-full text-xs font-bold transition-all text-gray-400">CN</button>
+                <button onclick="app.setLanguage('en')" id="mob-btn-lang-en" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-black bg-gas-green">EN</button>
+                <button onclick="app.setLanguage('ru')" id="mob-btn-lang-ru" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-gray-400">RU</button>
+            </div>
+        </div>
+        
+        <nav id="mobile-nav-content" class="flex flex-col space-y-1">
+            <!-- JS Generated Mobile Nav -->
+        </nav>
+    </div>
+
+    <!-- Main Content Area with React App -->
+    <main class="flex-grow pt-24 pb-12 px-4 w-full">
+        <!-- React Root -->
+        <div id="root" class="w-full max-w-[1800px] mx-auto"></div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#0a0a0a] border-t border-white/10 mt-auto pt-10 pb-8 relative z-10">
+        <div class="max-w-[1800px] mx-auto px-6">
+            
+            <!-- Footer Top Row: Brand & Contact -->
+            <div class="flex flex-col md:flex-row justify-between items-start mb-8 pb-6 border-b border-white/5">
+                <!-- Left: Logo & Tagline -->
+                <div class="mb-6 md:mb-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-2xl font-bold text-gas-green">GasGx</span>
+                    </div>
+                    <p class="text-sm text-gray-400 font-medium" data-i18n="footerTagline">Making natural gas power mining easier</p>
+                </div>
+
+                <!-- Right: Contact Info -->
+                <div class="flex flex-col md:items-end space-y-2">
+                    <h4 class="text-white font-bold text-sm uppercase tracking-wider mb-1" data-i18n="联系我们">Contact Us</h4>
+                    <a href="mailto:contact@gasgx.com" class="text-sm text-gray-400 hover:text-gas-green flex items-center gap-2 transition-colors">
+                        <i class="fa-solid fa-envelope"></i> contact@gasgx.com
+                    </a>
+                    <div class="text-sm text-gray-400 flex items-center gap-2">
+                        <i class="fa-brands fa-weixin"></i> <span class="hover:text-gas-green cursor-pointer">www_gasgx_com</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Links: Row Layout (Desktop) / Accordion (Mobile) -->
+            <div id="footer-links" class="mb-10 space-y-2">
+                <!-- JS Generated -->
+            </div>
+
+            <!-- Bottom: Copyright & Social -->
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-white/5">
+                <div class="text-xs text-gray-600">
+                    © 2026 GasGx. All rights reserved.
+                </div>
+
+                <div class="flex gap-4">
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-tiktok text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-linkedin text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-facebook text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-weixin text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-x-twitter text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-youtube text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-telegram text-lg"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Floating Canvas-Style Share Button (Right Side) -->
+    <button onclick="app.captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group" title="Share Snapshot">
+        <i class="fa-solid fa-camera text-xl"></i>
+        <!-- Tooltip -->
+        <span class="absolute right-14 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
+            Share Page
+        </span>
+    </button>
+
+    <!-- Back to Top -->
+    <button onclick="window.scrollTo({top:0, behavior:'smooth'})" id="backToTopBtn" class="fixed bottom-6 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-[0_0_15px_rgba(93,214,44,0.5)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-95 opacity-0" id="shareModalContent">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-check text-2xl text-gas-green"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3>
+                <p class="text-sm text-gray-400">Full page captured successfully.</p>
+            </div>
+            <button onclick="app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+        </div>
+    </div>
+
+    <!-- Application Logic (Header/Footer/Nav) -->
+    <script>
+        const AppData = {
+            navigation: [
+                { title: "首页", path: "/index.html", type: "link", icon: "fa-solid fa-house" },
+                {
+                    title: "解决方案",
+                    path: "/solutions",
+                    type: "menu",
+                    children: [
+                        { title: "油气井/伴生气发电", path: "/solutions/oilfield" },
+                        { title: "工业园区与分布式能源", path: "/solutions/industrial" },
+                        { title: "数据中心 / 挖矿电力", path: "/solutions/mining" },
+                        { title: "热电联供 CHP", path: "/solutions/chp" }
+                    ]
+                },
+                {
+                    title: "机型库",
+                    path: "/products",
+                    type: "mega",
+                    sections: [
+                        {
+                            header: "按功率分类",
+                            items: [
+                                { title: "小于 500 kW", path: "/products/power-range/0-500kw" },
+                                { title: "500 – 1,000 kW", path: "/products/power-range/500-1000kw" },
+                                { title: "1 MW 以上", path: "/products/power-range/1mw-plus" }
+                            ]
+                        },
+                        {
+                            header: "按冷却方式",
+                            items: [
+                                { title: "风冷", path: "/products/cooling/air" },
+                                { title: "液冷", path: "/products/cooling/liquid" }
+                            ]
+                        },
+                        {
+                            header: "按气源类型",
+                            items: [
+                                { title: "天然气", path: "/products/gas/natural" },
+                                { title: "伴生气", path: "/products/gas/associated" },
+                                { title: "低甲烷值气", path: "/products/gas/low-methane" }
+                            ]
+                        },
+                        {
+                            header: "按部署形式",
+                            items: [
+                                { title: "集装箱机组", path: "/products/deployment/container" },
+                                { title: "一体化机组 AIS", path: "/products/deployment/ais" },
+                                { title: "滑撬式机组", path: "/products/deployment/skid" }
+                            ]
+                        },
+                        {
+                            header: "按品牌",
+                            items: [
+                                { title: "全部品牌", path: "/products/brands" },
+                                { title: "中国生产", path: "/products/brands/china" },
+                                { title: "海外生产", path: "/products/brands/overseas" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "排行榜",
+                    path: "/rankings",
+                    type: "mega",
+                    gridCols: "grid-cols-6",
+                    sections: [
+                        {
+                            header: "性能榜",
+                            items: [
+                                { title: "综合性能 TOP 榜", path: "/rankings/performance" },
+                                { title: "高效率榜", path: "/rankings/efficiency" },
+                                { title: "天然气内燃机发电效率排行榜", path: "/rankings/engine-efficiency" },
+                                { title: "天然气内燃机热效率排行榜", path: "/rankings/thermal-efficiency" },
+                                { title: "天然气内燃机耗气量排行榜", path: "/rankings/gas-consumption" }
+                            ]
+                        },
+                        {
+                            header: "经济性榜",
+                            items: [
+                                { title: "最佳 ROI 榜", path: "/rankings/roi" },
+                                { title: "最低发电成本 LCOE 榜", path: "/rankings/lcoe" },
+                                { title: "天然气内燃机折旧排行榜", path: "/rankings/depreciation" },
+                                { title: "天然气内燃机投资回报率排行榜", path: "/rankings/engine-roi" }
+                            ]
+                        },
+                        {
+                            header: "可靠性榜",
+                            items: [
+                                { title: "高可靠机组榜", path: "/rankings/reliability" },
+                                { title: "最长 MTBF 榜", path: "/rankings/mtbf" },
+                                { title: "天然气内燃机保养时间排行榜", path: "/rankings/maintenance-interval" },
+                                { title: "天然气内燃机备件保障排行榜", path: "/rankings/spare-parts" }
+                            ]
+                        },
+                        {
+                            header: "品质与环保榜",
+                            items: [
+                                { title: "天然气内燃机排放排行榜", path: "/rankings/emissions" },
+                                { title: "天然气内燃机噪音排行榜", path: "/rankings/noise" }
+                            ]
+                        },
+                        {
+                            header: "系统能力榜",
+                            items: [
+                                { title: "天然气内燃机发电机排行榜", path: "/rankings/generator" },
+                                { title: "天然气内燃机控制系统排行榜", path: "/rankings/control-system" }
+                            ]
+                        },
+                        {
+                            header: "区域榜",
+                            items: [
+                                { title: "美国市场榜", path: "/rankings/usa" },
+                                { title: "加拿大市场榜", path: "/rankings/canada" },
+                                { title: "中东市场榜", path: "/rankings/middle-east" },
+                                { title: "俄罗斯市场榜", path: "/rankings/russia" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "应用场景",
+                    path: "/use-cases",
+                    type: "menu",
+                    children: [
+                        { title: "油气井 / 伴生气", path: "/use-cases/oilfield" },
+                        { title: "工业与园区能源", path: "/use-cases/industrial" },
+                        { title: "挖矿 / 数据中心", path: "/use-cases/mining" },
+                        { title: "CHP 热电联供", path: "/use-cases/chp" }
+                    ]
+                },
+                {
+                    title: "工具箱",
+                    path: "/tools",
+                    type: "mega",
+                    gridCols: "grid-cols-5",
+                    sections: [
+                        {
+                            header: "经济测算工具",
+                            items: [
+                                { title: "LCOE 成本计算器", path: "/tools/lcoe-calculator" },
+                                { title: "ROI 回报估算器", path: "/tools/roi" },
+                                { title: "燃气发电挖矿收益计算器", path: "/tools/mining-power-calc" },
+                                { title: "蒙特卡洛模拟盈利分析", path: "/tools/monte-carlo-profit" },
+                                { title: "天然气发电耗气成本分析", path: "/tools/gas-cost-analysis" }
+                            ]
+                        },
+                        {
+                            header: "工程与技术工具",
+                            items: [
+                                { title: "气质适配工具", path: "/tools/gas-fit" },
+                                { title: "排放估算工具", path: "/tools/emission" },
+                                { title: "气体分析计算器", path: "/tools/gas-analyzer" },
+                                { title: "能电转换计算器", path: "/tools/energy-conversion" },
+                                { title: "天然气主要成分热值表", path: "/tools/gas-composition-heat" }
+                            ]
+                        },
+                        {
+                            header: "项目与选型工具",
+                            items: [
+                                { title: "站点匹配向导", path: "/tools/site-fit" },
+                                { title: "气源所在地分析", path: "/tools/gas-location-analysis" },
+                                { title: "燃气发动机选型与运营经济性", path: "/tools/engine-selection" },
+                                { title: "天然气发电机机油消耗率", path: "/tools/oil-consumption" },
+                                { title: "车机 VS 工业机 10MW 对比分析", path: "/tools/vehicle-vs-industrial-10mw" },
+                                { title: "多机型对比 3 年运营数据", path: "/tools/3y-compare" }
+                            ]
+                        },
+                        {
+                            header: "矿工专区（托管与算力分析）",
+                            items: [
+                                { title: "挖矿收益计算器", path: "/tools/mining-income-calculator" },
+                                { title: "矿机盈利能力计算器", path: "/tools/miner-profitability" },
+                                { title: "矿机选购速查", path: "/tools/miner-buying-guide" }
+                            ]
+                        },
+                        {
+                            header: "全球支持与合规",
+                            items: [
+                                { title: "加拿大 AECO 天然气价格预测", path: "/tools/aeco-price-forecast" },
+                                { title: "全球物流运输推荐", path: "/tools/global-logistics" },
+                                { title: "全球合规政策", path: "/tools/global-compliance" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "资料中心",
+                    path: "/resources",
+                    type: "mega",
+                    gridCols: "grid-cols-4",
+                    sections: [
+                        {
+                            header: "文档",
+                            items: [
+                                { title: "白皮书", path: "/resources/whitepapers" },
+                                { title: "行业报告", path: "/resources/reports" }
+                            ]
+                        },
+                        {
+                            header: "案例",
+                            items: [
+                                { title: "全部案例", path: "/resources/case-studies" },
+                                { title: "按区域查看", path: "/resources/case-studies/regions" },
+                                { title: "按场景查看", path: "/resources/case-studies/scenarios" }
+                            ]
+                        },
+                        {
+                            header: "技术库",
+                            items: [
+                                { title: "技术参数表", path: "/resources/datasheets" },
+                                { title: "认证与合规文件", path: "/resources/certifications" }
+                            ]
+                        },
+                        {
+                            header: "媒体与支持",
+                            items: [
+                                { title: "视频与教程", path: "/resources/videos" },
+                                { title: "常见问答 FAQ", path: "/resources/faq" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "服务支持",
+                    path: "/support",
+                    type: "menu",
+                    children: [
+                        { title: "服务网络", path: "/support/network" },
+                        { title: "技术支持", path: "/support/tech" },
+                        { title: "售后与保养", path: "/support/service" }
+                    ]
+                },
+                {
+                    title: "关于我们",
+                    path: "/about",
+                    type: "menu",
+                    children: [
+                        { title: "公司介绍", path: "/about/company" },
+                        { title: "联系我们", path: "/about/contact" }
+                    ]
+                }
+            ],
+
+            i18n: {
+                zh: {
+                    tagline: "天然气发电挖矿助手",
+                    footerTagline: "让天然气发电挖矿更简单",
+                },
+                en: {
+                    tagline: "Natural Gas Power Mining Assistant",
+                    footerTagline: "Making natural gas power mining easier",
+                    "首页": "Home",
+                    "解决方案": "Solutions",
+                    "机型库": "Products",
+                    "排行榜": "Rankings",
+                    "应用场景": "Use Cases",
+                    "工具箱": "Tools",
+                    "资料中心": "Resources",
+                    "服务支持": "Support",
+                    "关于我们": "About Us",
+                    "联系我们": "Contact Us",
+                    "油气井/伴生气发电": "Oil & Gas Power",
+                    "工业园区与分布式能源": "Industrial Power",
+                    "数据中心 / 挖矿电力": "Data Center / Mining",
+                    "热电联供 CHP": "CHP Cogeneration",
+                    "按功率分类": "By Power",
+                    "按冷却方式": "By Cooling",
+                    "按气源类型": "By Gas Type",
+                    "按部署形式": "By Deployment",
+                    "按品牌": "By Brand",
+                    "小于 500 kW": "< 500 kW",
+                    "500 – 1,000 kW": "500 – 1,000 kW",
+                    "1 MW 以上": "1 MW+",
+                    "风冷": "Air Cooled",
+                    "液冷": "Liquid Cooled",
+                    "天然气": "Natural Gas",
+                    "伴生气": "Associated Gas",
+                    "低甲烷值气": "Low Methane Gas",
+                    "集装箱机组": "Containerized",
+                    "一体化机组 AIS": "Integrated (AIS)",
+                    "滑撬式机组": "Skid Mounted",
+                    "全部品牌": "All Brands",
+                    "中国生产": "Made in China",
+                    "海外生产": "Overseas Brands",
+                    "性能榜": "Performance",
+                    "经济性榜": "Economics",
+                    "可靠性榜": "Reliability",
+                    "品质与环保榜": "Quality & Eco",
+                    "系统能力榜": "System Cap.",
+                    "区域榜": "Regions",
+                    "综合性能 TOP 榜": "Top Performance",
+                    "高效率榜": "High Efficiency",
+                    "天然气内燃机发电效率排行榜": "Elec. Efficiency Rank",
+                    "天然气内燃机热效率排行榜": "Thermal Efficiency Rank",
+                    "天然气内燃机耗气量排行榜": "Gas Consumption Rank",
+                    "最佳 ROI 榜": "Best ROI",
+                    "最低发电成本 LCOE 榜": "Lowest LCOE",
+                    "天然气内燃机折旧排行榜": "Depreciation Rank",
+                    "天然气内燃机投资回报率排行榜": "ROI Rank",
+                    "高可靠机组榜": "High Reliability",
+                    "最长 MTBF 榜": "Longest MTBF",
+                    "天然气内燃机保养时间排行榜": "Maintenance Interval Rank",
+                    "天然气内燃机备件保障排行榜": "Spare Parts Rank",
+                    "天然气内燃机排放排行榜": "Emission Rank",
+                    "天然气内燃机噪音排行榜": "Noise Rank",
+                    "天然气内燃机发电机排行榜": "Generator Rank",
+                    "天然气内燃机控制系统排行榜": "Control System Rank",
+                    "美国市场榜": "USA Market",
+                    "加拿大市场榜": "Canada Market",
+                    "中东市场榜": "Middle East Market",
+                    "俄罗斯市场榜": "Russia Market",
+                    "油气井 / 伴生气": "Oilfield / Associated Gas",
+                    "工业与园区能源": "Industrial & Park",
+                    "挖矿 / 数据中心": "Mining / Data Center",
+                    "CHP 热电联供": "CHP",
+                    "经济测算工具": "Economic Tools",
+                    "工程与技术工具": "Engineering Tools",
+                    "项目与选型工具": "Selection Tools",
+                    "矿工专区（托管与算力分析）": "Miners Zone",
+                    "全球支持与合规": "Global Support",
+                    "LCOE 成本计算器": "LCOE Calculator",
+                    "ROI 回报估算器": "ROI Estimator",
+                    "燃气发电挖矿收益计算器": "Gas Mining Revenue",
+                    "蒙特卡洛模拟盈利分析": "Monte Carlo Sim",
+                    "天然气发电耗气成本分析": "Gas Cost Analysis",
+                    "气质适配工具": "Gas Fit Tool",
+                    "排放估算工具": "Emission Estimator",
+                    "气体分析计算器": "Gas Analyzer",
+                    "能电转换计算器": "Energy Conversion",
+                    "天然气主要成分热值表": "Heat Value Table",
+                    "站点匹配向导": "Site Fit Wizard",
+                    "气源所在地分析": "Location Analysis",
+                    "燃气发动机选型与运营经济性": "Engine Selection & Econ",
+                    "天然气发电机机油消耗率": "Oil Consumption",
+                    "车机 VS 工业机 10MW 对比分析": "Vehicle vs Ind. (10MW)",
+                    "多机型对比 3 年运营数据": "3-Year Ops Data",
+                    "挖矿收益计算器": "Mining Revenue Calc",
+                    "矿机盈利能力计算器": "Miner Profitability",
+                    "矿机选购速查": "Miner Buyer Guide",
+                    "加拿大 AECO 天然气价格预测": "AECO Price Forecast",
+                    "全球物流运输推荐": "Global Logistics",
+                    "全球合规政策": "Global Compliance",
+                    "文档": "Documents",
+                    "案例": "Case Studies",
+                    "技术库": "Tech Library",
+                    "媒体与支持": "Media & Support",
+                    "白皮书": "Whitepapers",
+                    "行业报告": "Industry Reports",
+                    "全部案例": "All Cases",
+                    "按区域查看": "By Region",
+                    "按场景查看": "By Scenario",
+                    "技术参数表": "Datasheets",
+                    "认证与合规文件": "Certifications",
+                    "视频与教程": "Videos & Tutorials",
+                    "常见问答 FAQ": "FAQ",
+                    "服务网络": "Service Network",
+                    "技术支持": "Tech Support",
+                    "售后与保养": "After-sales",
+                    "公司介绍": "Company Profile"
+                },
+                ru: {
+                    tagline: "Помощник по газовому майнингу",
+                    footerTagline: "Майнинг на газе проще",
+                    "首页": "Главная",
+                    "解决方案": "Решения",
+                    "机型库": "Продукты",
+                    "排行榜": "Рейтинги",
+                    "应用场景": "Кейсы",
+                    "工具箱": "Инструменты",
+                    "资料中心": "Ресурсы",
+                    "服务支持": "Поддержка",
+                    "关于我们": "О нас",
+                    "联系我们": "Контакты",
+                    "油气井/伴生气发电": "Нефтегаз",
+                    "工业园区与分布式能源": "Пром. энергия",
+                    "数据中心 / 挖矿电力": "Майнинг",
+                    "热电联供 CHP": "Когенерация",
+                    "按功率分类": "По мощности",
+                    "按冷却方式": "По охлаждению",
+                    "按气源类型": "По типу газа",
+                    "按部署形式": "По типу",
+                    "按品牌": "По бренду",
+                    "小于 500 kW": "< 500 кВт",
+                    "500 – 1,000 kW": "500 – 1,000 кВт",
+                    "1 MW 以上": "1 МВт+",
+                    "风冷": "Воздушное",
+                    "液冷": "Жидкостное",
+                    "天然气": "Природный газ",
+                    "伴生气": "Попутный газ",
+                    "低甲烷值气": "Низкий метан",
+                    "集装箱机组": "Контейнерные",
+                    "一体化机组 AIS": "Интегрированные",
+                    "滑撬式机组": "На раме",
+                    "全部品牌": "Все бренды",
+                    "中国生产": "Китай",
+                    "海外生产": "Зарубежные",
+                    "性能榜": "Производ.",
+                    "经济性榜": "Экономика",
+                    "可靠性榜": "Надежность",
+                    "品质与环保榜": "Качество",
+                    "系统能力榜": "Системы",
+                    "区域榜": "Регионы",
+                    "综合性能 TOP 榜": "Топ прозвод.",
+                    "高效率榜": "Выс. эффективность",
+                    "天然气内燃机发电效率排行榜": "Эл. КПД",
+                    "天然气内燃机热效率排行榜": "Тепл. КПД",
+                    "天然气内燃机耗气量排行榜": "Расход газа",
+                    "最佳 ROI 榜": "Лучший ROI",
+                    "最低发电成本 LCOE 榜": "Мин. LCOE",
+                    "天然气内燃机折旧排行榜": "Амортизация",
+                    "天然气内燃机投资回报率排行榜": "Рейтинг ROI",
+                    "高可靠机组榜": "Надежность",
+                    "最长 MTBF 榜": "Макс. MTBF",
+                    "天然气内燃机保养时间排行榜": "Интервал ТО",
+                    "天然气内燃机备件保障排行榜": "Запчасти",
+                    "天然气内燃机排放排行榜": "Выбросы",
+                    "天然气内燃机噪音排行榜": "Шум",
+                    "天然气内燃机发电机排行榜": "Генераторы",
+                    "天然气内燃机控制系统排行榜": "Системы упр.",
+                    "美国市场榜": "Рынок США",
+                    "加拿大市场榜": "Рынок Канады",
+                    "中东市场榜": "Ближний Восток",
+                    "俄罗斯市场榜": "Рынок РФ",
+                    "油气井 / 伴生气": "Нефтегаз",
+                    "工业与园区能源": "Пром. зоны",
+                    "挖矿 / 数据中心": "Майнинг ЦОД",
+                    "CHP 热电联供": "ТЭЦ",
+                    "经济测算工具": "Экономика",
+                    "工程与技术工具": "Инжиниринг",
+                    "项目与选型工具": "Подбор",
+                    "矿工专区（托管与算力分析）": "Майнерам",
+                    "全球支持与合规": "Поддержка",
+                    "LCOE 成本计算器": "LCOE Кальк.",
+                    "ROI 回报估算器": "ROI Оценка",
+                    "燃气发电挖矿收益计算器": "Доход майнинга",
+                    "蒙特卡洛模拟盈利分析": "Монте-Карло",
+                    "天然气发电耗气成本分析": "Затраты на газ",
+                    "气质适配工具": "Анализ газа",
+                    "排放估算工具": "Выбросы",
+                    "气体分析计算器": "Газовый анализ",
+                    "能电转换计算器": "Конвертер",
+                    "天然气主要成分热值表": "Таблица тепла",
+                    "站点匹配向导": "Подбор площадки",
+                    "气源所在地分析": "Локация",
+                    "燃气发动机选型与运营经济性": "Выбор двигателя",
+                    "天然气发电机机油消耗率": "Расход масла",
+                    "车机 VS 工业机 10MW 对比分析": "Авто vs Пром",
+                    "多机型对比 3 年运营数据": "Данные за 3 года",
+                    "挖矿收益计算器": "Доходность",
+                    "矿机盈利能力计算器": "Рентабельность",
+                    "矿机选购速查": "Выбор майнера",
+                    "加拿大 AECO 天然气价格预测": "Прогноз AECO",
+                    "全球物流运输推荐": "Логистика",
+                    "全球合规政策": "Комплаенс",
+                    "文档": "Документы",
+                    "案例": "Кейсы",
+                    "技术库": "Тех. база",
+                    "媒体与支持": "Медиа",
+                    "白皮书": "Whitepapers",
+                    "行业报告": "Отчеты",
+                    "全部案例": "Все кейсы",
+                    "按区域查看": "По регионам",
+                    "按场景查看": "По сценариям",
+                    "技术参数表": "Спецификации",
+                    "认证与合规文件": "Сертификаты",
+                    "视频与教程": "Видео",
+                    "常见问答 FAQ": "FAQ",
+                    "服务网络": "Сервис",
+                    "技术支持": "Техподдержка",
+                    "售后与保养": "Обслуживание",
+                    "公司介绍": "О компании"
+                }
+            }
+        };
+
+        const app = {
+            currentLang: 'en', // Default to English
+            isMobileMenuOpen: false,
+
+            init() {
+                this.renderNav();
+                this.renderFooter();
+                this.updateStaticText();
+                
+                // Back to Top Scroll Logic
+                window.onscroll = () => {
+                    const btn = document.getElementById('backToTopBtn');
+                    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                        btn.classList.remove('translate-y-20', 'opacity-0');
+                    } else {
+                        btn.classList.add('translate-y-20', 'opacity-0');
+                    }
+                };
+            },
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                
+                ['zh', 'en', 'ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+                    
+                    const activeClass = "text-black bg-gas-green shadow-glow font-bold";
+                    const inactiveClass = "text-gas-subtext hover:text-white hover:bg-white/5 font-medium";
+                    const mobActiveClass = "text-black bg-gas-green font-bold";
+                    const mobInactiveClass = "text-gray-400 font-medium";
+
+                    if (btn) btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center ${l === lang ? activeClass : inactiveClass}`;
+                    if (mobBtn) mobBtn.className = `px-4 py-2 rounded-full text-xs transition-all ${l === lang ? mobActiveClass : mobInactiveClass}`;
+                });
+
+                this.renderNav();
+                this.renderMobileNav();
+                this.renderFooter();
+                this.updateStaticText();
+
+                // DISPATCH EVENT FOR REACT
+                window.dispatchEvent(new CustomEvent('gasgx-language-change', { detail: lang }));
+            },
+
+            t(key) {
+                const dict = AppData.i18n[this.currentLang];
+                return (dict && dict[key]) ? dict[key] : key;
+            },
+
+            toggleMobileMenu() {
+                this.isMobileMenuOpen = !this.isMobileMenuOpen;
+                const menu = document.getElementById('mobile-menu-container');
+                const btnIcon = document.querySelector('#mobile-menu-btn i');
+                
+                if (this.isMobileMenuOpen) {
+                    menu.classList.remove('translate-x-full');
+                    btnIcon.classList.remove('fa-bars');
+                    btnIcon.classList.add('fa-xmark');
+                    document.body.style.overflow = 'hidden';
+                    this.renderMobileNav();
+                } else {
+                    menu.classList.add('translate-x-full');
+                    btnIcon.classList.remove('fa-xmark');
+                    btnIcon.classList.add('fa-bars');
+                    document.body.style.overflow = '';
+                }
+            },
+
+            toggleMobileSubmenu(id) {
+                const el = document.getElementById(id);
+                const icon = document.getElementById(`icon-${id}`);
+                
+                if (el.style.maxHeight) {
+                    el.style.maxHeight = null;
+                    icon.classList.remove('rotate-180');
+                } else {
+                    el.style.maxHeight = el.scrollHeight + "px";
+                    icon.classList.add('rotate-180');
+                }
+            },
+
+            // Footer Toggle Function (Mobile)
+            toggleFooter(id) {
+                const el = document.getElementById(id);
+                const icon = document.getElementById(`footer-icon-${id}`);
+                
+                if (el.style.maxHeight) {
+                    el.style.maxHeight = null;
+                    icon.classList.remove('fa-minus');
+                    icon.classList.add('fa-plus');
+                    icon.classList.remove('text-gas-green');
+                } else {
+                    el.style.maxHeight = el.scrollHeight + "px";
+                    icon.classList.remove('fa-plus');
+                    icon.classList.add('fa-minus');
+                    icon.classList.add('text-gas-green');
+                }
+            },
+
+            renderNav() {
+                const navContainer = document.getElementById('desktop-nav');
+                navContainer.innerHTML = '';
+                const totalItems = AppData.navigation.length;
+
+                AppData.navigation.forEach((item, index) => {
+                    if (item.type === 'link') {
+                        navContainer.innerHTML += `
+                            <a href="${item.path}" target="_blank" class="nav-item-link font-medium text-sm">
+                                <span>${this.t(item.title)}</span>
+                            </a>
+                        `;
+                    }
+                    else if (item.type === 'menu' || item.type === 'mega') {
+                        let dropContent = '';
+                        let isMega = item.type === 'mega';
+                        
+                        // Positioning Fix: Align Right for last 3 items to avoid overflow
+                        const isRightAligned = index >= totalItems - 3;
+                        const posClass = isRightAligned ? 'right-0' : 'left-0';
+                        
+                        if (isMega) {
+                            const gridClass = item.gridCols || 'grid-cols-5';
+                            const sectionsHtml = item.sections.map((section, idx) => {
+                                const isLast = idx === item.sections.length - 1;
+                                const borderClass = isLast ? '' : 'border-r border-white/5';
+                                const itemsHtml = section.items.map(subItem => `
+                                    <li class="mb-2">
+                                        <a href="${subItem.path}" target="_blank" class="text-gray-400 hover:text-gas-green text-xs flex items-center gap-2 transition-colors">
+                                            <i class="fa-solid fa-angle-right text-[10px] opacity-50"></i>
+                                            ${this.t(subItem.title)}
+                                        </a>
+                                    </li>
+                                `).join('');
+                                return `<div class="col-span-1 space-y-4 ${borderClass} px-2">
+                                            <h3 class="text-gas-green font-bold text-sm uppercase tracking-wider mb-3 border-b border-white/5 pb-2">${this.t(section.header)}</h3>
+                                            <ul>${itemsHtml}</ul>
+                                        </div>`;
+                            }).join('');
+                            // Mega Menu requires STATIC parent to align full width to header
+                            dropContent = `<div class="mega-menu"><div class="max-w-[1800px] mx-auto px-4 grid ${gridClass} gap-6">${sectionsHtml}</div></div>`;
+                        } else {
+                            const childrenHtml = item.children.map(child => `
+                                <a href="${child.path}" target="_blank" class="block px-4 py-2 text-sm text-gray-400 hover:text-gas-green hover:bg-white/5 whitespace-nowrap">${this.t(child.title)}</a>
+                            `).join('');
+                            dropContent = `<div class="dropdown-menu ${posClass}">${childrenHtml}</div>`;
+                        }
+
+                        // Determine position class for parent
+                        // Mega Menu needs STATIC parent so it aligns to Header
+                        // Dropdown needs RELATIVE parent
+                        const parentPos = isMega ? '' : 'relative';
+
+                        navContainer.innerHTML += `
+                            <div class="group h-full flex items-center cursor-pointer ${parentPos}">
+                                <span class="nav-item-link font-medium text-sm">
+                                    <span>${this.t(item.title)}</span> <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
+                                </span>
+                                ${dropContent}
+                            </div>
+                        `;
+                    }
+                });
+            },
+
+            renderMobileNav() {
+                const container = document.getElementById('mobile-nav-content');
+                container.innerHTML = '';
+                
+                AppData.navigation.forEach((item, index) => {
+                    if (item.type === 'link') {
+                        container.innerHTML += `
+                            <a href="${item.path}" target="_blank" class="block py-4 border-b border-white/10 text-lg font-medium hover:text-gas-green">
+                                ${this.t(item.title)}
+                            </a>
+                        `;
+                    } else {
+                        const subId = `mob-sub-${index}`;
+                        let subItemsHtml = '';
+                        
+                        if (item.type === 'menu') {
+                            subItemsHtml = item.children.map(child => `
+                                <a href="${child.path}" target="_blank" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">
+                                    ${this.t(child.title)}
+                                </a>
+                            `).join('');
+                        } else if (item.type === 'mega') {
+                            subItemsHtml = item.sections.map(sec => `
+                                <div class="py-2">
+                                    <h4 class="text-gas-green text-xs font-bold uppercase mb-2 pl-4">${this.t(sec.header)}</h4>
+                                    ${sec.items.map(sub => `
+                                        <a href="${sub.path}" target="_blank" class="block py-2 pl-6 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">
+                                            ${this.t(sub.title)}
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            `).join('');
+                        }
+
+                        container.innerHTML += `
+                            <div class="border-b border-white/10">
+                                <button onclick="app.toggleMobileSubmenu('${subId}')" class="w-full py-4 flex justify-between items-center text-lg font-medium hover:text-gas-green focus:outline-none">
+                                    <span>${this.t(item.title)}</span>
+                                    <i id="icon-${subId}" class="fa-solid fa-chevron-down text-sm transition-transform duration-300"></i>
+                                </button>
+                                <div id="${subId}" class="mobile-submenu">
+                                    <div class="pb-4 space-y-1">
+                                        ${subItemsHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            },
+
+            renderFooter() {
+                const footerContainer = document.getElementById('footer-links');
+                footerContainer.innerHTML = '';
+
+                AppData.navigation.forEach((item, idx) => {
+                    if (item.title === '首页') return;
+
+                    let contentHtml = '';
+                    let desktopContentHtml = '';
+                    const footerSubId = `footer-sub-${idx}`;
+
+                    // --- 1. Content Generation ---
+                    
+                    if (item.type === 'menu') {
+                        // Desktop & Mobile Link List
+                        const links = item.children.map(child => `
+                            <a href="${child.path}" target="_blank" class="footer-link hover:text-gas-green text-gray-400 mr-4 mb-2 inline-block">
+                                ${this.t(child.title)}
+                            </a>
+                        `).join('');
+                        contentHtml = `<div class="flex flex-wrap">${links}</div>`;
+                    } 
+                    else if (item.type === 'mega') {
+                        // For Mega: We format nicely for Desktop Row
+                        // Format: [Header]: Link Link | [Header]: Link Link
+                        const desktopSections = item.sections.map(section => {
+                            const secTitle = this.t(section.header);
+                            const secLinks = section.items.map(sub => `
+                                <a href="${sub.path}" target="_blank" class="hover:text-gas-green text-gray-400 ml-2 text-xs">
+                                    ${this.t(sub.title)}
+                                </a>
+                            `).join('<span class="text-gray-700 mx-1">|</span>');
+                            
+                            return `
+                                <div class="flex items-baseline mr-6 mb-2">
+                                    <span class="text-gas-green text-xs font-bold uppercase mr-1 whitespace-nowrap">${secTitle}:</span>
+                                    <div class="flex flex-wrap">${secLinks}</div>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        // Simple list for mobile accordion
+                        const mobileLinks = item.sections.map(sec => 
+                            sec.items.map(sub => 
+                                `<a href="${sub.path}" target="_blank" class="footer-link block pl-2 border-l border-white/10 hover:border-gas-green mb-1">${this.t(sub.title)}</a>`
+                            ).join('')
+                        ).join('');
+
+                        contentHtml = `<div class="flex flex-col">${mobileLinks}</div>`; // Mobile content
+                        desktopContentHtml = `<div class="flex flex-wrap items-center">${desktopSections}</div>`; // Desktop content
+                    }
+
+                    // --- 2. HTML Structure ---
+
+                    // Use desktopContentHtml if available (for Mega), otherwise use generic contentHtml
+                    const finalDesktopHtml = desktopContentHtml || contentHtml;
+
+                    footerContainer.innerHTML += `
+                        <div class="w-full border-b border-white/5 last:border-0">
+                            <!-- Desktop View: Horizontal Row Layout -->
+                            <div class="hidden md:flex py-4 items-start">
+                                <div class="w-32 lg:w-48 shrink-0">
+                                    <h4 class="text-white font-bold text-sm border-l-2 border-gas-green pl-3">
+                                        ${this.t(item.title)}
+                                    </h4>
+                                </div>
+                                <div class="flex-1">
+                                    ${finalDesktopHtml}
+                                </div>
+                            </div>
+
+                            <!-- Mobile View: Accordion -->
+                            <div class="md:hidden">
+                                <button onclick="app.toggleFooter('${footerSubId}')" class="w-full flex justify-between items-center py-3 text-sm font-bold text-white focus:outline-none">
+                                    <span class="border-l-2 border-gas-green pl-3">${this.t(item.title)}</span>
+                                    <i id="footer-icon-${footerSubId}" class="fa-solid fa-plus text-xs text-gray-500 transition-transform duration-300"></i>
+                                </button>
+                                <div id="${footerSubId}" class="footer-accordion-content">
+                                    <div class="pt-2 pl-4 pb-4 text-gray-400">
+                                        ${contentHtml} 
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            },
+
+            captureAndShare() {
+                // Scroll to top
+                window.scrollTo(0, 0);
+
+                // Add Watermark Layer
+                const watermark = document.createElement('div');
+                watermark.id = 'temp-watermark';
+                Object.assign(watermark.style, {
+                    position: 'absolute', top: 0, left: 0, width: '100%', height: document.body.scrollHeight + 'px',
+                    zIndex: 9999, pointerEvents: 'none', display: 'flex', flexWrap: 'wrap', 
+                    alignContent: 'space-around', justifyContent: 'space-around', overflow: 'hidden', opacity: '0.15'
+                });
+
+                const textHtml = `<div style="text-align:center; transform: rotate(-30deg); margin: 100px;">
+                                    <div style="font-size: 24px; font-weight: bold; color: #5DD62C;">www.gasgx.com</div>
+                                    <div style="font-size: 16px; color: #fff;">Natural Gas Power Mining Assistant</div>
+                                  </div>`;
+                
+                // Repeat watermark
+                const count = Math.ceil(document.body.scrollHeight / 400) * 3;
+                watermark.innerHTML = textHtml.repeat(count);
+                document.body.appendChild(watermark);
+
+                // Capture
+                setTimeout(() => {
+                    html2canvas(document.body, {
+                        backgroundColor: '#0F0F0F',
+                        scrollY: 0,
+                        useCORS: true,
+                        scale: 2
+                    }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = 'GasGx-Page-Capture.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        document.body.removeChild(watermark);
+                        
+                        // Show Success Modal
+                        const modal = document.getElementById('shareModal');
+                        modal.classList.remove('hidden');
+                        setTimeout(() => modal.querySelector('div').classList.remove('scale-95', 'opacity-0'), 10);
+                    }).catch(err => {
+                        console.error(err);
+                        if(document.getElementById('temp-watermark')) document.body.removeChild(watermark);
+                        alert('Capture failed.');
+                    });
+                }, 500);
+            },
+
+            closeModal() {
+                const modal = document.getElementById('shareModal');
+                const content = modal.querySelector('div');
+                content.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            },
+
+            updateStaticText() {
+                const taglineEl = document.getElementById('header-tagline');
+                const footerTaglineEl = document.querySelector('[data-i18n="footerTagline"]');
+                
+                if(taglineEl) taglineEl.innerText = this.t('tagline');
+                if(footerTaglineEl) footerTaglineEl.innerText = this.t('footerTagline');
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (key !== 'tagline' && key !== 'footerTagline') { 
+                        el.innerText = this.t(key);
+                    }
+                });
+            }
+        };
+
+        // Start
+        app.init();
+    </script>
+
+    <!-- React Application Logic -->
+    <script type="text/babel">
+        // --- React I18N (Internal for Calculator) ---
+        const REACT_I18N = {
+            en: {
+                subtitle: "LCOE & ROI Model",
+                modelA: "Model A (High Eff)",
+                modelB: "Model B (Low Eff)",
+                investment: "Investment & Depreciation",
+                equipCost: "Equipment Cost",
+                depreciation: "Depreciation Years",
+                params: "Operating Parameters",
+                hours: "Annual Hours",
+                load: "Load Rate",
+                efficiency: "Elec. Efficiency",
+                gasPrice: "Gas Price",
+                elecPrice: "Elec. Price",
+                omCost: "O&M Cost",
+                oilConsump: "Oil Consump.",
+                oilPrice: "Oil Price",
+                labor: "Labor (Year)",
+                period3: "3-Year Analysis",
+                period6: "6-Year Analysis",
+                totalGen: "Total Generation",
+                items: "Cost Breakdown",
+                fuelCost: "Fuel Cost",
+                oilCost2: "Oil Cost",
+                omCost2: "O&M Cost",
+                laborCost2: "Labor Cost",
+                depCost: "Depreciation",
+                totalCost: "Total Cost (Acctg)",
+                revenue: "Total Revenue",
+                netProfit: "Net Profit (Pre-tax)",
+                roiTitle: "Investment Performance",
+                payback: "Payback Period",
+                roi: "Annualized ROI",
+                year: "Years",
+                compare: "Comp",
+                better: "Better",
+            },
+            zh: {
+                subtitle: "全生命周期成本与收益模型",
+                modelA: "机型 A (高效)",
+                modelB: "机型 B (低效)",
+                investment: "投资与折旧参数",
+                equipCost: "设备采购成本",
+                depreciation: "折旧年限",
+                params: "核心运行参数",
+                hours: "年运行时间",
+                load: "平均负载率",
+                efficiency: "发电效率",
+                gasPrice: "天然气价格",
+                elecPrice: "上网/销售电价",
+                omCost: "运维备件成本",
+                oilConsump: "机油消耗率",
+                oilPrice: "机油单价",
+                labor: "人工工资 (年)",
+                period3: "3年分析期",
+                period6: "6年分析期",
+                totalGen: "累计发电量",
+                items: "成本构成明细",
+                fuelCost: "燃料成本",
+                oilCost2: "机油成本",
+                omCost2: "运维备件",
+                laborCost2: "人工成本",
+                depCost: "设备折旧 (摊销)",
+                totalCost: "总支出 (会计成本)",
+                revenue: "总售电收入",
+                netProfit: "净利润 (税前)",
+                roiTitle: "投资回报表现",
+                payback: "回本周期",
+                roi: "年化 ROI",
+                year: "年",
+                compare: "对比",
+                better: "优",
+            },
+            ru: {
+                subtitle: "Модель LCOE и ROI",
+                modelA: "Модель А (Высок)",
+                modelB: "Модель Б (Низк)",
+                investment: "Инвестиции и Аморт.",
+                equipCost: "Стоимость оборуд.",
+                depreciation: "Срок амортизации",
+                params: "Параметры работы",
+                hours: "Часы работы/год",
+                load: "Нагрузка",
+                efficiency: "Эл. КПД",
+                gasPrice: "Цена газа",
+                elecPrice: "Цена эл-ва",
+                omCost: "ТО и запчасти",
+                oilConsump: "Расход масла",
+                oilPrice: "Цена масла",
+                labor: "Зарплата (год)",
+                period3: "Анализ 3 года",
+                period6: "Анализ 6 лет",
+                totalGen: "Всего выработка",
+                items: "Структура затрат",
+                fuelCost: "Топливо",
+                oilCost2: "Масло",
+                omCost2: "ТО и ремонт",
+                laborCost2: "Персонал",
+                depCost: "Амортизация",
+                totalCost: "Всего затрат",
+                revenue: "Выручка",
+                netProfit: "Прибыль (до налог.)",
+                roiTitle: "Показатели ROI",
+                payback: "Окупаемость",
+                roi: "Годовой ROI",
+                year: "Лет",
+                compare: "Сравн.",
+                better: "Лучше",
+            }
+        };
+
+        const CURRENCIES = {
+            USD: { label: 'USD', symbol: '$', locale: 'en-US' },
+            CNY: { label: 'CNY', symbol: '¥', locale: 'zh-CN' },
+            RUB: { label: 'RUB', symbol: '₽', locale: 'ru-RU' },
+            CAD: { label: 'CAD', symbol: 'C$', locale: 'en-CA' }
+        };
+
+        // Icons
+        const Icons = {
+            Activity: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+            Zap: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+            Clock: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+            TrendingUp: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+            DollarSign: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+            Globe: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+            Wrench: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
+            Coins: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg>,
+            CheckCircle: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+            Settings: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        };
+
+        const Card = ({ children, className = "" }) => (
+            <div className={`glass-card-react rounded-xl shadow-xl overflow-hidden ${className}`}>
+                {children}
+            </div>
+        );
+
+        const InputGroup = ({ label, value, onChange, unit, step = "1", icon: Icon }) => (
+            <div className="flex flex-col mb-2">
+                <label className="text-xs font-medium text-gas-subtext mb-1 flex items-center gap-1.5">
+                    {Icon && <Icon size={12} className="text-gas-green" />}
+                    {label}
+                </label>
+                <div className="relative rounded-md shadow-inner-input h-10 w-full bg-[#1A1A1A]">
+                    <input
+                        type="number"
+                        value={value}
+                        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+                        className="input-glow block w-full h-full rounded bg-transparent border border-white/10 text-gas-text pl-3 pr-10 text-sm focus:outline-none transition-all placeholder-gray-600"
+                        step={step}
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <span className="text-gray-500 text-xs font-medium">{unit}</span>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const ResultRow = ({ label, valA, valB, currency, locale, isCurrency = true, isTotal = false, isHighlight = false, isProfit = false, isDiffInverse = false, t }) => {
+            const format = (num) => {
+                if (num === Infinity || isNaN(num)) return '-';
+                if (isCurrency) {
+                    return new Intl.NumberFormat(locale, { 
+                        style: 'currency', 
+                        currency: currency,
+                        currencyDisplay: 'narrowSymbol',
+                        maximumFractionDigits: 0 
+                    }).format(num);
+                }
+                return new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(num);
+            };
+            
+            const formatValue = (num) => {
+                if (!isCurrency) return format(num);
+                const val = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(num);
+                const symbol = CURRENCIES[currency]?.symbol || currency;
+                return `${symbol}${val}`;
+            };
+
+            const diff = valA - valB;
+            
+            let baseClass = 'border-b border-white/5 hover:bg-white/5 transition-colors h-10'; 
+            let textClass = 'text-gray-400';
+            let valClass = 'text-gray-300';
+            
+            if (isTotal) {
+                baseClass = 'bg-[#151515] font-bold border-t border-white/10 h-11';
+                textClass = 'text-gray-200';
+                valClass = 'text-white';
+            }
+
+            if (isHighlight) {
+                baseClass = 'bg-gas-darkGreen/20 font-bold border-t border-gas-darkGreen/30 h-11';
+                textClass = 'text-green-100';
+                valClass = 'text-gas-green';
+            }
+
+            if (isProfit) {
+                baseClass = 'bg-gas-darkGreen/40 font-bold border-t-2 border-gas-green/50 h-12';
+                textClass = 'text-white';
+                valClass = 'text-gas-green text-base shadow-black drop-shadow-md';
+            }
+
+            const renderDiff = () => {
+                if (Math.abs(diff) < 0.01) return <span className="text-gray-600">-</span>;
+                const isAGood = isDiffInverse ? diff > 0 : diff < 0;
+                const colorClass = isAGood ? "text-gas-green" : "text-gray-500";
+                const winnerText = isAGood ? `A ${t.better}` : `B ${t.better}`;
+                return <span className={`text-[10px] ${colorClass} font-medium border border-current px-1 rounded`}>{winnerText}</span>;
+            };
+            
+            return (
+                <tr className={baseClass}>
+                    <td className={`px-3 text-xs whitespace-nowrap ${textClass}`}>{label}</td>
+                    <td className={`px-3 text-right text-xs font-medium whitespace-nowrap ${valClass}`}>{formatValue(valA)}</td>
+                    <td className={`px-3 text-right text-xs font-medium whitespace-nowrap ${valClass}`}>{formatValue(valB)}</td>
+                    <td className="px-3 text-right whitespace-nowrap">{renderDiff()}</td>
+                </tr>
+            );
+        };
+
+        const MainApp = () => {
+            const [lang, setLang] = React.useState('en');
+            const [currencyCode, setCurrencyCode] = React.useState('USD');
+            const [activeTab, setActiveTab] = React.useState('A');
+            const [viewPeriod, setViewPeriod] = React.useState(6);
+            
+            // Listen to global language change
+            React.useEffect(() => {
+                const handleLangChange = (e) => {
+                    setLang(e.detail);
+                };
+                window.addEventListener('gasgx-language-change', handleLangChange);
+                return () => window.removeEventListener('gasgx-language-change', handleLangChange);
+            }, []);
+
+            const t = REACT_I18N[lang];
+            const currencyConfig = CURRENCIES[currencyCode];
+
+            // Default Data
+            const initialDataA = { equipCost: 2000000, depreciationYears: 10, annualHours: 8322, efficiency: 40.1, gasPrice: 0.73, oilConsump: 0.3, oilPrice: 20, laborCost: 150000, loadRate: 100, omPrice: 0.03, salePrice: 0.45 };
+            const initialDataB = { equipCost: 1500000, depreciationYears: 10, annualHours: 8322, efficiency: 33.2, gasPrice: 0.73, oilConsump: 0.3, oilPrice: 20, laborCost: 150000, loadRate: 100, omPrice: 0.03, salePrice: 0.45 };
+
+            const [inputsA, setInputsA] = React.useState(initialDataA);
+            const [inputsB, setInputsB] = React.useState(initialDataB);
+
+            // Calculation Logic
+            const calculateResults = (inputs) => {
+                const ratingPower = 1000; 
+                const actualPower = ratingPower * (inputs.loadRate / 100);
+                const annualGen = actualPower * inputs.annualHours;
+                const gasLHV = 9.5;
+
+                const hourlyGas = actualPower / (inputs.efficiency / 100) / gasLHV;
+                const annualFuelCost = hourlyGas * inputs.annualHours * inputs.gasPrice;
+                const annualOilKg = actualPower * inputs.oilConsump * inputs.annualHours / 1000;
+                const annualOilCost = annualOilKg * inputs.oilPrice;
+                const annualOmCost = annualGen * inputs.omPrice;
+                const annualLaborCost = inputs.laborCost;
+
+                const annualOpEx = annualFuelCost + annualOilCost + annualOmCost + annualLaborCost;
+                const annualDepreciation = inputs.equipCost / inputs.depreciationYears;
+                
+                const depreciation3Year = annualDepreciation * 3;
+                const depreciation6Year = annualDepreciation * 6;
+
+                const totalCost3Year = (annualOpEx * 3) + depreciation3Year;
+                const totalCost6Year = (annualOpEx * 6) + depreciation6Year;
+
+                const lcoe3Year = totalCost3Year / (annualGen * 3);
+                const lcoe6Year = totalCost6Year / (annualGen * 6);
+
+                const revenue3Year = annualGen * 3 * inputs.salePrice;
+                const revenue6Year = annualGen * 6 * inputs.salePrice;
+                
+                const profit3Year = revenue3Year - totalCost3Year;
+                const profit6Year = revenue6Year - totalCost6Year;
+
+                const annualProfit = (annualGen * inputs.salePrice) - annualOpEx - annualDepreciation;
+                const annualCashFlow = (annualGen * inputs.salePrice) - annualOpEx; 
+                const paybackPeriod = inputs.equipCost > 0 ? inputs.equipCost / annualCashFlow : 0;
+                const roiAnnualized = inputs.equipCost > 0 ? (annualProfit / inputs.equipCost) * 100 : 0;
+
+                return {
+                    depreciation3: depreciation3Year, depreciation6: depreciation6Year,
+                    fuel3: annualFuelCost * 3, fuel6: annualFuelCost * 6,
+                    oil3: annualOilCost * 3, oil6: annualOilCost * 6,
+                    om3: annualOmCost * 3, om6: annualOmCost * 6,
+                    labor3: annualLaborCost * 3, labor6: annualLaborCost * 6,
+                    total3: totalCost3Year, total6: totalCost6Year,
+                    lcoe3: lcoe3Year, lcoe6: lcoe6Year,
+                    revenue3: revenue3Year, revenue6: revenue6Year,
+                    profit3: profit3Year, profit6: profit6Year,
+                    annualGen, paybackPeriod, roiAnnualized
+                };
+            };
+
+            const resultsA = calculateResults(inputsA);
+            const resultsB = calculateResults(inputsB);
+
+            const handleInputChange = (key, value) => {
+                if (activeTab === 'A') setInputsA(prev => ({ ...prev, [key]: value }));
+                else setInputsB(prev => ({ ...prev, [key]: value }));
+            };
+
+            const currentInputs = activeTab === 'A' ? inputsA : inputsB;
+            const getDataForView = (resA, resB, field) => {
+                if (viewPeriod === 3) return { valA: resA[field + '3'], valB: resB[field + '3'] };
+                return { valA: resA[field + '6'], valB: resB[field + '6'] };
+            };
+
+            return (
+                <div className="w-full">
+                    {/* Tool Header with Currency Selector */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-white/10">
+                        <div className="flex items-center gap-3">
+                             <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Icons.Activity className="text-gas-green" size={24}/>
+                                LCOE & ROI
+                            </h2>
+                            <span className="hidden md:inline px-2 py-0.5 rounded border border-gas-green/30 bg-gas-darkGreen/20 text-gas-green text-xs font-mono">{t.subtitle}</span>
+                        </div>
+                        <div className="flex items-center gap-2 bg-[#1A1A1A] rounded px-2 py-1 border border-white/5">
+                            <Icons.Globe size={14} className="text-gray-500"/>
+                            <select value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value)} className="bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer">
+                                {Object.entries(CURRENCIES).map(([code, conf]) => <option key={code} value={code} className="bg-gas-card">{code} ({conf.symbol})</option>)}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        {/* Left: Input Params */}
+                        <div className="lg:col-span-4 flex flex-col gap-4">
+                            <Card className="h-full">
+                                <div className="flex border-b border-white/10">
+                                    <button onClick={() => setActiveTab('A')} className={`flex-1 py-3 text-sm font-bold text-center transition-all ${activeTab === 'A' ? 'bg-gas-green text-black' : 'text-gray-500 hover:text-gray-300'}`}>{t.modelA}</button>
+                                    <button onClick={() => setActiveTab('B')} className={`flex-1 py-3 text-sm font-bold text-center transition-all ${activeTab === 'B' ? 'bg-gas-green text-black' : 'text-gray-500 hover:text-gray-300'}`}>{t.modelB}</button>
+                                </div>
+                                <div className="p-4 space-y-4">
+                                    <div className="bg-white/5 p-3 rounded-lg border border-white/5">
+                                        <div className="text-xs font-bold text-gas-green mb-3 flex items-center gap-1.5 uppercase tracking-wide">
+                                            <Icons.DollarSign size={12}/> {t.investment}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <InputGroup label={t.equipCost} value={currentInputs.equipCost} onChange={(v) => handleInputChange('equipCost', v)} unit={currencyConfig.symbol} icon={null} />
+                                            <InputGroup label={t.depreciation} value={currentInputs.depreciationYears} onChange={(v) => handleInputChange('depreciationYears', v)} unit={t.year} icon={null} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-xs font-bold text-gas-green mb-3 flex items-center gap-1.5 uppercase tracking-wide px-1">
+                                            <Icons.Settings size={12}/> {t.params}
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-1">
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <InputGroup label={t.hours} value={currentInputs.annualHours} onChange={(v) => handleInputChange('annualHours', v)} unit="h" icon={Icons.Clock} />
+                                                <InputGroup label={t.load} value={currentInputs.loadRate} onChange={(v) => handleInputChange('loadRate', v)} unit="%" icon={Icons.Activity} />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <InputGroup label={t.efficiency} value={currentInputs.efficiency} onChange={(v) => handleInputChange('efficiency', v)} unit="%" icon={Icons.Zap} />
+                                                <InputGroup label={t.gasPrice} value={currentInputs.gasPrice} onChange={(v) => handleInputChange('gasPrice', v)} unit={`${currencyConfig.symbol}/m³`} icon={Icons.TrendingUp} />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <InputGroup label={t.elecPrice} value={currentInputs.salePrice} onChange={(v) => handleInputChange('salePrice', v)} unit={`${currencyConfig.symbol}/kWh`} icon={Icons.Coins} />
+                                                <InputGroup label={t.omCost} value={currentInputs.omPrice} onChange={(v) => handleInputChange('omPrice', v)} unit={`${currencyConfig.symbol}/kWh`} icon={Icons.Wrench} />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <InputGroup label={t.oilConsump} value={currentInputs.oilConsump} onChange={(v) => handleInputChange('oilConsump', v)} unit="g/kWh" icon={null} />
+                                                <InputGroup label={t.oilPrice} value={currentInputs.oilPrice} onChange={(v) => handleInputChange('oilPrice', v)} unit={`${currencyConfig.symbol}/kg`} icon={null} />
+                                            </div>
+                                            <InputGroup label={t.labor} value={currentInputs.laborCost} onChange={(v) => handleInputChange('laborCost', v)} unit={`${currencyConfig.symbol}`} icon={null} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
+
+                        {/* Right: Analysis */}
+                        <div className="lg:col-span-8 flex flex-col gap-6">
+                            <div className="flex flex-wrap items-center gap-3 bg-[#202020] rounded-xl p-2 border border-white/5 shadow-inner">
+                                <div className="flex flex-1 gap-2 min-w-[200px]">
+                                    <button onClick={() => setViewPeriod(3)} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${viewPeriod === 3 ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>{t.period3}</button>
+                                    <button onClick={() => setViewPeriod(6)} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${viewPeriod === 6 ? 'bg-gas-green text-black shadow-glow' : 'text-slate-500 hover:text-white'}`}>{t.period6}</button>
+                                </div>
+                                <div className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-gas-darkGreen to-transparent rounded-lg text-xs text-white border border-gas-green/20 flex items-center justify-center sm:justify-start gap-2">
+                                    <span className="opacity-80">{t.totalGen}:</span> 
+                                    <span className="font-mono font-bold text-gas-green text-sm">{new Intl.NumberFormat(currencyConfig.locale).format(resultsA.annualGen * viewPeriod)} kWh</span>
+                                </div>
+                            </div>
+
+                            <Card className="flex-1 flex flex-col p-0 border-t-4 border-t-gas-green">
+                                <div className="overflow-x-auto w-full">
+                                    <table className="w-full text-left border-collapse min-w-[600px]">
+                                        <thead>
+                                            <tr className="bg-[#151515] border-b border-white/10 text-slate-500 text-[10px] uppercase tracking-wider">
+                                                <th className="py-3 px-3 font-semibold w-1/3">{t.items}</th>
+                                                <th className="py-3 px-3 text-right font-semibold text-slate-400 w-1/4">{t.modelA}</th>
+                                                <th className="py-3 px-3 text-right font-semibold text-slate-400 w-1/4">{t.modelB}</th>
+                                                <th className="py-3 px-3 text-right font-semibold text-gas-green w-1/6">{t.compare}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <ResultRow label={`1. ${t.fuelCost}`} {...getDataForView(resultsA, resultsB, 'fuel')} currency={currencyCode} locale={currencyConfig.locale} t={t} />
+                                            <ResultRow label={`2. ${t.oilCost2}`} {...getDataForView(resultsA, resultsB, 'oil')} currency={currencyCode} locale={currencyConfig.locale} t={t} />
+                                            <ResultRow label={`3. ${t.omCost2}`} {...getDataForView(resultsA, resultsB, 'om')} currency={currencyCode} locale={currencyConfig.locale} t={t} />
+                                            <ResultRow label={`4. ${t.laborCost2}`} {...getDataForView(resultsA, resultsB, 'labor')} currency={currencyCode} locale={currencyConfig.locale} t={t} />
+                                            <ResultRow label={`5. ${t.depCost}`} {...getDataForView(resultsA, resultsB, 'depreciation')} currency={currencyCode} locale={currencyConfig.locale} t={t} />
+                                            
+                                            <ResultRow label={t.totalCost} {...getDataForView(resultsA, resultsB, 'total')} currency={currencyCode} locale={currencyConfig.locale} isTotal={true} t={t} />
+                                            <ResultRow label={t.revenue} {...getDataForView(resultsA, resultsB, 'revenue')} currency={currencyCode} locale={currencyConfig.locale} isHighlight={true} t={t} />
+                                            <ResultRow label={t.netProfit} {...getDataForView(resultsA, resultsB, 'profit')} currency={currencyCode} locale={currencyConfig.locale} isProfit={true} isDiffInverse={true} t={t} />
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </Card>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Card className={`p-5 relative flex flex-col justify-between min-h-[150px] transition-all duration-300 ${resultsA.roiAnnualized > resultsB.roiAnnualized ? 'border-gas-green/40 bg-gas-darkGreen/10 shadow-glow' : 'opacity-80'}`}>
+                                    {resultsA.roiAnnualized > resultsB.roiAnnualized && <Icons.CheckCircle className="absolute top-4 right-4 text-gas-green" size={20}/>}
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="text-sm text-gas-green font-bold flex items-center gap-2"><Icons.TrendingUp size={14}/> {t.modelA} {t.roiTitle}</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 mt-auto mb-4">
+                                        <div>
+                                            <div className="text-[10px] text-slate-500 uppercase font-bold">{t.payback}</div>
+                                            <div className="text-2xl font-bold text-white tracking-tight">{resultsA.paybackPeriod.toFixed(1)} <span className="text-sm font-normal text-slate-400">{t.year}</span></div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] text-slate-500 uppercase font-bold">{t.roi}</div>
+                                            <div className={`text-2xl font-bold tracking-tight ${resultsA.roiAnnualized > 0 ? 'text-gas-green' : 'text-red-400'}`}>
+                                                {resultsA.roiAnnualized.toFixed(1)}<span className="text-sm">%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-[11px] text-slate-400 pt-3 border-t border-white/10 flex justify-between font-mono">
+                                        <span>LCOE: {currencyConfig.symbol}{resultsA[`lcoe${viewPeriod}`].toFixed(3)}/kWh</span>
+                                    </div>
+                                </Card>
+
+                                <Card className={`p-5 relative flex flex-col justify-between min-h-[150px] transition-all duration-300 ${resultsB.roiAnnualized > resultsA.roiAnnualized ? 'border-gas-green/40 bg-gas-darkGreen/10 shadow-glow' : 'opacity-80'}`}>
+                                    {resultsB.roiAnnualized > resultsA.roiAnnualized && <Icons.CheckCircle className="absolute top-4 right-4 text-gas-green" size={20}/>}
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="text-sm text-gas-green font-bold flex items-center gap-2"><Icons.TrendingUp size={14}/> {t.modelB} {t.roiTitle}</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 mt-auto mb-4">
+                                        <div>
+                                            <div className="text-[10px] text-slate-500 uppercase font-bold">{t.payback}</div>
+                                            <div className="text-2xl font-bold text-white tracking-tight">{resultsB.paybackPeriod.toFixed(1)} <span className="text-sm font-normal text-slate-400">{t.year}</span></div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] text-slate-500 uppercase font-bold">{t.roi}</div>
+                                            <div className={`text-2xl font-bold tracking-tight ${resultsB.roiAnnualized > 0 ? 'text-gas-green' : 'text-red-400'}`}>
+                                                {resultsB.roiAnnualized.toFixed(1)}<span className="text-sm">%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-[11px] text-slate-400 pt-3 border-t border-white/10 flex justify-between font-mono">
+                                        <span>LCOE: {currencyConfig.symbol}{resultsB[`lcoe${viewPeriod}`].toFixed(3)}/kWh</span>
+                                    </div>
+                                </Card>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<MainApp />);
+    </script>
+</body>
+</html>

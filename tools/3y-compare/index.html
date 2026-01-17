@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx - 3-Year Operational Data & ROI Analysis</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome 6.5.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- html2canvas for Screenshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Chart.js (Added for ROI Tool) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* 卡片磨砂效果 */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Mega Menu 动画 */
+        .mega-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: #151515;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .mega-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        /* Dropdown Menu 动画 */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            min-width: 220px;
+            background-color: #151515;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0 0 8px 8px;
+            padding: 0.5rem 0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .dropdown-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-item-link:hover { color: #5DD62C; }
+        
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after { width: 100%; }
+
+        /* Footer Link Hover */
+        .footer-link {
+            color: #94a3b8;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .footer-link:hover {
+            color: #5DD62C;
+        }
+
+        /* Mobile Menu Styles */
+        #mobile-menu-container {
+            transition: transform 0.3s ease-in-out;
+        }
+        .mobile-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        /* Footer Accordion (Mobile) */
+        .footer-accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        /* Floating Share Button Animation */
+        @keyframes floatPulse {
+            0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); }
+        }
+        .float-btn {
+            animation: floatPulse 2s infinite;
+        }
+
+        /* ROI Tool Specific Styles */
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #5DD62C; cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px rgba(93, 214, 44, 0.5); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #333; border-radius: 2px; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative">
+
+    <!-- Header (Structure copied from index_header_footer.html) -->
+    <header class="fixed top-0 w-full z-50 gas-card h-16 transition-all duration-300">
+        <div class="max-w-[1800px] mx-auto px-4 h-full flex justify-between items-center relative">
+            
+            <!-- Left: Logo + Tagline -->
+            <div class="flex items-center gap-3 w-auto shrink-0 mr-4">
+                <a href="/index.html" target="_blank" class="flex items-center gap-2 group">
+                    <h1 class="text-2xl font-bold tracking-wider text-gas-green hover:text-white transition-colors cursor-pointer">GasGx</h1>
+                </a>
+                
+                <!-- Tagline: Header (Desktop) -->
+                <div class="hidden md:flex flex-col justify-center border-l border-gray-700 pl-3 h-8">
+                    <span id="header-tagline" class="text-gas-green text-xs font-bold tracking-wide">Natural Gas Power Mining Assistant</span>
+                </div>
+            </div>
+
+            <!-- Center: Desktop Navigation (Populated by JS) -->
+            <nav id="desktop-nav" class="hidden lg:flex items-center justify-center gap-2 xl:gap-6 h-full flex-1">
+                <!-- JS Generated -->
+            </nav>
+
+            <!-- Right: Language & Mobile Toggle -->
+            <div class="flex items-center gap-4 w-auto shrink-0 justify-end ml-4">
+                <!-- Language Switcher (Desktop) -->
+                <div class="hidden sm:flex items-center gap-1 bg-[#111] border border-white/10 rounded-full px-1 py-1">
+                    <button onclick="app.setLanguage('zh')" id="btn-lang-zh" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">CN</button>
+                    <button onclick="app.setLanguage('en')" id="btn-lang-en" class="px-2 py-1 rounded-full text-[10px] font-bold transition-all w-8 text-center text-black bg-gas-green shadow-glow">EN</button>
+                    <button onclick="app.setLanguage('ru')" id="btn-lang-ru" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">RU</button>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" onclick="app.toggleMobileMenu()" class="lg:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation Overlay -->
+    <div id="mobile-menu-container" class="fixed inset-0 z-40 bg-[#111] transform translate-x-full pt-20 px-4 pb-8 overflow-y-auto lg:hidden">
+        <!-- Mobile Lang Switcher -->
+        <div class="flex justify-center gap-4 mb-6 border-b border-white/10 pb-4">
+            <div class="flex items-center gap-2 bg-[#222] border border-white/10 rounded-full px-1 py-1">
+                <button onclick="app.setLanguage('zh')" id="mob-btn-lang-zh" class="px-4 py-2 rounded-full text-xs font-bold transition-all text-gray-400">CN</button>
+                <button onclick="app.setLanguage('en')" id="mob-btn-lang-en" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-black bg-gas-green">EN</button>
+                <button onclick="app.setLanguage('ru')" id="mob-btn-lang-ru" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-gray-400">RU</button>
+            </div>
+        </div>
+        
+        <nav id="mobile-nav-content" class="flex flex-col space-y-1">
+            <!-- JS Generated Mobile Nav -->
+        </nav>
+    </div>
+
+    <!-- Main Content Area: ROI Tool -->
+    <main class="flex-grow pt-24 pb-12 px-4 w-full max-w-[1800px] mx-auto">
+        <!-- ROI Tool Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-3xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+                <span class="text-gas-green">3-Year</span> Operational Data & ROI Comparison
+            </h1>
+            <p class="text-gray-400 text-sm md:text-lg max-w-3xl mx-auto leading-relaxed" data-i18n="roiDesc">
+                Compare models from VMAN, Weichai, MWM, Cummins, Hanma, and Yuchai. Data sourced from latest 2024-2025 specs.
+            </p>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Left Sidebar: DIY Controls -->
+            <div class="w-full lg:w-1/4 shrink-0">
+                <div class="gas-card rounded-2xl p-6 sticky top-24 border border-white/10">
+                    <h3 class="text-xl font-bold text-white mb-8 flex items-center gap-3 pb-4 border-b border-white/10">
+                        <i class="fa-solid fa-sliders text-gas-green"></i> <span data-i18n="parameters">Parameters (DIY)</span>
+                    </h3>
+
+                    <!-- Gas Price -->
+                    <div class="mb-8">
+                        <div class="flex justify-between mb-3">
+                            <label class="text-sm text-gray-400 font-medium" data-i18n="gasPrice">Gas Price ($/m³)</label>
+                            <span class="text-gas-green font-bold text-lg" id="val-gasPrice">$0.10</span>
+                        </div>
+                        <input type="range" id="input-gasPrice" min="0.01" max="0.50" step="0.01" value="0.10" class="w-full h-2">
+                    </div>
+
+                    <!-- Elec Price -->
+                    <div class="mb-8">
+                        <div class="flex justify-between mb-3">
+                            <label class="text-sm text-gray-400 font-medium" data-i18n="elecPrice">Revenue/Price ($/kWh)</label>
+                            <span class="text-gas-green font-bold text-lg" id="val-elecPrice">$0.07</span>
+                        </div>
+                        <input type="range" id="input-elecPrice" min="0.03" max="0.20" step="0.005" value="0.07" class="w-full h-2">
+                        <p class="text-xs text-gray-500 mt-2 flex items-center gap-1"><i class="fa-solid fa-circle-info text-[10px]"></i> <span data-i18n="elecPriceHint">* Revenue per kWh generated</span></p>
+                    </div>
+
+                    <!-- Hours -->
+                    <div class="mb-8">
+                        <div class="flex justify-between mb-3">
+                            <label class="text-sm text-gray-400 font-medium" data-i18n="hoursYear">Running Hours / Year</label>
+                            <span class="text-gas-green font-bold text-lg" id="val-hours">8000 h</span>
+                        </div>
+                        <input type="range" id="input-hours" min="1000" max="8760" step="100" value="8000" class="w-full h-2">
+                    </div>
+
+                    <!-- Capex -->
+                    <div class="mb-8">
+                        <div class="flex justify-between mb-3">
+                            <label class="text-sm text-gray-400 font-medium" data-i18n="capex">Est. Unit Price Strategy</label>
+                            <span class="text-gas-green font-bold" id="val-capex">Real/Avg</span>
+                        </div>
+                        <select id="input-capex" class="w-full bg-[#111] border border-gray-700 text-gray-300 rounded-lg px-4 py-3 text-sm focus:border-gas-green outline-none transition-colors">
+                            <option value="market" selected data-i18n="optMarket">Market Real/Avg</option>
+                            <option value="low" data-i18n="optLow">Optimistic (-20%)</option>
+                            <option value="high" data-i18n="optHigh">Conservative (+20%)</option>
+                        </select>
+                    </div>
+
+                    <button onclick="app.resetCalculator()" class="w-full py-3 border border-white/10 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors font-medium flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i> <span data-i18n="reset">Reset Defaults</span>
+                    </button>
+                    
+                    <div class="mt-8 pt-6 border-t border-white/10 bg-white/5 rounded-lg p-4">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase mb-4 tracking-wider" data-i18n="marketAvg">Averages</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-[10px] text-gray-500 mb-1">Avg LCOE</div>
+                                <div class="text-xl font-bold text-gas-green" id="avg-lcoe">$0.035</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-gray-500 mb-1">Avg Efficiency</div>
+                                <div class="text-xl font-bold text-white" id="avg-eff">38.5%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Results Grid & Chart -->
+            <div class="w-full lg:w-3/4">
+                <!-- Group 1 -->
+                <div class="mb-12">
+                    <div class="flex items-center justify-between mb-6 pb-2 border-b border-white/5">
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                            <i class="fa-solid fa-bolt text-yellow-500"></i> <span data-i18n="group1Title">1MW+ Power Class</span>
+                        </h2>
+                        <span class="text-xs text-gray-500 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">VMAN, Weichai, MWM, Cummins</span>
+                    </div>
+                    <div id="grid-large" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6"></div>
+                </div>
+
+                <!-- Group 2 -->
+                <div>
+                    <div class="flex items-center justify-between mb-6 pb-2 border-b border-white/5">
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                            <i class="fa-solid fa-layer-group text-blue-500"></i> <span data-i18n="group2Title">200kW - 600kW Class</span>
+                        </h2>
+                        <span class="text-xs text-gray-500 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">VMAN, Yuchai, Hanma</span>
+                    </div>
+                    <div id="grid-small" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6"></div>
+                </div>
+
+                <!-- Chart -->
+                <div class="mt-12 gas-card rounded-2xl p-8 border border-white/10">
+                    <div class="flex justify-between items-center mb-8">
+                        <h3 class="text-xl font-bold text-white" data-i18n="chartTitle">3-Year Cumulative Profit Comparison</h3>
+                        <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <span class="w-3 h-3 rounded-full bg-gas-green"></span> Profit
+                            <span class="w-3 h-3 rounded-full bg-red-500 ml-2"></span> Loss
+                        </div>
+                    </div>
+                    <div class="h-[400px] w-full">
+                        <canvas id="roiChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer (Structure copied from index_header_footer.html) -->
+    <footer class="bg-[#0a0a0a] border-t border-white/10 mt-auto pt-10 pb-8 relative z-10">
+        <div class="max-w-[1800px] mx-auto px-6">
+            
+            <!-- Footer Top Row: Brand & Contact -->
+            <div class="flex flex-col md:flex-row justify-between items-start mb-8 pb-6 border-b border-white/5">
+                <!-- Left: Logo & Tagline -->
+                <div class="mb-6 md:mb-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-2xl font-bold text-gas-green">GasGx</span>
+                    </div>
+                    <p class="text-sm text-gray-400 font-medium" data-i18n="footerTagline">Making natural gas power mining easier</p>
+                </div>
+
+                <!-- Right: Contact Info -->
+                <div class="flex flex-col md:items-end space-y-2">
+                    <h4 class="text-white font-bold text-sm uppercase tracking-wider mb-1" data-i18n="联系我们">Contact Us</h4>
+                    <a href="mailto:contact@gasgx.com" class="text-sm text-gray-400 hover:text-gas-green flex items-center gap-2 transition-colors">
+                        <i class="fa-solid fa-envelope"></i> contact@gasgx.com
+                    </a>
+                    <div class="text-sm text-gray-400 flex items-center gap-2">
+                        <i class="fa-brands fa-weixin"></i> <span class="hover:text-gas-green cursor-pointer">www_gasgx_com</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Links: Row Layout (Desktop) / Accordion (Mobile) -->
+            <div id="footer-links" class="mb-10 space-y-2">
+                <!-- JS Generated -->
+            </div>
+
+            <!-- Bottom: Copyright & Social -->
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-white/5">
+                <div class="text-xs text-gray-600">
+                    © 2026 GasGx. All rights reserved.
+                </div>
+
+                <div class="flex gap-4">
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-tiktok text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-linkedin text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-facebook text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-weixin text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-x-twitter text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-youtube text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-telegram text-lg"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Floating Canvas-Style Share Button -->
+    <button onclick="app.captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group" title="Share Snapshot">
+        <i class="fa-solid fa-camera text-xl"></i>
+        <!-- Tooltip -->
+        <span class="absolute right-14 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
+            Share Page
+        </span>
+    </button>
+
+    <!-- Back to Top -->
+    <button onclick="window.scrollTo({top:0, behavior:'smooth'})" id="backToTopBtn" class="fixed bottom-6 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-[0_0_15px_rgba(93,214,44,0.5)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-95 opacity-0" id="shareModalContent">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-check text-2xl text-gas-green"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3>
+                <p class="text-sm text-gray-400">Full page captured successfully.</p>
+            </div>
+            <button onclick="app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+        </div>
+    </div>
+
+    <!-- Application Logic (Merged ROI Tool + Site Navigation) -->
+    <script>
+        // 1. Core Site Data (From index_header_footer.html)
+        const AppData = {
+            navigation: [
+                { title: "首页", path: "/index.html", type: "link", icon: "fa-solid fa-house" },
+                {
+                    title: "解决方案",
+                    path: "/solutions",
+                    type: "menu",
+                    children: [
+                        { title: "油气井/伴生气发电", path: "/solutions/oilfield" },
+                        { title: "工业园区与分布式能源", path: "/solutions/industrial" },
+                        { title: "数据中心 / 挖矿电力", path: "/solutions/mining" },
+                        { title: "热电联供 CHP", path: "/solutions/chp" }
+                    ]
+                },
+                {
+                    title: "机型库",
+                    path: "/products",
+                    type: "mega",
+                    sections: [
+                        {
+                            header: "按功率分类",
+                            items: [
+                                { title: "小于 500 kW", path: "/products/power-range/0-500kw" },
+                                { title: "500 – 1,000 kW", path: "/products/power-range/500-1000kw" },
+                                { title: "1 MW 以上", path: "/products/power-range/1mw-plus" }
+                            ]
+                        },
+                        {
+                            header: "按冷却方式",
+                            items: [
+                                { title: "风冷", path: "/products/cooling/air" },
+                                { title: "液冷", path: "/products/cooling/liquid" }
+                            ]
+                        },
+                        {
+                            header: "按气源类型",
+                            items: [
+                                { title: "天然气", path: "/products/gas/natural" },
+                                { title: "伴生气", path: "/products/gas/associated" },
+                                { title: "低甲烷值气", path: "/products/gas/low-methane" }
+                            ]
+                        },
+                        {
+                            header: "按部署形式",
+                            items: [
+                                { title: "集装箱机组", path: "/products/deployment/container" },
+                                { title: "一体化机组 AIS", path: "/products/deployment/ais" },
+                                { title: "滑撬式机组", path: "/products/deployment/skid" }
+                            ]
+                        },
+                        {
+                            header: "按品牌",
+                            items: [
+                                { title: "全部品牌", path: "/products/brands" },
+                                { title: "中国生产", path: "/products/brands/china" },
+                                { title: "海外生产", path: "/products/brands/overseas" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "排行榜",
+                    path: "/rankings",
+                    type: "mega",
+                    gridCols: "grid-cols-6",
+                    sections: [
+                        {
+                            header: "性能榜",
+                            items: [
+                                { title: "综合性能 TOP 榜", path: "/rankings/performance" },
+                                { title: "高效率榜", path: "/rankings/efficiency" },
+                                { title: "天然气内燃机发电效率排行榜", path: "/rankings/engine-efficiency" },
+                                { title: "天然气内燃机热效率排行榜", path: "/rankings/thermal-efficiency" },
+                                { title: "天然气内燃机耗气量排行榜", path: "/rankings/gas-consumption" }
+                            ]
+                        },
+                        {
+                            header: "经济性榜",
+                            items: [
+                                { title: "最佳 ROI 榜", path: "/rankings/roi" },
+                                { title: "最低发电成本 LCOE 榜", path: "/rankings/lcoe" },
+                                { title: "天然气内燃机折旧排行榜", path: "/rankings/depreciation" },
+                                { title: "天然气内燃机投资回报率排行榜", path: "/rankings/engine-roi" }
+                            ]
+                        },
+                        {
+                            header: "可靠性榜",
+                            items: [
+                                { title: "高可靠机组榜", path: "/rankings/reliability" },
+                                { title: "最长 MTBF 榜", path: "/rankings/mtbf" },
+                                { title: "天然气内燃机保养时间排行榜", path: "/rankings/maintenance-interval" },
+                                { title: "天然气内燃机备件保障排行榜", path: "/rankings/spare-parts" }
+                            ]
+                        },
+                        {
+                            header: "品质与环保榜",
+                            items: [
+                                { title: "天然气内燃机排放排行榜", path: "/rankings/emissions" },
+                                { title: "天然气内燃机噪音排行榜", path: "/rankings/noise" }
+                            ]
+                        },
+                        {
+                            header: "系统能力榜",
+                            items: [
+                                { title: "天然气内燃机发电机排行榜", path: "/rankings/generator" },
+                                { title: "天然气内燃机控制系统排行榜", path: "/rankings/control-system" }
+                            ]
+                        },
+                        {
+                            header: "区域榜",
+                            items: [
+                                { title: "美国市场榜", path: "/rankings/usa" },
+                                { title: "加拿大市场榜", path: "/rankings/canada" },
+                                { title: "中东市场榜", path: "/rankings/middle-east" },
+                                { title: "俄罗斯市场榜", path: "/rankings/russia" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "应用场景",
+                    path: "/use-cases",
+                    type: "menu",
+                    children: [
+                        { title: "油气井 / 伴生气", path: "/use-cases/oilfield" },
+                        { title: "工业与园区能源", path: "/use-cases/industrial" },
+                        { title: "挖矿 / 数据中心", path: "/use-cases/mining" },
+                        { title: "CHP 热电联供", path: "/use-cases/chp" }
+                    ]
+                },
+                {
+                    title: "工具箱",
+                    path: "/tools",
+                    type: "mega",
+                    gridCols: "grid-cols-5",
+                    sections: [
+                        {
+                            header: "经济测算工具",
+                            items: [
+                                { title: "LCOE 成本计算器", path: "/tools/lcoe-calculator" },
+                                { title: "ROI 回报估算器", path: "/tools/roi" },
+                                { title: "燃气发电挖矿收益计算器", path: "/tools/mining-power-calc" },
+                                { title: "蒙特卡洛模拟盈利分析", path: "/tools/monte-carlo-profit" },
+                                { title: "天然气发电耗气成本分析", path: "/tools/gas-cost-analysis" }
+                            ]
+                        },
+                        {
+                            header: "工程与技术工具",
+                            items: [
+                                { title: "气质适配工具", path: "/tools/gas-fit" },
+                                { title: "排放估算工具", path: "/tools/emission" },
+                                { title: "气体分析计算器", path: "/tools/gas-analyzer" },
+                                { title: "能电转换计算器", path: "/tools/energy-conversion" },
+                                { title: "天然气主要成分热值表", path: "/tools/gas-composition-heat" }
+                            ]
+                        },
+                        {
+                            header: "项目与选型工具",
+                            items: [
+                                { title: "站点匹配向导", path: "/tools/site-fit" },
+                                { title: "气源所在地分析", path: "/tools/gas-location-analysis" },
+                                { title: "燃气发动机选型与运营经济性", path: "/tools/engine-selection" },
+                                { title: "天然气发电机机油消耗率", path: "/tools/oil-consumption" },
+                                { title: "车机 VS 工业机 10MW 对比分析", path: "/tools/vehicle-vs-industrial-10mw" },
+                                { title: "多机型对比 3 年运营数据", path: "/tools/3y-compare" }
+                            ]
+                        },
+                        {
+                            header: "矿工专区（托管与算力分析）",
+                            items: [
+                                { title: "挖矿收益计算器", path: "/tools/mining-income-calculator" },
+                                { title: "矿机盈利能力计算器", path: "/tools/miner-profitability" },
+                                { title: "矿机选购速查", path: "/tools/miner-buying-guide" }
+                            ]
+                        },
+                        {
+                            header: "全球支持与合规",
+                            items: [
+                                { title: "加拿大 AECO 天然气价格预测", path: "/tools/aeco-price-forecast" },
+                                { title: "全球物流运输推荐", path: "/tools/global-logistics" },
+                                { title: "全球合规政策", path: "/tools/global-compliance" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "资料中心",
+                    path: "/resources",
+                    type: "mega",
+                    gridCols: "grid-cols-4",
+                    sections: [
+                        {
+                            header: "文档",
+                            items: [
+                                { title: "白皮书", path: "/resources/whitepapers" },
+                                { title: "行业报告", path: "/resources/reports" }
+                            ]
+                        },
+                        {
+                            header: "案例",
+                            items: [
+                                { title: "全部案例", path: "/resources/case-studies" },
+                                { title: "按区域查看", path: "/resources/case-studies/regions" },
+                                { title: "按场景查看", path: "/resources/case-studies/scenarios" }
+                            ]
+                        },
+                        {
+                            header: "技术库",
+                            items: [
+                                { title: "技术参数表", path: "/resources/datasheets" },
+                                { title: "认证与合规文件", path: "/resources/certifications" }
+                            ]
+                        },
+                        {
+                            header: "媒体与支持",
+                            items: [
+                                { title: "视频与教程", path: "/resources/videos" },
+                                { title: "常见问答 FAQ", path: "/resources/faq" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "服务支持",
+                    path: "/support",
+                    type: "menu",
+                    children: [
+                        { title: "服务网络", path: "/support/network" },
+                        { title: "技术支持", path: "/support/tech" },
+                        { title: "售后与保养", path: "/support/service" }
+                    ]
+                },
+                {
+                    title: "关于我们",
+                    path: "/about",
+                    type: "menu",
+                    children: [
+                        { title: "公司介绍", path: "/about/company" },
+                        { title: "联系我们", path: "/about/contact" }
+                    ]
+                }
+            ],
+
+            // Extended I18n (Site Nav + ROI Tool)
+            i18n: {
+                zh: {
+                    // Site Nav
+                    tagline: "天然气发电挖矿助手", footerTagline: "让天然气发电挖矿更简单",
+                    "首页": "首页", "解决方案": "解决方案", "机型库": "机型库", "排行榜": "排行榜", "应用场景": "应用场景",
+                    "工具箱": "工具箱", "资料中心": "资料中心", "服务支持": "服务支持", "关于我们": "关于我们", "联系我们": "联系我们",
+                    "油气井/伴生气发电": "油气井/伴生气发电", "工业园区与分布式能源": "工业园区与分布式能源", "数据中心 / 挖矿电力": "数据中心 / 挖矿电力",
+                    "热电联供 CHP": "热电联供 CHP", "按功率分类": "按功率分类", "按冷却方式": "按冷却方式", "按气源类型": "按气源类型",
+                    "按部署形式": "按部署形式", "按品牌": "按品牌", "小于 500 kW": "小于 500 kW", "500 – 1,000 kW": "500 – 1,000 kW", "1 MW 以上": "1 MW 以上",
+                    "风冷": "风冷", "液冷": "液冷", "天然气": "天然气", "伴生气": "伴生气", "低甲烷值气": "低甲烷值气", "集装箱机组": "集装箱机组",
+                    "一体化机组 AIS": "一体化机组 AIS", "滑撬式机组": "滑撬式机组", "全部品牌": "全部品牌", "中国生产": "中国生产", "海外生产": "海外生产",
+                    "性能榜": "性能榜", "经济性榜": "经济性榜", "可靠性榜": "可靠性榜", "品质与环保榜": "品质与环保榜", "系统能力榜": "系统能力榜", "区域榜": "区域榜",
+                    "综合性能 TOP 榜": "综合性能 TOP 榜", "高效率榜": "高效率榜", "天然气内燃机发电效率排行榜": "发电效率排行榜", "天然气内燃机热效率排行榜": "热效率排行榜",
+                    "天然气内燃机耗气量排行榜": "耗气量排行榜", "最佳 ROI 榜": "最佳 ROI 榜", "最低发电成本 LCOE 榜": "最低 LCOE 榜", "天然气内燃机折旧排行榜": "折旧排行榜",
+                    "天然气内燃机投资回报率排行榜": "投资回报率排行榜", "高可靠机组榜": "高可靠机组榜", "最长 MTBF 榜": "最长 MTBF 榜", "天然气内燃机保养时间排行榜": "保养时间排行榜",
+                    "天然气内燃机备件保障排行榜": "备件保障排行榜", "天然气内燃机排放排行榜": "排放排行榜", "天然气内燃机噪音排行榜": "噪音排行榜",
+                    "天然气内燃机发电机排行榜": "发电机排行榜", "天然气内燃机控制系统排行榜": "控制系统排行榜", "美国市场榜": "美国市场榜", "加拿大市场榜": "加拿大市场榜",
+                    "中东市场榜": "中东市场榜", "俄罗斯市场榜": "俄罗斯市场榜", "油气井 / 伴生气": "油气井 / 伴生气", "工业与园区能源": "工业与园区能源", "挖矿 / 数据中心": "挖矿 / 数据中心",
+                    "CHP 热电联供": "CHP 热电联供", "经济测算工具": "经济测算工具", "工程与技术工具": "工程与技术工具", "项目与选型工具": "项目与选型工具", "矿工专区（托管与算力分析）": "矿工专区",
+                    "全球支持与合规": "全球支持与合规", "LCOE 成本计算器": "LCOE 成本计算器", "ROI 回报估算器": "ROI 回报估算器", "燃气发电挖矿收益计算器": "挖矿收益计算器",
+                    "蒙特卡洛模拟盈利分析": "蒙特卡洛模拟", "天然气发电耗气成本分析": "耗气成本分析", "气质适配工具": "气质适配工具", "排放估算工具": "排放估算工具",
+                    "气体分析计算器": "气体分析计算器", "能电转换计算器": "能电转换计算器", "天然气主要成分热值表": "热值表", "站点匹配向导": "站点匹配向导", "气源所在地分析": "气源所在地分析",
+                    "燃气发动机选型与运营经济性": "选型与经济性", "天然气发电机机油消耗率": "机油消耗率", "车机 VS 工业机 10MW 对比分析": "车机 VS 工业机",
+                    "多机型对比 3 年运营数据": "3年运营数据对比", "挖矿收益计算器": "挖矿收益计算器", "矿机盈利能力计算器": "矿机盈利能力", "矿机选购速查": "矿机选购速查",
+                    "加拿大 AECO 天然气价格预测": "AECO 价格预测", "全球物流运输推荐": "物流运输推荐", "全球合规政策": "全球合规政策", "文档": "文档", "案例": "案例",
+                    "技术库": "技术库", "媒体与支持": "媒体与支持", "白皮书": "白皮书", "行业报告": "行业报告", "全部案例": "全部案例", "按区域查看": "按区域查看",
+                    "按场景查看": "按场景查看", "技术参数表": "技术参数表", "认证与合规文件": "认证与合规文件", "视频与教程": "视频与教程", "常见问答 FAQ": "常见问答 FAQ",
+                    "服务网络": "服务网络", "技术支持": "技术支持", "售后与保养": "售后与保养", "公司介绍": "公司介绍",
+                    // ROI Tool Specifics
+                    roiDesc: "对比 VMAN、潍柴、MWM、康明斯、汉马、玉柴等主流机型。数据源自2024-2025最新原厂参数。",
+                    parameters: "测算参数 (DIY)", gasPrice: "天然气价格 ($/m³)", elecPrice: "托管电价/收益 ($/kWh)",
+                    hoursYear: "年运行小时数", elecPriceHint: "* 每发一度电的收入或节省成本", capex: "预估单价策略",
+                    optMarket: "市场实价 (默认)", optLow: "乐观 (低成本 -20%)", optHigh: "保守 (高成本 +20%)", reset: "重置默认值",
+                    marketAvg: "市场平均指标", group1Title: "1MW+ 主力机型", group2Title: "200kW - 600kW 轻型机组",
+                    chartTitle: "3年累计净利润对比 (USD)", eff: "电效率", cons: "耗气量",
+                    yrProfit: "3年净利润", roi: "回本周期", lcoe: "度电成本", months: "个月",
+                    bestRoi: "最佳回报", topEff: "最高效率", lowCapex: "低门槛", revenue3y: "3年总营收", cost3y: "3年总成本"
+                },
+                en: {
+                    // Site Nav
+                    tagline: "Natural Gas Power Mining Assistant", footerTagline: "Making natural gas power mining easier",
+                    "首页": "Home", "解决方案": "Solutions", "机型库": "Products", "排行榜": "Rankings", "应用场景": "Use Cases",
+                    "工具箱": "Tools", "资料中心": "Resources", "服务支持": "Support", "关于我们": "About Us", "联系我们": "Contact Us",
+                    "油气井/伴生气发电": "Oil & Gas Power", "工业园区与分布式能源": "Industrial Power", "数据中心 / 挖矿电力": "Data Center / Mining",
+                    "热电联供 CHP": "CHP Cogeneration", "按功率分类": "By Power", "按冷却方式": "By Cooling", "按气源类型": "By Gas Type",
+                    "按部署形式": "By Deployment", "按品牌": "By Brand", "小于 500 kW": "< 500 kW", "500 – 1,000 kW": "500 – 1,000 kW", "1 MW 以上": "1 MW+",
+                    "风冷": "Air Cooled", "液冷": "Liquid Cooled", "天然气": "Natural Gas", "伴生气": "Associated Gas", "低甲烷值气": "Low Methane Gas",
+                    "集装箱机组": "Containerized", "一体化机组 AIS": "Integrated (AIS)", "滑撬式机组": "Skid Mounted", "全部品牌": "All Brands",
+                    "中国生产": "Made in China", "海外生产": "Overseas Brands", "性能榜": "Performance", "经济性榜": "Economics",
+                    "可靠性榜": "Reliability", "品质与环保榜": "Quality & Eco", "系统能力榜": "System Cap.", "区域榜": "Regions",
+                    "综合性能 TOP 榜": "Top Performance", "高效率榜": "High Efficiency", "天然气内燃机发电效率排行榜": "Elec. Efficiency Rank",
+                    "天然气内燃机热效率排行榜": "Thermal Efficiency Rank", "天然气内燃机耗气量排行榜": "Gas Consumption Rank", "最佳 ROI 榜": "Best ROI",
+                    "最低发电成本 LCOE 榜": "Lowest LCOE", "天然气内燃机折旧排行榜": "Depreciation Rank", "天然气内燃机投资回报率排行榜": "ROI Rank",
+                    "高可靠机组榜": "High Reliability", "最长 MTBF 榜": "Longest MTBF", "天然气内燃机保养时间排行榜": "Maintenance Interval Rank",
+                    "天然气内燃机备件保障排行榜": "Spare Parts Rank", "天然气内燃机排放排行榜": "Emission Rank", "天然气内燃机噪音排行榜": "Noise Rank",
+                    "天然气内燃机发电机排行榜": "Generator Rank", "天然气内燃机控制系统排行榜": "Control System Rank", "美国市场榜": "USA Market",
+                    "加拿大市场榜": "Canada Market", "中东市场榜": "Middle East Market", "俄罗斯市场榜": "Russia Market",
+                    "油气井 / 伴生气": "Oilfield / Associated Gas", "工业与园区能源": "Industrial & Park", "挖矿 / 数据中心": "Mining / Data Center",
+                    "CHP 热电联供": "CHP", "经济测算工具": "Economic Tools", "工程与技术工具": "Engineering Tools", "项目与选型工具": "Selection Tools",
+                    "矿工专区（托管与算力分析）": "Miners Zone", "全球支持与合规": "Global Support", "LCOE 成本计算器": "LCOE Calculator", "ROI 回报估算器": "ROI Estimator",
+                    "燃气发电挖矿收益计算器": "Gas Mining Revenue", "蒙特卡洛模拟盈利分析": "Monte Carlo Sim", "天然气发电耗气成本分析": "Gas Cost Analysis",
+                    "气质适配工具": "Gas Fit Tool", "排放估算工具": "Emission Estimator", "气体分析计算器": "Gas Analyzer", "能电转换计算器": "Energy Conversion",
+                    "天然气主要成分热值表": "Heat Value Table", "站点匹配向导": "Site Fit Wizard", "气源所在地分析": "Location Analysis",
+                    "燃气发动机选型与运营经济性": "Engine Selection & Econ", "天然气发电机机油消耗率": "Oil Consumption", "车机 VS 工业机 10MW 对比分析": "Vehicle vs Ind. (10MW)",
+                    "多机型对比 3 年运营数据": "3-Year Ops Data", "挖矿收益计算器": "Mining Revenue Calc", "矿机盈利能力计算器": "Miner Profitability",
+                    "矿机选购速查": "Miner Buyer Guide", "加拿大 AECO 天然气价格预测": "AECO Price Forecast", "全球物流运输推荐": "Global Logistics",
+                    "全球合规政策": "Global Compliance", "文档": "Documents", "案例": "Case Studies", "技术库": "Tech Library",
+                    "媒体与支持": "Media & Support", "白皮书": "Whitepapers", "行业报告": "Industry Reports", "全部案例": "All Cases",
+                    "按区域查看": "By Region", "按场景查看": "By Scenario", "技术参数表": "Datasheets", "认证与合规文件": "Certifications",
+                    "视频与教程": "Videos & Tutorials", "常见问答 FAQ": "FAQ", "服务网络": "Service Network", "技术支持": "Tech Support",
+                    "售后与保养": "After-sales", "公司介绍": "Company Profile",
+                    // ROI Tool Specifics
+                    roiDesc: "Compare models from VMAN, Weichai, MWM, Cummins, Hanma, and Yuchai. Data sourced from latest 2024-2025 specs.",
+                    parameters: "Parameters (DIY)", gasPrice: "Gas Price ($/m³)", elecPrice: "Managed Elec Price ($/kWh)",
+                    hoursYear: "Running Hours / Year", elecPriceHint: "* Revenue per kWh generated", capex: "Est. Unit Price Strategy",
+                    optMarket: "Market Real/Avg", optLow: "Optimistic (-20%)", optHigh: "Conservative (+20%)", reset: "Reset Defaults",
+                    marketAvg: "Market Average Stats", group1Title: "1MW+ Power Class", group2Title: "200kW - 600kW Class",
+                    chartTitle: "3-Year Cumulative Profit Comparison (USD)", eff: "Efficiency", cons: "Gas Cons.",
+                    yrProfit: "3-Year Profit", roi: "Payback Period", lcoe: "LCOE", months: "months",
+                    bestRoi: "Best ROI", topEff: "Top Efficiency", lowCapex: "Low CapEx", revenue3y: "3Y Revenue", cost3y: "3Y Total Cost"
+                },
+                ru: {
+                    // Site Nav
+                    tagline: "Помощник по газовому майнингу", footerTagline: "Майнинг на газе проще",
+                    "首页": "Главная", "解决方案": "Решения", "机型库": "Продукты", "排行榜": "Рейтинги", "应用场景": "Кейсы",
+                    "工具箱": "Инструменты", "资料中心": "Ресурсы", "服务支持": "Поддержка", "关于我们": "О нас", "联系我们": "Контакты",
+                    "油气井/伴生气发电": "Нефтегаз", "工业园区与分布式能源": "Пром. энергия", "数据中心 / 挖矿电力": "Майнинг",
+                    "热电联供 CHP": "Когенерация", "按功率分类": "По мощности", "按冷却方式": "По охлаждению", "按气源类型": "По типу газа",
+                    "按部署形式": "По типу", "按品牌": "По бренду", "小于 500 kW": "< 500 кВт", "500 – 1,000 kW": "500 – 1,000 кВт", "1 MW 以上": "1 МВт+",
+                    "风冷": "Воздушное", "液冷": "Жидкостное", "天然气": "Природный газ", "伴生气": "Попутный газ", "低甲烷值气": "Низкий метан",
+                    "集装箱机组": "Контейнерные", "一体化机组 AIS": "Интегрированные", "滑撬式机组": "На раме", "全部品牌": "Все бренды",
+                    "中国生产": "Китай", "海外生产": "Зарубежные", "性能榜": "Производ.", "经济性榜": "Экономика", "可靠性榜": "Надежность",
+                    "品质与环保榜": "Качество", "系统能力榜": "Системы", "区域榜": "Регионы", "综合性能 TOP 榜": "Топ прозвод.",
+                    "高效率榜": "Выс. эффективность", "天然气内燃机发电效率排行榜": "Эл. КПД", "天然气内燃机热效率排行榜": "Тепл. КПД",
+                    "天然气内燃机耗气量排行榜": "Расход газа", "最佳 ROI 榜": "Лучший ROI", "最低发电成本 LCOE 榜": "Мин. LCOE",
+                    "天然气内燃机折旧排行榜": "Амортизация", "天然气内燃机投资回报率排行榜": "Рейтинг ROI", "高可靠机组榜": "Надежность",
+                    "最长 MTBF 榜": "Макс. MTBF", "天然气内燃机保养时间排行榜": "Интервал ТО", "天然气内燃机备件保障排行榜": "Запчасти",
+                    "天然气内燃机排放排行榜": "Выбросы", "天然气内燃机噪音排行榜": "Шум", "天然气内燃机发电机排行榜": "Генераторы",
+                    "天然气内燃机控制系统排行榜": "Системы упр.", "美国市场榜": "Рынок США", "加拿大市场榜": "Рынок Канады",
+                    "中东市场榜": "Ближний Восток", "俄罗斯市场榜": "Рынок РФ", "油气井 / 伴生气": "Нефтегаз", "工业与园区能源": "Пром. зоны",
+                    "挖矿 / 数据中心": "Майнинг ЦОД", "CHP 热电联供": "ТЭЦ", "经济测算工具": "Экономика", "工程与技术工具": "Инжиниринг",
+                    "项目与选型工具": "Подбор", "矿工专区（托管与算力分析）": "Майнерам", "全球支持与合规": "Поддержка", "LCOE 成本计算器": "LCOE Кальк.",
+                    "ROI 回报估算器": "ROI Оценка", "燃气发电挖矿收益计算器": "Доход майнинга", "蒙特卡洛模拟盈利分析": "Монте-Карло",
+                    "天然气发电耗气成本分析": "Затраты на газ", "气质适配工具": "Анализ газа", "排放估算工具": "Выбросы", "气体分析计算器": "Газовый анализ",
+                    "能电转换计算器": "Конвертер", "天然气主要成分热值表": "Таблица тепла", "站点匹配向导": "Подбор площадки", "气源所在地分析": "Локация",
+                    "燃气发动机选型与运营经济性": "Выбор двигателя", "天然气发电机机油消耗率": "Расход масла", "车机 VS 工业机 10MW 对比分析": "Авто vs Пром",
+                    "多机型对比 3 年运营数据": "Данные за 3 года", "挖矿收益计算器": "Доходность", "矿机盈利能力计算器": "Рентабельность",
+                    "矿机选购速查": "Выбор майнера", "加拿大 AECO 天然气价格预测": "Прогноз AECO", "全球物流运输推荐": "Логистика",
+                    "全球合规政策": "Комплаенс", "文档": "Документы", "案例": "Кейсы", "技术库": "Тех. база", "媒体与支持": "Медиа",
+                    "白皮书": "Whitepapers", "行业报告": "Отчеты", "全部案例": "Все кейсы", "按区域查看": "По регионам",
+                    "按场景查看": "По сценариям", "技术参数表": "Спецификации", "认证与合规文件": "Сертификаты", "视频与教程": "Видео",
+                    "常见问答 FAQ": "FAQ", "服务网络": "Сервис", "技术支持": "Техподдержка", "售后与保养": "Обслуживание",
+                    "公司介绍": "О компании",
+                    // ROI Tool Specifics
+                    roiDesc: "Сравните VMAN, Weichai, MWM, Cummins, Hanma, Yuchai. Данные 2024-2025.",
+                    parameters: "Параметры (DIY)", gasPrice: "Цена газа ($/m³)", elecPrice: "Цена эл-ва ($/kWh)",
+                    hoursYear: "Часы работы / год", elecPriceHint: "* Доход за кВтч", capex: "Цена за кВт ($/kW)",
+                    optMarket: "Средняя (По умолч.)", optLow: "Оптимист (-20%)", optHigh: "Консерватор (+20%)", reset: "Сброс",
+                    marketAvg: "Средние показатели", group1Title: "Класс 1 МВт+", group2Title: "Класс 200-600 кВт",
+                    chartTitle: "Сравнение прибыли за 3 года (USD)", eff: "Эффект.", cons: "Расход газа",
+                    yrProfit: "Прибыль (3 года)", roi: "Окупаемость", lcoe: "LCOE", months: "мес.",
+                    bestRoi: "Лучший ROI", topEff: "Топ Эффект.", lowCapex: "Низкий старт", revenue3y: "Выручка (3г)", cost3y: "Расходы (3г)"
+                }
+            }
+        };
+
+        // 2. ROI Tool Data (Engines)
+        const Engines = [
+            // Group: Large (1MW+)
+            { id: 'vman-p1200', brand: 'VMAN', model: 'P1200 (DT58)', power: 1200, efficiency: 41.41, gasConsumption: 291, group: 'large', basePricePerKw: 191, origin: 'China/Joint' },
+            { id: 'weichai-1100', brand: 'Weichai', model: 'WPG1375 (16M33)', power: 1100, efficiency: 40.2, gasConsumption: 274, group: 'large', basePricePerKw: 170, origin: 'China' },
+            { id: 'mwm-tcg3016', brand: 'MWM', model: 'TCG3016 V16S', power: 1000, efficiency: 40.5, gasConsumption: 247, group: 'large', basePricePerKw: 350, origin: 'Germany' },
+            { id: 'cummins-k50n', brand: 'Cummins', model: 'K50N-G10', power: 1000, efficiency: 38.5, gasConsumption: 265, group: 'large', basePricePerKw: 300, origin: 'China' },
+            // Group: Small (200kW-600kW)
+            { id: 'vman-p550', brand: 'VMAN', model: 'P550 (DT30)', power: 550, efficiency: 39.0, gasConsumption: 145, group: 'small', basePricePerKw: 165, origin: 'China' },
+            { id: 'yuchai-300', brand: 'Yuchai', model: 'YC6TD (300GFQ)', power: 300, efficiency: 36.5, gasConsumption: 85, group: 'small', basePricePerKw: 145, origin: 'China' },
+            { id: 'hanma-250', brand: 'Hanma', model: 'HMT13F (250kW)', power: 250, efficiency: 35.5, gasConsumption: 73, group: 'small', basePricePerKw: 135, origin: 'China' },
+            { id: 'vman-p280', brand: 'VMAN', model: 'P280 (DT15)', power: 250, efficiency: 35.0, gasConsumption: 78, group: 'small', basePricePerKw: 152, origin: 'China' }
+        ];
+
+        let myChart = null;
+
+        // 3. Main Application Logic
+        const app = {
+            currentLang: 'en',
+            isMobileMenuOpen: false,
+
+            init() {
+                this.renderNav();
+                this.renderFooter();
+                this.updateStaticText();
+                this.initCalculatorListeners();
+                this.calculateAndRender();
+                
+                // Back to Top Scroll Logic
+                window.onscroll = () => {
+                    const btn = document.getElementById('backToTopBtn');
+                    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                        btn.classList.remove('translate-y-20', 'opacity-0');
+                    } else {
+                        btn.classList.add('translate-y-20', 'opacity-0');
+                    }
+                };
+            },
+
+            // --- Navigation Logic (From index_header_footer.html) ---
+            renderNav() {
+                const navContainer = document.getElementById('desktop-nav');
+                navContainer.innerHTML = '';
+                const totalItems = AppData.navigation.length;
+
+                AppData.navigation.forEach((item, index) => {
+                    if (item.type === 'link') {
+                        navContainer.innerHTML += `
+                            <a href="${item.path}" target="_blank" class="nav-item-link font-medium text-sm">
+                                <span>${this.t(item.title)}</span>
+                            </a>
+                        `;
+                    }
+                    else if (item.type === 'menu' || item.type === 'mega') {
+                        let dropContent = '';
+                        let isMega = item.type === 'mega';
+                        
+                        const isRightAligned = index >= totalItems - 3;
+                        const posClass = isRightAligned ? 'right-0' : 'left-0';
+                        
+                        if (isMega) {
+                            const gridClass = item.gridCols || 'grid-cols-5';
+                            const sectionsHtml = item.sections.map((section, idx) => {
+                                const isLast = idx === item.sections.length - 1;
+                                const borderClass = isLast ? '' : 'border-r border-white/5';
+                                const itemsHtml = section.items.map(subItem => `
+                                    <li class="mb-2">
+                                        <a href="${subItem.path}" target="_blank" class="text-gray-400 hover:text-gas-green text-xs flex items-center gap-2 transition-colors">
+                                            <i class="fa-solid fa-angle-right text-[10px] opacity-50"></i>
+                                            ${this.t(subItem.title)}
+                                        </a>
+                                    </li>
+                                `).join('');
+                                return `<div class="col-span-1 space-y-4 ${borderClass} px-2">
+                                            <h3 class="text-gas-green font-bold text-sm uppercase tracking-wider mb-3 border-b border-white/5 pb-2">${this.t(section.header)}</h3>
+                                            <ul>${itemsHtml}</ul>
+                                        </div>`;
+                            }).join('');
+                            dropContent = `<div class="mega-menu"><div class="max-w-[1800px] mx-auto px-4 grid ${gridClass} gap-6">${sectionsHtml}</div></div>`;
+                        } else {
+                            const childrenHtml = item.children.map(child => `
+                                <a href="${child.path}" target="_blank" class="block px-4 py-2 text-sm text-gray-400 hover:text-gas-green hover:bg-white/5 whitespace-nowrap">${this.t(child.title)}</a>
+                            `).join('');
+                            dropContent = `<div class="dropdown-menu ${posClass}">${childrenHtml}</div>`;
+                        }
+
+                        const parentPos = isMega ? '' : 'relative';
+
+                        navContainer.innerHTML += `
+                            <div class="group h-full flex items-center cursor-pointer ${parentPos}">
+                                <span class="nav-item-link font-medium text-sm">
+                                    <span>${this.t(item.title)}</span> <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
+                                </span>
+                                ${dropContent}
+                            </div>
+                        `;
+                    }
+                });
+            },
+
+            renderMobileNav() {
+                const container = document.getElementById('mobile-nav-content');
+                container.innerHTML = '';
+                
+                AppData.navigation.forEach((item, index) => {
+                    if (item.type === 'link') {
+                        container.innerHTML += `
+                            <a href="${item.path}" target="_blank" class="block py-4 border-b border-white/10 text-lg font-medium hover:text-gas-green">
+                                ${this.t(item.title)}
+                            </a>
+                        `;
+                    } else {
+                        const subId = `mob-sub-${index}`;
+                        let subItemsHtml = '';
+                        
+                        if (item.type === 'menu') {
+                            subItemsHtml = item.children.map(child => `
+                                <a href="${child.path}" target="_blank" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">
+                                    ${this.t(child.title)}
+                                </a>
+                            `).join('');
+                        } else if (item.type === 'mega') {
+                            subItemsHtml = item.sections.map(sec => `
+                                <div class="py-2">
+                                    <h4 class="text-gas-green text-xs font-bold uppercase mb-2 pl-4">${this.t(sec.header)}</h4>
+                                    ${sec.items.map(sub => `
+                                        <a href="${sub.path}" target="_blank" class="block py-2 pl-6 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">
+                                            ${this.t(sub.title)}
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            `).join('');
+                        }
+
+                        container.innerHTML += `
+                            <div class="border-b border-white/10">
+                                <button onclick="app.toggleMobileSubmenu('${subId}')" class="w-full py-4 flex justify-between items-center text-lg font-medium hover:text-gas-green focus:outline-none">
+                                    <span>${this.t(item.title)}</span>
+                                    <i id="icon-${subId}" class="fa-solid fa-chevron-down text-sm transition-transform duration-300"></i>
+                                </button>
+                                <div id="${subId}" class="mobile-submenu">
+                                    <div class="pb-4 space-y-1">
+                                        ${subItemsHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            },
+
+            renderFooter() {
+                const footerContainer = document.getElementById('footer-links');
+                footerContainer.innerHTML = '';
+
+                AppData.navigation.forEach((item, idx) => {
+                    if (item.title === '首页') return;
+
+                    let contentHtml = '';
+                    let desktopContentHtml = '';
+                    const footerSubId = `footer-sub-${idx}`;
+
+                    if (item.type === 'menu') {
+                        const links = item.children.map(child => `
+                            <a href="${child.path}" target="_blank" class="footer-link hover:text-gas-green text-gray-400 mr-4 mb-2 inline-block">
+                                ${this.t(child.title)}
+                            </a>
+                        `).join('');
+                        contentHtml = `<div class="flex flex-wrap">${links}</div>`;
+                    } 
+                    else if (item.type === 'mega') {
+                        const desktopSections = item.sections.map(section => {
+                            const secTitle = this.t(section.header);
+                            const secLinks = section.items.map(sub => `
+                                <a href="${sub.path}" target="_blank" class="hover:text-gas-green text-gray-400 ml-2 text-xs">
+                                    ${this.t(sub.title)}
+                                </a>
+                            `).join('<span class="text-gray-700 mx-1">|</span>');
+                            
+                            return `
+                                <div class="flex items-baseline mr-6 mb-2">
+                                    <span class="text-gas-green text-xs font-bold uppercase mr-1 whitespace-nowrap">${secTitle}:</span>
+                                    <div class="flex flex-wrap">${secLinks}</div>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        const mobileLinks = item.sections.map(sec => 
+                            sec.items.map(sub => 
+                                `<a href="${sub.path}" target="_blank" class="footer-link block pl-2 border-l border-white/10 hover:border-gas-green mb-1">${this.t(sub.title)}</a>`
+                            ).join('')
+                        ).join('');
+
+                        contentHtml = `<div class="flex flex-col">${mobileLinks}</div>`;
+                        desktopContentHtml = `<div class="flex flex-wrap items-center">${desktopSections}</div>`;
+                    }
+
+                    const finalDesktopHtml = desktopContentHtml || contentHtml;
+
+                    footerContainer.innerHTML += `
+                        <div class="w-full border-b border-white/5 last:border-0">
+                            <div class="hidden md:flex py-4 items-start">
+                                <div class="w-32 lg:w-48 shrink-0">
+                                    <h4 class="text-white font-bold text-sm border-l-2 border-gas-green pl-3">
+                                        ${this.t(item.title)}
+                                    </h4>
+                                </div>
+                                <div class="flex-1">
+                                    ${finalDesktopHtml}
+                                </div>
+                            </div>
+                            <div class="md:hidden">
+                                <button onclick="app.toggleFooter('${footerSubId}')" class="w-full flex justify-between items-center py-3 text-sm font-bold text-white focus:outline-none">
+                                    <span class="border-l-2 border-gas-green pl-3">${this.t(item.title)}</span>
+                                    <i id="footer-icon-${footerSubId}" class="fa-solid fa-plus text-xs text-gray-500 transition-transform duration-300"></i>
+                                </button>
+                                <div id="${footerSubId}" class="footer-accordion-content">
+                                    <div class="pt-2 pl-4 pb-4 text-gray-400">
+                                        ${contentHtml} 
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            },
+
+            // --- ROI Calculator Logic ---
+            initCalculatorListeners() {
+                const inputs = ['input-gasPrice', 'input-elecPrice', 'input-hours', 'input-capex'];
+                inputs.forEach(id => {
+                    document.getElementById(id).addEventListener('input', (e) => {
+                        this.updateInputDisplay(id, e.target.value);
+                        this.calculateAndRender();
+                    });
+                });
+            },
+
+            updateInputDisplay(id, val) {
+                const displayMap = {
+                    'input-gasPrice': `val-gasPrice`,
+                    'input-elecPrice': `val-elecPrice`,
+                    'input-hours': `val-hours`,
+                    'input-capex': `val-capex`
+                };
+                const suffix = id === 'input-hours' ? ' h' : '';
+                const prefix = (id === 'input-gasPrice' || id === 'input-elecPrice') ? '$' : '';
+                
+                let text = val;
+                if(id === 'input-capex') {
+                    const map = { 'market': 'Real/Avg', 'low': '-20%', 'high': '+20%' };
+                    text = map[val];
+                }
+
+                document.getElementById(displayMap[id]).innerText = prefix + text + suffix;
+            },
+
+            resetCalculator() {
+                document.getElementById('input-gasPrice').value = 0.10;
+                document.getElementById('input-elecPrice').value = 0.07;
+                document.getElementById('input-hours').value = 8000;
+                document.getElementById('input-capex').value = 'market';
+                
+                this.updateInputDisplay('input-gasPrice', 0.10);
+                this.updateInputDisplay('input-elecPrice', 0.07);
+                this.updateInputDisplay('input-hours', 8000);
+                this.updateInputDisplay('input-capex', 'market');
+                
+                this.calculateAndRender();
+            },
+
+            calculateAndRender() {
+                const gasPrice = parseFloat(document.getElementById('input-gasPrice').value);
+                const elecPrice = parseFloat(document.getElementById('input-elecPrice').value);
+                const hours = parseInt(document.getElementById('input-hours').value);
+                const capexMode = document.getElementById('input-capex').value;
+                const capexMult = capexMode === 'low' ? 0.8 : (capexMode === 'high' ? 1.2 : 1.0);
+                const opExPerKwh = 0.015; 
+
+                const results = Engines.map(eng => {
+                    const capex = eng.basePricePerKw * eng.power * capexMult;
+                    const annualGen = eng.power * hours; 
+                    const annualRevenue = annualGen * elecPrice;
+                    const annualGasCost = eng.gasConsumption * hours * gasPrice;
+                    const annualOpEx = annualGen * opExPerKwh;
+                    const annualTotalCost = annualGasCost + annualOpEx;
+                    const annualProfit = annualRevenue - annualTotalCost;
+                    const profit3y = (annualProfit * 3) - capex;
+                    const lcoe = ((capex / 10) + annualTotalCost) / annualGen; 
+                    let paybackMonths = 999;
+                    if (annualProfit > 0) {
+                        paybackMonths = (capex / annualProfit) * 12;
+                    }
+                    return { ...eng, capex, annualProfit, profit3y, paybackMonths, lcoe, annualRevenue, annualTotalCost };
+                });
+
+                this.renderEngineCards(results, 'large', 'grid-large');
+                this.renderEngineCards(results, 'small', 'grid-small');
+                
+                const avgLcoe = results.reduce((a,b) => a + b.lcoe, 0) / results.length;
+                document.getElementById('avg-lcoe').innerText = '$' + avgLcoe.toFixed(3);
+                const avgEff = results.reduce((a,b) => a + b.efficiency, 0) / results.length;
+                document.getElementById('avg-eff').innerText = avgEff.toFixed(1) + '%';
+
+                this.updateChart(results);
+            },
+
+            renderEngineCards(data, group, elementId) {
+                const container = document.getElementById(elementId);
+                container.innerHTML = '';
+                const groupData = data.filter(d => d.group === group);
+                if(groupData.length === 0) return;
+                
+                const bestProfit = Math.max(...groupData.map(d => d.profit3y));
+                const bestEff = Math.max(...groupData.map(d => d.efficiency));
+
+                groupData.forEach(eng => {
+                    const profitClass = eng.profit3y >= 0 ? 'text-gas-green' : 'text-red-500';
+                    const profitSign = eng.profit3y >= 0 ? '+' : '';
+                    const fmtProfit = profitSign + '$' + Math.abs(eng.profit3y).toLocaleString(undefined, {maximumFractionDigits:0});
+                    const fmtPayback = eng.paybackMonths > 60 ? '> 5 Years' : eng.paybackMonths.toFixed(1) + ' ' + this.t('months');
+                    
+                    let badges = '';
+                    if (eng.profit3y === bestProfit && eng.profit3y > 0) badges += `<span class="bg-gas-green text-black text-[10px] font-bold px-2 py-0.5 rounded ml-2">${this.t('bestRoi')}</span>`;
+                    if (eng.efficiency === bestEff) badges += `<span class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded ml-2">${this.t('topEff')}</span>`;
+                    if (eng.group === 'small' && eng.power <= 250) badges += `<span class="bg-gray-700 text-gray-300 text-[10px] font-bold px-2 py-0.5 rounded ml-2">${this.t('lowCapex')}</span>`;
+
+                    const html = `
+                    <div class="gas-card rounded-xl p-5 hover:border-gas-green/50 transition-colors flex flex-col h-full relative group overflow-hidden">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <i class="fa-solid fa-gear text-6xl text-white"></i>
+                        </div>
+                        <div class="flex justify-between items-start mb-4 relative z-10">
+                            <div>
+                                <div class="text-xs text-gray-400 mb-1">${eng.brand}</div>
+                                <h3 class="text-xl font-bold text-white flex items-center flex-wrap gap-1">${eng.model} ${badges}</h3>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-bold text-white">${eng.power}<span class="text-sm text-gray-500 font-normal">kW</span></div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-y-3 gap-x-4 mb-6 text-sm relative z-10 bg-black/20 p-3 rounded-lg border border-white/5">
+                            <div>
+                                <span class="text-gray-500 block text-xs" data-i18n="eff">${this.t('eff')}</span>
+                                <span class="text-white font-semibold">${eng.efficiency}%</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500 block text-xs" data-i18n="cons">${this.t('cons')}</span>
+                                <span class="text-white font-semibold">${eng.gasConsumption} m³/h</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500 block text-xs" data-i18n="lcoe">${this.t('lcoe')}</span>
+                                <span class="text-gray-300">$${eng.lcoe.toFixed(3)}/kWh</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500 block text-xs" data-i18n="roi">${this.t('roi')}</span>
+                                <span class="text-gas-green font-bold">${fmtPayback}</span>
+                            </div>
+                        </div>
+                        <div class="mt-auto relative z-10">
+                            <div class="flex justify-between items-end border-t border-white/10 pt-4">
+                                <div>
+                                    <div class="text-xs text-gray-500 mb-1" data-i18n="yrProfit">${this.t('yrProfit')}</div>
+                                    <div class="text-2xl font-bold ${profitClass}">${fmtProfit}</div>
+                                </div>
+                                <div class="text-right text-xs text-gray-500 space-y-1">
+                                    <div>${this.t('revenue3y')}: <span class="text-gray-300">$${(eng.annualRevenue*3).toLocaleString(undefined, {maximumFractionDigits:0})}</span></div>
+                                    <div>${this.t('cost3y')}: <span class="text-gray-300">$${((eng.annualTotalCost*3)+eng.capex).toLocaleString(undefined, {maximumFractionDigits:0})}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                    container.innerHTML += html;
+                });
+            },
+
+            updateChart(data) {
+                const ctx = document.getElementById('roiChart').getContext('2d');
+                const sortedData = [...data].sort((a, b) => b.profit3y - a.profit3y);
+                const labels = sortedData.map(d => d.model);
+                const profits = sortedData.map(d => d.profit3y);
+                const colors = sortedData.map(d => d.profit3y >= 0 ? '#5DD62C' : '#ef4444');
+
+                if (myChart) myChart.destroy();
+                myChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{ label: this.t('yrProfit'), data: profits, backgroundColor: colors, borderRadius: 4, barThickness: 20 }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' } },
+                            x: { grid: { display: false }, ticks: { color: '#9ca3af', font: {size: 10}, maxRotation: 45, minRotation: 45 } }
+                        }
+                    }
+                });
+            },
+
+            // --- Shared Logic (Language, Mobile Menu, Utils) ---
+            setLanguage(lang) {
+                this.currentLang = lang;
+                ['zh', 'en', 'ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+                    if (btn) btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center ${l === lang ? "text-black bg-gas-green shadow-glow font-bold" : "text-gas-subtext hover:text-white hover:bg-white/5 font-medium"}`;
+                    if (mobBtn) mobBtn.className = `px-4 py-2 rounded-full text-xs transition-all ${l === lang ? "text-black bg-gas-green font-bold" : "text-gray-400 font-medium"}`;
+                });
+                
+                this.renderNav();
+                this.renderMobileNav();
+                this.renderFooter();
+                this.updateStaticText();
+                this.calculateAndRender();
+            },
+
+            t(key) { return AppData.i18n[this.currentLang][key] || key; },
+
+            toggleMobileMenu() {
+                this.isMobileMenuOpen = !this.isMobileMenuOpen;
+                const menu = document.getElementById('mobile-menu-container');
+                const btnIcon = document.querySelector('#mobile-menu-btn i');
+                
+                if (this.isMobileMenuOpen) {
+                    menu.classList.remove('translate-x-full');
+                    btnIcon.classList.remove('fa-bars');
+                    btnIcon.classList.add('fa-xmark');
+                    document.body.style.overflow = 'hidden';
+                    this.renderMobileNav();
+                } else {
+                    menu.classList.add('translate-x-full');
+                    btnIcon.classList.remove('fa-xmark');
+                    btnIcon.classList.add('fa-bars');
+                    document.body.style.overflow = '';
+                }
+            },
+
+            toggleMobileSubmenu(id) {
+                const el = document.getElementById(id);
+                const icon = document.getElementById(`icon-${id}`);
+                if (el.style.maxHeight) {
+                    el.style.maxHeight = null;
+                    icon.classList.remove('rotate-180');
+                } else {
+                    el.style.maxHeight = el.scrollHeight + "px";
+                    icon.classList.add('rotate-180');
+                }
+            },
+
+            toggleFooter(id) {
+                const el = document.getElementById(id);
+                const icon = document.getElementById(`footer-icon-${id}`);
+                if (el.style.maxHeight) {
+                    el.style.maxHeight = null;
+                    icon.classList.remove('fa-minus');
+                    icon.classList.add('fa-plus');
+                    icon.classList.remove('text-gas-green');
+                } else {
+                    el.style.maxHeight = el.scrollHeight + "px";
+                    icon.classList.remove('fa-plus');
+                    icon.classList.add('fa-minus');
+                    icon.classList.add('text-gas-green');
+                }
+            },
+
+            updateStaticText() {
+                const taglineEl = document.getElementById('header-tagline');
+                if(taglineEl) taglineEl.innerText = this.t('tagline');
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (key !== 'tagline' && key !== 'footerTagline') {
+                        if(el.tagName === 'OPTION') el.innerText = this.t(key);
+                        else el.innerText = this.t(key);
+                    }
+                });
+            },
+            
+            captureAndShare() {
+                window.scrollTo(0, 0);
+                const watermark = document.createElement('div');
+                Object.assign(watermark.style, {position: 'absolute', top: 0, left: 0, width: '100%', height: document.body.scrollHeight + 'px', zIndex: 9999, pointerEvents: 'none', opacity: '0.15', display: 'flex', flexWrap: 'wrap', overflow: 'hidden'});
+                watermark.innerHTML = `<div style="margin:100px;transform:rotate(-30deg);text-align:center"><div style="font-size:24px;font-weight:bold;color:#5DD62C">GasGx ROI</div></div>`.repeat(50);
+                document.body.appendChild(watermark);
+                setTimeout(() => {
+                    html2canvas(document.body, {backgroundColor: '#0F0F0F', scale: 2}).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = 'GasGx-ROI.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        document.body.removeChild(watermark);
+                        document.getElementById('shareModal').classList.remove('hidden');
+                        setTimeout(() => document.getElementById('shareModal').querySelector('div').classList.remove('scale-95', 'opacity-0'), 10);
+                    });
+                }, 500);
+            },
+            closeModal() {
+                const modal = document.getElementById('shareModal');
+                modal.querySelector('div').classList.add('scale-95', 'opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => { app.init(); });
+    </script>
+</body>
+</html>

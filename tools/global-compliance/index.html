@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Compliance - GasGx Natural Gas Power Mining</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome 6.5.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- html2canvas for Screenshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* Card Frosted Effect */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Mega Menu Animation */
+        .mega-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: #151515;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+        .group:hover .mega-menu { display: block; animation: slideDown 0.2s ease-out; }
+
+        /* Dropdown Menu Animation */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            min-width: 220px;
+            background-color: #151515;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0 0 8px 8px;
+            padding: 0.5rem 0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+        .group:hover .dropdown-menu { display: block; animation: slideDown 0.2s ease-out; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-item-link:hover { color: #5DD62C; }
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; width: 0; height: 2px;
+            background-color: #5DD62C; transition: width 0.3s;
+        }
+        .nav-item-link:hover::after { width: 100%; }
+
+        /* Footer Link Hover */
+        .footer-link { color: #94a3b8; transition: all 0.2s; font-size: 0.8rem; white-space: nowrap; }
+        .footer-link:hover { color: #5DD62C; }
+
+        /* Mobile Menu */
+        #mobile-menu-container { transition: transform 0.3s ease-in-out; }
+        .mobile-submenu, .footer-accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        
+        /* Floating Share Button */
+        @keyframes floatPulse {
+            0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); }
+        }
+        .float-btn { animation: floatPulse 2s infinite; }
+
+        /* Custom Tab Styles */
+        .country-tab.active {
+            background-color: rgba(93, 214, 44, 0.1);
+            color: #5DD62C;
+            border-color: #5DD62C;
+            border-bottom: 2px solid #5DD62C;
+        }
+        .country-tab { border-bottom: 2px solid transparent; }
+        
+        .info-card { transition: all 0.3s ease; }
+        .info-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(93, 214, 44, 0.5);
+            box-shadow: 0 15px 40px -10px rgba(0,0,0,0.6);
+        }
+        
+        /* Score Bar Animation */
+        .score-bar-fill { transition: width 1s ease-out; }
+        
+        /* List Styling */
+        .detail-list li {
+            position: relative;
+            padding-left: 1.2em;
+            margin-bottom: 0.5em;
+        }
+        .detail-list li::before {
+            content: "•";
+            color: #5DD62C;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 gas-card h-16 transition-all duration-300 border-b-0">
+        <div class="max-w-[1800px] mx-auto px-4 h-full flex justify-between items-center relative">
+            <!-- Logo -->
+            <div class="flex items-center gap-3 w-auto shrink-0 mr-4">
+                <a href="/index.html" class="flex items-center gap-2 group">
+                    <h1 class="text-2xl font-bold tracking-wider text-gas-green hover:text-white transition-colors cursor-pointer">GasGx</h1>
+                </a>
+                <div class="hidden md:flex flex-col justify-center border-l border-gray-700 pl-3 h-8">
+                    <span id="header-tagline" class="text-gas-green text-xs font-bold tracking-wide">Natural Gas Power Mining Assistant</span>
+                </div>
+            </div>
+
+            <!-- Desktop Nav -->
+            <nav id="desktop-nav" class="hidden lg:flex items-center justify-center gap-2 xl:gap-6 h-full flex-1">
+                <!-- JS Generated -->
+            </nav>
+
+            <!-- Right Controls -->
+            <div class="flex items-center gap-4 w-auto shrink-0 justify-end ml-4">
+                <div class="hidden sm:flex items-center gap-1 bg-[#111] border border-white/10 rounded-full px-1 py-1">
+                    <button onclick="app.setLanguage('zh')" id="btn-lang-zh" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">CN</button>
+                    <button onclick="app.setLanguage('en')" id="btn-lang-en" class="px-2 py-1 rounded-full text-[10px] font-bold transition-all w-8 text-center text-black bg-gas-green shadow-glow">EN</button>
+                    <button onclick="app.setLanguage('ru')" id="btn-lang-ru" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">RU</button>
+                </div>
+                <button id="mobile-menu-btn" onclick="app.toggleMobileMenu()" class="lg:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu-container" class="fixed inset-0 z-40 bg-[#111] transform translate-x-full pt-20 px-4 pb-8 overflow-y-auto lg:hidden">
+        <div class="flex justify-center gap-4 mb-6 border-b border-white/10 pb-4">
+            <div class="flex items-center gap-2 bg-[#222] border border-white/10 rounded-full px-1 py-1">
+                <button onclick="app.setLanguage('zh')" id="mob-btn-lang-zh" class="px-4 py-2 rounded-full text-xs font-bold transition-all text-gray-400">CN</button>
+                <button onclick="app.setLanguage('en')" id="mob-btn-lang-en" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-black bg-gas-green">EN</button>
+                <button onclick="app.setLanguage('ru')" id="mob-btn-lang-ru" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-gray-400">RU</button>
+            </div>
+        </div>
+        <nav id="mobile-nav-content" class="flex flex-col space-y-1"></nav>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow pt-24 pb-12 px-4 w-full max-w-[1600px] mx-auto">
+        
+        <!-- Page Title -->
+        <div class="mb-10 text-center relative animate-slide-up">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4"><span class="text-gas-green">Global</span> Compliance Policy</h1>
+            <p class="text-gray-400 max-w-2xl mx-auto" data-i18n="complianceIntro">Comprehensive guide to natural gas power mining regulations, taxation, and operational standards.</p>
+            <div class="w-24 h-1 bg-gas-green mx-auto mt-6 rounded-full shadow-[0_0_10px_rgba(93,214,44,0.5)]"></div>
+        </div>
+
+        <!-- Country Tabs -->
+        <div class="flex flex-wrap justify-center gap-2 mb-8 border-b border-white/10 pb-1 animate-slide-up" style="animation-delay: 0.1s;">
+            <button onclick="pageApp.setCountry('usa')" class="country-tab active px-6 py-3 rounded-t-lg text-gray-400 hover:text-white font-bold transition-all flex items-center gap-2" id="tab-usa">
+                <img src="https://flagcdn.com/w40/us.png" class="w-5 h-auto rounded-sm" alt="USA"> <span data-i18n="countryUSA">USA</span>
+            </button>
+            <button onclick="pageApp.setCountry('canada')" class="country-tab px-6 py-3 rounded-t-lg text-gray-400 hover:text-white font-bold transition-all flex items-center gap-2" id="tab-canada">
+                <img src="https://flagcdn.com/w40/ca.png" class="w-5 h-auto rounded-sm" alt="Canada"> <span data-i18n="countryCanada">Canada</span>
+            </button>
+            <button onclick="pageApp.setCountry('russia')" class="country-tab px-6 py-3 rounded-t-lg text-gray-400 hover:text-white font-bold transition-all flex items-center gap-2" id="tab-russia">
+                <img src="https://flagcdn.com/w40/ru.png" class="w-5 h-auto rounded-sm" alt="Russia"> <span data-i18n="countryRussia">Russia</span>
+            </button>
+            <button onclick="pageApp.setCountry('kazakhstan')" class="country-tab px-6 py-3 rounded-t-lg text-gray-400 hover:text-white font-bold transition-all flex items-center gap-2" id="tab-kazakhstan">
+                <img src="https://flagcdn.com/w40/kz.png" class="w-5 h-auto rounded-sm" alt="Kazakhstan"> <span data-i18n="countryKazakhstan">Kazakhstan</span>
+            </button>
+            <button onclick="pageApp.setCountry('indonesia')" class="country-tab px-6 py-3 rounded-t-lg text-gray-400 hover:text-white font-bold transition-all flex items-center gap-2" id="tab-indonesia">
+                <img src="https://flagcdn.com/w40/id.png" class="w-5 h-auto rounded-sm" alt="Indonesia"> <span data-i18n="countryIndonesia">Indonesia</span>
+            </button>
+        </div>
+
+        <!-- Dynamic Content Container -->
+        <div id="country-content" class="min-h-[600px]">
+            <!-- JS Injects Content Here -->
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#0a0a0a] border-t border-white/10 mt-auto pt-10 pb-8 relative z-10">
+        <div class="max-w-[1800px] mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-start mb-8 pb-6 border-b border-white/5">
+                <div class="mb-6 md:mb-0">
+                    <div class="flex items-center gap-2 mb-2"><span class="text-2xl font-bold text-gas-green">GasGx</span></div>
+                    <p class="text-sm text-gray-400 font-medium" data-i18n="footerTagline">Making natural gas power mining easier</p>
+                </div>
+                <div class="flex flex-col md:items-end space-y-2">
+                    <h4 class="text-white font-bold text-sm uppercase tracking-wider mb-1" data-i18n="联系我们">Contact Us</h4>
+                    <a href="mailto:contact@gasgx.com" class="text-sm text-gray-400 hover:text-gas-green flex items-center gap-2 transition-colors"><i class="fa-solid fa-envelope"></i> contact@gasgx.com</a>
+                    <div class="text-sm text-gray-400 flex items-center gap-2"><i class="fa-brands fa-weixin"></i> <span class="hover:text-gas-green cursor-pointer">www_gasgx_com</span></div>
+                </div>
+            </div>
+            <div id="footer-links" class="mb-10 space-y-2"></div>
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-white/5">
+                <div class="text-xs text-gray-600">© 2026 GasGx. All rights reserved.</div>
+                <div class="flex gap-4">
+                    <a href="#" class="text-gray-500 hover:text-gas-green"><i class="fa-brands fa-x-twitter text-lg"></i></a>
+                    <a href="#" class="text-gray-500 hover:text-gas-green"><i class="fa-brands fa-telegram text-lg"></i></a>
+                    <a href="#" class="text-gray-500 hover:text-gas-green"><i class="fa-brands fa-linkedin text-lg"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Tools: Share Button & Scroll Top -->
+    <button onclick="app.captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50" title="Share Snapshot"><i class="fa-solid fa-camera text-xl"></i></button>
+    <button onclick="window.scrollTo({top:0, behavior:'smooth'})" id="backToTopBtn" class="fixed bottom-6 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer"><i class="fa-solid fa-arrow-up"></i></button>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-95 opacity-0">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-check text-2xl text-gas-green"></i></div>
+                <h3 class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3>
+                <p class="text-sm text-gray-400">Full page captured successfully.</p>
+            </div>
+            <button onclick="app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- 1. Full Navigation Data ---
+        const AppData = {
+            navigation: [
+                { title: "首页", path: "/index.html", type: "link", icon: "fa-solid fa-house" },
+                {
+                    title: "解决方案",
+                    path: "/solutions",
+                    type: "menu",
+                    children: [
+                        { title: "油气井/伴生气发电", path: "/solutions/oilfield" },
+                        { title: "工业园区与分布式能源", path: "/solutions/industrial" },
+                        { title: "数据中心 / 挖矿电力", path: "/solutions/mining" },
+                        { title: "热电联供 CHP", path: "/solutions/chp" }
+                    ]
+                },
+                {
+                    title: "机型库",
+                    path: "/products",
+                    type: "mega",
+                    sections: [
+                        { header: "按功率分类", items: [{ title: "小于 500 kW", path: "#" }, { title: "500 – 1,000 kW", path: "#" }, { title: "1 MW 以上", path: "#" }] },
+                        { header: "按冷却方式", items: [{ title: "风冷", path: "#" }, { title: "液冷", path: "#" }] },
+                        { header: "按气源类型", items: [{ title: "天然气", path: "#" }, { title: "伴生气", path: "#" }, { title: "低甲烷值气", path: "#" }] },
+                        { header: "按部署形式", items: [{ title: "集装箱机组", path: "#" }, { title: "一体化机组 AIS", path: "#" }, { title: "滑撬式机组", path: "#" }] },
+                        { header: "按品牌", items: [{ title: "全部品牌", path: "#" }, { title: "中国生产", path: "#" }, { title: "海外生产", path: "#" }] }
+                    ]
+                },
+                {
+                    title: "排行榜",
+                    path: "/rankings",
+                    type: "mega",
+                    gridCols: "grid-cols-6",
+                    sections: [
+                        { header: "性能榜", items: [{ title: "综合性能 TOP 榜", path: "#" }, { title: "高效率榜", path: "#" }, { title: "天然气内燃机发电效率排行榜", path: "#" }, { title: "天然气内燃机热效率排行榜", path: "#" }, { title: "天然气内燃机耗气量排行榜", path: "#" }] },
+                        { header: "经济性榜", items: [{ title: "最佳 ROI 榜", path: "#" }, { title: "最低发电成本 LCOE 榜", path: "#" }, { title: "天然气内燃机折旧排行榜", path: "#" }, { title: "天然气内燃机投资回报率排行榜", path: "#" }] },
+                        { header: "可靠性榜", items: [{ title: "高可靠机组榜", path: "#" }, { title: "最长 MTBF 榜", path: "#" }, { title: "天然气内燃机保养时间排行榜", path: "#" }, { title: "天然气内燃机备件保障排行榜", path: "#" }] },
+                        { header: "品质与环保榜", items: [{ title: "天然气内燃机排放排行榜", path: "#" }, { title: "天然气内燃机噪音排行榜", path: "#" }] },
+                        { header: "系统能力榜", items: [{ title: "天然气内燃机发电机排行榜", path: "#" }, { title: "天然气内燃机控制系统排行榜", path: "#" }] },
+                        { header: "区域榜", items: [{ title: "美国市场榜", path: "#" }, { title: "加拿大市场榜", path: "#" }, { title: "中东市场榜", path: "#" }, { title: "俄罗斯市场榜", path: "#" }] }
+                    ]
+                },
+                {
+                    title: "应用场景",
+                    path: "/use-cases",
+                    type: "menu",
+                    children: [
+                        { title: "油气井 / 伴生气", path: "#" },
+                        { title: "工业与园区能源", path: "#" },
+                        { title: "挖矿 / 数据中心", path: "#" },
+                        { title: "CHP 热电联供", path: "#" }
+                    ]
+                },
+                {
+                    title: "工具箱",
+                    path: "/tools",
+                    type: "mega",
+                    gridCols: "grid-cols-5",
+                    sections: [
+                        { header: "经济测算工具", items: [{ title: "LCOE 成本计算器", path: "#" }, { title: "ROI 回报估算器", path: "#" }, { title: "燃气发电挖矿收益计算器", path: "#" }, { title: "蒙特卡洛模拟盈利分析", path: "#" }, { title: "天然气发电耗气成本分析", path: "#" }] },
+                        { header: "工程与技术工具", items: [{ title: "气质适配工具", path: "#" }, { title: "排放估算工具", path: "#" }, { title: "气体分析计算器", path: "#" }, { title: "能电转换计算器", path: "#" }, { title: "天然气主要成分热值表", path: "#" }] },
+                        { header: "项目与选型工具", items: [{ title: "站点匹配向导", path: "#" }, { title: "气源所在地分析", path: "#" }, { title: "燃气发动机选型与运营经济性", path: "#" }, { title: "天然气发电机机油消耗率", path: "#" }, { title: "车机 VS 工业机 10MW 对比分析", path: "#" }, { title: "多机型对比 3 年运营数据", path: "#" }] },
+                        { header: "矿工专区（托管与算力分析）", items: [{ title: "挖矿收益计算器", path: "#" }, { title: "矿机盈利能力计算器", path: "#" }, { title: "矿机选购速查", path: "#" }] },
+                        { header: "全球支持与合规", items: [{ title: "加拿大 AECO 天然气价格预测", path: "#" }, { title: "全球物流运输推荐", path: "#" }, { title: "全球合规政策", path: "/global_compliance.html" }] }
+                    ]
+                },
+                {
+                    title: "资料中心",
+                    path: "/resources",
+                    type: "mega",
+                    gridCols: "grid-cols-4",
+                    sections: [
+                        { header: "文档", items: [{ title: "白皮书", path: "#" }, { title: "行业报告", path: "#" }] },
+                        { header: "案例", items: [{ title: "全部案例", path: "#" }, { title: "按区域查看", path: "#" }, { title: "按场景查看", path: "#" }] },
+                        { header: "技术库", items: [{ title: "技术参数表", path: "#" }, { title: "认证与合规文件", path: "#" }] },
+                        { header: "媒体与支持", items: [{ title: "视频与教程", path: "#" }, { title: "常见问答 FAQ", path: "#" }] }
+                    ]
+                },
+                {
+                    title: "服务支持",
+                    path: "/support",
+                    type: "menu",
+                    children: [
+                        { title: "服务网络", path: "#" },
+                        { title: "技术支持", path: "#" },
+                        { title: "售后与保养", path: "#" }
+                    ]
+                },
+                {
+                    title: "关于我们",
+                    path: "/about",
+                    type: "menu",
+                    children: [
+                        { title: "公司介绍", path: "#" },
+                        { title: "联系我们", path: "#" }
+                    ]
+                }
+            ],
+
+            // FULL DICTIONARY
+            i18n: {
+                zh: {
+                    tagline: "天然气发电挖矿助手",
+                    footerTagline: "让天然气发电挖矿更简单",
+                    complianceIntro: "天然气发电挖矿全球法规、税务及运营标准综合指南。",
+                    countryUSA: "美国", countryCanada: "加拿大", countryRussia: "俄罗斯", countryKazakhstan: "哈萨克斯坦", countryIndonesia: "印度尼西亚",
+                    // Core Nav
+                    "首页": "首页", "解决方案": "解决方案", "联系我们": "联系我们", "关于我们": "关于我们", "工具箱": "工具箱", "资料中心": "资料中心", "服务支持": "服务支持", "机型库": "机型库", "排行榜": "排行榜", "应用场景": "应用场景",
+                    // Sub items... self mapping for fallback
+                },
+                en: {
+                    tagline: "Natural Gas Power Mining Assistant",
+                    footerTagline: "Making natural gas power mining easier",
+                    complianceIntro: "Comprehensive guide to regulations, tax, and operations for gas power mining.",
+                    countryUSA: "USA", countryCanada: "Canada", countryRussia: "Russia", countryKazakhstan: "Kazakhstan", countryIndonesia: "Indonesia",
+                    // Core Nav
+                    "首页": "Home", "解决方案": "Solutions", "机型库": "Products", "工具箱": "Tools", "服务支持": "Support", "关于我们": "About Us", "排行榜": "Rankings", "应用场景": "Use Cases", "资料中心": "Resources", "联系我们": "Contact Us",
+                    
+                    // Solutions
+                    "油气井/伴生气发电": "Oil & Gas Power", "工业园区与分布式能源": "Industrial Power", "数据中心 / 挖矿电力": "Mining / Data Center", "热电联供 CHP": "CHP",
+                    
+                    // Products
+                    "按功率分类": "By Power", "按冷却方式": "By Cooling", "按品牌": "By Brand", "按气源类型": "By Gas Type", "按部署形式": "By Deployment",
+                    "小于 500 kW": "< 500 kW", "500 – 1,000 kW": "500-1000 kW", "1 MW 以上": "1 MW+", 
+                    "风冷": "Air Cooled", "液冷": "Liquid Cooled", 
+                    "天然气": "Natural Gas", "伴生气": "Associated Gas", "低甲烷值气": "Low Methane", 
+                    "集装箱机组": "Containerized", "一体化机组 AIS": "AIS", "滑撬式机组": "Skid-mounted", 
+                    "全部品牌": "All Brands", "中国生产": "Made in China", "海外生产": "Overseas",
+
+                    // Rankings
+                    "性能榜": "Performance", "经济性榜": "Economics", "可靠性榜": "Reliability", "品质与环保榜": "Quality & Eco", "系统能力榜": "Systems", "区域榜": "Regions",
+                    "综合性能 TOP 榜": "Top Performance", "高效率榜": "High Efficiency", "天然气内燃机发电效率排行榜": "Elec. Efficiency", "天然气内燃机热效率排行榜": "Thermal Efficiency", "天然气内燃机耗气量排行榜": "Gas Consumption",
+                    "最佳 ROI 榜": "Best ROI", "最低发电成本 LCOE 榜": "Lowest LCOE", "天然气内燃机折旧排行榜": "Depreciation", "天然气内燃机投资回报率排行榜": "ROI Ranking",
+                    "高可靠机组榜": "High Reliability", "最长 MTBF 榜": "Longest MTBF", "天然气内燃机保养时间排行榜": "Maint. Interval", "天然气内燃机备件保障排行榜": "Spare Parts",
+                    "天然气内燃机排放排行榜": "Emissions", "天然气内燃机噪音排行榜": "Noise",
+                    "天然气内燃机发电机排行榜": "Alternator", "天然气内燃机控制系统排行榜": "Control Sys",
+                    "美国市场榜": "USA Market", "加拿大市场榜": "Canada Market", "中东市场榜": "Middle East", "俄罗斯市场榜": "Russia Market",
+
+                    // Use Cases
+                    "油气井 / 伴生气": "Oil & Gas", "工业与园区能源": "Industrial", "挖矿 / 数据中心": "Mining / DC", "CHP 热电联供": "CHP",
+
+                    // Tools
+                    "经济测算工具": "Econ Tools", "工程与技术工具": "Eng & Tech Tools", "项目与选型工具": "Project Tools", "矿工专区（托管与算力分析）": "Miners Area", "全球支持与合规": "Global Support",
+                    "LCOE 成本计算器": "LCOE Calc", "ROI 回报估算器": "ROI Estimator", "燃气发电挖矿收益计算器": "Revenue Calc", "蒙特卡洛模拟盈利分析": "Monte Carlo", "天然气发电耗气成本分析": "Gas Cost Analysis",
+                    "气质适配工具": "Gas Adaptability", "排放估算工具": "Emission Calc", "气体分析计算器": "Gas Analyzer", "能电转换计算器": "Energy Conversion", "天然气主要成分热值表": "Heat Value Table",
+                    "站点匹配向导": "Site Wizard", "气源所在地分析": "Gas Location", "燃气发动机选型与运营经济性": "Engine Selection", "天然气发电机机油消耗率": "Oil Consumption", "车机 VS 工业机 10MW 对比分析": "Vehicle vs Industrial", "多机型对比 3 年运营数据": "3-Year Data",
+                    "挖矿收益计算器": "Mining Income", "矿机盈利能力计算器": "Miner Profit", "矿机选购速查": "Miner Buying Guide",
+                    "加拿大 AECO 天然气价格预测": "AECO Forecast", "全球物流运输推荐": "Logistics", "全球合规政策": "Global Compliance",
+
+                    // Resources
+                    "文档": "Docs", "案例": "Cases", "技术库": "Tech Lib", "媒体与支持": "Media",
+                    "白皮书": "Whitepapers", "行业报告": "Reports", 
+                    "全部案例": "All Cases", "按区域查看": "By Region", "按场景查看": "By Scenario",
+                    "技术参数表": "Datasheets", "认证与合规文件": "Certifications",
+                    "视频与教程": "Videos", "常见问答 FAQ": "FAQ",
+
+                    // Support & About
+                    "服务网络": "Service Network", "技术支持": "Tech Support", "售后与保养": "Service",
+                    "公司介绍": "Company", "联系我们": "Contact Us"
+                },
+                ru: {
+                    tagline: "Помощник по газовому майнингу",
+                    footerTagline: "Майнинг на газе проще",
+                    complianceIntro: "Полное руководство по правилам, налогам и эксплуатации.",
+                    countryUSA: "США", countryCanada: "Канада", countryRussia: "Россия", countryKazakhstan: "Казахстан", countryIndonesia: "Индонезия",
+                    // Core Nav
+                    "首页": "Главная", "解决方案": "Решения", "机型库": "Продукты", "工具箱": "Инструменты", "服务支持": "Поддержка", "关于我们": "О нас", "排行榜": "Рейтинги", "应用场景": "Кейсы", "资料中心": "Ресурсы", "联系我们": "Контакты",
+
+                    // Solutions
+                    "油气井/伴生气发电": "Нефтегаз", "工业园区与分布式能源": "Пром. Энергия", "数据中心 / 挖矿电力": "Майнинг / ЦОД", "热电联供 CHP": "ТЭЦ",
+
+                    // Products
+                    "按功率分类": "Мощность", "按冷却方式": "Охлаждение", "按品牌": "Бренд", "按气源类型": "Тип газа", "按部署形式": "Тип установки",
+                    "小于 500 kW": "< 500 кВт", "500 – 1,000 kW": "500-1000 кВт", "1 MW 以上": "1 МВт+",
+                    "风冷": "Воздушное", "液冷": "Жидкостное",
+                    "天然气": "Природный газ", "伴生气": "ПНГ", "低甲烷值气": "Низкий метан",
+                    "集装箱机组": "Контейнер", "一体化机组 AIS": "AIS", "滑撬式机组": "Скид",
+                    "全部品牌": "Все бренды", "中国生产": "Китай", "海外生产": "Зарубежные",
+
+                    // Rankings
+                    "性能榜": "Производ.", "经济性榜": "Экономика", "可靠性榜": "Надежность", "品质与环保榜": "Качество", "系统能力榜": "Системы", "区域榜": "Регионы",
+                    "综合性能 TOP 榜": "Топ Производ.", "高效率榜": "Выс. КПД", "天然气内燃机发电效率排行榜": "Эл. КПД", "天然气内燃机热效率排行榜": "Тепл. КПД", "天然气内燃机耗气量排行榜": "Расход Газа",
+                    "最佳 ROI 榜": "Лучший ROI", "最低发电成本 LCOE 榜": "Мин. LCOE", "天然气内燃机折旧排行榜": "Амортизация", "天然气内燃机投资回报率排行榜": "Рейтинг ROI",
+                    "高可靠机组榜": "Надежность", "最长 MTBF 榜": "Макс. MTBF", "天然气内燃机保养时间排行榜": "Интервалы ТО", "天然气内燃机备件保障排行榜": "Запчасти",
+                    "天然气内燃机排放排行榜": "Выбросы", "天然气内燃机噪音排行榜": "Шум",
+                    "天然气内燃机发电机排行榜": "Генераторы", "天然气内燃机控制系统排行榜": "Системы Упр.",
+                    "美国市场榜": "Рынок США", "加拿大市场榜": "Рынок Канады", "中东市场榜": "Ближний Восток", "俄罗斯市场榜": "Рынок РФ",
+
+                    // Use Cases
+                    "油气井 / 伴生气": "Нефтегаз", "工业与园区能源": "Пром.", "挖矿 / 数据中心": "Майнинг", "CHP 热电联供": "ТЭЦ",
+
+                    // Tools
+                    "经济测算工具": "Экономика", "工程与技术工具": "Инжиниринг", "项目与选型工具": "Проектные", "矿工专区（托管与算力分析）": "Для майнеров", "全球支持与合规": "Глобал. поддержка",
+                    "LCOE 成本计算器": "LCOE Кальк.", "ROI 回报估算器": "ROI Оценка", "燃气发电挖矿收益计算器": "Доход Майнинга", "蒙特卡洛模拟盈利分析": "Монте-Карло", "天然气发电耗气成本分析": "Анализ Расходов",
+                    "气质适配工具": "Адаптация Газа", "排放估算工具": "Расчет Выбросов", "气体分析计算器": "Газоанализатор", "能电转换计算器": "Конвертер Энергии", "天然气主要成分热值表": "Таблица Теплотворности",
+                    "站点匹配向导": "Подбор Площадки", "气源所在地分析": "Локация Газа", "燃气发动机选型与运营经济性": "Подбор Двигателя", "天然气发电机机油消耗率": "Расход Масла", "车机 VS 工业机 10MW 对比分析": "Авто vs Пром", "多机型对比 3 年运营数据": "3 Года Экспл.",
+                    "挖矿收益计算器": "Доход Майнинг", "矿机盈利能力计算器": "Профит Майнера", "矿机选购速查": "Гид Покупки",
+                    "加拿大 AECO 天然气价格预测": "Прогноз AECO", "全球物流运输推荐": "Логистика", "全球合规政策": "Комплаенс",
+
+                    // Resources
+                    "文档": "Документы", "案例": "Кейсы", "技术库": "Тех. база", "媒体与支持": "Медиа",
+                    "白皮书": "Whitepapers", "行业报告": "Отчеты",
+                    "全部案例": "Все кейсы", "按区域查看": "По регионам", "按场景查看": "По типу",
+                    "技术参数表": "Техпаспорта", "认证与合规文件": "Сертификаты",
+                    "视频与教程": "Видео", "常见问答 FAQ": "FAQ",
+
+                    // Support & About
+                    "服务网络": "Сервис-сеть", "技术支持": "Техподдержка", "售后与保养": "Обслуживание",
+                    "公司介绍": "Компания", "联系我们": "Контакты"
+                }
+            }
+        };
+
+        // --- 2. Enhanced Country Data ---
+        const CountryData = {
+            usa: {
+                en: {
+                    eval: { score: 9.2, verdict: "Excellent", stability: 95, cost: 90, entry: 80, tax: 85, gas_access: 95, climate: 70 },
+                    tax: "<ul><li><strong>IRS:</strong> Crypto is property. Capital gains apply.</li><li><strong>Incentives:</strong> Texas HB 591 offers tax breaks for flare gas use.</li><li><strong>Sales Tax:</strong> Exemptions for data centers in specific zones.</li></ul>",
+                    permits: "<ul><li><strong>FERC:</strong> Required for grid sales.</li><li><strong>RRC (Texas):</strong> Gas utilization permits.</li><li><strong>TCEQ:</strong> Air permits (PBR/Standard) for engines.</li></ul>",
+                    env: "<ul><li><strong>EPA:</strong> Strict NOx limits (Tier 4F often needed).</li><li><strong>ESG:</strong> Flare mitigation is a recognized carbon reduction strategy.</li></ul>",
+                    corp: "<ul><li><strong>LLC:</strong> Standard structure.</li><li><strong>Rights:</strong> Private mineral rights simplify gas acquisition.</li></ul>",
+                    power: "<ul><li><strong>ERCOT:</strong> 4CP/5CP demand response programs are highly profitable.</li><li><strong>Grid:</strong> Open market with real-time pricing.</li></ul>",
+                    special: "<ul><li><strong>Transparency:</strong> Beneficial Ownership reporting required.</li><li><strong>LFL:</strong> >20MW loads must register with ERCOT.</li></ul>",
+                    labor: "<ul><li><strong>Talent:</strong> High availability of skilled oil & gas engineers.</li><li><strong>Cost:</strong> High labor costs ($40-80/hr for techs).</li></ul>",
+                    logistics: "<ul><li><strong>Supply Chain:</strong> Excellent. Major ports (Houston) and road networks.</li><li><strong>Speed:</strong> Fast deployment capability.</li></ul>",
+                    links: [
+                        {name: "Texas RRC", url: "https://www.rrc.texas.gov/"}, 
+                        {name: "IRS Digital Assets", url: "https://www.irs.gov/businesses/small-businesses-self-employed/digital-assets"},
+                        {name: "ERCOT Market", url: "https://www.ercot.com/"},
+                        {name: "TCEQ Air Permitting", url: "https://www.tceq.texas.gov/permitting/air"},
+                        {name: "US Energy Info Admin (EIA)", url: "https://www.eia.gov/"}
+                    ]
+                },
+                zh: {
+                    eval: { score: 9.2, verdict: "极佳 (黄金标准)", stability: 95, cost: 90, entry: 80, tax: 85, gas_access: 95, climate: 70 },
+                    tax: "<ul><li><strong>IRS 定性：</strong>加密货币为“财产”，适用资本利得税。</li><li><strong>德州激励：</strong>HB 591 法案提供火炬气利用税收减免。</li><li><strong>销售税：</strong>特定区域数据中心免除硬件销售税。</li></ul>",
+                    permits: "<ul><li><strong>FERC：</strong>并网售电需联邦注册。</li><li><strong>德州 RRC：</strong>天然气使用核心许可。</li><li><strong>TCEQ：</strong>内燃机空气排放许可 (PBR/标准)。</li></ul>",
+                    env: "<ul><li><strong>EPA 标准：</strong>排放限制严格（通常需 Tier 4 Final）。</li><li><strong>ESG：</strong>伴生气挖矿被认可为减排手段。</li></ul>",
+                    corp: "<ul><li><strong>LLC：</strong>最常见的公司形式。</li><li><strong>矿权：</strong>私人矿权制度便于直接签署供气协议。</li></ul>",
+                    power: "<ul><li><strong>ERCOT：</strong>需求响应 (4CP/5CP) 收益极高。</li><li><strong>电网：</strong>完全开放的实时电价市场。</li></ul>",
+                    special: "<ul><li><strong>透明度：</strong>需申报最终受益人。</li><li><strong>大负荷：</strong>>20MW 负载需向 ERCOT 专项注册。</li></ul>",
+                    labor: "<ul><li><strong>人才：</strong>油气工程师储备极丰富。</li><li><strong>成本：</strong>人力成本较高（技师约 $40-80/小时）。</li></ul>",
+                    logistics: "<ul><li><strong>供应链：</strong>极佳。休斯顿港及完善的公路网。</li><li><strong>速度：</strong>部署速度全球最快。</li></ul>",
+                    links: [
+                        {name: "德州铁路委员会 (RRC)", url: "https://www.rrc.texas.gov/"}, 
+                        {name: "IRS 数字资产指南", url: "https://www.irs.gov/businesses/small-businesses-self-employed/digital-assets"},
+                        {name: "ERCOT 官网", url: "https://www.ercot.com/"},
+                        {name: "TCEQ 空气许可", url: "https://www.tceq.texas.gov/permitting/air"},
+                        {name: "美国能源信息署 (EIA)", url: "https://www.eia.gov/"}
+                    ]
+                },
+                ru: {
+                    eval: { score: 9.2, verdict: "Отлично", stability: 95, cost: 90, entry: 80, tax: 85, gas_access: 95, climate: 70 },
+                    tax: "<ul><li><strong>IRS:</strong> Налог на прирост капитала.</li><li><strong>Техас HB 591:</strong> Льготы за утилизацию ПНГ.</li></ul>",
+                    permits: "<ul><li><strong>RRC:</strong> Разрешения на газ.</li><li><strong>TCEQ:</strong> Экология (воздух).</li></ul>",
+                    env: "<ul><li><strong>EPA:</strong> Строгие нормы (Tier 4F).</li></ul>",
+                    corp: "<ul><li><strong>LLC:</strong> Стандарт.</li><li><strong>Права:</strong> Частные недра.</li></ul>",
+                    power: "<ul><li><strong>ERCOT:</strong> Доход от Demand Response.</li></ul>",
+                    special: "<ul><li><strong>Отчетность:</strong> Раскрытие бенефициаров.</li></ul>",
+                    labor: "<ul><li><strong>Кадры:</strong> Много инженеров.</li><li><strong>Стоимость:</strong> Высокая ($40-80/час).</li></ul>",
+                    logistics: "<ul><li><strong>Логистика:</strong> Отличная (порт Хьюстон).</li></ul>",
+                    links: [
+                        {name: "RRC Texas", url: "https://www.rrc.texas.gov/"}, 
+                        {name: "IRS Налоги", url: "https://www.irs.gov/businesses/small-businesses-self-employed/digital-assets"},
+                        {name: "ERCOT", url: "https://www.ercot.com/"},
+                        {name: "TCEQ", url: "https://www.tceq.texas.gov/permitting/air"},
+                        {name: "EIA Energy", url: "https://www.eia.gov/"}
+                    ]
+                }
+            },
+            canada: {
+                en: {
+                    eval: { score: 7.8, verdict: "Good (Stable)", stability: 90, cost: 70, entry: 65, tax: 60, gas_access: 85, climate: 95 },
+                    tax: "<ul><li><strong>Income:</strong> Full business income tax.</li><li><strong>GST:</strong> No Input Tax Credits for crypto mining (exempt supply).</li></ul>",
+                    permits: "<ul><li><strong>AUC:</strong> Approval for plants >10MW.</li><li><strong>AER:</strong> Gas licenses.</li></ul>",
+                    env: "<ul><li><strong>TIER:</strong> Carbon pricing for large emitters.</li><li><strong>Methane:</strong> 75% reduction mandate.</li></ul>",
+                    corp: "<ul><li><strong>Alberta:</strong> Low corporate tax rate.</li></ul>",
+                    power: "<ul><li><strong>Stranded Gas:</strong> Abundant but remote.</li></ul>",
+                    special: "<ul><li><strong>FINTRAC:</strong> MSB registration for exchanges.</li></ul>",
+                    labor: "<ul><li><strong>Talent:</strong> High quality, scarce in remote areas.</li><li><strong>Cost:</strong> High ($35-70/hr).</li></ul>",
+                    logistics: "<ul><li><strong>Winter:</strong> Ice roads needed for remote sites. Seasonal limits.</li></ul>",
+                    links: [
+                        {name: "Alberta Energy Regulator (AER)", url: "https://www.aer.ca/"}, 
+                        {name: "Alberta Utilities Commission (AUC)", url: "https://www.auc.ab.ca/"},
+                        {name: "CRA Crypto Tax", url: "https://www.canada.ca/en/revenue-agency/programs/about-canada-revenue-agency-cra/compliance/digital-currency/cryptocurrency-guide.html"},
+                        {name: "AESO (Grid)", url: "https://www.aeso.ca/"},
+                        {name: "Gov of Alberta Energy", url: "https://www.alberta.ca/energy"}
+                    ]
+                },
+                zh: {
+                    eval: { score: 7.8, verdict: "良好 (寒冷气候优势)", stability: 90, cost: 70, entry: 65, tax: 60, gas_access: 85, climate: 95 },
+                    tax: "<ul><li><strong>所得税：</strong>全额商业所得税。</li><li><strong>GST：</strong>挖矿无进项税抵扣（约增加5%成本）。</li></ul>",
+                    permits: "<ul><li><strong>AUC：</strong>>10MW 电站需严格审批。</li><li><strong>AER：</strong>天然气使用执照。</li></ul>",
+                    env: "<ul><li><strong>TIER：</strong>碳定价体系适用于大型排放源。</li><li><strong>甲烷：</strong>75% 强制减排目标。</li></ul>",
+                    corp: "<ul><li><strong>艾伯塔：</strong>企业税率全加最低。</li></ul>",
+                    power: "<ul><li><strong>搁浅气：</strong>丰富但位置偏远。</li></ul>",
+                    special: "<ul><li><strong>FINTRAC：</strong>涉及兑换需注册 MSB。</li></ul>",
+                    labor: "<ul><li><strong>人才：</strong>素质高，但偏远地区招工难。</li><li><strong>成本：</strong>高（$35-70/小时）。</li></ul>",
+                    logistics: "<ul><li><strong>冬季挑战：</strong>偏远站点需冰路进入，受季节限制严重。</li></ul>",
+                    links: [
+                        {name: "艾伯塔能源监管局 (AER)", url: "https://www.aer.ca/"}, 
+                        {name: "艾伯塔公用事业委员会 (AUC)", url: "https://www.auc.ab.ca/"},
+                        {name: "CRA 加密税务指南", url: "https://www.canada.ca/en/revenue-agency/programs/about-canada-revenue-agency-cra/compliance/digital-currency/cryptocurrency-guide.html"},
+                        {name: "AESO 电网", url: "https://www.aeso.ca/"},
+                        {name: "艾伯塔省能源部", url: "https://www.alberta.ca/energy"}
+                    ]
+                },
+                ru: {
+                    eval: { score: 7.8, verdict: "Хорошо (Холод)", stability: 90, cost: 70, entry: 65, tax: 60, gas_access: 85, climate: 95 },
+                    tax: "<ul><li><strong>Налог:</strong> Полный налог на прибыль.</li><li><strong>НДС:</strong> Не возмещается.</li></ul>",
+                    permits: "<ul><li><strong>AUC:</strong> Одобрение >10 МВт.</li></ul>",
+                    env: "<ul><li><strong>TIER:</strong> Углеродный налог.</li></ul>",
+                    corp: "<ul><li><strong>Альберта:</strong> Низкие налоги.</li></ul>",
+                    power: "<ul><li><strong>Газ:</strong> Много, но далеко.</li></ul>",
+                    special: "<ul><li><strong>FINTRAC:</strong> MSB регистрация.</li></ul>",
+                    labor: "<ul><li><strong>Кадры:</strong> Дорого ($35-70/час).</li></ul>",
+                    logistics: "<ul><li><strong>Зима:</strong> Ледовые дороги, сложный доступ.</li></ul>",
+                    links: [
+                        {name: "AER Альберта", url: "https://www.aer.ca/"}, 
+                        {name: "AUC Комиссия", url: "https://www.auc.ab.ca/"},
+                        {name: "CRA Налоги", url: "https://www.canada.ca/en/revenue-agency/programs/about-canada-revenue-agency-cra/compliance/digital-currency/cryptocurrency-guide.html"},
+                        {name: "AESO Сеть", url: "https://www.aeso.ca/"}
+                    ]
+                }
+            },
+            russia: {
+                en: {
+                    eval: { score: 6.5, verdict: "Lowest Cost / High Risk", stability: 40, cost: 98, entry: 50, tax: 70, gas_access: 90, climate: 90 },
+                    tax: "<ul><li><strong>Profit Tax:</strong> 20%.</li><li><strong>VAT:</strong> Crypto sales exempt.</li><li><strong>Excise:</strong> Proposed energy excise tax.</li></ul>",
+                    permits: "<ul><li><strong>Registry:</strong> Mandatory Ministry of Digital Dev registration (Nov 2024).</li></ul>",
+                    env: "<ul><li><strong>APG:</strong> 95% utilization mandated, driving gas mining.</li></ul>",
+                    corp: "<ul><li><strong>Status:</strong> Mining is a legal economic activity.</li></ul>",
+                    power: "<ul><li><strong>Cost:</strong> World's lowest gas prices (~$1-2/MMBtu).</li><li><strong>Limits:</strong> Grid bans in Siberia.</li></ul>",
+                    special: "<ul><li><strong>Bans:</strong> No crypto payments or ads allowed.</li><li><strong>Export:</strong> Only mining/selling permitted.</li></ul>",
+                    labor: "<ul><li><strong>Talent:</strong> High technical skill, moderate cost.</li><li><strong>Visa:</strong> Difficult for westerners.</li></ul>",
+                    logistics: "<ul><li><strong>Sanctions:</strong> Major hurdle for importing western hardware. Parallel imports required.</li></ul>",
+                    links: [
+                        {name: "Ministry of Digital Development", url: "https://digital.gov.ru/ru/"}, 
+                        {name: "Federal Tax Service (FTS)", url: "https://www.nalog.gov.ru/"},
+                        {name: "Ministry of Energy", url: "https://minenergo.gov.ru/"},
+                        {name: "Central Bank of Russia", url: "https://cbr.ru/"}
+                    ]
+                },
+                zh: {
+                    eval: { score: 6.5, verdict: "极致低成本 / 高风险", stability: 40, cost: 98, entry: 50, tax: 70, gas_access: 90, climate: 90 },
+                    tax: "<ul><li><strong>所得税：</strong>20% 标准税率。</li><li><strong>增值税：</strong>销售加密货币免征。</li><li><strong>消费税：</strong>正讨论能源消费税。</li></ul>",
+                    permits: "<ul><li><strong>名录注册：</strong>2024新法强制要求在数码部注册。</li></ul>",
+                    env: "<ul><li><strong>伴生气：</strong>95% 强制利用率政策推动了燃气挖矿。</li></ul>",
+                    corp: "<ul><li><strong>地位：</strong>挖矿是合法经济活动。</li></ul>",
+                    power: "<ul><li><strong>成本：</strong>全球最低气价（约 $1-2/MMBtu）。</li><li><strong>限制：</strong>西伯利亚部分地区有季节性禁令。</li></ul>",
+                    special: "<ul><li><strong>禁令：</strong>严禁支付和广告。仅允许挖矿和出口。</li></ul>",
+                    labor: "<ul><li><strong>人才：</strong>技术能力强，成本适中。</li><li><strong>签证：</strong>西方人员入境困难。</li></ul>",
+                    logistics: "<ul><li><strong>制裁：</strong>西方硬件进口极难，需依赖平行进口或中国供应链。</li></ul>",
+                    links: [
+                        {name: "俄罗斯数码发展部", url: "https://digital.gov.ru/ru/"}, 
+                        {name: "联邦税务局 (FTS)", url: "https://www.nalog.gov.ru/"},
+                        {name: "俄罗斯能源部", url: "https://minenergo.gov.ru/"},
+                        {name: "俄罗斯央行", url: "https://cbr.ru/"}
+                    ]
+                },
+                ru: {
+                    eval: { score: 6.5, verdict: "Низкая цена / Риск", stability: 40, cost: 98, entry: 50, tax: 70, gas_access: 90, climate: 90 },
+                    tax: "<ul><li><strong>Налог на прибыль:</strong> 20%.</li><li><strong>НДС:</strong> Нет на продажу.</li></ul>",
+                    permits: "<ul><li><strong>Реестр:</strong> Обязательно (Минцифры).</li></ul>",
+                    env: "<ul><li><strong>ПНГ:</strong> Обязательная утилизация 95%.</li></ul>",
+                    corp: "<ul><li><strong>Статус:</strong> Легально (ОКВЭД).</li></ul>",
+                    power: "<ul><li><strong>Цена:</strong> Самый дешевый газ.</li></ul>",
+                    special: "<ul><li><strong>Запреты:</strong> Реклама и платежи запрещены.</li></ul>",
+                    labor: "<ul><li><strong>Кадры:</strong> Квалифицированные, недорого.</li></ul>",
+                    logistics: "<ul><li><strong>Санкции:</strong> Сложности с импортом оборудования.</li></ul>",
+                    links: [
+                        {name: "Минцифры РФ", url: "https://digital.gov.ru/ru/"}, 
+                        {name: "ФНС России", url: "https://www.nalog.gov.ru/"},
+                        {name: "Минэнерго РФ", url: "https://minenergo.gov.ru/"},
+                        {name: "ЦБ РФ", url: "https://cbr.ru/"}
+                    ]
+                }
+            },
+            kazakhstan: {
+                en: {
+                    eval: { score: 7.0, verdict: "Moderate (Tiered)", stability: 60, cost: 85, entry: 55, tax: 60, gas_access: 60, climate: 60 },
+                    tax: "<ul><li><strong>Mining Fee:</strong> 1-25 Tenge/kWh.</li><li><strong>Astana Hub:</strong> 0% tax, 1% royalty.</li></ul>",
+                    permits: "<ul><li><strong>License:</strong> Class I/II mandatory.</li><li><strong>Quota:</strong> Strict grid quotas.</li></ul>",
+                    env: "<ul><li><strong>Emissions:</strong> Standard permits.</li></ul>",
+                    corp: "<ul><li><strong>AIFC:</strong> English law protection.</li></ul>",
+                    power: "<ul><li><strong>Gas:</strong> Domestic shortage limits new allocations.</li></ul>",
+                    special: "<ul><li><strong>Reporting:</strong> Monthly AFM reports.</li></ul>",
+                    labor: "<ul><li><strong>Talent:</strong> Good, ex-Soviet industrial base.</li></ul>",
+                    logistics: "<ul><li><strong>Transit:</strong> Landlocked, transit via China/Russia.</li></ul>",
+                    links: [
+                        {name: "Astana Hub", url: "https://astanahub.com/"}, 
+                        {name: "AIFC Authority", url: "https://aifc.kz/"},
+                        {name: "Ministry of Digital (MDDIAI)", url: "https://www.gov.kz/memleket/entities/mdai"},
+                        {name: "KEGOC (Grid)", url: "https://www.kegoc.kz/"}
+                    ]
+                },
+                zh: {
+                    eval: { score: 7.0, verdict: "中等 (阶梯费率)", stability: 60, cost: 85, entry: 55, tax: 60, gas_access: 60, climate: 60 },
+                    tax: "<ul><li><strong>挖矿费：</strong>1-25 坚戈/kWh。</li><li><strong>Astana Hub：</strong>0% 税，1% 版税。</li></ul>",
+                    permits: "<ul><li><strong>牌照：</strong>强制 I/II 类牌照。</li><li><strong>配额：</strong>电网配额极严。</li></ul>",
+                    env: "<ul><li><strong>排放：</strong>标准工业许可。</li></ul>",
+                    corp: "<ul><li><strong>AIFC：</strong>英国法体系保护。</li></ul>",
+                    power: "<ul><li><strong>气源：</strong>内需增长导致新气源配额难批。</li></ul>",
+                    special: "<ul><li><strong>报告：</strong>每月向 AFM 报告。</li></ul>",
+                    labor: "<ul><li><strong>人才：</strong>工业基础尚可。</li></ul>",
+                    logistics: "<ul><li><strong>运输：</strong>内陆国，依赖中俄过境运输。</li></ul>",
+                    links: [
+                        {name: "Astana Hub", url: "https://astanahub.com/"}, 
+                        {name: "AIFC 官网", url: "https://aifc.kz/"},
+                        {name: "哈萨克斯坦数码部 (MDDIAI)", url: "https://www.gov.kz/memleket/entities/mdai"},
+                        {name: "KEGOC 国家电网", url: "https://www.kegoc.kz/"}
+                    ]
+                },
+                ru: {
+                    eval: { score: 7.0, verdict: "Средне", stability: 60, cost: 85, entry: 55, tax: 60, gas_access: 60, climate: 60 },
+                    tax: "<ul><li><strong>Плата:</strong> 1-25 тенге.</li><li><strong>Astana Hub:</strong> 0% налог.</li></ul>",
+                    permits: "<ul><li><strong>Лицензия:</strong> I/II класс.</li></ul>",
+                    env: "<ul><li><strong>Выбросы:</strong> Стандарт.</li></ul>",
+                    corp: "<ul><li><strong>МФЦА:</strong> Англ. право.</li></ul>",
+                    power: "<ul><li><strong>Газ:</strong> Дефицит товарного газа.</li></ul>",
+                    special: "<ul><li><strong>АФМ:</strong> Отчеты обязательны.</li></ul>",
+                    labor: "<ul><li><strong>Кадры:</strong> Есть база.</li></ul>",
+                    logistics: "<ul><li><strong>Транзит:</strong> Через РФ/КНР.</li></ul>",
+                    links: [
+                        {name: "Astana Hub", url: "https://astanahub.com/"}, 
+                        {name: "МФЦА", url: "https://aifc.kz/"},
+                        {name: "МЦРИАП РК", url: "https://www.gov.kz/memleket/entities/mdai"},
+                        {name: "KEGOC", url: "https://www.kegoc.kz/"}
+                    ]
+                }
+            },
+            indonesia: {
+                en: {
+                    eval: { score: 6.0, verdict: "Developing (High Entry)", stability: 50, cost: 75, entry: 40, tax: 70, gas_access: 70, climate: 20 },
+                    tax: "<ul><li><strong>VAT/Income:</strong> 0.11% / 0.1% final.</li><li><strong>Import:</strong> High hardware duties.</li></ul>",
+                    permits: "<ul><li><strong>IUI:</strong> Generation license.</li><li><strong>Wilus:</strong> Industrial zones.</li></ul>",
+                    env: "<ul><li><strong>AMDAL:</strong> Impact analysis mandatory.</li></ul>",
+                    corp: "<ul><li><strong>PT PMA:</strong> High capital req for foreigners.</li></ul>",
+                    power: "<ul><li><strong>PLN:</strong> Monopoly. Self-gen needs permit.</li></ul>",
+                    special: "<ul><li><strong>Payment:</strong> Crypto illegal for payment.</li></ul>",
+                    labor: "<ul><li><strong>Cost:</strong> Low wages.</li><li><strong>Skill:</strong> Training needed.</li></ul>",
+                    logistics: "<ul><li><strong>Archipelago:</strong> Complex inter-island logistics.</li></ul>",
+                    links: [
+                        {name: "Bappebti", url: "https://bappebti.go.id/"}, 
+                        {name: "BKPM Investment", url: "https://www.bkpm.go.id/"},
+                        {name: "OJK Authority", url: "https://ojk.go.id/"},
+                        {name: "ESDM (Energy Ministry)", url: "https://www.esdm.go.id/"},
+                        {name: "PLN", url: "https://web.pln.co.id/"}
+                    ]
+                },
+                zh: {
+                    eval: { score: 6.0, verdict: "发展中 (湿热挑战)", stability: 50, cost: 75, entry: 40, tax: 70, gas_access: 70, climate: 20 },
+                    tax: "<ul><li><strong>税率：</strong>0.11% 增值税 + 0.1% 所得税。</li><li><strong>进口：</strong>硬件关税高。</li></ul>",
+                    permits: "<ul><li><strong>IUI：</strong>发电许可。</li><li><strong>Wilus：</strong>工业区落地。</li></ul>",
+                    env: "<ul><li><strong>AMDAL：</strong>强制环评。</li></ul>",
+                    corp: "<ul><li><strong>PT PMA：</strong>外资资本门槛高。</li></ul>",
+                    power: "<ul><li><strong>PLN：</strong>垄断。自发自用需特批。</li></ul>",
+                    special: "<ul><li><strong>支付：</strong>严禁加密支付。</li></ul>",
+                    labor: "<ul><li><strong>成本：</strong>人工便宜。</li><li><strong>技能：</strong>需培训。</li></ul>",
+                    logistics: "<ul><li><strong>群岛：</strong>岛际物流复杂。</li></ul>",
+                    links: [
+                        {name: "Bappebti (商品期货局)", url: "https://bappebti.go.id/"}, 
+                        {name: "BKPM (投资协调委员会)", url: "https://www.bkpm.go.id/"},
+                        {name: "OJK (金融服务管理局)", url: "https://ojk.go.id/"},
+                        {name: "ESDM (能源矿产部)", url: "https://www.esdm.go.id/"},
+                        {name: "PLN (国家电力)", url: "https://web.pln.co.id/"}
+                    ]
+                },
+                ru: {
+                    eval: { score: 6.0, verdict: "Сложно (Климат)", stability: 50, cost: 75, entry: 40, tax: 70, gas_access: 70, climate: 20 },
+                    tax: "<ul><li><strong>Налог:</strong> 0.11% + 0.1%.</li><li><strong>Импорт:</strong> Пошлины.</li></ul>",
+                    permits: "<ul><li><strong>IUI:</strong> Лицензия.</li></ul>",
+                    env: "<ul><li><strong>AMDAL:</strong> Экология.</li></ul>",
+                    corp: "<ul><li><strong>PT PMA:</strong> Дорогой вход.</li></ul>",
+                    power: "<ul><li><strong>PLN:</strong> Монополия.</li></ul>",
+                    special: "<ul><li><strong>Платежи:</strong> Запрещены.</li></ul>",
+                    labor: "<ul><li><strong>Кадры:</strong> Дешево, обучение.</li></ul>",
+                    logistics: "<ul><li><strong>Острова:</strong> Сложно.</li></ul>",
+                    links: [
+                        {name: "Bappebti", url: "https://bappebti.go.id/"}, 
+                        {name: "BKPM", url: "https://www.bkpm.go.id/"},
+                        {name: "OJK", url: "https://ojk.go.id/"},
+                        {name: "ESDM", url: "https://www.esdm.go.id/"}
+                    ]
+                }
+            }
+        };
+
+        // --- 3. Page Logic with Evaluation Rendering ---
+        const pageApp = {
+            currentCountry: 'usa',
+            
+            setCountry(code) {
+                this.currentCountry = code;
+                document.querySelectorAll('.country-tab').forEach(btn => btn.classList.remove('active', 'text-white'));
+                const activeBtn = document.getElementById(`tab-${code}`);
+                if(activeBtn) activeBtn.classList.add('active', 'text-white');
+                this.renderContent();
+            },
+
+            renderContent() {
+                const lang = app.currentLang;
+                if (!CountryData[this.currentCountry] || !CountryData[this.currentCountry][lang]) return;
+
+                const data = CountryData[this.currentCountry][lang];
+                const evalData = data.eval;
+                const container = document.getElementById('country-content');
+
+                // Labels
+                const L = {
+                    scoreTitle: { en: "GasGx Comprehensive Eval", zh: "GasGx 综合评估", ru: "Оценка GasGx" },
+                    stability: { en: "Policy Stability", zh: "政策稳定性", ru: "Стабильность" },
+                    cost: { en: "Energy Cost Advantage", zh: "能源成本优势", ru: "Цена энергии" },
+                    entry: { en: "Ease of Entry", zh: "准入门槛", ru: "Легкость входа" },
+                    tax: { en: "Tax Friendliness", zh: "税务友好度", ru: "Налоги" },
+                    gas_access: { en: "Gas Availability", zh: "气源可获得性", ru: "Доступ к газу" },
+                    climate: { en: "Climate Suitability", zh: "气候/散热优势", ru: "Климат" },
+                    verdict: { en: "Verdict", zh: "最终评级", ru: "Вердикт" },
+                    
+                    cardTitles: {
+                        tax: { en: "Tax & Incentives", zh: "税收与激励", ru: "Налоги и льготы" },
+                        permits: { en: "Permits & Licensing", zh: "许可与牌照", ru: "Лицензии" },
+                        env: { en: "Environment (ESG)", zh: "环保与排放", ru: "Экология" },
+                        power: { en: "Power & Grid", zh: "电力与并网", ru: "Энергетика" },
+                        corp: { en: "Corporate Structure", zh: "公司架构", ru: "Корпоративная структура" },
+                        special: { en: "Special Rules", zh: "专项规定", ru: "Спец. правила" },
+                        labor: { en: "Labor & Ops", zh: "人力与运维", ru: "Кадры" },
+                        logistics: { en: "Logistics", zh: "物流与供应链", ru: "Логистика" },
+                        links: { en: "Official Sources", zh: "官方信源", ru: "Источники" }
+                    }
+                };
+
+                // Helper for Score Bar
+                const renderBar = (val, color) => `
+                    <div class="h-2 bg-gray-700 rounded-full overflow-hidden mt-1">
+                        <div class="h-full ${color} score-bar-fill" style="width: ${val}%"></div>
+                    </div>
+                `;
+
+                // HTML Construction
+                let html = `
+                    <!-- 1. Evaluation Scorecard (Enhanced 6 Metrics) -->
+                    <div class="gas-card rounded-2xl p-6 md:p-8 mb-8 border border-gas-green/30 relative overflow-hidden animate-fade-in">
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-gas-green/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                        
+                        <div class="flex flex-col lg:flex-row gap-8 items-center">
+                            <!-- Left: Big Score -->
+                            <div class="text-center lg:text-left shrink-0">
+                                <h3 class="text-gas-subtext text-sm uppercase font-bold tracking-wider mb-2">${L.scoreTitle[lang]}</h3>
+                                <div class="text-6xl font-black text-gas-green leading-none mb-2">${evalData.score}</div>
+                                <div class="text-white font-bold bg-white/10 px-3 py-1 rounded-full text-sm inline-block">${evalData.verdict}</div>
+                            </div>
+
+                            <!-- Right: Progress Bars (6 Items) -->
+                            <div class="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
+                                <div><div class="flex justify-between text-xs mb-1"><span class="text-gray-400">${L.stability[lang]}</span><span class="text-white">${evalData.stability}%</span></div>${renderBar(evalData.stability, 'bg-blue-500')}</div>
+                                <div><div class="flex justify-between text-xs mb-1"><span class="text-gray-400">${L.cost[lang]}</span><span class="text-white">${evalData.cost}%</span></div>${renderBar(evalData.cost, 'bg-green-500')}</div>
+                                <div><div class="flex justify-between text-xs mb-1"><span class="text-gray-400">${L.entry[lang]}</span><span class="text-white">${evalData.entry}%</span></div>${renderBar(evalData.entry, 'bg-yellow-500')}</div>
+                                <div><div class="flex justify-between text-xs mb-1"><span class="text-gray-400">${L.tax[lang]}</span><span class="text-white">${evalData.tax}%</span></div>${renderBar(evalData.tax, 'bg-purple-500')}</div>
+                                <div><div class="flex justify-between text-xs mb-1"><span class="text-gray-400">${L.gas_access[lang]}</span><span class="text-white">${evalData.gas_access}%</span></div>${renderBar(evalData.gas_access, 'bg-orange-500')}</div>
+                                <div><div class="flex justify-between text-xs mb-1"><span class="text-gray-400">${L.climate[lang]}</span><span class="text-white">${evalData.climate}%</span></div>${renderBar(evalData.climate, 'bg-cyan-500')}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Detailed Grid (Expanded to 8 Cards) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in" style="animation-delay: 0.1s">
+                        ${[
+                            { key: 'tax', icon: 'fa-file-invoice-dollar', color: 'text-gas-green', bg: 'bg-gas-green/10', border: 'border-t-gas-green' },
+                            { key: 'permits', icon: 'fa-scroll', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-t-blue-500' },
+                            { key: 'env', icon: 'fa-leaf', color: 'text-green-500', bg: 'bg-green-600/10', border: 'border-t-green-600' },
+                            { key: 'power', icon: 'fa-bolt', color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-t-yellow-500' },
+                            { key: 'corp', icon: 'fa-building', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-t-purple-500' },
+                            { key: 'labor', icon: 'fa-users', color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-t-pink-500' },
+                            { key: 'logistics', icon: 'fa-truck-fast', color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-t-orange-500' },
+                            { key: 'special', icon: 'fa-triangle-exclamation', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-t-red-500' }
+                        ].map(item => `
+                            <div class="gas-card p-6 rounded-xl info-card group border-t-4 ${item.border}">
+                                <div class="w-12 h-12 ${item.bg} rounded-lg flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
+                                    <i class="fa-solid ${item.icon} text-xl ${item.color}"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-white mb-3">${L.cardTitles[item.key][lang]}</h3>
+                                <div class="text-sm text-gray-400 leading-relaxed detail-list">
+                                    ${data[item.key]}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <!-- 3. Links Section (Enhanced) -->
+                    <div class="mt-8 bg-[#151515] rounded-xl p-6 border border-white/5 animate-fade-in" style="animation-delay: 0.2s">
+                        <h4 class="text-white font-bold mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-link text-gas-subtext"></i> ${L.cardTitles.links[lang]}
+                        </h4>
+                        <div class="flex flex-wrap gap-4">
+                            ${data.links.map(l => `
+                                <a href="${l.url}" target="_blank" class="px-4 py-2 bg-white/5 hover:bg-gas-green hover:text-black rounded text-sm text-gas-green transition-all border border-gas-green/20 flex items-center gap-2 group">
+                                    ${l.name} <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-70 group-hover:translate-x-1 transition-transform"></i>
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML = html;
+            }
+        };
+
+        // --- 4. Main App Logic ---
+        const app = {
+            currentLang: 'en',
+            isMobileMenuOpen: false,
+
+            init() {
+                this.renderNav();
+                this.renderFooter();
+                this.updateStaticText();
+                pageApp.renderContent();
+
+                // Scroll Listener
+                window.onscroll = () => {
+                    const btn = document.getElementById('backToTopBtn');
+                    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                        btn.classList.remove('translate-y-20', 'opacity-0');
+                    } else {
+                        btn.classList.add('translate-y-20', 'opacity-0');
+                    }
+                };
+            },
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                
+                // Update Buttons
+                ['zh', 'en', 'ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+                    const isActive = l === lang;
+                    if(btn) btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center ${isActive ? "text-black bg-gas-green shadow-glow font-bold" : "text-gas-subtext hover:text-white hover:bg-white/5 font-medium"}`;
+                    if(mobBtn) mobBtn.className = `px-4 py-2 rounded-full text-xs transition-all ${isActive ? "text-black bg-gas-green font-bold" : "text-gray-400 font-medium"}`;
+                });
+
+                // Update All Components
+                this.renderNav();
+                this.renderMobileNav();
+                this.renderFooter();
+                this.updateStaticText();
+                pageApp.renderContent(); // IMPORTANT: Refresh main content
+            },
+
+            t(key) {
+                const dict = AppData.i18n[this.currentLang] || AppData.i18n['en'];
+                return (dict && dict[key]) ? dict[key] : key;
+            },
+
+            // Navigation Rendering (Matches index.html logic)
+            renderNav() {
+                const navContainer = document.getElementById('desktop-nav');
+                navContainer.innerHTML = '';
+                const totalItems = AppData.navigation.length;
+
+                AppData.navigation.forEach((item, index) => {
+                    if (item.type === 'link') {
+                        navContainer.innerHTML += `<a href="${item.path}" class="nav-item-link font-medium text-sm"><span>${this.t(item.title)}</span></a>`;
+                    } else if (item.type === 'menu' || item.type === 'mega') {
+                        let dropContent = '';
+                        const isRightAligned = index >= totalItems - 2; // Adjust alignment for last items
+                        const posClass = isRightAligned ? 'right-0' : 'left-0';
+                        
+                        if (item.type === 'mega') {
+                            const gridClass = item.gridCols || 'grid-cols-5';
+                            const sectionsHtml = item.sections.map((section, idx) => {
+                                const borderClass = idx === item.sections.length - 1 ? '' : 'border-r border-white/5';
+                                const itemsHtml = section.items.map(sub => `<li class="mb-2"><a href="${sub.path}" class="text-gray-400 hover:text-gas-green text-xs flex items-center gap-2 transition-colors"><i class="fa-solid fa-angle-right text-[10px] opacity-50"></i>${this.t(sub.title)}</a></li>`).join('');
+                                return `<div class="col-span-1 space-y-4 ${borderClass} px-2"><h3 class="text-gas-green font-bold text-sm uppercase tracking-wider mb-3 border-b border-white/5 pb-2">${this.t(section.header)}</h3><ul>${itemsHtml}</ul></div>`;
+                            }).join('');
+                            dropContent = `<div class="mega-menu"><div class="max-w-[1800px] mx-auto px-4 grid ${gridClass} gap-6">${sectionsHtml}</div></div>`;
+                        } else {
+                            const childrenHtml = item.children.map(child => `<a href="${child.path}" class="block px-4 py-2 text-sm text-gray-400 hover:text-gas-green hover:bg-white/5 whitespace-nowrap">${this.t(child.title)}</a>`).join('');
+                            dropContent = `<div class="dropdown-menu ${posClass}">${childrenHtml}</div>`;
+                        }
+                        navContainer.innerHTML += `<div class="group h-full flex items-center cursor-pointer ${item.type === 'mega' ? '' : 'relative'}"><span class="nav-item-link font-medium text-sm"><span>${this.t(item.title)}</span> <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i></span>${dropContent}</div>`;
+                    }
+                });
+            },
+
+            renderMobileNav() {
+                const container = document.getElementById('mobile-nav-content');
+                container.innerHTML = '';
+                AppData.navigation.forEach((item, index) => {
+                    if (item.type === 'link') {
+                        container.innerHTML += `<a href="${item.path}" class="block py-4 border-b border-white/10 text-lg font-medium hover:text-gas-green">${this.t(item.title)}</a>`;
+                    } else {
+                        const subId = `mob-sub-${index}`;
+                        let subHtml = '';
+                        if (item.type === 'menu') subHtml = item.children.map(c => `<a href="${c.path}" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green text-sm">${this.t(c.title)}</a>`).join('');
+                        else if (item.type === 'mega') subHtml = item.sections.map(s => `<div class="py-2"><h4 class="text-gas-green text-xs font-bold uppercase mb-2 pl-4">${this.t(s.header)}</h4>${s.items.map(i => `<a href="${i.path}" class="block py-2 pl-6 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green text-sm">${this.t(i.title)}</a>`).join('')}</div>`).join('');
+                        container.innerHTML += `<div class="border-b border-white/10"><button onclick="app.toggleMobileSubmenu('${subId}')" class="w-full py-4 flex justify-between items-center text-lg font-medium hover:text-gas-green focus:outline-none"><span>${this.t(item.title)}</span><i id="icon-${subId}" class="fa-solid fa-chevron-down text-sm transition-transform duration-300"></i></button><div id="${subId}" class="mobile-submenu"><div class="pb-4 space-y-1">${subHtml}</div></div></div>`;
+                    }
+                });
+            },
+
+            renderFooter() {
+                const c = document.getElementById('footer-links');
+                c.innerHTML = '';
+                AppData.navigation.forEach((item, idx) => {
+                    if (item.title === '首页') return;
+                    let linksHtml = '';
+                    const footerSubId = `footer-sub-${idx}`;
+                    
+                    if(item.type==='menu') {
+                        linksHtml = `<div class="flex flex-wrap">${item.children.map(x => `<a href="${x.path}" class="footer-link hover:text-gas-green text-gray-400 mr-4 mb-2 inline-block">${this.t(x.title)}</a>`).join('')}</div>`;
+                    } else if(item.type==='mega') {
+                        linksHtml = item.sections.map(s => `
+                            <div class="flex flex-col md:flex-row md:items-baseline mr-6 mb-2">
+                                <span class="text-gas-green text-xs font-bold uppercase mr-2 md:w-24 shrink-0">${this.t(s.header)}:</span>
+                                <div class="flex flex-wrap">${s.items.map(x => `<a href="${x.path}" class="footer-link hover:text-gas-green text-gray-400 mr-3 mb-1 text-xs inline-block">${this.t(x.title)}</a>`).join('')}</div>
+                            </div>
+                        `).join('');
+                    }
+
+                    // Desktop View
+                    const desktopHtml = `<div class="hidden md:flex py-4 border-b border-white/5"><div class="w-32 lg:w-48 shrink-0"><h4 class="text-white font-bold text-sm border-l-2 border-gas-green pl-3">${this.t(item.title)}</h4></div><div class="flex-1 flex flex-col gap-2">${linksHtml}</div></div>`;
+
+                    // Mobile View (Accordion)
+                    const mobileHtml = `
+                        <div class="md:hidden border-b border-white/5">
+                            <button onclick="app.toggleFooter('${footerSubId}')" class="w-full flex justify-between items-center py-3 text-sm font-bold text-white focus:outline-none">
+                                <span class="border-l-2 border-gas-green pl-3">${this.t(item.title)}</span>
+                                <i id="footer-icon-${footerSubId}" class="fa-solid fa-plus text-xs text-gray-500 transition-transform duration-300"></i>
+                            </button>
+                            <div id="${footerSubId}" class="footer-accordion-content">
+                                <div class="pt-2 pl-4 pb-4 text-gray-400 flex flex-col gap-2">${linksHtml.replace(/flex-row/g, 'flex-col').replace(/md:w-24/g, '')}</div>
+                            </div>
+                        </div>
+                    `;
+
+                    c.innerHTML += desktopHtml + mobileHtml;
+                });
+            },
+
+            // UI Toggles
+            toggleMobileMenu() {
+                this.isMobileMenuOpen = !this.isMobileMenuOpen;
+                const m = document.getElementById('mobile-menu-container');
+                const i = document.querySelector('#mobile-menu-btn i');
+                if(this.isMobileMenuOpen) { m.classList.remove('translate-x-full'); i.className="fa-solid fa-xmark"; document.body.style.overflow='hidden'; this.renderMobileNav(); }
+                else { m.classList.add('translate-x-full'); i.className="fa-solid fa-bars"; document.body.style.overflow=''; }
+            },
+            toggleMobileSubmenu(id) {
+                const el = document.getElementById(id); const icon = document.getElementById(`icon-${id}`);
+                if(el.style.maxHeight){ el.style.maxHeight=null; icon.classList.remove('rotate-180'); }
+                else{ el.style.maxHeight=el.scrollHeight+"px"; icon.classList.add('rotate-180'); }
+            },
+            toggleFooter(id) {
+                const el = document.getElementById(id); const icon = document.getElementById(`footer-icon-${id}`);
+                if (el.style.maxHeight) { el.style.maxHeight = null; icon.classList.remove('fa-minus', 'text-gas-green'); icon.classList.add('fa-plus'); } 
+                else { el.style.maxHeight = el.scrollHeight + "px"; icon.classList.remove('fa-plus'); icon.classList.add('fa-minus', 'text-gas-green'); }
+            },
+
+            // Capture
+            captureAndShare() {
+                window.scrollTo(0,0);
+                const w = document.createElement('div'); w.id='temp-watermark';
+                Object.assign(w.style, {position:'absolute',top:0,left:0,width:'100%',height:document.body.scrollHeight+'px',zIndex:9999,pointerEvents:'none',display:'flex',flexWrap:'wrap',justifyContent:'space-around',opacity:'0.1',overflow:'hidden'});
+                w.innerHTML = `<div style="margin:100px;transform:rotate(-30deg);text-align:center"><div style="font-size:24px;font-weight:bold;color:#5DD62C">GasGx.com</div><div style="color:#fff">Compliance Guide</div></div>`.repeat(20);
+                document.body.appendChild(w);
+                setTimeout(()=>{
+                    html2canvas(document.body,{backgroundColor:'#0F0F0F',scale:2}).then(canvas=>{
+                        const a = document.createElement('a'); a.download='GasGx-Compliance.png'; a.href=canvas.toDataURL('image/png'); a.click();
+                        document.body.removeChild(w);
+                        const m = document.getElementById('shareModal'); m.classList.remove('hidden');
+                        setTimeout(()=>m.querySelector('div').classList.remove('scale-95','opacity-0'),10);
+                    }).catch(e=>{console.error(e); if(document.getElementById('temp-watermark'))document.body.removeChild(w);});
+                },500);
+            },
+            closeModal() { const m=document.getElementById('shareModal'); m.querySelector('div').classList.add('scale-95','opacity-0'); setTimeout(()=>m.classList.add('hidden'),300); },
+
+            updateStaticText() {
+                document.querySelector('#header-tagline').innerText = this.t('tagline');
+                document.querySelector('[data-i18n="footerTagline"]').innerText = this.t('footerTagline');
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const k = el.getAttribute('data-i18n');
+                    if(k!=='tagline' && k!=='footerTagline') el.innerText = this.t(k);
+                });
+            }
+        };
+
+        // Expose globals
+        window.app = app;
+        window.pageApp = pageApp;
+
+        // Start
+        app.init();
+    </script>
+</body>
+</html>

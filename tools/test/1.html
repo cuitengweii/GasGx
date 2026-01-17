@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx 全球燃气发动机查询平台</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        /* 隐藏数字输入框的箭头 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 overflow-hidden">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        // --- 图标组件 ---
+        const Icon = ({ path, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {path}
+            </svg>
+        );
+        const Icons = {
+            Search: (p) => <Icon {...p} path={<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>} />,
+            Filter: (p) => <Icon {...p} path={<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>} />,
+            Zap: (p) => <Icon {...p} path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>} />,
+            Activity: (p) => <Icon {...p} path={<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>} />,
+            X: (p) => <Icon {...p} path={<><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>} />,
+            ChevronDown: (p) => <Icon {...p} path={<polyline points="6 9 12 15 18 9"/>} />,
+            ChevronRight: (p) => <Icon {...p} path={<polyline points="9 18 15 12 9 6"/>} />,
+            ChevronLeft: (p) => <Icon {...p} path={<polyline points="15 18 9 12 15 6"/>} />,
+            Database: (p) => <Icon {...p} path={<><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></>} />,
+            Gauge: (p) => <Icon {...p} path={<><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></>} />,
+            Download: (p) => <Icon {...p} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>} />,
+            LayoutGrid: (p) => <Icon {...p} path={<><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></>} />,
+            Table: (p) => <Icon {...p} path={<><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2v-14a2 2 0 0 1 2-2h7"/><path d="M3 10h18"/><path d="M9 21V3"/></>} />,
+            Sliders: (p) => <Icon {...p} path={<><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></>} />,
+            Droplets: (p) => <Icon {...p} path={<><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.35c.71-.77 1.37-1.7 1.8-2.67a8.99 8.99 0 0 0 1.67-4.1z"/></>} />,
+            Wind: (p) => <Icon {...p} path={<><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></>} />,
+            Edit3: (p) => <Icon {...p} path={<><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>} />,
+        };
+
+        // --- 品牌 Logo SVG (高保真模拟) ---
+        const BrandLogos = {
+            Cummins: () => <svg viewBox="0 0 100 50" className="w-full h-full"><rect width="100" height="50" fill="#cc0000" rx="4"/><path d="M30 10 h40 v30 h-40 v-10 h25 v-10 h-25 z" fill="white" transform="rotate(-45 50 25)"/></svg>,
+            Caterpillar: () => <svg viewBox="0 0 100 50" className="w-full h-full"><path d="M10 40 L90 40 L50 5 Z" fill="#FFCD11"/><text x="50" y="42" fontSize="16" fill="black" textAnchor="middle" fontWeight="900" style={{fontFamily:'Arial Black'}}>CAT</text></svg>,
+            Weichai: () => <svg viewBox="0 0 100 50" className="w-full h-full"><circle cx="20" cy="25" r="15" fill="none" stroke="#0046ad" strokeWidth="5"/><text x="65" y="32" fontSize="14" fill="#0046ad" textAnchor="middle" fontWeight="bold">WEICHAI</text></svg>,
+            Yuchai: () => <svg viewBox="0 0 100 50" className="w-full h-full"><path d="M10 10 L30 10 L20 40 Z" fill="#0056b3"/><text x="65" y="32" fontSize="14" fill="#0056b3" textAnchor="middle" fontWeight="bold">YUCHAI</text></svg>,
+            MTU: () => <svg viewBox="0 0 100 50" className="w-full h-full"><rect x="5" y="5" width="90" height="40" fill="#2d3748" rx="2"/><text x="50" y="35" fontSize="24" fill="white" textAnchor="middle" fontWeight="bold">mtu</text></svg>,
+            MWM: () => <svg viewBox="0 0 100 50" className="w-full h-full"><text x="50" y="35" fontSize="24" fill="#003399" textAnchor="middle" fontWeight="900" style={{letterSpacing:'-2px'}}>MWM</text></svg>,
+            Jenbacher: () => <svg viewBox="0 0 100 50" className="w-full h-full"><text x="50" y="22" fontSize="16" fill="#4CAF50" textAnchor="middle" fontWeight="bold">INNIO</text><text x="50" y="38" fontSize="10" fill="#666" textAnchor="middle">Jenbacher</text></svg>,
+            Wartsila: () => <svg viewBox="0 0 100 50" className="w-full h-full"><circle cx="15" cy="25" r="8" fill="#f97316"/><text x="60" y="32" fontSize="12" fill="#f97316" textAnchor="middle" fontWeight="bold">WÄRTSILÄ</text></svg>,
+            VMAN: () => <svg viewBox="0 0 100 50" className="w-full h-full"><path d="M10 10 L25 40 L40 10" stroke="#dc2626" strokeWidth="4" fill="none"/><text x="70" y="32" fontSize="20" fill="#dc2626" textAnchor="middle" fontWeight="bold">VMAN</text></svg>,
+            SDEC: () => <svg viewBox="0 0 100 50" className="w-full h-full"><rect x="5" y="10" width="30" height="30" fill="#0056b3" rx="4"/><text x="68" y="32" fontSize="16" fill="#0056b3" textAnchor="middle" fontWeight="bold">SDEC</text></svg>,
+            Deutz: () => <svg viewBox="0 0 100 50" className="w-full h-full"><path d="M15 35 L25 15 L35 35" stroke="#ff9900" strokeWidth="4" fill="none"/><text x="70" y="32" fontSize="16" fill="#333" textAnchor="middle" fontWeight="bold">DEUTZ</text></svg>,
+            Siemens: () => <svg viewBox="0 0 100 50" className="w-full h-full"><text x="50" y="28" fontSize="16" fill="#009999" textAnchor="middle" fontWeight="bold">SIEMENS</text><text x="50" y="42" fontSize="8" fill="#666" textAnchor="middle" letterSpacing="2">Energy</text></svg>,
+            Doosan: () => <svg viewBox="0 0 100 50" className="w-full h-full"><rect x="10" y="18" width="15" height="15" fill="#0056b3"/><rect x="28" y="18" width="15" height="15" fill="#0056b3"/><rect x="46" y="18" width="15" height="15" fill="#0056b3"/><text x="80" y="32" fontSize="10" fill="#0056b3" textAnchor="middle" fontWeight="bold">DOOSAN</text></svg>,
+            BakerHughes: () => <svg viewBox="0 0 100 50" className="w-full h-full"><path d="M15 15 L35 15 M25 15 L25 35" stroke="#006633" strokeWidth="4"/><text x="68" y="22" fontSize="10" fill="#006633" textAnchor="middle" fontWeight="bold">Baker</text><text x="68" y="36" fontSize="10" fill="#006633" textAnchor="middle" fontWeight="bold">Hughes</text></svg>,
+            Hanma: () => <svg viewBox="0 0 100 50" className="w-full h-full"><path d="M20 10 L40 25 L20 40 L5 25 Z" fill="#0046ad"/><text x="70" y="32" fontSize="16" fill="#0046ad" textAnchor="middle" fontWeight="bold">CAMC</text></svg>,
+            FAWDE: () => <svg viewBox="0 0 100 50" className="w-full h-full"><path d="M10 25 Q25 10 40 25 T70 25" stroke="#0046ad" strokeWidth="3" fill="none"/><text x="50" y="45" fontSize="10" fill="#0046ad" textAnchor="middle" fontWeight="bold">FAWDE</text></svg>,
+            MAN: () => <svg viewBox="0 0 100 50" className="w-full h-full"><path d="M10 40 A30 30 0 0 1 90 40" stroke="#333" strokeWidth="2" fill="none"/><text x="50" y="32" fontSize="20" fill="#333" textAnchor="middle" fontWeight="bold">MAN</text></svg>,
+            Waukesha: () => <svg viewBox="0 0 100 50" className="w-full h-full"><text x="50" y="32" fontSize="16" fill="#e65100" textAnchor="middle" fontWeight="bold">Waukesha</text></svg>,
+            Bergen: () => <svg viewBox="0 0 100 50" className="w-full h-full"><rect width="100" height="50" fill="#002060" rx="2"/><text x="50" y="25" fontSize="12" fill="white" textAnchor="middle" fontWeight="bold">BERGEN</text><text x="50" y="40" fontSize="8" fill="#ddd" textAnchor="middle">Engines</text></svg>,
+            Default: ({name}) => <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-500 font-bold text-xs p-1 text-center rounded border border-slate-200">{name.substring(0, 4)}</div>
+        };
+
+        // --- 核心数据 (137 条) ---
+        const RAW_DATA = [
+            // 1. 康明斯 (Cummins)
+            { id: 'cum-gta855', category: '工业燃气发动机', brand: 'Cummins (康明斯)', series: 'GTA系列', model: 'GTA855E', power_kw: 250, eff_elec: 35.5, gas_consump_rate: 0.29, nox: 500, dimensions: '2100×1000×1500', weight: 1800, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 14.0 },
+            { id: 'cum-k19n', category: '工业燃气发动机', brand: 'Cummins (康明斯)', series: 'K系列', model: 'K19N', power_kw: 300, eff_elec: 36.0, gas_consump_rate: 0.28, nox: 500, dimensions: '1800×900×1400', weight: 2000, cooling: '液冷', gas_source: '天然气, 伴生气', deployment: '机组', cylinders: 'L6', displacement: 19.0 },
+            { id: 'cum-k38n', category: '工业燃气发动机', brand: 'Cummins (康明斯)', series: 'K系列', model: 'K38N', power_kw: 800, eff_elec: 37.0, gas_consump_rate: 0.27, nox: 500, dimensions: '2200×1400×1700', weight: 4500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 38.0 },
+            { id: 'cum-k50n', category: '工业燃气发动机', brand: 'Cummins (康明斯)', series: 'K系列', model: 'K50N', power_kw: 1100, eff_elec: 37.5, gas_consump_rate: 0.27, nox: 500, dimensions: '2800×1500×1800', weight: 5500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 50.0 },
+            { id: 'cum-qsk19g', category: '工业燃气发动机', brand: 'Cummins (康明斯)', series: 'QSK', model: 'QSK19G', power_kw: 350, eff_elec: 39.0, gas_consump_rate: 0.25, nox: 500, dimensions: '2000×1000×1600', weight: 2200, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 19.0 },
+            { id: 'cum-qsk60g', category: '工业燃气发动机', brand: 'Cummins (康明斯)', series: 'QSK', model: 'QSK60G', power_kw: 1540, eff_elec: 43.5, gas_consump_rate: 0.23, nox: 500, dimensions: '3200×1600×2100', weight: 8800, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 60.0 },
+            { id: 'cum-qsv81', category: '工业燃气发动机', brand: 'Cummins (康明斯)', series: 'QSV', model: 'QSV81', power_kw: 1750, eff_elec: 43.8, gas_consump_rate: 0.22, nox: 500, dimensions: '3400×1700×2200', weight: 12000, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 81.0 },
+            { id: 'cum-qsv91', category: '工业燃气发动机', brand: 'Cummins (康明斯)', series: 'QSV', model: 'QSV91', power_kw: 2000, eff_elec: 44.0, gas_consump_rate: 0.22, nox: 500, dimensions: '3500×1800×2300', weight: 14000, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V18', displacement: 91.0 },
+            { id: 'cum-b6.7n', category: '车用燃气发动机', brand: 'Cummins (康明斯)', series: 'B系列', model: 'B6.7N', power_kw: 179, eff_elec: 37.0, gas_consump_rate: 0.26, nox: 250, dimensions: '1100×800×1000', weight: 600, cooling: '液冷', gas_source: 'CNG', deployment: '车用', cylinders: 'L6', displacement: 6.7 },
+            { id: 'cum-l9n', category: '车用燃气发动机', brand: 'Cummins (康明斯)', series: 'L系列', model: 'L9N', power_kw: 239, eff_elec: 38.0, gas_consump_rate: 0.25, nox: 250, dimensions: '1200×900×1100', weight: 800, cooling: '液冷', gas_source: 'CNG/LNG', deployment: '车用', cylinders: 'L6', displacement: 8.9 },
+            { id: 'cum-isx12n', category: '车用燃气发动机', brand: 'Cummins (康明斯)', series: 'ISX12', model: 'ISX12N', power_kw: 298, eff_elec: 39.0, gas_consump_rate: 0.24, nox: 250, dimensions: '1400×1000×1200', weight: 1200, cooling: '液冷', gas_source: 'LNG', deployment: '车用', cylinders: 'L6', displacement: 11.9 },
+            { id: 'cum-x15n', category: '车用燃气发动机', brand: 'Cummins (康明斯)', series: '15L', model: 'X15N', power_kw: 373, eff_elec: 42.0, gas_consump_rate: 0.22, nox: 200, dimensions: '1500×1000×1250', weight: 1300, cooling: '液冷', gas_source: 'LNG', deployment: '车用', cylinders: 'L6', displacement: 15.0 },
+            { id: 'cum-qsk19-g', category: '工业燃气发动机', brand: 'Cummins (康明斯)', series: 'QSK', model: 'QSK19-G', power_kw: 388, eff_elec: 38.0, gas_consump_rate: 0.26, nox: 500, dimensions: '2000×1000×1600', weight: 2200, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 19.0 },
+            { id: 'cum-qsk38-g', category: '工业燃气发动机', brand: 'Cummins (康明斯)', series: 'QSK', model: 'QSK38-G', power_kw: 880, eff_elec: 39.0, gas_consump_rate: 0.25, nox: 500, dimensions: '2200×1400×1700', weight: 4600, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 38.0 },
+            { id: 'cum-qsk50-g', category: '工业燃气发动机', brand: 'Cummins (康明斯)', series: 'QSK', model: 'QSK50-G', power_kw: 1200, eff_elec: 40.0, gas_consump_rate: 0.25, nox: 500, dimensions: '2800×1500×1800', weight: 5600, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 50.0 },
+
+            // 2. 卡特彼勒 (Caterpillar)
+            { id: 'cat-cg170-12', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'CG170', model: 'CG170-12', power_kw: 1200, eff_elec: 43.4, gas_consump_rate: 0.24, nox: 500, dimensions: '4600×1900×2400', weight: 7500, cooling: '液冷', gas_source: '天然气, 沼气', deployment: '集装箱', cylinders: 'V12', displacement: 52.0 },
+            { id: 'cat-cg170-16', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'CG170', model: 'CG170-16', power_kw: 2000, eff_elec: 43.7, gas_consump_rate: 0.24, nox: 500, dimensions: '5600×1900×2400', weight: 9800, cooling: '液冷', gas_source: '天然气, 沼气', deployment: '集装箱', cylinders: 'V16', displacement: 70.0 },
+            { id: 'cat-cg170-20', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'CG170', model: 'CG170-20', power_kw: 2300, eff_elec: 43.5, gas_consump_rate: 0.24, nox: 500, dimensions: '6200×1900×2400', weight: 11000, cooling: '液冷', gas_source: '天然气, 沼气', deployment: '集装箱', cylinders: 'V20', displacement: 87.0 },
+            { id: 'cat-cg132b-16', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'CG132B', model: 'CG132B-16', power_kw: 800, eff_elec: 42.6, gas_consump_rate: 0.25, nox: 500, dimensions: '3800×1500×2000', weight: 6200, cooling: '液冷', gas_source: '天然气, 沼气', deployment: '集装箱', cylinders: 'V16', displacement: 35.0 },
+            { id: 'cat-cg132-12', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'CG132', model: 'CG132-12', power_kw: 600, eff_elec: 42.0, gas_consump_rate: 0.24, nox: 500, dimensions: '3200×1400×1800', weight: 5000, cooling: '液冷', gas_source: '沼气', deployment: '集装箱', cylinders: 'V12', displacement: 50.0 },
+            { id: 'cat-g3512', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'G3500', model: 'G3512', power_kw: 1000, eff_elec: 42.0, gas_consump_rate: 0.24, nox: 500, dimensions: '2800×1700×2000', weight: 6500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 51.8 },
+            { id: 'cat-g3516-ta', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'G3500', model: 'G3516 TA', power_kw: 1029, eff_elec: 36.5, gas_consump_rate: 0.27, nox: 500, dimensions: '3339×1820×1864', weight: 8015, cooling: '液冷', gas_source: '天然气', deployment: '撬装', cylinders: 'V16', displacement: 69.0 },
+            { id: 'cat-g3520h', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'G3500H', model: 'G3520H', power_kw: 2500, eff_elec: 45.3, gas_consump_rate: 0.22, nox: 500, dimensions: '4000×1900×2300', weight: 11000, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V20', displacement: 86.0 },
+            { id: 'cat-g3306', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'G3300', model: 'G3306', power_kw: 150, eff_elec: 32.0, gas_consump_rate: 0.30, nox: 1000, dimensions: '1500×900×1200', weight: 1000, cooling: '液冷', gas_source: '田间气', deployment: '撬装', cylinders: 'L6', displacement: 10.5 },
+            { id: 'cat-g3406', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'G3400', model: 'G3406', power_kw: 250, eff_elec: 33.0, gas_consump_rate: 0.29, nox: 800, dimensions: '1900×1100×1400', weight: 1800, cooling: '液冷', gas_source: '田间气', deployment: '撬装', cylinders: 'L6', displacement: 14.6 },
+            { id: 'cat-g3412', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'G3400', model: 'G3412', power_kw: 450, eff_elec: 34.0, gas_consump_rate: 0.28, nox: 800, dimensions: '2200×1300×1600', weight: 3000, cooling: '液冷', gas_source: '田间气', deployment: '撬装', cylinders: 'V12', displacement: 27.0 },
+            { id: 'cat-g3606', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'G3600', model: 'G3606', power_kw: 1400, eff_elec: 40.0, gas_consump_rate: 0.25, nox: 500, dimensions: '3800×1800×2600', weight: 16000, cooling: '液冷', gas_source: '天然气', deployment: '撬装', cylinders: 'L6', displacement: 127.0 },
+            { id: 'cat-g3616', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'G3600', model: 'G3616', power_kw: 3990, eff_elec: 41.0, gas_consump_rate: 0.24, nox: 500, dimensions: '6125×2634×3278', weight: 32000, cooling: '液冷', gas_source: '天然气', deployment: '撬装', cylinders: 'V16', displacement: 339.0 },
+            { id: 'cat-cg260-16', category: '工业燃气发动机', brand: 'Caterpillar (卡特彼勒)', series: 'CG260', model: 'CG260-16', power_kw: 4500, eff_elec: 44.5, gas_consump_rate: 0.23, nox: 500, dimensions: '8500×2800×3500', weight: 45000, cooling: '液冷', gas_source: '天然气', deployment: '大型', cylinders: 'V16', displacement: 260.0 },
+
+            // 3. 潍柴 (Weichai)
+            { id: 'wp13ng', category: '车用燃气发动机', brand: 'Weichai (潍柴)', series: '4.0动力', model: 'WP13NG-4.0', power_kw: 397, eff_elec: 44.0, gas_consump_rate: 0.21, nox: 400, dimensions: '1400×900×1100', weight: 1100, cooling: '液冷', gas_source: 'LNG', deployment: '车用', cylinders: 'L6', displacement: 13.0 },
+            { id: 'wp15ng', category: '车用燃气发动机', brand: 'Weichai (潍柴)', series: '4.0动力', model: 'WP15NG-4.0', power_kw: 463, eff_elec: 45.0, gas_consump_rate: 0.21, nox: 400, dimensions: '1500×900×1100', weight: 1200, cooling: '液冷', gas_source: 'LNG', deployment: '车用', cylinders: 'L6', displacement: 14.6 },
+            { id: 'wp17ng', category: '车用燃气发动机', brand: 'Weichai (潍柴)', series: '4.0动力', model: 'WP17NG-4.0', power_kw: 515, eff_elec: 45.5, gas_consump_rate: 0.20, nox: 380, dimensions: '1600×950×1200', weight: 1350, cooling: '液冷', gas_source: 'LNG', deployment: '车用', cylinders: 'L6', displacement: 16.6 },
+            { id: 'wp10ng', category: '车用燃气发动机', brand: 'Weichai (潍柴)', series: '4.0动力', model: 'WP10NG', power_kw: 220, eff_elec: 40.0, gas_consump_rate: 0.23, nox: 450, dimensions: '1300×850×1000', weight: 900, cooling: '液冷', gas_source: 'LNG/CNG', deployment: '车用', cylinders: 'L6', displacement: 9.7 },
+            { id: 'wp7ng', category: '车用燃气发动机', brand: 'Weichai (潍柴)', series: '蓝擎', model: 'WP7NG', power_kw: 199, eff_elec: 38.0, gas_consump_rate: 0.24, nox: 500, dimensions: '1200×800×950', weight: 700, cooling: '液冷', gas_source: 'CNG', deployment: '车用', cylinders: 'L6', displacement: 7.4 },
+            { id: 'wp4d', category: '工业燃气发动机', brand: 'Weichai (潍柴)', series: '发电', model: 'WP4D77E300NG', power_kw: 70, eff_elec: 36.0, gas_consump_rate: 0.28, nox: 600, dimensions: '1100×700×900', weight: 450, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L4', displacement: 4.0 },
+            { id: 'wp6d', category: '工业燃气发动机', brand: 'Weichai (潍柴)', series: '发电', model: 'WP6D132E300NG', power_kw: 120, eff_elec: 37.0, gas_consump_rate: 0.27, nox: 550, dimensions: '1300×750×1000', weight: 650, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 6.75 },
+            { id: 'wp10d', category: '工业燃气发动机', brand: 'Weichai (潍柴)', series: '发电', model: 'WP10D-NG', power_kw: 200, eff_elec: 38.0, gas_consump_rate: 0.26, nox: 500, dimensions: '1400×800×1100', weight: 950, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 9.7 },
+            { id: 'wp12d', category: '工业燃气发动机', brand: 'Weichai (潍柴)', series: '发电', model: 'WP12D-NG', power_kw: 250, eff_elec: 38.5, gas_consump_rate: 0.25, nox: 500, dimensions: '1500×900×1200', weight: 1100, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 11.6 },
+            { id: 'wpg1375', category: '工业燃气发动机', brand: 'Weichai (潍柴)', series: '博杜安平台', model: 'WPG1375B7NG', power_kw: 1100, eff_elec: 40.2, gas_consump_rate: 0.26, nox: 500, dimensions: '6090×2300×2900', weight: 12300, cooling: '液冷', gas_source: '天然气, 伴生气', deployment: '集装箱', cylinders: 'V12', displacement: 39.0 },
+            { id: '16m33ng', category: '工业燃气发动机', brand: 'Weichai (潍柴)', series: '博杜安平台', model: '16M33NG', power_kw: 1400, eff_elec: 41.0, gas_consump_rate: 0.25, nox: 500, dimensions: '3100×1600×2100', weight: 5500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 52.0 },
+
+            // 4. VMAN (威曼) - 新增 DT30+
+            { id: 'vman-dt30plus', category: '工业燃气发动机', brand: 'VMAN (威曼)', series: 'DT系列', model: 'DT30+', power_kw: 550, eff_elec: 40.1, gas_consump_rate: 0.21, nox: 500, dimensions: '2100×1450×1400', weight: 2800, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 30.0 },
+            { id: 'vman-cet13', category: '工业燃气发动机', brand: 'VMAN (威曼)', series: 'CET系列', model: 'CET13', power_kw: 250, eff_elec: 37.0, gas_consump_rate: 0.28, nox: 600, dimensions: '1400×900×1100', weight: 1100, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 13.0 },
+            { id: 'vman-dt22', category: '工业燃气发动机', brand: 'VMAN (威曼)', series: 'DT系列', model: 'DT22', power_kw: 350, eff_elec: 38.1, gas_consump_rate: 0.26, nox: 500, dimensions: '1717×1392×1360', weight: 2200, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 22.0 },
+            { id: 'vman-dt30', category: '工业燃气发动机', brand: 'VMAN (威曼)', series: 'DT系列', model: 'DT30', power_kw: 500, eff_elec: 38.1, gas_consump_rate: 0.26, nox: 500, dimensions: '2100×1450×1400', weight: 2800, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 30.0 },
+            { id: 'vman-dt58', category: '工业燃气发动机', brand: 'VMAN (威曼)', series: 'DT系列', model: 'DT58', power_kw: 1200, eff_elec: 40.2, gas_consump_rate: 0.25, nox: 500, dimensions: '4200×1600×2100', weight: 6500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 58.0 },
+            { id: 'vman-hnd234v6', category: '工业燃气发动机', brand: 'VMAN (威曼)', series: 'HND系列', model: 'HND-234V6', power_kw: 210, eff_elec: 36.5, gas_consump_rate: 0.27, nox: 600, dimensions: '1600×1200×1300', weight: 1800, cooling: '液冷', gas_source: '天然气/沼气', deployment: '机组', cylinders: 'V6', displacement: 14.0 },
+            { id: 'vman-hnd234v8', category: '工业燃气发动机', brand: 'VMAN (威曼)', series: 'HND系列', model: 'HND-234V8', power_kw: 280, eff_elec: 37.0, gas_consump_rate: 0.27, nox: 600, dimensions: '1800×1300×1400', weight: 2100, cooling: '液冷', gas_source: '天然气/沼气', deployment: '机组', cylinders: 'V8', displacement: 18.6 },
+            { id: 'vman-hnd234v12', category: '工业燃气发动机', brand: 'VMAN (威曼)', series: 'HND系列', model: 'HND-234V12', power_kw: 420, eff_elec: 37.5, gas_consump_rate: 0.26, nox: 600, dimensions: '2300×1400×1600', weight: 3200, cooling: '液冷', gas_source: '天然气/沼气', deployment: '机组', cylinders: 'V12', displacement: 28.0 },
+            { id: 'vman-hnd604v12', category: '工业燃气发动机', brand: 'VMAN (威曼)', series: 'HND系列', model: 'HND-604V12', power_kw: 800, eff_elec: 39.0, gas_consump_rate: 0.25, nox: 500, dimensions: '2600×1500×1800', weight: 4500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 36.0 },
+            { id: 'vman-hnd620v12', category: '工业燃气发动机', brand: 'VMAN (威曼)', series: 'HND系列', model: 'HND-620V12', power_kw: 1300, eff_elec: 41.0, gas_consump_rate: 0.24, nox: 500, dimensions: '3000×1600×2000', weight: 6800, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 48.0 },
+            { id: 'vman-hnd620v16', category: '工业燃气发动机', brand: 'VMAN (威曼)', series: 'HND系列', model: 'HND-620V16', power_kw: 1700, eff_elec: 41.5, gas_consump_rate: 0.24, nox: 500, dimensions: '3600×1700×2100', weight: 8500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 64.0 },
+
+            // 5. MTU
+            { id: 'mtu-6r400', category: '工业燃气发动机', brand: 'MTU (罗罗动力)', series: '400', model: '6R400 GS', power_kw: 200, eff_elec: 38.0, gas_consump_rate: 0.26, nox: 500, dimensions: '1800×900×1200', weight: 1500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 12.0 },
+            { id: 'mtu-8v4000', category: '工业燃气发动机', brand: 'MTU (罗罗动力)', series: '4000', model: '8V4000 GS', power_kw: 776, eff_elec: 42.4, gas_consump_rate: 0.24, nox: 500, dimensions: '2800×1500×1800', weight: 5500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V8', displacement: 38.0 },
+            { id: 'mtu-12v4000', category: '工业燃气发动机', brand: 'MTU (罗罗动力)', series: '4000', model: '12V4000 GS', power_kw: 1286, eff_elec: 43.2, gas_consump_rate: 0.23, nox: 500, dimensions: '3500×1600×2000', weight: 7000, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 57.0 },
+            { id: 'mtu-16v4000', category: '工业燃气发动机', brand: 'MTU (罗罗动力)', series: '4000', model: '16V4000 GS', power_kw: 1720, eff_elec: 43.8, gas_consump_rate: 0.23, nox: 500, dimensions: '4200×1600×2000', weight: 9000, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 76.0 },
+            { id: 'mtu-20v4000', category: '工业燃气发动机', brand: 'MTU (罗罗动力)', series: '4000', model: '20V4000 GS', power_kw: 2535, eff_elec: 44.2, gas_consump_rate: 0.23, nox: 500, dimensions: '4800×1600×2000', weight: 11000, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V20', displacement: 95.0 },
+            { id: 'mtu-l64-20v', category: '工业燃气发动机', brand: 'MTU (罗罗动力)', series: '4000', model: 'L64 20V4000', power_kw: 2600, eff_elec: 44.4, gas_consump_rate: 0.22, nox: 500, dimensions: '4800×1600×2000', weight: 11200, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V20', displacement: 95.0 },
+
+            // 6. 玉柴 (Yuchai)
+            { id: 'yc-yc6k', category: '车用燃气发动机', brand: 'Yuchai (玉柴)', series: 'YC6K', model: 'YC6K360LN-D30', power_kw: 265, eff_elec: 39.0, gas_consump_rate: 0.24, nox: 450, dimensions: '1350×950×1200', weight: 1000, cooling: '液冷', gas_source: 'LNG', deployment: '车用', cylinders: 'L6', displacement: 10.3 },
+            { id: 'yc-yc16vc', category: '工业燃气发动机', brand: 'Yuchai (玉柴)', series: 'YC16VC', model: 'YC16VCG', power_kw: 1200, eff_elec: 40.5, gas_consump_rate: 0.25, nox: 500, dimensions: '2500×1400×1900', weight: 5800, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 52.3 },
+            { id: 'yc-yc6td', category: '工业燃气发动机', brand: 'Yuchai (玉柴)', series: 'YC6TD', model: 'YC6TD600N', power_kw: 300, eff_elec: 38.0, gas_consump_rate: 0.27, nox: 500, dimensions: '1630×960×1400', weight: 1850, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 19.6 },
+            { id: 'yc-yc12vc', category: '工业燃气发动机', brand: 'Yuchai (玉柴)', series: 'YC12VC', model: 'YC12VC', power_kw: 1000, eff_elec: 40.0, gas_consump_rate: 0.26, nox: 500, dimensions: '2200×1300×1800', weight: 4200, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 39.2 },
+            { id: 'yc-yc4dn', category: '车用燃气发动机', brand: 'Yuchai (玉柴)', series: 'YC4DN', model: 'YC4DN-140', power_kw: 103, eff_elec: 36.0, gas_consump_rate: 0.27, nox: 600, dimensions: '900×700×850', weight: 380, cooling: '液冷', gas_source: 'CNG', deployment: '车用', cylinders: 'L4', displacement: 4.2 },
+            { id: 'yc-yc6jn', category: '车用燃气发动机', brand: 'Yuchai (玉柴)', series: 'YC6JN', model: 'YC6JN-225', power_kw: 165, eff_elec: 37.5, gas_consump_rate: 0.26, nox: 550, dimensions: '1100×800×1000', weight: 650, cooling: '液冷', gas_source: 'LNG/CNG', deployment: '车用', cylinders: 'L6', displacement: 6.5 },
+            { id: 'yc-yc6gn', category: '车用燃气发动机', brand: 'Yuchai (玉柴)', series: 'YC6GN', model: 'YC6GN-260', power_kw: 191, eff_elec: 38.0, gas_consump_rate: 0.25, nox: 500, dimensions: '1200×850×1100', weight: 780, cooling: '液冷', gas_source: 'LNG', deployment: '车用', cylinders: 'L6', displacement: 7.8 },
+            { id: 'yc-yc6ln', category: '车用燃气发动机', brand: 'Yuchai (玉柴)', series: 'YC6LN', model: 'YC6LN-280', power_kw: 206, eff_elec: 38.5, gas_consump_rate: 0.25, nox: 500, dimensions: '1250×900×1150', weight: 850, cooling: '液冷', gas_source: 'LNG', deployment: '车用', cylinders: 'L6', displacement: 8.4 },
+            { id: 'yc-yc6mk', category: '车用燃气发动机', brand: 'Yuchai (玉柴)', series: 'YC6MK', model: 'YC6MKN-375', power_kw: 276, eff_elec: 39.0, gas_consump_rate: 0.24, nox: 450, dimensions: '1350×950×1200', weight: 1050, cooling: '液冷', gas_source: 'LNG', deployment: '车用', cylinders: 'L6', displacement: 10.3 },
+            { id: 'yc-yc6k-13', category: '车用燃气发动机', brand: 'Yuchai (玉柴)', series: 'YC6K', model: 'YC6K13N-500', power_kw: 368, eff_elec: 42.0, gas_consump_rate: 0.22, nox: 400, dimensions: '1450×1000×1250', weight: 1150, cooling: '液冷', gas_source: 'LNG', deployment: '车用', cylinders: 'L6', displacement: 12.9 },
+
+            // 7. 上柴 (SDEC)
+            { id: 'sdec-sc9dt', category: '工业燃气发动机', brand: 'SDEC (上柴)', series: 'G系列', model: 'SC9DT', power_kw: 200, eff_elec: 37.0, gas_consump_rate: 0.27, nox: 550, dimensions: '1300×800×1100', weight: 850, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 8.8 },
+            { id: 'sdec-sc13g', category: '工业燃气发动机', brand: 'SDEC (上柴)', series: 'G系列', model: 'SC13G', power_kw: 260, eff_elec: 38.0, gas_consump_rate: 0.26, nox: 500, dimensions: '1500×900×1300', weight: 1100, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 12.8 },
+            { id: 'sdec-sc25g', category: '工业燃气发动机', brand: 'SDEC (上柴)', series: 'W系列', model: 'SC25G', power_kw: 500, eff_elec: 39.0, gas_consump_rate: 0.25, nox: 500, dimensions: '1900×1200×1600', weight: 2500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 25.0 },
+            { id: 'sdec-sc27g', category: '工业燃气发动机', brand: 'SDEC (上柴)', series: 'W系列', model: 'SC27G', power_kw: 600, eff_elec: 39.5, gas_consump_rate: 0.25, nox: 500, dimensions: '2000×1200×1650', weight: 2600, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 26.6 },
+            { id: 'sdec-sc4h', category: '工业燃气发动机', brand: 'SDEC (上柴)', series: 'H系列', model: 'SC4H', power_kw: 90, eff_elec: 36.0, gas_consump_rate: 0.28, nox: 600, dimensions: '950×750×900', weight: 450, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L4', displacement: 4.3 },
+            { id: 'sdec-sc7h', category: '工业燃气发动机', brand: 'SDEC (上柴)', series: 'H系列', model: 'SC7H', power_kw: 150, eff_elec: 37.0, gas_consump_rate: 0.27, nox: 550, dimensions: '1100×800×1000', weight: 650, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 6.5 },
+
+            // 8. 燃气轮机 (Turbines)
+            { id: 'siemens-sgt400', category: '涡轮燃气轮机', brand: 'Siemens Energy (西门子)', series: 'SGT', model: 'SGT-400', power_kw: 12900, eff_elec: 35.0, gas_consump_rate: 0.26, nox: 15, dimensions: '9000×3000×4000', weight: 40000, cooling: '空冷', gas_source: '天然气', deployment: '模块化', cylinders: 'Turbine', displacement: 0 },
+            { id: 'bh-novalt16', category: '涡轮燃气轮机', brand: 'Baker Hughes (贝克休斯)', series: 'NovaLT', model: 'NovaLT16', power_kw: 16900, eff_elec: 36.4, gas_consump_rate: 0.25, nox: 30, dimensions: '15000×5000×6000', weight: 400000, cooling: '空冷', gas_source: '天然气, H2', deployment: '模块化', cylinders: 'Turbine', displacement: 0 },
+            { id: 'doosan-dgt100', category: '涡轮燃气轮机', brand: 'Doosan (斗山)', series: 'DGT', model: 'DGT-100', power_kw: 90000, eff_elec: 39.0, gas_consump_rate: 0.24, nox: 25, dimensions: '25000×8000×10000', weight: 800000, cooling: '液冷', gas_source: '天然气', deployment: '电站', cylinders: 'Turbine', displacement: 0 },
+            { id: 'siemens-sgt50', category: '涡轮燃气轮机', brand: 'Siemens Energy (西门子)', series: 'SGT', model: 'SGT-50', power_kw: 2000, eff_elec: 25.0, gas_consump_rate: 0.32, nox: 50, dimensions: '4000×2000×2500', weight: 8000, cooling: '空冷', gas_source: '天然气', deployment: '模块化', cylinders: 'Turbine', displacement: 0 },
+            { id: 'siemens-sgt800', category: '涡轮燃气轮机', brand: 'Siemens Energy (西门子)', series: 'SGT', model: 'SGT-800', power_kw: 57000, eff_elec: 40.0, gas_consump_rate: 0.23, nox: 15, dimensions: '15000×5000×6000', weight: 120000, cooling: '液冷', gas_source: '天然气/H2', deployment: '电站', cylinders: 'Turbine', displacement: 0 },
+            { id: 'bh-lm2500', category: '涡轮燃气轮机', brand: 'Baker Hughes (贝克休斯)', series: 'LM', model: 'LM2500', power_kw: 23000, eff_elec: 37.0, gas_consump_rate: 0.25, nox: 25, dimensions: '18000×6000×7000', weight: 500000, cooling: '空冷', gas_source: '天然气', deployment: '模块化', cylinders: 'Turbine', displacement: 0 },
+
+            // 9. 博杜安 (Baudouin)
+            { id: 'baud-6m26ng', category: '工业燃气发动机', brand: 'Baudouin (博杜安)', series: 'M26', model: '6M26NG', power_kw: 300, eff_elec: 38.0, gas_consump_rate: 0.26, nox: 500, dimensions: '1800×1000×1400', weight: 1800, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 16.0 },
+            { id: 'baud-12m26ng', category: '工业燃气发动机', brand: 'Baudouin (博杜安)', series: 'M26', model: '12M26NG', power_kw: 600, eff_elec: 39.0, gas_consump_rate: 0.25, nox: 500, dimensions: '2200×1400×1700', weight: 3200, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 32.0 },
+            { id: 'baud-6m33ng', category: '工业燃气发动机', brand: 'Baudouin (博杜安)', series: 'M33', model: '6M33NG', power_kw: 500, eff_elec: 39.0, gas_consump_rate: 0.26, nox: 500, dimensions: '2200×1100×1600', weight: 2200, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 19.6 },
+            { id: 'baud-12m33ng', category: '工业燃气发动机', brand: 'Baudouin (博杜安)', series: 'M33', model: '12M33NG', power_kw: 1000, eff_elec: 40.0, gas_consump_rate: 0.25, nox: 500, dimensions: '2800×1500×2000', weight: 4000, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 39.0 },
+            { id: 'baud-16m33ng', category: '工业燃气发动机', brand: 'Baudouin (博杜安)', series: 'M33', model: '16M33NG', power_kw: 1400, eff_elec: 40.5, gas_consump_rate: 0.25, nox: 500, dimensions: '3100×1600×2100', weight: 5500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 52.0 },
+            { id: 'baud-12m55ng', category: '工业燃气发动机', brand: 'Baudouin (博杜安)', series: 'M55', model: '12M55NG', power_kw: 1500, eff_elec: 41.0, gas_consump_rate: 0.24, nox: 500, dimensions: '3200×1600×2200', weight: 6000, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 55.0 },
+
+            // 10. 道依茨 (Deutz)
+            { id: 'deutz-bf4m', category: '工业燃气发动机', brand: 'Deutz (道依茨)', series: '914', model: 'BF4M914G', power_kw: 60, eff_elec: 34.0, gas_consump_rate: 0.30, nox: 800, dimensions: '900×700×800', weight: 400, cooling: '风冷', gas_source: '天然气', deployment: '机组', cylinders: 'L4', displacement: 4.3 },
+            { id: 'deutz-bf6m', category: '工业燃气发动机', brand: 'Deutz (道依茨)', series: '914', model: 'BF6M914G', power_kw: 100, eff_elec: 35.0, gas_consump_rate: 0.29, nox: 800, dimensions: '1100×800×900', weight: 600, cooling: '风冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 6.5 },
+            { id: 'deutz-tcg2015v6', category: '工业燃气发动机', brand: 'Deutz (道依茨)', series: '2015', model: 'TCG 2015 V6', power_kw: 220, eff_elec: 38.0, gas_consump_rate: 0.26, nox: 500, dimensions: '1400×1000×1200', weight: 1200, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V6', displacement: 12.0 },
+            { id: 'deutz-tcg2015v8', category: '工业燃气发动机', brand: 'Deutz (道依茨)', series: '2015', model: 'TCG 2015 V8', power_kw: 300, eff_elec: 38.5, gas_consump_rate: 0.26, nox: 500, dimensions: '1600×1100×1300', weight: 1500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V8', displacement: 16.0 },
+
+            // 11. 锡柴 (FAWDE) - 车用部分
+            { id: 'faw-6dld', category: '车用燃气发动机', brand: 'FAWDE (锡柴)', series: '铂威系列', model: '6DLD', power_kw: 220, eff_elec: 38.0, gas_consump_rate: 0.25, nox: 500, dimensions: '1401×888×1187', weight: 1058, cooling: '液冷', gas_source: 'LNG/CNG', deployment: '车用/机组', cylinders: 'L6', displacement: 6.6 },
+            { id: 'faw-6dk1', category: '车用燃气发动机', brand: 'FAWDE (锡柴)', series: '铂威系列', model: '6DK1', power_kw: 320, eff_elec: 38.5, gas_consump_rate: 0.25, nox: 500, dimensions: '1450×920×1220', weight: 1120, cooling: '液冷', gas_source: 'LNG/CNG', deployment: '车用', cylinders: 'L6', displacement: 7.1 },
+            { id: 'faw-6dh1', category: '车用燃气发动机', brand: 'FAWDE (锡柴)', series: '铂威系列', model: '6DH1', power_kw: 180, eff_elec: 37.0, gas_consump_rate: 0.26, nox: 600, dimensions: '1300×850×1100', weight: 950, cooling: '液冷', gas_source: 'LNG', deployment: '车用', cylinders: 'L6', displacement: 5.7 },
+            { id: 'faw-ca6sm2', category: '车用燃气发动机', brand: 'FAWDE (锡柴)', series: '奥威系列', model: 'CA6SM2', power_kw: 280, eff_elec: 40.0, gas_consump_rate: 0.24, nox: 450, dimensions: '1500×1000×1200', weight: 1250, cooling: '液冷', gas_source: 'LNG', deployment: '车用', cylinders: 'L6', displacement: 11.0 },
+            { id: 'faw-ca6sl2', category: '车用燃气发动机', brand: 'FAWDE (锡柴)', series: '奥威系列', model: 'CA6SL2', power_kw: 250, eff_elec: 39.0, gas_consump_rate: 0.25, nox: 500, dimensions: '1400×950×1150', weight: 1100, cooling: '液冷', gas_source: 'CNG', deployment: '车用', cylinders: 'L6', displacement: 8.6 },
+
+            // 12. 汉马 (Hanma)
+            { id: 'hm-hmt13', category: '工业燃气发动机', brand: 'Hanma (汉马)', series: 'HMT系列', model: 'HMT13F.408 30', power_kw: 300, eff_elec: 38.0, gas_consump_rate: 0.25, nox: 500, dimensions: '1500×1000×1300', weight: 1100, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 12.8 },
+            { id: 'hm-cm6t18', category: '工业燃气发动机', brand: 'Hanma (汉马)', series: 'CM6T', model: 'CM6T18', power_kw: 220, eff_elec: 37.5, gas_consump_rate: 0.26, nox: 550, dimensions: '1300×900×1100', weight: 900, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 9.8 },
+            { id: 'hm-cm6t28', category: '工业燃气发动机', brand: 'Hanma (汉马)', series: 'CM6T', model: 'CM6T28.410 50', power_kw: 301, eff_elec: 39.0, gas_consump_rate: 0.25, nox: 500, dimensions: '1400×950×1200', weight: 1000, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'L6', displacement: 11.8 },
+
+            // 13. MWM
+            { id: 'mwm-tcg2016v12', category: '工业燃气发动机', brand: 'MWM (曼海姆)', series: 'TCG 2016', model: 'TCG 2016 V12', power_kw: 600, eff_elec: 42.0, gas_consump_rate: 0.24, nox: 500, dimensions: '3000×1300×1700', weight: 4800, cooling: '液冷', gas_source: '沼气', deployment: '机组', cylinders: 'V12', displacement: 48.0 },
+            { id: 'mwm-tcg2016v16', category: '工业燃气发动机', brand: 'MWM (曼海姆)', series: 'TCG 2016', model: 'TCG 2016 V16', power_kw: 800, eff_elec: 42.5, gas_consump_rate: 0.24, nox: 500, dimensions: '3600×1300×1700', weight: 6000, cooling: '液冷', gas_source: '沼气', deployment: '机组', cylinders: 'V16', displacement: 64.0 },
+            { id: 'mwm-tcg2020v12', category: '工业燃气发动机', brand: 'MWM (曼海姆)', series: 'TCG 2020', model: 'TCG 2020 V12', power_kw: 1200, eff_elec: 43.0, gas_consump_rate: 0.23, nox: 500, dimensions: '4200×1500×2000', weight: 7500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 60.0 },
+            { id: 'mwm-tcg2020v16', category: '工业燃气发动机', brand: 'MWM (曼海姆)', series: 'TCG 2020', model: 'TCG 2020 V16', power_kw: 1560, eff_elec: 43.2, gas_consump_rate: 0.23, nox: 500, dimensions: '4900×1500×2000', weight: 9500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 80.0 },
+            { id: 'mwm-tcg2020v20', category: '工业燃气发动机', brand: 'MWM (曼海姆)', series: 'TCG 2020', model: 'TCG 2020 V20', power_kw: 2000, eff_elec: 43.5, gas_consump_rate: 0.23, nox: 500, dimensions: '5600×1500×2000', weight: 11500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V20', displacement: 100.0 },
+            { id: 'mwm-tcg3016v12', category: '工业燃气发动机', brand: 'MWM (曼海姆)', series: 'TCG 3016', model: 'TCG 3016 V12', power_kw: 600, eff_elec: 43.0, gas_consump_rate: 0.23, nox: 500, dimensions: '3100×1400×1800', weight: 5200, cooling: '液冷', gas_source: '天然气', deployment: '集装箱', cylinders: 'V12', displacement: 55.0 },
+            { id: 'mwm-tcg3016v16', category: '工业燃气发动机', brand: 'MWM (曼海姆)', series: 'TCG 3016', model: 'TCG 3016 V16', power_kw: 800, eff_elec: 43.5, gas_consump_rate: 0.23, nox: 500, dimensions: '3800×1400×1800', weight: 6800, cooling: '液冷', gas_source: '天然气', deployment: '集装箱', cylinders: 'V16', displacement: 73.0 },
+            { id: 'mwm-tcg3020v20', category: '工业燃气发动机', brand: 'MWM (曼海姆)', series: 'TCG 3020', model: 'TCG 3020 V20', power_kw: 2300, eff_elec: 45.0, gas_consump_rate: 0.22, nox: 500, dimensions: '5800×1700×2200', weight: 12000, cooling: '液冷', gas_source: '天然气', deployment: '集装箱', cylinders: 'V20', displacement: 95.0 },
+            { id: 'mwm-tcg2032v16', category: '工业燃气发动机', brand: 'MWM (曼海姆)', series: 'TCG 2032', model: 'TCG 2032 V16', power_kw: 4500, eff_elec: 44.1, gas_consump_rate: 0.23, nox: 500, dimensions: '8200×2600×3500', weight: 48000, cooling: '液冷', gas_source: '多种燃气', deployment: '大型', cylinders: 'V16', displacement: 230.0 },
+
+            // 14. INNIO Jenbacher
+            { id: 'jen-j208', category: '工业燃气发动机', brand: 'INNIO Jenbacher (颜巴赫)', series: 'Type 2', model: 'J208', power_kw: 330, eff_elec: 39.0, gas_consump_rate: 0.26, nox: 500, dimensions: '3500×1500×1800', weight: 4000, cooling: '液冷', gas_source: '生物燃气', deployment: '集装箱', cylinders: 'V8', displacement: 20.0 },
+            { id: 'jen-j312', category: '工业燃气发动机', brand: 'INNIO Jenbacher (颜巴赫)', series: 'Type 3', model: 'J312', power_kw: 635, eff_elec: 40.0, gas_consump_rate: 0.25, nox: 500, dimensions: '4000×1600×2000', weight: 6500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 36.0 },
+            { id: 'jen-j316', category: '工业燃气发动机', brand: 'INNIO Jenbacher (颜巴赫)', series: 'Type 3', model: 'J316', power_kw: 850, eff_elec: 40.5, gas_consump_rate: 0.25, nox: 500, dimensions: '4600×1600×2000', weight: 8000, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 48.0 },
+            { id: 'jen-j320', category: '工业燃气发动机', brand: 'INNIO Jenbacher (颜巴赫)', series: 'Type 3', model: 'J320', power_kw: 1063, eff_elec: 41.0, gas_consump_rate: 0.24, nox: 500, dimensions: '5200×1600×2000', weight: 9500, cooling: '液冷', gas_source: 'LFG', deployment: '机组', cylinders: 'V20', displacement: 60.0 },
+            { id: 'jen-j412', category: '工业燃气发动机', brand: 'INNIO Jenbacher (颜巴赫)', series: 'Type 4', model: 'J412', power_kw: 900, eff_elec: 42.0, gas_consump_rate: 0.24, nox: 500, dimensions: '4500×1700×2100', weight: 8500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 45.0 },
+            { id: 'jen-j416', category: '工业燃气发动机', brand: 'INNIO Jenbacher (颜巴赫)', series: 'Type 4', model: 'J416', power_kw: 1200, eff_elec: 42.5, gas_consump_rate: 0.24, nox: 500, dimensions: '5100×1700×2100', weight: 10500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 60.0 },
+            { id: 'jen-j420', category: '工业燃气发动机', brand: 'INNIO Jenbacher (颜巴赫)', series: 'Type 4', model: 'J420', power_kw: 1500, eff_elec: 43.0, gas_consump_rate: 0.23, nox: 500, dimensions: '5800×1700×2100', weight: 12500, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V20', displacement: 75.0 },
+            { id: 'jen-j612', category: '工业燃气发动机', brand: 'INNIO Jenbacher (颜巴赫)', series: 'Type 6', model: 'J612', power_kw: 2000, eff_elec: 45.0, gas_consump_rate: 0.22, nox: 500, dimensions: '5500×2000×2500', weight: 18000, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V12', displacement: 70.0 },
+            { id: 'jen-j616', category: '工业燃气发动机', brand: 'INNIO Jenbacher (颜巴赫)', series: 'Type 6', model: 'J616', power_kw: 2700, eff_elec: 45.5, gas_consump_rate: 0.22, nox: 500, dimensions: '6200×2000×2500', weight: 22000, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V16', displacement: 95.0 },
+            { id: 'jen-j620', category: '工业燃气发动机', brand: 'INNIO Jenbacher (颜巴赫)', series: 'Type 6', model: 'J620', power_kw: 3350, eff_elec: 46.0, gas_consump_rate: 0.22, nox: 500, dimensions: '7000×2000×2500', weight: 26000, cooling: '液冷', gas_source: '天然气', deployment: '机组', cylinders: 'V20', displacement: 120.0 },
+            { id: 'jen-j624', category: '工业燃气发动机', brand: 'INNIO Jenbacher (颜巴赫)', series: 'Type 6', model: 'J624', power_kw: 4500, eff_elec: 46.5, gas_consump_rate: 0.22, nox: 250, dimensions: '7200×2200×2800', weight: 28000, cooling: '液冷', gas_source: 'H2 Ready', deployment: '集装箱', cylinders: 'V24', displacement: 145.0 },
+            { id: 'jen-j920', category: '工业燃气发动机', brand: 'INNIO Jenbacher (颜巴赫)', series: 'Type 9', model: 'J920 FleXtra', power_kw: 10600, eff_elec: 49.9, gas_consump_rate: 0.21, nox: 500, dimensions: '12000×3000×4000', weight: 110000, cooling: '液冷', gas_source: '天然气', deployment: '大型', cylinders: 'V20', displacement: 350.0 },
+
+            // 15. 其他国际品牌
+            { id: 'man-18v5160g', category: '工业燃气发动机', brand: 'MAN Energy Solutions (曼恩)', series: '51/60G', model: '18V51/60G', power_kw: 18900, eff_elec: 50.0, gas_consump_rate: 0.20, nox: 350, dimensions: '16000×4500×6000', weight: 250000, cooling: '液冷', gas_source: '天然气', deployment: '大型', cylinders: 'V18', displacement: 950.0 },
+            { id: 'wau-vhp5', category: '工业燃气发动机', brand: 'Waukesha (瓦克夏)', series: 'VHP 5', model: 'L7044GSI S5', power_kw: 1235, eff_elec: 38.0, gas_consump_rate: 0.25, nox: 200, dimensions: '4100×1800×2200', weight: 9500, cooling: '液冷', gas_source: '田间气', deployment: '撬装', cylinders: 'V12', displacement: 115.0 },
+            { id: 'wau-16v275gl', category: '工业燃气发动机', brand: 'Waukesha (瓦克夏)', series: '275GL+', model: '16V275GL+', power_kw: 3600, eff_elec: 40.5, gas_consump_rate: 0.24, nox: 500, dimensions: '6000×2000×2800', weight: 26000, cooling: '液冷', gas_source: '天然气', deployment: '撬装', cylinders: 'V16', displacement: 175.0 },
+            { id: 'bergen-b3645', category: '工业燃气发动机', brand: 'Bergen Engines (伯尔根)', series: 'B36:45', model: 'B36:45V20', power_kw: 11800, eff_elec: 50.0, gas_consump_rate: 0.20, nox: 400, dimensions: '12000×3500×4500', weight: 130000, cooling: '液冷', gas_source: 'H2 Ready', deployment: '大型', cylinders: 'V20', displacement: 600.0 }
+        ];
+
+        // --- 增强数据处理函数 ---
+        const processData = (data) => {
+            return data.map(item => {
+                const apps = [];
+                const p = item.power_kw;
+                
+                // 1. 发电规模分类
+                if (p < 300) apps.push('1-5MW发电使用');
+                else if (p >= 300 && p < 1000) apps.push('5-10MW发电使用');
+                else if (p >= 1000 && p < 5000) apps.push('10-100MW发电使用');
+                else if (p >= 5000) apps.push('100MW-1GW发电使用');
+
+                // 2. 气源分类
+                const src = (item.gas_source || '').toLowerCase();
+                if (src.includes('天然气') || src.includes('lng') || src.includes('cng')) apps.push('天然气');
+                if (src.includes('沼气') || src.includes('biogas')) apps.push('沼气');
+                if (src.includes('煤层气') || src.includes('mine')) apps.push('煤层气');
+                if (src.includes('伴生气') || src.includes('associated')) apps.push('伴生气');
+                
+                // 3. 特殊分类
+                if (item.category === '涡轮燃气轮机') apps.push('轮机');
+
+                return { ...item, calculatedApps: apps };
+            });
+        };
+
+        const PROCESSED_DATA = processData(RAW_DATA);
+
+        // --- 筛选滑块+输入框组件 (优化版) ---
+        const RangeFilter = ({ label, unit, min, max, value, onChange, step = 1 }) => {
+            // value is [minVal, maxVal]
+            const handleMinChange = (e) => {
+                let val = Number(e.target.value);
+                if (val < min) val = min;
+                if (val > value[1]) val = value[1];
+                onChange([val, value[1]]);
+            };
+            const handleMaxChange = (e) => {
+                let val = Number(e.target.value);
+                if (val > max) val = max;
+                if (val < value[0]) val = value[0];
+                onChange([value[0], val]);
+            };
+
+            return (
+                <div className="space-y-2 px-1 mb-4">
+                    <div className="flex justify-between items-center text-xs text-slate-500 font-medium">
+                        <span>{label}</span>
+                        <span className="text-[10px] bg-slate-100 px-1 rounded text-slate-400">单位: {unit}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <input 
+                            type="number" 
+                            value={value[0]} 
+                            onChange={handleMinChange}
+                            className="w-16 px-1 py-0.5 text-xs border border-slate-300 rounded text-center focus:outline-none focus:border-blue-500"
+                        />
+                        <div className="relative h-2 flex-1 mx-2">
+                            <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-200 rounded-full -translate-y-1/2"></div>
+                            <div 
+                                className="absolute top-1/2 h-1 bg-blue-500 rounded-full -translate-y-1/2"
+                                style={{ left: `${((value[0] - min) / (max - min)) * 100}%`, right: `${100 - ((value[1] - min) / (max - min)) * 100}%` }}
+                            ></div>
+                            <input 
+                                type="range" min={min} max={max} step={step} value={value[0]} 
+                                onChange={(e) => {
+                                    const val = Math.min(Number(e.target.value), value[1]);
+                                    onChange([val, value[1]]);
+                                }}
+                                className="absolute top-1/2 -translate-y-1/2 w-full h-4 opacity-0 cursor-pointer z-10" 
+                            />
+                            <input 
+                                type="range" min={min} max={max} step={step} value={value[1]} 
+                                onChange={(e) => {
+                                    const val = Math.max(Number(e.target.value), value[0]);
+                                    onChange([value[0], val]);
+                                }}
+                                className="absolute top-1/2 -translate-y-1/2 w-full h-4 opacity-0 cursor-pointer z-10" 
+                            />
+                        </div>
+                        <input 
+                            type="number" 
+                            value={value[1]} 
+                            onChange={handleMaxChange}
+                            className="w-16 px-1 py-0.5 text-xs border border-slate-300 rounded text-center focus:outline-none focus:border-blue-500"
+                        />
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 筛选栏组件 ---
+        const FilterSection = ({ title, icon, isOpen, onToggle, children }) => (
+            <div className="border-b border-slate-200 last:border-0">
+                <button onClick={onToggle} className="flex items-center justify-between w-full py-4 px-2 hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-2 font-semibold text-slate-700 text-sm">
+                        {icon}
+                        {title}
+                    </div>
+                    {isOpen ? <Icons.ChevronDown className="w-4 h-4 text-slate-400" /> : <Icons.ChevronRight className="w-4 h-4 text-slate-400" />}
+                </button>
+                {isOpen && <div className="pb-4 px-2 space-y-3 animate-in slide-in-from-top-1 duration-200">{children}</div>}
+            </div>
+        );
+
+        // --- 主应用组件 ---
+        const App = () => {
+            const [viewMode, setViewMode] = useState('grid');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [selectedEngine, setSelectedEngine] = useState(null);
+            
+            // 使用 localStorage 初始化 actualEfficiencies
+            const [actualEfficiencies, setActualEfficiencies] = useState(() => {
+                const saved = localStorage.getItem('gasgx_actual_efficiency');
+                return saved ? JSON.parse(saved) : {};
+            });
+
+            const [currentPage, setCurrentPage] = useState(1);
+            const [itemsPerPage] = useState(20);
+
+            // 筛选器状态
+            const [filtersOpen, setFiltersOpen] = useState({ cat: true, basic: true, perf: true, phys: false, app: true });
+            const [filterCategory, setFilterCategory] = useState([]);
+            const [filterBrand, setFilterBrand] = useState([]);
+            const [filterApp, setFilterApp] = useState([]);
+            
+            const [rangePower, setRangePower] = useState([0, 100000]);
+            const [rangeDisplacement, setRangeDisplacement] = useState([0, 1000]);
+            const [rangeEffElec, setRangeEffElec] = useState([0, 60]);
+            const [rangeGasRate, setRangeGasRate] = useState([0, 0.5]);
+            const [rangeWeight, setRangeWeight] = useState([0, 800000]);
+
+            // 监听 actualEfficiencies 变化并保存到 localStorage
+            useEffect(() => {
+                localStorage.setItem('gasgx_actual_efficiency', JSON.stringify(actualEfficiencies));
+            }, [actualEfficiencies]);
+
+            // 唯一选项
+            const categories = useMemo(() => [...new Set(PROCESSED_DATA.map(d => d.category))].sort(), []);
+            const brands = useMemo(() => [...new Set(PROCESSED_DATA.map(d => d.brand))].sort(), []);
+            const allApps = useMemo(() => [...new Set(PROCESSED_DATA.flatMap(d => d.calculatedApps))].sort(), []);
+
+            // 过滤逻辑
+            const filteredData = useMemo(() => {
+                return PROCESSED_DATA.filter(item => {
+                    const searchMatch = !searchTerm || [item.brand, item.model, item.series].some(val => val?.toLowerCase().includes(searchTerm.toLowerCase()));
+                    const categoryMatch = filterCategory.length === 0 || filterCategory.includes(item.category);
+                    const brandMatch = filterBrand.length === 0 || filterBrand.includes(item.brand);
+                    const appMatch = filterApp.length === 0 || filterApp.some(app => item.calculatedApps.includes(app));
+                    const powerMatch = item.power_kw >= rangePower[0] && item.power_kw <= rangePower[1];
+                    const dispMatch = item.displacement >= rangeDisplacement[0] && item.displacement <= rangeDisplacement[1];
+                    const effMatch = item.eff_elec >= rangeEffElec[0] && item.eff_elec <= rangeEffElec[1];
+                    const gasRateMatch = item.gas_consump_rate >= rangeGasRate[0] && item.gas_consump_rate <= rangeGasRate[1];
+                    const weightMatch = item.weight >= rangeWeight[0] && item.weight <= rangeWeight[1];
+
+                    return searchMatch && categoryMatch && brandMatch && appMatch && powerMatch && dispMatch && effMatch && gasRateMatch && weightMatch;
+                });
+            }, [searchTerm, filterCategory, filterBrand, filterApp, rangePower, rangeDisplacement, rangeEffElec, rangeGasRate, rangeWeight]);
+
+            // 分页
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            const currentData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+            const getBrandLogo = (brandName) => {
+                // 简单匹配逻辑
+                if (brandName.includes('Cummins')) return <BrandLogos.Cummins />;
+                if (brandName.includes('Caterpillar')) return <BrandLogos.Caterpillar />;
+                if (brandName.includes('Weichai')) return <BrandLogos.Weichai />;
+                if (brandName.includes('Yuchai')) return <BrandLogos.Yuchai />;
+                if (brandName.includes('MTU')) return <BrandLogos.MTU />;
+                if (brandName.includes('MWM')) return <BrandLogos.MWM />;
+                if (brandName.includes('Jenbacher')) return <BrandLogos.Jenbacher />;
+                if (brandName.includes('Wärtsilä')) return <BrandLogos.Wartsila />;
+                if (brandName.includes('VMAN')) return <BrandLogos.VMAN />;
+                if (brandName.includes('SDEC')) return <BrandLogos.SDEC />;
+                if (brandName.includes('Deutz')) return <BrandLogos.Deutz />;
+                if (brandName.includes('Siemens')) return <BrandLogos.Siemens />;
+                if (brandName.includes('Doosan')) return <BrandLogos.Doosan />;
+                if (brandName.includes('Baker')) return <BrandLogos.BakerHughes />;
+                if (brandName.includes('Hanma')) return <BrandLogos.Hanma />;
+                if (brandName.includes('FAWDE')) return <BrandLogos.FAWDE />;
+                if (brandName.includes('MAN')) return <BrandLogos.MAN />;
+                if (brandName.includes('Waukesha')) return <BrandLogos.Waukesha />;
+                if (brandName.includes('Bergen')) return <BrandLogos.Bergen />;
+                return <BrandLogos.Default name={brandName} />;
+            };
+
+            const handleEfficiencyChange = (id, val) => {
+                setActualEfficiencies(prev => ({ ...prev, [id]: val }));
+            };
+
+            const handleExport = () => {
+                const headers = ["分类", "品牌", "系列", "型号", "缸数", "排量(L)", "功率(kW)", "电效率(%)", "实际电效率", "气耗率", "NOx", "尺寸", "重量", "冷却", "气源", "部署", "场景"];
+                const csvContent = [headers.join(','), ...filteredData.map(row => [
+                    row.category, row.brand, row.series, row.model, row.cylinders, row.displacement, row.power_kw, 
+                    row.eff_elec, actualEfficiencies[row.id] || '', row.gas_consump_rate, row.nox, `"${row.dimensions}"`, 
+                    row.weight, row.cooling, `"${row.gas_source}"`, row.deployment, `"${row.calculatedApps.join(';')}"`
+                ].join(','))].join('\n');
+                
+                const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = "GasGx_Engine_DB_Full.csv";
+                link.click();
+            };
+
+            return (
+                <div className="flex flex-col h-screen bg-slate-50 font-sans text-slate-900">
+                    {/* Header */}
+                    <header className="bg-slate-900 text-white shadow-md z-30 shrink-0">
+                        <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-blue-600 p-1.5 rounded-lg"><Icons.Database className="w-6 h-6 text-white" /></div>
+                                <div>
+                                    <h1 className="text-xl font-bold tracking-tight">GasGx 选型助手</h1>
+                                    <p className="text-[10px] text-blue-200 uppercase tracking-wider">Professional Engine Database</p>
+                                </div>
+                            </div>
+                            <div className="flex-1 max-w-xl mx-4 relative">
+                                <input type="text" placeholder="输入型号、品牌 (如 DT30+, WP13)..." className="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-full py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                <div className="absolute left-3 top-2.5 w-4 h-4 text-slate-400"><Icons.Search className="w-4 h-4"/></div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="bg-slate-800 p-1 rounded-lg flex border border-slate-700">
+                                    <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}><Icons.LayoutGrid className="w-4 h-4" /></button>
+                                    <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}><Icons.Table className="w-4 h-4" /></button>
+                                </div>
+                                <button onClick={handleExport} className="hidden sm:flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors"><Icons.Download className="w-3 h-3" /> 导出</button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="flex flex-1 overflow-hidden">
+                        {/* Sidebar */}
+                        <aside className="w-72 bg-white border-r border-slate-200 overflow-y-auto hidden lg:block custom-scrollbar">
+                            <div className="p-4">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="font-bold text-slate-800 flex items-center gap-2"><Icons.Filter className="w-4 h-4" /> 筛选条件</h2>
+                                    <span className="text-xs text-slate-400">{filteredData.length} 条结果</span>
+                                </div>
+                                
+                                <FilterSection title="分类" icon={<Icons.Gauge className="w-4 h-4 text-blue-500"/>} isOpen={filtersOpen.cat} onToggle={() => setFiltersOpen(p => ({...p, cat: !p.cat}))}>
+                                    {categories.map(c => (
+                                        <label key={c} className="flex items-center gap-2 text-xs py-1 cursor-pointer hover:bg-slate-50 rounded px-1">
+                                            <input type="checkbox" checked={filterCategory.includes(c)} onChange={(e) => e.target.checked ? setFilterCategory([...filterCategory, c]) : setFilterCategory(filterCategory.filter(x => x !== c))} className="rounded border-slate-300 text-blue-600"/>
+                                            <span>{c}</span>
+                                        </label>
+                                    ))}
+                                </FilterSection>
+
+                                <FilterSection title="应用场景 (新)" icon={<Icons.Droplets className="w-4 h-4 text-blue-500"/>} isOpen={filtersOpen.app} onToggle={() => setFiltersOpen(p => ({...p, app: !p.app}))}>
+                                    {allApps.map(a => (
+                                        <label key={a} className="flex items-center gap-2 text-xs py-1 cursor-pointer hover:bg-slate-50 rounded px-1">
+                                            <input type="checkbox" checked={filterApp.includes(a)} onChange={(e) => e.target.checked ? setFilterApp([...filterApp, a]) : setFilterApp(filterApp.filter(x => x !== a))} className="rounded border-slate-300 text-blue-600"/>
+                                            <span>{a}</span>
+                                        </label>
+                                    ))}
+                                </FilterSection>
+
+                                <FilterSection title="品牌" icon={<Icons.Sliders className="w-4 h-4 text-blue-500"/>} isOpen={filtersOpen.basic} onToggle={() => setFiltersOpen(p => ({...p, basic: !p.basic}))}>
+                                    <div className="max-h-40 overflow-y-auto custom-scrollbar">
+                                        {brands.map(b => (
+                                            <label key={b} className="flex items-center gap-2 text-xs py-1 cursor-pointer hover:bg-slate-50 rounded px-1">
+                                                <input type="checkbox" checked={filterBrand.includes(b)} onChange={(e) => e.target.checked ? setFilterBrand([...filterBrand, b]) : setFilterBrand(filterBrand.filter(x => x !== b))} className="rounded border-slate-300 text-blue-600"/>
+                                                <span className="truncate">{b}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </FilterSection>
+                                
+                                <FilterSection title="性能 (含输入)" icon={<Icons.Zap className="w-4 h-4 text-blue-500"/>} isOpen={filtersOpen.perf} onToggle={() => setFiltersOpen(p => ({...p, perf: !p.perf}))}>
+                                    <RangeFilter label="功率 (kW)" unit="kW" min={0} max={100000} step={100} value={rangePower} onChange={setRangePower} />
+                                    <RangeFilter label="电效率 (%)" unit="%" min={0} max={60} step={0.1} value={rangeEffElec} onChange={setRangeEffElec} />
+                                    <RangeFilter label="气耗率" unit="" min={0} max={0.5} step={0.01} value={rangeGasRate} onChange={setRangeGasRate} />
+                                </FilterSection>
+                                
+                                <FilterSection title="物理" icon={<Icons.Wind className="w-4 h-4 text-blue-500"/>} isOpen={filtersOpen.phys} onToggle={() => setFiltersOpen(p => ({...p, phys: !p.phys}))}>
+                                    <RangeFilter label="排量 (L)" unit="L" min={0} max={1000} value={rangeDisplacement} onChange={setRangeDisplacement} />
+                                    <RangeFilter label="重量 (kg)" unit="kg" min={0} max={800000} step={100} value={rangeWeight} onChange={setRangeWeight} />
+                                </FilterSection>
+                            </div>
+                        </aside>
+
+                        {/* Main */}
+                        <main className="flex-1 overflow-hidden flex flex-col bg-slate-50">
+                            <div className="flex-1 overflow-auto p-4 sm:p-6 custom-scrollbar">
+                                {filteredData.length === 0 ? (
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                        <p>无匹配数据</p>
+                                        <button onClick={() => {setFilterCategory([]); setFilterBrand([]); setFilterApp([]); setSearchTerm('');}} className="mt-4 text-blue-600 text-sm hover:underline">重置筛选</button>
+                                    </div>
+                                ) : viewMode === 'grid' ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                                        {currentData.map(item => (
+                                            <div key={item.id} onClick={() => setSelectedEngine(item)} className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col h-full group">
+                                                <div className="p-4 flex-1">
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div className="w-12 h-8">{getBrandLogo(item.brand)}</div>
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${item.category === '涡轮燃气轮机' ? 'bg-orange-100 text-orange-700' : 'bg-blue-50 text-blue-700'}`}>{item.category}</span>
+                                                    </div>
+                                                    <h3 className="font-bold text-slate-900 text-lg mb-1 truncate" title={item.model}>{item.model}</h3>
+                                                    <p className="text-xs text-slate-400 mb-3">{item.brand}</p>
+                                                    <div className="flex gap-2 mb-3">
+                                                        <span className="text-xs bg-slate-100 px-2 py-1 rounded flex items-center gap-1"><Icons.Zap className="w-3 h-3 text-yellow-500" /> {item.power_kw} kW</span>
+                                                        <span className="text-xs bg-slate-100 px-2 py-1 rounded flex items-center gap-1"><Icons.Activity className="w-3 h-3 text-green-500" /> {item.eff_elec}%</span>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-1 mb-2">
+                                                        {item.calculatedApps.slice(0, 3).map(app => (
+                                                            <span key={app} className="text-[9px] border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded">{app}</span>
+                                                        ))}
+                                                    </div>
+                                                    <div className="space-y-1 text-xs text-slate-500 pt-2 border-t border-dashed border-slate-100">
+                                                        <div className="flex justify-between items-center">
+                                                            <span>实际效率</span>
+                                                            <span className={`font-bold ${actualEfficiencies[item.id] ? 'text-blue-600' : 'text-slate-300'}`}>{actualEfficiencies[item.id] ? `${actualEfficiencies[item.id]}%` : '-'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                                        <div className="overflow-x-auto custom-scrollbar">
+                                            <table className="w-full text-xs text-left whitespace-nowrap">
+                                                <thead className="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200">
+                                                    <tr>
+                                                        <th className="px-3 py-3 w-12">Logo</th>
+                                                        <th className="px-3 py-3 sticky left-0 bg-slate-100 shadow-sm">型号</th>
+                                                        <th className="px-3 py-3">分类</th>
+                                                        <th className="px-3 py-3">品牌</th>
+                                                        <th className="px-3 py-3">功率(kW)</th>
+                                                        <th className="px-3 py-3">电效率(%)</th>
+                                                        <th className="px-3 py-3 bg-blue-50 text-blue-700 border-l border-r border-blue-100 w-28">实际电效率(%) <Icons.Edit3 className="w-3 h-3 inline ml-1"/></th>
+                                                        <th className="px-3 py-3">场景标签</th>
+                                                        <th className="px-3 py-3">缸数</th>
+                                                        <th className="px-3 py-3">气耗率</th>
+                                                        <th className="px-3 py-3">重量(kg)</th>
+                                                        <th className="px-3 py-3">操作</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {currentData.map(item => (
+                                                        <tr key={item.id} className="hover:bg-blue-50 transition-colors">
+                                                            <td className="px-3 py-2 w-12 h-8">{getBrandLogo(item.brand)}</td>
+                                                            <td className="px-3 py-2 font-bold text-blue-700 sticky left-0 bg-white shadow-sm">{item.model}</td>
+                                                            <td className="px-3 py-2 text-slate-500">{item.category}</td>
+                                                            <td className="px-3 py-2 truncate max-w-[100px]" title={item.brand}>{item.brand}</td>
+                                                            <td className="px-3 py-2 font-medium">{item.power_kw}</td>
+                                                            <td className="px-3 py-2 text-green-700">{item.eff_elec}</td>
+                                                            <td className="px-3 py-2 bg-blue-50/30 border-l border-r border-blue-100">
+                                                                <input type="number" className="w-full px-1 py-0.5 border border-blue-200 rounded text-center text-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white" placeholder="-" value={actualEfficiencies[item.id] || ''} onChange={(e) => handleEfficiencyChange(item.id, e.target.value)} />
+                                                            </td>
+                                                            <td className="px-3 py-2">
+                                                                <div className="flex flex-wrap gap-1 max-w-[200px]">
+                                                                    {item.calculatedApps.map(app => <span key={app} className="text-[9px] bg-slate-100 px-1 rounded text-slate-500">{app}</span>)}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-3 py-2">{item.cylinders}</td>
+                                                            <td className="px-3 py-2">{item.gas_consump_rate}</td>
+                                                            <td className="px-3 py-2">{item.weight}</td>
+                                                            <td className="px-3 py-2"><button onClick={() => setSelectedEngine(item)} className="text-blue-600 hover:text-blue-800">详情</button></td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            {/* Pagination */}
+                            <div className="bg-white border-t border-slate-200 p-4 flex justify-between items-center text-xs text-slate-500 shrink-0">
+                                <span>显示 {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredData.length)} / {filteredData.length} 条</span>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 border rounded hover:bg-slate-50 disabled:opacity-50"><Icons.ChevronLeft className="w-4 h-4" /></button>
+                                    <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 border rounded hover:bg-slate-50 disabled:opacity-50"><Icons.ChevronRight className="w-4 h-4" /></button>
+                                </div>
+                            </div>
+                        </main>
+                    </div>
+
+                    {/* Modal */}
+                    {selectedEngine && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                            <div className="bg-white w-full max-w-4xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                                <div className="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shrink-0">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-16 h-10 bg-white rounded p-1 flex items-center justify-center">{getBrandLogo(selectedEngine.brand)}</div>
+                                        <div><h2 className="text-xl font-bold">{selectedEngine.model}</h2><p className="text-sm text-blue-200">{selectedEngine.brand}</p></div>
+                                    </div>
+                                    <button onClick={() => setSelectedEngine(null)} className="hover:bg-white/10 p-1 rounded-full"><Icons.X className="w-5 h-5" /></button>
+                                </div>
+                                <div className="p-6 overflow-y-auto custom-scrollbar">
+                                    <div className="mb-6">
+                                        <h3 className="text-sm font-bold border-b pb-2 mb-3 uppercase text-slate-400">应用场景</h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedEngine.calculatedApps.map(app => <span key={app} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium border border-blue-100">{app}</span>)}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div>
+                                            <h3 className="text-sm font-bold border-b pb-2 mb-4 uppercase text-slate-400">物理参数</h3>
+                                            <dl className="space-y-3 text-sm text-slate-600">
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><dt>分类</dt><dd className="font-medium text-slate-900">{selectedEngine.category}</dd></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><dt>系列</dt><dd className="font-medium text-slate-900">{selectedEngine.series}</dd></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><dt>缸数/结构</dt><dd className="font-medium text-slate-900">{selectedEngine.cylinders}</dd></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><dt>排量</dt><dd className="font-medium text-slate-900">{selectedEngine.displacement} L</dd></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><dt>尺寸</dt><dd className="font-medium text-slate-900">{selectedEngine.dimensions}</dd></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><dt>重量</dt><dd className="font-medium text-slate-900">{selectedEngine.weight} kg</dd></div>
+                                            </dl>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold border-b pb-2 mb-4 uppercase text-slate-400">性能数据</h3>
+                                            <dl className="space-y-3 text-sm text-slate-600">
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><dt>额定功率</dt><dd className="font-bold text-slate-900 text-lg">{selectedEngine.power_kw} kW</dd></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><dt>标称电效率</dt><dd className="font-medium text-slate-900">{selectedEngine.eff_elec}%</dd></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1 bg-blue-50 px-2 rounded -mx-2"><dt className="text-blue-700 font-bold">实际电效率</dt><dd className="font-bold text-blue-700">{actualEfficiencies[selectedEngine.id] ? `${actualEfficiencies[selectedEngine.id]}%` : '未设置'}</dd></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><dt>气耗率</dt><dd className="font-medium text-slate-900">{selectedEngine.gas_consump_rate} Nm³/kWh</dd></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><dt>NOx 排放</dt><dd className="font-medium text-slate-900">{selectedEngine.nox} mg/m³</dd></div>
+                                                <div className="flex justify-between border-b border-slate-50 pb-1"><dt>冷却方式</dt><dd className="font-medium text-slate-900">{selectedEngine.cooling}</dd></div>
+                                            </dl>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

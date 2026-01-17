@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx - Canada AECO Price Simulator</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome 6.5.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- html2canvas for Screenshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Chart.js & Moment (Required for Simulator) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'neon': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'inner-input': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.6)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* 卡片磨砂效果 */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Mega Menu 动画 */
+        .mega-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: #151515;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .mega-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        /* Dropdown Menu 动画 */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            min-width: 220px;
+            background-color: #151515;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0 0 8px 8px;
+            padding: 0.5rem 0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .dropdown-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-item-link:hover { color: #5DD62C; }
+        
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after { width: 100%; }
+
+        /* Footer Link Hover */
+        .footer-link {
+            color: #94a3b8;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .footer-link:hover {
+            color: #5DD62C;
+        }
+
+        /* Mobile Menu Styles */
+        #mobile-menu-container {
+            transition: transform 0.3s ease-in-out;
+        }
+        .mobile-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        /* Footer Accordion (Mobile) */
+        .footer-accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        /* Floating Share Button Animation */
+        @keyframes floatPulse {
+            0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); }
+        }
+        .float-btn {
+            animation: floatPulse 2s infinite;
+        }
+
+        /* Simulator Input Styles */
+        .gas-input, input[type="number"] {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            color: #F8F8F8;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.6);
+        }
+        .gas-input:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #5DD62C;
+            box-shadow: 0 0 0 3px rgba(93, 214, 44, 0.2), inset 0 2px 4px 0 rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 gas-card h-16 transition-all duration-300">
+        <div class="max-w-[1800px] mx-auto px-4 h-full flex justify-between items-center relative">
+            
+            <!-- Left: Logo + Tagline -->
+            <div class="flex items-center gap-3 w-auto shrink-0 mr-4">
+                <a href="/index.html" class="flex items-center gap-2 group">
+                    <h1 class="text-2xl font-bold tracking-wider text-gas-green hover:text-white transition-colors cursor-pointer">GasGx</h1>
+                </a>
+                
+                <!-- Tagline: Header (Desktop) -->
+                <div class="hidden md:flex flex-col justify-center border-l border-gray-700 pl-3 h-8">
+                    <span id="header-tagline" class="text-gas-green text-xs font-bold tracking-wide">Natural Gas Power Mining Assistant</span>
+                </div>
+            </div>
+
+            <!-- Center: Desktop Navigation -->
+            <nav id="desktop-nav" class="hidden lg:flex items-center justify-center gap-2 xl:gap-6 h-full flex-1">
+                <!-- JS Generated -->
+            </nav>
+
+            <!-- Right: Language & Mobile Toggle -->
+            <div class="flex items-center gap-4 w-auto shrink-0 justify-end ml-4">
+                <!-- Language Switcher (Desktop) -->
+                <div class="hidden sm:flex items-center gap-1 bg-[#111] border border-white/10 rounded-full px-1 py-1">
+                    <button onclick="app.setLanguage('zh')" id="btn-lang-zh" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">CN</button>
+                    <button onclick="app.setLanguage('en')" id="btn-lang-en" class="px-2 py-1 rounded-full text-[10px] font-bold transition-all w-8 text-center text-black bg-gas-green shadow-glow">EN</button>
+                    <button onclick="app.setLanguage('ru')" id="btn-lang-ru" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">RU</button>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" onclick="app.toggleMobileMenu()" class="lg:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation Overlay -->
+    <div id="mobile-menu-container" class="fixed inset-0 z-40 bg-[#111] transform translate-x-full pt-20 px-4 pb-8 overflow-y-auto lg:hidden">
+        <!-- Mobile Lang Switcher -->
+        <div class="flex justify-center gap-4 mb-6 border-b border-white/10 pb-4">
+            <div class="flex items-center gap-2 bg-[#222] border border-white/10 rounded-full px-1 py-1">
+                <button onclick="app.setLanguage('zh')" id="mob-btn-lang-zh" class="px-4 py-2 rounded-full text-xs font-bold transition-all text-gray-400">CN</button>
+                <button onclick="app.setLanguage('en')" id="mob-btn-lang-en" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-black bg-gas-green">EN</button>
+                <button onclick="app.setLanguage('ru')" id="mob-btn-lang-ru" class="px-4 py-2 rounded-full text-xs font-medium transition-all text-gray-400">RU</button>
+            </div>
+        </div>
+        
+        <nav id="mobile-nav-content" class="flex flex-col space-y-1">
+            <!-- JS Generated Mobile Nav -->
+        </nav>
+    </div>
+
+    <!-- Main Content Area: Simulator -->
+    <main class="flex-grow pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full min-h-[80vh] space-y-6">
+        
+        <!-- Page Title within Main -->
+        <div class="flex items-center justify-between">
+            <h2 id="simPageTitle" class="text-xl md:text-2xl font-bold text-gas-text">Canada AECO Price Simulator</h2>
+            <div class="h-1 w-20 bg-gas-green rounded-full"></div>
+        </div>
+
+        <!-- Controls Section -->
+        <div class="gas-card rounded-xl p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+            <!-- Range Selector -->
+            <div class="md:col-span-4 flex flex-col md:flex-row gap-4 items-center justify-between border-b border-white/5 pb-4 mb-2">
+                <span id="labelRange" class="text-sm font-bold text-gas-green uppercase tracking-wider">📅 Data Range:</span>
+                <div class="flex bg-[#151515] rounded-lg p-1 border border-white/5 w-full md:w-auto overflow-x-auto gap-1">
+                    <button onclick="setRange(5)" id="btn-5" class="range-btn flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded hover:text-white transition-colors whitespace-nowrap text-slate-400">5Y</button>
+                    <button onclick="setRange(10)" id="btn-10" class="range-btn flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded hover:text-white transition-colors whitespace-nowrap text-slate-400">10Y</button>
+                    <button onclick="setRange(20)" id="btn-20" class="range-btn flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded hover:text-white transition-colors whitespace-nowrap text-slate-400">20Y</button>
+                    <button onclick="setRange(30)" id="btn-30" class="range-btn flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded bg-gas-green text-black shadow-neon whitespace-nowrap">30Y</button>
+                </div>
+            </div>
+
+            <!-- Inputs -->
+            <div class="relative group">
+                <label id="labelFloor" class="block text-xs font-bold text-slate-400 uppercase mb-2">Floor Price</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gas-green">$</span>
+                    <input type="number" id="floorPrice" value="2.50" step="0.1" onchange="runSimulation()" 
+                        class="w-full bg-[#151515] text-gas-text border border-white/10 rounded-lg py-3 pl-8 pr-12 focus:outline-none focus:border-gas-green focus:shadow-neon transition-all shadow-inner-glow font-mono text-lg">
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">USD</span>
+                </div>
+            </div>
+
+            <div class="relative group">
+                <label id="labelCap" class="block text-xs font-bold text-slate-400 uppercase mb-2">Cap Price</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gas-green">$</span>
+                    <input type="number" id="capPrice" value="3.50" step="0.1" onchange="runSimulation()" 
+                        class="w-full bg-[#151515] text-gas-text border border-white/10 rounded-lg py-3 pl-8 pr-12 focus:outline-none focus:border-gas-green focus:shadow-neon transition-all shadow-inner-glow font-mono text-lg">
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">USD</span>
+                </div>
+            </div>
+
+            <div class="relative group">
+                <label id="labelAdder" class="block text-xs font-bold text-slate-400 uppercase mb-2">Adder</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gas-green">$</span>
+                    <input type="number" id="adderPrice" value="0.38" step="0.01" onchange="runSimulation()" 
+                        class="w-full bg-[#151515] text-gas-text border border-white/10 rounded-lg py-3 pl-8 pr-12 focus:outline-none focus:border-gas-green focus:shadow-neon transition-all shadow-inner-glow font-mono text-lg">
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">USD</span>
+                </div>
+            </div>
+
+            <div class="flex items-end">
+                <button onclick="runSimulation()" id="btnCalculate" class="w-full bg-gas-green text-[#0F0F0F] font-black uppercase tracking-wider py-3 px-6 rounded-lg shadow-neon hover:bg-[#4bc122] hover:shadow-neon-strong transition-all duration-200 active:scale-95">
+                    Calculate
+                </button>
+            </div>
+        </div>
+
+        <!-- Future Projection -->
+        <div class="gas-card rounded-xl p-1 bg-gradient-to-r from-gas-darkGreen/40 to-transparent border border-gas-green/20 relative overflow-hidden">
+            <div class="p-6 relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex-1">
+                    <h3 class="text-gas-text font-bold text-xl mb-2 flex items-center gap-2">
+                        <span class="text-gas-green">🚀</span> 
+                        <span id="titleProjection">Future 3-Year Projection</span>
+                    </h3>
+                    <p id="descProjection" class="text-slate-400 text-sm">
+                        Monte Carlo simulation based on <span id="periodLabel" class="text-gas-green font-bold">30Y</span> historical volatility.
+                    </p>
+                </div>
+                <div class="bg-[#0F0F0F]/80 p-4 rounded-xl border border-gas-green/30 min-w-[200px] text-center shadow-neon backdrop-blur-sm">
+                    <div id="labelEstPrice" class="text-gas-green text-xs font-black uppercase tracking-widest mb-1">Est. Avg Price</div>
+                    <div class="text-4xl font-black text-white tracking-tighter" id="futureAvgDisplay">--</div>
+                    <div class="text-slate-500 text-xs mt-1 font-medium">USD / MCF</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="gas-card p-5 rounded-xl border border-white/5 hover:border-gas-green/30 transition-colors">
+                <div id="labelHistAvg" class="text-slate-500 text-xs font-bold uppercase tracking-wider">Historical Avg</div>
+                <div class="text-2xl font-bold text-gas-text mt-2 font-mono" id="histAvgDisplay">--</div>
+                <div class="text-xs text-slate-600 mt-1">USD / MCF</div>
+            </div>
+            <div class="gas-card p-5 rounded-xl border border-white/5 hover:border-gas-green/30 transition-colors">
+                <div id="labelFloorHit" class="text-slate-500 text-xs font-bold uppercase tracking-wider">Floor Hit Rate</div>
+                <div class="text-2xl font-bold text-gas-green mt-2 font-mono" id="floorRateDisplay">--</div>
+                <div id="subFloorHit" class="text-xs text-slate-600 mt-1">Protected</div>
+            </div>
+            <div class="gas-card p-5 rounded-xl border border-white/5 hover:border-gas-green/30 transition-colors">
+                <div id="labelCapHit" class="text-slate-500 text-xs font-bold uppercase tracking-wider">Cap Hit Rate</div>
+                <div class="text-2xl font-bold text-gas-green mt-2 font-mono" id="capRateDisplay">--</div>
+                <div id="subCapHit" class="text-xs text-slate-600 mt-1">Capped</div>
+            </div>
+            <div class="gas-card p-5 rounded-xl border border-white/5 hover:border-gas-green/30 transition-colors">
+                <div id="labelRangeStat" class="text-slate-500 text-xs font-bold uppercase tracking-wider">Price Range</div>
+                <div class="text-xl font-bold text-gas-text mt-2 font-mono" id="rangeDisplay">--</div>
+                <div class="text-xs text-slate-600 mt-1">Min - Max</div>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="gas-card rounded-xl p-6 border border-white/5">
+            <div class="flex items-center justify-between mb-6">
+                <h2 id="chartTitle" class="text-lg font-bold text-gas-text flex items-center gap-2">
+                    <span class="w-2 h-6 bg-gas-green rounded-sm"></span>
+                    Market Trend Analysis
+                </h2>
+            </div>
+            <div class="relative h-[400px] w-full">
+                <canvas id="gasPriceChart"></canvas>
+            </div>
+            <!-- Legend Custom -->
+            <div class="mt-6 flex flex-wrap justify-center gap-4 md:gap-8 text-xs font-medium text-slate-400">
+                <div class="flex items-center gap-2"><span class="w-6 h-1 bg-slate-600 border border-slate-500 border-dashed"></span> <span id="legRaw">Raw Market</span></div>
+                <div class="flex items-center gap-2"><span class="w-3 h-3 bg-gas-green rounded-full shadow-neon"></span> <span id="legFinal">Settlement Price</span></div>
+                <div class="flex items-center gap-2"><span class="w-6 h-1 border-t-2 border-slate-500 border-dotted"></span> <span id="legLimit">Floor/Cap</span></div>
+            </div>
+        </div>
+
+        <!-- Analysis -->
+        <div class="gas-card rounded-xl p-6 border-t-2 border-gas-green/20">
+            <h3 id="analysisTitle" class="text-lg font-bold text-gas-green mb-4">AI Analysis Insight</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm text-slate-300">
+                <div>
+                    <h4 id="analysisHistTitle" class="font-bold text-white mb-2 border-b border-white/10 pb-2">Historical Performance</h4>
+                    <p id="analysisHistText" class="leading-relaxed text-slate-400">
+                        The mechanism effectively locks the price range. In low markets, the floor price dominates, while in extreme volatility, the cap price provides significant savings.
+                    </p>
+                </div>
+                <div>
+                    <h4 id="analysisFutTitle" class="font-bold text-white mb-2 border-b border-white/10 pb-2">Future Outlook</h4>
+                    <p id="analysisFutText" class="leading-relaxed text-slate-400">
+                        Based on the selected volatility model, the forecasted average remains stable. The Monte Carlo simulation suggests a continued trend within the protected bounds.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#0a0a0a] border-t border-white/10 mt-auto pt-10 pb-8 relative z-10">
+        <div class="max-w-[1800px] mx-auto px-6">
+            
+            <!-- Footer Top Row: Brand & Contact -->
+            <div class="flex flex-col md:flex-row justify-between items-start mb-8 pb-6 border-b border-white/5">
+                <!-- Left: Logo & Tagline -->
+                <div class="mb-6 md:mb-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-2xl font-bold text-gas-green">GasGx</span>
+                    </div>
+                    <p class="text-sm text-gray-400 font-medium" data-i18n="footerTagline">Making natural gas power mining easier</p>
+                </div>
+
+                <!-- Right: Contact Info -->
+                <div class="flex flex-col md:items-end space-y-2">
+                    <h4 class="text-white font-bold text-sm uppercase tracking-wider mb-1" data-i18n="联系我们">Contact Us</h4>
+                    <a href="mailto:contact@gasgx.com" class="text-sm text-gray-400 hover:text-gas-green flex items-center gap-2 transition-colors">
+                        <i class="fa-solid fa-envelope"></i> contact@gasgx.com
+                    </a>
+                    <div class="text-sm text-gray-400 flex items-center gap-2">
+                        <i class="fa-brands fa-weixin"></i> <span class="hover:text-gas-green cursor-pointer">www_gasgx_com</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Links: Row Layout (Desktop) / Accordion (Mobile) -->
+            <div id="footer-links" class="mb-10 space-y-2">
+                <!-- JS Generated -->
+            </div>
+
+            <!-- Bottom: Copyright & Social -->
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-white/5">
+                <div class="text-xs text-gray-600">
+                    © 2026 GasGx. All rights reserved.
+                </div>
+
+                <div class="flex gap-4">
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-tiktok text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-linkedin text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-facebook text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-weixin text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-x-twitter text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-youtube text-lg"></i></a>
+                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-telegram text-lg"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Floating Canvas-Style Share Button (Right Side) -->
+    <button onclick="app.captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group" title="Share Snapshot">
+        <i class="fa-solid fa-camera text-xl"></i>
+        <!-- Tooltip -->
+        <span class="absolute right-14 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
+            Share Page
+        </span>
+    </button>
+
+    <!-- Back to Top -->
+    <button onclick="window.scrollTo({top:0, behavior:'smooth'})" id="backToTopBtn" class="fixed bottom-6 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-[0_0_15px_rgba(93,214,44,0.5)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-95 opacity-0" id="shareModalContent">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-check text-2xl text-gas-green"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3>
+                <p class="text-sm text-gray-400">Full page captured successfully.</p>
+            </div>
+            <button onclick="app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- Simulator Global Data & Logic ---
+        let currentRangeYears = 30;
+        const historyData = {
+            '1995': 1.35, '1996': 1.65, '1997': 2.10, '1998': 2.05, '1999': 2.60,
+            '2000': 4.80, '2001': 5.50, '2002': 3.90, '2003': 6.10, '2004': 6.40,
+            '2005': 7.80, '2006': 6.00, '2007': 5.80, '2008': 7.20, '2009': 3.80,
+            '2010': 3.90, '2011': 3.50, '2012': 2.30, '2013': 3.00, '2014': 4.20,
+            '2015': 2.50, '2016': 2.05, '2017': 2.04, '2018': 1.66, '2019': 1.68,
+            '2020': 2.12, '2021': 3.44, '2022': 5.25, '2023': 2.55, '2024': 1.60
+        };
+        const GJ_TO_MCF = 1.055;
+        const EXCH_RATE = 0.74; 
+        let chartInstance = null;
+
+        function randn_bm() {
+            let u = 0, v = 0;
+            while(u === 0) u = Math.random(); 
+            while(v === 0) v = Math.random();
+            return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+        }
+
+        function setRange(years) {
+            currentRangeYears = years;
+            document.querySelectorAll('.range-btn').forEach(btn => {
+                btn.className = "range-btn flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded hover:text-white transition-colors whitespace-nowrap text-slate-400";
+            });
+            const activeBtn = document.getElementById(`btn-${years}`);
+            if(activeBtn) activeBtn.className = "range-btn flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded bg-gas-green text-black shadow-neon whitespace-nowrap";
+            
+            const periodLabel = document.getElementById('periodLabel');
+            if(periodLabel) periodLabel.innerText = `${years}Y`;
+
+            runSimulation();
+        }
+
+        function runSimulation() {
+            const floor = parseFloat(document.getElementById('floorPrice').value);
+            const cap = parseFloat(document.getElementById('capPrice').value);
+            const adder = parseFloat(document.getElementById('adderPrice').value);
+
+            const startYear = 2024 - currentRangeYears + 1;
+            const dates = [];
+            const rawPrices = [];
+            const finalPrices = [];
+            const historicalPool = [];
+
+            let histSum = 0, histCount = 0, floorCount = 0, capCount = 0;
+            let minP = 999, maxP = 0;
+
+            let currDate = new Date(`${startYear}-01-01`);
+            const endDate = new Date('2024-12-31');
+
+            while(currDate <= endDate) {
+                const y = currDate.getFullYear();
+                const baseAvg = historyData[y] || 2.0;
+                
+                const vol = randn_bm() * (baseAvg * 0.45);
+                const rawCad = Math.max(0.1, baseAvg + vol);
+                const rawUsd = rawCad * GJ_TO_MCF * EXCH_RATE;
+                
+                const final = Math.max(floor, Math.min(cap, rawUsd)) + adder;
+
+                if(final <= floor + adder + 0.01) floorCount++;
+                if(final >= cap + adder - 0.01) capCount++;
+                if(final < minP) minP = final;
+                if(final > maxP) maxP = final;
+
+                histSum += final;
+                histCount++;
+                historicalPool.push(rawUsd);
+
+                dates.push(currDate.toISOString().split('T')[0]);
+                rawPrices.push(rawUsd);
+                finalPrices.push(final);
+
+                currDate.setDate(currDate.getDate() + 1);
+            }
+
+            const futStart = new Date('2025-01-01');
+            const futEnd = new Date('2027-12-31');
+            let futSum = 0, futCount = 0;
+            const futDates = [], futFinals = [];
+
+            let fDate = new Date(futStart);
+            while(fDate <= futEnd) {
+                const pick = historicalPool[Math.floor(Math.random() * historicalPool.length)];
+                const noise = randn_bm() * 0.15;
+                const simRaw = Math.max(0.1, pick + noise);
+                const simFinal = Math.max(floor, Math.min(cap, simRaw)) + adder;
+
+                futSum += simFinal;
+                futCount++;
+                
+                futDates.push(fDate.toISOString().split('T')[0]);
+                futFinals.push(simFinal);
+                fDate.setDate(fDate.getDate() + 1);
+            }
+
+            const histAvg = histSum / histCount;
+            const futAvg = futSum / futCount;
+
+            document.getElementById('histAvgDisplay').innerText = '$' + histAvg.toFixed(2);
+            document.getElementById('futureAvgDisplay').innerText = '$' + futAvg.toFixed(2);
+            document.getElementById('floorRateDisplay').innerText = ((floorCount/histCount)*100).toFixed(0) + '%';
+            document.getElementById('capRateDisplay').innerText = ((capCount/histCount)*100).toFixed(0) + '%';
+            document.getElementById('rangeDisplay').innerText = `$${minP.toFixed(1)} - $${maxP.toFixed(1)}`;
+
+            renderChart(dates, finalPrices, rawPrices, futDates, futFinals, floor+adder, cap+adder);
+        }
+
+        function renderChart(hD, hF, hR, fD, fF, floorLine, capLine) {
+            const ctx = document.getElementById('gasPriceChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+
+            const grad = ctx.createLinearGradient(0,0,0,400);
+            grad.addColorStop(0, 'rgba(93, 214, 44, 0.2)');
+            grad.addColorStop(1, 'rgba(93, 214, 44, 0)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        { label: 'History Final', data: hD.map((d,i) => ({x:d, y:hF[i]})), borderColor: '#5DD62C', backgroundColor: grad, borderWidth: 1.5, pointRadius: 0, fill: true, order: 1 },
+                        { label: 'Raw Market', data: hD.map((d,i) => ({x:d, y:hR[i]})), borderColor: '#64748b', borderWidth: 1, pointRadius: 0, borderDash: [2,2], order: 3 },
+                        { label: 'Future', data: fD.map((d,i) => ({x:d, y:fF[i]})), borderColor: '#FFFFFF', borderWidth: 1, pointRadius: 0, borderDash: [4,4], order: 2 },
+                        { label: 'Cap', data: [{x: hD[0], y: capLine}, {x: fD[fD.length-1], y: capLine}], borderColor: 'rgba(255,255,255,0.3)', borderWidth: 1, borderDash: [5,5], pointRadius: 0, order: 4 },
+                        { label: 'Floor', data: [{x: hD[0], y: floorLine}, {x: fD[fD.length-1], y: floorLine}], borderColor: 'rgba(255,255,255,0.3)', borderWidth: 1, borderDash: [5,5], pointRadius: 0, order: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'nearest', axis: 'x', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(15,15,15,0.9)', titleColor: '#fff', bodyColor: '#ccc', borderColor: 'rgba(93, 214, 44, 0.3)', borderWidth: 1,
+                            callbacks: { label: function(context) { return context.dataset.label + ': $' + context.parsed.y.toFixed(2); } }
+                        }
+                    },
+                    scales: {
+                        x: { type: 'time', time: { unit: 'year' }, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#666' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#666' } }
+                    }
+                }
+            });
+        }
+
+        // --- App Data & Logic (From uploaded file, extended with Simulator Translations) ---
+        const AppData = {
+            navigation: [
+                { title: "首页", path: "/index.html", type: "link", icon: "fa-solid fa-house" },
+                {
+                    title: "解决方案",
+                    path: "/solutions",
+                    type: "menu",
+                    children: [
+                        { title: "油气井/伴生气发电", path: "/solutions/oilfield" },
+                        { title: "工业园区与分布式能源", path: "/solutions/industrial" },
+                        { title: "数据中心 / 挖矿电力", path: "/solutions/mining" },
+                        { title: "热电联供 CHP", path: "/solutions/chp" }
+                    ]
+                },
+                {
+                    title: "机型库",
+                    path: "/products",
+                    type: "mega",
+                    sections: [
+                        {
+                            header: "按功率分类",
+                            items: [
+                                { title: "小于 500 kW", path: "/products/power-range/0-500kw" },
+                                { title: "500 – 1,000 kW", path: "/products/power-range/500-1000kw" },
+                                { title: "1 MW 以上", path: "/products/power-range/1mw-plus" }
+                            ]
+                        },
+                        {
+                            header: "按冷却方式",
+                            items: [
+                                { title: "风冷", path: "/products/cooling/air" },
+                                { title: "液冷", path: "/products/cooling/liquid" }
+                            ]
+                        },
+                        {
+                            header: "按气源类型",
+                            items: [
+                                { title: "天然气", path: "/products/gas/natural" },
+                                { title: "伴生气", path: "/products/gas/associated" },
+                                { title: "低甲烷值气", path: "/products/gas/low-methane" }
+                            ]
+                        },
+                        {
+                            header: "按部署形式",
+                            items: [
+                                { title: "集装箱机组", path: "/products/deployment/container" },
+                                { title: "一体化机组 AIS", path: "/products/deployment/ais" },
+                                { title: "滑撬式机组", path: "/products/deployment/skid" }
+                            ]
+                        },
+                        {
+                            header: "按品牌",
+                            items: [
+                                { title: "全部品牌", path: "/products/brands" },
+                                { title: "中国生产", path: "/products/brands/china" },
+                                { title: "海外生产", path: "/products/brands/overseas" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "排行榜",
+                    path: "/rankings",
+                    type: "mega",
+                    gridCols: "grid-cols-6",
+                    sections: [
+                        {
+                            header: "性能榜",
+                            items: [
+                                { title: "综合性能 TOP 榜", path: "/rankings/performance" },
+                                { title: "高效率榜", path: "/rankings/efficiency" },
+                                { title: "天然气内燃机发电效率排行榜", path: "/rankings/engine-efficiency" },
+                                { title: "天然气内燃机热效率排行榜", path: "/rankings/thermal-efficiency" },
+                                { title: "天然气内燃机耗气量排行榜", path: "/rankings/gas-consumption" }
+                            ]
+                        },
+                        {
+                            header: "经济性榜",
+                            items: [
+                                { title: "最佳 ROI 榜", path: "/rankings/roi" },
+                                { title: "最低发电成本 LCOE 榜", path: "/rankings/lcoe" },
+                                { title: "天然气内燃机折旧排行榜", path: "/rankings/depreciation" },
+                                { title: "天然气内燃机投资回报率排行榜", path: "/rankings/engine-roi" }
+                            ]
+                        },
+                        {
+                            header: "可靠性榜",
+                            items: [
+                                { title: "高可靠机组榜", path: "/rankings/reliability" },
+                                { title: "最长 MTBF 榜", path: "/rankings/mtbf" },
+                                { title: "天然气内燃机保养时间排行榜", path: "/rankings/maintenance-interval" },
+                                { title: "天然气内燃机备件保障排行榜", path: "/rankings/spare-parts" }
+                            ]
+                        },
+                        {
+                            header: "品质与环保榜",
+                            items: [
+                                { title: "天然气内燃机排放排行榜", path: "/rankings/emissions" },
+                                { title: "天然气内燃机噪音排行榜", path: "/rankings/noise" }
+                            ]
+                        },
+                        {
+                            header: "系统能力榜",
+                            items: [
+                                { title: "天然气内燃机发电机排行榜", path: "/rankings/generator" },
+                                { title: "天然气内燃机控制系统排行榜", path: "/rankings/control-system" }
+                            ]
+                        },
+                        {
+                            header: "区域榜",
+                            items: [
+                                { title: "美国市场榜", path: "/rankings/usa" },
+                                { title: "加拿大市场榜", path: "/rankings/canada" },
+                                { title: "中东市场榜", path: "/rankings/middle-east" },
+                                { title: "俄罗斯市场榜", path: "/rankings/russia" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "应用场景",
+                    path: "/use-cases",
+                    type: "menu",
+                    children: [
+                        { title: "油气井 / 伴生气", path: "/use-cases/oilfield" },
+                        { title: "工业与园区能源", path: "/use-cases/industrial" },
+                        { title: "挖矿 / 数据中心", path: "/use-cases/mining" },
+                        { title: "CHP 热电联供", path: "/use-cases/chp" }
+                    ]
+                },
+                {
+                    title: "工具箱",
+                    path: "/tools",
+                    type: "mega",
+                    gridCols: "grid-cols-5",
+                    sections: [
+                        {
+                            header: "经济测算工具",
+                            items: [
+                                { title: "LCOE 成本计算器", path: "/tools/lcoe-calculator" },
+                                { title: "ROI 回报估算器", path: "/tools/roi" },
+                                { title: "燃气发电挖矿收益计算器", path: "/tools/mining-power-calc" },
+                                { title: "蒙特卡洛模拟盈利分析", path: "/tools/monte-carlo-profit" },
+                                { title: "天然气发电耗气成本分析", path: "/tools/gas-cost-analysis" }
+                            ]
+                        },
+                        {
+                            header: "工程与技术工具",
+                            items: [
+                                { title: "气质适配工具", path: "/tools/gas-fit" },
+                                { title: "排放估算工具", path: "/tools/emission" },
+                                { title: "气体分析计算器", path: "/tools/gas-analyzer" },
+                                { title: "能电转换计算器", path: "/tools/energy-conversion" },
+                                { title: "天然气主要成分热值表", path: "/tools/gas-composition-heat" }
+                            ]
+                        },
+                        {
+                            header: "项目与选型工具",
+                            items: [
+                                { title: "站点匹配向导", path: "/tools/site-fit" },
+                                { title: "气源所在地分析", path: "/tools/gas-location-analysis" },
+                                { title: "燃气发动机选型与运营经济性", path: "/tools/engine-selection" },
+                                { title: "天然气发电机机油消耗率", path: "/tools/oil-consumption" },
+                                { title: "车机 VS 工业机 10MW 对比分析", path: "/tools/vehicle-vs-industrial-10mw" },
+                                { title: "多机型对比 3 年运营数据", path: "/tools/3y-compare" }
+                            ]
+                        },
+                        {
+                            header: "矿工专区（托管与算力分析）",
+                            items: [
+                                { title: "挖矿收益计算器", path: "/tools/mining-income-calculator" },
+                                { title: "矿机盈利能力计算器", path: "/tools/miner-profitability" },
+                                { title: "矿机选购速查", path: "/tools/miner-buying-guide" }
+                            ]
+                        },
+                        {
+                            header: "全球支持与合规",
+                            items: [
+                                { title: "加拿大 AECO 天然气价格预测", path: "/tools/aeco-price-forecast" },
+                                { title: "全球物流运输推荐", path: "/tools/global-logistics" },
+                                { title: "全球合规政策", path: "/tools/global-compliance" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "资料中心",
+                    path: "/resources",
+                    type: "mega",
+                    gridCols: "grid-cols-4",
+                    sections: [
+                        {
+                            header: "文档",
+                            items: [
+                                { title: "白皮书", path: "/resources/whitepapers" },
+                                { title: "行业报告", path: "/resources/reports" }
+                            ]
+                        },
+                        {
+                            header: "案例",
+                            items: [
+                                { title: "全部案例", path: "/resources/case-studies" },
+                                { title: "按区域查看", path: "/resources/case-studies/regions" },
+                                { title: "按场景查看", path: "/resources/case-studies/scenarios" }
+                            ]
+                        },
+                        {
+                            header: "技术库",
+                            items: [
+                                { title: "技术参数表", path: "/resources/datasheets" },
+                                { title: "认证与合规文件", path: "/resources/certifications" }
+                            ]
+                        },
+                        {
+                            header: "媒体与支持",
+                            items: [
+                                { title: "视频与教程", path: "/resources/videos" },
+                                { title: "常见问答 FAQ", path: "/resources/faq" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "服务支持",
+                    path: "/support",
+                    type: "menu",
+                    children: [
+                        { title: "服务网络", path: "/support/network" },
+                        { title: "技术支持", path: "/support/tech" },
+                        { title: "售后与保养", path: "/support/service" }
+                    ]
+                },
+                {
+                    title: "关于我们",
+                    path: "/about",
+                    type: "menu",
+                    children: [
+                        { title: "公司介绍", path: "/about/company" },
+                        { title: "联系我们", path: "/about/contact" }
+                    ]
+                }
+            ],
+
+            i18n: {
+                zh: {
+                    tagline: "天然气发电挖矿助手",
+                    footerTagline: "让天然气发电挖矿更简单",
+                    // ... [Other nav translations] ...
+                    // Simulator Specifics
+                    simPageTitle: "加拿大AECO价格预测模拟器",
+                    labelRange: "历史数据范围",
+                    labelFloor: "保底价格 (Floor)",
+                    labelCap: "封顶价格 (Cap)",
+                    labelAdder: "附加费 (Adder)",
+                    btnCalculate: "开始计算",
+                    titleProjection: "未来3年趋势预测",
+                    descProjection: "基于历史市场波动率的蒙特卡洛模拟预测。",
+                    labelEstPrice: "预估结算均价",
+                    labelHistAvg: "历史平均价",
+                    labelFloorHit: "触发保底比例",
+                    subFloorHit: "享受低价保护",
+                    labelCapHit: "触发封顶比例",
+                    subCapHit: "享受高价封顶",
+                    labelRangeStat: "价格波动区间",
+                    chartTitle: "市场趋势分析",
+                    legRaw: "原始市价",
+                    legFinal: "最终结算价",
+                    legLimit: "上下限",
+                    analysisTitle: "AI 深度洞察",
+                    analysisHistTitle: "历史回测结论",
+                    analysisHistText: "该机制有效锁定了成本区间。在低价市场中，保底价确保了供应商利益；而在极端高价市场中，封顶价为您节省了大量成本。",
+                    analysisFutTitle: "未来展望",
+                    analysisFutText: "模型预测未来市场将在保护区间内平稳运行。虽然偶有波动，但长期来看成本可控。"
+                },
+                en: {
+                    tagline: "Natural Gas Power Mining Assistant",
+                    footerTagline: "Making natural gas power mining easier",
+                    "首页": "Home",
+                    "解决方案": "Solutions",
+                    "机型库": "Products",
+                    "排行榜": "Rankings",
+                    "应用场景": "Use Cases",
+                    "工具箱": "Tools",
+                    "资料中心": "Resources",
+                    "服务支持": "Support",
+                    "关于我们": "About Us",
+                    "联系我们": "Contact Us",
+                    // Simulator Specifics
+                    simPageTitle: "Canada AECO Price Simulator",
+                    labelRange: "Data Range",
+                    labelFloor: "Floor Price",
+                    labelCap: "Cap Price",
+                    labelAdder: "Adder",
+                    btnCalculate: "Calculate",
+                    titleProjection: "Future 3-Year Projection",
+                    descProjection: "Monte Carlo simulation based on historical volatility.",
+                    labelEstPrice: "Est. Avg Price",
+                    labelHistAvg: "Historical Avg",
+                    labelFloorHit: "Floor Hit Rate",
+                    subFloorHit: "Protected",
+                    labelCapHit: "Cap Hit Rate",
+                    subCapHit: "Capped",
+                    labelRangeStat: "Price Range",
+                    chartTitle: "Market Trend Analysis",
+                    legRaw: "Raw Market",
+                    legFinal: "Settlement Price",
+                    legLimit: "Floor/Cap",
+                    analysisTitle: "AI Analysis Insight",
+                    analysisHistTitle: "Historical Performance",
+                    analysisHistText: "The mechanism effectively locks the price range. In low markets, the floor price dominates, while in extreme volatility, the cap price provides significant savings.",
+                    analysisFutTitle: "Future Outlook",
+                    analysisFutText: "Based on the selected volatility model, the forecasted average remains stable. The Monte Carlo simulation suggests a continued trend within the protected bounds."
+                },
+                ru: {
+                    tagline: "Помощник по газовому майнингу",
+                    footerTagline: "Майнинг на газе проще",
+                    "首页": "Главная",
+                    "解决方案": "Решения",
+                    "机型库": "Продукты",
+                    "排行榜": "Рейтинги",
+                    "应用场景": "Кейсы",
+                    "工具箱": "Инструменты",
+                    "资料中心": "Ресурсы",
+                    "服务支持": "Поддержка",
+                    "关于我们": "О нас",
+                    "联系我们": "Контакты",
+                    // Simulator Specifics
+                    simPageTitle: "Симулятор цен AECO (Канада)",
+                    labelRange: "Диапазон данных",
+                    labelFloor: "Минимальная цена",
+                    labelCap: "Максимальная цена",
+                    labelAdder: "Наценка",
+                    btnCalculate: "Рассчитать",
+                    titleProjection: "Прогноз на 3 года",
+                    descProjection: "Моделирование Монте-Карло на основе исторической волатильности.",
+                    labelEstPrice: "Ожидаемая цена",
+                    labelHistAvg: "Средняя ист.",
+                    labelFloorHit: "Частота минимума",
+                    subFloorHit: "Защита",
+                    labelCapHit: "Частота максимума",
+                    subCapHit: "Ограничение",
+                    labelRangeStat: "Диапазон цен",
+                    chartTitle: "Анализ рынка",
+                    legRaw: "Рыночная цена",
+                    legFinal: "Цена расчета",
+                    legLimit: "Лимиты",
+                    analysisTitle: "AI Анализ",
+                    analysisHistTitle: "Исторические данные",
+                    analysisHistText: "Механизм эффективно фиксирует диапазон затрат. В периоды низких цен работает защита минимума, а при скачках - максимума.",
+                    analysisFutTitle: "Перспективы",
+                    analysisFutText: "Модель прогнозирует стабильность в пределах защищенного диапазона."
+                }
+            }
+        };
+
+        const app = {
+            currentLang: 'en',
+            isMobileMenuOpen: false,
+
+            init() {
+                this.renderNav();
+                this.renderFooter();
+                this.updateStaticText();
+                this.setLanguage(this.currentLang); // Ensure initial render is correct
+                runSimulation(); // Init Simulator logic
+                
+                window.onscroll = () => {
+                    const btn = document.getElementById('backToTopBtn');
+                    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                        btn.classList.remove('translate-y-20', 'opacity-0');
+                    } else {
+                        btn.classList.add('translate-y-20', 'opacity-0');
+                    }
+                };
+            },
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                
+                ['zh', 'en', 'ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+                    
+                    const activeClass = "text-black bg-gas-green shadow-glow font-bold";
+                    const inactiveClass = "text-gas-subtext hover:text-white hover:bg-white/5 font-medium";
+                    const mobActiveClass = "text-black bg-gas-green font-bold";
+                    const mobInactiveClass = "text-gray-400 font-medium";
+
+                    if (btn) btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center ${l === lang ? activeClass : inactiveClass}`;
+                    if (mobBtn) mobBtn.className = `px-4 py-2 rounded-full text-xs transition-all ${l === lang ? mobActiveClass : mobInactiveClass}`;
+                });
+
+                this.renderNav();
+                this.renderMobileNav();
+                this.renderFooter();
+                this.updateStaticText();
+                this.updateSimulatorText(); // Hook for Simulator
+            },
+
+            t(key) {
+                const dict = AppData.i18n[this.currentLang];
+                return (dict && dict[key]) ? dict[key] : key;
+            },
+
+            // ... (Mobile Menu Logic from uploaded file) ...
+            toggleMobileMenu() {
+                this.isMobileMenuOpen = !this.isMobileMenuOpen;
+                const menu = document.getElementById('mobile-menu-container');
+                const btnIcon = document.querySelector('#mobile-menu-btn i');
+                
+                if (this.isMobileMenuOpen) {
+                    menu.classList.remove('translate-x-full');
+                    btnIcon.classList.remove('fa-bars');
+                    btnIcon.classList.add('fa-xmark');
+                    document.body.style.overflow = 'hidden';
+                    this.renderMobileNav();
+                } else {
+                    menu.classList.add('translate-x-full');
+                    btnIcon.classList.remove('fa-xmark');
+                    btnIcon.classList.add('fa-bars');
+                    document.body.style.overflow = '';
+                }
+            },
+
+            toggleMobileSubmenu(id) {
+                const el = document.getElementById(id);
+                const icon = document.getElementById(`icon-${id}`);
+                
+                if (el.style.maxHeight) {
+                    el.style.maxHeight = null;
+                    icon.classList.remove('rotate-180');
+                } else {
+                    el.style.maxHeight = el.scrollHeight + "px";
+                    icon.classList.add('rotate-180');
+                }
+            },
+
+            toggleFooter(id) {
+                const el = document.getElementById(id);
+                const icon = document.getElementById(`footer-icon-${id}`);
+                
+                if (el.style.maxHeight) {
+                    el.style.maxHeight = null;
+                    icon.classList.remove('fa-minus');
+                    icon.classList.add('fa-plus');
+                    icon.classList.remove('text-gas-green');
+                } else {
+                    el.style.maxHeight = el.scrollHeight + "px";
+                    icon.classList.remove('fa-plus');
+                    icon.classList.add('fa-minus');
+                    icon.classList.add('text-gas-green');
+                }
+            },
+
+            renderNav() {
+                const navContainer = document.getElementById('desktop-nav');
+                navContainer.innerHTML = '';
+                const totalItems = AppData.navigation.length;
+
+                AppData.navigation.forEach((item, index) => {
+                    if (item.type === 'link') {
+                        navContainer.innerHTML += `
+                            <a href="${item.path}" class="nav-item-link font-medium text-sm">
+                                <span>${this.t(item.title)}</span>
+                            </a>
+                        `;
+                    }
+                    else if (item.type === 'menu' || item.type === 'mega') {
+                        let dropContent = '';
+                        let isMega = item.type === 'mega';
+                        
+                        const isRightAligned = index >= totalItems - 3;
+                        const posClass = isRightAligned ? 'right-0' : 'left-0';
+                        
+                        if (isMega) {
+                            const gridClass = item.gridCols || 'grid-cols-5';
+                            const sectionsHtml = item.sections.map((section, idx) => {
+                                const isLast = idx === item.sections.length - 1;
+                                const borderClass = isLast ? '' : 'border-r border-white/5';
+                                const itemsHtml = section.items.map(subItem => `
+                                    <li class="mb-2">
+                                        <a href="${subItem.path}" class="text-gray-400 hover:text-gas-green text-xs flex items-center gap-2 transition-colors">
+                                            <i class="fa-solid fa-angle-right text-[10px] opacity-50"></i>
+                                            ${this.t(subItem.title)}
+                                        </a>
+                                    </li>
+                                `).join('');
+                                return `<div class="col-span-1 space-y-4 ${borderClass} px-2">
+                                            <h3 class="text-gas-green font-bold text-sm uppercase tracking-wider mb-3 border-b border-white/5 pb-2">${this.t(section.header)}</h3>
+                                            <ul>${itemsHtml}</ul>
+                                        </div>`;
+                            }).join('');
+                            dropContent = `<div class="mega-menu"><div class="max-w-[1800px] mx-auto px-4 grid ${gridClass} gap-6">${sectionsHtml}</div></div>`;
+                        } else {
+                            const childrenHtml = item.children.map(child => `
+                                <a href="${child.path}" class="block px-4 py-2 text-sm text-gray-400 hover:text-gas-green hover:bg-white/5 whitespace-nowrap">${this.t(child.title)}</a>
+                            `).join('');
+                            dropContent = `<div class="dropdown-menu ${posClass}">${childrenHtml}</div>`;
+                        }
+
+                        const parentPos = isMega ? '' : 'relative';
+
+                        navContainer.innerHTML += `
+                            <div class="group h-full flex items-center cursor-pointer ${parentPos}">
+                                <span class="nav-item-link font-medium text-sm">
+                                    <span>${this.t(item.title)}</span> <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
+                                </span>
+                                ${dropContent}
+                            </div>
+                        `;
+                    }
+                });
+            },
+
+            renderMobileNav() {
+                const container = document.getElementById('mobile-nav-content');
+                container.innerHTML = '';
+                
+                AppData.navigation.forEach((item, index) => {
+                    if (item.type === 'link') {
+                        container.innerHTML += `
+                            <a href="${item.path}" class="block py-4 border-b border-white/10 text-lg font-medium hover:text-gas-green">
+                                ${this.t(item.title)}
+                            </a>
+                        `;
+                    } else {
+                        const subId = `mob-sub-${index}`;
+                        let subItemsHtml = '';
+                        
+                        if (item.type === 'menu') {
+                            subItemsHtml = item.children.map(child => `
+                                <a href="${child.path}" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">
+                                    ${this.t(child.title)}
+                                </a>
+                            `).join('');
+                        } else if (item.type === 'mega') {
+                            subItemsHtml = item.sections.map(sec => `
+                                <div class="py-2">
+                                    <h4 class="text-gas-green text-xs font-bold uppercase mb-2 pl-4">${this.t(sec.header)}</h4>
+                                    ${sec.items.map(sub => `
+                                        <a href="${sub.path}" class="block py-2 pl-6 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">
+                                            ${this.t(sub.title)}
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            `).join('');
+                        }
+
+                        container.innerHTML += `
+                            <div class="border-b border-white/10">
+                                <button onclick="app.toggleMobileSubmenu('${subId}')" class="w-full py-4 flex justify-between items-center text-lg font-medium hover:text-gas-green focus:outline-none">
+                                    <span>${this.t(item.title)}</span>
+                                    <i id="icon-${subId}" class="fa-solid fa-chevron-down text-sm transition-transform duration-300"></i>
+                                </button>
+                                <div id="${subId}" class="mobile-submenu">
+                                    <div class="pb-4 space-y-1">
+                                        ${subItemsHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            },
+
+            renderFooter() {
+                const footerContainer = document.getElementById('footer-links');
+                footerContainer.innerHTML = '';
+
+                AppData.navigation.forEach((item, idx) => {
+                    if (item.title === '首页') return;
+
+                    let contentHtml = '';
+                    let desktopContentHtml = '';
+                    const footerSubId = `footer-sub-${idx}`;
+
+                    if (item.type === 'menu') {
+                        const links = item.children.map(child => `
+                            <a href="${child.path}" class="footer-link hover:text-gas-green text-gray-400 mr-4 mb-2 inline-block">
+                                ${this.t(child.title)}
+                            </a>
+                        `).join('');
+                        contentHtml = `<div class="flex flex-wrap">${links}</div>`;
+                    } 
+                    else if (item.type === 'mega') {
+                        const desktopSections = item.sections.map(section => {
+                            const secTitle = this.t(section.header);
+                            const secLinks = section.items.map(sub => `
+                                <a href="${sub.path}" class="hover:text-gas-green text-gray-400 ml-2 text-xs">
+                                    ${this.t(sub.title)}
+                                </a>
+                            `).join('<span class="text-gray-700 mx-1">|</span>');
+                            
+                            return `
+                                <div class="flex items-baseline mr-6 mb-2">
+                                    <span class="text-gas-green text-xs font-bold uppercase mr-1 whitespace-nowrap">${secTitle}:</span>
+                                    <div class="flex flex-wrap">${secLinks}</div>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        const mobileLinks = item.sections.map(sec => 
+                            sec.items.map(sub => 
+                                `<a href="${sub.path}" class="footer-link block pl-2 border-l border-white/10 hover:border-gas-green mb-1">${this.t(sub.title)}</a>`
+                            ).join('')
+                        ).join('');
+
+                        contentHtml = `<div class="flex flex-col">${mobileLinks}</div>`; 
+                        desktopContentHtml = `<div class="flex flex-wrap items-center">${desktopSections}</div>`;
+                    }
+
+                    const finalDesktopHtml = desktopContentHtml || contentHtml;
+
+                    footerContainer.innerHTML += `
+                        <div class="w-full border-b border-white/5 last:border-0">
+                            <div class="hidden md:flex py-4 items-start">
+                                <div class="w-32 lg:w-48 shrink-0">
+                                    <h4 class="text-white font-bold text-sm border-l-2 border-gas-green pl-3">
+                                        ${this.t(item.title)}
+                                    </h4>
+                                </div>
+                                <div class="flex-1">
+                                    ${finalDesktopHtml}
+                                </div>
+                            </div>
+
+                            <div class="md:hidden">
+                                <button onclick="app.toggleFooter('${footerSubId}')" class="w-full flex justify-between items-center py-3 text-sm font-bold text-white focus:outline-none">
+                                    <span class="border-l-2 border-gas-green pl-3">${this.t(item.title)}</span>
+                                    <i id="footer-icon-${footerSubId}" class="fa-solid fa-plus text-xs text-gray-500 transition-transform duration-300"></i>
+                                </button>
+                                <div id="${footerSubId}" class="footer-accordion-content">
+                                    <div class="pt-2 pl-4 pb-4 text-gray-400">
+                                        ${contentHtml} 
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            },
+
+            captureAndShare() {
+                window.scrollTo(0, 0);
+
+                const watermark = document.createElement('div');
+                watermark.id = 'temp-watermark';
+                Object.assign(watermark.style, {
+                    position: 'absolute', top: 0, left: 0, width: '100%', height: document.body.scrollHeight + 'px',
+                    zIndex: 9999, pointerEvents: 'none', display: 'flex', flexWrap: 'wrap', 
+                    alignContent: 'space-around', justifyContent: 'space-around', overflow: 'hidden', opacity: '0.15'
+                });
+
+                const textHtml = `<div style="text-align:center; transform: rotate(-30deg); margin: 100px;">
+                                    <div style="font-size: 24px; font-weight: bold; color: #5DD62C;">www.gasgx.com</div>
+                                    <div style="font-size: 16px; color: #fff;">Natural Gas Power Mining Assistant</div>
+                                  </div>`;
+                
+                const count = Math.ceil(document.body.scrollHeight / 400) * 3;
+                watermark.innerHTML = textHtml.repeat(count);
+                document.body.appendChild(watermark);
+
+                setTimeout(() => {
+                    html2canvas(document.body, {
+                        backgroundColor: '#0F0F0F',
+                        scrollY: 0,
+                        useCORS: true,
+                        scale: 2
+                    }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = 'GasGx-Page-Capture.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        document.body.removeChild(watermark);
+                        
+                        const modal = document.getElementById('shareModal');
+                        modal.classList.remove('hidden');
+                        setTimeout(() => modal.querySelector('div').classList.remove('scale-95', 'opacity-0'), 10);
+                    }).catch(err => {
+                        console.error(err);
+                        if(document.getElementById('temp-watermark')) document.body.removeChild(watermark);
+                        alert('Capture failed.');
+                    });
+                }, 500);
+            },
+
+            closeModal() {
+                const modal = document.getElementById('shareModal');
+                const content = modal.querySelector('div');
+                content.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            },
+
+            updateStaticText() {
+                const taglineEl = document.getElementById('header-tagline');
+                const footerTaglineEl = document.querySelector('[data-i18n="footerTagline"]');
+                
+                if(taglineEl) taglineEl.innerText = this.t('tagline');
+                if(footerTaglineEl) footerTaglineEl.innerText = this.t('footerTagline');
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (key !== 'tagline' && key !== 'footerTagline') { 
+                        el.innerText = this.t(key);
+                    }
+                });
+            },
+
+            // --- Simulator Translation Sync ---
+            updateSimulatorText() {
+                const map = {
+                    'simPageTitle': 'simPageTitle',
+                    'labelRange': 'labelRange',
+                    'labelFloor': 'labelFloor',
+                    'labelCap': 'labelCap',
+                    'labelAdder': 'labelAdder',
+                    'btnCalculate': 'btnCalculate',
+                    'titleProjection': 'titleProjection',
+                    'labelEstPrice': 'labelEstPrice',
+                    'labelHistAvg': 'labelHistAvg',
+                    'labelFloorHit': 'labelFloorHit',
+                    'subFloorHit': 'subFloorHit',
+                    'labelCapHit': 'labelCapHit',
+                    'subCapHit': 'subCapHit',
+                    'labelRangeStat': 'labelRangeStat',
+                    'legRaw': 'legRaw',
+                    'legFinal': 'legFinal',
+                    'legLimit': 'legLimit',
+                    'analysisTitle': 'analysisTitle',
+                    'analysisHistTitle': 'analysisHistTitle',
+                    'analysisHistText': 'analysisHistText',
+                    'analysisFutTitle': 'analysisFutTitle',
+                    'analysisFutText': 'analysisFutText'
+                };
+
+                for (const [id, key] of Object.entries(map)) {
+                    const el = document.getElementById(id);
+                    if (el) el.innerText = this.t(key);
+                }
+
+                // Complex HTML replacements
+                const desc = document.getElementById('descProjection');
+                if (desc) desc.innerHTML = this.t('descProjection').replace('30Y', `<span id="periodLabel" class="text-gas-green font-bold">${currentRangeYears}Y</span>`);
+                
+                const chartT = document.getElementById('chartTitle');
+                if (chartT) chartT.innerHTML = `<span class="w-2 h-6 bg-gas-green rounded-sm"></span> ${this.t('chartTitle')}`;
+                
+                const rangeLabel = document.getElementById('labelRange');
+                if (rangeLabel) rangeLabel.innerText = "📅 " + this.t('labelRange') + ":";
+            }
+        };
+
+        // Start
+        app.init();
+    </script>
+</body>
+</html>
