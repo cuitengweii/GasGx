@@ -2,7 +2,7 @@
 <html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GasGx - Natural Gas Power Mining</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,7 +27,6 @@
                             darkGreen: '#337418',
                             text: '#F8F8F8',    
                             subtext: '#94a3b8',
-                            // Map Specific Colors
                             legal: '#5DD62C', 
                             grey: '#9ca3af',  
                             illegal: '#ef4444', 
@@ -64,10 +63,11 @@
             background-color: #0F0F0F;
             color: #F8F8F8;
             font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
+            overflow: hidden; /* 防止body滚动，由内部容器接管 */
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            height: 100vh;
+            width: 100vw;
         }
 
         /* 滚动条 */
@@ -137,8 +137,28 @@
         .icon-lightning { filter: drop-shadow(0 0 4px #5DD62C); animation: pulseFlash 3s infinite; }
         @keyframes spinReverse { from {transform: rotate(360deg);} to {transform: rotate(0deg);} }
         @keyframes pulseFlash { 0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 2px #5DD62C); } 50% { opacity: 1; filter: drop-shadow(0 0 8px #fff); } }
-        .map-info-box { position: absolute; pointer-events: none; background: rgba(10, 15, 20, 0.85); border: 1px solid rgba(93, 214, 44, 0.4); border-left: 3px solid #5DD62C; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 14px 18px; border-radius: 4px; font-size: 11px; color: #fff; box-shadow: 0 10px 40px rgba(0,0,0,0.8); z-index: 150; opacity: 0; transition: opacity 0.3s ease, top 0.4s cubic-bezier(0.16, 1, 0.3, 1), left 0.4s cubic-bezier(0.16, 1, 0.3, 1); width: 320px; }
+        
+        /* Map Info Box Styles */
+        .map-info-box { 
+            position: absolute; 
+            pointer-events: none; 
+            background: rgba(10, 15, 20, 0.85); 
+            border: 1px solid rgba(93, 214, 44, 0.4); 
+            border-left: 3px solid #5DD62C; 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px); 
+            padding: 14px 18px; 
+            border-radius: 4px; 
+            font-size: 11px; 
+            color: #fff; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
+            z-index: 150; 
+            opacity: 0; 
+            transition: opacity 0.3s ease, top 0.4s cubic-bezier(0.16, 1, 0.3, 1), left 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+            width: 320px; 
+        }
         .map-info-box.active { opacity: 1; pointer-events: auto; }
+        
         #detail-modal { z-index: 200; transition: opacity 0.3s ease; }
         #detail-modal.hidden { pointer-events: none; opacity: 0; }
         #detail-modal:not(.hidden) { pointer-events: auto; opacity: 1; }
@@ -155,7 +175,7 @@
         .text-rank-3 { color: #CD7F32; text-shadow: 0 0 5px rgba(205, 127, 50, 0.5); }
     </style>
 </head>
-<body class="flex flex-col min-h-screen relative">
+<body class="flex flex-col h-screen relative bg-[#0F0F0F] overflow-hidden">
 
     <header class="fixed top-0 w-full z-50 gas-card h-16 transition-all duration-300">
         <div class="max-w-[1800px] mx-auto px-4 h-full flex justify-between items-center relative">
@@ -168,8 +188,8 @@
                 </div>
             </div>
 
-            <nav id="desktop-nav" class="hidden lg:flex items-center justify-center gap-2 xl:gap-6 h-full flex-1">
-                </nav>
+            <nav id="desktop-nav" class="hidden xl:flex items-center justify-center gap-2 xl:gap-6 h-full flex-1">
+            </nav>
 
             <div class="flex items-center gap-4 w-auto shrink-0 justify-end ml-4">
                 <div class="hidden md:flex relative items-center">
@@ -202,14 +222,14 @@
                     <button onclick="window.app.setLanguage('ru')" id="btn-lang-ru" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">RU</button>
                 </div>
 
-                <button id="mobile-menu-btn" onclick="window.app.toggleMobileMenu()" class="lg:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative">
+                <button id="mobile-menu-btn" onclick="window.app.toggleMobileMenu()" class="xl:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative">
                     <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <div id="mobile-menu-container" class="fixed inset-0 z-40 bg-[#111] transform translate-x-full pt-20 px-4 pb-8 overflow-y-auto lg:hidden">
+    <div id="mobile-menu-container" class="fixed inset-0 z-40 bg-[#111] transform translate-x-full pt-20 px-4 pb-8 overflow-y-auto xl:hidden">
         <div class="flex justify-center gap-4 mb-6 border-b border-white/10 pb-4">
             <div class="flex items-center gap-2 bg-[#222] border border-white/10 rounded-full px-1 py-1">
                 <button onclick="window.app.setLanguage('zh')" id="mob-btn-lang-zh" class="px-4 py-2 rounded-full text-xs font-bold transition-all text-gray-400">CN</button>
@@ -238,25 +258,25 @@
         <nav id="mobile-nav-content" class="flex flex-col space-y-1"></nav>
     </div>
 
-    <main class="flex-grow pt-16 w-full relative h-[100vh] flex flex-col overflow-hidden">
-        <div class="relative w-full flex-grow flex flex-col md:flex-row bg-[#000] overflow-hidden">
+    <main class="flex-grow mt-16 w-full relative h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+        <div class="relative w-full flex-grow flex flex-col md:flex-row bg-[#000] overflow-hidden h-full">
             
-            <div class="w-full md:w-[220px] h-[30%] md:h-full bg-[#0a0a0a] border-r border-white/10 flex flex-col relative z-20 shrink-0 shadow-2xl">
-                <div class="p-3 border-b border-white/5 bg-[#121212] flex justify-center">
+            <div class="w-full md:w-[260px] lg:w-[280px] h-[35%] md:h-full bg-[#0a0a0a] border-r border-white/10 flex flex-col relative z-20 shrink-0 shadow-2xl">
+                <div class="p-3 border-b border-white/5 bg-[#121212] flex justify-center shrink-0">
                     <h2 class="text-gas-green font-bold text-[10px] uppercase tracking-widest flex items-center gap-1">
                         <i class="fa-solid fa-trophy"></i>
                         <span data-i18n="top_producers">Total Score Ranking</span>
                     </h2>
                 </div>
-                <div id="country-list" class="flex-1 p-1 space-y-0.5 overflow-y-auto custom-scrollbar bg-[#080808]"></div>
-                <div class="p-2 border-t border-white/5 bg-[#050505] text-[9px] text-gray-500 flex flex-col gap-1.5 pl-3 pb-3">
+                <div id="country-list" class="flex-1 min-h-0 p-1 space-y-0.5 overflow-y-auto custom-scrollbar bg-[#080808]"></div>
+                <div class="p-2 border-t border-white/5 bg-[#050505] text-[9px] text-gray-500 flex flex-col gap-1.5 pl-3 pb-3 shrink-0">
                     <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm bg-gas-legal shadow-[0_0_5px_#5DD62C]"></div> <span data-i18n="legend_legal">Legal / High Score</span></div>
                     <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm bg-gas-grey"></div> <span data-i18n="legend_restricted">Restricted</span></div>
                     <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm bg-gas-illegal"></div> <span data-i18n="legend_banned">Banned</span></div>
                 </div>
             </div>
 
-            <div class="flex-1 h-[70%] md:h-full relative bg-[#000] overflow-hidden">
+            <div class="flex-1 h-[65%] md:h-full relative bg-[#000] overflow-hidden">
                 <div id="map-container" class="w-full h-full">
                     <canvas id="starfield"></canvas>
                     <svg id="hud-layer" style="position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 50;"></svg>
@@ -280,41 +300,18 @@
                         <div class="text-lg font-bold text-white font-mono">25+ <span class="text-[10px] text-gas-green" data-i18n="countries_label">Countries</span></div>
                     </div>
                 </div>
-                <div class="absolute bottom-4 left-4 text-[9px] text-gray-600 pointer-events-none md:left-[240px] z-50">
+                <div class="absolute bottom-4 left-4 text-[9px] text-gray-600 pointer-events-none md:left-4 z-50">
                     <i class="fa-solid fa-hand-pointer mr-1"></i> <span data-i18n="drag_to_rotate">Drag to Rotate</span>
                 </div>
             </div>
         </div>
     </main>
 
-    <footer class="bg-[#0a0a0a] border-t border-white/10 mt-auto pt-10 pb-8 relative z-10">
-        <div class="max-w-[1800px] mx-auto px-6">
-            <div class="flex flex-col md:flex-row justify-between items-start mb-8 pb-6 border-b border-white/5">
-                <div class="mb-6 md:mb-0">
-                    <div class="flex items-center gap-2 mb-2"><span class="text-2xl font-bold text-gas-green">GasGx</span></div>
-                    <p class="text-sm text-gray-400 font-medium" data-i18n="footerTagline">Making natural gas power mining easier</p>
-                </div>
-                <div class="flex flex-col md:items-end space-y-2">
-                    <h4 class="text-white font-bold text-sm uppercase tracking-wider mb-1" data-i18n="联系我们">Contact Us</h4>
-                    <a href="mailto:contact@gasgx.com" class="text-sm text-gray-400 hover:text-gas-green flex items-center gap-2 transition-colors"><i class="fa-solid fa-envelope"></i> contact@gasgx.com</a>
-                    <div class="text-sm text-gray-400 flex items-center gap-2"><i class="fa-brands fa-weixin"></i> <span class="hover:text-gas-green cursor-pointer">www_gasgx_com</span></div>
-                </div>
-            </div>
-            <div id="footer-links" class="mb-10 space-y-2"></div>
-            <div class="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-white/5">
-                <div class="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-600">
-                    <span>© 2026 GasGx. All rights reserved.</span><span class="hidden sm:inline text-gray-700">|</span>
-                    <a href="/about/app_privacy_policy.html" target="_blank" class="hover:text-gas-green transition-colors flex items-center gap-1"><i class="fa-solid fa-shield-halved text-[10px]"></i><span data-i18n="privacy_policy">Privacy Policy</span></a>
-                </div>
-                <div class="flex gap-4">
-                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-tiktok text-lg"></i></a>
-                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-linkedin text-lg"></i></a>
-                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-facebook text-lg"></i></a>
-                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-x-twitter text-lg"></i></a>
-                </div>
-            </div>
-        </div>
-    </footer>
+    <div class="hidden">
+        <footer class="bg-[#0a0a0a] border-t border-white/10 mt-auto pt-10 pb-8 relative z-10">
+             <div id="footer-links" class="mb-10 space-y-2"></div>
+        </footer>
+    </div>
 
     <button onclick="window.app.captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group">
         <i class="fa-solid fa-camera text-xl"></i>
@@ -670,17 +667,67 @@
                 this.startRotation();
             },
             updateInfoBox() {
-                if (!this.activeData) return; const infoBox = document.getElementById('map-info-box'); const hudLayer = document.getElementById('hud-layer'); while (hudLayer.firstChild) hudLayer.removeChild(hudLayer.firstChild);
-                const data = this.activeData.data; const color = AppData.statusColors[data.status]; const cx = this.width / 2; const cy = this.height / 2 + 50; const centroid = d3.geoCentroid(this.activeData.geo); const airPos = this.projectionAir(centroid); const dist = d3.geoDistance(centroid, this.projectionAir.invert([cx, cy]));
-                if (dist > 1.57 || !airPos) { infoBox.style.opacity = 0; infoBox.style.pointerEvents = 'none'; return; } 
+                if (!this.activeData) return; 
+                const infoBox = document.getElementById('map-info-box'); 
+                const hudLayer = document.getElementById('hud-layer'); 
+                while (hudLayer.firstChild) hudLayer.removeChild(hudLayer.firstChild);
+                
+                const data = this.activeData.data; 
+                const color = AppData.statusColors[data.status]; 
+                
                 const generateStars = (score) => { let html = ''; for(let i=0; i<5; i++) { const active = i < Math.floor(score); html += `<svg class="btc-star ${active?'':'inactive'}" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`; } return html; };
                 let dimHtml = ''; data.dims.forEach((score, idx) => { dimHtml += `<div class="dim-row"><span>${this.getText(DIMENSION_DEFS[idx])}</span><div class="dim-stars">${generateStars(score)}</div></div>`; });
                 infoBox.innerHTML = `<div class="flex items-center justify-between mb-3 pb-2 border-b" style="border-color:${color}50"><div class="font-bold text-white text-sm uppercase tracking-wider">${this.getName(data)}</div><div class="text-xs font-mono font-bold" style="color:${color}">Score: ${data.score}</div></div><div class="mb-3 flex justify-between items-center bg-white/5 p-2 rounded border border-white/5"><div class="flex-1 mr-2"><div class="text-[10px] text-gray-400 mb-0.5">${this.t('policy_status')}</div><div class="text-xs font-bold text-white flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full" style="background:${color}"></div>${this.getText(data.mining)}</div></div><button onclick="window.app.openDetailModal('${data.en}')" class="shrink-0 px-2 py-1.5 bg-gas-green hover:bg-white text-black text-[10px] font-bold rounded transition-colors flex items-center gap-1 pointer-events-auto h-auto whitespace-normal leading-tight text-left max-w-[120px]" style="cursor: pointer;"><i class="fa-solid fa-file-lines"></i> ${this.t('analysis_10')}</button></div><div class="mb-3 space-y-1 text-xs"><div class="flex justify-between"><span class="text-gray-400">${this.t('gas_production')}:</span> <span class="text-white font-mono">${data.vol} Bcm</span></div></div><div class="pt-2 border-t border-white/10">${dimHtml}</div>`;
-                const isRight = airPos[0] > cx; const boxWidth = 320; let boxX = isRight ? (cx + this.projection.scale() + 40) : (cx - this.projection.scale() - 40 - boxWidth); if (boxX < 10) boxX = 10; if (boxX + boxWidth > this.width - 10) boxX = this.width - boxWidth - 10; let boxY = airPos[1] - 100; if (boxY > this.height - 370) boxY = this.height - 370; else if (boxY < 80) boxY = 80;
-                infoBox.style.borderColor = color; infoBox.style.left = boxX + 'px'; infoBox.style.top = boxY + 'px'; infoBox.classList.add('active'); infoBox.style.opacity = 1;
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'path'); let connectY = boxY + 60; if (boxY < airPos[1] - 100) connectY = boxY + 290;
-                const pathD = `M ${airPos[0]} ${airPos[1]} L ${(airPos[0] + (isRight?boxX:boxX+boxWidth))/2} ${airPos[1]} L ${(airPos[0] + (isRight?boxX:boxX+boxWidth))/2} ${connectY} L ${isRight?boxX:boxX+boxWidth} ${connectY}`;
-                line.setAttribute('d', pathD); line.setAttribute('stroke', color); line.setAttribute('stroke-width', '1.5'); line.setAttribute('fill', 'none'); line.setAttribute('filter', 'url(#line-glow)'); hudLayer.appendChild(line); const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); dot.setAttribute('cx', airPos[0]); dot.setAttribute('cy', airPos[1]); dot.setAttribute('r', '3'); dot.setAttribute('fill', '#fff'); hudLayer.appendChild(dot);
+                
+                // --- FIX: Responsive Positioning ---
+                const isMobile = this.width < 768;
+                
+                if (isMobile) {
+                    // Mobile: Fixed at bottom, full width
+                    infoBox.style.width = '94%';
+                    infoBox.style.left = '3%';
+                    infoBox.style.top = 'auto';
+                    infoBox.style.bottom = '10px';
+                    infoBox.style.transform = 'none';
+                    // No lines on mobile
+                } else {
+                    // Desktop: Relative to Globe
+                    const cx = this.width / 2; 
+                    const cy = this.height / 2 + 50; 
+                    const centroid = d3.geoCentroid(this.activeData.geo); 
+                    const airPos = this.projectionAir(centroid); 
+                    
+                    const dist = d3.geoDistance(centroid, this.projectionAir.invert([cx, cy]));
+                    if (dist > 1.57 || !airPos) { infoBox.style.opacity = 0; infoBox.style.pointerEvents = 'none'; return; } 
+
+                    const boxWidth = 320; 
+                    infoBox.style.width = boxWidth + 'px';
+                    infoBox.style.bottom = 'auto';
+
+                    const isRight = airPos[0] > cx; 
+                    let boxX = isRight ? (cx + this.projection.scale() + 40) : (cx - this.projection.scale() - 40 - boxWidth); 
+                    
+                    // Desktop Edge Clamping
+                    if (boxX < 10) boxX = 10; 
+                    if (boxX + boxWidth > this.width - 10) boxX = this.width - boxWidth - 10; 
+                    
+                    let boxY = airPos[1] - 100; 
+                    if (boxY > this.height - 300) boxY = this.height - 300; 
+                    else if (boxY < 80) boxY = 80;
+                    
+                    infoBox.style.left = boxX + 'px'; 
+                    infoBox.style.top = boxY + 'px';
+
+                    // Draw connecting line (Desktop only)
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'path'); 
+                    let connectY = boxY + 60; if (boxY < airPos[1] - 100) connectY = boxY + 290;
+                    const pathD = `M ${airPos[0]} ${airPos[1]} L ${(airPos[0] + (isRight?boxX:boxX+boxWidth))/2} ${airPos[1]} L ${(airPos[0] + (isRight?boxX:boxX+boxWidth))/2} ${connectY} L ${isRight?boxX:boxX+boxWidth} ${connectY}`;
+                    line.setAttribute('d', pathD); line.setAttribute('stroke', color); line.setAttribute('stroke-width', '1.5'); line.setAttribute('fill', 'none'); line.setAttribute('filter', 'url(#line-glow)'); hudLayer.appendChild(line); const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); dot.setAttribute('cx', airPos[0]); dot.setAttribute('cy', airPos[1]); dot.setAttribute('r', '3'); dot.setAttribute('fill', '#fff'); hudLayer.appendChild(dot);
+                }
+                
+                infoBox.style.borderColor = color; 
+                infoBox.classList.add('active'); 
+                infoBox.style.opacity = 1;
             },
             openDetailModal(countryName) {
                 const data = GAS_DATA.find(d => d.en === countryName); if(!data) return;
@@ -694,15 +741,26 @@
                 this.width = container.clientWidth; this.height = container.clientHeight;
                 this.svg = d3.select("#map-container").append("svg").attr("width", this.width).attr("height", this.height).style("position", "absolute");
                 this.svg.on("click", () => this.resetMap());
-                this.projection = d3.geoOrthographic().scale(this.height / 2.2).translate([this.width / 2, this.height / 2 + 50]).rotate([100, -40]).clipAngle(90);
-                this.projectionAir = d3.geoOrthographic().scale(this.height / 2.2 * 1.35).translate([this.width / 2, this.height / 2 + 50]).rotate([100, -40]).clipAngle(90);
+                
+                // --- FIX: Responsive Globe Scaling ---
+                const isMobile = this.width < 768;
+                // Use minimum dimension to ensure globe fits on narrow screens
+                const baseSize = Math.min(this.width, this.height);
+                // Smaller scale on mobile (0.42), Standard on Desktop (height/2.2)
+                const globeScale = isMobile ? (baseSize * 0.42) : (this.height / 2.2);
+                const globeCenterY = this.height / 2 + (isMobile ? 0 : 50);
+
+                this.projection = d3.geoOrthographic().scale(globeScale).translate([this.width / 2, globeCenterY]).rotate([100, -40]).clipAngle(90);
+                this.projectionAir = d3.geoOrthographic().scale(globeScale * 1.35).translate([this.width / 2, globeCenterY]).rotate([100, -40]).clipAngle(90);
+                
                 this.geoGenerator = d3.geoPath().projection(this.projection);
                 this.createStarfield();
                 try {
                     const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
                     this.countries = topojson.feature(world, world.objects.countries).features;
                     loading.style.display = 'none';
-                    this.svg.append("circle").attr("cx", this.width/2).attr("cy", this.height/2 + 50).attr("r", this.height/2.2 * 1.25).attr("class", "globe-halo");
+                    // Update halo size to match new scale
+                    this.svg.append("circle").attr("cx", this.width/2).attr("cy", globeCenterY).attr("r", globeScale * 1.25).attr("class", "globe-halo");
                     this.svg.append("path").datum({type: "Sphere"}).attr("class", "globe-sphere").attr("d", this.geoGenerator);
                     const g = this.svg.append("g");
                     g.selectAll("path").data(this.countries).enter().append("path").attr("d", this.geoGenerator).attr("class", "country").attr("id", d => `country-${d.properties.name.replace(/\s+/g, '-')}`)
@@ -738,8 +796,14 @@
                 if(!this.svg) return;
                 this.svg.selectAll("path.country").attr("d", this.geoGenerator); this.drawStars(this.projection.rotate()); const self = this;
                 this.svg.selectAll(".country-label").text(function(d) { return self.getName(d3.select(this.parentNode).datum().data); });
+                
+                // Update Halo position
+                const isMobile = this.width < 768;
+                const globeCenterY = this.height / 2 + (isMobile ? 0 : 50);
+                this.svg.select(".globe-halo").attr("cy", globeCenterY);
+
                 this.svg.selectAll(".btc-icon-group").each(function(d) {
-                    const center = window.app.projection.invert([window.app.width/2, window.app.height/2 + 50]); 
+                    const center = window.app.projection.invert([window.app.width/2, globeCenterY]); 
                     const geoAngle = d3.geoDistance(d.coordinates, center);
                     if (geoAngle > 1.57) { d3.select(this).style("display", "none"); } 
                     else {
