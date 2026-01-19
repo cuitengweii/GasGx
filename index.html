@@ -189,7 +189,8 @@
             #hud-layer { display: none; }
         }
 
-        #detail-modal { z-index: 200; transition: opacity 0.3s ease; }
+        /* 将 z-index 改为 350，使其高于 header 的 300 */
+        #detail-modal { z-index: 350; transition: opacity 0.3s ease; }
         #detail-modal.hidden { pointer-events: none; opacity: 0; }
         #detail-modal:not(.hidden) { pointer-events: auto; opacity: 1; }
         
@@ -216,11 +217,11 @@
                     <h1 class="text-xl md:text-2xl font-bold tracking-wider text-gas-green hover:text-white transition-colors cursor-pointer">GasGx</h1>
                 </a>
                 <div class="flex flex-col justify-center border-l border-gray-700 pl-2 md:pl-3 h-6 md:h-8">
-                    <span id="header-tagline" class="hidden 2xl:block text-gas-green text-[10px] md:text-xs font-bold tracking-wide leading-tight">Natural Gas Power Mining Assistant</span>
+                    <span id="header-tagline" class="block text-gas-green text-[8px] sm:text-[10px] md:text-xs font-bold tracking-wide leading-tight">Natural Gas Power Mining Assistant</span>
                 </div>
             </div>
 
-            <nav id="desktop-nav" class="hidden lg:flex items-center justify-center gap-1 xl:gap-2 2xl:gap-6 h-full flex-1">
+            <nav id="desktop-nav" class="hidden 2xl:flex items-center justify-center gap-1 xl:gap-2 2xl:gap-6 h-full flex-1">
             </nav>
 
             <div class="flex items-center gap-2 xl:gap-4 w-auto shrink-0 justify-end ml-2 xl:ml-4">
@@ -254,14 +255,14 @@
                     <button onclick="window.app.setLanguage('ru')" id="btn-lang-ru" class="px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext">RU</button>
                 </div>
 
-                <button id="mobile-menu-btn" onclick="window.app.toggleMobileMenu()" class="lg:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative">
+                <button id="mobile-menu-btn" onclick="window.app.toggleMobileMenu()" class="2xl:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative">
                     <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <div id="mobile-menu-container" class="fixed inset-0 z-40 bg-[#111] transform translate-x-full pt-20 px-4 pb-8 overflow-y-auto lg:hidden">
+    <div id="mobile-menu-container" class="fixed inset-0 z-[250] bg-[#111] transform translate-x-full pt-20 px-4 pb-8 overflow-y-auto xl:hidden">
         <div class="flex justify-center gap-4 mb-6 border-b border-white/10 pb-4">
             <div class="flex items-center gap-2 bg-[#222] border border-white/10 rounded-full px-1 py-1">
                 <button onclick="window.app.setLanguage('zh')" id="mob-btn-lang-zh" class="px-4 py-2 rounded-full text-xs font-bold transition-all text-gray-400">CN</button>
@@ -311,29 +312,29 @@
                         <div class="flex flex-col items-center gap-3"><i class="fa-solid fa-circle-notch fa-spin text-3xl text-gas-green"></i><span class="text-sm text-gray-400">Loading Mining Data...</span></div>
                     </div>
                 </div>
-                <div class="absolute top-4 right-4 flex gap-3 pointer-events-none z-10">
+                <div class="absolute top-6 right-6 flex gap-3 pointer-events-none z-10">
                     <div class="bg-black/80 backdrop-blur-md border border-gas-green/30 rounded-lg px-3 py-1.5 text-right shadow-[0_0_15px_rgba(93,214,44,0.1)]">
                         <div class="text-[9px] text-gray-400 uppercase tracking-wider" data-i18n="analysis_scope">Analysis Scope</div>
                         <div class="text-lg font-bold text-white font-mono">25+ <span class="text-[10px] text-gas-green" data-i18n="countries_label">Countries</span></div>
                     </div>
                 </div>
-                <div class="absolute bottom-20 left-4 text-[9px] text-gray-600 pointer-events-none md:left-[20px] md:bottom-4 z-10 transition-all duration-300" id="rotate-hint">
+                <div class="absolute bottom-20 left-4 text-[9px] text-gray-600 pointer-events-none xl:left-[20px] xl:bottom-4 z-10 transition-all duration-300" id="rotate-hint">
                     <i class="fa-solid fa-hand-pointer mr-1"></i> <span data-i18n="drag_to_rotate">Drag to Rotate</span>
                 </div>
             </div>
 
-            <div id="ranking-sidebar" class="absolute bottom-0 left-0 w-full md:static md:w-[280px] md:h-full bg-[#121212] md:bg-[#0a0a0a] border-t md:border-t-0 md:border-r border-white/10 flex flex-col z-[200] shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] rounded-t-2xl md:rounded-none transition-transform duration-300 transform translate-y-[calc(100%-45px)] md:translate-y-0 h-[60vh] md:h-auto md:order-first">
+            <div id="ranking-sidebar" class="absolute bottom-0 left-0 w-full xl:static xl:w-[280px] xl:h-full bg-[#121212] xl:bg-[#0a0a0a] border-t xl:border-t-0 xl:border-r border-white/10 flex flex-col z-[200] shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] rounded-t-2xl xl:rounded-none transition-transform duration-300 transform translate-y-[calc(100%-45px)] xl:translate-y-0 h-[60vh] xl:h-auto xl:order-first">
                 
-                <div id="mobile-drawer-handle" class="md:hidden w-full h-5 flex items-center justify-center cursor-pointer active:bg-white/5 pt-2" onclick="window.app.toggleDrawer()">
+                <div id="mobile-drawer-handle" class="xl:hidden w-full h-5 flex items-center justify-center cursor-pointer active:bg-white/5 pt-2" onclick="window.app.toggleDrawer()">
                     <div class="w-10 h-1 bg-gray-600 rounded-full"></div>
                 </div>
 
-                <div class="px-3 pb-2 md:py-3 border-b border-white/5 bg-[#121212] md:bg-[#121212] flex justify-between items-center cursor-pointer md:cursor-default" onclick="window.app.toggleDrawer()">
+                <div class="px-3 pb-2 xl:py-3 border-b border-white/5 bg-[#121212] xl:bg-[#121212] flex justify-between items-center cursor-pointer xl:cursor-default" onclick="window.app.toggleDrawer()">
                     <h2 class="text-gas-green font-bold text-[10px] uppercase tracking-widest flex items-center gap-1">
                         <i class="fa-solid fa-trophy"></i>
                         <span data-i18n="top_producers">Total Score Ranking</span>
                     </h2>
-                    <i id="drawer-icon" class="fa-solid fa-chevron-up text-gray-500 text-xs md:hidden transition-transform duration-300"></i>
+                    <i id="drawer-icon" class="fa-solid fa-chevron-up text-gray-500 text-xs xl:hidden transition-transform duration-300"></i>
                 </div>
 
                 <div id="country-list" class="flex-1 p-1 space-y-0.5 overflow-y-auto custom-scrollbar bg-[#080808]"></div>
@@ -377,12 +378,12 @@
         </div>
     </footer>
 
-    <button onclick="window.app.captureAndShare()" class="float-btn fixed right-6 bottom-24 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group">
-        <i class="fa-solid fa-camera text-xl"></i>
-    </button>
-    <button onclick="window.scrollTo({top:0, behavior:'smooth'})" id="backToTopBtn" class="fixed bottom-6 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-[0_0_15px_rgba(93,214,44,0.5)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer">
-        <i class="fa-solid fa-arrow-up"></i>
-    </button>
+    <button onclick="window.app.captureAndShare()" class="float-btn fixed right-6 bottom-40 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group">
+    <i class="fa-solid fa-camera text-xl"></i>
+</button>
+    <button onclick="window.scrollTo({top:0, behavior:'smooth'})" id="backToTopBtn" class="fixed bottom-24 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-[0_0_15px_rgba(93,214,44,0.5)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer">
+    <i class="fa-solid fa-arrow-up"></i>
+</button>
 
     <div id="detail-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 lg:p-8">
         <div class="bg-[#1a1a1a] border border-gas-green/50 w-full max-w-4xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative">
@@ -480,7 +481,7 @@
             { cn: "马来西亚", en: "Malaysia", ru: "Малайзия", status: "legal", score: 31, vol: 75.0, dims: [2,2,4,4,3,3,3,3,3,4], mining: { cn: "合法/受监管", en: "Legal/Regulated", ru: "Легально/Регулируется" }, pros: { cn: "合规环境较好。", en: "Good compliance environment.", ru: "Хорошая среда соответствия." }, cons: { cn: "热带气候需增加散热成本。", en: "Tropical climate increases cooling costs.", ru: "Тропический климат увеличивает затраты на охлаждение." }, advice: { cn: "适合布局，需优化散热方案。", en: "Suitable, optimize cooling.", ru: "Подходит, оптимизируйте охлаждение." } },
             { cn: "土库曼斯坦", en: "Turkmenistan", ru: "Туркменистан", status: "legal", score: 31, vol: 83.6, dims: [3,4,4,3,3,3,2,3,4,2], mining: { cn: "合法/受监管", en: "Legal/Regulated", ru: "Легально/Регулируется" }, pros: { cn: "资源丰富，成本低", en: "Rich resources, low cost", ru: "Богатые ресурсы, низкая стоимость" }, cons: { cn: "政策透明度低，市场准入难", en: "Low transparency, hard entry", ru: "Низкая прозрачность, трудный вход" }, advice: { cn: "适合有政府关系的投资者", en: "Need government connections", ru: "Требуются связи в правительстве" } },
             { cn: "泰国", en: "Thailand", ru: "Таиланд", status: "legal", score: 30, vol: 38.4, dims: [2,1,4,4,3,3,3,3,3,4], mining: { cn: "合法/受监管", en: "Legal/Regulated", ru: "Легально/Регулируется" }, pros: { cn: "政策逐渐明朗", en: "Policy clarifying", ru: "Политика проясняется" }, cons: { cn: "能源依赖进口，成本较高", en: "Import reliance, high cost", ru: "Зависимость от импорта, высокая стоимость" }, advice: { cn: "观望为主", en: "Wait and see", ru: "Подождите и посмотрите" } },
-            { cn: "阿联酋", en: "United Arab Emirates", ru: "ОАЭ", status: "legal", score: 29.5, vol: 62.9, dims: [2,2,4,5,3,1,3,3,3.5,3], mining: { cn: "合法/局部", en: "Legal/Partial", ru: "Легально/Частично" }, pros: { cn: "自贸区政策友好，资本充裕", en: "Friendly free zones, rich capital", ru: "Дружественные свободные зоны, богатый капитал" }, cons: { cn: "高温气候，散热成本极高", en: "Extreme heat, high cooling cost", ru: "Экстремальная жара, высокие затраты на охлаждение" }, advice: { cn: "适合液冷矿场项目", en: "Suitable for hydro cooling", ru: "Подходит для гидроохлаждения" } },
+            { cn: "阿联酋", en: "United Arab Emirates", ru: "ОАЭ", status: "legal", score: 29.5, vol: 62.9, dims: [2,2,4,5,3,1,3,3,3.5,3], mining: { cn: "合法/局部", en: "Legal/Partial", ru: "Легально/Частично" }, pros: { cn: "自贸区政策友好，资本充裕", en: "Friendly free zones, rich capital", ru: "Дружественные свободные зоны, богатый капитал" }, cons: { cn: "高温气候，散热成本极高", en: "Extreme heat, high cooling cost", ru: "Экстремальная жара, высокие затраты на охлаждение." }, advice: { cn: "适合液冷矿场项目", en: "Suitable for hydro cooling", ru: "Подходит для гидроохлаждения" } },
             { cn: "沙特阿拉伯", en: "Saudi Arabia", ru: "Саудовская Аравия", status: "grey", score: 29, vol: 114.0, dims: [3,3,3,4,3,1,3,2,4,3], mining: { cn: "合法/灰色地带", en: "Legal/Grey Area", ru: "Легально/Серая зона" }, pros: { cn: "能源极其廉价", en: "Extremely cheap energy", ru: "Чрезвычайно дешевая энергия" }, cons: { cn: "监管不明确，高温环境", en: "Unclear regs, high heat", ru: "Неясные правила, жара" }, advice: { cn: "等待政策进一步明朗", en: "Wait for clarity", ru: "Ждите ясности" } },
             { cn: "卡塔尔", en: "Qatar", ru: "Катар", status: "grey", score: 28.5, vol: 167.5, dims: [3,3,2,4,3,1,2,2,4.5,4], mining: { cn: "受限", en: "Restricted", ru: "Ограничено" }, pros: { cn: "LNG大国，能源无限", en: "LNG giant, unlimited energy", ru: "Гигант СПГ, неограниченная энергия" }, cons: { cn: "对加密货币持谨慎态度", en: "Cautious on crypto", ru: "Осторожно с криптовалютой" }, advice: { cn: "政策风险较大", en: "High policy risk", ru: "Высокий политический риск" } },
             { cn: "阿根廷", en: "Argentina", ru: "Аргентина", status: "legal", score: 28, vol: 41.2, dims: [2,2,4,3,2,3,3,3,3,3], mining: { cn: "合法/受监管", en: "Legal/Regulated", ru: "Легально/Регулируется" }, pros: { cn: "资源丰富", en: "Rich resources", ru: "Богатые ресурсы" }, cons: { cn: "经济通胀高", en: "High inflation", ru: "Высокая инфляция" }, advice: { cn: "需做足汇率对冲", en: "Hedge currency risk", ru: "Хеджируйте валютные риски" } },
@@ -613,7 +614,8 @@
             isDrawerOpen: false,
 
             toggleDrawer(forceState) {
-                if (window.innerWidth >= 768) return; // Disable on desktop
+                // MODIFICATION: Changed 768 to 1280 to match new breakpoint
+                if (window.innerWidth >= 1280) return; 
 
                 const sidebar = document.getElementById('ranking-sidebar');
                 const icon = document.getElementById('drawer-icon');
@@ -641,7 +643,8 @@
             handleListClick(name) {
                 this.highlightCountry(name, true);
                 // On mobile, auto close drawer after selection to see map
-                if (window.innerWidth < 768) {
+                // MODIFICATION: Changed 768 to 1280 to match new breakpoint
+                if (window.innerWidth < 1280) {
                     setTimeout(() => {
                         this.toggleDrawer(false);
                     }, 500);
@@ -718,12 +721,18 @@
             renderMobileNav() {
                 const container = document.getElementById('mobile-nav-content'); container.innerHTML = '';
                 AppData.navigation.forEach((item, index) => {
-                    if (item.type === 'link') { container.innerHTML += `<a href="${item.path}" class="block py-4 border-b border-white/10 text-lg font-medium hover:text-gas-green">${this.t(item.title)}</a>`; } 
+                    if (item.type === 'link') { 
+                        container.innerHTML += `<a href="${item.path}" class="block py-4 border-b border-white/10 text-lg font-medium text-white hover:text-gas-green">${this.t(item.title)}</a>`; 
+                    } 
                     else {
                         const subId = `mob-sub-${index}`; let subItemsHtml = '';
-                        if (item.type === 'menu') { subItemsHtml = item.children.map(child => `<a href="${child.path}" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">${this.t(child.title)}</a>`).join(''); } 
-                        else if (item.type === 'mega') { subItemsHtml = item.sections.map(sec => `<div class="py-2"><h4 class="text-gas-green text-xs font-bold uppercase mb-2 pl-4">${this.t(sec.header)}</h4>${sec.items.map(sub => `<a href="${sub.path}" class="block py-2 pl-6 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">${this.t(sub.title)}</a>`).join('')}</div>`).join(''); }
-                        container.innerHTML += `<div class="border-b border-white/10"><button onclick="window.app.toggleMobileSubmenu('${subId}')" class="w-full py-4 flex justify-between items-center text-lg font-medium hover:text-gas-green focus:outline-none"><span>${this.t(item.title)}</span><i id="icon-${subId}" class="fa-solid fa-chevron-down text-sm transition-transform duration-300"></i></button><div id="${subId}" class="mobile-submenu"><div class="pb-4 space-y-1">${subItemsHtml}</div></div></div>`;
+                        if (item.type === 'menu') { 
+                            subItemsHtml = item.children.map(child => `<a href="${child.path}" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">${this.t(child.title)}</a>`).join(''); 
+                        } 
+                        else if (item.type === 'mega') { 
+                            subItemsHtml = item.sections.map(sec => `<div class="py-2"><h4 class="text-gas-green text-xs font-bold uppercase mb-2 pl-4">${this.t(sec.header)}</h4>${sec.items.map(sub => `<a href="${sub.path}" class="block py-2 pl-6 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">${this.t(sub.title)}</a>`).join('')}</div>`).join(''); 
+                        }
+                        container.innerHTML += `<div class="border-b border-white/10"><button onclick="window.app.toggleMobileSubmenu('${subId}')" class="w-full py-4 flex justify-between items-center text-lg font-medium text-white hover:text-gas-green focus:outline-none"><span>${this.t(item.title)}</span><i id="icon-${subId}" class="fa-solid fa-chevron-down text-sm transition-transform duration-300"></i></button><div id="${subId}" class="mobile-submenu"><div class="pb-4 space-y-1">${subItemsHtml}</div></div></div>`;
                     }
                 });
             },
