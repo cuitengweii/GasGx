@@ -359,7 +359,10 @@
                 <div class="flex flex-col md:items-end space-y-2">
                     <h4 class="text-white font-bold text-sm uppercase tracking-wider mb-1" data-i18n="联系我们">Contact Us</h4>
                     <a href="mailto:contact@gasgx.com" class="text-sm text-gray-400 hover:text-gas-green flex items-center gap-2 transition-colors"><i class="fa-solid fa-envelope"></i> contact@gasgx.com</a>
-                    <div class="text-sm text-gray-400 flex items-center gap-2"><i class="fa-brands fa-weixin"></i> <span class="hover:text-gas-green cursor-pointer">www_gasgx_com</span></div>
+                    <button onclick="window.openQrModal('wechat')" class="text-sm text-gray-400 hover:text-gas-green flex items-center gap-2 transition-colors focus:outline-none">
+                        <i class="fa-brands fa-weixin"></i>
+                        <span>www_gasgx_com</span>
+                    </button>
                 </div>
             </div>
             <div id="footer-links" class="mb-10 space-y-2"></div>
@@ -369,10 +372,18 @@
                     <a href="/about/app_privacy_policy.html" target="_blank" class="hover:text-gas-green transition-colors flex items-center gap-1"><i class="fa-solid fa-shield-halved text-[10px]"></i><span data-i18n="privacy_policy">Privacy Policy</span></a>
                 </div>
                 <div class="flex gap-4">
-                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-tiktok text-lg"></i></a>
-                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-linkedin text-lg"></i></a>
-                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-facebook text-lg"></i></a>
-                    <a href="#" target="_blank" class="text-gray-500 hover:text-gas-green transition-colors"><i class="fa-brands fa-x-twitter text-lg"></i></a>
+                    <button onclick="window.openQrModal('tiktok')" class="text-gray-500 hover:text-gas-green transition-colors focus:outline-none">
+                        <i class="fa-brands fa-tiktok text-lg"></i>
+                    </button>
+                    <button onclick="window.openQrModal('linkedin')" class="text-gray-500 hover:text-gas-green transition-colors focus:outline-none">
+                        <i class="fa-brands fa-linkedin text-lg"></i>
+                    </button>
+                    <button onclick="window.openQrModal('facebook')" class="text-gray-500 hover:text-gas-green transition-colors focus:outline-none">
+                        <i class="fa-brands fa-facebook text-lg"></i>
+                    </button>
+                    <button onclick="window.openQrModal('x')" class="text-gray-500 hover:text-gas-green transition-colors focus:outline-none">
+                        <i class="fa-brands fa-x-twitter text-lg"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -438,6 +449,30 @@
         </div>
     </div>
 
+<div id="qrModal" class="fixed inset-0 z-[400] bg-black/90 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-opacity duration-300 opacity-0" onclick="window.closeQrModal(event)">
+    <div class="bg-[#1a1a1a] border border-gas-green/50 rounded-2xl p-6 max-w-sm w-full shadow-[0_0_30px_rgba(93,214,44,0.2)] transform scale-95 transition-all duration-300 flex flex-col items-center relative" id="qrModalContent">
+        
+        <button onclick="window.closeQrModal(event, true)" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+
+        <div class="mb-4 text-center">
+            <div id="qrIconContainer" class="text-3xl text-gas-green mb-2">
+                </div>
+            <h3 id="qrTitle" class="text-xl font-bold text-white tracking-wide">
+                </h3>
+            <p class="text-xs text-gray-500 mt-1">Scan to follow us</p>
+        </div>
+
+        <div class="w-48 h-48 bg-white p-2 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+            <img id="qrImageDisplay" src="" alt="QR Code" class="w-full h-full object-contain">
+        </div>
+
+        <p class="text-[10px] text-gray-400 text-center max-w-[200px]">
+            Long press or screenshot to save the QR code.
+        </p>
+    </div>
+</div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -993,5 +1028,92 @@
 
         if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', () => window.app.init()); } else { window.app.init(); }
     </script>
+    <script>
+    // --- 二维码弹窗逻辑 (QR Modal Logic) ---
+    
+    // 1. 定义数据
+    const qrData = {
+        'tiktok': {
+            title: 'TikTok',
+            icon: '<i class="fa-brands fa-tiktok"></i>',
+            img: '/image/tiktok_qr.png' 
+        },
+        'linkedin': {
+            title: 'LinkedIn',
+            icon: '<i class="fa-brands fa-linkedin"></i>',
+            img: '/image/linkedin_qr.png'
+        },
+        'facebook': {
+            title: 'Facebook',
+            icon: '<i class="fa-brands fa-facebook"></i>',
+            img: '/image/facebook_qr.png'
+        },
+        'x': {
+            title: 'X (Twitter)',
+            icon: '<i class="fa-brands fa-x-twitter"></i>',
+            img: '/image/x_qr.png'
+        },
+        'wechat': {
+            title: 'WeChat',
+            icon: '<i class="fa-brands fa-weixin"></i>',
+            img: '/image/wechat_qr.png'
+        }
+    };
+
+    // 2. 打开弹窗函数 (绑定到 window 对象以确保全局可用)
+    window.openQrModal = function(type) {
+        console.log("Opening modal for:", type); // 用于调试，看控制台是否有输出
+        const data = qrData[type];
+        if (!data) {
+            console.error("No data found for type:", type);
+            return;
+        }
+
+        const modal = document.getElementById('qrModal');
+        const content = document.getElementById('qrModalContent');
+        const imgEl = document.getElementById('qrImageDisplay');
+        const titleEl = document.getElementById('qrTitle');
+        const iconEl = document.getElementById('qrIconContainer');
+
+        if(!modal || !content || !imgEl) {
+            console.error("Modal elements not found!");
+            return;
+        }
+
+        // 设置内容
+        imgEl.src = data.img;
+        titleEl.innerText = data.title;
+        iconEl.innerHTML = data.icon;
+
+        // 显示弹窗
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }, 10);
+    };
+
+    // 3. 关闭弹窗函数
+    window.closeQrModal = function(e, force = false) {
+        const content = document.getElementById('qrModalContent');
+        // 如果点击的是内容区域且不是强制关闭，则不操作
+        if (!force && content && content.contains(e.target)) return;
+
+        const modal = document.getElementById('qrModal');
+        if(!modal) return;
+        
+        // 隐藏动画
+        modal.classList.add('opacity-0');
+        if(content) {
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+        }
+
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    };
+</script>
 </body>
 </html>
