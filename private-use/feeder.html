@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GasGx 移动采集台 v23</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: { bg: '#050505', card: '#161616', green: '#5DD62C', border: '#333', text: '#ddd' }
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #eee; -webkit-tap-highlight-color: transparent; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+        
+        .input-gas { background: #111; border: 1px solid #333; color: white; padding: 14px; width: 100%; border-radius: 12px; outline: none; transition: all 0.2s; font-size: 15px; }
+        .input-gas:focus { border-color: #5DD62C; background: #0a0a0a; }
+
+        :root { --capture-h: 164px; }
+        .capture-bar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+            background: rgba(5, 5, 5, 0.92);
+            border-bottom: 1px solid #1e1e1e;
+            backdrop-filter: blur(10px);
+        }
+        .capture-inner { max-width: 448px; margin: 0 auto; padding: calc(10px + env(safe-area-inset-top)) 16px 12px; }
+        .capture-spacer { height: var(--capture-h); }
+
+        .app-header { transition: all 0.2s ease; }
+        .app-subtitle { transition: opacity 0.2s ease; }
+        .capture-bar.compact .app-subtitle { opacity: 0; height: 0; overflow: hidden; }
+        .capture-bar.compact .app-header { margin-bottom: 6px; }
+        .app-logo { width: 36px; height: 36px; }
+        .capture-bar.compact .app-logo { width: 30px; height: 30px; }
+
+        .sticky-url {
+            position: relative;
+            background: rgba(5, 5, 5, 0.88);
+            border: 1px solid #1e1e1e; border-radius: 16px;
+            padding: 10px; backdrop-filter: blur(10px);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+        }
+        .url-shell {
+            background: #0f0f0f; border: 1px solid #2a2a2a;
+            border-radius: 14px; display: flex; align-items: center;
+            overflow: hidden;
+        }
+        .url-input {
+            background: transparent; border: 0; color: #f1f1f1;
+            padding: 14px 14px; flex: 1; font-size: 15px;
+        }
+        .url-input:focus { outline: none; }
+        .url-paste-btn {
+            width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+            background: #151515; border-left: 1px solid #2a2a2a; color: #9aa0a6;
+            transition: all 0.2s; cursor: pointer;
+        }
+        .url-paste-btn:hover { color: #5DD62C; background: #121a0f; }
+        .url-paste-btn:active { transform: scale(0.92); }
+        .url-send-btn {
+            width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+            background: #5DD62C; color: #0a0a0a; border-left: 1px solid #2a2a2a;
+            transition: all 0.2s; cursor: pointer; font-weight: 700;
+        }
+        .url-send-btn:hover { filter: brightness(0.95); }
+        .url-send-btn:active { transform: scale(0.92); }
+        
+        .btn-gas { background: #5DD62C; color: black; font-weight: 800; padding: 16px; border-radius: 12px; width: 100%; text-transform: uppercase; letter-spacing: 1px; font-size: 16px; box-shadow: 0 4px 15px rgba(93, 214, 44, 0.2); transition: all 0.2s; }
+        .btn-gas:active { transform: scale(0.96); opacity: 0.9; }
+
+        .grid-select { display: grid; gap: 8px; }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 380px) {
+            .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        /* 选项卡片 */
+        .option-card {
+            background: #161616; border: 1px solid #333; border-radius: 8px;
+            padding: 10px 4px; text-align: center; font-size: 12px; font-weight: 600; color: #888;
+            cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+            min-height: 44px; word-break: break-word; line-height: 1.2;
+            position: relative;
+        }
+        .option-card.custom-item { padding-right: 18px; }
+        .option-card.active {
+            background: rgba(93, 214, 44, 0.15); border-color: #5DD62C; color: #5DD62C;
+            box-shadow: 0 0 8px rgba(93, 214, 44, 0.1);
+        }
+        .option-card .delete-x {
+            position: absolute; top: 4px; right: 4px;
+            width: 16px; height: 16px; border-radius: 50%;
+            border: 1px solid #2e2e2e; background: #101010; color: #9aa0a6;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; line-height: 1; cursor: pointer;
+        }
+        .option-card .delete-x:hover { color: #ff6b6b; border-color: #3a2a2a; }
+        
+        /* DIY 输入框动画 */
+        .custom-input-wrapper { display: none; margin-top: 8px; animation: slideDown 0.2s ease-out; }
+        .custom-input-wrapper.show { display: block; }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="max-w-md mx-auto relative">
+
+    <div id="captureBar" class="capture-bar">
+        <div class="capture-inner">
+            <div id="appHeader" class="app-header flex items-center justify-between mb-2">
+                <div class="flex items-center gap-3">
+                    <div class="app-logo w-9 h-9 bg-gas-card rounded-full flex items-center justify-center border border-gas-border shadow-glow">
+                        <i class="fa-solid fa-gas-pump text-gas-green text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold font-mono text-white tracking-tight">GasGx Feeder</h1>
+                        <p class="app-subtitle text-[10px] text-gray-500 uppercase tracking-widest">Mobile Link Control</p>
+                    </div>
+                </div>
+                <div class="text-xs text-gas-green font-mono bg-gas-green/10 px-2 py-1 rounded">v23.0</div>
+            </div>
+
+            <div class="sticky-url">
+                <label class="flex justify-between text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">
+                    <span>Target URL</span>
+                    <span class="text-gas-green text-[10px]"><i class="fa-solid fa-bolt"></i> Ready</span>
+                </label>
+                <div class="url-shell">
+                    <input type="url" id="link" class="url-input" placeholder="https://..." required form="taskForm" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false">
+                    <button type="button" onclick="triggerPaste()" class="url-paste-btn" aria-label="Paste link">
+                        <i class="fa-solid fa-link text-lg"></i>
+                    </button>
+                    <button type="submit" form="taskForm" class="url-send-btn" aria-label="Send">
+                        <i class="fa-solid fa-paper-plane text-base"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="capture-spacer"></div>
+
+    <form id="taskForm" class="px-4 pt-2 pb-6 space-y-6">
+
+        <div>
+            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Category</label>
+            <div class="grid-select grid-cols-3" id="category-container"></div>
+            <div id="category-custom-wrapper" class="custom-input-wrapper">
+                <input type="text" id="category-custom-input" class="input-gas border-gas-green" placeholder="输入自定义 Category..." oninput="syncCustomValue('category', this.value)" onblur="persistCustomValue('category', this.value)">
+            </div>
+            <input type="hidden" id="category" value="gas-energy">
+        </div>
+
+        <div>
+            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Publisher</label>
+            <div class="grid-select grid-cols-3" id="publisher-container"></div>
+            <div id="publisher-custom-wrapper" class="custom-input-wrapper">
+                <input type="text" id="publisher-custom-input" class="input-gas border-gas-green" placeholder="输入自定义 Publisher..." oninput="syncCustomValue('publisher', this.value)" onblur="persistCustomValue('publisher', this.value)">
+            </div>
+            <input type="hidden" id="publisher" value="GasGx-Researcher">
+        </div>
+
+        <div>
+            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Main Tag</label>
+            <div class="grid-select grid-cols-3" id="tag-container"></div>
+            <div id="tag-custom-wrapper" class="custom-input-wrapper">
+                <input type="text" id="tag-custom-input" class="input-gas border-gas-green" placeholder="输入自定义 Tag..." oninput="syncCustomValue('tag', this.value)" onblur="persistCustomValue('tag', this.value)">
+            </div>
+            <input type="hidden" id="tag" value="Hardware">
+        </div>
+
+        <div>
+            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Secondary Tag</label>
+            <div class="grid-select grid-cols-3" id="secondary_tag-container"></div>
+            <div id="secondary_tag-custom-wrapper" class="custom-input-wrapper">
+                <input type="text" id="secondary_tag-custom-input" class="input-gas border-gas-green" placeholder="输入自定义 Sec Tag..." oninput="syncCustomValue('secondary_tag', this.value)" onblur="persistCustomValue('secondary_tag', this.value)">
+            </div>
+            <input type="hidden" id="secondary_tag" value=""> 
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn-gas mt-6 flex items-center justify-center gap-3">
+            <span>SEND TO CLOUD</span>
+            <i class="fa-solid fa-paper-plane"></i>
+        </button>
+
+    </form>
+
+    <div class="px-4 mt-2 mb-8">
+        <h3 class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-3 border-b border-gray-800 pb-2">Recent Generated Links</h3>
+        <div id="history-list" class="space-y-3"></div>
+        <button onclick="clearHistory()" class="text-[10px] text-gray-600 mt-4 w-full text-center py-2 hover:text-red-500 transition-colors">Clear History</button>
+    </div>
+
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 bg-[#111] border border-gas-green text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl opacity-0 transition-all pointer-events-none flex items-center gap-3 z-50 transform scale-90">
+        <i class="fa-solid fa-circle-check text-gas-green text-lg"></i>
+        <span id="toast-msg">Task Added!</span>
+    </div>
+
+    <script>
+        // Supabase Init
+        const SUPABASE_URL = "https://mkpcliytqudclkwtewru.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw"; 
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Data Config
+        const categories = [
+            { id: 'gas-energy', label: 'Gas Energy' },
+            { id: 'generators', label: 'Generators' },
+            { id: 'bitcoin-mining', label: 'BTC Mining' },
+            { id: 'flash', label: 'Flash' },
+            { id: 'insights', label: 'Insights' },
+            { id: 'data', label: 'Data' },
+            { id: 'events', label: 'Events' },
+            { id: 'custom', label: '+ DIY' } 
+        ];
+
+        const publishers = [
+            { id: 'GasGx-Researcher', label: 'GasGx' },
+            { id: 'WuShuoBlock', label: 'WuShuo' },
+            { id: 'Blockbeats', label: 'Blockbeats' },
+            { id: 'Chaincatcher', label: 'ChainC.' },
+            { id: 'Panewslab', label: 'Panews' },
+            { id: 'Odaily', label: 'Odaily' },
+            { id: 'Techflow', label: 'Techflow' },
+            { id: 'Linkein', label: 'LinkedIn' },
+            { id: 'custom', label: '+ DIY' }
+        ];
+
+        const mainTags = [
+            { id: 'Hardware', label: 'Hardware' },
+            { id: 'Policy', label: 'Policy' },
+            { id: 'Finance', label: 'Finance' },
+            { id: 'Tech', label: 'Tech' },
+            { id: 'Market', label: 'Market' },
+            { id: 'custom', label: '+ DIY' }
+        ];
+
+        const secTags = [
+            { id: 'Policy', label: 'Policy' },
+            { id: 'Newly released', label: 'New Release' },
+            { id: 'Guidance', label: 'Guidance' },
+            { id: 'Report', label: 'Report' },
+            { id: 'Hardware', label: 'Hardware' },
+            { id: 'Bitcoin', label: 'Bitcoin' },
+            { id: 'Mining', label: 'Mining' },
+            { id: 'Analysis', label: 'Analysis' },
+            { id: 'custom', label: '+ DIY' }
+        ];
+
+        // --- DIY Cache (LocalStorage) ---
+        const CUSTOM_STORE_PREFIX = 'gasgx_feeder_custom_';
+        const CUSTOM_MAX = 12;
+        const baseOptions = {
+            category: categories,
+            publisher: publishers,
+            tag: mainTags,
+            secondary_tag: secTags
+        };
+        const gridConfigMap = {
+            category: { containerId: 'category-container', items: categories, defaultVal: 'gas-energy' },
+            publisher: { containerId: 'publisher-container', items: publishers, defaultVal: 'GasGx-Researcher' },
+            tag: { containerId: 'tag-container', items: mainTags, defaultVal: 'Hardware' },
+            secondary_tag: { containerId: 'secondary_tag-container', items: secTags, defaultVal: '' }
+        };
+        const LAST_STORE_KEY = 'gasgx_feeder_last_state';
+        const manualOverride = {};
+
+        function normalizeValue(value) {
+            return (value || '').toString().trim();
+        }
+
+        function getStoreKey(inputId) {
+            return `${CUSTOM_STORE_PREFIX}${inputId}`;
+        }
+
+        function loadCustomOptions(inputId) {
+            try {
+                const raw = localStorage.getItem(getStoreKey(inputId));
+                if (!raw) return [];
+                const list = JSON.parse(raw);
+                if (!Array.isArray(list)) return [];
+                return list.map(normalizeValue).filter(Boolean);
+            } catch (e) {
+                console.warn('Load custom options failed:', e);
+                return [];
+            }
+        }
+
+        function saveCustomOptions(inputId, list) {
+            try {
+                localStorage.setItem(getStoreKey(inputId), JSON.stringify(list));
+            } catch (e) {
+                console.warn('Save custom options failed:', e);
+            }
+        }
+
+        function persistCustomValue(inputId, value) {
+            const val = normalizeValue(value);
+            if (!val) return;
+            const baseList = (baseOptions[inputId] || []).map(item => (item.id || '').toString().toLowerCase());
+            if (baseList.includes(val.toLowerCase())) return;
+            let list = loadCustomOptions(inputId);
+            list.unshift(val);
+            list = list.filter((v, idx, arr) => arr.findIndex(x => x.toLowerCase() === v.toLowerCase()) === idx);
+            if (list.length > CUSTOM_MAX) list = list.slice(0, CUSTOM_MAX);
+            saveCustomOptions(inputId, list);
+        }
+
+        function saveLastSelections(data) {
+            try {
+                localStorage.setItem(LAST_STORE_KEY, JSON.stringify(data));
+            } catch (e) {
+                console.warn('Save last selections failed:', e);
+            }
+        }
+
+        function loadLastSelections() {
+            try {
+                const raw = localStorage.getItem(LAST_STORE_KEY);
+                if (!raw) return;
+                const data = JSON.parse(raw);
+                if (!data || typeof data !== 'object') return;
+                Object.keys(gridConfigMap).forEach(inputId => {
+                    if (data[inputId]) {
+                        const hiddenInput = document.getElementById(inputId);
+                        if (hiddenInput) hiddenInput.value = data[inputId];
+                        persistCustomValue(inputId, data[inputId]);
+                    }
+                });
+            } catch (e) {
+                console.warn('Load last selections failed:', e);
+            }
+        }
+
+        function applySelection(inputId, value, force = false) {
+            const val = normalizeValue(value);
+            if (!val) return;
+            if (!force && manualOverride[inputId]) return;
+            const hiddenInput = document.getElementById(inputId);
+            if (hiddenInput) hiddenInput.value = val;
+            persistCustomValue(inputId, val);
+            const cfg = gridConfigMap[inputId];
+            if (cfg) renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
+        }
+
+        function applyUrlHints(url) {
+            if (!url) return;
+            let parsedUrl;
+            try {
+                parsedUrl = new URL(url);
+            } catch (e) {
+                try {
+                    parsedUrl = new URL(`https://${url}`);
+                } catch (err) {
+                    return;
+                }
+            }
+            const host = (parsedUrl.hostname || '').toLowerCase();
+            if (host.includes('x.com') || host.includes('twitter.com')) {
+                applySelection('publisher', 'X');
+            } else if (host.includes('linkedin.com')) {
+                applySelection('publisher', 'Linkein');
+            } else if (host.includes('mp.weixin.qq.com') || host.includes('weixin.qq.com')) {
+                applySelection('publisher', 'Weixin');
+            }
+        }
+
+        function mergeOptions(inputId, items) {
+            const customValues = loadCustomOptions(inputId);
+            if (!customValues.length) return items;
+            const customItems = customValues.map(val => ({ id: val, label: val, _isCustom: true }));
+            const seen = new Set();
+            const merged = [];
+            for (const item of items) {
+                if (item.id === 'custom') {
+                    for (const c of customItems) {
+                        const key = (c.id || '').toString().toLowerCase();
+                        if (!key || seen.has(key)) continue;
+                        seen.add(key);
+                        merged.push(c);
+                    }
+                    merged.push(item);
+                    continue;
+                }
+                const key = (item.id || '').toString().toLowerCase();
+                if (key && !seen.has(key)) {
+                    seen.add(key);
+                    merged.push(item);
+                }
+            }
+            return merged;
+        }
+
+        // --- 1. Paste Logic (点击图标触发) ---
+        async function triggerPaste(autoSend = false) {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    const input = document.getElementById('link');
+                    input.value = text;
+                    manualOverride.publisher = false;
+                    applyUrlHints(text);
+                    // Visual Feedback
+                    input.classList.add('border-gas-green');
+                    setTimeout(() => input.classList.remove('border-gas-green'), 500);
+                    if (autoSend) {
+                        const formEl = document.getElementById('taskForm');
+                        if (formEl) formEl.requestSubmit();
+                    } else {
+                        input.focus();
+                    }
+                    showToast("已粘贴内容");
+                } else {
+                    showToast("剪贴板为空");
+                }
+            } catch (err) {
+                console.error(err);
+                // Fallback prompt for security restrictions
+                showToast("请长按输入框手动粘贴");
+            }
+        }
+
+        // --- 2. Grid & DIY Logic ---
+        function renderGrid(containerId, inputId, items, defaultVal) {
+            const container = document.getElementById(containerId);
+            const hiddenInput = document.getElementById(inputId);
+            const mergedItems = mergeOptions(inputId, items);
+            
+            // Set default logic
+            if(!hiddenInput.value && defaultVal) hiddenInput.value = defaultVal;
+
+            container.innerHTML = mergedItems.map(item => {
+                const encodedId = encodeURIComponent(item.id);
+                const customClass = item._isCustom ? 'custom-item' : '';
+                const deleteBtn = item._isCustom
+                    ? `<button type="button" class="delete-x" onclick="removeCustomOption(event, '${inputId}', '${encodedId}')" aria-label="Delete cached option">x</button>`
+                    : '';
+                return `
+                    <div class="option-card ${customClass} ${item.id === hiddenInput.value ? 'active' : ''} ${item.id === 'custom' ? 'border-dashed border-gray-600 text-gray-500' : ''}"
+                         onclick="handleSelection('${inputId}', '${encodedId}', this)">
+                        ${item.label}
+                        ${deleteBtn}
+                    </div>
+                `;
+            }).join('');
+            
+            // Init check: if default was custom, show input
+            if(hiddenInput.value === 'custom') {
+               const wrap = document.getElementById(`${inputId}-custom-wrapper`);
+               if(wrap) wrap.classList.add('show');
+            }
+        }
+
+        function handleSelection(inputId, value, element) {
+            const decodedValue = decodeURIComponent(value);
+            const hiddenInput = document.getElementById(inputId);
+            const customWrapper = document.getElementById(`${inputId}-custom-wrapper`);
+            const customInput = document.getElementById(`${inputId}-custom-input`);
+            manualOverride[inputId] = true;
+
+            // 1. UI Style Update
+            const siblings = element.parentElement.children;
+            for(let el of siblings) el.classList.remove('active');
+            element.classList.add('active');
+
+            // 2. Data Logic
+            if(decodedValue === 'custom') {
+                // Show Input
+                if(customWrapper) customWrapper.classList.add('show');
+                if(customInput) {
+                    customInput.focus();
+                    // If user already typed something, use that. If empty, it's empty string.
+                    hiddenInput.value = customInput.value; 
+                }
+            } else {
+                // Hide Input & Set Value
+                if(customWrapper) customWrapper.classList.remove('show');
+                hiddenInput.value = decodedValue;
+            }
+
+            // Haptic
+            if(window.navigator && window.navigator.vibrate) window.navigator.vibrate(5);
+        }
+
+        // Called when user types in DIY box: Syncs to the hidden input which Supabase uses
+        function syncCustomValue(inputId, val) {
+            document.getElementById(inputId).value = val;
+            manualOverride[inputId] = true;
+        }
+
+        function removeCustomOption(event, inputId, encodedValue) {
+            if (event) event.stopPropagation();
+            const val = decodeURIComponent(encodedValue || '');
+            if (!val) return;
+            let list = loadCustomOptions(inputId);
+            list = list.filter(v => v.toLowerCase() !== val.toLowerCase());
+            saveCustomOptions(inputId, list);
+            const hiddenInput = document.getElementById(inputId);
+            if (hiddenInput && hiddenInput.value && hiddenInput.value.toLowerCase() === val.toLowerCase()) {
+                hiddenInput.value = '';
+            }
+            const cfg = gridConfigMap[inputId];
+            if (cfg) renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
+        }
+
+        // --- 3. History Logic (双链接) ---
+        function saveToHistory(newUrl, originalUrl) {
+            let currentHistory = getCookie("gas_url_list_v2");
+            let list = currentHistory ? JSON.parse(currentHistory) : [];
+            
+            list.unshift({ 
+                newUrl: newUrl, 
+                originalUrl: originalUrl,
+                time: new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}) 
+            });
+            
+            if(list.length > 10) list.pop();
+            setCookie("gas_url_list_v2", JSON.stringify(list), 30);
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const listEl = document.getElementById('history-list');
+            const currentHistory = getCookie("gas_url_list_v2");
+            
+            if (!currentHistory) {
+                listEl.innerHTML = '<div class="p-4 text-center text-xs text-gray-600 italic bg-gas-card rounded-lg border border-gas-border">No recent history</div>';
+                return;
+            }
+
+            try {
+                const list = JSON.parse(currentHistory);
+                listEl.innerHTML = list.map(item => `
+                    <div class="bg-gas-card border border-gas-border rounded-lg p-3 flex flex-col gap-2">
+                        <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                            <div class="flex items-center gap-2 overflow-hidden w-full">
+                                <span class="bg-gas-green text-black text-[9px] font-bold px-1 rounded flex-shrink-0">GAS</span>
+                                <a href="${item.newUrl}" target="_blank" class="text-sm font-bold text-white truncate flex-1 hover:text-gas-green">${item.newUrl}</a>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center pt-1">
+                             <div class="flex items-center gap-2 overflow-hidden w-full">
+                                <span class="bg-gray-700 text-gray-300 text-[9px] font-bold px-1 rounded flex-shrink-0">SRC</span>
+                                <a href="${item.originalUrl}" target="_blank" class="text-xs text-gray-500 truncate flex-1 hover:text-gray-300">${item.originalUrl}</a>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function clearHistory() { setCookie("gas_url_list_v2", "", -1); renderHistory(); }
+        function setCookie(n, v, d) { let e=""; if(d){const dt=new Date();dt.setTime(dt.getTime()+(d*24*60*60*1000));e="; expires="+dt.toUTCString();} document.cookie=n+"="+(v||"")+e+"; path=/"; }
+        function getCookie(n) { const ne=n+"="; const ca=document.cookie.split(';'); for(let i=0;i<ca.length;i++){let c=ca[i];while(c.charAt(0)==' ')c=c.substring(1);if(c.indexOf(ne)==0)return c.substring(ne.length,c.length);}return null; }
+        
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
+            setTimeout(() => toast.classList.add('opacity-0', 'scale-90', 'pointer-events-none'), 3000);
+        }
+
+        // --- Submit ---
+        const form = document.getElementById('taskForm');
+        const btn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Sending...';
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+
+            // Data Gathering
+            const link = document.getElementById('link').value;
+            const category = document.getElementById('category').value;
+            const publisher = document.getElementById('publisher').value;
+            const tag_choice = document.getElementById('tag').value;
+            const secondary_tag = document.getElementById('secondary_tag').value;
+
+            // Persist DIY values for reuse
+            persistCustomValue('category', category);
+            persistCustomValue('publisher', publisher);
+            persistCustomValue('tag', tag_choice);
+            persistCustomValue('secondary_tag', secondary_tag);
+
+            try {
+                const { data, error } = await client
+                    .from('scrape_queue')
+                    .insert([{ 
+                        link, category, publisher, tag_choice, secondary_tag, 
+                        status: 'pending' 
+                    }])
+                    .select();
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    const newId = data[0].id;
+                    const newUrl = `https://www.gasgx.com/news/article/${newId}`;
+                    saveToHistory(newUrl, link);
+                    
+                    showToast("✅ 发布成功!");
+                    
+                    // Save last selections for faster next entry
+                    saveLastSelections({ category, publisher, tag: tag_choice, secondary_tag });
+                    manualOverride.category = false;
+                    manualOverride.publisher = false;
+                    manualOverride.tag = false;
+                    manualOverride.secondary_tag = false;
+
+                    // Reset link only, keep selections
+                    document.getElementById('link').value = '';
+                    document.querySelectorAll('.custom-input-wrapper').forEach(wrapper => {
+                        const inputEl = wrapper.querySelector('input');
+                        if (!wrapper.classList.contains('show') && inputEl) inputEl.value = '';
+                    });
+                    
+                    // Re-render grids to include any new custom options
+                    Object.entries(gridConfigMap).forEach(([inputId, cfg]) => {
+                        renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
+                    });
+                } else {
+                    showToast("⚠️ 已提交，但未返回ID");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("❌ Error: " + err.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
+        });
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLastSelections();
+            Object.entries(gridConfigMap).forEach(([inputId, cfg]) => {
+                renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
+            });
+            renderHistory();
+
+            const linkInput = document.getElementById('link');
+            if (linkInput) {
+                linkInput.addEventListener('change', () => applyUrlHints(linkInput.value));
+                linkInput.addEventListener('paste', () => setTimeout(() => applyUrlHints(linkInput.value), 0));
+                linkInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const formEl = document.getElementById('taskForm');
+                        if (formEl) formEl.requestSubmit();
+                    }
+                });
+                linkInput.focus();
+            }
+        });
+
+        // Capture bar sizing + compact mode while scrolling
+        const captureBar = document.getElementById('captureBar');
+
+        function updateCaptureHeight() {
+            if (!captureBar) return;
+            const height = captureBar.offsetHeight || 0;
+            document.documentElement.style.setProperty('--capture-h', `${height}px`);
+        }
+
+        function setCompactMode(isCompact) {
+            if (!captureBar) return;
+            captureBar.classList.toggle('compact', isCompact);
+            updateCaptureHeight();
+        }
+
+        updateCaptureHeight();
+        window.addEventListener('resize', updateCaptureHeight);
+
+        let lastCompact = false;
+        window.addEventListener('scroll', () => {
+            const currentY = window.scrollY || 0;
+            const shouldCompact = currentY > 40;
+            if (shouldCompact !== lastCompact) {
+                setCompactMode(shouldCompact);
+                lastCompact = shouldCompact;
+            }
+        }, { passive: true });
+    </script>
+</body>
+</html>

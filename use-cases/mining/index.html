@@ -1,0 +1,433 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mining & AI Data Center Power - GasGx</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(93, 214, 44, 0.4)',
+                        'glow-sm': '0 0 10px rgba(93, 214, 44, 0.2)',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+        
+        .gas-card:hover {
+            border-color: rgba(93, 214, 44, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+        }
+        .nav-item-link:hover, .nav-item-link.active { color: #5DD62C; }
+        
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after, .nav-item-link.active::after { width: 100%; }
+
+        .section-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(93,214,44,0.08) 0%, rgba(0,0,0,0) 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="bg-grid-pattern">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-24 pb-12 w-full relative overflow-hidden">
+        
+        <section class="max-w-7xl mx-auto px-4 mb-20 relative">
+            <div class="section-glow top-0 left-1/2 -translate-x-1/2"></div>
+            
+            <div class="text-center relative z-10 pt-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gas-green/30 bg-gas-green/10 text-gas-green text-xs font-mono mb-6">
+                    <i class="fa-solid fa-server"></i>
+                    <span data-i18n="hero_badge">Mining & HPC Infrastructure</span>
+                </div>
+                <h1 data-i18n="hero_title" class="text-4xl md:text-6xl font-black mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-500">
+                    从比特币挖矿到 AI 算力基荷
+                </h1>
+                <p data-i18n="hero_desc" class="text-xl text-gas-subtext max-w-3xl mx-auto leading-relaxed">
+                    为高价值计算提供 24/7 稳定电力。相比间歇性新能源，天然气发电是 AI 数据中心最可靠的能源桥梁。
+                </p>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 mb-24">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="order-2 md:order-1">
+                    <div class="gas-card p-8 rounded-2xl relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl"></div>
+                        <h3 data-i18n="sec1_title" class="text-2xl font-bold text-white mb-4">AI 数据中心的基荷电源</h3>
+                        <p data-i18n="sec1_desc" class="text-gray-400 mb-6 leading-relaxed">
+                            AI 训练对电力中断零容忍。天然气发电提供了太阳能和风能无法企及的持续性，是目前填补数据中心电力缺口的关键资源。
+                        </p>
+                        <ul class="space-y-4">
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-microchip text-purple-500 mt-1"></i>
+                                <div>
+                                    <strong data-i18n="sec1_point1_title" class="text-white block text-sm">24/7 稳定运行</strong>
+                                    <span data-i18n="sec1_point1_desc" class="text-sm text-gray-500">区别于可中断的挖矿负载，AI 训练需要持续稳定的基荷电力 (Baseload Power)。</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-plug-circle-bolt text-gas-green mt-1"></i>
+                                <div>
+                                    <strong data-i18n="sec1_point2_title" class="text-white block text-sm">独立供能岛</strong>
+                                    <span data-i18n="sec1_point2_desc" class="text-sm text-gray-500">在电网容量受限区域，建立独立的天然气微电网，保障 HPC 集群算力不掉线。</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="order-1 md:order-2 text-center md:text-left flex justify-center">
+                    <div class="relative">
+                        <i class="fa-solid fa-brain text-[140px] text-gas-green/10 animate-pulse"></i>
+                        <i class="fa-solid fa-bolt text-5xl text-gas-green absolute -right-4 top-10 shadow-glow rounded-full bg-black p-2"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 mb-24">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="text-center flex justify-center">
+                    <i class="fa-solid fa-snowflake text-[120px] text-blue-400/20"></i>
+                </div>
+                <div>
+                    <h3 data-i18n="sec2_title" class="text-2xl font-bold text-white mb-4">极端环境与高密度部署</h3>
+                    <p data-i18n="sec2_desc" class="text-gray-400 mb-6 leading-relaxed">
+                        适应西伯利亚寒冬或德州酷暑，集成液冷与浸没式技术，为 S21 XP Hydro 等大算力设备提供最佳运行环境。
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-[#1a1a1a] p-4 rounded border border-white/5">
+                            <div class="text-blue-400 mb-2"><i class="fa-solid fa-droplet"></i></div>
+                            <h4 data-i18n="sec2_sub1_title" class="font-bold text-sm mb-1">液冷与浸没式技术</h4>
+                            <p data-i18n="sec2_sub1_desc" class="text-xs text-gray-500">大幅降低 PUE，提升算力密度，无惧沙尘与极端温差。</p>
+                        </div>
+                        <div class="bg-[#1a1a1a] p-4 rounded border border-white/5">
+                            <div class="text-gas-green mb-2"><i class="fa-solid fa-temperature-arrow-down"></i></div>
+                            <h4 data-i18n="sec2_sub2_title" class="font-bold text-sm mb-1">废热利用</h4>
+                            <p data-i18n="sec2_sub2_desc" class="text-xs text-gray-500">配合 CHP 系统，将芯片废热用于供暖或工业流程，进一步摊薄能源成本。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 mb-20">
+            <div class="flex items-center gap-4 mb-8">
+                <h2 data-i18n="sec3_title" class="text-3xl font-bold text-white">全球地理套利</h2>
+                <div class="h-px bg-white/10 flex-1"></div>
+            </div>
+            
+            <div class="bg-gas-card p-8 rounded-xl border border-white/5 relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 text-8xl text-white/5"><i class="fa-solid fa-earth-americas"></i></div>
+                <div class="grid md:grid-cols-3 gap-8 relative z-10">
+                    <div>
+                        <h4 class="text-gas-green font-bold text-lg mb-2" data-i18n="sec3_col1_title">成本驱动迁移</h4>
+                        <p class="text-sm text-gray-400 leading-relaxed" data-i18n="sec3_col1_desc">
+                            比特币减半后，美国电网挖矿成本飙升至 $130k/BTC (部分地区)。矿工正被迫寻找新的能源洼地。
+                        </p>
+                    </div>
+                    <div>
+                        <h4 class="text-gas-green font-bold text-lg mb-2" data-i18n="sec3_col2_title">俄罗斯与中亚</h4>
+                        <p class="text-sm text-gray-400 leading-relaxed" data-i18n="sec3_col2_desc">
+                            利用西伯利亚丰富的搁浅天然气和哈萨克斯坦（后 AIFC 垄断时代）的政策窗口，实现极低成本挖矿。
+                        </p>
+                    </div>
+                    <div>
+                        <h4 class="text-gas-green font-bold text-lg mb-2" data-i18n="sec3_col3_title">南美洲机遇</h4>
+                        <p class="text-sm text-gray-400 leading-relaxed" data-i18n="sec3_col3_desc">
+                            阿根廷与巴拉圭等地的水电与天然气资源，正在成为全球算力迁移的新热土。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-4xl mx-auto px-4 text-center mb-12">
+            <div class="bg-gradient-to-r from-gas-green/10 to-transparent p-1 rounded-2xl">
+                <div class="bg-[#151515] rounded-xl p-8 md:p-12">
+                    <h2 data-i18n="cta_title" class="text-2xl md:text-3xl font-bold mb-4">算力基础设施升级</h2>
+                    <p data-i18n="cta_desc" class="text-gray-400 mb-8">无论是比特币挖矿选址，还是 AI 数据中心供能，我们提供从气源分析到电力交付的一站式方案。</p>
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <a href="/tools/miner-profitability" class="px-8 py-3 bg-gas-green text-black font-bold rounded hover:bg-white transition-all shadow-glow">
+                            <i class="fa-solid fa-coins mr-2"></i> <span data-i18n="cta_btn_calc">矿机盈利计算器</span>
+                        </a>
+                        <a href="/about/contact" class="px-8 py-3 border border-white/20 text-white font-medium rounded hover:border-gas-green hover:text-gas-green transition-all">
+                            <span data-i18n="cta_btn_contact">获取能源方案</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        const AppData = {
+            navigation: [
+                { title: "nav_home", path: "/index.html", type: "link" },
+                { title: "nav_oil", path: "/use-cases/oilfield", type: "link" },
+                { title: "nav_ind", path: "/use-cases/industrial", type: "link" },
+                { title: "nav_mining", path: "/use-cases/mining", type: "link" }, // Active
+                { title: "nav_chp", path: "/use-cases/chp", type: "link" }
+            ],
+            
+            i18n: {
+                zh: {
+                    tagline: "天然气发电挖矿助手",
+                    footerTagline: "让天然气发电挖矿更简单",
+                    // Navigation
+                    nav_home: "首页",
+                    nav_oil: "油气井 / 伴生气",
+                    nav_ind: "工业与园区能源",
+                    nav_mining: "挖矿 / 数据中心",
+                    nav_chp: "CHP 热电联供",
+                    // Hero
+                    hero_badge: "算力与能源基础设施",
+                    hero_title: "从比特币挖矿到 AI 算力基荷",
+                    hero_desc: "为高价值计算提供 24/7 稳定电力。相比间歇性新能源，天然气发电是 AI 数据中心最可靠的能源桥梁。",
+                    // Section 1: AI Baseload
+                    sec1_title: "AI 数据中心的基荷电源",
+                    sec1_desc: "AI 训练对电力中断零容忍。天然气发电提供了太阳能和风能无法企及的持续性，是目前填补数据中心电力缺口的关键资源。",
+                    sec1_point1_title: "24/7 稳定运行",
+                    sec1_point1_desc: "区别于可中断的挖矿负载，AI 训练需要持续稳定的基荷电力 (Baseload Power)。",
+                    sec1_point2_title: "独立供能岛",
+                    sec1_point2_desc: "在电网容量受限区域，建立独立的天然气微电网，保障 HPC 集群算力不掉线。",
+                    // Section 2: Extreme Env
+                    sec2_title: "极端环境与高密度部署",
+                    sec2_desc: "适应西伯利亚寒冬或德州酷暑，集成液冷与浸没式技术，为 S21 XP Hydro 等大算力设备提供最佳运行环境。",
+                    sec2_sub1_title: "液冷与浸没式技术",
+                    sec2_sub1_desc: "大幅降低 PUE，提升算力密度，无惧沙尘与极端温差。",
+                    sec2_sub2_title: "废热利用",
+                    sec2_sub2_desc: "配合 CHP 系统，将芯片废热用于供暖或工业流程，进一步摊薄能源成本。",
+                    // Section 3: Geo Arbitrage
+                    sec3_title: "全球地理套利",
+                    sec3_col1_title: "成本驱动迁移",
+                    sec3_col1_desc: "比特币减半后，美国电网挖矿成本飙升至 $130k/BTC (部分地区)。矿工正被迫寻找新的能源洼地。",
+                    sec3_col2_title: "俄罗斯与中亚",
+                    sec3_col2_desc: "利用西伯利亚丰富的搁浅天然气和哈萨克斯坦（后 AIFC 垄断时代）的政策窗口，实现极低成本挖矿。",
+                    sec3_col3_title: "南美洲机遇",
+                    sec3_col3_desc: "阿根廷与巴拉圭等地的水电与天然气资源，正在成为全球算力迁移的新热土。",
+                    // CTA
+                    cta_title: "算力基础设施升级",
+                    cta_desc: "无论是比特币挖矿选址，还是 AI 数据中心供能，我们提供从气源分析到电力交付的一站式方案。",
+                    cta_btn_calc: "矿机盈利计算器",
+                    cta_btn_contact: "获取能源方案"
+                },
+                en: {
+                    tagline: "Natural Gas Power Mining Assistant",
+                    footerTagline: "Making natural gas power mining easier",
+                    // Navigation
+                    nav_home: "Home",
+                    nav_oil: "Oilfield / Associated Gas",
+                    nav_ind: "Industrial / Park",
+                    nav_mining: "Mining / Data Center",
+                    nav_chp: "CHP Cogeneration",
+                    // Hero
+                    hero_badge: "Mining & HPC Infrastructure",
+                    hero_title: "From Bitcoin Mining to AI Baseload",
+                    hero_desc: "Providing 24/7 stable power for high-value computing. Natural gas bridges the gap where intermittent renewables fail AI requirements.",
+                    // Section 1: AI Baseload
+                    sec1_title: "AI Data Center Baseload Power",
+                    sec1_desc: "AI training has zero tolerance for downtime. Gas generation offers the consistency solar and wind cannot, bridging the data center power gap.",
+                    sec1_point1_title: "24/7 Uptime",
+                    sec1_point1_desc: "Unlike interruptible mining loads, AI training requires constant, reliable Baseload Power.",
+                    sec1_point2_title: "Island Mode Power",
+                    sec1_point2_desc: "Establish independent microgrids in grid-constrained areas to ensure HPC clusters never go offline.",
+                    // Section 2: Extreme Env
+                    sec2_title: "Extreme Environments & Density",
+                    sec2_desc: "Optimized for Siberian winters or Texas heat. Integrating hydro and immersion cooling for next-gen hardware like S21 XP Hydro.",
+                    sec2_sub1_title: "Hydro & Immersion Cooling",
+                    sec2_sub1_desc: "Significantly lower PUE and increase density while protecting gear from dust and temp swings.",
+                    sec2_sub2_title: "Heat Recovery",
+                    sec2_sub2_desc: "Utilize chip waste heat via CHP for heating or industrial processes to offset energy costs.",
+                    // Section 3: Geo Arbitrage
+                    sec3_title: "Global Geographic Arbitrage",
+                    sec3_col1_title: "Cost-Driven Migration",
+                    sec3_col1_desc: "Post-halving, US grid mining costs can hit $130k/BTC. Miners are forced to seek cheaper energy jurisdictions.",
+                    sec3_col2_title: "Russia & Central Asia",
+                    sec3_col2_desc: "Leveraging stranded gas in Siberia and policy openings in Kazakhstan (post-AIFC monopoly) for ultra-low cost mining.",
+                    sec3_col3_title: "South American Opportunity",
+                    sec3_col3_desc: "Argentina and Paraguay offer abundant hydro and gas resources, becoming the new frontier for hashrate migration.",
+                    // CTA
+                    cta_title: "Upgrade Infrastructure",
+                    cta_desc: "From Bitcoin mining site selection to AI data center power, we provide end-to-end energy solutions.",
+                    cta_btn_calc: "Profitability Calc",
+                    cta_btn_contact: "Get Energy Solution"
+                },
+                ru: {
+                    tagline: "Помощник по газовому майнингу",
+                    footerTagline: "Майнинг на газе проще",
+                    // Navigation
+                    nav_home: "Главная",
+                    nav_oil: "Нефтегаз / ПНГ",
+                    nav_ind: "Пром. энергия",
+                    nav_mining: "Майнинг / ЦОД",
+                    nav_chp: "ТЭЦ (CHP)",
+                    // Hero
+                    hero_badge: "Инфраструктура для Майнинга и HPC",
+                    hero_title: "От Биткоина к ИИ: Базовая мощность",
+                    hero_desc: "Стабильная энергия 24/7 для вычислений. Природный газ — надежный мост для ЦОД там, где ВИЭ нестабильны.",
+                    // Section 1: AI Baseload
+                    sec1_title: "Базовая мощность для ЦОД ИИ",
+                    sec1_desc: "Обучение ИИ не терпит простоев. Газовая генерация обеспечивает постоянство, недоступное для солнца и ветра.",
+                    sec1_point1_title: "Работа 24/7",
+                    sec1_point1_desc: "В отличие от прерываемого майнинга, ИИ требует постоянной базовой мощности (Baseload).",
+                    sec1_point2_title: "Островной режим",
+                    sec1_point2_desc: "Создание микросетей в районах с дефицитом энергии для гарантии работы HPC кластеров.",
+                    // Section 2: Extreme Env
+                    sec2_title: "Экстремальные условия и плотность",
+                    sec2_desc: "Адаптация к зиме Сибири или жаре Техаса. Гидроохлаждение и иммерсионные ванны для S21 XP Hydro.",
+                    sec2_sub1_title: "Гидро и Иммерсия",
+                    sec2_sub1_desc: "Снижение PUE и рост плотности хешрейта с защитой от пыли и перепадов температур.",
+                    sec2_sub2_title: "Утилизация тепла",
+                    sec2_sub2_desc: "Использование тепла чипов через ТЭЦ для отопления или промышленности.",
+                    // Section 3: Geo Arbitrage
+                    sec3_title: "Географический арбитраж",
+                    sec3_col1_title: "Миграция из-за затрат",
+                    sec3_col1_desc: "После халвинга себестоимость в США достигает $130k/BTC. Майнеры ищут дешевую энергию.",
+                    sec3_col2_title: "Россия и Ц. Азия",
+                    sec3_col2_desc: "Использование попутного газа в Сибири и новые возможности в Казахстане для сверхдешевого майнинга.",
+                    sec3_col3_title: "Южная Америка",
+                    sec3_col3_desc: "Аргентина и Парагвай с их гидро- и газовыми ресурсами становятся новым центром притяжения хешрейта.",
+                    // CTA
+                    cta_title: "Обновите инфраструктуру",
+                    cta_desc: "От подбора площадки для майнинга до питания ЦОД ИИ — полные энергетические решения.",
+                    cta_btn_calc: "Калькулятор доходности",
+                    cta_btn_contact: "Получить решение"
+                }
+            }
+        };
+
+        const app = {
+            currentLang: 'en',
+
+            init() {
+                this.updateContent();
+                this.updateActiveLangState();
+            },
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                this.updateContent();
+                this.updateActiveLangState();
+            },
+
+            t(key) {
+                const dict = AppData.i18n[this.currentLang];
+                return (dict && dict[key]) ? dict[key] : key;
+            },
+
+            updateActiveLangState() {
+                const buttonClasses = {
+                    active: "text-black bg-gas-green shadow-glow font-bold",
+                    inactive: "text-gas-subtext hover:text-white hover:bg-white/5 font-medium"
+                };
+
+                ['zh', 'en', 'ru'].forEach(lang => {
+                    const btn = document.getElementById(`btn-lang-${lang}`);
+                    if(btn) {
+                        btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center cursor-pointer ${lang === this.currentLang ? buttonClasses.active : buttonClasses.inactive}`;
+                    }
+                });
+            },
+
+            updateContent() {
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    el.innerText = this.t(key);
+                });
+            },
+        };
+
+        // Start
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = app;
+            app.init();
+        });
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

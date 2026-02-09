@@ -1,0 +1,425 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial Power & Microgrids - GasGx</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            blue: '#2C8AD6', // Added Blue for Industrial/Grid feel
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(93, 214, 44, 0.4)',
+                        'glow-blue': '0 0 20px rgba(44, 138, 214, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* 卡片磨砂效果 */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .bg-grid-pattern {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-item-link:hover, .nav-item-link.active { color: #5DD62C; }
+        
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after, .nav-item-link.active::after { width: 100%; }
+    </style>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative bg-grid-pattern">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-16 w-full">
+        
+        <section class="relative py-24 px-4 overflow-hidden border-b border-white/5">
+            <div class="absolute inset-0 z-0">
+                <div class="absolute top-0 left-0 w-full h-full opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+                <div class="absolute bottom-0 right-0 w-2/3 h-full bg-gradient-to-l from-gas-blue/10 to-transparent"></div>
+                <i class="fa-solid fa-industry text-[300px] text-white/5 absolute -right-20 bottom-0"></i>
+            </div>
+
+            <div class="max-w-7xl mx-auto relative z-10 text-center lg:text-left grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-block px-3 py-1 mb-6 border border-gas-blue/50 rounded bg-gas-blue/10 text-gas-blue text-xs font-bold uppercase tracking-wider">
+                        <span data-i18n="heroBadge">SOLUTIONS / INDUSTRIAL</span>
+                    </div>
+                    <h1 class="text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
+                        <span data-i18n="heroTitle">Independent Power</span> <br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-gas-blue to-white" data-i18n="heroHighlight">Behind the Meter</span>
+                    </h1>
+                    <p class="text-xl text-gas-subtext mb-8 max-w-2xl mx-auto lg:mx-0" data-i18n="heroDesc">
+                        Bypass grid delays and volatility. Deploy gas-powered microgrids with flexible loads to secure 24/7 power for AI and industrial parks.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                        <a href="#solutions" class="px-8 py-4 bg-gas-blue text-white font-bold rounded hover:bg-white hover:text-black transition-all shadow-glow-blue flex items-center justify-center gap-2">
+                            <span data-i18n="btnExplore">Explore Solutions</span> <i class="fa-solid fa-arrow-down"></i>
+                        </a>
+                        <a href="/about/contact" class="px-8 py-4 border border-white/20 text-white font-medium rounded hover:border-gas-blue hover:text-gas-blue transition-all flex items-center justify-center gap-2">
+                            <span data-i18n="btnContact">Talk to Expert</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="relative hidden lg:flex justify-end">
+                    <div class="gas-card p-8 rounded-xl max-w-md w-full border-l-4 border-gas-blue">
+                        <div class="flex items-start gap-4 mb-6">
+                            <div class="w-12 h-12 rounded bg-gas-blue/20 flex items-center justify-center text-gas-blue">
+                                <i class="fa-solid fa-bolt text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-gray-400 text-xs font-bold uppercase mb-1">Power Demand Forecast</h3>
+                                <p class="text-white text-sm" data-i18n="statSource">Data Centers Power Demand Growth (2030)</p>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline gap-2 mb-2">
+                            <span class="text-5xl font-black text-white">+165%</span>
+                            <span class="text-gas-green text-sm font-bold"><i class="fa-solid fa-arrow-trend-up"></i> Goldman Sachs</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-4 pt-4 border-t border-white/10" data-i18n="statDesc">
+                            Grid capacity cannot keep up. Behind-the-meter generation is the only viable bridge for rapid deployment.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="solutions" class="py-20 px-4">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold text-white mb-4" data-i18n="coreTitle">Behind-the-Meter & Microgrids</h2>
+                    <p class="text-gas-subtext max-w-2xl mx-auto" data-i18n="coreSubtitle">
+                        Solving the interconnection queue and pricing volatility with autonomous energy infrastructure.
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8">
+                    
+                    <div class="gas-card p-8 rounded-xl group hover:border-gas-blue/50 transition-all duration-300">
+                        <div class="mb-6 relative">
+                            <div class="w-14 h-14 bg-gas-card border border-white/10 rounded-lg flex items-center justify-center text-2xl text-gas-blue group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-charging-station"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-4" data-i18n="feat1Title">Baseload Power Security</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-4" data-i18n="feat1Desc">
+                            Renewables are intermittent. Natural gas engines provide dispatchable, 24/7 baseload power essential for AI data centers and industrial processes, bridging the gap when sun and wind fail.
+                        </p>
+                        <ul class="text-xs text-gray-500 space-y-2">
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-gas-green"></i> <span data-i18n="feat1Point1">99% Availability</span></li>
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-gas-green"></i> <span data-i18n="feat1Point2">Grid Independence</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="gas-card p-8 rounded-xl group hover:border-gas-green/50 transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-20 h-20 bg-gas-green/5 rounded-bl-full"></div>
+                        <div class="mb-6 relative">
+                            <div class="w-14 h-14 bg-gas-card border border-white/10 rounded-lg flex items-center justify-center text-2xl text-gas-green group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-sliders"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-4" data-i18n="feat2Title">Flex Load Management</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-4" data-i18n="feat2Desc">
+                            Deploy Bitcoin miners as "interruptible load". During peak grid demand or high prices, miners shut down instantly, releasing power back to the park or selling to the grid (Demand Response).
+                        </p>
+                        <ul class="text-xs text-gray-500 space-y-2">
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-gas-green"></i> <span data-i18n="feat2Point1">Economic Optimization</span></li>
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-gas-green"></i> <span data-i18n="feat2Point2">Grid Balancing Service</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="gas-card p-8 rounded-xl group hover:border-white/30 transition-all duration-300">
+                        <div class="mb-6 relative">
+                            <div class="w-14 h-14 bg-gas-card border border-white/10 rounded-lg flex items-center justify-center text-2xl text-white group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-route"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-4" data-i18n="feat3Title">Infrastructure Avoidance</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-4" data-i18n="feat3Desc">
+                            Bypass the multi-year wait for transmission line permits. "Gas-Compute Direct Connection" locates computing power directly at the fuel source, eliminating transmission congestion.
+                        </p>
+                        <ul class="text-xs text-gray-500 space-y-2">
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-gas-green"></i> <span data-i18n="feat3Point1">Speed to Market</span></li>
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-gas-green"></i> <span data-i18n="feat3Point2">No Transmission Loss</span></li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section class="py-20 px-4 bg-[#111] border-t border-white/5">
+            <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-12">
+                <div class="w-full md:w-1/2">
+                    <div class="relative rounded-xl overflow-hidden shadow-2xl border border-white/10 group">
+                        <img src="https://images.unsplash.com/photo-1558494949-ef526b0042a0?q=80&w=1000&auto=format&fit=crop" alt="Server Room" class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                        <div class="absolute bottom-6 left-6">
+                            <span class="px-2 py-1 bg-gas-green text-black text-xs font-bold rounded mb-2 inline-block">CASE STUDY</span>
+                            <h4 class="text-white font-bold text-lg">Riot Platforms (Texas)</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-full md:w-1/2">
+                    <h2 class="text-3xl font-bold text-white mb-6" data-i18n="caseTitle">Turning Energy into an Asset</h2>
+                    <p class="text-gas-subtext mb-6" data-i18n="caseDesc">
+                        Riot Platforms utilizes a massive flexible load strategy in Texas (ERCOT). By curtailing mining operations during heatwaves, they return hundreds of megawatts to the grid.
+                    </p>
+                    <div class="bg-gas-card p-6 rounded-lg border-l-4 border-gas-green mb-8">
+                        <p class="text-white text-sm italic">
+                            "<span data-i18n="caseQuote">Through demand response programs, miners act as a virtual battery, stabilizing the grid while earning significant energy credits.</span>"
+                        </p>
+                    </div>
+                    <a href="#" class="text-gas-blue hover:text-white font-bold text-sm flex items-center gap-2 transition-colors">
+                        <span data-i18n="caseLink">Learn about Flex Load Strategy</span> <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        const AppData = {
+            navigation: [
+                { title: "首页", path: "/index.html", type: "link", icon: "fa-solid fa-house" },
+                { title: "油气井/伴生气发电", path: "/solutions/oilfield", type: "link" },
+                { title: "工业园区与分布式能源", path: "/solutions/industrial", type: "link", active: true },
+                { title: "数据中心 / 挖矿电力", path: "/solutions/mining", type: "link" },
+                { title: "热电联供 CHP", path: "/solutions/chp", type: "link" }
+            ],
+
+            i18n: {
+                zh: {
+                    tagline: "天然气发电挖矿助手",
+                    heroBadge: "解决方案 / 工业园区",
+                    heroTitle: "独立供能",
+                    heroHighlight: "表后发电 (Behind-the-Meter)",
+                    heroDesc: "规避电网扩容延迟与价格波动。部署燃气微电网与灵活负载，为AI与工业园区提供全天候电力保障。",
+                    btnExplore: "探索方案",
+                    btnContact: "咨询专家",
+                    statSource: "数据中心电力需求增长 (2030)",
+                    statDesc: "电网容量无法满足需求激增。表后发电是快速部署的唯一桥梁。",
+                    coreTitle: "表后发电与微电网",
+                    coreSubtitle: "利用自治能源基础设施，解决电网互连排队和电价波动问题。",
+                    feat1Title: "基荷电源保障",
+                    feat1Desc: "新能源具有间歇性。天然气内燃机提供可调度的 24/7 基荷电力，这对AI数据中心和工业流程至关重要，填补了风光发电的缺口。",
+                    feat1Point1: "99% 可用性",
+                    feat1Point2: "电网独立性",
+                    feat2Title: "灵活负载管理 (Flex Load)",
+                    feat2Desc: "部署比特币矿机作为“可中断负载”。在电网高峰期或高电价时段，矿机瞬间关机，将电力释放回园区或出售给电网（需求响应）。",
+                    feat2Point1: "经济效益最大化",
+                    feat2Point2: "电网平衡服务",
+                    feat3Title: "规避基础设施瓶颈",
+                    feat3Desc: "无需等待数年的输电线路许可和建设流程。“气算直连”将算力直接部署在气源侧，消除了输电拥堵。",
+                    feat3Point1: "快速上市",
+                    feat3Point2: "无输电损耗",
+                    caseTitle: "将能源转化为资产",
+                    caseDesc: "Riot Platforms 在德克萨斯州（ERCOT）利用大规模灵活负载策略。通过在热浪期间削减挖矿负荷，他们向电网返还了数百兆瓦的电力。",
+                    caseQuote: "通过需求响应计划，矿工充当虚拟电池，在稳定电网的同时获得巨额能源信用。",
+                    caseLink: "了解灵活负载策略",
+                    "首页": "首页",
+                    "油气井/伴生气发电": "油气井/伴生气发电",
+                    "工业园区与分布式能源": "工业园区与分布式能源",
+                    "数据中心 / 挖矿电力": "数据中心 / 挖矿电力",
+                    "热电联供 CHP": "热电联供 CHP"
+                },
+                en: {
+                    tagline: "Natural Gas Power Mining Assistant",
+                    heroBadge: "SOLUTIONS / INDUSTRIAL",
+                    heroTitle: "Independent Power",
+                    heroHighlight: "Behind the Meter",
+                    heroDesc: "Bypass grid delays and volatility. Deploy gas-powered microgrids with flexible loads to secure 24/7 power for AI and industrial parks.",
+                    btnExplore: "Explore Solutions",
+                    btnContact: "Talk to Expert",
+                    statSource: "Data Centers Power Demand (2030)",
+                    statDesc: "Grid capacity cannot keep up. Behind-the-meter generation is the only viable bridge for rapid deployment.",
+                    coreTitle: "Behind-the-Meter & Microgrids",
+                    coreSubtitle: "Solving the interconnection queue and pricing volatility with autonomous energy infrastructure.",
+                    feat1Title: "Baseload Power Security",
+                    feat1Desc: "Renewables are intermittent. Natural gas engines provide dispatchable, 24/7 baseload power essential for AI data centers and industrial processes, bridging the gap when sun and wind fail.",
+                    feat1Point1: "99% Availability",
+                    feat1Point2: "Grid Independence",
+                    feat2Title: "Flex Load Management",
+                    feat2Desc: "Deploy Bitcoin miners as 'interruptible load'. During peak grid demand or high prices, miners shut down instantly, releasing power back to the park or selling to the grid (Demand Response).",
+                    feat2Point1: "Economic Optimization",
+                    feat2Point2: "Grid Balancing Service",
+                    feat3Title: "Infrastructure Avoidance",
+                    feat3Desc: "Bypass the multi-year wait for transmission line permits. 'Gas-Compute Direct Connection' locates computing power directly at the fuel source, eliminating transmission congestion.",
+                    feat3Point1: "Speed to Market",
+                    feat3Point2: "No Transmission Loss",
+                    caseTitle: "Turning Energy into an Asset",
+                    caseDesc: "Riot Platforms utilizes a massive flexible load strategy in Texas (ERCOT). By curtailing mining operations during heatwaves, they return hundreds of megawatts to the grid.",
+                    caseQuote: "Through demand response programs, miners act as a virtual battery, stabilizing the grid while earning significant energy credits.",
+                    caseLink: "Learn about Flex Load",
+                    "首页": "Home",
+                    "油气井/伴生气发电": "Oil & Gas Power",
+                    "工业园区与分布式能源": "Industrial Power",
+                    "数据中心 / 挖矿电力": "Mining Power",
+                    "热电联供 CHP": "CHP"
+                },
+                ru: {
+                    tagline: "Помощник по газовому майнингу",
+                    heroBadge: "РЕШЕНИЯ / ПРОМЫШЛЕННОСТЬ",
+                    heroTitle: "Независимая энергия",
+                    heroHighlight: "За счетчиком (BtM)",
+                    heroDesc: "Обход задержек сети и волатильности. Газовые микросети с гибкой нагрузкой для обеспечения питания 24/7 для ИИ и промпарков.",
+                    btnExplore: "Решения",
+                    btnContact: "Консультация",
+                    statSource: "Спрос ЦОД на энергию (2030)",
+                    statDesc: "Сеть не успевает. Генерация «за счетчиком» — единственный мост для быстрого развертывания.",
+                    coreTitle: "Микросети Behind-the-Meter",
+                    coreSubtitle: "Решение проблем с подключением к сети и ценами с помощью автономной инфраструктуры.",
+                    feat1Title: "Базовая нагрузка (Baseload)",
+                    feat1Desc: "ВИЭ непостоянны. Газовые двигатели обеспечивают диспетчеризируемую базовую мощность 24/7, необходимую для ЦОД и промышленности, дополняя ветер и солнце.",
+                    feat1Point1: "Доступность 99%",
+                    feat1Point2: "Независимость от сети",
+                    feat2Title: "Управление гибкой нагрузкой",
+                    feat2Desc: "Майнеры как «прерываемая нагрузка». В пиковые часы они отключаются, отдавая энергию парку или продавая в сеть (Demand Response).",
+                    feat2Point1: "Оптимизация экономики",
+                    feat2Point2: "Балансировка сети",
+                    feat3Title: "Обход инфраструктуры",
+                    feat3Desc: "Не нужно ждать годами разрешений на ЛЭП. Прямое подключение «Газ-Вычисления» устраняет перегрузки передачи.",
+                    feat3Point1: "Скорость запуска",
+                    feat3Point2: "Нет потерь в сетях",
+                    caseTitle: "Энергия как актив",
+                    caseDesc: "Riot Platforms использует стратегию гибкой нагрузки в Техасе (ERCOT). Отключая майнинг в жару, они возвращают сети сотни мегаватт.",
+                    caseQuote: "Благодаря программам Demand Response, майнеры работают как виртуальная батарея, стабилизируя сеть и зарабатывая кредиты.",
+                    caseLink: "О стратегии Flex Load",
+                    "首页": "Главная",
+                    "油气井/伴生气发电": "Нефтегаз",
+                    "工业园区与分布式能源": "Пром. энергия",
+                    "数据中心 / 挖矿电力": "Майнинг",
+                    "热电联供 CHP": "ТЭЦ"
+                }
+            }
+        };
+
+        const app = {
+            currentLang: 'en',
+            isMobileMenuOpen: false,
+
+            init() {
+                this.updateStaticText();
+                this.setLanguage('en');
+            },
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                
+                ['zh', 'en', 'ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+                    
+                    const activeClass = "text-black bg-gas-green shadow-glow font-bold";
+                    const inactiveClass = "text-gas-subtext hover:text-white hover:bg-white/5 font-medium";
+                    const mobActiveClass = "text-black bg-gas-green font-bold";
+                    const mobInactiveClass = "text-gray-400 font-medium";
+
+                    if (btn) btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center ${l === lang ? activeClass : inactiveClass}`;
+                    if (mobBtn) mobBtn.className = `px-4 py-2 rounded-full text-xs transition-all ${l === lang ? mobActiveClass : mobInactiveClass}`;
+                });
+
+                this.updateStaticText();
+            },
+
+            t(key) {
+                const dict = AppData.i18n[this.currentLang];
+                return (dict && dict[key]) ? dict[key] : key;
+            },
+
+            updateStaticText() {
+                const taglineEl = document.getElementById('header-tagline');
+                if(taglineEl) taglineEl.innerText = this.t('tagline');
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    el.innerText = this.t(key);
+                });
+            }
+        };
+
+        window.app = app;
+
+        app.init();
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

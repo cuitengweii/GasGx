@@ -1,0 +1,363 @@
+﻿<!DOCTYPE html>
+<html lang="zh" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About GasGx | 天然气发电算力行业研究平台</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',
+                            card: '#202020',
+                            green: '#5DD62C',
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',
+                            subtext: '#94a3b8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 20px rgba(93, 214, 44, 0.6)',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #1a1a1a 1px, transparent 1px), linear-gradient(to bottom, #1a1a1a 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body { background-color: #0F0F0F; color: #F8F8F8; font-family: 'Inter', sans-serif; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* 核心卡片样式复用 */
+        .gas-card { background-color: rgba(32, 32, 32, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .gas-card-hover { transition: all 0.3s ease; }
+        .gas-card-hover:hover { transform: translateY(-5px); border-color: #5DD62C; box-shadow: 0 10px 30px rgba(93, 214, 44, 0.1); }
+
+        /* 背景网格动画 */
+        .bg-grid { background-size: 40px 40px; mask-image: linear-gradient(to bottom, transparent, 10%, black, 90%, transparent); }
+
+        /* 文本高亮 */
+        .text-gradient { background: linear-gradient(135deg, #fff 0%, #94a3b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .text-accent { color: #5DD62C; text-shadow: 0 0 15px rgba(93, 214, 44, 0.4); }
+    </style>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative selection:bg-gas-green selection:text-black">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-16 w-full">
+
+        <section class="relative min-h-[60vh] flex items-center justify-center overflow-hidden">
+            <div class="absolute inset-0 bg-grid-pattern bg-grid opacity-20 pointer-events-none"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gas-green opacity-[0.03] blur-[120px] rounded-full pointer-events-none"></div>
+
+            <div class="max-w-5xl mx-auto px-6 text-center relative z-10 mt-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gas-green/30 bg-gas-green/10 text-gas-green text-xs font-bold tracking-wider mb-6">
+                    <span class="w-2 h-2 rounded-full bg-gas-green animate-pulse"></span>
+                    <span data-i18n="hero_badge">INDUSTRY RESEARCH PLATFORM</span>
+                </div>
+
+                <h1 class="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                    <span data-i18n="hero_title_1">Connecting Stranded Gas</span><br>
+                    <span data-i18n="hero_title_2">to Global</span> <span class="text-accent">Compute Power</span>
+                </h1>
+
+                <p class="text-lg md:text-xl text-gas-subtext max-w-3xl mx-auto mb-10 font-light leading-relaxed" data-i18n="hero_desc">
+                    GasGx 是全球领先的天然气发电与算力结合的行研平台。我们专注于解决伴生气放散问题，提供从燃气发电机组选型到比特币挖矿及 AI 数据中心建设的全链路可行性分析。
+                </p>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button onclick="document.getElementById('cta-section').scrollIntoView({behavior: 'smooth'})" class="px-8 py-3 bg-gas-green text-black font-bold rounded-lg shadow-glow hover:bg-white transition-all transform hover:scale-105">
+                        <i class="fa-solid fa-file-arrow-down mr-2"></i> <span data-i18n="btn_whitepaper">Download Whitepaper</span>
+                    </button>
+                    <a href="mailto:contact@gasgx.com?subject=Partnership%20Inquiry%20%7C%20GasGx" class="px-8 py-3 border border-white/20 text-white font-medium rounded-lg hover:border-gas-green hover:text-gas-green transition-all bg-[#1a1a1a] flex items-center justify-center">
+                        <span data-i18n="btn_contact">Partner with Us</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <div class="border-y border-white/5 bg-[#151515]">
+            <div class="max-w-[1400px] mx-auto px-6 py-12">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                    <div>
+                        <div class="text-3xl font-bold text-white mb-1">150+</div>
+                        <div class="text-xs text-gas-subtext uppercase tracking-widest" data-i18n="stat_models">Genset Models</div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-gas-green mb-1">63%</div>
+                        <div class="text-xs text-gas-subtext uppercase tracking-widest" data-i18n="stat_emissions">Emission Reduction</div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-white mb-1">$0.03</div>
+                        <div class="text-xs text-gas-subtext uppercase tracking-widest" data-i18n="stat_cost">Target Power Cost</div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-white mb-1">20+</div>
+                        <div class="text-xs text-gas-subtext uppercase tracking-widest" data-i18n="stat_regions">Regions Covered</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="py-20 px-6 max-w-[1400px] mx-auto">
+            <div class="mb-12">
+                <h2 class="text-3xl font-bold text-white mb-4"><span class="text-gas-green">///</span> <span data-i18n="section_core_title">Our Expertise</span></h2>
+                <p class="text-gas-subtext max-w-2xl" data-i18n="section_core_sub">我们不仅仅是一个数据库，更是连接能源与数字资产的桥梁。</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="gas-card gas-card-hover rounded-xl p-8 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fa-solid fa-server text-8xl text-gas-green"></i>
+                    </div>
+                    <div class="w-12 h-12 bg-gas-green/10 rounded-lg flex items-center justify-center mb-6 text-gas-green border border-gas-green/20">
+                        <i class="fa-solid fa-database text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3" data-i18n="card_1_title">Data Insights</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed" data-i18n="card_1_desc">
+                        收录全球主流燃气发电机组参数（CAT, Jenbacher等），提供针对高硫气、伴生气的设备选型建议与效率对比。
+                    </p>
+                </div>
+
+                <div class="gas-card gas-card-hover rounded-xl p-8 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fa-brands fa-bitcoin text-8xl text-gas-green"></i>
+                    </div>
+                    <div class="w-12 h-12 bg-gas-green/10 rounded-lg flex items-center justify-center mb-6 text-gas-green border border-gas-green/20">
+                        <i class="fa-solid fa-microchip text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3" data-i18n="card_2_title">Compute Integration</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed" data-i18n="card_2_desc">
+                        专注于比特币挖矿与 AI 高性能计算的能源供给研究。分析算力功耗比，设计集装箱式、浸没式液冷的现场部署方案。
+                    </p>
+                </div>
+
+                <div class="gas-card gas-card-hover rounded-xl p-8 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fa-solid fa-scale-balanced text-8xl text-gas-green"></i>
+                    </div>
+                    <div class="w-12 h-12 bg-gas-green/10 rounded-lg flex items-center justify-center mb-6 text-gas-green border border-gas-green/20">
+                        <i class="fa-solid fa-chart-line text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3" data-i18n="card_3_title">Financial Models</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed" data-i18n="card_3_desc">
+                        基于 CAPEX/OPEX 的深度财务模型。涵盖碳信用（Carbon Credits）变现、电力套利策略以及合规性风险评估。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="cta-section" class="py-20 bg-[#0a0a0a] border-t border-white/5">
+            <div class="max-w-3xl mx-auto text-center px-4">
+                <i class="fa-solid fa-bolt text-4xl text-gas-green mb-6 animate-pulse"></i>
+                <h2 class="text-3xl font-bold text-white mb-6" data-i18n="cta_title">Ready to Monetize Your Stranded Gas?</h2>
+                <p class="text-gas-subtext mb-8" data-i18n="cta_desc">
+                    GasGx 2026 行业白皮书现已开放。立即联系我们获取针对您的气井或矿场的定制化能源报告。
+                </p>
+
+                <div class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                    <input id="sub-email" type="email" placeholder="Enter your email" class="flex-1 bg-[#1a1a1a] border border-white/10 text-white px-4 py-3 rounded-lg focus:border-gas-green focus:outline-none transition-colors">
+                    <button onclick="window.app.handleSubscribe()" class="bg-gas-green text-black font-bold px-6 py-3 rounded-lg hover:bg-white transition-colors">
+                        <span data-i18n="btn_subscribe">Subscribe</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        const I18N_DATA = {
+            'zh': {
+                'tagline': '天然气发电挖矿助手',
+                'nav_home': '首页',
+                'nav_about': '关于我们',
+                'nav_research': '研究报告',
+                'nav_contact': '联系我们',
+                'hero_badge': '行业战略研究平台',
+                'hero_title_1': '连接搁浅能源与',
+                'hero_title_2': '全球数字',
+                'hero_desc': 'GasGx 是全球领先的天然气发电与算力结合的行研平台。我们专注于解决伴生气放散问题，提供从燃气发电机组选型到比特币挖矿及 AI 数据中心建设的全链路可行性分析。',
+                'btn_whitepaper': '获取白皮书',
+                'btn_contact': '商务合作',
+                'stat_models': '收录机型',
+                'stat_emissions': '碳减排潜力',
+                'stat_cost': '目标电力成本',
+                'stat_regions': '覆盖地区',
+                'section_core_title': '我们的专业领域',
+                'section_core_sub': '我们不仅仅是一个数据库，更是连接能源与数字资产的桥梁。',
+                'card_1_title': '数据洞察',
+                'card_1_desc': '收录全球主流燃气发电机组参数（CAT, Jenbacher 等），提供针对高硫气、伴生气的设备选型建议与效率对比。',
+                'card_2_title': '算力集成',
+                'card_2_desc': '专注于比特币挖矿与 AI 高性能计算的能源供给研究。分析算力功耗比，设计集装箱式、浸没式液冷的现场部署方案。',
+                'card_3_title': '金融模型',
+                'card_3_desc': '基于 CAPEX/OPEX 的深度财务模型。涵盖碳信用（Carbon Credits）变现、电力套利策略以及合规性风险评估。',
+                'cta_title': '准备好让搁浅气变现了吗？',
+                'cta_desc': 'GasGx 2026 行业白皮书现已开放。立即订阅获取完整报告。',
+                'btn_subscribe': '立即订阅',
+                'footerTagline': '让天然气发电挖矿更简单',
+                'contact_us': '联系我们',
+                'privacy_policy': '隐私政策'
+            },
+            'en': {
+                'tagline': 'Natural Gas Power Mining Assistant',
+                'nav_home': 'Home',
+                'nav_about': 'About Us',
+                'nav_research': 'Research',
+                'nav_contact': 'Contact',
+                'hero_badge': 'INDUSTRY RESEARCH PLATFORM',
+                'hero_title_1': 'Connecting Stranded Gas',
+                'hero_title_2': 'to Global',
+                'hero_desc': 'GasGx is the premier research platform bridging natural gas generation with digital compute. We solve gas flaring issues by analyzing the feasibility of gas-to-power for Bitcoin mining and AI data centers.',
+                'btn_whitepaper': 'Get Whitepaper',
+                'btn_contact': 'Partner with Us',
+                'stat_models': 'Genset Models',
+                'stat_emissions': 'Emission Reduction',
+                'stat_cost': 'Target Power Cost',
+                'stat_regions': 'Regions Covered',
+                'section_core_title': 'Our Expertise',
+                'section_core_sub': 'More than a database, we are the bridge between energy infrastructure and digital assets.',
+                'card_1_title': 'Data Insights',
+                'card_1_desc': 'Comprehensive database of gas gensets (CAT, Jenbacher, etc.) with selection advice for sour/associated gas and efficiency comparisons.',
+                'card_2_title': 'Compute Integration',
+                'card_2_desc': 'Research on power supply for Bitcoin mining and HPC AI. Analyzing power-to-hash ratios and immersion cooling deployment strategies.',
+                'card_3_title': 'Financial Models',
+                'card_3_desc': 'Deep financial modeling based on CAPEX/OPEX. Covering Carbon Credit monetization, arbitrage strategies, and regulatory compliance.',
+                'cta_title': 'Ready to Monetize Your Stranded Gas?',
+                'cta_desc': 'The GasGx 2026 Industry Whitepaper is available. Subscribe now to get the full report.',
+                'btn_subscribe': 'Subscribe',
+                'footerTagline': 'Making natural gas power mining easier',
+                'contact_us': 'Contact Us',
+                'privacy_policy': 'Privacy Policy'
+            },
+            'ru': {
+                'tagline': 'Помощник по майнингу на газе',
+                'nav_home': 'Главная',
+                'nav_about': 'О нас',
+                'nav_research': 'Отчеты',
+                'nav_contact': 'Контакты',
+                'hero_badge': 'ИССЛЕДОВАТЕЛЬСКАЯ ПЛАТФОРМА',
+                'hero_title_1': 'Связь Попутного Газа',
+                'hero_title_2': 'с Вычислениями',
+                'hero_desc': 'GasGx - ведущая платформа исследований газовой генерации и майнинга. Мы решаем проблему сжигания газа, анализируя возможности майнинга и ИИ на месторождениях.',
+                'btn_whitepaper': 'Белая книга',
+                'btn_contact': 'Сотрудничество',
+                'stat_models': 'Модели генераторов',
+                'stat_emissions': 'Снижение выбросов',
+                'stat_cost': 'Цена энергии',
+                'stat_regions': 'Регионы',
+                'section_core_title': 'Наша Экспертиза',
+                'section_core_sub': 'Мы мост между энергетической инфраструктурой и цифровыми активами.',
+                'card_1_title': 'Данные и Инсайты',
+                'card_1_desc': 'База данных газовых генераторов (CAT, Jenbacher) с рекомендациями по выбору для высокосернистого и попутного газа.',
+                'card_2_title': 'Интеграция Вычислений',
+                'card_2_desc': 'Энергоснабжение для майнинга биткоинов и ИИ. Анализ эффективности и стратегии иммерсионного охлаждения.',
+                'card_3_title': 'Финансовые Модели',
+                'card_3_desc': 'Глубокое моделирование CAPEX/OPEX. Монетизация углеродных кредитов и оценка регуляторных рисков.',
+                'cta_title': 'Готовы монетизировать газ?',
+                'cta_desc': 'Доступен отчет GasGx 2026. Подпишитесь для получения.',
+                'btn_subscribe': 'Подписаться',
+                'footerTagline': 'Майнинг на газе стал проще',
+                'contact_us': 'Контакты',
+                'privacy_policy': 'Политика конфиденциальности'
+            }
+        };
+
+        window.app = {
+            lang: localStorage.getItem('gas_lang') || 'en',
+
+            init() {
+                this.setLanguage(this.lang);
+            },
+
+            setLanguage(lang) {
+                this.lang = lang;
+                localStorage.setItem('gas_lang', lang);
+                const dict = I18N_DATA[lang] || I18N_DATA['en'];
+
+                // 更新按钮样式
+                ['zh','en','ru'].forEach(l => {
+                    const activeClass = "px-2 py-1 rounded-full text-[10px] font-bold transition-all w-8 text-center text-black bg-gas-green shadow-glow";
+                    const inactiveClass = "px-2 py-1 rounded-full text-[10px] font-medium transition-all w-8 text-center text-gas-subtext";
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    if(btn) btn.className = l===lang ? activeClass : inactiveClass;
+                });
+
+                // 更新文本
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key]) {
+                        // 保留图标
+                        if(el.children.length > 0) {
+                            const icon = el.children[0].outerHTML;
+                            el.innerHTML = icon + ' ' + dict[key];
+                        } else {
+                            el.innerText = dict[key];
+                        }
+                    }
+                });
+
+                // 更新输入框 placeholder
+                const input = document.getElementById('sub-email');
+                if(input && lang === 'zh') input.placeholder = "请输入您的邮箱";
+                if(input && lang === 'en') input.placeholder = "Enter your email";
+                if(input && lang === 'ru') input.placeholder = "Введите ваш email";
+            },
+
+            // 新增：订阅处理函数
+            handleSubscribe() {
+                const emailInput = document.getElementById('sub-email');
+                const email = emailInput.value.trim();
+
+                if (!email) {
+                    const msg = this.lang === 'zh' ? '请输入有效的邮箱地址' : 'Please enter a valid email address';
+                    alert(msg);
+                    emailInput.focus();
+                    return;
+                }
+
+                // 构建 mailto 链接
+                // 主题：GasGx 2026 行业白皮书
+                // 正文：包含了用户输入的邮箱，方便发送者确认
+                const recipient = 'contact@gasgx.com';
+                const subject = encodeURIComponent('GasGx 2026 行业白皮书');
+                const body = encodeURIComponent(`Hi GasGx Team,\n\nPlease send the 2026 Whitepaper to my email: ${email}\n\nThanks.`);
+
+                window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => window.app.init());
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

@@ -1,0 +1,458 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oil & Gas Digital Flare Mitigation - GasGx</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(93, 214, 44, 0.4)',
+                        'glow-sm': '0 0 10px rgba(93, 214, 44, 0.2)',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+        
+        .gas-card:hover {
+            border-color: rgba(93, 214, 44, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+        }
+        .nav-item-link:hover, .nav-item-link.active { color: #5DD62C; }
+        
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after, .nav-item-link.active::after { width: 100%; }
+
+        .section-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(93,214,44,0.08) 0%, rgba(0,0,0,0) 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="bg-grid-pattern">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-24 pb-12 w-full relative overflow-hidden">
+        
+        <section class="max-w-7xl mx-auto px-4 mb-20 relative">
+            <div class="section-glow top-0 left-1/2 -translate-x-1/2"></div>
+            
+            <div class="text-center relative z-10 pt-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gas-green/30 bg-gas-green/10 text-gas-green text-xs font-mono mb-6">
+                    <i class="fa-solid fa-fire-flame-simple"></i>
+                    <span data-i18n="hero_badge">Digital Flare Mitigation (DFM)</span>
+                </div>
+                <h1 data-i18n="hero_title" class="text-4xl md:text-6xl font-black mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-500">
+                    油气井伴生气发电解决方案
+                </h1>
+                <p data-i18n="hero_desc" class="text-xl text-gas-subtext max-w-3xl mx-auto leading-relaxed">
+                    将原本被燃烧或排放的“废气”转化为高性能计算电力。零边际成本能源，为算力基础设施提供最强动力。
+                </p>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 mb-24">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="order-2 md:order-1">
+                    <div class="gas-card p-8 rounded-2xl relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-gas-green/5 rounded-full blur-2xl"></div>
+                        <h3 data-i18n="sec1_title" class="text-2xl font-bold text-white mb-4">搁浅气体货币化</h3>
+                        <p data-i18n="sec1_desc" class="text-gray-400 mb-6 leading-relaxed">
+                            在偏远油气井口，利用模块化燃气发电机组直接消耗伴生气。产生的电力不并网，直接供给集装箱式数据中心（矿箱）。
+                        </p>
+                        <ul class="space-y-4">
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-check text-gas-green mt-1"></i>
+                                <div>
+                                    <strong data-i18n="sec1_point1_title" class="text-white block text-sm">负资产转正</strong>
+                                    <span data-i18n="sec1_point1_desc" class="text-sm text-gray-500">消除燃烧罚款，将废气转化为正向现金流。</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-bolt text-gas-green mt-1"></i>
+                                <div>
+                                    <strong data-i18n="sec1_point2_title" class="text-white block text-sm">极低电力成本</strong>
+                                    <span data-i18n="sec1_point2_desc" class="text-sm text-gray-500">综合成本低至 $0.02 - $0.04/kWh，远低于工业电网价格。</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="order-1 md:order-2 text-center md:text-left">
+                    <i class="fa-solid fa-coins text-[120px] text-gas-green/20 animate-pulse"></i>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 mb-24">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="text-center md:text-right">
+                    <i class="fa-solid fa-flask text-[120px] text-gas-green/20"></i>
+                </div>
+                <div>
+                    <h3 data-i18n="sec2_title" class="text-2xl font-bold text-white mb-4">酸性气 (Sour Gas) 处理技术</h3>
+                    <p data-i18n="sec2_desc" class="text-gray-400 mb-6 leading-relaxed">
+                        面对含高浓度硫化氢 (H₂S) 的劣质气源，我们提供完整的预处理与抗腐蚀发电方案，解锁原本无法利用的能源储备。
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-[#1a1a1a] p-4 rounded border border-white/5">
+                            <div class="text-gas-green mb-2"><i class="fa-solid fa-filter"></i></div>
+                            <h4 data-i18n="sec2_sub1_title" class="font-bold text-sm mb-1">化学清除与胺处理</h4>
+                            <p data-i18n="sec2_sub1_desc" class="text-xs text-gray-500">使用三嗪或胺液高效脱硫，保护发电机组。</p>
+                        </div>
+                        <div class="bg-[#1a1a1a] p-4 rounded border border-white/5">
+                            <div class="text-gas-green mb-2"><i class="fa-solid fa-shield-halved"></i></div>
+                            <h4 data-i18n="sec2_sub2_title" class="font-bold text-sm mb-1">设备防腐保护</h4>
+                            <p data-i18n="sec2_sub2_desc" class="text-xs text-gray-500">防止硫化物应力开裂，延长设备MTBF。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 mb-20">
+            <div class="flex items-center gap-4 mb-8">
+                <h2 data-i18n="cases_title" class="text-3xl font-bold text-white">典型落地案例</h2>
+                <div class="h-px bg-white/10 flex-1"></div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="gas-card p-6 rounded-xl group hover:border-gas-green/50 cursor-pointer">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="bg-blue-900/30 text-blue-400 text-xs px-2 py-1 rounded border border-blue-500/30" data-i18n="case1_loc">Argentina</div>
+                        <i class="fa-solid fa-arrow-right -rotate-45 text-gray-600 group-hover:text-gas-green transition-colors"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-2">YPF Luz & Genesis Digital Assets</h4>
+                    <p data-i18n="case1_desc" class="text-sm text-gray-400 mb-4">
+                        在 Vaca Muerta 油田，利用 Bajo del Toro 热电厂的搁浅气体为 1,200 台矿机供电。
+                    </p>
+                    <div class="flex gap-4 border-t border-white/5 pt-4">
+                        <div>
+                            <span class="block text-xl font-bold text-gas-green">-63%</span>
+                            <span data-i18n="case_stat_co2" class="text-[10px] text-gray-500 uppercase">CO2e Emissions</span>
+                        </div>
+                        <div>
+                            <span class="block text-xl font-bold text-white">7 MW</span>
+                            <span data-i18n="case_stat_power" class="text-[10px] text-gray-500 uppercase">Power Capacity</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gas-card p-6 rounded-xl group hover:border-gas-green/50 cursor-pointer">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="bg-red-900/30 text-red-400 text-xs px-2 py-1 rounded border border-red-500/30" data-i18n="case2_loc">USA (North Dakota)</div>
+                        <i class="fa-solid fa-arrow-right -rotate-45 text-gray-600 group-hover:text-gas-green transition-colors"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-2">Crusoe Energy & ExxonMobil</h4>
+                    <p data-i18n="case2_desc" class="text-sm text-gray-400 mb-4">
+                        利用页岩油田伴生气驱动模块化数据中心，通过 Digital Flare Mitigation 技术大幅减少甲烷排放。
+                    </p>
+                    <div class="flex gap-4 border-t border-white/5 pt-4">
+                        <div>
+                            <span class="block text-xl font-bold text-gas-green">99.9%</span>
+                            <span data-i18n="case_stat_methane" class="text-[10px] text-gray-500 uppercase">Methane Removed</span>
+                        </div>
+                        <div>
+                            <span class="block text-xl font-bold text-white">Scalable</span>
+                            <span data-i18n="case_stat_deploy" class="text-[10px] text-gray-500 uppercase">Deployment</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-4xl mx-auto px-4 text-center mb-12">
+            <div class="bg-gradient-to-r from-gas-green/10 to-transparent p-1 rounded-2xl">
+                <div class="bg-[#151515] rounded-xl p-8 md:p-12">
+                    <h2 data-i18n="cta_title" class="text-2xl md:text-3xl font-bold mb-4">准备好计算您的收益了吗？</h2>
+                    <p data-i18n="cta_desc" class="text-gray-400 mb-8">使用我们的 ROI 计算器，输入您的气量参数，立即估算挖矿回本周期。</p>
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <a href="/tools/mining-income-calculator" class="px-8 py-3 bg-gas-green text-black font-bold rounded hover:bg-white transition-all shadow-glow">
+                            <i class="fa-solid fa-calculator mr-2"></i> <span data-i18n="cta_btn_calc">打开收益计算器</span>
+                        </a>
+                        <a href="/about/contact" class="px-8 py-3 border border-white/20 text-white font-medium rounded hover:border-gas-green hover:text-gas-green transition-all">
+                            <span data-i18n="cta_btn_contact">联系技术专家</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        const AppData = {
+            // Updated simple navigation structure
+            navigation: [
+                { title: "nav_home", path: "/index.html", type: "link" },
+                { title: "nav_oil", path: "/use-cases/oilfield", type: "link" }, // Active Page
+                { title: "nav_ind", path: "/use-cases/industrial", type: "link" },
+                { title: "nav_mining", path: "/use-cases/mining", type: "link" },
+                { title: "nav_chp", path: "/use-cases/chp", type: "link" }
+            ],
+            
+            i18n: {
+                zh: {
+                    tagline: "天然气发电挖矿助手",
+                    footerTagline: "让天然气发电挖矿更简单",
+                    // Navigation
+                    nav_home: "首页",
+                    nav_oil: "油气井 / 伴生气",
+                    nav_ind: "工业与园区能源",
+                    nav_mining: "挖矿 / 数据中心",
+                    nav_chp: "CHP 热电联供",
+                    // Hero
+                    hero_badge: "数字火炬缓解 (DFM)",
+                    hero_title: "油气井伴生气发电解决方案",
+                    hero_desc: "将原本被燃烧或排放的“废气”转化为高性能计算电力。零边际成本能源，为算力基础设施提供最强动力。",
+                    // Section 1
+                    sec1_title: "搁浅气体货币化",
+                    sec1_desc: "在偏远油气井口，利用模块化燃气发电机组直接消耗伴生气。产生的电力不并网，直接供给集装箱式数据中心（矿箱）。",
+                    sec1_point1_title: "负资产转正",
+                    sec1_point1_desc: "消除燃烧罚款，将废气转化为正向现金流。",
+                    sec1_point2_title: "极低电力成本",
+                    sec1_point2_desc: "综合成本低至 $0.02 - $0.04/kWh，远低于工业电网价格。",
+                    // Section 2
+                    sec2_title: "酸性气 (Sour Gas) 处理技术",
+                    sec2_desc: "面对含高浓度硫化氢 (H₂S) 的劣质气源，我们提供完整的预处理与抗腐蚀发电方案，解锁原本无法利用的能源储备。",
+                    sec2_sub1_title: "化学清除与胺处理",
+                    sec2_sub1_desc: "使用三嗪或胺液高效脱硫，保护发电机组。",
+                    sec2_sub2_title: "设备防腐保护",
+                    sec2_sub2_desc: "防止硫化物应力开裂，延长设备MTBF。",
+                    // Cases
+                    cases_title: "典型落地案例",
+                    case1_loc: "阿根廷",
+                    case1_desc: "在 Vaca Muerta 油田，利用 Bajo del Toro 热电厂的搁浅气体为 1,200 台矿机供电。",
+                    case2_loc: "美国 (北达科他州)",
+                    case2_desc: "利用页岩油田伴生气驱动模块化数据中心，通过 Digital Flare Mitigation 技术大幅减少甲烷排放。",
+                    case_stat_co2: "碳排放当量减少",
+                    case_stat_power: "装机容量",
+                    case_stat_methane: "甲烷去除率",
+                    case_stat_deploy: "部署方式",
+                    // CTA
+                    cta_title: "准备好计算您的收益了吗？",
+                    cta_desc: "使用我们的 ROI 计算器，输入您的气量参数，立即估算挖矿回本周期。",
+                    cta_btn_calc: "打开收益计算器",
+                    cta_btn_contact: "联系技术专家"
+                },
+                en: {
+                    tagline: "Natural Gas Power Mining Assistant",
+                    footerTagline: "Making natural gas power mining easier",
+                    // Navigation
+                    nav_home: "Home",
+                    nav_oil: "Oilfield / Associated Gas",
+                    nav_ind: "Industrial / Park",
+                    nav_mining: "Mining / Data Center",
+                    nav_chp: "CHP Cogeneration",
+                    // Hero
+                    hero_badge: "Digital Flare Mitigation (DFM)",
+                    hero_title: "Associated Gas Power Solutions",
+                    hero_desc: "Transforming flared or vented 'waste gas' into high-performance computing power. Zero marginal cost energy powering infrastructure.",
+                    // Section 1
+                    sec1_title: "Stranded Gas Monetization",
+                    sec1_desc: "Utilize modular gas generator sets directly at remote wellheads to consume associated gas. Power is fed directly to containerized data centers (Miners).",
+                    sec1_point1_title: "Liability to Asset",
+                    sec1_point1_desc: "Eliminate flaring fines and turn waste gas into positive cash flow.",
+                    sec1_point2_title: "Ultra-Low Power Cost",
+                    sec1_point2_desc: "All-in costs as low as $0.02 - $0.04/kWh, far below grid industrial rates.",
+                    // Section 2
+                    sec2_title: "Sour Gas Treatment Tech",
+                    sec2_desc: "For low-quality gas with high H₂S concentration, we provide complete pretreatment and corrosion-resistant power solutions.",
+                    sec2_sub1_title: "Chemical Scavengers",
+                    sec2_sub1_desc: "Using Triazine or Amine scrubbers for efficient desulfurization.",
+                    sec2_sub2_title: "Corrosion Protection",
+                    sec2_sub2_desc: "Preventing sulfide stress cracking and extending equipment MTBF.",
+                    // Cases
+                    cases_title: "Case Studies",
+                    case1_loc: "Argentina",
+                    case1_desc: "Powering 1,200 miners using stranded gas at the Bajo del Toro thermal plant in Vaca Muerta.",
+                    case2_loc: "USA (North Dakota)",
+                    case2_desc: "Powering modular data centers with shale oil associated gas, significantly reducing methane emissions.",
+                    case_stat_co2: "CO2e Reduced",
+                    case_stat_power: "Power Capacity",
+                    case_stat_methane: "Methane Removed",
+                    case_stat_deploy: "Deployment",
+                    // CTA
+                    cta_title: "Ready to calculate your ROI?",
+                    cta_desc: "Use our calculator to estimate mining payback periods based on your gas volume.",
+                    cta_btn_calc: "Launch Calculator",
+                    cta_btn_contact: "Contact Expert"
+                },
+                ru: {
+                    tagline: "Помощник по газовому майнингу",
+                    footerTagline: "Майнинг на газе проще",
+                    // Navigation
+                    nav_home: "Главная",
+                    nav_oil: "Нефтегаз / ПНГ",
+                    nav_ind: "Пром. энергия",
+                    nav_mining: "Майнинг / ЦОД",
+                    nav_chp: "ТЭЦ (CHP)",
+                    // Hero
+                    hero_badge: "Цифровое факельное сжигание (DFM)",
+                    hero_title: "Решения для попутного газа",
+                    hero_desc: "Превращаем сжигаемый «мусорный газ» в энергию для вычислений. Энергия с нулевой стоимостью для инфраструктуры.",
+                    // Section 1
+                    sec1_title: "Монетизация газа",
+                    sec1_desc: "Использование модульных генераторов прямо на скважине. Электроэнергия питает контейнерные дата-центры (майнеры) без подключения к сети.",
+                    sec1_point1_title: "Из пассива в актив",
+                    sec1_point1_desc: "Исключение штрафов за сжигание и превращение газа в денежный поток.",
+                    sec1_point2_title: "Низкая цена кВт*ч",
+                    sec1_point2_desc: "Себестоимость $0.02 - $0.04/кВт*ч, значительно ниже промышленных тарифов.",
+                    // Section 2
+                    sec2_title: "Обработка кислого газа",
+                    sec2_desc: "Для газа с высоким содержанием H₂S мы предлагаем полную предобработку и коррозионно-стойкие решения.",
+                    sec2_sub1_title: "Хим. очистка и Амины",
+                    sec2_sub1_desc: "Использование триазина или аминовых скрубберов для десулфуризации.",
+                    sec2_sub2_title: "Защита от коррозии",
+                    sec2_sub2_desc: "Предотвращение сероводородного растрескивания и увеличение MTBF.",
+                    // Cases
+                    cases_title: "Кейсы",
+                    case1_loc: "Аргентина",
+                    case1_desc: "Питание 1200 майнеров попутным газом на ТЭС Bajo del Toro в Vaca Muerta.",
+                    case2_loc: "США (Северная Дакота)",
+                    case2_desc: "Модульные ЦОД на сланцевом газе, значительное снижение выбросов метана.",
+                    case_stat_co2: "Снижение CO2e",
+                    case_stat_power: "Мощность",
+                    case_stat_methane: "Удаление метана",
+                    case_stat_deploy: "Развертывание",
+                    // CTA
+                    cta_title: "Готовы рассчитать доход?",
+                    cta_desc: "Используйте калькулятор для оценки окупаемости майнинга на вашем газе.",
+                    cta_btn_calc: "Калькулятор",
+                    cta_btn_contact: "Связаться"
+                }
+            }
+        };
+
+        const app = {
+            currentLang: 'en', // Default to Chinese as per context implying region importance, or use 'en'
+
+            init() {
+                this.updateContent();
+                this.updateActiveLangState();
+            },
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                this.updateContent();
+                this.updateActiveLangState();
+            },
+
+            t(key) {
+                const dict = AppData.i18n[this.currentLang];
+                return (dict && dict[key]) ? dict[key] : key;
+            },
+
+            updateActiveLangState() {
+                const buttonClasses = {
+                    active: "text-black bg-gas-green shadow-glow font-bold",
+                    inactive: "text-gas-subtext hover:text-white hover:bg-white/5 font-medium"
+                };
+
+                ['zh', 'en', 'ru'].forEach(lang => {
+                    const btn = document.getElementById(`btn-lang-${lang}`);
+                    if(btn) {
+                        btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center cursor-pointer ${lang === this.currentLang ? buttonClasses.active : buttonClasses.inactive}`;
+                    }
+                });
+            },
+
+            updateContent() {
+                // Update text for elements with data-i18n attribute
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    el.innerText = this.t(key);
+                });
+            },
+        };
+
+        // Start
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = app;
+            app.init();
+        });
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

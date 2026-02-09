@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service & Maintenance | GasGx 售后服务体系</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 20px rgba(93, 214, 44, 0.6)',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #1a1a1a 1px, transparent 1px), linear-gradient(to bottom, #1a1a1a 1px, transparent 1px)",
+                        'engine-schematic': "url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23333\" fill-opacity=\"0.2\"%3E%3Cpath d=\"M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body { background-color: #0F0F0F; color: #F8F8F8; font-family: 'Inter', sans-serif; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+        
+        .gas-card { background-color: rgba(32, 32, 32, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .gas-card-hover { transition: all 0.3s ease; }
+        .gas-card-hover:hover { transform: translateY(-5px); border-color: #5DD62C; box-shadow: 0 10px 30px rgba(93, 214, 44, 0.1); }
+        
+        .bg-grid { background-size: 40px 40px; mask-image: linear-gradient(to bottom, transparent, 10%, black, 90%, transparent); }
+    </style>
+    
+    <script>window.app = window.app || {};</script>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative selection:bg-gas-green selection:text-black">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-16 w-full relative">
+        <div class="absolute inset-0 bg-grid-pattern bg-grid opacity-20 pointer-events-none"></div>
+        
+        <section class="max-w-[1400px] mx-auto px-6 py-16 text-center relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gas-green/30 bg-gas-green/10 text-gas-green text-xs font-bold tracking-wider mb-6">
+                <i class="fa-solid fa-rotate-right animate-spin-slow"></i>
+                <span data-i18n="hero_badge">LIFECYCLE SERVICES</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold mb-6">
+                <span data-i18n="page_title_1">Total Care</span> <span class="text-gas-green" data-i18n="page_title_2">Solution</span>
+            </h1>
+            <p class="text-lg text-gas-subtext max-w-3xl mx-auto" data-i18n="page_desc">
+                GasGx 提供覆盖全生命周期的综合服务体系。从基础的定期保养到基于数字监控的预测性维护，我们致力于降低您的总拥有成本 (TCO) 并延长设备寿命。
+            </p>
+        </section>
+
+        <section class="max-w-[1400px] mx-auto px-6 pb-16">
+            <div class="grid md:grid-cols-3 gap-6">
+                
+                <div class="gas-card gas-card-hover rounded-xl p-8 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fa-solid fa-wrench text-8xl text-gas-green"></i>
+                    </div>
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 rounded bg-gas-green/20 flex items-center justify-center text-gas-green">
+                            <i class="fa-solid fa-oil-can"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white" data-i18n="sec1_title">Routine Maintenance</h3>
+                    </div>
+                    <div class="space-y-4 text-sm text-gas-subtext">
+                        <p data-i18n="sec1_p1">确保机组运行的基础。严格遵循运行小时数 (Operating Hours) 计划。</p>
+                        <ul class="list-disc pl-4 space-y-2">
+                            <li>
+                                <span class="text-white font-medium" data-i18n="sec1_li1_title">耗材更换:</span> 
+                                <span data-i18n="sec1_li1_desc">Waukesha VHP 5系列机油/火花塞更换间隔可达 4,000 小时。</span>
+                            </li>
+                            <li>
+                                <span class="text-white font-medium" data-i18n="sec1_li2_title">流体分析 (S•O•S℠):</span> 
+                                <span data-i18n="sec1_li2_desc">分析废油/冷却液样本，精准确定组件状态，优化换油间隔。</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="gas-card gas-card-hover rounded-xl p-8 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fa-solid fa-arrows-rotate text-8xl text-blue-500"></i>
+                    </div>
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 rounded bg-blue-500/20 flex items-center justify-center text-blue-500">
+                            <i class="fa-solid fa-screwdriver-wrench"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white" data-i18n="sec2_title">Overhaul & Replacement</h3>
+                    </div>
+                    <div class="space-y-4 text-sm text-gas-subtext">
+                        <p data-i18n="sec2_p1">随着运行时间积累进行的深度维修，包括顶部大修与全面大修。</p>
+                        <ul class="list-disc pl-4 space-y-2">
+                            <li>
+                                <span class="text-white font-medium" data-i18n="sec2_li1_title">大修周期:</span> 
+                                <span data-i18n="sec2_li1_desc">Jenbacher 6系列/MWM TCG2032 大修间隔可达 60,000-80,000 小时。</span>
+                            </li>
+                            <li>
+                                <span class="text-white font-medium" data-i18n="sec2_li2_title">X-Change 计划:</span> 
+                                <span data-i18n="sec2_li2_desc">使用工厂翻新部件替代现场维修，节省 75% 停机时间。</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="gas-card gas-card-hover rounded-xl p-8 relative overflow-hidden group border-gas-green/30">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fa-solid fa-wifi text-8xl text-gas-green"></i>
+                    </div>
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 rounded bg-gas-green/20 flex items-center justify-center text-gas-green animate-pulse">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white" data-i18n="sec3_title">Digital Solutions</h3>
+                    </div>
+                    <div class="space-y-4 text-sm text-gas-subtext">
+                        <p data-i18n="sec3_p1">从“被动维修”向“预测性维护”转变，实时掌握资产绩效。</p>
+                        <ul class="list-disc pl-4 space-y-2">
+                            <li>
+                                <span class="text-white font-medium" data-i18n="sec3_li1_title">APM 平台:</span> 
+                                <span data-i18n="sec3_li1_desc">集成 myplant 与 TPEM 系统，远程跟踪性能与故障预警。</span>
+                            </li>
+                            <li>
+                                <span class="text-white font-medium" data-i18n="sec3_li2_title">绕组监测:</span> 
+                                <span data-i18n="sec3_li2_desc">实时监控发电机轴承与绕组温度，防止电机过热损坏。</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section class="bg-[#151515] py-16 border-y border-white/5">
+            <div class="max-w-[1400px] mx-auto px-6">
+                <div class="grid md:grid-cols-2 gap-12">
+                    
+                    <div class="flex gap-6">
+                        <div class="shrink-0">
+                            <div class="w-12 h-12 rounded-full bg-gas-card border border-white/10 flex items-center justify-center text-white">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-bold text-white mb-3" data-i18n="sec4_title">Spare Parts & Logistics</h4>
+                            <p class="text-sm text-gas-subtext leading-relaxed mb-4" data-i18n="sec4_desc">
+                                我们强调使用 OEM 原厂备件以确保可靠性。依托卡特彼勒全球 1,600+ 经销商网络及 MWM 德国物流中心，确保关键备件的快速供应，减少停机损失。
+                            </p>
+                            <span class="text-xs font-mono text-gas-green border border-gas-green/30 px-2 py-1 rounded">100% OEM Certified</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-6">
+                        <div class="shrink-0">
+                            <div class="w-12 h-12 rounded-full bg-gas-card border border-white/10 flex items-center justify-center text-white">
+                                <i class="fa-solid fa-leaf"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-bold text-white mb-3" data-i18n="sec5_title">Upgrades & Retrofits</h4>
+                            <p class="text-sm text-gas-subtext leading-relaxed mb-4" data-i18n="sec5_desc">
+                                针对老旧机组进行技术更新。提供 25H2-Kit 套件（混燃 25% 氢气升级）及 SCR 尾气后处理系统加装，满足德国 44. BImSchV 等严苛排放法规。
+                            </p>
+                            <span class="text-xs font-mono text-blue-400 border border-blue-400/30 px-2 py-1 rounded">H2 Ready</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-[1400px] mx-auto px-6 py-16">
+            <div class="grid md:grid-cols-2 gap-8">
+                
+                <div class="gas-card p-8 rounded-xl flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-graduation-cap text-gas-subtext"></i>
+                            <span data-i18n="sec6_title">Training & Support</span>
+                        </h3>
+                        <p class="text-sm text-gas-subtext mb-6" data-i18n="sec6_desc">
+                            授人以渔。我们提供操作员与服务技术人员培训，涵盖点火系统、控制逻辑及故障排除。同时开放 "Do it the smart way" 视频教程库与电子维修手册。
+                        </p>
+                    </div>
+                   <!-- <button class="self-start text-sm text-gas-green hover:text-white font-bold flex items-center gap-2 transition-colors">
+                        <span data-i18n="btn_access_portal">Access Training Portal</span> <i class="fa-solid fa-arrow-right"></i>
+                    </button>-->
+                </div>
+
+                <div class="gas-card p-8 rounded-xl border border-gas-green/20 bg-gas-green/5 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-file-contract text-gas-green"></i>
+                            <span data-i18n="sec7_title">Service Agreements (LTSA)</span>
+                        </h3>
+                        <p class="text-sm text-gas-subtext mb-6" data-i18n="sec7_desc">
+                            锁定全生命周期成本。长期服务协议 (LTSA) 涵盖计划内/外维护、备件供应及性能保证。部分原厂认证再制造引擎（如 reUp 计划）提供与新机相同的 1 年质保。
+                        </p>
+                    </div>
+                    <button onclick="window.location.href='mailto:support@gasgx.com?subject=LTSA%20Inquiry'" class="self-start px-4 py-2 bg-gas-green text-black font-bold rounded hover:bg-white transition-colors">
+                        <span data-i18n="btn_get_quote">Get a Quote</span>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        const I18N_DATA = {
+            'zh': {
+                'tagline': '天然气发电挖矿助手',
+                'nav_home': '首页',
+                'nav_network': '服务网络',
+                'nav_tech': '技术支持',
+                'nav_service': '售后与保养',
+                'hero_badge': '全生命周期服务',
+                'page_title_1': '全方位关怀',
+                'page_title_2': '解决方案',
+                'page_desc': 'GasGx 提供覆盖全生命周期的综合服务体系。从基础的定期保养到基于数字监控的预测性维护，我们致力于降低您的总拥有成本 (TCO) 并延长设备寿命。',
+                'sec1_title': '基础维护与保养',
+                'sec1_p1': '确保机组运行的基础。严格遵循运行小时数 (oh) 计划。',
+                'sec1_li1_title': '耗材更换:',
+                'sec1_li1_desc': 'Waukesha VHP 5系列机油/火花塞更换间隔可达 4,000 小时。',
+                'sec1_li2_title': '流体分析 (S•O•S℠):',
+                'sec1_li2_desc': '分析废油/冷却液样本，精准确定组件状态，优化换油间隔。',
+                'sec2_title': '大修与核心部件',
+                'sec2_p1': '随着运行时间积累进行的深度维修，包括顶部大修与全面大修。',
+                'sec2_li1_title': '大修周期:',
+                'sec2_li1_desc': 'Jenbacher 6系列/MWM TCG2032 大修间隔可达 60,000-80,000 小时。',
+                'sec2_li2_title': 'X-Change 计划:',
+                'sec2_li2_desc': '使用工厂翻新部件替代现场维修，节省 75% 停机时间。',
+                'sec3_title': '数字化监控与诊断',
+                'sec3_p1': '从“被动维修”向“预测性维护”转变，实时掌握资产绩效。',
+                'sec3_li1_title': 'APM 平台:',
+                'sec3_li1_desc': '集成 myplant 与 TPEM 系统，远程跟踪性能与故障预警。',
+                'sec3_li2_title': '绕组监测:',
+                'sec3_li2_desc': '实时监控发电机轴承与绕组温度，防止电机过热损坏。',
+                'sec4_title': '备件供应与物流',
+                'sec4_desc': '我们强调使用 OEM 原厂备件以确保可靠性。依托卡特彼勒全球 1,600+ 经销商网络及 MWM 德国物流中心，确保关键备件的快速供应，减少停机损失。',
+                'sec5_title': '升级与环保合规',
+                'sec5_desc': '针对老旧机组进行技术更新。提供 25H2-Kit 套件（混燃 25% 氢气升级）及 SCR 尾气后处理系统加装，满足德国 44. BImSchV 等严苛排放法规。',
+                'sec6_title': '培训与技术支持',
+                'sec6_desc': '授人以渔。我们提供操作员与服务技术人员培训，涵盖点火系统、控制逻辑及故障排除。同时开放 "Do it the smart way" 视频教程库与电子维修手册。',
+                'btn_access_portal': '进入培训门户',
+                'sec7_title': '服务协议与质保',
+                'sec7_desc': '锁定全生命周期成本。长期服务协议 (LTSA) 涵盖计划内/外维护、备件供应及性能保证。部分原厂认证再制造引擎（如 reUp 计划）提供与新机相同的 1 年质保。',
+                'btn_get_quote': '获取报价',
+                'footerTagline': '让天然气发电挖矿更简单',
+                'contact_us': '联系我们',
+                'privacy_policy': '隐私政策'
+            },
+            'en': {
+                'tagline': 'Natural Gas Power Mining Assistant',
+                'nav_home': 'Home',
+                'nav_network': 'Service Network',
+                'nav_tech': 'Tech Support',
+                'nav_service': 'After-sales',
+                'hero_badge': 'LIFECYCLE SERVICES',
+                'page_title_1': 'Total Care',
+                'page_title_2': 'Solution',
+                'page_desc': 'GasGx provides a comprehensive lifecycle service system. From routine maintenance to digital predictive monitoring, we aim to lower your TCO and extend equipment life.',
+                'sec1_title': 'Routine Maintenance',
+                'sec1_p1': 'The foundation of operation. Strictly based on Operating Hours (oh).',
+                'sec1_li1_title': 'Consumables:',
+                'sec1_li1_desc': 'Waukesha VHP 5 oil/spark plug intervals up to 4,000 hours.',
+                'sec1_li2_title': 'Fluid Analysis (S•O•S℠):',
+                'sec1_li2_desc': 'Analyze oil/coolant samples to optimize change intervals.',
+                'sec2_title': 'Overhaul & Replacement',
+                'sec2_p1': 'Deep maintenance as hours accumulate, including Top End and Major Overhauls.',
+                'sec2_li1_title': 'Overhaul Interval:',
+                'sec2_li1_desc': 'Jenbacher 6 / MWM TCG2032 intervals up to 60,000-80,000 hours.',
+                'sec2_li2_title': 'X-Change Program:',
+                'sec2_li2_desc': 'Factory remanufactured parts save 75% downtime vs on-site repair.',
+                'sec3_title': 'Digital Solutions',
+                'sec3_p1': 'Shifting from "reactive" to "predictive" maintenance with real-time data.',
+                'sec3_li1_title': 'APM Platforms:',
+                'sec3_li1_desc': 'Integrated myplant & TPEM systems for remote tracking.',
+                'sec3_li2_title': 'Winding Monitor:',
+                'sec3_li2_desc': 'Monitor bearing & winding temps to prevent overheating.',
+                'sec4_title': 'Spare Parts & Logistics',
+                'sec4_desc': 'We emphasize OEM parts for reliability. Leveraging Caterpillar\'s 1,600+ dealer network and MWM Lorsch logistics center for rapid supply.',
+                'sec5_title': 'Upgrades & Retrofits',
+                'sec5_desc': 'Tech updates for older units. Offering 25H2-Kits (25% Hydrogen blend) and SCR catalyst retrofits to meet strict regulations like 44. BImSchV.',
+                'sec6_title': 'Training & Support',
+                'sec6_desc': 'Empowering your team. We offer operator training covering ignition, control, and troubleshooting. Access our "Do it the smart way" video library.',
+                'btn_access_portal': 'Access Portal',
+                'sec7_title': 'Service Agreements (LTSA)',
+                'sec7_desc': 'Lock in lifecycle costs. LTSA covers scheduled/unscheduled maintenance and parts. Factory reUp engines offer same-as-new 1-year warranty.',
+                'btn_get_quote': 'Get a Quote',
+                'footerTagline': 'Making natural gas power mining easier',
+                'contact_us': 'Contact Us',
+                'privacy_policy': 'Privacy Policy'
+            },
+            'ru': {
+                'tagline': 'Помощник по майнингу на газе',
+                'nav_home': 'Главная',
+                'nav_network': 'Сервисная сеть',
+                'nav_tech': 'Техподдержка',
+                'nav_service': 'Обслуживание',
+                'hero_badge': 'ЖИЗНЕННЫЙ ЦИКЛ',
+                'page_title_1': 'Комплексное',
+                'page_title_2': 'Решение',
+                'page_desc': 'GasGx предоставляет полный цикл услуг. От регулярного ТО до цифрового мониторинга, мы снижаем TCO и продлеваем срок службы.',
+                'sec1_title': 'Регулярное обслуживание',
+                'sec1_p1': 'Основа работы. Строго по часам наработки (oh).',
+                'sec1_li1_title': 'Расходные материалы:',
+                'sec1_li1_desc': 'Интервалы замены масла/свечей Waukesha VHP 5 до 4,000 часов.',
+                'sec1_li2_title': 'Анализ жидкостей (S•O•S℠):',
+                'sec1_li2_desc': 'Анализ проб масла/охлаждающей жидкости для оптимизации замен.',
+                'sec2_title': 'Капитальный ремонт',
+                'sec2_p1': 'Глубокий ремонт по мере наработки, включая Top End и Major Overhaul.',
+                'sec2_li1_title': 'Интервал капремонта:',
+                'sec2_li1_desc': 'Jenbacher 6 / MWM TCG2032 до 60,000-80,000 часов.',
+                'sec2_li2_title': 'Программа X-Change:',
+                'sec2_li2_desc': 'Заводские восстановленные детали экономят 75% времени простоя.',
+                'sec3_title': 'Цифровые решения',
+                'sec3_p1': 'Переход от «реактивного» к «предиктивному» обслуживанию.',
+                'sec3_li1_title': 'APM Платформы:',
+                'sec3_li1_desc': 'Интеграция myplant и TPEM для удаленного отслеживания.',
+                'sec3_li2_title': 'Мониторинг обмоток:',
+                'sec3_li2_desc': 'Контроль температуры подшипников и обмоток генератора.',
+                'sec4_title': 'Запчасти и Логистика',
+                'sec4_desc': 'Используем только OEM запчасти. Опираемся на сеть дилеров Caterpillar и логистический центр MWM в Лорше.',
+                'sec5_title': 'Модернизация',
+                'sec5_desc': 'Обновление старых агрегатов. Комплекты 25H2-Kit (25% водорода) и SCR катализаторы для соответствия нормам 44. BImSchV.',
+                'sec6_title': 'Обучение и Поддержка',
+                'sec6_desc': 'Обучение операторов: зажигание, управление, устранение неполадок. Доступ к видеотеке "Do it the smart way".',
+                'btn_access_portal': 'Портал обучения',
+                'sec7_title': 'Сервисные соглашения (LTSA)',
+                'sec7_desc': 'Фиксация стоимости. LTSA покрывает плановое/внеплановое ТО. Программа reUp дает гарантию 1 год как на новые двигатели.',
+                'btn_get_quote': 'Получить КП',
+                'footerTagline': 'Майнинг на газе стал проще',
+                'contact_us': 'Контакты',
+                'privacy_policy': 'Политика конфиденциальности'
+            }
+        };
+
+        window.app = {
+            lang: localStorage.getItem('gas_lang') || 'en',
+            
+            init() {
+                this.setLanguage(this.lang);
+            },
+
+            setLanguage(lang) {
+                this.lang = lang;
+                localStorage.setItem('gas_lang', lang);
+                const dict = I18N_DATA[lang] || I18N_DATA['en'];
+
+                // Update Buttons
+                ['zh','en','ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    if(btn) {
+                        if (l === lang) {
+                            btn.classList.remove('text-gas-subtext', 'font-medium');
+                            btn.classList.add('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                        } else {
+                            btn.classList.remove('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                            btn.classList.add('text-gas-subtext', 'font-medium');
+                        }
+                    }
+                });
+
+                // Update Text
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key]) {
+                        const icon = el.querySelector('i');
+                        if (icon) {
+                            el.innerHTML = ''; 
+                            el.appendChild(icon);
+                            el.append(' ' + dict[key]);
+                        } else {
+                            el.innerText = dict[key];
+                        }
+                    }
+                });
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => window.app.init());
+        } else {
+            window.app.init();
+        }
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

@@ -1,0 +1,459 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mining & AI Power Solutions - GasGx</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            purple: '#8b5cf6', // Added Purple for AI/Compute vibe
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(93, 214, 44, 0.4)',
+                        'glow-purple': '0 0 20px rgba(139, 92, 246, 0.4)',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* 卡片磨砂效果 */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .bg-grid-pattern {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-item-link:hover, .nav-item-link.active { color: #5DD62C; }
+        
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after, .nav-item-link.active::after { width: 100%; }
+        
+        /* Circuit Board Animation Overlay */
+        .circuit-overlay {
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 10 L30 10 L30 30' fill='none' stroke='rgba(93, 214, 44, 0.1)' stroke-width='1'/%3E%3Cpath d='M70 70 L90 70 L90 90' fill='none' stroke='rgba(139, 92, 246, 0.1)' stroke-width='1'/%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+    </style>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative bg-grid-pattern">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-16 w-full">
+        
+        <section class="relative py-24 px-4 overflow-hidden border-b border-white/5">
+            <div class="absolute inset-0 z-0">
+                <div class="circuit-overlay absolute inset-0"></div>
+                <div class="absolute bottom-0 right-0 w-full h-2/3 bg-gradient-to-t from-gas-card via-transparent to-transparent"></div>
+                <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-gas-purple/10 to-transparent"></div>
+                
+                <i class="fa-solid fa-microchip text-[180px] text-white/5 absolute -right-10 top-20 animate-pulse-slow"></i>
+            </div>
+
+            <div class="max-w-7xl mx-auto relative z-10 text-center lg:text-left grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-block px-3 py-1 mb-6 border border-gas-purple/50 rounded bg-gas-purple/10 text-gas-purple text-xs font-bold uppercase tracking-wider">
+                        <span data-i18n="heroBadge">SOLUTIONS / DATA CENTER & MINING</span>
+                    </div>
+                    <h1 class="text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
+                        <span data-i18n="heroTitle">From Mining to</span> <br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-gas-green to-gas-purple">High-Density AI</span>
+                    </h1>
+                    <p class="text-xl text-gas-subtext mb-8 max-w-2xl mx-auto lg:mx-0" data-i18n="heroDesc">
+                        Transition from Bitcoin mining to High Performance Computing (HPC). Secure low-cost off-grid power for the next generation of liquid-cooled ASIC and AI infrastructure.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                        <a href="#solutions" class="px-8 py-4 bg-gas-green text-black font-bold rounded hover:bg-white transition-all shadow-glow flex items-center justify-center gap-2">
+                            <span data-i18n="btnExplore">View Technologies</span> <i class="fa-solid fa-arrow-down"></i>
+                        </a>
+                        <a href="/tools/miner-profitability" class="px-8 py-4 border border-white/20 text-white font-medium rounded hover:border-gas-purple hover:text-gas-purple transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-chart-line"></i> <span data-i18n="btnCalc">Profitability Calc</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="relative hidden lg:block">
+                     <div class="gas-card p-8 rounded-xl border-l-4 border-red-500 relative mt-8 transform rotate-1 hover:rotate-0 transition-transform duration-500">
+                        <h3 class="text-gray-400 text-xs font-bold uppercase mb-2">2025 Grid Reality</h3>
+                        <div class="flex justify-between items-end border-b border-white/10 pb-4 mb-4">
+                            <span class="text-white text-lg font-bold">Grid Mining Cost</span>
+                            <span class="text-red-500 text-3xl font-black">~$130k<span class="text-sm text-gray-500">/BTC</span></span>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-red-400 mb-1"><i class="fa-solid fa-arrow-trend-up"></i> High Volatility Risk</p>
+                        </div>
+                     </div>
+
+                     <div class="gas-card p-8 rounded-xl border-l-4 border-gas-green relative -mt-4 -ml-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)] transform -rotate-2 hover:rotate-0 transition-transform duration-500 z-20 bg-[#151515]">
+                        <h3 class="text-gas-green text-xs font-bold uppercase mb-2">GasGx Off-Grid Solution</h3>
+                        <div class="flex justify-between items-end border-b border-white/10 pb-4 mb-4">
+                            <span class="text-white text-lg font-bold">Gas Power Cost</span>
+                            <span class="text-gas-green text-3xl font-black">$0.02<span class="text-sm text-gray-500">/kWh</span></span>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gas-green mb-1"><i class="fa-solid fa-shield-halved"></i> Survival Mode & AI Ready</p>
+                        </div>
+                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="solutions" class="py-24 px-4">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid md:grid-cols-3 gap-8">
+                    
+                    <div class="gas-card p-8 rounded-xl group hover:border-gas-green/50 transition-all duration-300">
+                        <div class="w-14 h-14 bg-[#111] border border-gas-green rounded-lg flex items-center justify-center text-2xl text-gas-green mb-6 shadow-glow">
+                            <i class="fa-solid fa-scale-unbalanced-flip"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-4" data-i18n="feat1Title">Power Cost Arbitrage</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-6" data-i18n="feat1Desc">
+                            Grid rates kill profitability. With commercial grid mining costs hitting ~$130k/BTC, off-grid natural gas generation is the only way to lock in low OPEX, survive halving cycles, and pivot infrastructure to AI.
+                        </p>
+                        <div class="bg-white/5 p-3 rounded text-xs text-gas-subtext">
+                            <span class="block mb-1 text-gas-green font-bold"><i class="fa-solid fa-check"></i> <span data-i18n="feat1Tag1">Predictable OPEX</span></span>
+                            <span class="block"><i class="fa-solid fa-check"></i> <span data-i18n="feat1Tag2">Asset Reuse for AI</span></span>
+                        </div>
+                    </div>
+
+                    <div class="gas-card p-8 rounded-xl group hover:border-blue-500/50 transition-all duration-300">
+                        <div class="w-14 h-14 bg-[#111] border border-blue-500 rounded-lg flex items-center justify-center text-2xl text-blue-500 mb-6 shadow-[0_0_15px_rgba(59,130,246,0.4)]">
+                            <i class="fa-solid fa-temperature-arrow-down"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-4" data-i18n="feat2Title">Hydro & Immersion Cooling</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-6" data-i18n="feat2Desc">
+                            Supporting the heat density of Antminer S21 XP Hydro and AI servers. Liquid cooling enables operation in 50°C+ desert oilfields while keeping chips stable for overclocking or continuous training loads.
+                        </p>
+                        <div class="bg-white/5 p-3 rounded text-xs text-gas-subtext">
+                            <span class="block mb-1 text-blue-400 font-bold"><i class="fa-solid fa-water"></i> <span data-i18n="feat2Tag1">Dust/Sand Proof</span></span>
+                            <span class="block"><i class="fa-solid fa-microchip"></i> <span data-i18n="feat2Tag2">High Density Deployment</span></span>
+                        </div>
+                    </div>
+
+                    <div class="gas-card p-8 rounded-xl group hover:border-gas-purple/50 transition-all duration-300">
+                        <div class="w-14 h-14 bg-[#111] border border-gas-purple rounded-lg flex items-center justify-center text-2xl text-gas-purple mb-6 shadow-glow-purple">
+                            <i class="fa-solid fa-network-wired"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-4" data-i18n="feat3Title">Connectivity Upgrade</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-6" data-i18n="feat3Desc">
+                            Mining works on Starlink, but AI demands low latency. Our site selection now prioritizes fiber proximity or microwave links to enable real-time inference and high-speed model training data transfer.
+                        </p>
+                        <div class="bg-white/5 p-3 rounded text-xs text-gas-subtext">
+                            <span class="block mb-1 text-gas-purple font-bold"><i class="fa-solid fa-satellite-dish"></i> <span data-i18n="feat3Tag1">Starlink for Mining</span></span>
+                            <span class="block"><i class="fa-solid fa-wifi"></i> <span data-i18n="feat3Tag2">Fiber for AI/HPC</span></span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section class="py-20 px-4 bg-[#111] border-t border-white/5">
+            <div class="max-w-6xl mx-auto flex flex-col md:flex-row-reverse items-center gap-12">
+                <div class="w-full md:w-1/2">
+                    <div class="relative rounded-xl overflow-hidden shadow-2xl border border-white/10 group h-[300px]">
+                        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555617981-d5225d300806?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center opacity-50 group-hover:scale-105 transition-transform duration-700"></div>
+                        <div class="absolute inset-0 bg-gradient-to-l from-gas-bg via-transparent to-transparent"></div>
+                        
+                        <div class="absolute bottom-6 right-6 text-right">
+                            <div class="text-gas-purple text-xs font-bold uppercase mb-1">Infrastructure Reuse</div>
+                            <h4 class="text-white font-bold text-2xl">Gas → Power → Compute</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-full md:w-1/2">
+                    <h2 class="text-3xl font-bold text-white mb-6" data-i18n="pivotTitle">The AI Infrastructure Play</h2>
+                    <p class="text-gas-subtext mb-6" data-i18n="pivotDesc">
+                        The bear market for mining is the bull market for AI infrastructure. Your natural gas generators don't care if they are powering SHA-256 hashes or LLM training.
+                    </p>
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-start gap-3">
+                            <i class="fa-solid fa-arrow-right-arrow-left text-gas-green mt-1"></i>
+                            <div>
+                                <strong class="text-white block" data-i18n="pivotPoint1Title">Flexible Strategy</strong>
+                                <span class="text-gray-500 text-sm" data-i18n="pivotPoint1Desc">Start with mining to monetize gas immediately. Upgrade to Tier 3/4 containerized data centers for AI clients when fiber arrives.</span>
+                            </div>
+                        </li>
+                    </ul>
+                    <a href="/about/contact" class="inline-flex items-center px-6 py-3 bg-white/5 border border-white/10 rounded hover:bg-gas-purple hover:text-white transition-all text-sm font-bold text-white">
+                        <span data-i18n="btnConsult">Consult on AI Transformation</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+    const AppData = {
+        // 1. 顶部目录配置 (当前页面为“数据中心 / 挖矿电力”，所以 active: true)
+        navigation: [
+            { title: "首页", path: "/index.html", type: "link", icon: "fa-solid fa-house" },
+            { title: "油气井/伴生气发电", path: "/solutions/oilfield", type: "link" },
+            { title: "工业园区与分布式能源", path: "/solutions/industrial", type: "link" },
+            { title: "数据中心 / 挖矿电力", path: "/solutions/mining", type: "link", active: true },
+            { title: "热电联供 CHP", path: "/solutions/chp", type: "link" }
+        ],
+
+        // 2. 多语言字典 (包含导航栏和页面内容的翻译)
+        i18n: {
+            zh: {
+                // --- 导航栏翻译 ---
+                "首页": "首页",
+                "油气井/伴生气发电": "油气井/伴生气发电",
+                "工业园区与分布式能源": "工业园区与分布式能源",
+                "数据中心 / 挖矿电力": "数据中心 / 挖矿电力",
+                "热电联供 CHP": "热电联供 CHP",
+
+                // --- 页面通用 ---
+                tagline: "天然气发电挖矿助手",
+                
+                // --- Hero 区域 ---
+                heroBadge: "解决方案 / 数据中心与挖矿",
+                heroTitle: "从单一挖矿迈向",
+                heroDesc: "解决方案正从比特币挖矿向高性能计算（HPC）转型。利用低成本离网电力，为新一代液冷 ASIC 和 AI 基础设施提供动力。",
+                btnExplore: "查看技术方案",
+                btnCalc: "收益计算器",
+                
+                // --- 核心特性 ---
+                feat1Title: "电力成本套利",
+                feat1Desc: "电网电价正在扼杀利润。2025年商业电网挖矿成本已飙升至约 $130,000/BTC。自建天然气电站是锁定极低运营成本、在减半周期中生存并将基础设施复用于 AI 的唯一途径。",
+                feat1Tag1: "OPEX 可预测",
+                feat1Tag2: "资产复用于 AI",
+                
+                feat2Title: "液冷与浸没式散热",
+                feat2Desc: "适配 Antminer S21 XP Hydro 和 AI 服务器的高热密度。液冷技术使设备能在 50°C+ 的油田沙漠环境中稳定运行，支持超频或持续训练负载。",
+                feat2Tag1: "防尘防沙",
+                feat2Tag2: "高密度部署",
+                
+                feat3Title: "连接性升级",
+                feat3Desc: "挖矿可依赖 Starlink，但 AI 需要低延迟。我们的选址现在优先考虑光纤接入或微波链路，以支持实时推理和高速模型训练数据传输。",
+                feat3Tag1: "挖矿用 Starlink",
+                feat3Tag2: "AI/HPC 用光纤",
+                
+                // --- 转型板块 ---
+                pivotTitle: "AI 基础设施布局",
+                pivotDesc: "挖矿的熊市是 AI 基础设施的牛市。您的天然气发电机并不在乎它们是在驱动 SHA-256 哈希运算还是 LLM 大模型训练。",
+                pivotPoint1Title: "灵活战略",
+                pivotPoint1Desc: "从挖矿开始即刻变现天然气。当光纤接入后，升级为服务于 AI 客户的 T3/T4 集装箱数据中心。",
+                btnConsult: "咨询 AI 转型方案"
+            },
+            en: {
+                // --- Navigation ---
+                "首页": "Home",
+                "油气井/伴生气发电": "Oil & Gas Power",
+                "工业园区与分布式能源": "Industrial Power",
+                "数据中心 / 挖矿电力": "Mining Power",
+                "热电联供 CHP": "CHP",
+
+                // --- General ---
+                tagline: "Natural Gas Power Mining Assistant",
+
+                // --- Hero ---
+                heroBadge: "SOLUTIONS / DATA CENTER & MINING",
+                heroTitle: "From Mining to",
+                heroDesc: "Transition from Bitcoin mining to High Performance Computing (HPC). Secure low-cost off-grid power for the next generation of liquid-cooled ASIC and AI infrastructure.",
+                btnExplore: "View Technologies",
+                btnCalc: "Profitability Calc",
+
+                // --- Features ---
+                feat1Title: "Power Cost Arbitrage",
+                feat1Desc: "Grid rates kill profitability. With commercial grid mining costs hitting ~$130k/BTC, off-grid natural gas generation is the only way to lock in low OPEX, survive halving cycles, and pivot infrastructure to AI.",
+                feat1Tag1: "Predictable OPEX",
+                feat1Tag2: "Asset Reuse for AI",
+
+                feat2Title: "Hydro & Immersion Cooling",
+                feat2Desc: "Supporting the heat density of Antminer S21 XP Hydro and AI servers. Liquid cooling enables operation in 50°C+ desert oilfields while keeping chips stable for overclocking or continuous training loads.",
+                feat2Tag1: "Dust/Sand Proof",
+                feat2Tag2: "High Density Deployment",
+
+                feat3Title: "Connectivity Upgrade",
+                feat3Desc: "Mining works on Starlink, but AI demands low latency. Our site selection now prioritizes fiber proximity or microwave links to enable real-time inference and high-speed model training data transfer.",
+                feat3Tag1: "Starlink for Mining",
+                feat3Tag2: "Fiber for AI/HPC",
+
+                // --- Pivot Section ---
+                pivotTitle: "The AI Infrastructure Play",
+                pivotDesc: "The bear market for mining is the bull market for AI infrastructure. Your natural gas generators don't care if they are powering SHA-256 hashes or LLM training.",
+                pivotPoint1Title: "Flexible Strategy",
+                pivotPoint1Desc: "Start with mining to monetize gas immediately. Upgrade to Tier 3/4 containerized data centers for AI clients when fiber arrives.",
+                btnConsult: "Consult on AI Transformation"
+            },
+            ru: {
+                // --- Навигация ---
+                "首页": "Главная",
+                "油气井/伴生气发电": "Нефтегаз",
+                "工业园区与分布式能源": "Пром. энергия",
+                "数据中心 / 挖矿电力": "Майнинг",
+                "热电联供 CHP": "ТЭЦ",
+
+                // --- Общее ---
+                tagline: "Помощник по газовому майнингу",
+
+                // --- Hero ---
+                heroBadge: "РЕШЕНИЯ / ЦОД и МАЙНИНГ",
+                heroTitle: "От майнинга к",
+                heroDesc: "Переход от майнинга биткойнов к высокопроизводительным вычислениям (HPC). Дешевая автономная энергия для нового поколения ASIC с жидкостным охлаждением и ИИ.",
+                btnExplore: "Технологии",
+                btnCalc: "Калькулятор",
+
+                // --- Features ---
+                feat1Title: "Арбитраж стоимости энергии",
+                feat1Desc: "Тарифы сети убивают прибыль. При стоимости сетевого майнинга ~$130k/BTC, автономная газовая генерация — единственный способ выжить в халвинг и переориентировать инфраструктуру на ИИ.",
+                feat1Tag1: "Прогнозируемый OPEX",
+                feat1Tag2: "Повторное использование для ИИ",
+
+                feat2Title: "Гидро и иммерсионное охлаждение",
+                feat2Desc: "Поддержка высокой плотности тепла Antminer S21 XP Hydro и серверов ИИ. Жидкостное охлаждение позволяет работать в пустынях при 50°C+.",
+                feat2Tag1: "Защита от пыли",
+                feat2Tag2: "Высокая плотность",
+
+                feat3Title: "Обновление связи",
+                feat3Desc: "Майнинг работает на Starlink, но ИИ требует низкой задержки. Мы выбираем площадки с доступом к оптоволокну для передачи данных обучения моделей в реальном времени.",
+                feat3Tag1: "Starlink для майнинга",
+                feat3Tag2: "Оптоволокно для ИИ",
+
+                // --- Pivot Section ---
+                pivotTitle: "Инфраструктура для ИИ",
+                pivotDesc: "Медвежий рынок майнинга — это бычий рынок инфраструктуры ИИ. Ваши газовые генераторы могут питать как хеши SHA-256, так и обучение LLM.",
+                pivotPoint1Title: "Гибкая стратегия",
+                pivotPoint1Desc: "Начните с майнинга для монетизации газа. Модернизируйте до контейнерных ЦОД Tier 3/4 для клиентов ИИ при появлении оптоволокна.",
+                btnConsult: "Консультация по ИИ"
+            }
+        }
+    };
+
+    const app = {
+        // 默认语言设置
+        currentLang: 'en', // 默认设为英文
+        isMobileMenuOpen: false,
+
+        init() {
+            // 初始化渲染导航和文本
+            this.setLanguage(this.currentLang);
+        },
+
+        setLanguage(lang) {
+            this.currentLang = lang;
+            
+            // 更新语言切换按钮样式
+            ['zh', 'en', 'ru'].forEach(l => {
+                const btn = document.getElementById(`btn-lang-${l}`);
+                const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+                
+                const activeClass = "text-black bg-gas-green shadow-glow font-bold";
+                const inactiveClass = "text-gas-subtext hover:text-white hover:bg-white/5 font-medium";
+                const mobActiveClass = "text-black bg-gas-green font-bold";
+                const mobInactiveClass = "text-gray-400 font-medium";
+
+                if (btn) btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center ${l === lang ? activeClass : inactiveClass}`;
+                if (mobBtn) mobBtn.className = `px-4 py-2 rounded-full text-xs transition-all ${l === lang ? mobActiveClass : mobInactiveClass}`;
+            });
+
+            // 重新渲染导航栏和页面静态文本
+            this.updateStaticText();
+        },
+
+        t(key) {
+            // 翻译查找函数
+            const dict = AppData.i18n[this.currentLang];
+            return (dict && dict[key]) ? dict[key] : key;
+        },
+
+        updateStaticText() {
+            const taglineEl = document.getElementById('header-tagline');
+            if(taglineEl) taglineEl.innerText = this.t('tagline');
+            
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                el.innerText = this.t(key);
+            });
+        }
+    };
+
+    // 启动应用
+    document.addEventListener('DOMContentLoaded', () => {
+        window.app = app;
+        app.init();
+    });
+</script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

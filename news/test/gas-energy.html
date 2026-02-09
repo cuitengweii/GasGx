@@ -1,0 +1,422 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gas Power Command | GasGx</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&family=Chakra+Petch:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bg: '#05070A',      // 深邃背景
+                        panel: '#0F1318',   // 面板背景
+                        border: '#232D38',  // 边框颜色
+                        
+                        // === 核心业务色系 ===
+                        ng: { DEFAULT: '#00F0FF', dim: 'rgba(0, 240, 255, 0.1)' },    // 天然气 (赛博蓝)
+                        flare: { DEFAULT: '#FF5733', dim: 'rgba(255, 87, 51, 0.1)' }, // 伴生气 (火焰橙)
+                        oil: { DEFAULT: '#FFD700', dim: 'rgba(255, 215, 0, 0.1)' },   // 油田 (黑金)
+                        
+                        success: '#00E096',
+                        text: '#94A3B8'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        header: ['Oswald', 'sans-serif'],
+                        hud: ['Chakra Petch', 'sans-serif'], // 用于数字和仪表盘标题
+                    },
+                    backgroundImage: {
+                        // 六边形蜂窝背景纹理
+                        'hex-pattern': "url('data:image/svg+xml,%3Csvg width=\"24\" height=\"40\" viewBox=\"0 0 24 40\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M0 40c5.523 0 10-4.477 10-10V10c0-5.523-4.477-10-10-10s-10 4.477-10 10v20c0 5.523 4.477 10 10 10z\" fill=\"%231E2933\" fill-opacity=\"0.05\" fill-rule=\"evenodd\"/%3E%3C/svg%3E')",
+                    },
+                    boxShadow: { 'neon': '0 0 15px rgba(0, 240, 255, 0.2)' }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* 全局样式重置 */
+        body { background-color: #05070A; color: #E2E8F0; font-family: 'Inter', sans-serif; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* 自定义滚动条 - 配合深色主题 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #05070A; }
+        ::-webkit-scrollbar-thumb { background: #232D38; }
+        ::-webkit-scrollbar-thumb:hover { background: #00F0FF; }
+        
+        /* 玻璃拟态 Header */
+        .header-glass { background: rgba(5, 7, 10, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+
+        /* 模块卡片交互效果 */
+        .module-card {
+            background: #0F1318; border: 1px solid #232D38; position: relative; overflow: hidden; transition: all 0.3s ease;
+        }
+        /* hover时根据 CSS 变量改变边框颜色和发光 */
+        .module-card:hover { border-color: var(--hover-color); box-shadow: 0 0 20px var(--shadow-color); transform: translateY(-2px); }
+        
+        /* 呼吸灯动画 */
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+        .status-dot.active { box-shadow: 0 0 8px currentColor; animation: pulse 2s infinite; }
+        
+        /* 涡轮旋转动画 */
+        .turbine-spin { animation: spin 4s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen bg-hex-pattern">
+
+    <header class="fixed top-0 w-full z-50 header-glass h-16">
+        <div class="max-w-[1600px] mx-auto px-4 lg:px-6 h-full flex justify-between items-center">
+            <div class="flex items-center gap-8 h-full">
+                <a href="/news/index.html" class="flex items-center gap-1 group">
+                    <div class="flex flex-col justify-center -space-y-1">
+                        <span class="text-2xl font-bold italic text-white tracking-tighter font-header group-hover:text-ng transition-colors">GasGx</span>
+                        <span class="text-[9px] font-bold text-ng tracking-[0.2em] uppercase leading-none pl-0.5">GAS POWER</span>
+                    </div>
+                </a>
+                <nav id="desktop-nav" class="hidden lg:flex items-center gap-1 h-full pl-6 border-l border-white/5 ml-4"></nav>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button onclick="window.app.toggleMobileMenu()" class="lg:hidden text-white text-lg ml-2"><i class="fa-solid fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div id="mobile-menu-container" class="fixed inset-0 z-50 bg-[#050505] transform translate-x-full transition-transform duration-300 lg:hidden flex flex-col pt-20 px-6">
+        <button onclick="window.app.toggleMobileMenu()" class="absolute top-5 right-5 text-gray-500 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+        <div id="mobile-nav-links" class="space-y-6 text-xl font-bold text-gray-300"></div>
+    </div>
+    <main class="flex-grow pt-24 pb-12 px-4 lg:px-6 max-w-[1600px] mx-auto w-full space-y-8">
+
+        <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            
+            <div class="md:col-span-3 module-card rounded-lg p-6 bg-gradient-to-r from-panel to-[#0A0E12]" style="--hover-color: #232D38; --shadow-color: rgba(0,0,0,0);">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="font-hud text-2xl text-white uppercase tracking-wide mb-1">Energy Generation Matrix</h2>
+                        <p class="text-xs text-text font-mono">Real-time load distribution across power sources.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="flex items-center gap-1 text-[10px] text-text bg-black/30 px-2 py-1 rounded border border-white/5"><span class="w-2 h-2 rounded-full bg-ng"></span> PIPELINE</span>
+                        <span class="flex items-center gap-1 text-[10px] text-text bg-black/30 px-2 py-1 rounded border border-white/5"><span class="w-2 h-2 rounded-full bg-flare"></span> FLARE</span>
+                        <span class="flex items-center gap-1 text-[10px] text-text bg-black/30 px-2 py-1 rounded border border-white/5"><span class="w-2 h-2 rounded-full bg-oil"></span> DIESEL REPLACEMENT</span>
+                    </div>
+                </div>
+                <div class="h-48 flex items-end justify-between gap-1 relative border-b border-border pb-0">
+                    <div class="w-full flex items-end gap-2 h-full px-2">
+                        <div class="flex-1 bg-ng/20 h-[60%] rounded-t-sm relative group"><div class="absolute bottom-0 w-full bg-ng h-[40%] group-hover:h-[45%] transition-all"></div></div>
+                        <div class="flex-1 bg-ng/20 h-[70%] rounded-t-sm relative group"><div class="absolute bottom-0 w-full bg-ng h-[55%] group-hover:h-[60%] transition-all"></div></div>
+                        <div class="flex-1 bg-flare/20 h-[50%] rounded-t-sm relative group"><div class="absolute bottom-0 w-full bg-flare h-[30%] group-hover:h-[35%] transition-all"></div></div>
+                        <div class="flex-1 bg-flare/20 h-[55%] rounded-t-sm relative group"><div class="absolute bottom-0 w-full bg-flare h-[35%] group-hover:h-[40%] transition-all"></div></div>
+                        <div class="flex-1 bg-oil/20 h-[40%] rounded-t-sm relative group"><div class="absolute bottom-0 w-full bg-oil h-[25%] group-hover:h-[30%] transition-all"></div></div>
+                        <div class="flex-1 bg-oil/20 h-[45%] rounded-t-sm relative group"><div class="absolute bottom-0 w-full bg-oil h-[30%] group-hover:h-[35%] transition-all"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="module-card rounded-lg p-5 flex flex-col justify-between" style="--hover-color: #00E096; --shadow-color: rgba(0,224,150,0.1);">
+                <h3 class="font-header text-white uppercase tracking-wider border-b border-white/10 pb-2 mb-2">System Efficiency</h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs text-text mb-1"><span>Fleet Availability</span> <span class="text-white">98.4%</span></div>
+                        <div class="h-1.5 w-full bg-black rounded-full overflow-hidden"><div class="h-full bg-success w-[98.4%]"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs text-text mb-1"><span>Gas Conversion</span> <span class="text-white">0.24 m³/kWh</span></div>
+                        <div class="h-1.5 w-full bg-black rounded-full overflow-hidden"><div class="h-full bg-ng w-[85%]"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs text-text mb-1"><span>Emissions Saved</span> <span class="text-white">12,405 t</span></div>
+                        <div class="h-1.5 w-full bg-black rounded-full overflow-hidden"><div class="h-full bg-flare w-[92%]"></div></div>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-white/5 text-center">
+                    <button class="text-xs font-mono text-success border border-success/30 bg-success/10 w-full py-2 rounded hover:bg-success hover:text-black transition-all uppercase">View Report</button>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div id="ng-gen" class="module-card rounded-lg flex flex-col h-[500px]" style="--hover-color: #00F0FF; --shadow-color: rgba(0, 240, 255, 0.2);">
+                <div class="p-5 border-b border-white/5 bg-ng/5 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded bg-black border border-ng/30 flex items-center justify-center">
+                            <i class="fa-solid fa-fan text-ng text-xl turbine-spin"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-hud text-lg text-white font-bold leading-none">Natural Gas</h3>
+                            <span class="text-[10px] text-ng font-mono uppercase">Utility Scale / Pipeline</span>
+                        </div>
+                    </div>
+                    <span class="status-dot active text-ng bg-ng"></span>
+                </div>
+                <div class="flex-1 p-5 relative">
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-black/40 p-3 rounded border border-white/5">
+                            <div class="text-[10px] text-text uppercase">Output (MW)</div>
+                            <div class="text-2xl font-hud text-white">320.5</div>
+                        </div>
+                        <div class="bg-black/40 p-3 rounded border border-white/5">
+                            <div class="text-[10px] text-text uppercase">Heat Rate</div>
+                            <div class="text-2xl font-hud text-white">8,200</div>
+                            <div class="text-[9px] text-gray-500">Btu/kWh</div>
+                        </div>
+                    </div>
+                    <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-3">Active Turbines</h4>
+                    <div class="space-y-2 overflow-y-auto h-40 pr-2 custom-scrollbar">
+                        <div class="flex justify-between items-center bg-white/5 p-2 rounded hover:bg-white/10 transition-colors cursor-pointer group">
+                            <div class="flex items-center gap-2"><span class="text-xs font-mono text-ng">G-01</span><span class="text-xs text-gray-300">Siemens SGT-800</span></div><span class="text-xs font-mono text-white group-hover:text-ng">54 MW</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-white/5 p-2 rounded hover:bg-white/10 transition-colors cursor-pointer group">
+                            <div class="flex items-center gap-2"><span class="text-xs font-mono text-ng">G-02</span><span class="text-xs text-gray-300">CAT G3520</span></div><span class="text-xs font-mono text-white group-hover:text-ng">2.5 MW</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-white/5 p-2 rounded hover:bg-white/10 transition-colors cursor-pointer group">
+                            <div class="flex items-center gap-2"><span class="text-xs font-mono text-ng">G-03</span><span class="text-xs text-gray-300">Jenbacher J624</span></div><span class="text-xs font-mono text-white group-hover:text-ng">4.4 MW</span>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-5 left-5 right-5">
+                         <div class="text-[10px] text-gray-500 mb-1 flex justify-between"><span>Grid Connection</span><span class="text-ng">Stable</span></div>
+                         <div class="h-1 bg-gray-800 w-full overflow-hidden"><div class="h-full bg-ng w-full animate-pulse"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="flare-gen" class="module-card rounded-lg flex flex-col h-[500px]" style="--hover-color: #FF5733; --shadow-color: rgba(255, 87, 51, 0.2);">
+                <div class="p-5 border-b border-white/5 bg-flare/5 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded bg-black border border-flare/30 flex items-center justify-center">
+                            <i class="fa-solid fa-fire-burner text-flare text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-hud text-lg text-white font-bold leading-none">Associated Gas</h3>
+                            <span class="text-[10px] text-flare font-mono uppercase">Flare Mitigation</span>
+                        </div>
+                    </div>
+                    <span class="status-dot active text-flare bg-flare"></span>
+                </div>
+                <div class="flex-1 p-5 relative flex flex-col">
+                    <div class="bg-gradient-to-br from-flare/10 to-transparent border border-flare/20 p-4 rounded mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-flare font-bold uppercase"><i class="fa-solid fa-leaf mr-1"></i> Flare Reduction</span>
+                            <span class="text-xl font-hud text-white">99.8%</span>
+                        </div>
+                        <div class="text-[10px] text-gray-400">Captured gas converted to computation power.</div>
+                    </div>
+                    <div class="flex-1 bg-black/50 border border-white/5 rounded relative overflow-hidden group">
+                        <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(#333 1px, transparent 1px); background-size: 10px 10px;"></div>
+                        <div class="absolute top-1/3 left-1/4 w-3 h-3 bg-flare rounded-full shadow-[0_0_10px_#FF5733] animate-pulse"></div>
+                        <div class="absolute bottom-1/4 right-1/3 w-2 h-2 bg-gray-600 rounded-full border border-flare"></div>
+                        <div class="absolute top-1/2 right-1/4 w-3 h-3 bg-flare rounded-full shadow-[0_0_10px_#FF5733] animate-pulse"></div>
+                        <div class="absolute bottom-2 left-2 bg-black/80 p-2 rounded text-[9px] font-mono text-gray-400 border border-white/10">
+                            <div><span class="text-flare">●</span> Active: 8 Sites</div>
+                            <div><span class="text-gray-500">○</span> Planned: 3 Sites</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-2">
+                        <button class="py-2 bg-flare/10 border border-flare/30 text-flare text-xs font-bold rounded hover:bg-flare hover:text-white transition-all uppercase">Deploy Map</button>
+                        <button class="py-2 bg-white/5 border border-white/10 text-gray-400 text-xs font-bold rounded hover:bg-white hover:text-black transition-all uppercase">ESG Report</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="oil-field" class="module-card rounded-lg flex flex-col h-[500px]" style="--hover-color: #FFD700; --shadow-color: rgba(255, 215, 0, 0.2);">
+                <div class="p-5 border-b border-white/5 bg-oil/5 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded bg-black border border-oil/30 flex items-center justify-center">
+                            <i class="fa-solid fa-oil-well text-oil text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-hud text-lg text-white font-bold leading-none">Oil Field</h3>
+                            <span class="text-[10px] text-oil font-mono uppercase">Off-Grid Power</span>
+                        </div>
+                    </div>
+                    <span class="status-dot active text-oil bg-oil"></span>
+                </div>
+                <div class="flex-1 p-5">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="text-center">
+                            <div class="text-xs text-gray-500 uppercase mb-1">Diesel Replaced</div>
+                            <div class="text-xl font-hud text-white">450k <span class="text-xs text-gray-500">Gal</span></div>
+                        </div>
+                        <div class="h-8 w-[1px] bg-white/10"></div>
+                        <div class="text-center">
+                            <div class="text-xs text-gray-500 uppercase mb-1">Cost Savings</div>
+                            <div class="text-xl font-hud text-oil">$1.2M</div>
+                        </div>
+                    </div>
+                    <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-3">Field Operations Log</h4>
+                    <div class="relative pl-4 space-y-4 border-l border-white/10 ml-2">
+                        <div class="relative">
+                            <div class="absolute -left-[21px] top-1 w-2.5 h-2.5 bg-oil rounded-full border-2 border-panel"></div>
+                            <div class="text-[9px] text-gray-500 font-mono mb-0.5">10:42 AM - Site #402</div>
+                            <div class="text-xs text-white">Generator #3 synchronized. Load stable.</div>
+                        </div>
+                        <div class="relative">
+                            <div class="absolute -left-[21px] top-1 w-2.5 h-2.5 bg-gray-600 rounded-full border-2 border-panel"></div>
+                            <div class="text-[9px] text-gray-500 font-mono mb-0.5">09:15 AM - Site #305</div>
+                            <div class="text-xs text-gray-400">Maintenance scheduled. Unit offline.</div>
+                        </div>
+                        <div class="relative">
+                            <div class="absolute -left-[21px] top-1 w-2.5 h-2.5 bg-gray-600 rounded-full border-2 border-panel"></div>
+                            <div class="text-[9px] text-gray-500 font-mono mb-0.5">08:00 AM - System</div>
+                            <div class="text-xs text-gray-400">Daily report generated.</div>
+                        </div>
+                    </div>
+                    <div class="mt-auto pt-8">
+                        <div class="bg-black/40 border border-white/5 p-3 rounded">
+                            <div class="flex justify-between items-center text-[10px] text-gray-400 mb-2"><span>Reliability</span><span class="text-white">99.99%</span></div>
+                            <div class="flex items-end gap-0.5 h-8 opacity-50">
+                                <div class="w-1 bg-oil h-full"></div><div class="w-1 bg-oil h-[90%]"></div><div class="w-1 bg-oil h-full"></div><div class="w-1 bg-oil h-full"></div>
+                                <div class="w-1 bg-oil h-[95%]"></div><div class="w-1 bg-oil h-full"></div><div class="w-1 bg-oil h-[98%]"></div><div class="w-1 bg-oil h-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="border-t border-border pt-6">
+             <div class="flex items-center justify-between mb-4">
+                <h3 class="font-hud text-lg text-white uppercase"><i class="fa-solid fa-newspaper text-text mr-2"></i> Module Updates</h3>
+                <a href="/news/index.html" class="text-xs text-ng hover:underline">View All News ></a>
+             </div>
+             <div id="module-news-feed" class="grid grid-cols-1 md:grid-cols-4 gap-4"></div>
+        </section>
+
+    </main>
+
+    <footer class="bg-[#020202] border-t border-[#1F1F1F] mt-auto pt-10 pb-8 text-sm relative z-20">
+        <div class="max-w-[1600px] mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2"><span class="text-2xl font-bold italic text-white tracking-tighter">GasGx</span></div>
+                    <p class="text-xs text-gray-500 leading-relaxed">The definitive intelligence platform for the energy-compute convergence.</p>
+                </div>
+                <div><h4 class="text-white font-bold text-xs uppercase tracking-widest mb-4">Public Services</h4><ul class="space-y-3 text-xs text-gray-500"><li>Mining Calculator</li><li>Gas Price Index</li><li>Miner Rankings</li><li>API Docs</li></ul></div>
+                <div><h4 class="text-white font-bold text-xs uppercase tracking-widest mb-4">Legal</h4><ul class="space-y-3 text-xs text-gray-500"><li>Privacy Policy</li><li>Terms of Service</li><li>Contact Us</li></ul></div>
+                <div>
+                    <h4 class="text-white font-bold text-xs uppercase tracking-widest mb-4">Connect</h4>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-x-twitter text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#229ED9] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-telegram text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#5865F2] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-discord text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#FF0000] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-youtube text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#0077B5] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-linkedin text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#1877F2] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-facebook text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#000000] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-tiktok text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#07C160] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-weixin text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#25D366] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-whatsapp text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#E1306C] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-instagram text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 transition-all hover:-translate-y-1 hover:bg-[#FF2442] hover:text-white" title="Xiaohongshu"><span class="font-black text-[9px] leading-none" style="font-family: 'PingFang SC', sans-serif;">小红书</span></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#FF9900] hover:text-white transition-all hover:-translate-y-1"><i class="fa-solid fa-circle-play text-lg"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-white/5 pt-8 text-xs text-gray-600 text-center">© 2026 GasGx Technology. All rights reserved.</div>
+        </div>
+    </footer>
+    <script>
+        // 配置 Supabase (请在生产环境中替换为您的真实 Key)
+        const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 应用数据配置
+        const AppData = {
+            navigation: [
+                { title: "Home", path: "/news/index.html" },
+                { title: "Gas Power", path: "/news/gas-power.html", active: true }, // 当前页面高亮
+                { title: "Generators", path: "/news/generators.html" },
+                { title: "Bitcoin Mining", path: "/news/bitcoin-mining.html" },
+                { title: "Flash", path: "/news/flash.html" },
+                { title: "Insights", path: "/news/insights.html" },
+                { title: "Data", path: "/news/data.html" },
+                { title: "Events", path: "/news/events.html" },
+            ]
+        };
+
+        window.app = {
+            // 渲染导航栏
+            renderNav() {
+                // 桌面端
+                const navLinks = AppData.navigation.map(item => {
+                    // 样式逻辑：如果激活，使用燃气蓝(ng)，否则灰色
+                    const activeClass = item.active 
+                        ? 'text-ng bg-white/5' 
+                        : 'text-gray-400 hover:text-white hover:bg-white/5';
+                    return `<a href="${item.path}" class="text-xs font-bold px-4 py-2 transition-colors uppercase tracking-wide rounded-full whitespace-nowrap ${activeClass}">${item.title}</a>`;
+                }).join('');
+                document.getElementById('desktop-nav').innerHTML = navLinks;
+                
+                // 移动端
+                const mobLinks = AppData.navigation.map(item => {
+                     const color = item.active ? 'text-ng' : 'text-white';
+                     return `<a href="${item.path}" class="block py-4 border-b border-white/10 ${color}">${item.title}</a>`;
+                }).join('');
+                document.getElementById('mobile-nav-links').innerHTML = mobLinks;
+            },
+            
+            // 切换移动菜单
+            toggleMobileMenu() { 
+                document.getElementById('mobile-menu-container').classList.toggle('translate-x-full'); 
+            },
+
+            // 加载 Supabase 新闻数据
+            async loadModuleNews() {
+                const container = document.getElementById('module-news-feed');
+                try {
+                    // 获取最新4篇文章
+                    const { data } = await _supabase.from('articles').select('*').limit(4).order('time', {ascending: false});
+                    if(data && data.length > 0) {
+                        container.innerHTML = data.map(art => {
+                            // 动态标签颜色
+                            let tagColor = 'text-gray-400';
+                            if(art.tag === 'Gas') tagColor = 'text-ng';
+                            if(art.tag === 'Oil') tagColor = 'text-oil';
+                            
+                            return `
+                            <a href="https://www.gasgx.com/news/${art.id}/index.html" class="bg-panel border border-border p-4 rounded hover:border-ng/50 transition-colors group">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[9px] font-bold uppercase ${tagColor} border border-white/10 px-1.5 rounded">${art.tag || 'ENERGY'}</span>
+                                    <span class="text-[9px] text-gray-600">${new Date(art.time).toLocaleDateString()}</span>
+                                </div>
+                                <h4 class="text-sm font-bold text-gray-200 group-hover:text-white line-clamp-2 leading-snug font-sans">${art.main_title}</h4>
+                            </a>`;
+                        }).join('');
+                    } else {
+                        container.innerHTML = '<div class="col-span-4 text-center text-xs text-gray-500">No updates available.</div>';
+                    }
+                } catch(e) { console.error('Data fetch error:', e); }
+            }
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app.renderNav();
+            window.app.loadModuleNews();
+            
+            // 模拟实时数据波动 (随机切换呼吸灯状态)
+            setInterval(() => {
+                document.querySelectorAll('.status-dot').forEach(dot => {
+                    if(Math.random() > 0.9) dot.classList.toggle('active');
+                });
+            }, 2000);
+        });
+    </script>
+<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js"></script>
+</body>
+</html>
+

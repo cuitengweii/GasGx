@@ -1,0 +1,383 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx Mining News - Bitcoin Protocol</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;600;700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&family=Teko:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: { bg: '#050505', card: '#0F0F0F', border: '#1F1F1F', green: '#5DD62C', accent: '#FFFFFF', subtext: '#888888' },
+                        // 硬核页面专属色
+                        void: '#030303',
+                        panel: '#0A0A0A',
+                        btc: { 
+                            primary: '#F7931A', 
+                            dim: '#5c3a0b',
+                        },
+                        acid: '#CCFF00',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        tech: ['Chakra Petch', 'sans-serif'], 
+                        mono: ['JetBrains Mono', 'monospace'],
+                        header: ['Oswald', 'sans-serif'],
+                        display: ['Teko', 'sans-serif'],
+                    },
+                    boxShadow: { 
+                        'neon': '0 0 15px rgba(93, 214, 44, 0.2)',
+                        'neon-orange': '0 0 10px rgba(247, 147, 26, 0.5), 0 0 20px rgba(247, 147, 26, 0.3)',
+                    },
+                    animation: { 
+                        'marquee': 'marquee 80s linear infinite',
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glitch': 'glitch 1s linear infinite',
+                    },
+                    keyframes: {
+                        marquee: { '0%': { transform: 'translateX(0%)' }, '100%': { transform: 'translateX(-50%)' } },
+                        glitch: {
+                            '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
+                            '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
+                            '62%': { transform: 'translate(0,0) skew(5deg)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body { background-color: #050505; color: #F8F8F8; font-family: 'Inter', sans-serif; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: #F7931A; }
+        
+        /* 头部毛玻璃 */
+        .header-glass { background: rgba(5, 5, 5, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+        
+        /* 硬核样式部分 */
+        .cyber-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            mask-image: radial-gradient(circle at 50% 50%, black 40%, transparent 100%);
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        }
+        .clip-card { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%); background: #0F0F0F; border: 1px solid #1F1F1F; }
+        .clip-card:hover { border-color: rgba(247, 147, 26, 0.4); transform: translateY(-2px); }
+        
+        /* 故障文字效果 */
+        .glitch-text { position: relative; }
+        .glitch-text::before, .glitch-text::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .glitch-text::before { left: 2px; text-shadow: -1px 0 #ff00c1; clip: rect(44px, 450px, 56px, 0); animation: glitch-anim 5s infinite linear alternate-reverse; }
+        .glitch-text::after { left: -2px; text-shadow: -1px 0 #00fff9; clip: rect(44px, 450px, 56px, 0); animation: glitch-anim2 5s infinite linear alternate-reverse; }
+        @keyframes glitch-anim { 0% { clip: rect(12px, 9999px, 5px, 0); } 100% { clip: rect(89px, 9999px, 92px, 0); } }
+        @keyframes glitch-anim2 { 0% { clip: rect(65px, 9999px, 100px, 0); } 100% { clip: rect(2px, 9999px, 45px, 0); } }
+        
+        .cursor-blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* 移动端菜单背景 */
+        #mobile-menu-container { background: #050505; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative selection:bg-btc-primary selection:text-black">
+
+    <div class="cyber-grid"></div>
+
+    <header class="fixed top-0 w-full z-50 header-glass h-16">
+        <div class="max-w-[1600px] mx-auto px-4 lg:px-6 h-full flex justify-between items-center">
+            <div class="flex items-center gap-8 h-full">
+                <a href="/news/index.html" class="flex items-center gap-1 group">
+                    <div class="flex flex-col justify-center -space-y-1">
+                        <span class="text-2xl font-bold italic text-white tracking-tighter font-header group-hover:text-gas-green transition-colors">GasGx</span>
+                        <span class="text-[9px] font-bold text-gas-green tracking-[0.2em] uppercase leading-none pl-0.5">MINING NEWS</span>
+                    </div>
+                </a>
+                <nav id="desktop-nav" class="hidden lg:flex items-center gap-1 h-full pl-6 border-l border-white/5 ml-4"></nav>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex items-center gap-2 px-3 py-1 bg-[#111] border border-white/10 rounded-full mr-2">
+                    <i class="fa-brands fa-bitcoin text-btc-primary"></i>
+                    <span class="text-xs font-mono font-bold text-white">$98,420</span>
+                </div>
+                <button onclick="window.app.toggleMobileMenu()" class="lg:hidden text-white text-lg ml-2"><i class="fa-solid fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="pt-16 bg-[#080808] border-b border-white/5 relative z-40 shadow-sm">
+        <div class="max-w-[1800px] mx-auto flex items-center h-8 overflow-hidden">
+            <div class="flex items-center gap-2 px-4 h-full shrink-0 border-r border-white/10 bg-[#050505] z-10">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-btc-primary opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-btc-primary"></span>
+                </span>
+                <span class="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Live Hash</span>
+            </div>
+            <div class="flex-1 overflow-hidden relative h-full flex items-center">
+                <div id="live-data-container" class="animate-marquee whitespace-nowrap flex items-center gap-12 px-4">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mobile-menu-container" class="fixed inset-0 z-50 bg-[#050505] transform translate-x-full transition-transform duration-300 lg:hidden flex flex-col pt-20 px-6">
+        <button onclick="window.app.toggleMobileMenu()" class="absolute top-5 right-5 text-gray-500 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+        <div id="mobile-nav-links" class="space-y-6 text-xl font-bold text-gray-300"></div>
+    </div>
+    <main class="flex-grow w-full max-w-[1600px] mx-auto px-4 lg:px-6 py-8 pb-8 relative z-10">
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 border-b border-white/5 pb-6">
+            <div class="bg-panel border-l-2 border-btc-primary p-3 bg-gradient-to-r from-btc-dim/20 to-transparent">
+                <div class="text-[10px] text-btc-primary font-mono mb-1">NETWORK HASHRATE</div>
+                <div class="text-2xl font-display font-bold text-white tracking-wide">645 <span class="text-sm text-gray-500">EH/s</span></div>
+            </div>
+            <div class="bg-panel border-l-2 border-gray-700 p-3 hover:border-acid transition-colors group">
+                <div class="text-[10px] text-gray-400 group-hover:text-acid font-mono mb-1">NEXT DIFFICULTY</div>
+                <div class="text-2xl font-display font-bold text-white tracking-wide">88.2 T <span class="text-xs text-red-500 ml-2 font-sans">+2.1%</span></div>
+            </div>
+            <div class="bg-panel border-l-2 border-gray-700 p-3 hover:border-blue-500 transition-colors group">
+                <div class="text-[10px] text-gray-400 group-hover:text-blue-400 font-mono mb-1">HASHPRICE</div>
+                <div class="text-2xl font-display font-bold text-white tracking-wide">$48.15 <span class="text-xs text-green-500 ml-2 font-sans">▲</span></div>
+            </div>
+            <div class="bg-panel border-l-2 border-gray-700 p-3 hover:border-purple-500 transition-colors group">
+                <div class="text-[10px] text-gray-400 group-hover:text-purple-400 font-mono mb-1">MEMPOOL FEES</div>
+                <div class="text-2xl font-display font-bold text-white tracking-wide">14 <span class="text-sm text-gray-500">sat/vB</span></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12 min-h-[500px]">
+            <div class="lg:col-span-8 relative group cursor-pointer clip-card bg-panel border-0">
+                <div class="absolute inset-0 z-0">
+                    <img src="https://images.unsplash.com/photo-1555617778-02518510b9fa?q=80&w=2070&auto=format&fit=crop" class="w-full h-full object-cover opacity-50 group-hover:opacity-70 transition-opacity duration-700 grayscale group-hover:grayscale-0">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                    <div class="absolute inset-0 bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFhAJ/wlseKgAAAABJRU5ErkJggg==')] opacity-20"></div>
+                </div>
+                <div class="relative z-10 h-full flex flex-col justify-end p-8">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="bg-btc-primary text-black text-xs font-bold px-3 py-1 font-mono skew-x-[-10deg]">EXCLUSIVE</span>
+                        <div class="flex items-center gap-2 px-3 py-1 border border-acid/30 bg-acid/10 rounded-sm">
+                            <span class="w-1.5 h-1.5 bg-acid rounded-full animate-pulse"></span>
+                            <span class="text-acid text-xs font-mono tracking-widest">LIVE FEED</span>
+                        </div>
+                    </div>
+                    <h1 class="text-4xl md:text-6xl font-display font-bold text-white leading-[0.9] mb-4 uppercase glitch-text" data-text="HASH WARS: TEXAS GRID AT CAPACITY">
+                        HASH WARS: TEXAS GRID AT CAPACITY
+                    </h1>
+                    <p class="text-gray-300 font-sans text-lg max-w-2xl border-l-4 border-btc-primary pl-4 mb-6">
+                        Miners in ERCOT territory face mandatory curtailment as summer heatwaves push demand to critical levels.
+                    </p>
+                </div>
+            </div>
+
+            <div class="lg:col-span-4 flex flex-col gap-4">
+                <div class="bg-black border border-green-900/50 p-4 h-64 font-mono text-xs overflow-hidden relative shadow-[0_0_20px_rgba(0,255,0,0.1)]">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-green-500/50 shadow-[0_0_10px_#00ff00]"></div>
+                    <div class="text-green-500/80 leading-relaxed" id="terminal-text">
+                        > CONNECTING TO NODE G-19... <br>
+                        > SYNCING BLOCK HEADER 835,201... OK <br>
+                        > <span class="text-white">WAITING FOR BLOCK...</span><span class="cursor-blink">_</span>
+                    </div>
+                </div>
+                <div class="flex-1 bg-panel border border-white/10 p-6 relative group overflow-hidden hover:border-btc-primary/50 transition-colors clip-card cursor-pointer">
+                    <div class="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-100 transition-opacity">
+                        <i class="fa-solid fa-microchip text-4xl text-btc-primary"></i>
+                    </div>
+                    <div class="mt-auto">
+                        <span class="text-acid text-[10px] font-bold uppercase tracking-widest mb-2 block">Hardware Review</span>
+                        <h3 class="text-xl font-bold text-white font-tech group-hover:text-btc-primary transition-colors">Bitmain S21 Pro Teardown</h3>
+                        <p class="text-gray-500 text-xs mt-2 font-mono">15 J/TH Efficiency // Air Cooled // 120dB</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="flex items-center justify-between border-b border-white/10 pb-2 mb-6">
+                    <h2 class="text-2xl font-display font-bold text-white uppercase"><i class="fa-solid fa-square-rss text-btc-primary mr-2"></i> On-Chain Intel</h2>
+                    <div class="flex gap-4 text-xs font-mono">
+                        <button class="text-btc-primary underline underline-offset-4 decoration-2 decoration-btc-primary">LATEST</button>
+                        <button class="text-gray-500 hover:text-white transition-colors">FINANCE</button>
+                    </div>
+                </div>
+                <div id="feed-container">
+                    <article class="flex flex-col md:flex-row gap-6 group cursor-pointer border-b border-white/5 pb-6 hover:bg-white/5 p-2 rounded transition-colors">
+                        <div class="w-full md:w-48 h-32 bg-gray-900 shrink-0 relative overflow-hidden border border-white/10">
+                             <img src="https://images.unsplash.com/photo-1621416894569-0f39ed31d247?q=80&w=1974&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                             <div class="absolute top-0 left-0 bg-btc-primary text-black text-[10px] font-bold px-1.5 py-0.5 font-mono">HOT</div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2 text-xs font-mono text-gray-500">
+                                <span class="text-acid">#MINING_POOLS</span>
+                                <span>//</span>
+                                <span>2026-05-12</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-2 group-hover:text-btc-primary transition-colors font-tech">Foundry USA Pool Dominance Drops Below 25%</h3>
+                            <p class="text-gray-400 text-sm leading-relaxed line-clamp-2">Decentralization advocates celebrate as small pools gain hashpower following the controversial KYC implementation.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+
+            <div class="lg:col-span-1 space-y-8">
+                <div class="bg-panel border border-white/10 p-0 overflow-hidden">
+                    <div class="bg-[#151515] p-3 border-b border-white/10 flex justify-between items-center">
+                        <span class="font-display font-bold text-white uppercase tracking-wider">Top Efficiency</span>
+                        <i class="fa-solid fa-trophy text-yellow-500 text-sm"></i>
+                    </div>
+                    <div class="text-xs font-mono">
+                        <div class="flex justify-between p-3 border-b border-white/5 hover:bg-white/5"><span class="text-white">1. Antminer S21 Pro</span><span class="text-acid">15.0 J/TH</span></div>
+                        <div class="flex justify-between p-3 border-b border-white/5 hover:bg-white/5"><span class="text-white">2. WhatsMiner M66S</span><span class="text-gray-400">18.5 J/TH</span></div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-br from-btc-primary to-orange-700 p-6 clip-card text-black group cursor-pointer relative overflow-hidden border-0">
+                    <div class="absolute -right-4 -bottom-4 text-9xl text-black opacity-10 rotate-12"><i class="fa-brands fa-bitcoin"></i></div>
+                    <h3 class="font-display font-bold text-3xl mb-2 leading-none">JOIN THE<br>POOL</h3>
+                    <p class="font-mono text-xs font-bold mb-4 opacity-80">0% FEES FOR FIRST 30 DAYS</p>
+                    <button class="bg-black text-white px-4 py-2 font-bold text-xs hover:scale-105 transition-transform">START HASHING <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer class="bg-[#020202] border-t border-[#1F1F1F] mt-auto pt-10 pb-8 text-sm relative z-20">
+        <div class="max-w-[1600px] mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2"><span class="text-2xl font-bold italic text-white tracking-tighter">GasGx</span></div>
+                    <p class="text-xs text-gray-500 leading-relaxed">The definitive intelligence platform for the energy-compute convergence.</p>
+                </div>
+                <div><h4 class="text-white font-bold text-xs uppercase tracking-widest mb-4">Public Services</h4><ul class="space-y-3 text-xs text-gray-500"><li>Mining Calculator</li><li>Gas Price Index</li><li>Miner Rankings</li><li>API Docs</li></ul></div>
+                <div><h4 class="text-white font-bold text-xs uppercase tracking-widest mb-4">Legal</h4><ul class="space-y-3 text-xs text-gray-500"><li>Privacy Policy</li><li>Terms of Service</li><li>Contact Us</li></ul></div>
+                <div>
+                    <h4 class="text-white font-bold text-xs uppercase tracking-widest mb-4">Connect</h4>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-x-twitter text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#229ED9] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-telegram text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#5865F2] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-discord text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#FF0000] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-youtube text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#0077B5] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-linkedin text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#1877F2] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-facebook text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#000000] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-tiktok text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#07C160] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-weixin text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#25D366] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-whatsapp text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#E1306C] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-instagram text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 transition-all hover:-translate-y-1 hover:bg-[#FF2442] hover:text-white" title="Xiaohongshu"><span class="font-black text-[9px] leading-none" style="font-family: 'PingFang SC', sans-serif;">小红书</span></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#FF9900] hover:text-white transition-all hover:-translate-y-1"><i class="fa-solid fa-circle-play text-lg"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-white/5 pt-8 text-xs text-gray-600 text-center">© 2026 GasGx Technology. All rights reserved.</div>
+        </div>
+    </footer>
+    <button id="back-to-top-btn" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="fixed right-6 bottom-24 w-10 h-10 bg-[#111] border border-btc-primary text-btc-primary rounded-full flex items-center justify-center z-40 hover:scale-110 transition-all duration-300 shadow-neon-orange group opacity-0 pointer-events-none"><i class="fa-solid fa-arrow-up group-hover:-translate-y-0.5 transition-transform"></i></button>
+
+    <script>
+        const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const AppData = {
+            navigation: [
+                { title: "Home", path: "/news/index.html" },
+                { title: "Gas Energy", path: "/news/gas-energy.html" },
+                { title: "Generators", path: "/news/generators.html" },
+                { title: "Bitcoin Mining", path: "/news/bitcoin-mining.html", active: true },
+                { title: "Flash", path: "/news/flash.html" },
+                { title: "Insights", path: "/news/insights.html" },
+                { title: "Data", path: "/news/data.html" },
+                { title: "Events", path: "/news/events.html" },
+            ]
+        };
+
+        window.app = {
+            init() {
+                this.renderNav();
+                this.loadTicker();
+                this.initTerminal();
+                
+                window.addEventListener('scroll', () => {
+                    const btn = document.getElementById('back-to-top-btn');
+                    if (window.scrollY > 300) btn.classList.remove('opacity-0', 'pointer-events-none');
+                    else btn.classList.add('opacity-0', 'pointer-events-none');
+                });
+            },
+
+            renderNav() {
+                // Desktop Nav - using 'text-btc-primary' for active state instead of gas-green
+                const navLinks = AppData.navigation.map(item => {
+                    if (item.active) {
+                        return `<a href="${item.path}" class="text-xs font-bold text-btc-primary px-4 py-2 transition-colors uppercase tracking-wide bg-white/5 rounded-full whitespace-nowrap">${item.title}</a>`;
+                    }
+                    return `<a href="${item.path}" class="text-xs font-bold text-gray-400 hover:text-white px-4 py-2 transition-colors uppercase tracking-wide hover:bg-white/5 rounded-full whitespace-nowrap">${item.title}</a>`;
+                }).join('');
+                document.getElementById('desktop-nav').innerHTML = navLinks;
+                
+                // Mobile Nav
+                const mobLinks = AppData.navigation.map(item => `<a href="${item.path}" class="block py-4 border-b border-white/10 ${item.active ? 'text-btc-primary' : 'hover:text-btc-primary'}">${item.title}</a>`).join('');
+                document.getElementById('mobile-nav-links').innerHTML = mobLinks;
+            },
+
+            toggleMobileMenu() { document.getElementById('mobile-menu-container').classList.toggle('translate-x-full'); },
+
+            loadTicker() {
+                const container = document.getElementById('live-data-container');
+                const items = [
+                    { l: 'Block Height', v: '835,402' },
+                    { l: 'Next Halving', v: '2028' },
+                    { l: 'Global Energy', v: '18 GW' },
+                    { l: 'Avg ASIC Eff', v: '24 J/TH' },
+                    { l: 'Pool Luck', v: '101%' }
+                ];
+                const html = items.map(i => `<div class="flex items-center gap-2 text-xs font-mono text-gray-400 whitespace-nowrap"><span class="text-btc-primary font-bold">${i.l}</span><span class="text-white font-bold">${i.v}</span></div>`).join('');
+                container.innerHTML = `<div class="flex items-center gap-12 px-4">${html}</div>`.repeat(4);
+            },
+
+            // Hardcore Terminal Effect
+            initTerminal() {
+                const terminalText = document.getElementById('terminal-text');
+                if(!terminalText) return;
+                const lines = [
+                    "> CONNECTING TO NODE G-19...",
+                    "> SYNCING BLOCK HEADER 835,201... OK",
+                    "> DETECTED NEW DIFFICULTY ADJUSTMENT...",
+                    "> WARNING: HASHRATE SPIKE [POOL: F2POOL]",
+                    "> ANALYZING MEMPOOL... 45MB",
+                    "> <span class='text-btc-primary'>NEW BLOCK FOUND: 0000...a3f2</span>"
+                ];
+                let lineIndex = 0;
+                const typeLine = () => {
+                    if (lineIndex < lines.length) {
+                        const currentContent = lines.slice(0, lineIndex + 1).join('<br>');
+                        terminalText.innerHTML = currentContent + '<span class="cursor-blink">_</span>';
+                        lineIndex++;
+                        setTimeout(typeLine, 800 + Math.random() * 1000);
+                    } else {
+                        lineIndex = 0;
+                        setTimeout(typeLine, 3000);
+                    }
+                };
+                setTimeout(typeLine, 1000);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => window.app.init());
+    </script>
+<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js"></script>
+</body>
+</html>
+

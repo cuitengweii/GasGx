@@ -1,0 +1,379 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx Insights - Tactical Intelligence</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;500;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: { black: '#020202', panel: '#080808', border: '#222', green: '#5DD62C', dim: '#888' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        tech: ['Rajdhani', 'sans-serif'],
+                        header: ['Oswald', 'sans-serif'],
+                    },
+                    animation: {
+                        'scanline': 'scanline 4s linear infinite',
+                    },
+                    keyframes: {
+                        scanline: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100vh)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body { background-color: #020202; color: #E0E0E0; font-family: 'Inter', sans-serif; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* FX: Noise & Grid */
+        .bg-noise {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;
+            opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+        .grid-bg { 
+            background-size: 40px 40px; 
+            background-image: linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+        }
+        .scanner-line {
+            position: absolute; left: 0; right: 0; height: 1px; background: rgba(93, 214, 44, 0.5);
+            box-shadow: 0 0 10px rgba(93, 214, 44, 0.8); z-index: 40; pointer-events: none;
+            animation: scanline 3s linear infinite;
+        }
+
+        .header-glass { background: rgba(5, 5, 5, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+        
+        /* UI: Cyber Cards */
+        .cyber-card {
+            background: #080808;
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
+            border: 1px solid #1F1F1F; position: relative; transition: all 0.3s ease;
+        }
+        .cyber-card:hover { transform: translateY(-3px); border-color: #5DD62C; box-shadow: 0 10px 30px -10px rgba(93, 214, 44, 0.1); }
+        .cyber-card::after {
+            content: ''; position: absolute; bottom: 0; right: 0; width: 15px; height: 15px;
+            background: linear-gradient(135deg, transparent 50%, rgba(93, 214, 44, 0.2) 50%);
+        }
+        .text-neon { text-shadow: 0 0 10px rgba(93, 214, 44, 0.5); }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative selection:bg-gas-green selection:text-black">
+
+    <div class="bg-noise"></div>
+    <div class="fixed inset-0 grid-bg z-0 pointer-events: none;"></div>
+    <div class="scanner-line"></div>
+
+    <header class="fixed top-0 w-full z-50 header-glass h-16">
+        <div class="max-w-[1600px] mx-auto px-4 lg:px-6 h-full flex justify-between items-center">
+            <div class="flex items-center gap-8 h-full">
+                <a href="/news/index.html" class="flex items-center gap-1 group">
+                    <div class="flex flex-col justify-center -space-y-1">
+                        <span class="text-2xl font-bold italic text-white tracking-tighter font-header group-hover:text-gas-green transition-colors">GasGx</span>
+                        <span class="text-[9px] font-bold text-gas-green tracking-[0.2em] uppercase leading-none pl-0.5">INSIGHTS</span>
+                    </div>
+                </a>
+                <nav id="desktop-nav" class="hidden lg:flex items-center gap-1 h-full pl-6 border-l border-white/5 ml-4"></nav>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="window.app.toggleMobileMenu()" class="lg:hidden text-white text-lg ml-2"><i class="fa-solid fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div id="mobile-menu-container" class="fixed inset-0 z-50 bg-[#050505] transform translate-x-full transition-transform duration-300 lg:hidden flex flex-col pt-20 px-6">
+        <button onclick="window.app.toggleMobileMenu()" class="absolute top-5 right-5 text-gray-500 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+        <div id="mobile-nav-links" class="space-y-6 text-xl font-bold text-gray-300"></div>
+    </div>
+
+    <main class="flex-grow w-full max-w-[1600px] mx-auto px-4 lg:px-6 py-24 pb-12 relative z-10">
+        
+        <div class="flex flex-col lg:flex-row justify-between items-end mb-10 gap-8 border-b border-white/5 pb-6">
+            <div class="relative pl-6 border-l-2 border-gas-green">
+                <h1 class="text-5xl md:text-6xl font-tech font-bold text-white mb-2 uppercase leading-none tracking-tight">
+                    Market <span class="text-transparent bg-clip-text bg-gradient-to-r from-gas-green to-white">Intel</span>
+                </h1>
+                <p class="text-xs font-mono text-gray-400 mt-2 uppercase tracking-wide">
+                    // Decrypted Analysis for Industrial Mining Operations.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                <button onclick="window.app.switchTab('all')" id="tab-btn-all" class="px-6 py-2 bg-gas-green text-black font-bold font-mono text-xs uppercase hover:bg-white transition-colors">
+                    [01] :: All_Feeds
+                </button>
+                <button onclick="window.app.switchTab('analysis')" id="tab-btn-analysis" class="px-6 py-2 bg-[#111] border border-white/10 text-gray-400 font-bold font-mono text-xs uppercase hover:border-gas-green hover:text-white transition-colors">
+                    [02] :: Analysis
+                </button>
+                <button onclick="window.app.switchTab('tech')" id="tab-btn-tech" class="px-6 py-2 bg-[#111] border border-white/10 text-gray-400 font-bold font-mono text-xs uppercase hover:border-gas-green hover:text-white transition-colors">
+                    [03] :: Tech_Specs
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <div class="lg:col-span-9">
+                <div id="insights-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 auto-rows-[280px]">
+                    <div class="col-span-full h-80 flex items-center justify-center border border-dashed border-white/10 bg-[#050505]">
+                        <div class="text-center font-mono">
+                            <div class="text-gas-green text-xl mb-2 animate-pulse">> ESTABLISHING UPLINK...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-12 flex justify-center">
+                    <button id="load-more-btn" onclick="window.app.loadMore()" class="group relative px-10 py-3 bg-transparent border border-white/20 text-white font-mono text-xs uppercase overflow-hidden tracking-widest hover:border-gas-green transition-colors">
+                        <span class="relative z-10 flex items-center gap-2">
+                            <i class="fa-solid fa-plus text-[10px]"></i> Load_Sector_Data
+                        </span>
+                        <div class="absolute inset-0 bg-white/5 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3 space-y-6 sticky top-24 h-fit">
+                
+                <div class="cyber-card p-5">
+                    <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+                        <h3 class="font-mono text-xs text-gas-green uppercase">Threat_Level</h3>
+                        <span class="w-2 h-2 bg-gas-green rounded-full animate-ping"></span>
+                    </div>
+                    <div class="relative w-24 h-24 mx-auto my-4 border border-white/10 rounded-full flex items-center justify-center">
+                        <div class="absolute inset-0 border-r border-transparent border-t border-gas-green rounded-full animate-spin"></div>
+                        <div class="text-center">
+                            <div class="text-xl font-tech font-bold text-white">LOW</div>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-[10px] font-mono text-gray-400">
+                        <div class="flex justify-between"><span>> STABILITY</span> <span class="text-white">99.9%</span></div>
+                        <div class="flex justify-between"><span>> GAS_PRICE</span> <span class="text-gas-green">$1.85</span></div>
+                    </div>
+                </div>
+
+                <div class="relative group cursor-pointer border border-white/10 bg-[#050505] p-1">
+                    <div class="p-5 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+                        <div class="font-mono text-[9px] text-gas-green mb-1">CLASSIFIED REPORT</div>
+                        <h3 class="text-white font-tech text-xl font-bold mb-2 uppercase">Alberta Grid<br>Alpha V.2</h3>
+                        <button class="w-full py-2 border border-white/20 text-white font-mono text-[10px] hover:bg-white hover:text-black hover:border-white transition-all">
+                            DOWNLOAD_PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div class="font-mono text-[10px]">
+                    <div class="flex flex-wrap gap-1">
+                        <span class="px-2 py-1 bg-[#111] border border-white/10 text-gray-400 hover:text-gas-green cursor-pointer">#FLARE_GAS</span>
+                        <span class="px-2 py-1 bg-[#111] border border-white/10 text-gray-400 hover:text-gas-green cursor-pointer">#ASIC</span>
+                        <span class="px-2 py-1 bg-[#111] border border-white/10 text-gray-400 hover:text-gas-green cursor-pointer">#AI</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-[#020202] border-t border-[#1F1F1F] mt-auto pt-10 pb-8 text-sm relative z-20">
+        <div class="max-w-[1600px] mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2"><span class="text-2xl font-bold italic text-white tracking-tighter">GasGx</span></div>
+                    <p class="text-xs text-gray-500 leading-relaxed">The definitive intelligence platform for the energy-compute convergence.</p>
+                </div>
+                <div><h4 class="text-white font-bold text-xs uppercase tracking-widest mb-4">Public Services</h4><ul class="space-y-3 text-xs text-gray-500"><li>Mining Calculator</li><li>Gas Price Index</li><li>Miner Rankings</li><li>API Docs</li></ul></div>
+                <div><h4 class="text-white font-bold text-xs uppercase tracking-widest mb-4">Legal</h4><ul class="space-y-3 text-xs text-gray-500"><li>Privacy Policy</li><li>Terms of Service</li><li>Contact Us</li></ul></div>
+                <div>
+                    <h4 class="text-white font-bold text-xs uppercase tracking-widest mb-4">Connect</h4>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-x-twitter text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#229ED9] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-telegram text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#5865F2] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-discord text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#FF0000] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-youtube text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#0077B5] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-linkedin text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#1877F2] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-facebook text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#000000] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-tiktok text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#07C160] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-weixin text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#25D366] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-whatsapp text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#E1306C] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-instagram text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 transition-all hover:-translate-y-1 hover:bg-[#FF2442] hover:text-white" title="Xiaohongshu"><span class="font-black text-[9px] leading-none" style="font-family: 'PingFang SC', sans-serif;">小红书</span></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#FF9900] hover:text-white transition-all hover:-translate-y-1"><i class="fa-solid fa-circle-play text-lg"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-white/5 pt-8 text-xs text-gray-600 text-center">© 2026 GasGx Technology. All rights reserved.</div>
+        </div>
+    </footer>
+
+    <script>
+        const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const AppData = {
+            navigation: [
+                { title: "Home", path: "/news/index.html" },
+                { title: "Gas Energy", path: "/news/gas-energy.html" },
+                { title: "Generators", path: "/news/generators.html" },
+                { title: "Bitcoin Mining", path: "/news/bitcoin-mining.html" },
+                { title: "Flash", path: "/news/flash.html" },
+                { title: "Insights", path: "/news/insights.html" },
+                { title: "Data", path: "/news/data.html" },
+                { title: "Events", path: "/news/events.html" },
+            ]
+        };
+
+        window.app = {
+            state: { currentTab: 'all', currentOffset: 0, isLoading: false },
+
+            init() {
+                this.renderNav();
+                this.loadGrid('all', true); 
+            },
+
+            getImageUrl(item) {
+                if (item.cover_image) return `https://www.gasgx.com/news/${item.id}/images/${item.cover_image}`;
+                return `https://www.gasgx.com/news/advertisement/zhanwei.jpg`;
+            },
+
+            renderNav() {
+                const navLinks = AppData.navigation.map(item => {
+                    const isActive = item.title === "Insights";
+                    const classes = isActive 
+                        ? "text-xs font-bold text-gas-green px-4 py-2 transition-colors uppercase tracking-wide rounded-full whitespace-nowrap bg-white/5 border border-gas-green/20"
+                        : "text-xs font-bold text-gray-400 hover:text-white px-4 py-2 transition-colors uppercase tracking-wide hover:bg-white/5 rounded-full whitespace-nowrap";
+                    return `<a href="${item.path}" class="${classes}">${item.title}</a>`;
+                }).join('');
+                document.getElementById('desktop-nav').innerHTML = navLinks;
+                
+                const mobLinks = AppData.navigation.map(item => `<a href="${item.path}" class="block py-4 border-b border-white/10 hover:text-gas-green ${item.title==='Insights'?'text-gas-green':''}">${item.title}</a>`).join('');
+                document.getElementById('mobile-nav-links').innerHTML = mobLinks;
+            },
+            toggleMobileMenu() { document.getElementById('mobile-menu-container').classList.toggle('translate-x-full'); },
+
+            switchTab(tabId) {
+                ['all', 'analysis', 'tech'].forEach(t => {
+                    const btn = document.getElementById(`tab-btn-${t}`);
+                    btn.className = 'px-6 py-2 bg-[#111] border border-white/10 text-gray-400 font-bold font-mono text-xs uppercase hover:border-gas-green hover:text-white transition-colors';
+                });
+                const active = document.getElementById(`tab-btn-${tabId}`);
+                active.className = 'px-6 py-2 bg-gas-green text-black font-bold font-mono text-xs uppercase hover:bg-white transition-colors';
+                this.loadGrid(tabId, true);
+            },
+
+            async loadGrid(tab, isReset = false) {
+                const container = document.getElementById('insights-grid');
+                const btn = document.getElementById('load-more-btn');
+
+                if (isReset) {
+                    this.state.currentTab = tab;
+                    this.state.currentOffset = 0;
+                    container.innerHTML = `<div class="col-span-full h-80 flex items-center justify-center border border-dashed border-white/10"><i class="fa-solid fa-circle-notch fa-spin text-gas-green text-2xl"></i></div>`;
+                    btn.style.display = 'none';
+                }
+
+                const limit = 9; // FETCH 9 ITEMS TO FILL GRID (1+8)
+                const from = this.state.currentOffset;
+                const to = from + limit - 1;
+
+                try {
+                    let query = _supabase.from('articles').select('*').order('time', { ascending: false }).range(from, to);
+                    
+                    if (tab === 'analysis') query = query.ilike('tag', '%Analysis%');
+                    if (tab === 'tech') query = query.or('tag.ilike.%Tech%,tag.ilike.%Hardware%');
+
+                    const { data, error } = await query;
+
+                    if (isReset) container.innerHTML = '';
+                    
+                    if (!data || data.length === 0) {
+                        if(isReset) container.innerHTML = `<div class="col-span-full border border-white/10 p-12 text-center text-gray-600 font-mono text-xs uppercase">>> No Signals Found in Sector [${tab}]</div>`;
+                        return;
+                    }
+
+                    const html = data.map((art, index) => {
+                        const imgUrl = this.getImageUrl(art);
+                        const tag = art.secondary_tag || art.tag || 'INTEL';
+                        const dateStr = new Date(art.time).toLocaleDateString();
+                        const id = String(art.id).padStart(4, '0');
+                        
+                        let gridClass = '';
+                        let heightClass = '';
+                        let titleClass = 'text-lg';
+
+                        if (isReset && index === 0) {
+                            gridClass = 'md:col-span-2 md:row-span-2'; 
+                            heightClass = 'min-h-[380px]'; 
+                            titleClass = 'text-3xl uppercase';
+                        } 
+
+                        return `
+                        <article class="cyber-card group cursor-pointer flex flex-col ${gridClass} ${heightClass}" onclick="window.location.href='https://www.gasgx.com/news/${art.id}/index.html'">
+                            <div class="relative h-40 ${isReset && index === 0 ? 'md:h-full md:absolute md:inset-0 md:z-0' : ''} overflow-hidden border-b border-white/10 ${isReset && index === 0 ? 'border-b-0' : ''}">
+                                <img src="${imgUrl}" loading="lazy" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500 grayscale group-hover:grayscale-0">
+                                <div class="absolute inset-0 bg-gradient-to-t from-[#080808] to-transparent"></div>
+                                <div class="absolute top-0 left-0 p-3 z-10">
+                                    <span class="bg-black/80 backdrop-blur border border-white/20 text-white text-[9px] font-mono px-2 py-1 uppercase tracking-widest text-neon">${tag}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="p-5 flex flex-col flex-1 relative ${isReset && index === 0 ? 'justify-end z-10 bg-gradient-to-t from-black via-black/80 to-transparent' : 'bg-[#080808]'}">
+                                <div class="flex justify-between items-start mb-2 ${isReset && index === 0 ? 'opacity-80' : ''}">
+                                    <span class="font-mono text-[9px] text-gray-500">DATE: ${dateStr}</span>
+                                </div>
+                                <h3 class="text-white font-tech font-bold ${titleClass} leading-tight mb-2 transition-colors group-hover:text-gas-green">${art.main_title}</h3>
+                                ${!isReset || index !== 0 ? `<p class="text-gray-400 text-xs font-mono leading-relaxed line-clamp-2 mb-3">${art.subheading || 'Encrypted content.'}</p>` : ''}
+                                <div class="mt-auto pt-3 border-t border-white/10 flex items-center justify-between ${isReset && index === 0 ? 'border-white/20' : ''}">
+                                    <span class="text-[9px] font-mono text-gas-green group-hover:underline decoration-gas-green underline-offset-4">READ_BRIEF >></span>
+                                    <span class="text-[9px] font-mono text-gray-600">ID: ${id}</span>
+                                </div>
+                            </div>
+                        </article>
+                        `;
+                    }).join('');
+
+                    if (isReset) {
+                        container.innerHTML = html;
+                    } else {
+                        container.insertAdjacentHTML('beforeend', html);
+                    }
+                    
+                    this.state.currentOffset += data.length;
+                    
+                    if (data.length < limit) btn.style.display = 'none';
+                    else btn.style.display = 'inline-block';
+
+                } catch(e) { console.error(e); }
+            },
+            
+            loadMore() { this.loadGrid(this.state.currentTab, false); }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => window.app.init());
+    </script>
+<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js"></script>
+</body>
+</html>
+

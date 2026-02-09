@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Case Studies | GasGx 案例库</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 20px rgba(93, 214, 44, 0.6)',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #1a1a1a 1px, transparent 1px), linear-gradient(to bottom, #1a1a1a 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body { background-color: #0F0F0F; color: #F8F8F8; font-family: 'Inter', sans-serif; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+        
+        .gas-card { background-color: rgba(32, 32, 32, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .gas-card-hover { transition: all 0.3s ease; }
+        .gas-card-hover:hover { transform: translateY(-5px); border-color: #5DD62C; box-shadow: 0 10px 30px rgba(93, 214, 44, 0.1); }
+        
+        .bg-grid { background-size: 40px 40px; mask-image: linear-gradient(to bottom, transparent, 10%, black, 90%, transparent); }
+
+        /* 强制隐藏类，确保优先级最高，防止JS动画冲突 */
+        .force-hidden { display: none !important; }
+        
+        /* Tab 激活状态样式 */
+        .tab-btn.active {
+            color: #5DD62C;
+            border-bottom-color: #5DD62C;
+            background-color: rgba(93, 214, 44, 0.05);
+        }
+    </style>
+    
+    <script>window.app = window.app || {};</script>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative selection:bg-gas-green selection:text-black">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-16 w-full relative">
+        <div class="absolute inset-0 bg-grid-pattern bg-grid opacity-20 pointer-events-none"></div>
+        
+        <section class="max-w-[1400px] mx-auto px-6 py-16 text-center relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gas-green/30 bg-gas-green/10 text-gas-green text-xs font-bold tracking-wider mb-6">
+                <i class="fa-solid fa-earth-americas"></i>
+                <span data-i18n="hero_badge">GLOBAL PROJECTS</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold mb-6">
+                <span data-i18n="page_title_1">Global</span> <span class="text-gas-green" data-i18n="page_title_2">Case Studies</span>
+            </h1>
+            <p class="text-lg text-gas-subtext max-w-3xl mx-auto mb-10" data-i18n="page_desc">
+                探索全球最具代表性的天然气发电与算力结合项目，涵盖从石油巨头到创新型初创企业的多种合作模式。
+            </p>
+
+            <div class="flex justify-center border-b border-white/10 max-w-2xl mx-auto">
+                <button onclick="window.app.switchTab('featured')" id="tab-btn-featured" class="tab-btn active flex-1 py-4 text-sm font-bold text-gas-subtext border-b-2 border-transparent hover:text-white transition-all">
+                    <i class="fa-solid fa-star mr-2"></i> <span data-i18n="tab_featured">Featured</span>
+                </button>
+                <button onclick="window.app.switchTab('regions')" id="tab-btn-regions" class="tab-btn flex-1 py-4 text-sm font-bold text-gas-subtext border-b-2 border-transparent hover:text-white transition-all">
+                    <i class="fa-solid fa-map mr-2"></i> <span data-i18n="tab_regions">Regions</span>
+                </button>
+                <button onclick="window.app.switchTab('scenarios')" id="tab-btn-scenarios" class="tab-btn flex-1 py-4 text-sm font-bold text-gas-subtext border-b-2 border-transparent hover:text-white transition-all">
+                    <i class="fa-solid fa-layer-group mr-2"></i> <span data-i18n="tab_scenarios">Scenarios</span>
+                </button>
+            </div>
+        </section>
+
+        <div class="max-w-[1400px] mx-auto px-6 pb-20 min-h-[500px] relative">
+            
+            <div id="content-featured" class="tab-content w-full">
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="gas-card gas-card-hover rounded-xl p-6 relative overflow-hidden group">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-xs font-bold bg-white/10 text-white px-2 py-1 rounded border border-white/5" data-i18n="tag_us">USA</span>
+                            <i class="fa-solid fa-fire text-gas-green/50 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2" data-i18n="case1_title">Crusoe & ExxonMobil</h3>
+                        <p class="text-sm text-gas-subtext mb-4" data-i18n="case1_desc">
+                            北达科他州 Bakken 盆地的 DFM 标杆。每月消耗 1800万立方英尺天然气，燃烧效率 99.9%，正向 AI 云计算转型。
+                        </p>
+                        <div class="flex gap-2">
+                            <span class="text-[10px] bg-gas-green/10 text-gas-green px-2 py-1 rounded border border-gas-green/20">DFM</span>
+                            <span class="text-[10px] bg-gas-green/10 text-gas-green px-2 py-1 rounded border border-gas-green/20">AI Pivot</span>
+                        </div>
+                    </div>
+
+                    <div class="gas-card gas-card-hover rounded-xl p-6 relative overflow-hidden group">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-xs font-bold bg-white/10 text-white px-2 py-1 rounded border border-white/5" data-i18n="tag_ar">ARGENTINA</span>
+                            <i class="fa-solid fa-bolt text-blue-500/50 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2" data-i18n="case2_title">YPF Luz & GDA</h3>
+                        <p class="text-sm text-gas-subtext mb-4" data-i18n="case2_desc">
+                            Vaca Muerta 盆地的国企合作案例。7MW 装机，1200 台矿机，预计减少 63% 二氧化碳当量排放。
+                        </p>
+                        <div class="flex gap-2">
+                            <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded border border-blue-500/20">SOE</span>
+                            <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded border border-blue-500/20">Carbon Negative</span>
+                        </div>
+                    </div>
+
+                    <div class="gas-card gas-card-hover rounded-xl p-6 relative overflow-hidden group">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-xs font-bold bg-white/10 text-white px-2 py-1 rounded border border-white/5" data-i18n="tag_ca">CANADA</span>
+                            <i class="fa-solid fa-snowflake text-white/50 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2" data-i18n="case3_title">LINKMINE 艾伯塔项目</h3>
+                        <p class="text-sm text-gas-subtext mb-4" data-i18n="case3_desc">
+                            利用艾伯塔省废弃气井（OWA）和离网豁免政策。实现 $0.043/kWh 低成本电力，并预留氢能接口。
+                        </p>
+                        <div class="flex gap-2">
+                            <span class="text-[10px] bg-white/10 text-white px-2 py-1 rounded border border-white/20">Off-grid</span>
+                            <span class="text-[10px] bg-white/10 text-white px-2 py-1 rounded border border-white/20">H2 Ready</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-regions" class="tab-content force-hidden w-full">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="gas-card p-6 rounded-xl border border-white/10">
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-flag-usa text-blue-400"></i>
+                            <span data-i18n="reg_na_title">北美 (North America)</span>
+                        </h3>
+                        <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-2">
+                            <li><strong class="text-white" data-i18n="reg_tx">德克萨斯 (Texas):</strong> <span data-i18n="reg_tx_desc">ERCOT 市场灵活负载，ExxonMobil 等巨头布局。</span></li>
+                            <li><strong class="text-white" data-i18n="reg_ny">纽约州 (New York):</strong> <span data-i18n="reg_ny_desc">Greenidge 电厂自用模式，面临环保法规挑战。</span></li>
+                            <li><strong class="text-white" data-i18n="reg_ab">艾伯塔 (Alberta):</strong> <span data-i18n="reg_ab_desc">受益于离网自用 (<10MW) 豁免政策，废弃气井利用活跃。</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="gas-card p-6 rounded-xl border border-white/10">
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-sun text-yellow-500"></i>
+                            <span data-i18n="reg_sa_title">南美 (South America)</span>
+                        </h3>
+                        <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-2">
+                            <li><strong class="text-white" data-i18n="reg_arg">阿根廷 (Argentina):</strong> <span data-i18n="reg_arg_desc">Vaca Muerta 盆地，YPF 将无法出口的天然气“数字货币化”。</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="gas-card p-6 rounded-xl border border-white/10 md:col-span-2">
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-earth-asia text-purple-400"></i>
+                            <span data-i18n="reg_eu_title">欧亚与中东 (Eurasia & ME)</span>
+                        </h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-2">
+                                <li><strong class="text-white" data-i18n="reg_ru">俄罗斯 (Russia):</strong> <span data-i18n="reg_ru_desc">西伯利亚伴生气离网挖矿，解决电力短缺。</span></li>
+                            </ul>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-2">
+                                <li><strong class="text-white" data-i18n="reg_me">中东 (Middle East):</strong> <span data-i18n="reg_me_desc">ADNOC 投资布局，LNG 与伴生气挖矿潜力巨大。</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-scenarios" class="tab-content force-hidden w-full">
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="gas-card p-6 rounded-xl text-center group hover:border-gas-green transition-colors">
+                        <div class="w-16 h-16 rounded-full bg-gas-green/10 flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-leaf text-3xl text-gas-green"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2" data-i18n="scn1_title">数字火炬缓解 (DFM)</h3>
+                        <p class="text-sm text-gas-subtext" data-i18n="scn1_desc">部署在井口，直接利用伴生气发电。替代燃烧火炬，获取碳信用收益。</p>
+                    </div>
+
+                    <div class="gas-card p-6 rounded-xl text-center group hover:border-blue-500 transition-colors">
+                        <div class="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-database text-3xl text-blue-500"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2" data-i18n="scn2_title">搁浅气货币化</h3>
+                        <p class="text-sm text-gas-subtext" data-i18n="scn2_desc">针对因缺乏管道而关停的气井（Shut-in Wells），就地变现为数字资产。</p>
+                    </div>
+
+                    <div class="gas-card p-6 rounded-xl text-center group hover:border-purple-500 transition-colors">
+                        <div class="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-house-signal text-3xl text-purple-500"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2" data-i18n="scn3_title">离网自用模式</h3>
+                        <p class="text-sm text-gas-subtext" data-i18n="scn3_desc">无需并网，完全独立的电力孤岛。规避复杂的电网审批，快速部署。</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        const I18N_DATA = {
+            'zh': {
+                'tagline': '天然气发电挖矿助手',
+                'nav_home': '首页',
+                'nav_all': '全部案例',
+                'nav_regions': '按区域查看',
+                'nav_scenarios': '按场景查看',
+                'hero_badge': '全球项目',
+                'page_title_1': '全球',
+                'page_title_2': '案例库',
+                'page_desc': '探索全球最具代表性的天然气发电与算力结合项目，涵盖从石油巨头到创新型初创企业的多种合作模式。',
+                
+                'tab_featured': '精选案例',
+                'tab_regions': '按区域',
+                'tab_scenarios': '按场景',
+
+                // Sec 1
+                'sec1_title': '精选案例',
+                'tag_us': '美国',
+                'tag_ar': '阿根廷',
+                'tag_ca': '加拿大',
+                'case1_title': 'Crusoe & ExxonMobil',
+                'case1_desc': '北达科他州 Bakken 盆地的 DFM 标杆。每月消耗 1800万立方英尺天然气，燃烧效率 99.9%，正向 AI 云计算转型。',
+                'case2_title': 'YPF Luz & GDA',
+                'case2_desc': 'Vaca Muerta 盆地的国企合作案例。7MW 装机，1200 台矿机，预计减少 63% 二氧化碳当量排放。',
+                'case3_title': 'LINKMINE 艾伯塔项目',
+                'case3_desc': '利用艾伯塔省废弃气井（OWA）和离网豁免政策。实现 $0.043/kWh 低成本电力，并预留氢能接口。',
+
+                // Sec 2
+                'sec2_title': '按区域查看',
+                'reg_na_title': '北美 (North America)',
+                'reg_tx': '德克萨斯 (Texas):',
+                'reg_tx_desc': 'ERCOT 市场灵活负载，ExxonMobil 等巨头布局。',
+                'reg_ny': '纽约州 (New York):',
+                'reg_ny_desc': 'Greenidge 电厂自用模式，面临环保法规限制。',
+                'reg_ab': '艾伯塔 (Alberta):',
+                'reg_ab_desc': '受益于离网自用 (<10MW) 豁免政策，废弃气井利用活跃。',
+                'reg_sa_title': '南美 (South America)',
+                'reg_arg': '阿根廷 (Argentina):',
+                'reg_arg_desc': 'Vaca Muerta 盆地，YPF 将无法出口的天然气“数字货币化”。',
+                'reg_eu_title': '欧亚与中东 (Eurasia & ME)',
+                'reg_ru': '俄罗斯 (Russia):',
+                'reg_ru_desc': '西伯利亚伴生气离网挖矿，解决电力短缺。',
+                'reg_me': '中东 (Middle East):',
+                'reg_me_desc': 'ADNOC 投资布局，LNG 与伴生气挖矿潜力巨大。',
+
+                // Sec 3
+                'sec3_title': '按场景查看',
+                'scn1_title': '数字火炬缓解 (DFM)',
+                'scn1_desc': '部署在井口，直接利用伴生气发电。替代燃烧火炬，获取碳信用收益。',
+                'scn2_title': '搁浅气货币化',
+                'scn2_desc': '针对因缺乏管道而关停的气井（Shut-in Wells），就地变现为数字资产。',
+                'scn3_title': '离网自用模式',
+                'scn3_desc': '无需并网，完全独立的电力孤岛。规避复杂的电网审批，快速部署。',
+
+                'footerTagline': '让天然气发电挖矿更简单',
+                'contact_us': '联系我们',
+                'privacy_policy': '隐私政策'
+            },
+            'en': {
+                'tagline': 'Natural Gas Power Mining Assistant',
+                'nav_home': 'Home',
+                'nav_all': 'All Cases',
+                'nav_regions': 'By Region',
+                'nav_scenarios': 'By Scenario',
+                'hero_badge': 'GLOBAL PROJECTS',
+                'page_title_1': 'Global',
+                'page_title_2': 'Case Studies',
+                'page_desc': 'Exploring representative gas-to-power mining projects worldwide, from oil giants to innovative startups.',
+                
+                'tab_featured': 'Featured',
+                'tab_regions': 'Regions',
+                'tab_scenarios': 'Scenarios',
+
+                // Sec 1
+                'sec1_title': 'Featured Cases',
+                'tag_us': 'USA',
+                'tag_ar': 'ARGENTINA',
+                'tag_ca': 'CANADA',
+                'case1_title': 'Crusoe & ExxonMobil',
+                'case1_desc': 'DFM benchmark in Bakken, ND. Consuming 18M scf/month with 99.9% efficiency, pivoting to AI cloud.',
+                'case2_title': 'YPF Luz & GDA',
+                'case2_desc': 'SOE partnership in Vaca Muerta. 7MW capacity, 1200 miners, reducing 63% CO2e emissions.',
+                'case3_title': 'LINKMINE Alberta',
+                'case3_desc': 'Using OWA orphan wells and off-grid exemption. Achieving $0.043/kWh with Hydrogen-ready design.',
+
+                // Sec 2
+                'sec2_title': 'By Region',
+                'reg_na_title': 'North America',
+                'reg_tx': 'Texas:',
+                'reg_tx_desc': 'ERCOT flexible load, majors like ExxonMobil deploying.',
+                'reg_ny': 'New York:',
+                'reg_ny_desc': 'Greenidge self-mining, facing strict environmental regulations.',
+                'reg_ab': 'Alberta:',
+                'reg_ab_desc': 'Active orphan well utilization under off-grid (<10MW) exemption.',
+                'reg_sa_title': 'South America',
+                'reg_arg': 'Argentina:',
+                'reg_arg_desc': 'Vaca Muerta basin, YPF monetizing export-constrained gas digitally.',
+                'reg_eu_title': 'Eurasia & Middle East',
+                'reg_ru': 'Russia:',
+                'reg_ru_desc': 'Siberian associated gas mining off-grid, solving power shortages.',
+                'reg_me': 'Middle East:',
+                'reg_me_desc': 'ADNOC investing, huge potential in LNG & flare mining.',
+
+                // Sec 3
+                'sec3_title': 'By Scenario',
+                'scn1_title': 'Digital Flare Mitigation (DFM)',
+                'scn1_desc': 'Deployed at wellhead to use associated gas. Replacing flares, earning carbon credits.',
+                'scn2_title': 'Stranded Gas Monetization',
+                'scn2_desc': 'Monetizing shut-in wells lacking pipeline access into digital assets on-site.',
+                'scn3_title': 'Off-grid Own-Use',
+                'scn3_desc': 'No grid connection, independent power island. Bypassing complex grid approvals.',
+
+                'footerTagline': 'Making natural gas power mining easier',
+                'contact_us': 'Contact Us',
+                'privacy_policy': 'Privacy Policy'
+            },
+            'ru': {
+                'tagline': 'Помощник по майнингу на газе',
+                'nav_home': 'Главная',
+                'nav_all': 'Все кейсы',
+                'nav_regions': 'По регионам',
+                'nav_scenarios': 'По сценариям',
+                'hero_badge': 'ГЛОБАЛЬНЫЕ ПРОЕКТЫ',
+                'page_title_1': 'Библиотека',
+                'page_title_2': 'Кейсов',
+                'page_desc': 'Обзор проектов газового майнинга по всему миру: от нефтяных гигантов до стартапов.',
+                
+                'tab_featured': 'Избранное',
+                'tab_regions': 'Регионы',
+                'tab_scenarios': 'Сценарии',
+
+                // Sec 1
+                'sec1_title': 'Избранные кейсы',
+                'tag_us': 'США',
+                'tag_ar': 'АРГЕНТИНА',
+                'tag_ca': 'КАНАДА',
+                'case1_title': 'Crusoe и ExxonMobil',
+                'case1_desc': 'Эталон DFM в Баккене. Потребление 18 млн куб. футов/мес, эффективность 99.9%, переход на ИИ.',
+                'case2_title': 'YPF Luz и GDA',
+                'case2_desc': 'Партнерство в Вака Муэрта. 7 МВт, 1200 майнеров, снижение выбросов CO2e на 63%.',
+                'case3_title': 'LINKMINE Альберта',
+                'case3_desc': 'Использование сиротских скважин. Цена $0.043/кВтч, готовность к водороду.',
+
+                // Sec 2
+                'sec2_title': 'По регионам',
+                'reg_na_title': 'Северная Америка',
+                'reg_tx': 'Техас:',
+                'reg_tx_desc': 'Гибкая нагрузка ERCOT, участие гигантов вроде ExxonMobil.',
+                'reg_ny': 'Нью-Йорк:',
+                'reg_ny_desc': 'Greenidge самообеспечение, строгие экологические нормы.',
+                'reg_ab': 'Альберта:',
+                'reg_ab_desc': 'Активное использование старых скважин благодаря льготам (<10МВт).',
+                'reg_sa_title': 'Южная Америка',
+                'reg_arg': 'Аргентина:',
+                'reg_arg_desc': 'Бассейн Вака Муэрта, YPF монетизирует запертый газ.',
+                'reg_eu_title': 'Евразия и Ближний Восток',
+                'reg_ru': 'Россия:',
+                'reg_ru_desc': 'Майнинг на ПНГ в Сибири, решение энергодефицита.',
+                'reg_me': 'Ближний Восток:',
+                'reg_me_desc': 'Инвестиции ADNOC, огромный потенциал в СПГ и майнинге.',
+
+                // Sec 3
+                'sec3_title': 'По сценариям',
+                'scn1_title': 'Цифровое Гашение Факелов (DFM)',
+                'scn1_desc': 'Генерация на устье скважины. Замена факелов, получение углеродных кредитов.',
+                'scn2_title': 'Монетизация Запертого Газа',
+                'scn2_desc': 'Превращение газа из закрытых скважин без трубопроводов в цифровые активы.',
+                'scn3_title': 'Автономный режим (Off-grid)',
+                'scn3_desc': 'Без сети, энергоостров. Обход сложных согласований с электросетями.',
+
+                'footerTagline': 'Майнинг на газе стал проще',
+                'contact_us': 'Контакты',
+                'privacy_policy': 'Политика конфиденциальности'
+            }
+        };
+
+        window.app = {
+            lang: localStorage.getItem('gas_lang') || 'en',
+            validTabs: ['featured', 'regions', 'scenarios'],
+            
+            init() {
+                this.setLanguage(this.lang);
+                
+                // 1. 初始化时检查 URL Hash
+                setTimeout(() => this.handleHash(true), 100);
+
+                // 2. 监听 URL 变化
+                window.addEventListener('hashchange', () => this.handleHash(true));
+            },
+
+            // 处理 URL Hash
+            handleHash(shouldScroll = false) {
+                let hash = window.location.hash.substring(1); 
+                
+                if (!hash) hash = 'featured';
+
+                if (this.validTabs.includes(hash)) {
+                    this.switchTab(hash, false, shouldScroll);
+                    this.updateNavState(hash);
+                }
+            },
+
+            // 核心切换逻辑
+            switchTab(tabId, updateHistory = true, scrollToContent = false) {
+                // 1. 隐藏所有 Tab
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('force-hidden'));
+                
+                // 2. 重置按钮样式
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active', 'text-gas-green', 'border-gas-green', 'bg-gas-green/5');
+                    btn.classList.add('text-gas-subtext', 'border-transparent');
+                });
+
+                // 3. 显示目标 Tab
+                const targetContent = document.getElementById(`content-${tabId}`);
+                if (targetContent) {
+                    targetContent.classList.remove('force-hidden');
+                }
+                
+                // 4. 激活按钮
+                const btn = document.getElementById(`tab-btn-${tabId}`);
+                if (btn) {
+                    btn.classList.remove('text-gas-subtext', 'border-transparent');
+                    btn.classList.add('active', 'text-gas-green', 'border-gas-green', 'bg-gas-green/5');
+                }
+
+                // 5. 更新 URL
+                if(updateHistory) {
+                    history.pushState(null, null, `#${tabId}`);
+                    this.updateNavState(tabId);
+                }
+
+                // 6. 滚动定位
+                if (scrollToContent && targetContent) {
+                    setTimeout(() => {
+                        const headerOffset = 140; 
+                        const elementPosition = targetContent.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                
+                        window.scrollTo({
+                            top: offsetPosition,
+                            behavior: "smooth"
+                        });
+                    }, 50);
+                }
+            },
+
+            // 更新导航栏状态
+            updateNavState(activeHash) {
+                const links = document.querySelectorAll('nav a');
+                links.forEach(a => {
+                    if(a.getAttribute('href') === '/index.html') return;
+                    a.classList.remove('text-white', 'font-bold');
+                    a.classList.add('text-gas-subtext', 'font-medium');
+                });
+
+                const activeLink = document.querySelector(`nav a[href="#${activeHash}"]`);
+                if (activeLink) {
+                    activeLink.classList.remove('text-gas-subtext', 'font-medium');
+                    activeLink.classList.add('text-white', 'font-bold');
+                }
+            },
+
+            setLanguage(lang) {
+                this.lang = lang;
+                localStorage.setItem('gas_lang', lang);
+                const dict = I18N_DATA[lang] || I18N_DATA['en'];
+
+                ['zh','en','ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    if(btn) {
+                        if (l === lang) {
+                            btn.classList.remove('text-gas-subtext', 'font-medium');
+                            btn.classList.add('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                        } else {
+                            btn.classList.remove('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                            btn.classList.add('text-gas-subtext', 'font-medium');
+                        }
+                    }
+                });
+
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key]) {
+                        const icon = el.querySelector('i');
+                        if (icon) {
+                            el.innerHTML = ''; 
+                            el.appendChild(icon);
+                            el.append(' ' + dict[key]);
+                        } else {
+                            el.innerText = dict[key];
+                        }
+                    }
+                });
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => window.app.init());
+        } else {
+            window.app.init();
+        }
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

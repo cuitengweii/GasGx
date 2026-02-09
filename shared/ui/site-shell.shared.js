@@ -1,0 +1,1310 @@
+(function () {
+    "use strict";
+
+    if (window.GasGxSharedUI && window.GasGxSharedUI.__initialized) {
+        return;
+    }
+
+    const DEFAULT_CHAT_API_URL = "http://localhost:8000/chat";
+    const SHARED_TEXT = {
+        en: {
+            tagline: "Natural Gas Power Mining Assistant",
+            footerTagline: "Making natural gas power mining easier",
+            authLogin: "Login",
+            authLogout: "Logout",
+            contactUs: "Contact Us",
+            account: "Account",
+            welcome: "Welcome,",
+            privacyPolicy: "Privacy Policy",
+            languageEnglish: "English",
+            languageChinese: "简体中文"
+        },
+        zh: {
+            tagline: "天然气发电挖矿助手",
+            footerTagline: "让天然气发电挖矿更简单",
+            authLogin: "登录",
+            authLogout: "退出",
+            contactUs: "联系我们",
+            account: "账号",
+            welcome: "欢迎，",
+            privacyPolicy: "隐私政策",
+            languageEnglish: "English",
+            languageChinese: "简体中文"
+        }
+    };
+
+    const HEADER_TEMPLATE = `
+<header class="fixed top-0 w-full z-[300] gas-card h-16 transition-all duration-300">
+    <div class="max-w-[1800px] mx-auto px-4 h-full flex justify-between items-center relative">
+        <div class="flex items-center gap-3 w-auto shrink-0 mr-2 xl:mr-4">
+            <a href="/index.html" class="flex items-center gap-2 group">
+                <h1 class="text-xl md:text-2xl font-bold tracking-wider text-gas-green hover:text-white transition-colors cursor-pointer">GasGx</h1>
+            </a>
+            <div class="flex flex-col justify-center border-l border-gray-700 pl-2 md:pl-3 h-6 md:h-8">
+                <span id="header-tagline" class="block text-gas-green text-[8px] sm:text-[10px] md:text-xs font-bold tracking-wide leading-tight">Natural Gas Power Mining Assistant</span>
+            </div>
+        </div>
+
+        <nav id="desktop-nav" class="hidden 2xl:flex items-center justify-center gap-1 xl:gap-2 2xl:gap-6 h-full flex-1"></nav>
+
+        <div class="flex items-center gap-2 xl:gap-4 w-auto shrink-0 justify-end ml-2 xl:ml-4">
+            <div class="hidden md:flex relative items-center">
+                <button id="auth-login-btn" data-ggx-action="auth-sign-in" class="flex items-center gap-2 text-xs font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-4 py-1.5 shadow-glow hover:shadow-glow-strong transform hover:scale-105 active:scale-95">
+                    <i class="fa-brands fa-google"></i>
+                    <span data-ggx-text="auth-login">Login</span>
+                </button>
+                <div id="auth-user-profile" class="hidden items-center gap-2 cursor-pointer group relative h-full">
+                    <div class="relative py-3">
+                        <img id="auth-user-avatar" src="" alt="User" class="w-9 h-9 rounded-full border-2 border-gas-green p-0.5 transition-transform group-hover:scale-105">
+                        <div class="absolute bottom-3 right-0 w-2.5 h-2.5 bg-gas-green rounded-full border-2 border-[#151515]"></div>
+                    </div>
+                    <div class="absolute right-0 top-full pt-1 w-48 hidden group-hover:block z-[60]">
+                        <div class="bg-[#151515] border border-white/10 rounded-xl shadow-2xl py-2 mt-1">
+                            <div class="px-4 py-2 border-b border-white/5 mb-1">
+                                <span data-ggx-text="account" class="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Account</span>
+                                <div id="dropdown-username" class="text-xs text-white font-bold truncate mt-1">User</div>
+                            </div>
+                            <button data-ggx-action="auth-sign-out" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors flex items-center">
+                                <i class="fa-solid fa-right-from-bracket mr-2"></i> <span data-ggx-text="auth-logout">Logout</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hidden sm:flex items-center">
+                <div id="ggx-lang-picker" class="ggx-lang-picker">
+                    <button id="lang-menu-btn" data-ggx-action="toggle-lang-menu" class="ggx-lang-trigger" title="Language" aria-label="Language menu" aria-expanded="false" aria-haspopup="true">
+                        <span class="ggx-lang-globe" aria-hidden="true"></span>
+                    </button>
+                    <div id="ggx-lang-dropdown" class="ggx-lang-dropdown hidden">
+                        <button id="ggx-btn-lang-en" data-ggx-action="set-lang" data-ggx-lang="en" class="ggx-lang-option is-active">English</button>
+                        <button id="ggx-btn-lang-zh" data-ggx-action="set-lang" data-ggx-lang="zh" class="ggx-lang-option">简体中文</button>
+                    </div>
+                </div>
+            </div>
+
+            <button id="mobile-menu-btn" data-ggx-action="toggle-mobile-menu" class="2xl:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative" aria-label="Toggle mobile menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<div id="mobile-menu-container" class="fixed inset-0 z-[250] bg-[#111] transform translate-x-full pt-20 px-4 pb-8 overflow-y-auto xl:hidden">
+    <div class="flex justify-center mb-6 border-b border-white/10 pb-4">
+        <div class="ggx-lang-switch ggx-lang-switch-mobile">
+            <button id="ggx-mob-lang-en" data-ggx-action="set-lang" data-ggx-lang="en" class="ggx-lang-btn ggx-lang-btn-mobile text-gas-green font-semibold">EN</button>
+            <span class="ggx-lang-sep">/</span>
+            <button id="ggx-mob-lang-zh" data-ggx-action="set-lang" data-ggx-lang="zh" class="ggx-lang-btn ggx-lang-btn-mobile text-gray-400">中文</button>
+        </div>
+    </div>
+    <div class="mb-6 border-b border-white/10 pb-4 flex justify-center">
+         <button id="mob-auth-login-btn" data-ggx-action="auth-sign-in" class="w-full max-w-xs py-3 rounded-lg bg-gas-green text-black font-bold flex items-center justify-center gap-2 shadow-glow">
+            <i class="fa-brands fa-google"></i>
+            <span data-ggx-text="auth-login">Login</span>
+        </button>
+         <div id="mob-auth-user-profile" class="hidden flex items-center justify-between w-full max-w-xs px-2">
+            <div class="flex items-center gap-3">
+                 <img id="mob-auth-user-avatar" src="" alt="User avatar" class="w-10 h-10 rounded-full border border-gas-green">
+                 <div class="flex flex-col">
+                     <span data-ggx-text="welcome" class="text-xs text-gray-400">Welcome,</span>
+                     <span id="mob-auth-username" class="text-sm text-white font-bold">User</span>
+                 </div>
+            </div>
+            <button data-ggx-action="auth-sign-out" class="text-xs text-red-400 hover:text-red-300 border border-red-900/50 bg-red-900/20 px-3 py-1.5 rounded">
+                <span data-ggx-text="auth-logout">Logout</span>
+            </button>
+         </div>
+    </div>
+    <nav id="mobile-nav-content" class="flex flex-col space-y-1"></nav>
+</div>`;
+
+    const DEFAULT_SITE_SHELL_CONFIG = {
+        footer: {
+            contact: {
+                mode: "qr",
+                label: "www_gasgx_com",
+                iconClass: "fa-brands fa-weixin",
+                qrType: "wechat"
+            },
+            privacyPolicy: {
+                href: "/about/app_privacy_policy.html",
+                target: "_blank",
+                rel: "noopener noreferrer",
+                i18nKey: "privacy_policy"
+            },
+            socialLinks: [
+                { id: "tiktok", enabled: true, mode: "link", href: "https://www.tiktok.com/", iconClass: "fa-brands fa-tiktok", ariaLabel: "Open TikTok" },
+                { id: "linkedin", enabled: true, mode: "link", href: "https://www.linkedin.com/", iconClass: "fa-brands fa-linkedin", ariaLabel: "Open LinkedIn" },
+                { id: "facebook", enabled: true, mode: "link", href: "https://www.facebook.com/", iconClass: "fa-brands fa-facebook", ariaLabel: "Open Facebook" },
+                { id: "x", enabled: true, mode: "link", href: "https://x.com/", iconClass: "fa-brands fa-x-twitter", ariaLabel: "Open X" }
+            ]
+        }
+    };
+
+    const BACK_TO_TOP_TEMPLATE = `
+<button id="backToTopBtn" class="fixed bottom-24 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-[0_0_15px_rgba(93,214,44,0.5)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer" aria-label="Back to top">
+    <i class="fa-solid fa-arrow-up"></i>
+</button>`;
+
+    const CHATBOT_TEMPLATE = `
+<div id="ggx-chat-wrapper" class="fixed top-1/2 right-4 z-[90] -translate-y-1/2 flex flex-col items-end font-sans font-inter">
+    <div id="ggx-chat-window" class="hidden flex flex-col w-[340px] md:w-[380px] h-[500px] max-h-[80vh] bg-[#1a1a1a]/95 backdrop-blur-xl border border-gas-green/30 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.7)] overflow-hidden transition-all duration-300 origin-bottom-right transform scale-95 opacity-0 mb-4">
+        <div class="bg-[#111] p-4 flex justify-between items-center border-b border-white/5 shadow-md z-10 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-gas-green/20 border border-gas-green flex items-center justify-center">
+                    <i class="fa-solid fa-robot text-gas-green text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="text-white font-bold text-sm tracking-wide">GasGx AI Assistant</h3>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 bg-gas-green rounded-full animate-pulse"></span>
+                        <span class="text-[10px] text-gray-400 uppercase font-medium">Online</span>
+                    </div>
+                </div>
+            </div>
+            <button id="ggx-chat-close-btn" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors" aria-label="Close chat window">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div id="ggx-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0F0F0F] min-h-0 scroll-smooth">
+            <div class="text-center mb-2">
+                <span class="text-[10px] text-gray-600 bg-[#1a1a1a] px-2 py-1 rounded-full">Today</span>
+            </div>
+            <div class="flex flex-col items-start max-w-[85%] space-y-1">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-[10px] text-gray-500 ml-1">GasGx Bot</span>
+                </div>
+                <div class="bg-[#252525] text-gray-200 px-4 py-3 rounded-2xl rounded-tl-none text-sm border border-white/5 shadow-sm leading-relaxed">
+                    Hello! I am your GasGx Power Assistant.<br><br>
+                    Ask me about:
+                    <ul class="list-disc pl-4 mt-1 text-gray-400">
+                        <li>Generator Power Sizing</li>
+                        <li>Crypto Mining Solutions</li>
+                        <li>Gas Consumption Costs</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="ggx-chat-loading" class="hidden px-4 pb-2 bg-[#0F0F0F] shrink-0">
+            <div class="flex items-center gap-2 text-gas-green bg-[#1a1a1a] w-fit px-3 py-1.5 rounded-full text-xs border border-white/5">
+                <i class="fa-solid fa-circle-notch fa-spin"></i>
+                <span>Thinking...</span>
+            </div>
+        </div>
+
+        <div class="p-3 bg-[#111] border-t border-white/5 shrink-0">
+            <div class="relative flex items-center gap-2">
+                <input type="text" id="ggx-chat-user-input" class="flex-1 bg-[#1a1a1a] border border-white/10 rounded-full pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-gas-green focus:shadow-[0_0_10px_rgba(93,214,44,0.1)] transition-all placeholder-gray-600" placeholder="Type a question..." autocomplete="off">
+                <button id="ggx-chat-send-btn" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-gas-green rounded-full flex items-center justify-center text-black hover:bg-white hover:scale-105 transition-all shadow-glow cursor-pointer" aria-label="Send chat message">
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                </button>
+            </div>
+            <div class="text-center mt-2">
+                <p class="text-[9px] text-gray-600">AI Powered by GasGx Engine Database</p>
+            </div>
+        </div>
+    </div>
+
+    <button id="ggx-chat-toggle-btn" class="w-14 h-14 bg-gas-green rounded-full ggx-chat-attention flex items-center justify-center text-black text-2xl hover:bg-white transition-all duration-300 group z-50 relative shadow-lg" aria-label="Open chat window">
+        <i id="ggx-chat-toggle-icon" class="fa-solid fa-robot"></i>
+        <span data-ggx-chat-unread class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-[#0F0F0F]"></span>
+    </button>
+</div>`;
+
+    const state = {
+        mounted: false,
+        actionBound: false
+    };
+
+    function getSiteShellConfig() {
+        const config = window.GASGX_SITE_SHELL_CONFIG;
+        return config && typeof config === "object" ? config : {};
+    }
+
+    function getFooterConfig() {
+        const siteShellConfig = getSiteShellConfig();
+        const sourceFooter = siteShellConfig.footer && typeof siteShellConfig.footer === "object"
+            ? siteShellConfig.footer
+            : {};
+        const defaultFooter = DEFAULT_SITE_SHELL_CONFIG.footer;
+        const defaultSocialLinks = Array.isArray(defaultFooter.socialLinks)
+            ? defaultFooter.socialLinks
+            : [];
+        const sourceSocialLinks = Array.isArray(sourceFooter.socialLinks)
+            ? sourceFooter.socialLinks
+            : [];
+        const rawSocialLinks = sourceSocialLinks.length ? sourceSocialLinks : defaultSocialLinks;
+        const socialLinks = rawSocialLinks
+            .filter((item) => item && typeof item === "object")
+            .map((item) => {
+                const itemId = typeof item.id === "string" ? item.id.trim().toLowerCase() : "";
+                const fallback = itemId
+                    ? (defaultSocialLinks.find((entry) => entry && String(entry.id || "").toLowerCase() === itemId) || {})
+                    : {};
+                return Object.assign(
+                    {
+                        enabled: true,
+                        visible: true,
+                        mode: "link",
+                        href: "",
+                        target: "_blank",
+                        rel: "noopener noreferrer"
+                    },
+                    fallback,
+                    item
+                );
+            });
+
+        return {
+            contact: Object.assign({}, defaultFooter.contact, sourceFooter.contact || {}),
+            privacyPolicy: Object.assign({}, defaultFooter.privacyPolicy, sourceFooter.privacyPolicy || {}),
+            socialLinks: socialLinks
+        };
+    }
+
+    function getNavigationConfig() {
+        const siteShellConfig = getSiteShellConfig();
+        if (!Array.isArray(siteShellConfig.navigation)) {
+            return [];
+        }
+        return siteShellConfig.navigation;
+    }
+
+    function normalizePath(path) {
+        const raw = typeof path === "string" ? path.trim() : "";
+        if (!raw) return "#";
+        if (/^(https?:|mailto:|tel:|#)/i.test(raw)) return raw;
+        if (raw.startsWith("/")) return raw;
+        return "/" + raw.replace(/^\/+/, "");
+    }
+
+    function normalizeLang(lang) {
+        const value = String(lang || "").toLowerCase();
+        if (value.startsWith("zh")) return "zh";
+        return "en";
+    }
+
+    function readStoredLang() {
+        try {
+            const fromPrimary = window.localStorage.getItem("gasgx-lang");
+            if (fromPrimary) return fromPrimary;
+            return window.localStorage.getItem("gas_lang");
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function persistLang(lang) {
+        try {
+            window.localStorage.setItem("gasgx-lang", lang);
+            window.localStorage.setItem("gas_lang", lang);
+        } catch (error) {
+            // Ignore storage failures in restricted environments.
+        }
+    }
+
+    function getCurrentLang() {
+        const stored = readStoredLang();
+        if (stored) return normalizeLang(stored);
+
+        const htmlLang = document.documentElement && document.documentElement.lang;
+        if (htmlLang) return normalizeLang(htmlLang);
+
+        const app = window.app;
+        const appLang = app && (app.currentLang || app.lang);
+        return normalizeLang(appLang || "en");
+    }
+
+    function getSharedText(langCandidate) {
+        const lang = normalizeLang(langCandidate || "en");
+        const siteShellConfig = getSiteShellConfig();
+        const sharedTextConfig = siteShellConfig && typeof siteShellConfig.sharedText === "object"
+            ? siteShellConfig.sharedText
+            : {};
+        const langOverride = sharedTextConfig && typeof sharedTextConfig[lang] === "object"
+            ? sharedTextConfig[lang]
+            : {};
+
+        return Object.assign(
+            {},
+            SHARED_TEXT.en,
+            SHARED_TEXT[lang] || SHARED_TEXT.en,
+            langOverride
+        );
+    }
+
+    function setSharedTextByKey(key, value) {
+        if (typeof value !== "string" || !value.trim()) return;
+        document.querySelectorAll(`[data-ggx-text="${key}"]`).forEach((el) => {
+            el.textContent = value;
+        });
+    }
+
+    function applySharedText(langCandidate) {
+        const lang = normalizeLang(langCandidate || getCurrentLang());
+        const text = getSharedText(lang);
+
+        const headerTagline = document.getElementById("header-tagline");
+        if (headerTagline && typeof text.tagline === "string") {
+            headerTagline.textContent = text.tagline;
+        }
+
+        setSharedTextByKey("footer-tagline", text.footerTagline);
+        setSharedTextByKey("auth-login", text.authLogin);
+        setSharedTextByKey("auth-logout", text.authLogout);
+        setSharedTextByKey("contact-us", text.contactUs);
+        setSharedTextByKey("account", text.account);
+        setSharedTextByKey("welcome", text.welcome);
+        setSharedTextByKey("privacy-policy", text.privacyPolicy);
+
+        const desktopLangEn = document.getElementById("ggx-btn-lang-en");
+        if (desktopLangEn && typeof text.languageEnglish === "string") {
+            desktopLangEn.textContent = text.languageEnglish;
+        }
+
+        const desktopLangZh = document.getElementById("ggx-btn-lang-zh");
+        if (desktopLangZh && typeof text.languageChinese === "string") {
+            desktopLangZh.textContent = text.languageChinese;
+        }
+    }
+
+    function getLabelValue(label, lang) {
+        if (label && typeof label === "object" && !Array.isArray(label)) {
+            const exact = label[lang];
+            if (typeof exact === "string" && exact.trim()) return exact.trim();
+            const fallback = label.en || label.zh;
+            if (typeof fallback === "string" && fallback.trim()) return fallback.trim();
+            const first = Object.values(label).find((value) => typeof value === "string" && value.trim());
+            return first ? first.trim() : "";
+        }
+
+        if (typeof label === "string") {
+            const trimmed = label.trim();
+            const app = window.app;
+            if (app && typeof app.t === "function") {
+                const translated = app.t(trimmed);
+                if (typeof translated === "string" && translated.trim()) {
+                    return translated.trim();
+                }
+            }
+            return trimmed;
+        }
+
+        return "";
+    }
+
+    function isHomeNavigationPath(path) {
+        const normalized = normalizePath(path);
+        if (normalized === "#") return false;
+        return normalized === "/" || normalized === "/index.html";
+    }
+
+    function isCurrentPath(path) {
+        const target = normalizePath(path);
+        if (target === "#" || /^(https?:|mailto:|tel:|#)/i.test(target)) {
+            return false;
+        }
+
+        const currentRaw = window.location.pathname || "/";
+        const current = currentRaw === "/" ? "/index.html" : currentRaw.replace(/\/+$/, "");
+        const targetNormalized = target === "/" ? "/index.html" : target.replace(/\/+$/, "");
+        return current.toLowerCase() === targetNormalized.toLowerCase();
+    }
+
+    function getItemChildren(item) {
+        if (!item || typeof item !== "object") return [];
+        if (Array.isArray(item.children)) return item.children;
+        if (Array.isArray(item.sections)) {
+            return item.sections
+                .filter((section) => section && Array.isArray(section.items))
+                .flatMap((section) => section.items || []);
+        }
+        return [];
+    }
+
+    function getFooterItems(item) {
+        if (!item || typeof item !== "object") return [];
+
+        const children = getItemChildren(item)
+            .map((child) => ({
+                title: getLabelValue(child.title, getCurrentLang()),
+                path: normalizePath(child.path || "#")
+            }))
+            .filter((child) => child.path !== "#" && !isHomeNavigationPath(child.path));
+
+        if (children.length) return children;
+
+        const path = normalizePath(item.path || "#");
+        if (path === "#" || isHomeNavigationPath(path)) return [];
+
+        return [{ title: getLabelValue(item.title, getCurrentLang()), path: path }];
+    }
+
+    function buildDesktopNavigation(lang) {
+        const navigation = getNavigationConfig();
+
+        return navigation.map((item, index) => {
+            const itemType = item && item.type ? item.type : "link";
+            const title = escapeHtml(getLabelValue(item && item.title, lang));
+            const itemPath = escapeHtml(normalizePath(item && item.path));
+            const children = getItemChildren(item);
+
+            if (itemType === "link") {
+                return `<a href="${itemPath}" class="nav-item-link font-medium text-sm"><span>${title}</span></a>`;
+            }
+
+            if (itemType === "mega" && Array.isArray(item.sections) && item.sections.length) {
+                const gridCols = typeof item.gridCols === "string" && item.gridCols.trim()
+                    ? escapeHtml(item.gridCols.trim())
+                    : "grid-cols-5";
+                const sectionsHtml = item.sections.map((section, sectionIndex) => {
+                    const header = escapeHtml(getLabelValue(section && section.header, lang));
+                    const itemsHtml = Array.isArray(section && section.items)
+                        ? section.items.map((subItem) => {
+                            const subTitle = escapeHtml(getLabelValue(subItem && subItem.title, lang));
+                            const subPath = escapeHtml(normalizePath(subItem && subItem.path));
+                            return `<li class="mb-2"><a href="${subPath}" class="text-gray-400 hover:text-gas-green text-xs flex items-center gap-2 transition-colors"><i class="fa-solid fa-angle-right text-[10px] opacity-50"></i>${subTitle}</a></li>`;
+                        }).join("")
+                        : "";
+                    const borderClass = sectionIndex === item.sections.length - 1 ? "" : "border-r border-white/5";
+                    return `
+                        <div class="col-span-1 space-y-4 ${borderClass} px-2">
+                            <h3 class="text-gas-green font-bold text-sm uppercase tracking-wider mb-3 border-b border-white/5 pb-2">${header}</h3>
+                            <ul>${itemsHtml}</ul>
+                        </div>
+                    `;
+                }).join("");
+
+                const dropContent = `
+                    <div class="mega-menu">
+                        <div class="max-w-[1800px] mx-auto px-4 grid ${gridCols} gap-6">${sectionsHtml}</div>
+                    </div>
+                `;
+
+                return `
+                    <div class="group h-full flex items-center cursor-pointer">
+                        <span class="nav-item-link font-medium text-sm"><span>${title}</span> <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i></span>
+                        ${dropContent}
+                    </div>
+                `;
+            }
+
+            if ((itemType === "menu" || children.length) && children.length) {
+                const isRightAligned = index >= navigation.length - 3;
+                const childrenHtml = children.map((child) => {
+                    const childTitle = escapeHtml(getLabelValue(child && child.title, lang));
+                    const childPath = escapeHtml(normalizePath(child && child.path));
+                    return `<a href="${childPath}" class="block px-4 py-2 text-sm text-gray-400 hover:text-gas-green hover:bg-white/5 whitespace-nowrap">${childTitle}</a>`;
+                }).join("");
+
+                return `
+                    <div class="group h-full flex items-center cursor-pointer relative">
+                        <span class="nav-item-link font-medium text-sm"><span>${title}</span> <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i></span>
+                        <div class="dropdown-menu ${isRightAligned ? "right-0" : "left-0"}">${childrenHtml}</div>
+                    </div>
+                `;
+            }
+
+            return `<a href="${itemPath}" class="nav-item-link font-medium text-sm"><span>${title}</span></a>`;
+        }).join("");
+    }
+
+    function buildMobileNavigation(lang) {
+        const navigation = getNavigationConfig();
+
+        return navigation.map((item, index) => {
+            const itemType = item && item.type ? item.type : "link";
+            const title = escapeHtml(getLabelValue(item && item.title, lang));
+            const itemPath = escapeHtml(normalizePath(item && item.path));
+            const children = getItemChildren(item);
+
+            if (!children.length) {
+                return `
+                    <a href="${itemPath}" class="block py-4 border-b border-white/10 text-lg font-medium hover:text-gas-green">
+                        ${title}
+                    </a>
+                `;
+            }
+
+            const subId = `ggx-mobile-submenu-${index}`;
+            let childLinks = "";
+            if (itemType === "menu") {
+                childLinks = children.map((child) => {
+                    const childTitle = escapeHtml(getLabelValue(child && child.title, lang));
+                    const childPath = escapeHtml(normalizePath(child && child.path));
+                    return `<a href="${childPath}" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">${childTitle}</a>`;
+                }).join("");
+            } else {
+                childLinks = (item.sections || []).map((section) => {
+                    const header = escapeHtml(getLabelValue(section && section.header, lang));
+                    const subItems = (section && Array.isArray(section.items) ? section.items : []).map((subItem) => {
+                        const subTitle = escapeHtml(getLabelValue(subItem && subItem.title, lang));
+                        const subPath = escapeHtml(normalizePath(subItem && subItem.path));
+                        return `<a href="${subPath}" class="block py-2 pl-6 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">${subTitle}</a>`;
+                    }).join("");
+                    return `<div class="py-2"><h4 class="text-gas-green text-xs font-bold uppercase mb-2 pl-4">${header}</h4>${subItems}</div>`;
+                }).join("");
+            }
+
+            return `
+                <div class="border-b border-white/10">
+                    <button class="w-full py-4 flex justify-between items-center text-lg font-medium hover:text-gas-green focus:outline-none" data-ggx-action="toggle-mobile-submenu" data-ggx-target="${subId}" aria-label="Toggle submenu">
+                        <span>${title}</span>
+                        <i class="fa-solid fa-chevron-down text-sm transition-transform duration-300"></i>
+                    </button>
+                    <div id="${subId}" class="mobile-submenu"><div class="pb-4 space-y-1">${childLinks}</div></div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    function buildFooterLinks(lang) {
+        const navigation = getNavigationConfig();
+
+        return navigation.map((item, index) => {
+            if (isHomeNavigationPath(item && item.path)) return "";
+
+            const title = escapeHtml(getLabelValue(item && item.title, lang));
+            const footerSubId = `ggx-footer-section-${index}`;
+            let contentHtml = "";
+            let desktopContentHtml = "";
+
+            if (item && item.type === "menu" && Array.isArray(item.children) && item.children.length) {
+                const links = item.children.map((child) => {
+                    const childTitle = escapeHtml(getLabelValue(child && child.title, lang));
+                    const childPath = escapeHtml(normalizePath(child && child.path));
+                    return `<a href="${childPath}" class="footer-link hover:text-gas-green text-gray-400 mr-4 mb-2 inline-block">${childTitle}</a>`;
+                }).join("");
+                contentHtml = `<div class="flex flex-wrap">${links}</div>`;
+            } else if (item && item.type === "mega" && Array.isArray(item.sections) && item.sections.length) {
+                const desktopSections = item.sections.map((section) => {
+                    const sectionTitle = escapeHtml(getLabelValue(section && section.header, lang));
+                    const sectionLinks = (Array.isArray(section && section.items) ? section.items : []).map((subItem) => {
+                        const subTitle = escapeHtml(getLabelValue(subItem && subItem.title, lang));
+                        const subPath = escapeHtml(normalizePath(subItem && subItem.path));
+                        return `<a href="${subPath}" class="hover:text-gas-green text-gray-400 ml-2 text-xs">${subTitle}</a>`;
+                    }).join('<span class="text-gray-700 mx-1">|</span>');
+                    return `<div class="flex items-baseline mr-6 mb-2"><span class="text-gas-green text-xs font-bold uppercase mr-1 whitespace-nowrap">${sectionTitle}:</span><div class="flex flex-wrap">${sectionLinks}</div></div>`;
+                }).join("");
+
+                const mobileLinks = item.sections.map((section) => {
+                    return (Array.isArray(section && section.items) ? section.items : []).map((subItem) => {
+                        const subTitle = escapeHtml(getLabelValue(subItem && subItem.title, lang));
+                        const subPath = escapeHtml(normalizePath(subItem && subItem.path));
+                        return `<a href="${subPath}" class="footer-link block pl-2 border-l border-white/10 hover:border-gas-green mb-1">${subTitle}</a>`;
+                    }).join("");
+                }).join("");
+
+                contentHtml = `<div class="flex flex-col">${mobileLinks}</div>`;
+                desktopContentHtml = `<div class="flex flex-wrap items-center">${desktopSections}</div>`;
+            } else {
+                const path = normalizePath(item && item.path);
+                if (path !== "#" && path !== "/") {
+                    contentHtml = `<div class="flex flex-wrap"><a href="${escapeHtml(path)}" class="footer-link hover:text-gas-green text-gray-400 mr-4 mb-2 inline-block">${title}</a></div>`;
+                }
+            }
+
+            const finalDesktopHtml = desktopContentHtml || contentHtml;
+            if (!finalDesktopHtml) return "";
+
+            return `
+                <div class="w-full border-b border-white/5 last:border-0">
+                    <div class="hidden md:flex py-4 items-start">
+                        <div class="w-32 lg:w-48 shrink-0">
+                            <h4 class="text-white font-bold text-sm border-l-2 border-gas-green pl-3">${title}</h4>
+                        </div>
+                        <div class="flex-1">${finalDesktopHtml}</div>
+                    </div>
+                    <div class="md:hidden">
+                        <button class="w-full flex justify-between items-center py-3 text-sm font-bold text-white focus:outline-none" data-ggx-action="toggle-footer-group" data-ggx-target="${footerSubId}" aria-expanded="false">
+                            <span class="border-l-2 border-gas-green pl-3">${title}</span>
+                            <i id="ggx-footer-icon-${index}" class="fa-solid fa-plus text-xs text-gray-500 transition-transform duration-300"></i>
+                        </button>
+                        <div id="${footerSubId}" class="footer-accordion-content">
+                            <div class="pt-2 pl-4 pb-4 text-gray-400">${contentHtml}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    function renderNavigation(force) {
+        const lang = getCurrentLang();
+        const desktopNav = document.getElementById("desktop-nav");
+        const mobileNav = document.getElementById("mobile-nav-content");
+
+        if (desktopNav && (force || !desktopNav.innerHTML.trim())) {
+            desktopNav.innerHTML = buildDesktopNavigation(lang);
+        }
+
+        if (mobileNav && (force || !mobileNav.innerHTML.trim())) {
+            mobileNav.innerHTML = buildMobileNavigation(lang);
+        }
+    }
+
+    function renderFooterLinks(force) {
+        const footerLinks = document.getElementById("footer-links");
+        if (!footerLinks) return;
+
+        if (force || !footerLinks.innerHTML.trim()) {
+            footerLinks.innerHTML = buildFooterLinks(getCurrentLang());
+        }
+    }
+
+    function refreshShellNavigation(force) {
+        renderNavigation(!!force);
+        renderFooterLinks(!!force);
+    }
+
+    function syncLanguageUI(langCandidate) {
+        const lang = normalizeLang(langCandidate || getCurrentLang());
+
+        document.querySelectorAll("#ggx-site-header-slot .ggx-lang-option").forEach((button) => {
+            const active = button.dataset.ggxLang === lang;
+            button.classList.toggle("is-active", active);
+        });
+
+        document.querySelectorAll("#ggx-site-header-slot .ggx-lang-btn-mobile").forEach((button) => {
+            const active = button.dataset.ggxLang === lang;
+            button.classList.toggle("text-gas-green", active);
+            button.classList.toggle("font-semibold", active);
+            button.classList.toggle("text-gray-400", !active);
+        });
+
+        if (document.documentElement) {
+            document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+        }
+
+        applySharedText(lang);
+    }
+
+    function setLanguageFromShell(langCandidate) {
+        const lang = normalizeLang(langCandidate);
+        persistLang(lang);
+
+        const app = window.app;
+        if (app && typeof app.setLanguage === "function") {
+            app.setLanguage(lang);
+        } else {
+            document.dispatchEvent(new CustomEvent("gasgx:lang-changed", { detail: { lang: lang } }));
+        }
+
+        syncLanguageUI(lang);
+        window.setTimeout(function () {
+            refreshShellNavigation(true);
+            syncLanguageUI(lang);
+        }, 0);
+    }
+
+    function suppressLegacyShellRenderers() {
+        const app = window.app;
+        if (!app || app.__ggxLegacyShellSuppressed) {
+            return;
+        }
+
+        ["renderNav", "renderMobileNav", "renderFooter"].forEach((methodName) => {
+            if (typeof app[methodName] === "function") {
+                app[`__ggxOriginal${methodName}`] = app[methodName].bind(app);
+                app[methodName] = function () {
+                    return undefined;
+                };
+            }
+        });
+
+        app.__ggxLegacyShellSuppressed = true;
+    }
+
+    function suppressLegacyLoginReminders() {
+        document.querySelectorAll("#loginReminderModal, [id^='loginReminderModal']").forEach((node) => {
+            if (node && node.parentNode) {
+                node.parentNode.removeChild(node);
+            }
+        });
+
+        const app = window.app;
+        if (!app || app.__ggxLoginReminderSuppressed) {
+            return;
+        }
+
+        if (app.reminderInterval) {
+            clearInterval(app.reminderInterval);
+            app.reminderInterval = null;
+        }
+
+        app.reminderCount = typeof app.maxReminders === "number"
+            ? app.maxReminders
+            : 999;
+
+        app.startLoginReminders = function () {
+            return undefined;
+        };
+        app.showLoginReminder = function () {
+            return undefined;
+        };
+        app.closeLoginReminder = function () {
+            const modal = document.getElementById("loginReminderModal");
+            if (modal && modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+            return undefined;
+        };
+        app.stopLoginReminders = function () {
+            if (this.reminderInterval) {
+                clearInterval(this.reminderInterval);
+                this.reminderInterval = null;
+            }
+            const modal = document.getElementById("loginReminderModal");
+            if (modal && modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+            return undefined;
+        };
+
+        app.__ggxLoginReminderSuppressed = true;
+    }
+
+    function runAppIntegrationHooks() {
+        wrapAppLanguageSetter();
+        suppressLegacyShellRenderers();
+        suppressLegacyLoginReminders();
+    }
+
+    function wrapAppLanguageSetter() {
+        const app = window.app;
+        if (!app || typeof app.setLanguage !== "function" || app.__ggxSetLanguageWrapped) {
+            return;
+        }
+
+        const originalSetLanguage = app.setLanguage.bind(app);
+        app.setLanguage = function (langValue) {
+            const normalizedLang = normalizeLang(langValue || getCurrentLang());
+            const result = originalSetLanguage(normalizedLang);
+            persistLang(normalizedLang);
+            refreshShellNavigation(true);
+            syncLanguageUI(normalizedLang);
+            return result;
+        };
+        app.__ggxSetLanguageWrapped = true;
+    }
+
+    function toggleMobileMenuFallback() {
+        const menu = document.getElementById("mobile-menu-container");
+        if (!menu) return;
+
+        const isOpen = menu.dataset.ggxOpen === "1" || menu.style.transform === "translateX(0%)";
+        menu.style.transform = isOpen ? "translateX(100%)" : "translateX(0%)";
+        menu.dataset.ggxOpen = isOpen ? "0" : "1";
+
+        const icon = document.querySelector("#mobile-menu-btn i");
+        if (icon) {
+            icon.classList.toggle("fa-bars", isOpen);
+            icon.classList.toggle("fa-xmark", !isOpen);
+        }
+
+        document.body.style.overflow = isOpen ? "" : "hidden";
+    }
+
+    function toggleAccordionById(contentId, iconSelector, options) {
+        if (!contentId) return;
+
+        const content = document.getElementById(contentId);
+        if (!content) return;
+
+        const isOpen = content.style.maxHeight && content.style.maxHeight !== "0px";
+        content.style.maxHeight = isOpen ? "0px" : content.scrollHeight + "px";
+
+        const trigger = document.querySelector(`[data-ggx-target="${contentId}"]`);
+        if (trigger) {
+            trigger.setAttribute("aria-expanded", isOpen ? "false" : "true");
+        }
+
+        const icon = iconSelector ? trigger && trigger.querySelector(iconSelector) : null;
+        if (icon) {
+            icon.classList.toggle("rotate-180", !isOpen);
+            if (options && options.plusMinusIcon) {
+                icon.classList.toggle("fa-plus", isOpen);
+                icon.classList.toggle("fa-minus", !isOpen);
+            }
+        }
+    }
+
+    function toggleMobileSubmenuFallback(contentId) {
+        toggleAccordionById(contentId, "i", { plusMinusIcon: false });
+    }
+
+    function toggleFooterGroupFallback(contentId) {
+        toggleAccordionById(contentId, "i", { plusMinusIcon: true });
+    }
+
+    function buildFooterContact(contactConfig) {
+        const label = escapeHtml(getLabelValue(contactConfig.label, getCurrentLang()) || "www_gasgx_com");
+        const iconClass = escapeHtml(contactConfig.iconClass || "fa-brands fa-weixin");
+        const commonClass = "text-sm text-gray-400 hover:text-gas-green flex items-center gap-2 transition-colors focus:outline-none";
+
+        if (contactConfig.mode === "link" && contactConfig.href) {
+            const href = escapeHtml(contactConfig.href);
+            const target = escapeHtml(contactConfig.target || "_blank");
+            const rel = escapeHtml(contactConfig.rel || "noopener noreferrer");
+            return `<a href="${href}" target="${target}" rel="${rel}" class="${commonClass}"><i class="${iconClass}"></i><span>${label}</span></a>`;
+        }
+
+        const qrType = escapeHtml(contactConfig.qrType || "wechat");
+        return `<button data-ggx-action="open-qr" data-ggx-qr-type="${qrType}" class="${commonClass}"><i class="${iconClass}"></i><span>${label}</span></button>`;
+    }
+
+    function buildFooterPrivacyLink(privacyConfig) {
+        const href = escapeHtml(privacyConfig.href || "/about/app_privacy_policy.html");
+        const target = escapeHtml(privacyConfig.target || "_blank");
+        const rel = escapeHtml(privacyConfig.rel || "noopener noreferrer");
+        const resolvedText = getLabelValue(privacyConfig.text, getCurrentLang());
+        const text = typeof resolvedText === "string" && resolvedText.trim()
+            ? escapeHtml(resolvedText.trim())
+            : "";
+        const labelHtml = text ? text : `<span data-ggx-text="privacy-policy">Privacy Policy</span>`;
+        return `<a href="${href}" target="${target}" rel="${rel}" class="hover:text-gas-green transition-colors flex items-center gap-1"><i class="fa-solid fa-shield-halved text-[10px]"></i>${labelHtml}</a>`;
+    }
+
+    function isFooterSocialHidden(item) {
+        return !item || item.enabled === false || item.visible === false || item.hidden === true;
+    }
+
+    function getFallbackSocialHref(item) {
+        const id = String((item && (item.id || item.qrType)) || "").trim().toLowerCase();
+        if (!id) return "";
+
+        const fallbackMap = {
+            tiktok: "https://www.tiktok.com/",
+            linkedin: "https://www.linkedin.com/",
+            facebook: "https://www.facebook.com/",
+            x: "https://x.com/",
+            twitter: "https://x.com/",
+            youtube: "https://www.youtube.com/",
+            instagram: "https://www.instagram.com/"
+        };
+        return fallbackMap[id] || "";
+    }
+
+    function resolveFooterSocialHref(item) {
+        const explicit = typeof item.href === "string" ? item.href.trim() : "";
+        if (explicit) return explicit;
+        return getFallbackSocialHref(item);
+    }
+
+    function buildFooterSocialEntry(item) {
+        if (isFooterSocialHidden(item)) return "";
+
+        const iconClass = escapeHtml(item.iconClass || "fa-solid fa-link");
+        const commonClass = "ggx-social-btn focus:outline-none";
+        const href = resolveFooterSocialHref(item);
+        if (!href) return "";
+
+        const target = escapeHtml(item.target || "_blank");
+        const rel = escapeHtml(item.rel || "noopener noreferrer");
+        const resolvedTitle = getLabelValue(item.title, getCurrentLang());
+        const title = typeof resolvedTitle === "string" && resolvedTitle.trim() ? resolvedTitle.trim() : "";
+        const ariaLabel = escapeHtml(item.ariaLabel || title || item.id || "Social link");
+        const titleAttr = title ? ` title="${escapeHtml(title)}"` : "";
+        return `<a href="${escapeHtml(href)}" target="${target}" rel="${rel}" class="${commonClass}" aria-label="${ariaLabel}"${titleAttr}><i class="${iconClass} text-lg"></i></a>`;
+    }
+
+    function buildFooterTemplate() {
+        const footerConfig = getFooterConfig();
+        const contactHtml = buildFooterContact(footerConfig.contact);
+        const privacyHtml = buildFooterPrivacyLink(footerConfig.privacyPolicy);
+        const socialHtml = footerConfig.socialLinks.map(buildFooterSocialEntry).join("");
+        const socialContainer = socialHtml ? `<div class="flex items-center gap-4">${socialHtml}</div>` : "";
+
+        return `
+<footer class="bg-[#0a0a0a] border-t border-white/10 mt-auto pt-10 pb-8 relative z-10">
+    <div class="max-w-[1800px] mx-auto px-6">
+        <div class="flex flex-col md:flex-row justify-between items-start mb-8 pb-6 border-b border-white/5">
+            <div class="mb-6 md:mb-0">
+                <div class="flex items-center gap-2 mb-2"><span class="text-2xl font-bold text-gas-green">GasGx</span></div>
+                <p class="text-sm text-gray-400 font-medium" data-ggx-text="footer-tagline">Making natural gas power mining easier</p>
+            </div>
+            <div class="flex flex-col md:items-end space-y-2">
+                <h4 class="text-white font-bold text-sm uppercase tracking-wider mb-1" data-ggx-text="contact-us">Contact Us</h4>
+                ${contactHtml}
+            </div>
+        </div>
+        <div id="footer-links" class="mb-10 space-y-2"></div>
+        <div class="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-white/5">
+            <div class="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-600">
+                <span>&copy; 2026 GasGx. All rights reserved.</span><span class="hidden sm:inline text-gray-700">|</span>
+                ${privacyHtml}
+            </div>
+            ${socialContainer}
+        </div>
+    </div>
+</footer>`;
+    }
+
+    function callApp(method, ...args) {
+        const app = window.app;
+        if (!app || typeof app[method] !== "function") {
+            return undefined;
+        }
+        return app[method](...args);
+    }
+
+    function callAuth(method) {
+        const auth = window.AuthApp;
+        if (!auth || typeof auth[method] !== "function") {
+            return undefined;
+        }
+        return auth[method]();
+    }
+
+    function openQr(type) {
+        if (typeof window.openQrModal === "function") {
+            return window.openQrModal(type);
+        }
+        return undefined;
+    }
+
+    function mountSlot(slotId, html) {
+        const slot = document.getElementById(slotId);
+        if (!slot) return null;
+        slot.innerHTML = html;
+        return slot;
+    }
+
+    function closeLangMenu() {
+        const picker = document.getElementById("ggx-lang-picker");
+        const trigger = document.getElementById("lang-menu-btn");
+        const dropdown = document.getElementById("ggx-lang-dropdown");
+        if (picker) picker.classList.remove("is-open");
+        if (dropdown) dropdown.classList.add("hidden");
+        if (trigger) trigger.setAttribute("aria-expanded", "false");
+    }
+
+    function openLangMenu() {
+        const picker = document.getElementById("ggx-lang-picker");
+        const trigger = document.getElementById("lang-menu-btn");
+        const dropdown = document.getElementById("ggx-lang-dropdown");
+        if (picker) picker.classList.add("is-open");
+        if (dropdown) dropdown.classList.remove("hidden");
+        if (trigger) trigger.setAttribute("aria-expanded", "true");
+    }
+
+    function toggleLangMenu() {
+        const dropdown = document.getElementById("ggx-lang-dropdown");
+        if (!dropdown) return;
+        if (dropdown.classList.contains("hidden")) {
+            openLangMenu();
+        } else {
+            closeLangMenu();
+        }
+    }
+
+    function bindActionDelegation() {
+        if (state.actionBound) return;
+
+        document.addEventListener("click", (event) => {
+            const clickInsideLangPicker = !!event.target.closest("#ggx-lang-picker");
+            if (!clickInsideLangPicker) {
+                closeLangMenu();
+            }
+
+            const trigger = event.target.closest("[data-ggx-action]");
+            if (!trigger) return;
+
+            const action = trigger.dataset.ggxAction;
+
+            if (action === "set-lang") {
+                event.preventDefault();
+                setLanguageFromShell(trigger.dataset.ggxLang);
+                closeLangMenu();
+                return;
+            }
+
+            if (action === "toggle-lang-menu") {
+                event.preventDefault();
+                toggleLangMenu();
+                return;
+            }
+
+            if (action === "toggle-mobile-menu") {
+                event.preventDefault();
+                toggleMobileMenuFallback();
+                return;
+            }
+
+            if (action === "toggle-mobile-submenu") {
+                event.preventDefault();
+                const targetId = trigger.dataset.ggxTarget;
+                toggleMobileSubmenuFallback(targetId);
+                return;
+            }
+
+            if (action === "toggle-footer-group") {
+                event.preventDefault();
+                const targetId = trigger.dataset.ggxTarget;
+                toggleFooterGroupFallback(targetId);
+                return;
+            }
+
+            if (action === "auth-sign-in") {
+                event.preventDefault();
+                callAuth("signIn");
+                return;
+            }
+
+            if (action === "auth-sign-out") {
+                event.preventDefault();
+                callAuth("signOut");
+                return;
+            }
+
+            if (action === "open-qr") {
+                event.preventDefault();
+                openQr(trigger.dataset.ggxQrType);
+            }
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeLangMenu();
+            }
+        });
+
+        state.actionBound = true;
+    }
+
+    function initBackToTop() {
+        const backToTopBtn = document.getElementById("backToTopBtn");
+        if (!backToTopBtn || backToTopBtn.dataset.ggxBound === "1") return;
+
+        const updateButtonVisibility = function () {
+            if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                backToTopBtn.classList.remove("translate-y-20", "opacity-0");
+            } else {
+                backToTopBtn.classList.add("translate-y-20", "opacity-0");
+            }
+        };
+
+        backToTopBtn.addEventListener("click", function () {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+
+        window.addEventListener("scroll", updateButtonVisibility, { passive: true });
+        updateButtonVisibility();
+        backToTopBtn.dataset.ggxBound = "1";
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function initChatbot() {
+        const wrapper = document.getElementById("ggx-chat-wrapper");
+        if (!wrapper || wrapper.dataset.ggxBound === "1") return;
+
+        const chatWindow = document.getElementById("ggx-chat-window");
+        const toggleBtn = document.getElementById("ggx-chat-toggle-btn");
+        const toggleIcon = document.getElementById("ggx-chat-toggle-icon");
+        const closeBtn = document.getElementById("ggx-chat-close-btn");
+        const messagesContainer = document.getElementById("ggx-chat-messages");
+        const userInput = document.getElementById("ggx-chat-user-input");
+        const loadingIndicator = document.getElementById("ggx-chat-loading");
+        const sendBtn = document.getElementById("ggx-chat-send-btn");
+        const unreadDot = wrapper.querySelector("[data-ggx-chat-unread]");
+
+        if (!chatWindow || !toggleBtn || !toggleIcon || !messagesContainer || !userInput || !loadingIndicator || !sendBtn) {
+            return;
+        }
+
+        const runtimeConfig = window.GASGX_SHARED_CONFIG || {};
+        const chatApiUrl = typeof runtimeConfig.chatApiUrl === "string" && runtimeConfig.chatApiUrl.trim()
+            ? runtimeConfig.chatApiUrl.trim()
+            : DEFAULT_CHAT_API_URL;
+
+        let isChatOpen = false;
+
+        function scrollToBottom() {
+            requestAnimationFrame(function () {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            });
+        }
+
+        function setChatOpen(nextOpen) {
+            isChatOpen = nextOpen;
+            if (isChatOpen) {
+                chatWindow.classList.remove("hidden");
+                toggleBtn.classList.remove("ggx-chat-attention");
+                if (unreadDot) unreadDot.classList.add("hidden");
+                setTimeout(function () {
+                    chatWindow.classList.remove("scale-95", "opacity-0");
+                    chatWindow.classList.add("scale-100", "opacity-100");
+                }, 10);
+                toggleIcon.classList.remove("fa-robot");
+                toggleIcon.classList.add("fa-chevron-down");
+                setTimeout(function () {
+                    userInput.focus();
+                }, 250);
+            } else {
+                chatWindow.classList.remove("scale-100", "opacity-100");
+                chatWindow.classList.add("scale-95", "opacity-0");
+                toggleBtn.classList.add("ggx-chat-attention");
+                setTimeout(function () {
+                    chatWindow.classList.add("hidden");
+                }, 300);
+                toggleIcon.classList.remove("fa-chevron-down");
+                toggleIcon.classList.add("fa-robot");
+            }
+        }
+
+        function addMessage(text, sender) {
+            const container = document.createElement("div");
+            const isUser = sender === "user";
+            const safeText = escapeHtml(text).replace(/\n/g, "<br>");
+
+            container.className = "flex flex-col " + (isUser ? "items-end" : "items-start") + " max-w-[85%] space-y-1 w-full animate-[slideDown_0.3s_ease-out]";
+
+            const labelHtml = isUser
+                ? ""
+                : "<div class=\"flex items-center gap-2 mb-1\"><span class=\"text-[10px] text-gray-500 ml-1\">GasGx Bot</span></div>";
+
+            const bubbleClass = isUser
+                ? "bg-gas-green text-black rounded-2xl rounded-tr-none font-medium shadow-[0_0_15px_rgba(93,214,44,0.2)]"
+                : "bg-[#252525] text-gray-200 rounded-2xl rounded-tl-none border border-white/5";
+
+            container.innerHTML =
+                labelHtml +
+                "<div class=\"" + bubbleClass + " px-4 py-2 text-sm leading-relaxed break-words\">" + safeText + "</div>" +
+                "<span class=\"text-[9px] text-gray-600 mt-1\">" + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "</span>";
+
+            messagesContainer.appendChild(container);
+            scrollToBottom();
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            addMessage(text, "user");
+            userInput.value = "";
+            loadingIndicator.classList.remove("hidden");
+            sendBtn.disabled = true;
+
+            try {
+                const response = await fetch(chatApiUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: text })
+                });
+
+                const data = await response.json();
+                addMessage((data && data.reply) || "No response payload.", "bot");
+            } catch (error) {
+                console.error("Chat Error:", error);
+                addMessage("Connection failed. Please check if the local Python server is running.", "bot");
+            } finally {
+                loadingIndicator.classList.add("hidden");
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
+        }
+
+        toggleBtn.addEventListener("click", function () {
+            setChatOpen(!isChatOpen);
+        });
+
+        if (closeBtn) {
+            closeBtn.addEventListener("click", function () {
+                setChatOpen(false);
+            });
+        }
+
+        sendBtn.addEventListener("click", function () {
+            sendMessage();
+        });
+
+        userInput.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        wrapper.dataset.ggxBound = "1";
+    }
+
+    function mount() {
+        if (state.mounted) {
+            runAppIntegrationHooks();
+            refreshShellNavigation(true);
+            syncLanguageUI(getCurrentLang());
+            return;
+        }
+
+        const runtimeConfig = window.GASGX_SHARED_CONFIG || {};
+
+        mountSlot("ggx-site-header-slot", HEADER_TEMPLATE);
+        mountSlot("ggx-site-footer-slot", buildFooterTemplate());
+
+        if (runtimeConfig.backToTopEnabled !== false) {
+            mountSlot("ggx-back-to-top-slot", BACK_TO_TOP_TEMPLATE);
+        }
+
+        if (runtimeConfig.chatbotEnabled !== false) {
+            mountSlot("ggx-chatbot-slot", CHATBOT_TEMPLATE);
+        }
+
+        bindActionDelegation();
+        initBackToTop();
+        initChatbot();
+        runAppIntegrationHooks();
+        const initialLang = getCurrentLang();
+        const app = window.app;
+        if (app && typeof app.setLanguage === "function") {
+            app.setLanguage(initialLang);
+        }
+        refreshShellNavigation(true);
+        syncLanguageUI(initialLang);
+        state.mounted = true;
+
+        document.dispatchEvent(new CustomEvent("gasgx:shared-ui-ready"));
+
+        // Let page scripts finish their own init first, then re-apply shared nav/footer once.
+        window.setTimeout(function () {
+            runAppIntegrationHooks();
+            refreshShellNavigation(true);
+            syncLanguageUI(getCurrentLang());
+        }, 0);
+    }
+
+    window.GasGxSharedUI = {
+        __initialized: true,
+        get mounted() {
+            return state.mounted;
+        },
+        callApp: callApp,
+        mount: mount,
+        refreshNavigation: refreshShellNavigation,
+        syncLanguageUI: syncLanguageUI,
+        initBackToTop: initBackToTop,
+        initChatbot: initChatbot
+    };
+
+    if (document.readyState === "loading") {
+        if (document.getElementById("ggx-site-header-slot")) {
+            mount();
+        }
+        document.addEventListener("DOMContentLoaded", function () {
+            mount();
+        }, { once: true });
+    } else {
+        mount();
+    }
+})();

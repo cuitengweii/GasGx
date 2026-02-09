@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Support | GasGx 技术支持中心</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8',
+                            error: '#ef4444'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 20px rgba(93, 214, 44, 0.6)',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #1a1a1a 1px, transparent 1px), linear-gradient(to bottom, #1a1a1a 1px, transparent 1px)",
+                        'circuit': "url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M10 10h80v80h-80z\" fill=\"none\" stroke=\"%23333\" stroke-width=\"1\" opacity=\"0.2\"/%3E%3Cpath d=\"M30 30h40v40h-40z\" fill=\"none\" stroke=\"%235DD62C\" stroke-width=\"0.5\" opacity=\"0.1\"/%3E%3C/svg%3E')"
+                    },
+                    animation: {
+                        'scan': 'scan 3s linear infinite',
+                    },
+                    keyframes: {
+                        scan: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100%)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body { background-color: #0F0F0F; color: #F8F8F8; font-family: 'Inter', sans-serif; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+        
+        .gas-card { background-color: rgba(32, 32, 32, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .gas-card-hover { transition: all 0.3s ease; }
+        .gas-card-hover:hover { transform: translateY(-5px); border-color: #5DD62C; box-shadow: 0 10px 30px rgba(93, 214, 44, 0.1); }
+        
+        .bg-grid { background-size: 40px 40px; mask-image: linear-gradient(to bottom, transparent, 10%, black, 90%, transparent); }
+        
+        /* 模拟扫描线效果 */
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            background: linear-gradient(to bottom, transparent, rgba(93, 214, 44, 0.2), transparent);
+            animation: scan 4s linear infinite;
+            pointer-events: none;
+        }
+    </style>
+    
+    <script>window.app = window.app || {};</script>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative selection:bg-gas-green selection:text-black">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-16 w-full relative">
+        <div class="absolute inset-0 bg-grid-pattern bg-grid opacity-20 pointer-events-none"></div>
+        <div class="absolute inset-0 bg-circuit opacity-10 pointer-events-none"></div>
+
+        <section class="max-w-[1400px] mx-auto px-6 py-16 text-center relative">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gas-green/30 bg-gas-green/10 text-gas-green text-xs font-bold tracking-wider mb-6">
+                <i class="fa-solid fa-code-branch"></i>
+                <span data-i18n="hero_badge">ENGINEERING CENTER</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold mb-6">
+                <span data-i18n="page_title_1">Technical</span> <span class="text-gas-green" data-i18n="page_title_2">Support</span>
+            </h1>
+            <p class="text-lg text-gas-subtext max-w-3xl mx-auto" data-i18n="page_desc">
+                从燃气发电机组的 ECU 标定到矿场算力的集群优化，我们的技术工程师团队为您提供软硬件一体化的专业支持。
+            </p>
+        </section>
+
+        <section class="max-w-[1400px] mx-auto px-6 pb-20">
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="gas-card gas-card-hover rounded-xl p-8 group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-gas-green/5 rounded-bl-full -mr-4 -mt-4 transition-all group-hover:bg-gas-green/10"></div>
+                    <i class="fa-solid fa-laptop-code text-4xl text-gas-green mb-6"></i>
+                    <h3 class="text-xl font-bold text-white mb-3" data-i18n="service_1_title">Remote Diagnostics</h3>
+                    <ul class="space-y-3 text-sm text-gray-400">
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-gas-green mt-1"></i> <span data-i18n="service_1_item1">Log analysis & Fault code clearing</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-gas-green mt-1"></i> <span data-i18n="service_1_item2">Network latency optimization</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-gas-green mt-1"></i> <span data-i18n="service_1_item3">ECU firmware remote flash</span></li>
+                    </ul>
+                </div>
+
+                <div class="gas-card gas-card-hover rounded-xl p-8 group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-bl-full -mr-4 -mt-4 transition-all group-hover:bg-blue-500/10"></div>
+                    <i class="fa-solid fa-gears text-4xl text-blue-500 mb-6"></i>
+                    <h3 class="text-xl font-bold text-white mb-3" data-i18n="service_2_title">Genset Engineering</h3>
+                    <ul class="space-y-3 text-sm text-gray-400">
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-500 mt-1"></i> <span data-i18n="service_2_item1">Air/Fuel ratio tuning (High Sulfur)</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-500 mt-1"></i> <span data-i18n="service_2_item2">Lubrication system analysis</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-500 mt-1"></i> <span data-i18n="service_2_item3">Overhaul parts consultation</span></li>
+                    </ul>
+                </div>
+
+                <div class="gas-card gas-card-hover rounded-xl p-8 group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-bl-full -mr-4 -mt-4 transition-all group-hover:bg-purple-500/10"></div>
+                    <i class="fa-solid fa-microchip text-4xl text-purple-500 mb-6"></i>
+                    <h3 class="text-xl font-bold text-white mb-3" data-i18n="service_3_title">Mining Optimization</h3>
+                    <ul class="space-y-3 text-sm text-gray-400">
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-purple-500 mt-1"></i> <span data-i18n="service_3_item1">Immersion cooling parameters</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-purple-500 mt-1"></i> <span data-i18n="service_3_item2">ASIC firmware upgrade (S19/S21)</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-purple-500 mt-1"></i> <span data-i18n="service_3_item3">Hashrate fluctuation troubleshooting</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-4xl mx-auto px-6 pb-20 w-full">
+            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                <i class="fa-solid fa-download text-gas-green"></i>
+                <span data-i18n="docs_title">Resource Center</span>
+            </h2>
+            <div class="bg-[#151515] border border-white/10 rounded-xl overflow-hidden">
+                <div class="grid grid-cols-12 bg-white/5 p-4 text-xs font-bold text-gas-subtext uppercase tracking-wider">
+                    <div class="col-span-6 md:col-span-8">File Name</div>
+                    <div class="col-span-3 md:col-span-2 text-center">Version</div>
+                    <div class="col-span-3 md:col-span-2 text-right">Action</div>
+                </div>
+                <div class="divide-y divide-white/5">
+                    <div class="grid grid-cols-12 p-4 items-center hover:bg-white/5 transition-colors">
+                        <div class="col-span-6 md:col-span-8 flex items-center gap-3">
+                            <i class="fa-solid fa-file-pdf text-red-400 text-lg"></i>
+                            <div>
+                                <div class="text-sm text-white font-medium">GasGx Engine unit Operation Manual</div>
+                                <div class="text-xs text-gray-500">Genset maintenance guide</div>
+                            </div>
+                        </div>
+                        <div class="col-span-3 md:col-span-2 text-center text-xs text-gas-green bg-gas-green/10 rounded py-1 mx-2">v2.4.1</div>
+                        <div class="col-span-3 md:col-span-2 text-right">
+                            <button class="text-white hover:text-gas-green"><i class="fa-solid fa-download"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-12 p-4 items-center hover:bg-white/5 transition-colors">
+                        <div class="col-span-6 md:col-span-8 flex items-center gap-3">
+                            <i class="fa-solid fa-file-code text-blue-400 text-lg"></i>
+                            <div>
+                                <div class="text-sm text-white font-medium">GasGx OS Firmware</div>
+                                <div class="text-xs text-gray-500">For Antminer S19/S21 Hydro</div>
+                            </div>
+                        </div>
+                        <div class="col-span-3 md:col-span-2 text-center text-xs text-gas-green bg-gas-green/10 rounded py-1 mx-2">Stable 3.0</div>
+                        <div class="col-span-3 md:col-span-2 text-right">
+                            <button class="text-white hover:text-gas-green"><i class="fa-solid fa-download"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-12 p-4 items-center hover:bg-white/5 transition-colors">
+                        <div class="col-span-6 md:col-span-8 flex items-center gap-3">
+                            <i class="fa-solid fa-file-lines text-gray-400 text-lg"></i>
+                            <div>
+                                <div class="text-sm text-white font-medium">GasGx High Sulfur Gas Pre-treatment Spec</div>
+                                <div class="text-xs text-gray-500">Technical whitepaper</div>
+                            </div>
+                        </div>
+                        <div class="col-span-3 md:col-span-2 text-center text-xs text-gray-500 bg-white/5 rounded py-1 mx-2">2026.01</div>
+                        <div class="col-span-3 md:col-span-2 text-right">
+                            <button class="text-white hover:text-gas-green"><i class="fa-solid fa-download"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-3xl mx-auto px-6 pb-20 w-full" id="ticket-section">
+            <div class="gas-card p-8 rounded-xl border-t-4 border-gas-green">
+                <h2 class="text-2xl font-bold text-white mb-2" data-i18n="form_title">Submit Support Ticket</h2>
+                <p class="text-sm text-gas-subtext mb-8" data-i18n="form_desc">Please provide details about your equipment. Our engineers will analyze your logs and reply via email.</p>
+                
+                <form id="tech-form" onsubmit="window.app.submitTicket(event)" class="space-y-6">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Device SN / Site ID</label>
+                            <input type="text" id="device_sn" placeholder="e.g. GX-2026-US-001" class="w-full bg-[#111] border border-white/10 rounded p-3 text-white focus:border-gas-green focus:outline-none transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Category</label>
+                            <select id="issue_type" class="w-full bg-[#111] border border-white/10 rounded p-3 text-white focus:border-gas-green focus:outline-none transition-colors">
+                                <option value="Genset Fault">Gas Generator Fault</option>
+                                <option value="Miner Config">Miner Configuration</option>
+                                <option value="Network">Network/Connectivity</option>
+                                <option value="Parts">Spare Parts Request</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Detailed Description</label>
+                        <textarea id="issue_desc" rows="4" placeholder="Describe the error code, symptoms, or request..." class="w-full bg-[#111] border border-white/10 rounded p-3 text-white focus:border-gas-green focus:outline-none transition-colors"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-gas-green text-black font-bold py-4 rounded hover:bg-white transition-all shadow-glow flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span data-i18n="form_btn">Create Ticket</span>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        const I18N_DATA = {
+            'zh': {
+                'tagline': '天然气发电挖矿助手',
+                'nav_home': '首页',
+                'nav_network': '服务网络',
+                'nav_tech': '技术支持',
+                'nav_service': '售后与保养',
+                'nav_contact': '联系我们',
+                'hero_badge': '工程技术中心',
+                'page_title_1': '技术',
+                'page_title_2': '支持',
+                'page_desc': '从燃气发电机组的 ECU 标定到矿场算力的集群优化，我们的技术工程师团队为您提供软硬件一体化的专业支持。',
+                'service_1_title': '远程诊断',
+                'service_1_item1': '日志分析与故障码清除',
+                'service_1_item2': '网络延迟优化',
+                'service_1_item3': 'ECU 固件远程刷写',
+                'service_2_title': '机组工程',
+                'service_2_item1': '空燃比调优 (适配高硫气)',
+                'service_2_item2': '润滑系统油液分析',
+                'service_2_item3': '大修备件咨询',
+                'service_3_title': '算力优化',
+                'service_3_item1': '浸没式液冷参数设定',
+                'service_3_item2': 'ASIC 固件升级 (S19/S21)',
+                'service_3_item3': '算力波动排查',
+                'docs_title': '资源下载中心',
+                'form_title': '提交技术工单',
+                'form_desc': '请提供您的设备信息和故障描述。我们的工程师将分析日志并通过邮件回复您。',
+                'form_btn': '创建工单',
+                'footerTagline': '让天然气发电挖矿更简单',
+                'contact_us': '联系我们',
+                'privacy_policy': '隐私政策'
+            },
+            'en': {
+                'tagline': 'Natural Gas Power Mining Assistant',
+                'nav_home': 'Home',
+                'nav_network': 'Service Network',
+                'nav_tech': 'Tech Support',
+                'nav_service': 'After-sales',
+                'nav_contact': 'Contact',
+                'hero_badge': 'ENGINEERING CENTER',
+                'page_title_1': 'Technical',
+                'page_title_2': 'Support',
+                'page_desc': 'From genset ECU calibration to mining cluster optimization, our engineering team provides integrated hardware and software support.',
+                'service_1_title': 'Remote Diagnostics',
+                'service_1_item1': 'Log analysis & Fault code clearing',
+                'service_1_item2': 'Network latency optimization',
+                'service_1_item3': 'ECU firmware remote flash',
+                'service_2_title': 'Genset Engineering',
+                'service_2_item1': 'Air/Fuel ratio tuning (High Sulfur)',
+                'service_2_item2': 'Lubrication system analysis',
+                'service_2_item3': 'Overhaul parts consultation',
+                'service_3_title': 'Mining Optimization',
+                'service_3_item1': 'Immersion cooling parameters',
+                'service_3_item2': 'ASIC firmware upgrade (S19/S21)',
+                'service_3_item3': 'Hashrate fluctuation troubleshooting',
+                'docs_title': 'Resource Center',
+                'form_title': 'Submit Support Ticket',
+                'form_desc': 'Please provide details about your equipment. Our engineers will analyze your logs and reply via email.',
+                'form_btn': 'Create Ticket',
+                'footerTagline': 'Making natural gas power mining easier',
+                'contact_us': 'Contact Us',
+                'privacy_policy': 'Privacy Policy'
+            },
+            'ru': {
+                'tagline': 'Помощник по майнингу на газе',
+                'nav_home': 'Главная',
+                'nav_network': 'Сервисная сеть',
+                'nav_tech': 'Техподдержка',
+                'nav_service': 'Обслуживание',
+                'nav_contact': 'Контакты',
+                'hero_badge': 'ИНЖЕНЕРНЫЙ ЦЕНТР',
+                'page_title_1': 'Техническая',
+                'page_title_2': 'Поддержка',
+                'page_desc': 'От калибровки ECU генератора до оптимизации кластера майнинга, наша инженерная команда обеспечивает полную поддержку.',
+                'service_1_title': 'Удаленная диагностика',
+                'service_1_item1': 'Анализ логов и сброс ошибок',
+                'service_1_item2': 'Оптимизация сетевой задержки',
+                'service_1_item3': 'Прошивка ECU',
+                'service_2_title': 'Инженерия генераторов',
+                'service_2_item1': 'Настройка смеси (Высокая сера)',
+                'service_2_item2': 'Анализ системы смазки',
+                'service_2_item3': 'Запчасти для капремонта',
+                'service_3_title': 'Оптимизация майнинга',
+                'service_3_item1': 'Параметры иммерсионного охлаждения',
+                'service_3_item2': 'Обновление прошивки ASIC',
+                'service_3_item3': 'Устранение колебаний хешрейта',
+                'docs_title': 'Центр ресурсов',
+                'form_title': 'Создать тикет',
+                'form_desc': 'Пожалуйста, укажите детали оборудования. Наши инженеры проанализируют логи и ответят по email.',
+                'form_btn': 'Отправить',
+                'footerTagline': 'Майнинг на газе стал проще',
+                'contact_us': 'Контакты',
+                'privacy_policy': 'Политика конфиденциальности'
+            }
+        };
+
+        window.app = {
+            lang: localStorage.getItem('gas_lang') || 'en',
+            
+            init() {
+                this.setLanguage(this.lang);
+            },
+
+            setLanguage(lang) {
+                this.lang = lang;
+                localStorage.setItem('gas_lang', lang);
+                const dict = I18N_DATA[lang] || I18N_DATA['en'];
+
+                // Update Buttons
+                ['zh','en','ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    if(btn) {
+                        if (l === lang) {
+                            btn.classList.remove('text-gas-subtext', 'font-medium');
+                            btn.classList.add('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                        } else {
+                            btn.classList.remove('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                            btn.classList.add('text-gas-subtext', 'font-medium');
+                        }
+                    }
+                });
+
+                // Update Text
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key]) {
+                        const icon = el.querySelector('i');
+                        if (icon) {
+                            el.innerHTML = ''; 
+                            el.appendChild(icon);
+                            el.append(' ' + dict[key]);
+                        } else {
+                            el.innerText = dict[key];
+                        }
+                    }
+                });
+            },
+
+            // 提交工单逻辑
+            submitTicket(e) {
+                e.preventDefault();
+                
+                const sn = document.getElementById('device_sn').value;
+                const type = document.getElementById('issue_type').value;
+                const desc = document.getElementById('issue_desc').value;
+
+                if(!sn || !desc) {
+                    alert(this.lang === 'zh' ? '请填写完整信息' : 'Please fill in all fields');
+                    return;
+                }
+
+                const subject = `[Tech Ticket] ${type} - ${sn}`;
+                const body = `Device SN: ${sn}\nCategory: ${type}\n\nIssue Description:\n${desc}\n\n----------------\nSent from GasGx Tech Portal`;
+                
+                window.location.href = `mailto:support@gasgx.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => window.app.init());
+        } else {
+            window.app.init();
+        }
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

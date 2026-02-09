@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Datasheets | GasGx 技术参数表</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 20px rgba(93, 214, 44, 0.6)',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #1a1a1a 1px, transparent 1px), linear-gradient(to bottom, #1a1a1a 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body { background-color: #0F0F0F; color: #F8F8F8; font-family: 'Inter', sans-serif; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+        
+        .gas-card { background-color: rgba(32, 32, 32, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .gas-card-hover { transition: all 0.3s ease; }
+        .gas-card-hover:hover { transform: translateY(-5px); border-color: #5DD62C; box-shadow: 0 10px 30px rgba(93, 214, 44, 0.1); }
+        
+        .bg-grid { background-size: 40px 40px; mask-image: linear-gradient(to bottom, transparent, 10%, black, 90%, transparent); }
+    </style>
+    
+    <script>window.app = window.app || {};</script>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative selection:bg-gas-green selection:text-black">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-16 w-full relative">
+        <div class="absolute inset-0 bg-grid-pattern bg-grid opacity-20 pointer-events-none"></div>
+        
+        <section class="max-w-[1400px] mx-auto px-6 py-16 text-center relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gas-green/30 bg-gas-green/10 text-gas-green text-xs font-bold tracking-wider mb-6">
+                <i class="fa-solid fa-file-lines"></i>
+                <span data-i18n="hero_badge">ENGINEERING SPECS</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold mb-6">
+                <span data-i18n="page_title_1">Technical</span> <span class="text-gas-green" data-i18n="page_title_2">Parameters</span>
+            </h1>
+            <p class="text-lg text-gas-subtext max-w-3xl mx-auto" data-i18n="page_desc">
+                从选址规划到电网并联，GasGx 为您提供最详尽的天然气发电挖矿工程参数指南。
+            </p>
+        </section>
+
+        <section class="max-w-[1400px] mx-auto px-6 pb-20">
+            <div class="grid lg:grid-cols-2 gap-8">
+                
+                <div class="gas-card p-8 rounded-xl border-l-4 border-gas-green">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                        <i class="fa-solid fa-map-location-dot text-gas-green"></i>
+                        <span data-i18n="sec1_title">1. 土地与场地 (Land & Site)</span>
+                    </h3>
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec1_item1_label">占地面积</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec1_item1_p1_key">模块化标准：</span> <span class="text-gas-green" data-i18n="sec1_item1_p1_val">1MW 约需 150-200 平方米</span></li>
+                                <li><span data-i18n="sec1_item1_p2_key">集装箱尺寸：</span> <span class="text-white" data-i18n="sec1_item1_p2_val">ISO 20尺 (6m) 或 40尺 (12m)</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec1_item2_label">地面承重</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec1_item2_p1_key">基础要求：</span> <span class="text-white" data-i18n="sec1_item2_p1_val">硬化地面 > 3000 kg/m²</span></li>
+                                <li><span data-i18n="sec1_item2_p2_key">平整度：</span> <span class="text-white" data-i18n="sec1_item2_p2_val">坡度 < 5度 (液位传感器要求)</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec1_item3_label">环境距离</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec1_item3_p1_key">噪音缓冲区：</span> <span class="text-white" data-i18n="sec1_item3_p1_val">居民区距离 > 500米</span></li>
+                                <li><span data-i18n="sec1_item3_p2_key">安全距离：</span> <span class="text-white" data-i18n="sec1_item3_p2_val">井口高压设备 > 30-50米</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gas-card p-8 rounded-xl border-l-4 border-blue-500">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                        <i class="fa-solid fa-fire-flame-simple text-blue-500"></i>
+                        <span data-i18n="sec2_title">2. 气源参数 (Gas Source)</span>
+                    </h3>
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec2_item1_label">甲烷值 (MN)</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec2_item1_p1_key">理想值：</span> <span class="text-white" data-i18n="sec2_item1_p1_val">MN > 80 (运行稳定)</span></li>
+                                <li><span data-i18n="sec2_item1_p2_key">低值处理：</span> <span class="text-white" data-i18n="sec2_item1_p2_val">MN < 65 时需降额运行</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec2_item2_label">热值 (Heating Value)</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec2_item2_p1_key">低热值 (LHV)：</span> <span class="text-white" data-i18n="sec2_item2_p1_val">> 1000 BTU/scf (37 MJ/m³)</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec2_item3_label">杂质耐受</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec2_item3_p1_key">硫化氢 (H₂S)：</span> <span class="text-white" data-i18n="sec2_item3_p1_val">< 200 ppm (直燃); > 500 ppm (需预处理)</span></li>
+                                <li><span data-i18n="sec2_item3_p2_key">水分：</span> <span class="text-white" data-i18n="sec2_item3_p2_val">需脱水处理 (防止冻结)</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gas-card p-8 rounded-xl border-l-4 border-purple-500">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                        <i class="fa-solid fa-smog text-purple-500"></i>
+                        <span data-i18n="sec3_title">3. 排放与环保 (Emissions)</span>
+                    </h3>
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec3_item1_label">NOx 排放</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec3_item1_p1_key">标准：</span> <span class="text-white" data-i18n="sec3_item1_p1_val">1.0 g/bhp-hr (常规); 0.15 g/bhp-hr (严控)</span></li>
+                                <li><span data-i18n="sec3_item1_p2_key">技术：</span> <span class="text-white" data-i18n="sec3_item1_p2_val">稀薄燃烧 + SCR 后处理</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec3_item2_label">燃烧效率</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec3_item2_p1_key">甲烷破坏率：</span> <span class="text-gas-green" data-i18n="sec3_item2_p1_val">> 99% (火炬仅 91-95%)</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gas-card p-8 rounded-xl border-l-4 border-yellow-500">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                        <i class="fa-solid fa-plug text-yellow-500"></i>
+                        <span data-i18n="sec4_title">4. 发电机组参数 (Genset)</span>
+                    </h3>
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec4_item1_label">电力输出</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec4_item1_p1_key">电压：</span> <span class="text-white" data-i18n="sec4_item1_p1_val">400V/480V (低压); 10.5kV+ (高压)</span></li>
+                                <li><span data-i18n="sec4_item1_p2_key">频率：</span> <span class="text-white" data-i18n="sec4_item1_p2_val">50Hz (中/欧/俄) 或 60Hz (美/加)</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec4_item2_label">效率 (Efficiency)</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec4_item2_p1_key">电效率：</span> <span class="text-white" data-i18n="sec4_item2_p1_val">38% - 44% (例如 MWM TCG 3016)</span></li>
+                                <li><span data-i18n="sec4_item2_p2_key">气耗率：</span> <span class="text-white" data-i18n="sec4_item2_p2_val">0.24 - 0.30 m³/kWh</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec4_item3_label">冷却方式</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec4_item3_p1_key">适应温度：</span> <span class="text-white" data-i18n="sec4_item3_p1_val">-20°C 至 +40°C</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gas-card p-8 rounded-xl border-l-4 border-red-500">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                        <i class="fa-solid fa-server text-red-500"></i>
+                        <span data-i18n="sec5_title">5. 挖矿与负载 (Mining Load)</span>
+                    </h3>
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec5_item1_label">负荷特性</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec5_item1_p1_key">类型：</span> <span class="text-white" data-i18n="sec5_item1_p1_val">恒定负荷 (Base Load), 24/7 运行</span></li>
+                                <li><span data-i18n="sec5_item1_p2_key">功率因数：</span> <span class="text-white" data-i18n="sec5_item1_p2_val">需校正至 0.9 - 0.95</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec5_item2_label">矿机耐受性</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec5_item2_p1_key">环境：</span> <span class="text-white" data-i18n="sec5_item2_p1_val">液冷/浸没式耐受高温及沙尘</span></li>
+                                <li><span data-i18n="sec5_item2_p2_key">启动：</span> <span class="text-white" data-i18n="sec5_item2_p2_val">需 Load Bank 或软启动控制</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gas-card p-8 rounded-xl border-l-4 border-indigo-500">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                        <i class="fa-solid fa-network-wired text-indigo-500"></i>
+                        <span data-i18n="sec6_title">6. 电网与并网 (Grid)</span>
+                    </h3>
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec6_item1_label">离网模式</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec6_item1_p1_val">无需电网接入，需配备黑启动电池组。</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec6_item2_label">并网模式</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec6_item2_p1_val">需符合电网代码 (Grid Code)，配备同步装置。</span></li>
+                                <li><span data-i18n="sec6_item2_p2_val">支持“削峰填谷”收益模式。</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gas-card p-8 rounded-xl border-l-4 border-gray-500 lg:col-span-2">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                        <i class="fa-solid fa-satellite-dish text-gray-400"></i>
+                        <span data-i18n="sec7_title">7. 网络与通讯 (Connectivity)</span>
+                    </h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec7_item1_label">带宽需求</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec7_item1_p1_key">挖矿协议：</span> <span class="text-white" data-i18n="sec7_item1_p1_val">数据量极低 (< 50kbps/台)</span></li>
+                                <li><span data-i18n="sec7_item1_p2_key">总带宽：</span> <span class="text-gas-green" data-i18n="sec7_item1_p2_val">1MW 仅需 10-20 Mbps (含监控)</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-2" data-i18n="sec7_item2_label">接入方案</h4>
+                            <ul class="list-disc pl-5 text-sm text-gas-subtext space-y-1">
+                                <li><span data-i18n="sec7_item2_p1_key">首选：</span> <span class="text-white" data-i18n="sec7_item2_p1_val">Starlink (延迟 30-50ms)</span></li>
+                                <li><span data-i18n="sec7_item2_p2_key">备用：</span> <span class="text-white" data-i18n="sec7_item2_p2_val">4G/5G LTE 或微波链路</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        const I18N_DATA = {
+            'zh': {
+                'tagline': '天然气发电挖矿助手',
+                'nav_home': '首页',
+                'nav_datasheets': '技术参数表',
+                'nav_certs': '认证与合规文件',
+                'hero_badge': '工程技术规格',
+                'page_title_1': '核心技术',
+                'page_title_2': '参数表',
+                'page_desc': '从选址规划到电网并联，GasGx 为您提供最详尽的天然气发电挖矿工程参数指南。',
+                
+                // Sec 1
+                'sec1_title': '1. 土地与场地 (Land & Site)',
+                'sec1_item1_label': '占地面积',
+                'sec1_item1_p1_key': '模块化标准：',
+                'sec1_item1_p1_val': '1MW 约需 150-200 平方米',
+                'sec1_item1_p2_key': '集装箱尺寸：',
+                'sec1_item1_p2_val': 'ISO 20尺 (6m) 或 40尺 (12m)',
+                'sec1_item2_label': '地面承重',
+                'sec1_item2_p1_key': '基础要求：',
+                'sec1_item2_p1_val': '硬化地面 > 3000 kg/m²',
+                'sec1_item2_p2_key': '平整度：',
+                'sec1_item2_p2_val': '坡度 < 5度 (液位传感器要求)',
+                'sec1_item3_label': '环境距离',
+                'sec1_item3_p1_key': '噪音缓冲区：',
+                'sec1_item3_p1_val': '居民区距离 > 500米',
+                'sec1_item3_p2_key': '安全距离：',
+                'sec1_item3_p2_val': '井口高压设备 > 30-50米',
+
+                // Sec 2
+                'sec2_title': '2. 气源参数 (Gas Source)',
+                'sec2_item1_label': '甲烷值 (MN)',
+                'sec2_item1_p1_key': '理想值：',
+                'sec2_item1_p1_val': 'MN > 80 (运行稳定)',
+                'sec2_item1_p2_key': '低值处理：',
+                'sec2_item1_p2_val': 'MN < 65 时需降额运行',
+                'sec2_item2_label': '热值',
+                'sec2_item2_p1_key': '低热值 (LHV)：',
+                'sec2_item2_p1_val': '> 1000 BTU/scf (37 MJ/m³)',
+                'sec2_item3_label': '杂质耐受',
+                'sec2_item3_p1_key': '硫化氢 (H₂S)：',
+                'sec2_item3_p1_val': '< 200 ppm (直燃); > 500 ppm (需预处理)',
+                'sec2_item3_p2_key': '水分：',
+                'sec2_item3_p2_val': '需脱水处理 (防止冻结)',
+
+                // Sec 3
+                'sec3_title': '3. 排放与环保 (Emissions)',
+                'sec3_item1_label': 'NOx 排放',
+                'sec3_item1_p1_key': '标准：',
+                'sec3_item1_p1_val': '1.0 g/bhp-hr (常规); 0.15 g/bhp-hr (严控)',
+                'sec3_item1_p2_key': '技术：',
+                'sec3_item1_p2_val': '稀薄燃烧 + SCR 后处理',
+                'sec3_item2_label': '燃烧效率',
+                'sec3_item2_p1_key': '甲烷破坏率：',
+                'sec3_item2_p1_val': '> 99% (火炬仅 91-95%)',
+
+                // Sec 4
+                'sec4_title': '4. 发电机组参数 (Genset)',
+                'sec4_item1_label': '电力输出',
+                'sec4_item1_p1_key': '电压：',
+                'sec4_item1_p1_val': '400V/480V (低压); 10.5kV+ (高压)',
+                'sec4_item1_p2_key': '频率：',
+                'sec4_item1_p2_val': '50Hz (中/欧/俄) 或 60Hz (美/加)',
+                'sec4_item2_label': '效率',
+                'sec4_item2_p1_key': '电效率：',
+                'sec4_item2_p1_val': '38% - 44% (例如 MWM TCG 3016)',
+                'sec4_item2_p2_key': '气耗率：',
+                'sec4_item2_p2_val': '0.24 - 0.30 m³/kWh',
+                'sec4_item3_label': '冷却方式',
+                'sec4_item3_p1_key': '适应温度：',
+                'sec4_item3_p1_val': '-20°C 至 +40°C',
+
+                // Sec 5
+                'sec5_title': '5. 挖矿与负载 (Mining Load)',
+                'sec5_item1_label': '负荷特性',
+                'sec5_item1_p1_key': '类型：',
+                'sec5_item1_p1_val': '恒定负荷 (Base Load), 24/7 运行',
+                'sec5_item1_p2_key': '功率因数：',
+                'sec5_item1_p2_val': '需校正至 0.9 - 0.95',
+                'sec5_item2_label': '矿机耐受性',
+                'sec5_item2_p1_key': '环境：',
+                'sec5_item2_p1_val': '液冷/浸没式耐受高温及沙尘',
+                'sec5_item2_p2_key': '启动：',
+                'sec5_item2_p2_val': '需 Load Bank 或软启动控制',
+
+                // Sec 6
+                'sec6_title': '6. 电网与并网 (Grid)',
+                'sec6_item1_label': '离网模式',
+                'sec6_item1_p1_val': '无需电网接入，需配备黑启动电池组。',
+                'sec6_item2_label': '并网模式',
+                'sec6_item2_p1_val': '需符合电网代码 (Grid Code)，配备同步装置。',
+                'sec6_item2_p2_val': '支持“削峰填谷”收益模式。',
+
+                // Sec 7
+                'sec7_title': '7. 网络与通讯 (Connectivity)',
+                'sec7_item1_label': '带宽需求',
+                'sec7_item1_p1_key': '挖矿协议：',
+                'sec7_item1_p1_val': '数据量极低 (< 50kbps/台)',
+                'sec7_item1_p2_key': '总带宽：',
+                'sec7_item1_p2_val': '1MW 仅需 10-20 Mbps (含监控)',
+                'sec7_item2_label': '接入方案',
+                'sec7_item2_p1_key': '首选：',
+                'sec7_item2_p1_val': 'Starlink (延迟 30-50ms)',
+                'sec7_item2_p2_key': '备用：',
+                'sec7_item2_p2_val': '4G/5G LTE 或微波链路',
+
+                'footerTagline': '让天然气发电挖矿更简单',
+                'contact_us': '联系我们',
+                'privacy_policy': '隐私政策'
+            },
+            'en': {
+                'tagline': 'Natural Gas Power Mining Assistant',
+                'nav_home': 'Home',
+                'nav_datasheets': 'Datasheets',
+                'nav_certs': 'Certifications',
+                'hero_badge': 'ENGINEERING SPECS',
+                'page_title_1': 'Technical',
+                'page_title_2': 'Parameters',
+                'page_desc': 'From site selection to grid connection, GasGx provides comprehensive engineering specs for gas-to-power mining.',
+                
+                // Sec 1
+                'sec1_title': '1. Land & Site',
+                'sec1_item1_label': 'Footprint',
+                'sec1_item1_p1_key': 'Modular Std:',
+                'sec1_item1_p1_val': '1MW approx 150-200 m²',
+                'sec1_item1_p2_key': 'Container:',
+                'sec1_item1_p2_val': 'ISO 20ft (6m) or 40ft (12m)',
+                'sec1_item2_label': 'Load Bearing',
+                'sec1_item2_p1_key': 'Foundation:',
+                'sec1_item2_p1_val': 'Hardened Ground > 3000 kg/m²',
+                'sec1_item2_p2_key': 'Levelness:',
+                'sec1_item2_p2_val': 'Slope < 5° (for liquid sensors)',
+                'sec1_item3_label': 'Setbacks',
+                'sec1_item3_p1_key': 'Noise Buffer:',
+                'sec1_item3_p1_val': '> 500m from residents',
+                'sec1_item3_p2_key': 'Safety:',
+                'sec1_item3_p2_val': '> 30-50m from wellhead',
+
+                // Sec 2
+                'sec2_title': '2. Gas Source',
+                'sec2_item1_label': 'Methane Number (MN)',
+                'sec2_item1_p1_key': 'Ideal:',
+                'sec2_item1_p1_val': 'MN > 80 (Stable)',
+                'sec2_item1_p2_key': 'Low MN:',
+                'sec2_item1_p2_val': 'MN < 65 requires derating',
+                'sec2_item2_label': 'Heating Value',
+                'sec2_item2_p1_key': 'LHV:',
+                'sec2_item2_p1_val': '> 1000 BTU/scf (37 MJ/m³)',
+                'sec2_item3_label': 'Contaminants',
+                'sec2_item3_p1_key': 'H₂S:',
+                'sec2_item3_p1_val': '< 200 ppm (Direct); > 500 ppm (Treat)',
+                'sec2_item3_p2_key': 'Water:',
+                'sec2_item3_p2_val': 'Dehydration required',
+
+                // Sec 3
+                'sec3_title': '3. Emissions',
+                'sec3_item1_label': 'NOx Emissions',
+                'sec3_item1_p1_key': 'Standard:',
+                'sec3_item1_p1_val': '1.0 g/bhp-hr (Normal); 0.15 (Strict)',
+                'sec3_item1_p2_key': 'Tech:',
+                'sec3_item1_p2_val': 'Lean Burn + SCR',
+                'sec3_item2_label': 'Destruction Efficiency',
+                'sec3_item2_p1_key': 'Methane:',
+                'sec3_item2_p1_val': '> 99% (Flare is only 91-95%)',
+
+                // Sec 4
+                'sec4_title': '4. Genset Specs',
+                'sec4_item1_label': 'Power Output',
+                'sec4_item1_p1_key': 'Voltage:',
+                'sec4_item1_p1_val': '400V/480V (LV); 10.5kV+ (HV)',
+                'sec4_item1_p2_key': 'Frequency:',
+                'sec4_item1_p2_val': '50Hz (CN/EU/RU) or 60Hz (US/CA)',
+                'sec4_item2_label': 'Efficiency',
+                'sec4_item2_p1_key': 'Electrical:',
+                'sec4_item2_p1_val': '38% - 44% (e.g., MWM TCG 3016)',
+                'sec4_item2_p2_key': 'Gas Cons:',
+                'sec4_item2_p2_val': '0.24 - 0.30 m³/kWh',
+                'sec4_item3_label': 'Cooling',
+                'sec4_item3_p1_key': 'Ambient:',
+                'sec4_item3_p1_val': '-20°C to +40°C',
+
+                // Sec 5
+                'sec5_title': '5. Mining Load',
+                'sec5_item1_label': 'Load Profile',
+                'sec5_item1_p1_key': 'Type:',
+                'sec5_item1_p1_val': 'Base Load, 24/7',
+                'sec5_item1_p2_key': 'Power Factor:',
+                'sec5_item1_p2_val': 'Correct to 0.9 - 0.95',
+                'sec5_item2_label': 'Miner Tolerance',
+                'sec5_item2_p1_key': 'Env:',
+                'sec5_item2_p1_val': 'Hydro/Immersion handles heat/dust',
+                'sec5_item2_p2_key': 'Startup:',
+                'sec5_item2_p2_val': 'Need Load Bank or Soft Start',
+
+                // Sec 6
+                'sec6_title': '6. Grid Connection',
+                'sec6_item1_label': 'Off-Grid Mode',
+                'sec6_item1_p1_val': 'No grid access, Black Start required.',
+                'sec6_item2_label': 'On-Grid Mode',
+                'sec6_item2_p1_val': 'Grid Code compliance & sync required.',
+                'sec6_item2_p2_val': 'Supports peak-shaving revenue.',
+
+                // Sec 7
+                'sec7_title': '7. Connectivity',
+                'sec7_item1_label': 'Bandwidth',
+                'sec7_item1_p1_key': 'Protocol:',
+                'sec7_item1_p1_val': 'Very low data (< 50kbps/unit)',
+                'sec7_item1_p2_key': 'Total:',
+                'sec7_item1_p2_val': '1MW needs 10-20 Mbps (w/ CCTV)',
+                'sec7_item2_label': 'Access',
+                'sec7_item2_p1_key': 'Primary:',
+                'sec7_item2_p1_val': 'Starlink (30-50ms latency)',
+                'sec7_item2_p2_key': 'Backup:',
+                'sec7_item2_p2_val': '4G/5G LTE or Microwave',
+
+                'footerTagline': 'Making natural gas power mining easier',
+                'contact_us': 'Contact Us',
+                'privacy_policy': 'Privacy Policy'
+            },
+            'ru': {
+                'tagline': 'Помощник по майнингу на газе',
+                'nav_home': 'Главная',
+                'nav_datasheets': 'Техпаспорт',
+                'nav_certs': 'Сертификаты',
+                'hero_badge': 'СПЕЦИФИКАЦИИ',
+                'page_title_1': 'Технические',
+                'page_title_2': 'Параметры',
+                'page_desc': 'От выбора площадки до подключения к сети — полные инженерные данные.',
+                
+                // Sec 1
+                'sec1_title': '1. Земля и Площадка',
+                'sec1_item1_label': 'Площадь',
+                'sec1_item1_p1_key': 'Модуль:',
+                'sec1_item1_p1_val': '1 МВт прим. 150-200 м²',
+                'sec1_item1_p2_key': 'Контейнер:',
+                'sec1_item1_p2_val': 'ISO 20 футов (6м) или 40 (12м)',
+                'sec1_item2_label': 'Нагрузка на грунт',
+                'sec1_item2_p1_key': 'Фундамент:',
+                'sec1_item2_p1_val': 'Твердый грунт > 3000 кг/м²',
+                'sec1_item2_p2_key': 'Уклон:',
+                'sec1_item2_p2_val': '< 5° (для датчиков уровня)',
+                'sec1_item3_label': 'Отступы',
+                'sec1_item3_p1_key': 'Шум:',
+                'sec1_item3_p1_val': '> 500м от жилья',
+                'sec1_item3_p2_key': 'Безопасность:',
+                'sec1_item3_p2_val': '> 30-50м от устья скважины',
+
+                // Sec 2
+                'sec2_title': '2. Параметры Газа',
+                'sec2_item1_label': 'Метановое число (MN)',
+                'sec2_item1_p1_key': 'Идеал:',
+                'sec2_item1_p1_val': 'MN > 80 (Стабильно)',
+                'sec2_item1_p2_key': 'Низкое:',
+                'sec2_item1_p2_val': 'MN < 65 снижение мощности',
+                'sec2_item2_label': 'Теплотворность',
+                'sec2_item2_p1_key': 'LHV:',
+                'sec2_item2_p1_val': '> 1000 BTU/scf (37 МДж/м³)',
+                'sec2_item3_label': 'Примеси',
+                'sec2_item3_p1_key': 'H₂S:',
+                'sec2_item3_p1_val': '< 200 ppm (Прямо); > 500 (Очистка)',
+                'sec2_item3_p2_key': 'Вода:',
+                'sec2_item3_p2_val': 'Требуется осушка',
+
+                // Sec 3
+                'sec3_title': '3. Выбросы',
+                'sec3_item1_label': 'Выбросы NOx',
+                'sec3_item1_p1_key': 'Стандарт:',
+                'sec3_item1_p1_val': '1.0 г/л.с.-ч (Норма); 0.15 (Строго)',
+                'sec3_item1_p2_key': 'Технология:',
+                'sec3_item1_p2_val': 'Lean Burn + SCR',
+                'sec3_item2_label': 'Эффективность',
+                'sec3_item2_p1_key': 'Метан:',
+                'sec3_item2_p1_val': '> 99% (Факел только 91-95%)',
+
+                // Sec 4
+                'sec4_title': '4. Генератор',
+                'sec4_item1_label': 'Мощность',
+                'sec4_item1_p1_key': 'Напряжение:',
+                'sec4_item1_p1_val': '400V/480V (НН); 10.5kV+ (ВН)',
+                'sec4_item1_p2_key': 'Частота:',
+                'sec4_item1_p2_val': '50Гц (СНГ/ЕС) или 60Гц (США)',
+                'sec4_item2_label': 'КПД',
+                'sec4_item2_p1_key': 'Электрический:',
+                'sec4_item2_p1_val': '38% - 44% (напр. MWM TCG 3016)',
+                'sec4_item2_p2_key': 'Расход газа:',
+                'sec4_item2_p2_val': '0.24 - 0.30 м³/кВтч',
+                'sec4_item3_label': 'Охлаждение',
+                'sec4_item3_p1_key': 'Среда:',
+                'sec4_item3_p1_val': 'от -20°C до +40°C',
+
+                // Sec 5
+                'sec5_title': '5. Нагрузка Майнинга',
+                'sec5_item1_label': 'Профиль',
+                'sec5_item1_p1_key': 'Тип:',
+                'sec5_item1_p1_val': 'Базовая нагрузка, 24/7',
+                'sec5_item1_p2_key': 'Коэф. мощности:',
+                'sec5_item1_p2_val': 'Коррекция до 0.9 - 0.95',
+                'sec5_item2_label': 'Устойчивость',
+                'sec5_item2_p1_key': 'Среда:',
+                'sec5_item2_p1_val': 'Гидро/Иммерсия держит жару/пыль',
+                'sec5_item2_p2_key': 'Запуск:',
+                'sec5_item2_p2_val': 'Нужен Load Bank или Плавный пуск',
+
+                // Sec 6
+                'sec6_title': '6. Подключение к Сети',
+                'sec6_item1_label': 'Островной режим',
+                'sec6_item1_p1_val': 'Без сети, нужен Black Start.',
+                'sec6_item2_label': 'Параллель с сетью',
+                'sec6_item2_p1_val': 'Соблюдение Grid Code и синхронизация.',
+                'sec6_item2_p2_val': 'Поддержка срезки пиков.',
+
+                // Sec 7
+                'sec7_title': '7. Связь',
+                'sec7_item1_label': 'Пропускная способность',
+                'sec7_item1_p1_key': 'Протокол:',
+                'sec7_item1_p1_val': 'Мало данных (< 50кбит/с на юнит)',
+                'sec7_item1_p2_key': 'Всего:',
+                'sec7_item1_p2_val': '1 МВт нужно 10-20 Мбит/с (с видео)',
+                'sec7_item2_label': 'Доступ',
+                'sec7_item2_p1_key': 'Основной:',
+                'sec7_item2_p1_val': 'Starlink (задержка 30-50мс)',
+                'sec7_item2_p2_key': 'Резерв:',
+                'sec7_item2_p2_val': '4G/5G LTE или Радиоканал',
+
+                'footerTagline': 'Майнинг на газе стал проще',
+                'contact_us': 'Контакты',
+                'privacy_policy': 'Политика конфиденциальности'
+            }
+        };
+
+        window.app = {
+            lang: localStorage.getItem('gas_lang') || 'en',
+            
+            init() {
+                this.setLanguage(this.lang);
+            },
+
+            setLanguage(lang) {
+                this.lang = lang;
+                localStorage.setItem('gas_lang', lang);
+                const dict = I18N_DATA[lang] || I18N_DATA['en'];
+
+                ['zh','en','ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    if(btn) {
+                        if (l === lang) {
+                            btn.classList.remove('text-gas-subtext', 'font-medium');
+                            btn.classList.add('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                        } else {
+                            btn.classList.remove('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                            btn.classList.add('text-gas-subtext', 'font-medium');
+                        }
+                    }
+                });
+
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key]) {
+                        const icon = el.querySelector('i');
+                        if (icon) {
+                            el.innerHTML = ''; 
+                            el.appendChild(icon);
+                            el.append(' ' + dict[key]);
+                        } else {
+                            el.innerText = dict[key];
+                        }
+                    }
+                });
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => window.app.init());
+        } else {
+            window.app.init();
+        }
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

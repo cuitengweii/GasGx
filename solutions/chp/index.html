@@ -1,0 +1,442 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHP & Heat Recovery Solutions - GasGx</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            orange: '#F59E0B', // Added Orange for Heat/CHP theme
+                            darkOrange: '#B45309',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(93, 214, 44, 0.4)',
+                        'glow-orange': '0 0 20px rgba(245, 158, 11, 0.4)',
+                    },
+                    animation: {
+                        'steam': 'steam 3s ease-out infinite',
+                    },
+                    keyframes: {
+                        steam: {
+                            '0%': { transform: 'translateY(0) scale(1)', opacity: '0.8' },
+                            '100%': { transform: 'translateY(-20px) scale(1.5)', opacity: '0' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #F59E0B; }
+
+        /* 卡片磨砂效果 */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .bg-grid-pattern {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-item-link:hover, .nav-item-link.active { color: #F59E0B; }
+        
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #F59E0B;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after, .nav-item-link.active::after { width: 100%; }
+        
+        /* Efficiency Bar Animation */
+        .progress-bar {
+            transition: width 1.5s ease-out;
+        }
+    </style>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative bg-grid-pattern">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-16 w-full">
+        
+        <section class="relative py-24 px-4 overflow-hidden border-b border-white/5">
+            <div class="absolute inset-0 z-0">
+                <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-gas-orange/10 to-transparent"></div>
+                <div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-[#0F0F0F] to-transparent"></div>
+                
+                <div class="absolute -right-10 top-20 opacity-10">
+                    <i class="fa-solid fa-fire text-[250px] text-gas-orange animate-pulse"></i>
+                    <i class="fa-solid fa-smog text-[150px] text-white absolute top-0 left-0 animate-steam"></i>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto relative z-10 text-center lg:text-left grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-block px-3 py-1 mb-6 border border-gas-orange/50 rounded bg-gas-orange/10 text-gas-orange text-xs font-bold uppercase tracking-wider">
+                        <span data-i18n="heroBadge">SOLUTIONS / CHP</span>
+                    </div>
+                    <h1 class="text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
+                        <span data-i18n="heroTitle">Efficiency Beyond</span> <br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-gas-orange to-red-500">Electricity (80%+)</span>
+                    </h1>
+                    <p class="text-xl text-gas-subtext mb-8 max-w-2xl mx-auto lg:mx-0" data-i18n="heroDesc">
+                        Don't just burn gas for power. Capture the heat. Transform waste into steam, cooling, or carbon-negative agriculture, boosting system efficiency from 35% to over 80%.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                        <a href="#applications" class="px-8 py-4 bg-gas-orange text-black font-bold rounded hover:bg-white transition-all shadow-glow-orange flex items-center justify-center gap-2">
+                            <span data-i18n="btnExplore">Explore Applications</span> <i class="fa-solid fa-arrow-down"></i>
+                        </a>
+                        <a href="/tools/energy-conversion" class="px-8 py-4 border border-white/20 text-white font-medium rounded hover:border-gas-orange hover:text-gas-orange transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-calculator"></i> <span data-i18n="btnCalc">Heat Value Calc</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="relative hidden lg:block bg-gas-card p-8 rounded-xl border border-white/10 shadow-2xl">
+                    <h3 class="text-white font-bold mb-6 text-lg" data-i18n="graphTitle">System Efficiency Comparison</h3>
+                    
+                    <div class="mb-6">
+                        <div class="flex justify-between text-xs text-gray-400 mb-2">
+                            <span>Traditional Genset</span>
+                            <span>~35% Efficiency</span>
+                        </div>
+                        <div class="h-8 w-full bg-[#111] rounded-full overflow-hidden flex">
+                            <div class="h-full bg-gas-subtext w-[35%] flex items-center justify-center text-[10px] text-black font-bold">Power 35%</div>
+                            <div class="h-full bg-red-900/20 w-[65%] flex items-center justify-center text-[10px] text-gray-500">Waste Heat 65%</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs text-gas-orange mb-2">
+                            <span class="font-bold">GasGx CHP Solution</span>
+                            <span class="font-bold">~85% Efficiency</span>
+                        </div>
+                        <div class="h-8 w-full bg-[#111] rounded-full overflow-hidden flex relative shadow-glow-orange">
+                            <div class="h-full bg-gas-green w-[35%] flex items-center justify-center text-[10px] text-black font-bold z-10">Power 35%</div>
+                            <div class="h-full bg-gas-orange w-[50%] flex items-center justify-center text-[10px] text-black font-bold z-10">Recovered Heat 50%</div>
+                            <div class="h-full bg-red-900/20 w-[15%] flex items-center justify-center text-[10px] text-gray-500 z-0">Loss</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 pt-6 border-t border-white/10 text-xs text-gray-500">
+                        <i class="fa-solid fa-info-circle mr-1"></i> <span data-i18n="graphNote">Heat captured via HRSG or Liquid Cooling Loops.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-16 px-4 bg-[#111]">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-6" data-i18n="techTitle">Technology Path</h2>
+                        <p class="text-gray-400 mb-6" data-i18n="techDesc">
+                            We deploy advanced thermal capture systems tailored to your engine type and mining setup.
+                        </p>
+                        <ul class="space-y-6">
+                            <li class="flex items-start gap-4">
+                                <div class="w-10 h-10 rounded bg-gas-orange/20 flex items-center justify-center text-gas-orange shrink-0">
+                                    <i class="fa-solid fa-fire-burner"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-white font-bold" data-i18n="tech1Title">HRSG (Exhaust Gas)</h4>
+                                    <p class="text-sm text-gray-500" data-i18n="tech1Desc">Heat Recovery Steam Generators capture 400°C+ exhaust to produce high-pressure steam for industrial use.</p>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-4">
+                                <div class="w-10 h-10 rounded bg-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
+                                    <i class="fa-solid fa-water"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-white font-bold" data-i18n="tech2Title">Liquid Cooling Loops</h4>
+                                    <p class="text-sm text-gray-500" data-i18n="tech2Desc">Plate heat exchangers recycle 60°C hot water from hydro-cooled miners for greenhouse heating or district warming.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="gas-card p-6 rounded-xl border border-white/10 flex items-center justify-center h-64 relative">
+                        <div class="flex items-center gap-2 text-xs md:text-sm">
+                            <div class="flex flex-col items-center gap-2">
+                                <div class="p-3 border border-gas-green text-gas-green rounded">Gas Engine</div>
+                            </div>
+                            <i class="fa-solid fa-arrow-right text-gray-600"></i>
+                            <div class="flex flex-col items-center gap-2">
+                                <div class="p-3 border border-gas-orange text-gas-orange rounded bg-gas-orange/10 shadow-glow-orange">Heat Recovery</div>
+                                <i class="fa-solid fa-arrow-down text-gas-orange"></i>
+                            </div>
+                            <i class="fa-solid fa-arrow-right text-gray-600"></i>
+                            <div class="flex flex-col gap-2">
+                                <span class="px-2 py-1 bg-white/5 rounded border border-white/10">🏭 Steam</span>
+                                <span class="px-2 py-1 bg-white/5 rounded border border-white/10">🥬 Agriculture</span>
+                                <span class="px-2 py-1 bg-white/5 rounded border border-white/10">❄️ Cooling</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="applications" class="py-20 px-4">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold text-white mb-4" data-i18n="appTitle">Triple Revenue Streams</h2>
+                    <p class="text-gas-subtext max-w-2xl mx-auto" data-i18n="appSubtitle">
+                        Monetize the Electron (Mining), the Molecule (Gas), and the Thermal Unit (Heat).
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8">
+                    
+                    <div class="gas-card p-8 rounded-xl group hover:border-gas-orange/50 transition-all duration-300">
+                        <div class="w-14 h-14 bg-[#111] border border-gas-orange rounded-lg flex items-center justify-center text-2xl text-gas-orange mb-6 shadow-glow-orange">
+                            <i class="fa-solid fa-industry"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-4" data-i18n="app1Title">Industrial Steam</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-6" data-i18n="app1Desc">
+                            Sell process steam to nearby factories (paper, chemical, food processing). Steam is often priced equivalent to ~$0.04/kWh, creating a stable third revenue stream independent of crypto prices.
+                        </p>
+                    </div>
+
+                    <div class="gas-card p-8 rounded-xl group hover:border-green-500/50 transition-all duration-300">
+                        <div class="w-14 h-14 bg-[#111] border border-green-500 rounded-lg flex items-center justify-center text-2xl text-green-500 mb-6 shadow-[0_0_15px_rgba(34,197,94,0.4)]">
+                            <i class="fa-solid fa-seedling"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-4" data-i18n="app2Title">Carbon Sink Agriculture</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-6" data-i18n="app2Desc">
+                            "Heat-Power-Carbon" Loop. Waste heat warms greenhouses, while scrubbed CO2 from exhaust is piped in to boost photosynthesis by 30%. 
+                            <br><span class="text-xs text-gray-500 mt-2 block italic">Ref: Genesis Digital Assets Projects.</span>
+                        </p>
+                    </div>
+
+                    <div class="gas-card p-8 rounded-xl group hover:border-cyan-500/50 transition-all duration-300">
+                        <div class="w-14 h-14 bg-[#111] border border-cyan-500 rounded-lg flex items-center justify-center text-2xl text-cyan-500 mb-6 shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                            <i class="fa-solid fa-snowflake"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-4" data-i18n="app3Title">District Cooling (CCHP)</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-6" data-i18n="app3Desc">
+                            Combined Cooling, Heat and Power. Use Absorption Chillers to convert waste heat into cooling for the data center itself or nearby buildings, significantly lowering the PUE (Power Usage Effectiveness).
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        const AppData = {
+            navigation: [
+                { title: "首页", path: "/index.html", type: "link", icon: "fa-solid fa-house" },
+                { title: "油气井/伴生气发电", path: "/solutions/oilfield", type: "link" },
+                { title: "工业园区与分布式能源", path: "/solutions/industrial", type: "link" },
+                { title: "数据中心 / 挖矿电力", path: "/solutions/mining", type: "link" },
+                { title: "热电联供 CHP", path: "/solutions/chp", type: "link", active: true }
+            ],
+
+            i18n: {
+                zh: {
+                    tagline: "天然气发电挖矿助手",
+                    heroBadge: "解决方案 / 热电联供 CHP",
+                    heroTitle: "超越电力的极致效率",
+                    heroDesc: "不要只为了发电而燃烧天然气。通过回收废热转化为蒸汽、制冷或碳汇农业，将系统综合效率从 35% 提升至 80% 以上。",
+                    btnExplore: "探索应用场景",
+                    btnCalc: "热值换算计算器",
+                    graphTitle: "系统效率对比",
+                    graphNote: "热能通过余热锅炉(HRSG)或液冷回路回收。",
+                    techTitle: "技术路径",
+                    techDesc: "我们根据您的发动机类型和挖矿设施部署先进的热能捕获系统。",
+                    tech1Title: "余热锅炉 (HRSG)",
+                    tech1Desc: "捕获 400°C+ 的高温排气，产生高压蒸汽用于工业用途。",
+                    tech2Title: "液冷热回收回路",
+                    tech2Desc: "通过板式换热器回收液冷矿机产生的 60°C 热水，用于温室供暖或区域供热。",
+                    appTitle: "三重收入来源",
+                    appSubtitle: "同时通过电子（挖矿）、分子（天然气）和热值（热能）获利。",
+                    app1Title: "工业供汽",
+                    app1Desc: "为附近的工厂（造纸、化工、食品加工）提供工艺蒸汽。蒸汽定价通常相当于 $0.04/kWh，创造了独立于加密货币价格的稳定第三重收入。",
+                    app2Title: "碳汇农业",
+                    app2Desc: "“热-电-碳”闭环。废热用于温室供暖，而燃烧产生的清洁二氧化碳被输送给植物以促进光合作用（提升30%产量）。参考案例：Genesis Digital Assets。",
+                    app3Title: "区域供冷 (CCHP)",
+                    app3Desc: "冷热电三联供。利用吸收式制冷机（Absorption Chillers）将废热转化为冷能，为数据中心自身或周边建筑降温，显著降低 PUE 值。",
+                    "首页": "首页",
+                    "油气井/伴生气发电": "油气井/伴生气发电",
+                    "工业园区与分布式能源": "工业园区与分布式能源",
+                    "数据中心 / 挖矿电力": "数据中心 / 挖矿电力",
+                    "热电联供 CHP": "热电联供 CHP"
+                },
+                en: {
+                    tagline: "Natural Gas Power Mining Assistant",
+                    heroBadge: "SOLUTIONS / CHP",
+                    heroTitle: "Efficiency Beyond",
+                    heroDesc: "Don't just burn gas for power. Capture the heat. Transform waste into steam, cooling, or carbon-negative agriculture, boosting system efficiency from 35% to over 80%.",
+                    btnExplore: "Explore Applications",
+                    btnCalc: "Heat Value Calc",
+                    graphTitle: "System Efficiency Comparison",
+                    graphNote: "Heat captured via HRSG or Liquid Cooling Loops.",
+                    techTitle: "Technology Path",
+                    techDesc: "We deploy advanced thermal capture systems tailored to your engine type and mining setup.",
+                    tech1Title: "HRSG (Exhaust Gas)",
+                    tech1Desc: "Heat Recovery Steam Generators capture 400°C+ exhaust to produce high-pressure steam for industrial use.",
+                    tech2Title: "Liquid Cooling Loops",
+                    tech2Desc: "Plate heat exchangers recycle 60°C hot water from hydro-cooled miners for greenhouse heating or district warming.",
+                    appTitle: "Triple Revenue Streams",
+                    appSubtitle: "Monetize the Electron (Mining), the Molecule (Gas), and the Thermal Unit (Heat).",
+                    app1Title: "Industrial Steam",
+                    app1Desc: "Sell process steam to nearby factories (paper, chemical, food processing). Steam is often priced equivalent to ~$0.04/kWh, creating a stable third revenue stream independent of crypto prices.",
+                    app2Title: "Carbon Sink Agriculture",
+                    app2Desc: "'Heat-Power-Carbon' Loop. Waste heat warms greenhouses, while scrubbed CO2 from exhaust is piped in to boost photosynthesis by 30%. Ref: Genesis Digital Assets.",
+                    app3Title: "District Cooling (CCHP)",
+                    app3Desc: "Combined Cooling, Heat and Power. Use Absorption Chillers to convert waste heat into cooling for the data center itself or nearby buildings, significantly lowering the PUE.",
+                    "首页": "Home",
+                    "油气井/伴生气发电": "Oil & Gas Power",
+                    "工业园区与分布式能源": "Industrial Power",
+                    "数据中心 / 挖矿电力": "Mining Power",
+                    "热电联供 CHP": "CHP"
+                },
+                ru: {
+                    tagline: "Помощник по газовому майнингу",
+                    heroBadge: "РЕШЕНИЯ / ТЭЦ (CHP)",
+                    heroTitle: "Эффективность выше",
+                    heroDesc: "Не просто сжигайте газ ради энергии. Улавливайте тепло. Превращайте отходы в пар, холод или сельское хозяйство, повышая КПД с 35% до 80%+.",
+                    btnExplore: "Применение",
+                    btnCalc: "Калькулятор тепла",
+                    graphTitle: "Сравнение эффективности",
+                    graphNote: "Тепло улавливается через КУ (HRSG) или контуры жидкостного охлаждения.",
+                    techTitle: "Технологии",
+                    techDesc: "Мы внедряем передовые системы улавливания тепла, адаптированные к вашим двигателям.",
+                    tech1Title: "Котел-утилизатор (HRSG)",
+                    tech1Desc: "Улавливает выхлоп 400°C+ для производства пара высокого давления для промышленности.",
+                    tech2Title: "Жидкостные контуры",
+                    tech2Desc: "Пластинчатые теплообменники перерабатывают горячую воду 60°C от гидро-майнеров для отопления теплиц.",
+                    appTitle: "Тройной поток доходов",
+                    appSubtitle: "Монетизируйте Электрон (Майнинг), Молекулу (Газ) и Тепло (Джоули).",
+                    app1Title: "Промышленный пар",
+                    app1Desc: "Продажа пара заводам (бумага, химия, пищепром). Цена пара эквивалентна ~$0.04/кВтч, создавая стабильный доход, независимый от крипты.",
+                    app2Title: "Углеродное земледелие",
+                    app2Desc: "Цикл «Тепло-Энергия-Углерод». Тепло греет теплицы, а очищенный CO2 ускоряет фотосинтез на 30%. Пример: Genesis Digital Assets.",
+                    app3Title: "Центральное охлаждение (CCHP)",
+                    app3Desc: "Тригенерация. Использование абсорбционных чиллеров для преобразования тепла в холод для ЦОД, значительно снижая PUE.",
+                    "首页": "Главная",
+                    "油气井/伴生气发电": "Нефтегаз",
+                    "工业园区与分布式能源": "Пром. энергия",
+                    "数据中心 / 挖矿电力": "Майнинг",
+                    "热电联供 CHP": "ТЭЦ"
+                }
+            }
+        };
+
+        const app = {
+            currentLang: 'en',
+            isMobileMenuOpen: false,
+
+            init() {
+                this.updateStaticText();
+                this.setLanguage('en');
+            },
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                
+                ['zh', 'en', 'ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+                    
+                    const activeClass = "text-black bg-gas-green shadow-glow font-bold";
+                    const inactiveClass = "text-gas-subtext hover:text-white hover:bg-white/5 font-medium";
+                    const mobActiveClass = "text-black bg-gas-green font-bold";
+                    const mobInactiveClass = "text-gray-400 font-medium";
+
+                    if (btn) btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center ${l === lang ? activeClass : inactiveClass}`;
+                    if (mobBtn) mobBtn.className = `px-4 py-2 rounded-full text-xs transition-all ${l === lang ? mobActiveClass : mobInactiveClass}`;
+                });
+
+                this.updateStaticText();
+            },
+
+            t(key) {
+                const dict = AppData.i18n[this.currentLang];
+                return (dict && dict[key]) ? dict[key] : key;
+            },
+
+            updateStaticText() {
+                const taglineEl = document.getElementById('header-tagline');
+                if(taglineEl) taglineEl.innerText = this.t('tagline');
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    el.innerText = this.t(key);
+                });
+            }
+        };
+
+        window.app = app;
+
+        app.init();
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

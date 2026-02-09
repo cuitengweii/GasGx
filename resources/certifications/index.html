@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certifications & Compliance | GasGx 认证与合规</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 20px rgba(93, 214, 44, 0.6)',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #1a1a1a 1px, transparent 1px), linear-gradient(to bottom, #1a1a1a 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body { background-color: #0F0F0F; color: #F8F8F8; font-family: 'Inter', sans-serif; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+        
+        .gas-card { background-color: rgba(32, 32, 32, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .gas-card-hover { transition: all 0.3s ease; }
+        .gas-card-hover:hover { transform: translateY(-5px); border-color: #5DD62C; box-shadow: 0 10px 30px rgba(93, 214, 44, 0.1); }
+        
+        .bg-grid { background-size: 40px 40px; mask-image: linear-gradient(to bottom, transparent, 10%, black, 90%, transparent); }
+    </style>
+    
+    <script>window.app = window.app || {};</script>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative selection:bg-gas-green selection:text-black">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-16 w-full relative">
+        <div class="absolute inset-0 bg-grid-pattern bg-grid opacity-20 pointer-events-none"></div>
+        
+        <section class="max-w-[1400px] mx-auto px-6 py-16 text-center relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gas-green/30 bg-gas-green/10 text-gas-green text-xs font-bold tracking-wider mb-6">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span data-i18n="hero_badge">GLOBAL COMPLIANCE</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold mb-6">
+                <span data-i18n="page_title_1">Certifications</span> <span class="text-gas-green" data-i18n="page_title_2">& Compliance</span>
+            </h1>
+            <p class="text-lg text-gas-subtext max-w-3xl mx-auto" data-i18n="page_desc">
+                汇集我们在环境、电力、工业安全及数字资产运营方面的核心资质，为全球合作伙伴提供透明的尽职调查依据。
+            </p>
+        </section>
+
+        <section class="max-w-[1400px] mx-auto px-6 pb-20 space-y-12">
+            
+            <div class="gas-card p-8 rounded-xl border-l-4 border-gas-green">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 rounded-full bg-gas-green/10 flex items-center justify-center text-gas-green text-xl">
+                        <i class="fa-solid fa-leaf"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white" data-i18n="sec1_title">1. 环境排放与碳减排认证</h2>
+                </div>
+                <p class="text-sm text-gas-subtext mb-6 border-b border-white/5 pb-4" data-i18n="sec1_desc">
+                    核心合规：量化“数字火炬缓解”（DFM）的温室气体减排效益，确保碳资产的“额外性”与可交易性。
+                </p>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-black/20 p-6 rounded-lg border border-white/5 hover:border-gas-green/30 transition-colors">
+                        <h3 class="text-lg font-bold text-white mb-2" data-i18n="cert1_title">[碳权] Verra VMR0016 认证</h3>
+                        <p class="text-sm text-gas-subtext mb-2" data-i18n="cert1_detail">采用 Verra 最新 VMR0016 方法学（原 ACM0001）。通过高精度流量计核证每消耗 1 吨甲烷产生的碳信用。</p>
+                        <span class="text-xs bg-gas-green/20 text-gas-green px-2 py-1 rounded">VCS Standard</span>
+                    </div>
+                    
+                    <div class="bg-black/20 p-6 rounded-lg border border-white/5 hover:border-gas-green/30 transition-colors">
+                        <h3 class="text-lg font-bold text-white mb-2" data-i18n="cert2_title">[排放] EPA Quad O / Quad Oa</h3>
+                        <p class="text-sm text-gas-subtext mb-2" data-i18n="cert2_detail">符合美国 EPA 对油气设施 VOCs 和甲烷排放的 NSPS 标准。燃气机组配备闭环控制系统，确保破坏效率 >95%。</p>
+                        <span class="text-xs bg-gas-green/20 text-gas-green px-2 py-1 rounded">EPA 40 CFR 60</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gas-card p-8 rounded-xl border-l-4 border-blue-500">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 text-xl">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white" data-i18n="sec2_title">2. 电力接入与电网规范</h2>
+                </div>
+                <p class="text-sm text-gas-subtext mb-6 border-b border-white/5 pb-4" data-i18n="sec2_desc">
+                    核心合规：针对“离网自用”与“余电上网”两种模式的合法性文件，规避非法售电风险。
+                </p>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-black/20 p-6 rounded-lg border border-white/5 hover:border-blue-500/30 transition-colors">
+                        <h3 class="text-lg font-bold text-white mb-2" data-i18n="cert3_title">[加拿大] AUC Rule 007 豁免</h3>
+                        <p class="text-sm text-gas-subtext mb-2" data-i18n="cert3_detail">针对 <10MW 的小型电厂，符合艾伯塔省 AUC 的自用（Own-Use）豁免条款，无需申请全面电厂牌照。</p>
+                        <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">Alberta AUC</span>
+                    </div>
+                    
+                    <div class="bg-black/20 p-6 rounded-lg border border-white/5 hover:border-blue-500/30 transition-colors">
+                        <h3 class="text-lg font-bold text-white mb-2" data-i18n="cert4_title">[美国] ERCOT 灵活负载注册</h3>
+                        <p class="text-sm text-gas-subtext mb-2" data-i18n="cert4_detail">在德州 ERCOT 市场注册为可中断负载资源（CLR）。参与辅助服务市场，在电价高企时关机响应。</p>
+                        <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">ERCOT CLR</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gas-card p-8 rounded-xl border-l-4 border-red-500">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 text-xl">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white" data-i18n="sec3_title">3. 工业安全与设备标准</h2>
+                </div>
+                <p class="text-sm text-gas-subtext mb-6 border-b border-white/5 pb-4" data-i18n="sec3_desc">
+                    核心合规：保障高含硫（Sour Gas）及易爆环境下的设备可靠性与人员安全。
+                </p>
+                
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="bg-black/20 p-6 rounded-lg border border-white/5 hover:border-red-500/30 transition-colors">
+                        <h3 class="text-lg font-bold text-white mb-2" data-i18n="cert5_title">[抗硫] NACE MR0175</h3>
+                        <p class="text-sm text-gas-subtext mb-2" data-i18n="cert5_detail">针对含硫化氢环境的金属材料抗裂标准。管道及阀门使用316不锈钢，防止硫化物应力开裂。</p>
+                    </div>
+                    
+                    <div class="bg-black/20 p-6 rounded-lg border border-white/5 hover:border-red-500/30 transition-colors">
+                        <h3 class="text-lg font-bold text-white mb-2" data-i18n="cert6_title">[电气] UL 2200 / CSA</h3>
+                        <p class="text-sm text-gas-subtext mb-2" data-i18n="cert6_detail">集装箱式数据中心及配电柜符合北美 NEC 电气规范，通过现场电气验收。</p>
+                    </div>
+
+                    <div class="bg-black/20 p-6 rounded-lg border border-white/5 hover:border-red-500/30 transition-colors">
+                        <h3 class="text-lg font-bold text-white mb-2" data-i18n="cert7_title">[防爆] Class I, Div 2</h3>
+                        <p class="text-sm text-gas-subtext mb-2" data-i18n="cert7_detail">靠近气源接口的电气设备符合防爆要求，确保甲烷泄漏时不会产生火花。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gas-card p-8 rounded-xl border-l-4 border-purple-500">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500 text-xl">
+                        <i class="fa-solid fa-bitcoin-sign"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white" data-i18n="sec4_title">4. 数字资产与运营牌照</h2>
+                </div>
+                <p class="text-sm text-gas-subtext mb-6 border-b border-white/5 pb-4" data-i18n="sec4_desc">
+                    核心合规：确保挖矿及资产处置业务在所在国的合法经营权。
+                </p>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-black/20 p-6 rounded-lg border border-white/5 hover:border-purple-500/30 transition-colors">
+                        <h3 class="text-lg font-bold text-white mb-2" data-i18n="cert8_title">[俄罗斯] 挖矿登记簿</h3>
+                        <p class="text-sm text-gas-subtext mb-2" data-i18n="cert8_detail">依据《数字货币挖矿法》，法人实体已在联邦税务局（FTS）的挖矿活动登记簿中注册，不仅限于工业配额。</p>
+                        <span class="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">FTS Registry</span>
+                    </div>
+                    
+                    <div class="bg-black/20 p-6 rounded-lg border border-white/5 hover:border-purple-500/30 transition-colors">
+                        <h3 class="text-lg font-bold text-white mb-2" data-i18n="cert9_title">[哈萨克斯坦] AIFC 牌照</h3>
+                        <p class="text-sm text-gas-subtext mb-2" data-i18n="cert9_detail">在阿斯塔纳国际金融中心（AIFC）持有数字资产经营牌照，并将部分算力接入国家矿池。</p>
+                        <span class="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">AIFC License</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        const I18N_DATA = {
+            'zh': {
+                'tagline': '天然气发电挖矿助手',
+                'nav_home': '首页',
+                'nav_datasheets': '技术参数表',
+                'nav_certs': '认证与合规文件',
+                'hero_badge': '全球合规',
+                'page_title_1': '认证与',
+                'page_title_2': '合规文件',
+                'page_desc': '汇集我们在环境、电力、工业安全及数字资产运营方面的核心资质，为全球合作伙伴提供透明的尽职调查依据。',
+                
+                // Sec 1
+                'sec1_title': '1. 环境排放与碳减排认证',
+                'sec1_desc': '核心合规：量化“数字火炬缓解”（DFM）的温室气体减排效益，确保碳资产的“额外性”与可交易性。',
+                'cert1_title': '[碳权] Verra VMR0016 认证',
+                'cert1_detail': '采用 Verra 最新 VMR0016 方法学（原 ACM0001）。通过高精度流量计核证每消耗 1 吨甲烷产生的碳信用。',
+                'cert2_title': '[排放] EPA Quad O / Quad Oa',
+                'cert2_detail': '符合美国 EPA 对油气设施 VOCs 和甲烷排放的 NSPS 标准。燃气机组配备闭环控制系统，确保破坏效率 >95%。',
+
+                // Sec 2
+                'sec2_title': '2. 电力接入与电网规范',
+                'sec2_desc': '核心合规：针对“离网自用”与“余电上网”两种模式的合法性文件，规避非法售电风险。',
+                'cert3_title': '[加拿大] AUC Rule 007 豁免',
+                'cert3_detail': '针对 <10MW 的小型电厂，符合艾伯塔省 AUC 的自用（Own-Use）豁免条款，无需申请全面电厂牌照。',
+                'cert4_title': '[美国] ERCOT 灵活负载注册',
+                'cert4_detail': '在德州 ERCOT 市场注册为可中断负载资源（CLR）。参与辅助服务市场，在电价高企时关机响应。',
+
+                // Sec 3
+                'sec3_title': '3. 工业安全与设备标准',
+                'sec3_desc': '核心合规：保障高含硫（Sour Gas）及易爆环境下的设备可靠性与人员安全。',
+                'cert5_title': '[抗硫] NACE MR0175',
+                'cert5_detail': '针对含硫化氢环境的金属材料抗裂标准。管道及阀门使用316不锈钢，防止硫化物应力开裂。',
+                'cert6_title': '[电气] UL 2200 / CSA',
+                'cert6_detail': '集装箱式数据中心及配电柜符合北美 NEC 电气规范，通过现场电气验收。',
+                'cert7_title': '[防爆] Class I, Div 2',
+                'cert7_detail': '靠近气源接口的电气设备符合防爆要求，确保甲烷泄漏时不会产生火花。',
+
+                // Sec 4
+                'sec4_title': '4. 数字资产与运营牌照',
+                'sec4_desc': '核心合规：确保挖矿及资产处置业务在所在国的合法经营权。',
+                'cert8_title': '[俄罗斯] 挖矿登记簿',
+                'cert8_detail': '依据《数字货币挖矿法》，法人实体已在联邦税务局（FTS）的挖矿活动登记簿中注册。',
+                'cert9_title': '[哈萨克斯坦] AIFC 牌照',
+                'cert9_detail': '在阿斯塔纳国际金融中心（AIFC）持有数字资产经营牌照，并将部分算力接入国家矿池。',
+
+                'footerTagline': '让天然气发电挖矿更简单',
+                'contact_us': '联系我们',
+                'privacy_policy': '隐私政策'
+            },
+            'en': {
+                'tagline': 'Natural Gas Power Mining Assistant',
+                'nav_home': 'Home',
+                'nav_datasheets': 'Datasheets',
+                'nav_certs': 'Certifications',
+                'hero_badge': 'GLOBAL COMPLIANCE',
+                'page_title_1': 'Certifications',
+                'page_title_2': '& Compliance',
+                'page_desc': 'Aggregating our core qualifications in environmental, power, industrial safety, and digital asset operations for transparent due diligence.',
+                
+                // Sec 1
+                'sec1_title': '1. Environmental & Carbon',
+                'sec1_desc': 'Quantifying GHG reduction benefits of DFM, ensuring "additionality" and tradability of carbon assets.',
+                'cert1_title': '[Carbon] Verra VMR0016',
+                'cert1_detail': 'Adopting Verra\'s latest VMR0016 methodology. Verifying carbon credits via high-precision flow meters.',
+                'cert2_title': '[Emission] EPA Quad O / Quad Oa',
+                'cert2_detail': 'Compliant with US EPA NSPS for VOCs/Methane. Gensets equipped with closed-loop control for >95% destruction efficiency.',
+
+                // Sec 2
+                'sec2_title': '2. Grid & Power Access',
+                'sec2_desc': 'Legitimacy documents for "Off-grid Own-Use" and "Grid Export" models, avoiding illegal power sales risks.',
+                'cert3_title': '[Canada] AUC Rule 007 Exemption',
+                'cert3_detail': 'For <10MW plants, meeting Alberta AUC "Own-Use" exemption, bypassing full power plant licensing.',
+                'cert4_title': '[USA] ERCOT Flexible Load',
+                'cert4_detail': 'Registered as Controllable Load Resource (CLR) in ERCOT. Participating in ancillary services markets.',
+
+                // Sec 3
+                'sec3_title': '3. Industrial Safety',
+                'sec3_desc': 'Ensuring equipment reliability and personnel safety in high H2S (Sour Gas) and explosive environments.',
+                'cert5_title': '[Sour Gas] NACE MR0175',
+                'cert5_detail': 'Material standard for H2S environments. Using 316 stainless steel to prevent Sulfide Stress Cracking (SSC).',
+                'cert6_title': '[Electric] UL 2200 / CSA',
+                'cert6_detail': 'Mining containers and switchgear meet North American NEC codes, passing on-site electrical inspections.',
+                'cert7_title': '[Explosion] Class I, Div 2',
+                'cert7_detail': 'Electrical equipment near gas source meets explosion-proof requirements to prevent sparks.',
+
+                // Sec 4
+                'sec4_title': '4. Digital Assets License',
+                'sec4_desc': 'Ensuring legal operation rights for mining and asset disposal in host countries.',
+                'cert8_title': '[Russia] Mining Register',
+                'cert8_detail': 'Registered in the Federal Tax Service (FTS) mining activity register under the new Digital Currency Mining Law.',
+                'cert9_title': '[Kazakhstan] AIFC License',
+                'cert9_detail': 'Holding digital asset operation license in Astana International Financial Centre (AIFC).',
+
+                'footerTagline': 'Making natural gas power mining easier',
+                'contact_us': 'Contact Us',
+                'privacy_policy': 'Privacy Policy'
+            },
+            'ru': {
+                'tagline': 'Помощник по майнингу на газе',
+                'nav_home': 'Главная',
+                'nav_datasheets': 'Техпаспорт',
+                'nav_certs': 'Сертификаты',
+                'hero_badge': 'ГЛОБАЛЬНЫЙ КОМПЛАЕНС',
+                'page_title_1': 'Сертификация',
+                'page_title_2': 'и Стандарты',
+                'page_desc': 'Наши ключевые квалификации в области экологии, энергетики, промбезопасности и цифровых активов.',
+                
+                // Sec 1
+                'sec1_title': '1. Экология и Углерод',
+                'sec1_desc': 'Квантификация сокращения выбросов DFM, обеспечение «дополнительности» углеродных активов.',
+                'cert1_title': '[Карбон] Verra VMR0016',
+                'cert1_detail': 'Методология Verra VMR0016. Верификация углеродных кредитов через высокоточные расходомеры.',
+                'cert2_title': '[Выбросы] EPA Quad O / Quad Oa',
+                'cert2_detail': 'Соответствие стандартам США EPA NSPS. Эффективность уничтожения метана >95%.',
+
+                // Sec 2
+                'sec2_title': '2. Доступ к Электросетям',
+                'sec2_desc': 'Легализация моделей «Островной режим» и «Экспорт в сеть», исключение рисков незаконной продажи.',
+                'cert3_title': '[Канада] Исключение AUC Rule 007',
+                'cert3_detail': 'Для станций <10МВт, соответствие критерию «Собственное использование» в Альберте.',
+                'cert4_title': '[США] Гибкая нагрузка ERCOT',
+                'cert4_detail': 'Регистрация как CLR в ERCOT (Техас). Участие в рынке вспомогательных услуг.',
+
+                // Sec 3
+                'sec3_title': '3. Промышленная Безопасность',
+                'sec3_desc': 'Надежность оборудования в средах с высоким содержанием сероводорода (H2S).',
+                'cert5_title': '[H2S] NACE MR0175',
+                'cert5_detail': 'Стандарт материалов для кислого газа. Использование нерж. стали 316 против растрескивания.',
+                'cert6_title': '[Электрика] UL 2200 / CSA',
+                'cert6_detail': 'Контейнеры соответствуют нормам NEC Северной Америки, прошли инспекцию.',
+                'cert7_title': '[Взрывозащита] Class I, Div 2',
+                'cert7_detail': 'Электрооборудование у устья скважины соответствует взрывозащищенным требованиям.',
+
+                // Sec 4
+                'sec4_title': '4. Лицензии на ЦФА',
+                'sec4_desc': 'Обеспечение законных прав на майнинг и распоряжение активами.',
+                'cert8_title': '[Россия] Реестр майнинга',
+                'cert8_detail': 'Регистрация в реестре майнинговой деятельности ФНС согласно новому закону.',
+                'cert9_title': '[Казахстан] Лицензия МФЦА',
+                'cert9_detail': 'Лицензия на операции с цифровыми активами в Международном финансовом центре «Астана».',
+
+                'footerTagline': 'Майнинг на газе стал проще',
+                'contact_us': 'Контакты',
+                'privacy_policy': 'Политика конфиденциальности'
+            }
+        };
+
+        window.app = {
+            lang: localStorage.getItem('gas_lang') || 'en',
+            
+            init() {
+                this.setLanguage(this.lang);
+            },
+
+            setLanguage(lang) {
+                this.lang = lang;
+                localStorage.setItem('gas_lang', lang);
+                const dict = I18N_DATA[lang] || I18N_DATA['en'];
+
+                ['zh','en','ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    if(btn) {
+                        if (l === lang) {
+                            btn.classList.remove('text-gas-subtext', 'font-medium');
+                            btn.classList.add('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                        } else {
+                            btn.classList.remove('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                            btn.classList.add('text-gas-subtext', 'font-medium');
+                        }
+                    }
+                });
+
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key]) {
+                        const icon = el.querySelector('i');
+                        if (icon) {
+                            el.innerHTML = ''; 
+                            el.appendChild(icon);
+                            el.append(' ' + dict[key]);
+                        } else {
+                            el.innerText = dict[key];
+                        }
+                    }
+                });
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => window.app.init());
+        } else {
+            window.app.init();
+        }
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

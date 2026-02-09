@@ -1,0 +1,205 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GasGx Twin - Edge Alignment Fix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'hud-black': '#0a0a0a',
+                        'hud-green': '#4ade80',
+                    },
+                    fontFamily: {
+                        'sans': ['"Rajdhani"', 'sans-serif'],
+                        'mono': ['"Share Tech Mono"', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* --- 全局布局设定 --- */
+        body, html { background-color: #000; margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; touch-action: none; }
+        
+        #portrait-warning { position: fixed; inset: 0; z-index: 9999; background: #000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        @media (orientation: portrait) { #portrait-warning { display: flex; } #app-scaler { opacity: 0; pointer-events: none; } }
+
+        #app-scaler { position: absolute; top: 50%; left: 50%; width: 1920px; height: 1080px; transform-origin: center center; transform: translate(-50%, -50%); overflow: hidden; transition: transform 0.1s ease-out; }
+
+        /* --- 机器层 (48% 锁定) --- */
+        #machine-layer { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            width: 48%; z-index: 1; opacity: 0.9;
+            filter: drop-shadow(0 0 10px rgba(74, 222, 128, 0.3));
+        }
+
+        #scanner-effect { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; overflow: hidden; }
+        #scanner-bar {
+            position: absolute; top: -10%; left: 0; width: 100%; height: 20px;
+            background: linear-gradient(to bottom, transparent, rgba(74, 222, 128, 0.5), transparent);
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.8), 0 0 40px rgba(74, 222, 128, 0.4);
+            opacity: 0.7; animation: scanMove 5s linear infinite;
+        }
+        @keyframes scanMove { 0% { top: -10%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 110%; opacity: 0; } }
+
+        /* --- 连线层 --- */
+        .svg-layer { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        .conn-line { fill: none; stroke: #4ade80; stroke-width: 2; stroke-linecap: round; opacity: 0.8; stroke-dasharray: 4 3; animation: flow 1s linear infinite; filter: drop-shadow(0 0 3px currentColor); }
+        @keyframes flow { to { stroke-dashoffset: -7; } }
+        .conn-dot { r: 4; fill: #4ade80; filter: drop-shadow(0 0 5px currentColor); animation: pulse 2s infinite; }
+
+        /* --- UI 卡片 --- */
+        .hud-card { position: absolute; background: rgba(5, 10, 15, 0.9); border: 1px solid var(--border-color, #333); border-radius: 6px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 20; overflow: hidden; }
+        .hud-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; opacity: 0.9; color: inherit; }
+        .hud-val { font-family: 'Share Tech Mono'; font-weight: 700; line-height: 1; }
+        
+        .theme-green { --border-color: rgba(74, 222, 128, 0.3); color: #4ade80; }
+
+        .chart-container { position: relative; width: 100%; height: 300px; }
+        .chart-bg { background-image: linear-gradient(rgba(74, 222, 128, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(74, 222, 128, 0.05) 1px, transparent 1px); background-size: 20px 20px; border: 1px solid rgba(74, 222, 128, 0.1); }
+        .ecu-terminal { font-family: 'Share Tech Mono'; font-size: 11px; line-height: 1.4; opacity: 0.8; height: 100px; overflow: hidden; mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 100%); display: flex; flex-direction: column-reverse; }
+        .oil-circle { width: 80px; height: 80px; border-radius: 50%; border: 4px solid rgba(74, 222, 128, 0.1); position: relative; display: flex; justify-content: center; align-items: center; }
+        .oil-circle::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 4px solid transparent; border-top-color: #4ade80; border-right-color: #4ade80; transform: rotate(-45deg); }
+        .oil-inner { width: 60px; height: 60px; border-radius: 50%; background: rgba(74, 222, 128, 0.1); display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; color: #4ade80; }
+
+    </style>
+</head>
+<body>
+
+    <div id="portrait-warning">
+        <div class="animate-bounce mb-4 text-hud-green text-5xl"><i class="fa-solid fa-rotate"></i></div>
+        <h2 class="text-2xl font-bold text-white mb-2 tracking-widest">请旋转手机</h2>
+        <p class="text-gray-500 text-sm">横屏浏览以获取最佳数字孪生体验</p>
+    </div>
+
+    <div id="app-scaler">
+        
+        <img id="machine-layer" src="image_23.png" alt="Digital Twin Machine Wireframe">
+        <div id="scanner-effect"><div id="scanner-bar"></div></div>
+
+        <svg class="svg-layer">
+            <path class="conn-line" d="M 340 200 L 550 200 L 607 348" />
+            <circle cx="607" cy="348" class="conn-dot" />
+            
+            <path class="conn-line" d="M 340 910 L 550 910 L 604 533" />
+            <circle cx="604" cy="533" class="conn-dot" />
+
+            <path class="conn-line" d="M 1640 130 L 1200 130 L 1050 380" />
+            <circle cx="1050" cy="380" class="conn-dot" />
+
+            <path class="conn-line" d="M 1640 250 L 1300 250 L 1200 480" />
+            <circle cx="1200" cy="480" class="conn-dot" />
+
+            <path class="conn-line" d="M 1640 420 L 1400 420 L 1297 521" />
+            <circle cx="1297" cy="521" class="conn-dot" />
+            
+            <path class="conn-line" d="M 1640 580 L 1350 580 L 1250 620" />
+            <circle cx="1250" cy="620" class="conn-dot" />
+
+            <path class="conn-line" d="M 1640 720 L 1350 720 L 1200 750" />
+            <circle cx="1200" cy="750" class="conn-dot" />
+
+            <path class="conn-line" d="M 960 150 L 960 250 L 918 250 L 918 344" />
+            <circle cx="918" cy="344" class="conn-dot" />
+
+            <path class="conn-line" d="M 620 900 L 820 900 L 820 620" />
+            <circle cx="820" cy="620" class="conn-dot" />
+
+            <path class="conn-line" d="M 700 920 L 700 850 L 914 850 L 914 765" />
+            <circle cx="914" cy="765" class="conn-dot" />
+
+            <path class="conn-line" d="M 1060 1000 L 1150 1000 L 1150 700" />
+            <circle cx="1150" cy="700" class="conn-dot" />
+        </svg>
+
+        <div class="hud-card theme-green" style="top: 80px; left: 40px; width: 300px; height: 350px;">
+            <div class="hud-title">POWER GENERATION CURVE</div>
+            <div class="chart-container chart-bg p-1"><canvas id="powerChart"></canvas></div>
+        </div>
+        
+        <div class="hud-card theme-green" style="bottom: 80px; left: 40px; width: 300px; height: 180px;">
+            <div class="flex justify-between items-center mb-2"><div class="hud-title">ECU STREAM</div><div class="text-[9px] animate-pulse">● LIVE</div></div>
+            <div class="ecu-terminal" id="ecu-logs"></div>
+        </div>
+
+        <div class="hud-card theme-green text-center" style="top: 80px; left: 50%; transform: translateX(-50%);">
+            <div class="hud-title">EXHAUST TEMP</div><div class="hud-val text-5xl" id="val-exh">518</div><div class="text-sm opacity-70">°C</div>
+        </div>
+        
+        <div class="hud-card theme-green" style="bottom: 180px; left: 32%;">
+            <div class="hud-title">OIL PRESSURE:</div><div class="flex items-baseline gap-1"><span class="hud-val text-4xl" id="val-oil">4.7</span><span class="text-sm">Bar</span></div>
+        </div>
+        
+        <div class="hud-card theme-green" style="bottom: 80px; left: 32%;">
+            <div class="hud-title">ENGINE RPM:</div><div class="flex items-baseline gap-1"><span class="hud-val text-4xl" id="val-rpm">1503</span><span class="text-sm">r/min</span></div>
+        </div>
+        
+        <div class="hud-card theme-green" style="bottom: 80px; left: 55%;">
+            <div class="hud-title">AMBIENT TEMP:</div><div class="flex items-baseline gap-1 mb-2"><span class="hud-val text-4xl" id="val-amb">24.5</span><span class="text-sm">°C</span></div><div class="flex justify-between items-center border-t border-blue-400/30 pt-1"><span class="text-xs opacity-70">HUMIDITY:</span><span class="hud-val text-xl" id="val-hum">58%</span></div>
+        </div>
+        
+        <div class="hud-card theme-green" style="top: 80px; right: 40px; width: 280px; text-align: right;">
+            <div class="hud-title">CURRENT OUTPUT POWER</div><div class="flex justify-end items-baseline gap-2"><span class="hud-val text-6xl" id="val-pwr">1523</span><span class="text-xl opacity-70">kW</span></div>
+        </div>
+        
+        <div class="hud-card theme-green" style="top: 220px; right: 40px; width: 280px;">
+            <div class="hud-title">MAINTENANCE COUNTDOWN</div><div class="flex items-baseline gap-2 mt-1"><span class="hud-val text-5xl" id="val-days">183</span><span class="text-xl opacity-70">DAYS</span></div><div class="w-full h-2 bg-gray-800 rounded-full mt-3 overflow-hidden"><div class="h-full bg-green-400 w-[60%] rounded-full"></div></div>
+        </div>
+        
+        <div class="hud-card theme-green flex items-center gap-6" style="top: 380px; right: 40px; width: 280px;">
+            <div class="oil-circle"><div class="oil-inner">NORMAL</div></div><div><div class="hud-title">OIL LEVEL:</div><div class="text-xs opacity-60 mt-1">CONSUMPTION RATIO:</div><div class="hud-val text-xl">0.8g/kWh</div></div>
+        </div>
+        
+        <div class="hud-card theme-green" style="top: 540px; right: 40px; width: 280px;">
+            <div class="hud-title">WATER TEMP:</div><div class="flex items-baseline gap-1"><span class="hud-val text-5xl" id="val-water">88.6</span><span class="text-xl opacity-70">°C</span></div>
+        </div>
+        
+        <div class="hud-card theme-green" style="top: 680px; right: 40px; width: 280px;">
+            <div class="hud-title">VOLTAGE OUTPUT:</div><div class="flex items-baseline gap-1"><span class="hud-val text-5xl" id="val-volt">400 V</span></div><div class="text-right text-sm opacity-70">50.0 Hz</div>
+        </div>
+
+    </div>
+
+    <script>
+        function fitScreen() {
+            const scaler = document.getElementById('app-scaler');
+            const targetW = 1920; const targetH = 1080;
+            const winW = window.innerWidth; const winH = window.innerHeight;
+            let scale = Math.min(winW / targetW, winH / targetH);
+            scaler.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        }
+        window.addEventListener('resize', fitScreen); window.addEventListener('load', fitScreen);
+
+        const ctx = document.getElementById('powerChart').getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(74, 222, 128, 0.4)'); gradient.addColorStop(1, 'rgba(74, 222, 128, 0)');
+        const powerChart = new Chart(ctx, { type: 'line', data: { labels: Array(30).fill(''), datasets: [{ data: Array(30).fill(1500), borderColor: '#4ade80', borderWidth: 2, backgroundColor: gradient, pointRadius: 0, fill: true, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: false }, scales: { x: { display: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false } }, y: { display: true, min: 1400, max: 1600, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#888', font: { size: 14, family: 'Share Tech Mono' } } } }, animation: false });
+
+        function initECU() {
+            const logContainer = document.getElementById('ecu-logs');
+            const initLogs = ["[INFO] System Boot Sequence Initiated...", "[INFO] Loading Kernel Modules... OK", "[INFO] Connecting to Sensor Grid... SUCCESS", "[DATA] Initial Stream Buffer: 0x8F44"];
+            initLogs.forEach(msg => { const p = document.createElement('div'); p.style.marginBottom = "2px"; p.innerText = msg; logContainer.prepend(p); });
+        }
+        window.addEventListener('DOMContentLoaded', initECU);
+
+        function updateData() {
+            const rand = (b, v) => Math.floor(b + (Math.random()-0.5)*v);
+            const randF = (b, v) => (b + (Math.random()-0.5)*v).toFixed(1);
+            const pwr = rand(1523, 15); document.getElementById('val-pwr').innerText = pwr; document.getElementById('val-exh').innerText = rand(518, 4); document.getElementById('val-oil').innerText = randF(4.7, 0.1); document.getElementById('val-rpm').innerText = rand(1503, 5); document.getElementById('val-amb').innerText = randF(24.5, 0.2); document.getElementById('val-hum').innerText = rand(58, 2) + '%'; document.getElementById('val-water').innerText = randF(88.6, 0.3); document.getElementById('val-volt').innerText = rand(400, 2) + " V";
+            const d = powerChart.data.datasets[0].data; d.shift(); d.push(pwr); powerChart.update();
+            const logContainer = document.getElementById('ecu-logs'); const logs = ["[INFO] System Check: OK", "[INFO] Core Temp: Nominal", "[DATA] Sensor latency: 12ms", "[INFO] Fuel Injection: 98%", "[WARN] Minor vib in Sec-B"]; if(Math.random() > 0.5) { const p = document.createElement('div'); p.style.marginBottom = "2px"; p.innerText = logs[Math.floor(Math.random()*logs.length)]; logContainer.prepend(p); if(logContainer.children.length > 8) logContainer.removeChild(logContainer.lastChild); }
+        }
+        setInterval(updateData, 800); updateData();
+    </script>
+<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,510 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx POWER-GEN | SCADA SYSTEM V4.0</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;700&family=Share+Tech+Mono&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // 工业调色板
+                        ind: { 
+                            bg: '#080a0e',        // 深空黑
+                            panel: '#11141a',     // 控制面板灰
+                            border: '#2a313c',    // 结构边框
+                            accent: '#ff9f1c',    // 安全橙 (Safety Orange) - 高亮/警告
+                            cyan: '#00dde6',      // 工业青 (Technical Cyan) - 数据读数
+                            steel: '#607d8b',     // 钢结构色
+                            alert: '#ff3333'      // 故障红
+                        }
+                    },
+                    fontFamily: {
+                        // 字体映射
+                        machine: ['Chakra Petch', 'sans-serif'], // 机械铭牌感
+                        data: ['Share Tech Mono', 'monospace'],  // 数据终端感
+                        hud: ['Rajdhani', 'sans-serif'],         // 平视显示器感
+                    },
+                    backgroundImage: {
+                        // 背景纹理：蓝图网格 + 碳纤维
+                        'blueprint-grid': "linear-gradient(to right, rgba(0, 221, 230, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 221, 230, 0.05) 1px, transparent 1px)",
+                        'carbon-fiber': "repeating-linear-gradient(45deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 2px, transparent 2px, transparent 4px)",
+                        'scanlines': "linear-gradient(to bottom, rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%)"
+                    },
+                    boxShadow: {
+                        'neon-orange': '0 0 10px rgba(255, 159, 28, 0.3), inset 0 0 5px rgba(255, 159, 28, 0.1)',
+                        'neon-cyan': '0 0 10px rgba(0, 221, 230, 0.3), inset 0 0 5px rgba(0, 221, 230, 0.1)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body { 
+            background-color: #080a0e; 
+            color: #cdd6e0; 
+            font-family: 'Chakra Petch', sans-serif;
+            /* 复合工业背景 */
+            background-image: var(--tw-bg-image-blueprint-grid), radial-gradient(circle at center, #11141a 0%, #080a0e 100%);
+            background-size: 40px 40px, 100% 100%;
+            position: relative;
+        }
+
+        /* CRT 显示器扫描线效果 */
+        body::after {
+            content: ""; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: var(--tw-bg-image-scanlines); background-size: 100% 4px;
+            pointer-events: none; opacity: 0.15; z-index: 9999;
+        }
+
+        /* 工业切角 (Chamfered Corners) */
+        .tech-clip { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%); }
+        .tech-clip-top { clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px); }
+
+        /* 数据闪烁动画 */
+        .data-blink { animation: blink-animation 2s infinite; }
+        @keyframes blink-animation { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        /* 滚动条机械化 */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #080a0e; border: 1px solid #2a313c; }
+        ::-webkit-scrollbar-thumb { background: #2a313c; border: 1px solid #ff9f1c; }
+        ::-webkit-scrollbar-thumb:hover { background: #ff9f1c; }
+
+        /* 仪表盘进度条 */
+        .gauge-bar-container { background: #1a1e24; height: 8px; border: 1px solid #2a313c; position: relative; overflow: hidden; }
+        .gauge-bar-fill { height: 100%; background: linear-gradient(90deg, #ff9f1c, #ff4d00); position: absolute; left: 0; top: 0; transition: width 1s ease-in-out; }
+        .gauge-bar-fill.cyan { background: linear-gradient(90deg, #00dde6, #0099ff); }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen overflow-x-hidden">
+
+    <header class="fixed top-0 w-full z-50 bg-[#080a0ef2] border-b-2 border-ind-border h-18 backdrop-blur-md shadow-neon-orange/20">
+        <div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-ind-accent to-transparent opacity-70"></div>
+        
+        <div class="max-w-[1920px] mx-auto px-6 h-full flex justify-between items-center">
+            <div class="flex items-center gap-10 h-full">
+                <a href="/news/index.html" class="flex items-center gap-3 group relative pl-2">
+                    <div class="absolute left-0 h-8 w-[3px] bg-ind-accent group-hover:h-full transition-all duration-300"></div>
+                    <i class="fa-solid fa-gears text-3xl text-ind-accent animate-spin-slow opacity-80"></i>
+                    <div class="flex flex-col">
+                        <span class="text-2xl font-machine font-bold text-white tracking-tighter leading-none uppercase">GasGx <span class="text-ind-accent">POWER</span></span>
+                        <span class="text-[9px] font-data text-ind-cyan tracking-[0.3em] uppercase">SCADA SYSTEM V4.0</span>
+                    </div>
+                </a>
+
+                <nav id="desktop-nav" class="hidden xl:flex items-center gap-2 h-10 p-1 bg-ind-panel border border-ind-border rounded-sm">
+                    </nav>
+            </div>
+            
+            <div class="hidden lg:flex items-center gap-6 font-data text-xs border-l border-ind-border pl-6">
+                <div class="flex flex-col items-end">
+                    <span class="text-ind-steel uppercase text-[9px]">Grid Voltage (kV)</span>
+                    <span class="text-ind-cyan font-bold text-base data-blink">13.8 <i class="fa-solid fa-bolt text-[10px]"></i></span>
+                </div>
+                <div class="flex flex-col items-end">
+                    <span class="text-ind-steel uppercase text-[9px]">Frequency (Hz)</span>
+                    <span class="text-white font-bold text-base">59.9<span class="text-xs">8</span></span>
+                </div>
+                 <div class="flex flex-col items-end">
+                    <span class="text-ind-steel uppercase text-[9px]">Total Load (MW)</span>
+                    <span class="text-ind-accent font-bold text-base">4,520</span>
+                </div>
+                <div class="ml-4 border border-ind-accent/50 p-1 px-2 bg-ind-accent/10 flex items-center gap-2">
+                    <div class="w-2 h-2 bg-ind-accent rounded-full animate-pulse"></div>
+                    <span class="text-ind-accent font-bold tracking-wider">ONLINE</span>
+                </div>
+            </div>
+            <button class="lg:hidden text-ind-accent border border-ind-accent p-2 tech-clip hover:bg-ind-accent hover:text-black transition-colors"><i class="fa-solid fa-bars"></i></button>
+        </div>
+    </header>
+
+    <main class="flex-grow w-full max-w-[1920px] mx-auto pt-24 pb-12 px-4 lg:px-8 flex flex-col gap-8">
+        
+        <div class="w-full bg-ind-panel border-y border-ind-border py-1 flex items-center overflow-hidden relative font-data text-xs">
+             <div class="flex items-center gap-2 px-4 shrink-0 text-ind-accent font-bold border-r border-ind-border z-10 bg-ind-panel">
+                 <i class="fa-solid fa-terminal"></i> RAW_STREAM >_
+             </div>
+             <div id="live-data-container" class="animate-marquee whitespace-nowrap flex items-center gap-12 px-4 text-ind-cyan tracking-wider opacity-80">
+                 <span>INITIALIZING DATA LINK... AWAITING PACKETS...</span>
+             </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto lg:h-[480px]">
+            <div id="hero-monitor" class="lg:col-span-9 bg-ind-panel border-2 border-ind-border relative overflow-hidden group tech-clip shadow-neon-cyan/10">
+                <div class="absolute inset-0 flex flex-col items-center justify-center font-data text-ind-cyan z-20 pointer-events-none" id="hero-loading">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-2"></i>
+                    <span>ESTABLISHING CONNECTION TO UNIT #01...</span>
+                </div>
+                <div id="hero-content" class="absolute inset-0 opacity-0 transition-opacity duration-500"></div>
+                <div class="absolute inset-0 bg-blueprint-grid opacity-30 pointer-events-none z-10"></div>
+                <div class="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-ind-bg to-transparent z-10 pointer-events-none"></div>
+            </div>
+
+            <div class="lg:col-span-3 flex flex-col gap-4">
+                <div class="bg-ind-panel border-b-2 border-ind-accent p-3 flex justify-between items-center">
+                    <h3 class="text-sm font-bold font-machine uppercase text-white"><i class="fa-solid fa-server mr-2 text-ind-accent"></i>Fleet Capacity</h3>
+                    <span class="text-[10px] font-data text-ind-cyan animate-pulse">LIVE</span>
+                </div>
+                
+                <div class="flex-1 bg-ind-panel border border-ind-border p-4 flex flex-col justify-around space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs font-data mb-1"><span class="text-ind-steel">Aero-Deriv. GTs</span><span class="text-ind-cyan">85% Load</span></div>
+                        <div class="gauge-bar-container"><div class="gauge-bar-fill cyan" style="width: 85%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-data mb-1"><span class="text-ind-steel">Heavy Duty GTs</span><span class="text-ind-accent">92% Load</span></div>
+                        <div class="gauge-bar-container"><div class="gauge-bar-fill" style="width: 92%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-data mb-1"><span class="text-ind-steel">Recip. Engines</span><span class="text-ind-steel">60% Load</span></div>
+                        <div class="gauge-bar-container"><div class="gauge-bar-fill bg-ind-steel" style="width: 60%; background: #607d8b;"></div></div>
+                    </div>
+                </div>
+
+                 <div class="bg-ind-panel border border-ind-border p-4 relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 text-8xl text-ind-border opacity-20"><i class="fa-solid fa-chart-line"></i></div>
+                    <div class="text-xs font-machine uppercase text-ind-steel mb-2">Spark Spread Index (SSI)</div>
+                    <div class="text-3xl font-data font-bold text-white">$18.45 <span class="text-sm text-ind-steel">/MWh</span></div>
+                    <div class="text-xs font-data text-ind-cyan mt-1"><i class="fa-solid fa-caret-up"></i> +1.2% (24h)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <div class="lg:col-span-9 flex flex-col gap-6">
+                <div class="flex flex-wrap items-center justify-between border-b border-ind-border pb-2 mb-2">
+                    <div class="flex gap-2" id="feed-tabs">
+                        </div>
+                    <div class="font-data text-xs text-ind-steel hidden md:block">[MODE: DETAILED LOGS]</div>
+                </div>
+
+                <div id="news-feed-container" class="flex flex-col gap-4 min-h-[500px]">
+                    </div>
+                
+                <div class="text-center py-8 border-t border-dashed border-ind-border">
+                    <button id="load-more-btn" onclick="window.app.loadMore()" class="group relative overflow-hidden bg-ind-panel border border-ind-accent text-ind-accent font-machine font-bold text-sm uppercase px-8 py-3 tech-clip hover:bg-ind-accent hover:text-black transition-all">
+                        <span class="relative z-10 flex items-center gap-2"><i class="fa-solid fa-download"></i> Load Archived Logs</span>
+                        <div class="absolute inset-0 h-full w-0 bg-ind-accent transition-all duration-300 group-hover:w-full z-0"></div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3 flex flex-col gap-6 sticky top-24">
+                
+                <div class="bg-ind-panel border border-ind-border p-4 tech-clip-top">
+                    <h4 class="text-sm font-machine uppercase text-white border-b border-ind-border pb-2 mb-4">Live Monitoring</h4>
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <div class="flex justify-between text-xs font-data mb-1"><span class="text-ind-steel">Avg. Exhaust Temp.</span><span class="text-ind-alert font-bold">585°C</span></div>
+                            <div class="gauge-bar-container"><div class="gauge-bar-fill" style="width: 88%; background: linear-gradient(90deg, #ff9f1c, #ff3333);"></div></div>
+                             <span class="absolute top-0 right-0 -mt-1 mr-1 text-[8px] text-ind-alert animate-pulse">HIGH</span>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-data mb-1"><span class="text-ind-steel">Vibration Level</span><span class="text-ind-cyan">1.2 mm/s</span></div>
+                            <div class="gauge-bar-container"><div class="gauge-bar-fill cyan" style="width: 30%"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-ind-panel border border-ind-border overflow-hidden">
+                    <div class="bg-ind-border/30 p-2 px-3 text-xs font-machine uppercase text-ind-steel">Reference Data: GT Models</div>
+                    <table class="w-full text-[10px] font-data text-left">
+                        <thead class="bg-ind-bg text-ind-steel">
+                            <tr><th class="p-2">Model</th><th class="p-2">Output</th><th class="p-2">Eff. (%)</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-ind-border">
+                            <tr><td class="p-2 font-bold text-ind-cyan">LM6000 PF+</td><td class="p-2">55 MW</td><td class="p-2">42.5%</td></tr>
+                            <tr><td class="p-2 font-bold text-ind-cyan">7HA.03</td><td class="p-2">430 MW</td><td class="p-2">>64% (CC)</td></tr>
+                            <tr><td class="p-2 font-bold text-ind-cyan">SGT-800</td><td class="p-2">57 MW</td><td class="p-2">40.0%</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex-1 bg-ind-panel border-2 border-ind-border p-0 relative overflow-hidden min-h-[400px] tech-clip">
+                    <div class="bg-ind-bg p-2 border-b border-ind-border flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-ind-accent"></i>
+                        <span class="text-xs font-machine uppercase text-ind-steel">Event Log / Flash</span>
+                    </div>
+                    <div id="flash-news-container" class="p-4 space-y-4 relative z-10 h-[500px] overflow-y-auto custom-scrollbar font-data">
+                        </div>
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-9xl text-ind-border opacity-5 pointer-events-none"><i class="fa-solid fa-bolt"></i></div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-ind-panel border-t-4 border-ind-accent mt-auto py-8 relative overflow-hidden">
+        <div class="absolute inset-0 bg-carbon-fiber opacity-10 pointer-events-none"></div>
+        <div class="max-w-[1920px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 relative z-10">
+            <div>
+                <div class="text-2xl font-machine font-bold uppercase text-white mb-2">GasGx <span class="text-ind-accent">SYSTEMS</span></div>
+                <p class="text-xs font-data text-ind-steel">Advanced intelligence for gas-fired power generation assets.</p>
+            </div>
+            <div class="col-span-2 grid grid-cols-2 gap-4 text-xs font-data text-ind-steel">
+                <ul><li class="text-white font-bold mb-2 uppercase">Documentation</li><li><a href="#" class="hover:text-ind-cyan">API Reference</a></li><li><a href="#" class="hover:text-ind-cyan">Engine Manuals</a></li><li><a href="#" class="hover:text-ind-cyan">Safety Protocols</a></li></ul>
+                <ul><li class="text-white font-bold mb-2 uppercase">Network</li><li><a href="#" class="hover:text-ind-cyan">System Status</a></li><li><a href="#" class="hover:text-ind-cyan">Support Link</a></li></ul>
+            </div>
+            <div class="text-right flex flex-col justify-end">
+                <div class="text-ind-accent text-xl mb-2"><i class="fa-brands fa-linux"></i> <i class="fa-solid fa-network-wired"></i></div>
+                <div class="text-[10px] font-data text-ind-steel uppercase">© 2026 GasGx Technology.<br>All rights reserved. System ID: GGX-PWR-01</div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ================= 配置区 =================
+        const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 模拟工业数据生成函数 (用于增强真实感)
+        const generateTechSpecs = () => ({
+            rpm: Math.floor(Math.random() * (6600 - 3000) + 3000),
+            temp: Math.floor(Math.random() * (620 - 450) + 450),
+            eff: (Math.random() * (46 - 38) + 38).toFixed(1),
+            heatRate: Math.floor(Math.random() * (9500 - 8000) + 8000),
+            status: Math.random() > 0.8 ? 'MAINT. REQ.' : 'OPTIMAL'
+        });
+
+        const App = {
+            state: { offset: 0, category: 'latest' },
+
+            init() {
+                this.renderNav();
+                this.renderTabs();
+                this.loadHeroMonitor();
+                this.loadTickerData();
+                this.loadFlashLogs();
+                this.loadMainFeed('latest', true);
+            },
+
+            // 工具：获取图片链接
+            getImageUrl(item) {
+                return item.cover_image ? `https://www.gasgx.com/news/${item.id}/images/${item.cover_image}` : 'https://www.gasgx.com/news/advertisement/zhanwei.jpg';
+            },
+
+            // 渲染导航
+            renderNav() {
+                const links = [
+                    {t: 'Dashboard', l: 'index.html', icon: 'fa-chart-pie'},
+                    {t: 'Fleet View', l: 'generators.html', icon: 'fa-server', active: true},
+                    {t: 'Analytics', l: 'data.html', icon: 'fa-chart-area'}
+                ];
+                document.getElementById('desktop-nav').innerHTML = links.map(l => 
+                    `<a href="/news/${l.l}" class="px-4 h-full flex items-center gap-2 text-xs font-machine font-bold uppercase ${l.active ? 'bg-ind-accent text-black' : 'text-ind-steel hover:text-white hover:bg-ind-border'} transition-all">
+                        <i class="fa-solid ${l.icon}"></i> ${l.t}
+                    </a>`
+                ).join('');
+            },
+
+            // 渲染 Tabs
+            renderTabs() {
+                const tabs = [
+                    {id:'latest', t:'All Logs'}, {id:'turbines', t:'Gas Turbines'}, {id:'engines', t:'Recip. Engines'}, {id:'maintenance', t:'O&M Reports'}
+                ];
+                document.getElementById('feed-tabs').innerHTML = tabs.map(tab => 
+                    `<button onclick="window.app.switchTab('${tab.id}')" id="tab-${tab.id}" class="px-4 py-2 text-xs font-machine font-bold uppercase border-b-2 transition-all ${tab.id === 'latest' ? 'border-ind-accent text-ind-accent bg-ind-accent/5' : 'border-transparent text-ind-steel hover:text-white hover:border-ind-steel'}">
+                        ${tab.t}
+                    </button>`
+                ).join('');
+            },
+
+            // 加载 Hero 核心机组监控
+            async loadHeroMonitor() {
+                try {
+                    // 获取一条重要新闻作为主角
+                    const { data } = await _supabase.from('articles').select('*').eq('homepage_mark', 1).limit(1).single();
+                    const hero = data || { title: 'Unit #01 Status', cover_image: null, id: '0' };
+                    const img = this.getImageUrl(hero);
+                    const specs = generateTechSpecs(); // 生成模拟数据
+
+                    const container = document.getElementById('hero-content');
+                    document.getElementById('hero-loading').style.opacity = '0';
+                    
+                    container.innerHTML = `
+                        <img src="${img}" class="w-full h-full object-cover opacity-50 mix-blend-luminosity group-hover:mix-blend-normal group-hover:opacity-70 transition-all duration-1000 group-hover:scale-105">
+                        
+                        <div class="absolute inset-0 p-8 flex flex-col justify-between z-20">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="bg-ind-accent text-black text-[10px] font-bold px-2 py-1 font-data uppercase tech-clip">Primary Unit Monitor</span>
+                                        <span class="text-ind-cyan font-data text-xs border border-ind-cyan/30 px-2 py-1 bg-black/50 backdrop-blur">ID: GT-7HA.03-A</span>
+                                    </div>
+                                    <h2 class="text-3xl md:text-4xl font-machine font-bold text-white uppercase leading-none drop-shadow-lg max-w-2xl cursor-pointer hover:text-ind-accent transition-colors" onclick="window.location.href='/news/${hero.id}/index.html'">${hero.main_title || 'Awaiting Unit Data...'}</h2>
+                                </div>
+                                <div class="flex flex-col items-end gap-1">
+                                    <div class="flex items-center gap-2 bg-black/60 p-2 border border-${specs.status === 'OPTIMAL' ? 'ind-cyan' : 'ind-alert'}">
+                                        <div class="w-3 h-3 rounded-full bg-${specs.status === 'OPTIMAL' ? 'ind-cyan' : 'ind-alert'} animate-pulse"></div>
+                                        <span class="text-${specs.status === 'OPTIMAL' ? 'ind-cyan' : 'ind-alert'} font-data font-bold text-sm">${specs.status}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-4 gap-2 bg-black/80 backdrop-blur-md border-t border-ind-border p-4 font-data -mx-8 -mb-8">
+                                <div class="border-r border-ind-border pr-4">
+                                    <div class="text-[10px] text-ind-steel uppercase mb-1">Rotor Speed (RPM)</div>
+                                    <div class="text-xl text-white font-bold">${specs.rpm.toLocaleString()} <i class="fa-solid fa-gear text-ind-accent text-xs animate-spin-slow"></i></div>
+                                </div>
+                                <div class="border-r border-ind-border px-4">
+                                    <div class="text-[10px] text-ind-steel uppercase mb-1">Exhaust Temp.</div>
+                                    <div class="text-xl text-white font-bold">${specs.temp}°C <i class="fa-solid fa-temperature-high text-ind-alert text-xs"></i></div>
+                                </div>
+                                <div class="border-r border-ind-border px-4">
+                                    <div class="text-[10px] text-ind-steel uppercase mb-1">Elec. Efficiency</div>
+                                    <div class="text-xl text-ind-cyan font-bold">${specs.eff}%</div>
+                                </div>
+                                <div class="pl-4">
+                                    <div class="text-[10px] text-ind-steel uppercase mb-1">Current Load</div>
+                                    <div class="w-full bg-ind-border h-4 mt-1 relative overflow-hidden border border-ind-steel/30">
+                                        <div class="absolute inset-0 bg-gradient-to-r from-ind-accent to-ind-alert" style="width: ${specs.eff*2}%"></div>
+                                        <span class="absolute inset-0 flex items-center justify-center text-[10px] text-white font-bold drop-shadow">${(specs.eff*2).toFixed(0)}% MCR</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="absolute top-0 left-1/4 h-full w-[1px] bg-ind-border/50 pointer-events-none"></div>
+                        <div class="absolute top-1/2 left-0 w-full h-[1px] bg-ind-border/50 pointer-events-none"></div>
+                    `;
+                    container.style.opacity = '1';
+                } catch(e) { console.error('Hero load error:', e); }
+            },
+
+            // 加载滚动数据
+            async loadTickerData() {
+                const container = document.getElementById('live-data-container');
+                try {
+                    const { data } = await _supabase.from('homepage_scrolling_data').select('*').order('sort_order');
+                    if (data && data.length > 0) {
+                        container.innerHTML = data.map(d => 
+                            `<span class="text-ind-steel mr-2">[STREAM]</span><span class="text-white font-bold mr-1">${d.label}:</span><span class="text-ind-cyan mr-10 data-blink">${d.display_value} ${d.unit||''}</span>`
+                        ).join('').repeat(2);
+                    }
+                } catch(e) {}
+            },
+
+            // 加载主日志流 (Main Feed)
+            async loadMainFeed(category, isReset = false) {
+                const container = document.getElementById('news-feed-container');
+                const loadBtn = document.getElementById('load-more-btn');
+
+                if (isReset) {
+                    this.state.offset = 0; this.state.category = category;
+                    container.innerHTML = '<div class="text-center text-ind-cyan font-data py-10"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> ACCESSING DATABASE...</div>';
+                    loadBtn.parentElement.style.display = 'none';
+                    // 更新 Tab 样式
+                    document.querySelectorAll('#feed-tabs button').forEach(b => b.className = b.className.replace('border-ind-accent text-ind-accent bg-ind-accent/5', 'border-transparent text-ind-steel'));
+                    document.getElementById(`tab-${category}`).className = document.getElementById(`tab-${category}`).className.replace('border-transparent text-ind-steel', 'border-ind-accent text-ind-accent bg-ind-accent/5');
+                }
+
+                try {
+                    let query = _supabase.from('articles').select('*').order('time', { ascending: false }).range(this.state.offset, this.state.offset + 4);
+                    // 这里可以根据 category 添加简单的过滤逻辑，例如根据 tag 字段
+                    // if (category !== 'latest') query = query.eq('tag', category_map[category]);
+
+                    const { data } = await query;
+                    if (isReset) container.innerHTML = '';
+
+                    if (!data || data.length === 0) {
+                        if(isReset) container.innerHTML = '<div class="text-center text-ind-steel font-data py-10">NO LOGS FOUND.</div>';
+                        loadBtn.parentElement.style.display = 'none'; return;
+                    }
+
+                    const html = data.map(art => {
+                        const img = this.getImageUrl(art);
+                        const specs = generateTechSpecs(); // 为每篇文章生成模拟技术参数
+                        return `
+                        <article class="bg-ind-panel border border-ind-border flex flex-col md:flex-row h-auto group hover:border-ind-accent/50 transition-all relative overflow-hidden shadow-sm hover:shadow-neon-orange/10">
+                            <div class="w-full md:w-72 h-56 md:h-auto shrink-0 relative border-r border-ind-border bg-[#000] overflow-hidden">
+                                <img src="${img}" class="w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-all duration-500 grayscale group-hover:grayscale-0">
+                                <div class="absolute inset-0 bg-scanlines opacity-30 pointer-events-none"></div>
+                                <div class="absolute top-2 left-2 bg-ind-bg/80 border border-ind-accent text-ind-accent text-[10px] font-bold px-2 py-1 font-data uppercase tech-clip">
+                                    ${art.tag || 'GEN-SET LOG'}
+                                </div>
+                            </div>
+                            
+                            <div class="flex-1 flex flex-col justify-between relative">
+                                <div class="p-5 pb-0">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h3 class="text-xl font-machine font-bold text-gray-200 uppercase leading-tight group-hover:text-ind-accent cursor-pointer transition-colors w-11/12" onclick="window.location.href='/news/${art.id}/index.html'">${art.main_title}</h3>
+                                        <span class="text-xs font-data text-ind-steel whitespace-nowrap">${new Date(art.time).toLocaleDateString()}</span>
+                                    </div>
+                                    <p class="text-sm text-ind-steel font-data line-clamp-2 mb-4 border-l-2 border-ind-border pl-3 group-hover:border-ind-accent transition-colors">${art.subheading || 'Log entry content encrypted...'}</p>
+                                </div>
+                                
+                                <div class="bg-ind-bg/50 border-t border-ind-border p-3 px-5 grid grid-cols-3 gap-4 font-data text-xs relative mt-auto">
+                                    <div class="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-ind-accent opacity-50"></div>
+                                    
+                                    <div class="flex flex-col">
+                                        <span class="text-[9px] text-ind-steel uppercase">Heat Rate (LHV)</span>
+                                        <span class="text-ind-cyan font-bold">${specs.heatRate} kJ/kWh</span>
+                                    </div>
+                                    <div class="flex flex-col border-l border-ind-border pl-4">
+                                        <span class="text-[9px] text-ind-steel uppercase">Efficiency</span>
+                                        <span class="text-white font-bold">${specs.eff}%</span>
+                                    </div>
+                                    <div class="flex flex-col border-l border-ind-border pl-4 items-start">
+                                        <span class="text-[9px] text-ind-steel uppercase">Est. Output</span>
+                                        <div class="flex items-center gap-1 text-ind-accent font-bold">
+                                            <i class="fa-solid fa-bolt"></i> High Load
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </article>`;
+                    }).join('');
+
+                    container.insertAdjacentHTML('beforeend', html);
+                    this.state.offset += data.length;
+                    loadBtn.parentElement.style.display = 'block';
+                } catch(e) { console.error(e); loadBtn.parentElement.style.display = 'none'; }
+            },
+
+            // 加载快讯日志
+            async loadFlashLogs() {
+                const container = document.getElementById('flash-news-container');
+                try {
+                    const { data } = await _supabase.from('flash_news').select('*').order('created_at', { ascending: false }).limit(10);
+                    if (!data || data.length === 0) { container.innerHTML = '<div class="text-ind-steel text-xs">NO EVENTS.</div>'; return; }
+                    
+                    container.innerHTML = data.map(item => {
+                        const time = new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false});
+                        return `
+                        <div class="relative pl-6 border-l border-ind-border pb-4 group">
+                            <div class="absolute -left-[5px] top-1 w-[9px] h-[9px] bg-ind-bg border border-ind-accent rounded-sm group-hover:bg-ind-accent transition-colors"></div>
+                            <div class="text-[10px] font-data text-ind-cyan mb-1">[${time}] EVENT DETECTED</div>
+                            <div class="text-sm font-machine font-bold text-gray-300 leading-tight group-hover:text-white cursor-pointer">${item.title}</div>
+                        </div>`;
+                    }).join('');
+                } catch(e) {}
+            },
+
+            // 切换 Tab
+            switchTab(cat) { this.loadMainFeed(cat, true); },
+            // 加载更多
+            loadMore() { this.loadMainFeed(this.state.category); }
+        };
+
+        // 启动
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js"></script>
+</body>
+</html>
+

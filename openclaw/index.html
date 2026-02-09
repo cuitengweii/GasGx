@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>ClawdSkills - GasGx Mirror | ClawdBot & MoltBot Resources</title>
+    <meta name="description" content="The unofficial GasGx mirror for ClawdSkills. Discover, search and install high-performance skills for ClawdBot, MoltBot, and OpenClaw. Optimized for AI automation and neural workflows.">
+    <meta name="keywords" content="ClawdSkills, ClawdBot, MoltBot, GasGx, OpenClaw, AI Agents, Automation, Neural Networks, Tech Mirror, Gas-to-Compute">
+    <meta name="author" content="GasGx Network">
+    
+    <meta property="og:title" content="ClawdSkills - GasGx Mirror | ClawdBot & MoltBot">
+    <meta property="og:description" content="Explore the ultimate skill library for ClawdBot and MoltBot on the GasGx interface.">
+    <meta property="og:type" content="website">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class', 
+            theme: {
+                extend: {
+                    colors: {
+                        gas: { 
+                            bg: 'var(--bg-body)', 
+                            card: 'var(--bg-card)', 
+                            border: 'var(--border-color)', 
+                            text: 'var(--text-main)', 
+                            subtext: 'var(--text-sub)',
+                            hover: 'var(--bg-hover)',
+                            green: '#5DD62C' 
+                        }
+                    },
+                    fontFamily: { 
+                        sans: ['Inter', 'sans-serif'], 
+                        mono: ['JetBrains Mono', 'monospace'] 
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            /* Dark Mode (Default) */
+            --bg-body: #050505;
+            --bg-card: #0F0F0F;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #E5E5E5;
+            --text-sub: #9CA3AF;
+            --bg-hover: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Light Mode */
+        body.light-mode {
+            --bg-body: #F9FAFB;
+            --bg-card: #FFFFFF;
+            --border-color: #E5E7EB;
+            --text-main: #111827;
+            --text-sub: #6B7280;
+            --bg-hover: #F3F4F6;
+        }
+
+        body { 
+            background-color: var(--bg-body); 
+            color: var(--text-main); 
+            transition: background-color 0.3s ease, color 0.3s ease; 
+        }
+        
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: var(--bg-body); }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        body.light-mode ::-webkit-scrollbar-thumb { background: #cbd5e1; }
+
+        .modal-enter { opacity: 0; pointer-events: none; transform: scale(0.95); }
+        .modal-active { opacity: 1; pointer-events: auto; transform: scale(1); }
+        .transition-modal { transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        .tag-active { 
+            border: 1px solid #5DD62C !important;
+            background-color: rgba(93, 214, 44, 0.1) !important;
+            box-shadow: 0 0 10px rgba(93, 214, 44, 0.15);
+        }
+        
+        .badge { 
+            @apply text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase mr-1.5 mb-1.5 inline-block border border-transparent tracking-wide select-none; 
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-sm">
+
+    <aside class="w-64 bg-gas-card border-r border-gas-border flex flex-col hidden md:flex h-full transition-colors duration-300 z-30">
+        
+        <div class="p-5 shrink-0 flex items-center gap-3 border-b border-transparent">
+            <div class="w-8 h-8 bg-gas-green/10 rounded-lg flex items-center justify-center text-gas-green text-lg border border-gas-green/20">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div class="flex flex-col">
+                <h1 class="text-base font-bold text-gas-text tracking-tight leading-none">ClawdSkills</h1>
+                <span class="text-[9px] text-gas-subtext font-mono mt-0.5 opacity-70">Mirror for ClawdBot/MoltBot</span>
+            </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto px-3 py-2 min-h-0 custom-scrollbar">
+            
+            <div class="relative mb-5 group px-1 pt-2">
+                <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gas-subtext text-xs group-focus-within:text-gas-green transition-colors mt-1"></i>
+                <input type="text" id="tag-search" placeholder="Filter tags..." 
+                    class="w-full bg-[#111] dark:bg-gray-100 border border-gas-border rounded-md py-1.5 pl-8 pr-2 text-xs text-gas-text focus:border-gas-green focus:bg-black dark:focus:bg-white outline-none transition-all placeholder-gas-subtext/50">
+            </div>
+
+            <div class="mb-2 flex justify-between items-center px-1">
+                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                    <i class="fa-solid fa-layer-group"></i> Categories
+                </p>
+                <button onclick="resetFilter()" class="text-[10px] text-gas-green hover:underline hidden font-medium transition-all" id="reset-btn">
+                    Reset
+                </button>
+            </div>
+            
+            <div id="tag-list" class="flex flex-wrap gap-1.5 content-start pb-4 px-1 min-h-[200px]">
+                <div class="h-6 w-16 bg-gas-hover rounded animate-pulse"></div>
+                <div class="h-6 w-20 bg-gas-hover rounded animate-pulse"></div>
+                <div class="h-6 w-12 bg-gas-hover rounded animate-pulse"></div>
+                <div class="h-6 w-24 bg-gas-hover rounded animate-pulse"></div>
+            </div>
+        </div>
+        
+        <div class="p-3 border-t border-gas-border bg-gas-card shrink-0 z-10 space-y-1">
+            <a href="https://docs.openclaw.ai/" target="_blank" class="flex items-center justify-between px-3 py-2 text-xs text-gas-subtext hover:text-gas-text hover:bg-gas-hover rounded-md transition-colors group">
+                <span class="flex items-center gap-2"><i class="fa-regular fa-file-lines w-3 text-center"></i> OpenClaw Docs</span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </a>
+            <a href="https://www.openclaw.ai" target="_blank" class="flex items-center justify-between px-3 py-2 text-xs text-gas-subtext hover:text-gas-text hover:bg-gas-hover rounded-md transition-colors group">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-code-branch w-3 text-center"></i> OpenClaw</span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </a>
+            
+            <div onclick="toggleTheme()" class="flex items-center justify-between px-3 py-2 text-xs text-gas-subtext hover:text-gas-text hover:bg-gas-hover rounded-md cursor-pointer select-none transition-colors border border-transparent hover:border-gas-border mt-1">
+                <span class="flex items-center gap-2" id="theme-text">
+                    <i class="fa-solid fa-moon w-3 text-center"></i> Dark Mode
+                </span>
+                <i class="fa-solid fa-toggle-on text-gas-green text-lg transition-transform duration-300" id="theme-icon"></i>
+            </div>
+
+            <div class="mt-2 pt-2 border-t border-gas-border px-1 opacity-60 hover:opacity-100 transition-opacity">
+                <p class="text-[9px] text-gas-subtext font-mono flex items-center justify-between">
+                    <span>v2.5.0</span>
+                    <span>Powered by Supabase</span>
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-gas-bg transition-colors duration-300">
+        
+        <header class="h-16 border-b border-gas-border flex items-center justify-between px-6 md:px-8 bg-gas-bg/95 backdrop-blur z-20 shrink-0">
+            <div class="flex-1 max-w-2xl relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gas-subtext text-xs"></i>
+                <input type="text" id="search-input" placeholder="Search ClawdBot & MoltBot skills..." 
+                    class="w-full bg-gas-card border border-gas-border rounded-md py-2 pl-9 pr-4 text-sm text-gas-text focus:border-gas-green focus:ring-1 focus:ring-gas-green/20 outline-none transition-all placeholder-gas-subtext" 
+                    onkeyup="handleSearch()">
+            </div>
+            <div class="flex items-center gap-4 ml-4">
+                <div class="hidden md:block text-xs text-gas-subtext font-mono bg-gas-card px-3 py-1.5 rounded-md border border-gas-border">
+                    Showing <span id="display-count" class="text-gas-text font-bold">0</span> of <span id="total-count">0</span>
+                </div>
+            </div>
+        </header>
+
+        <div id="main-scroll" class="flex-1 overflow-y-auto p-6 md:p-8 relative scroll-smooth">
+            
+            <div id="skill-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5 auto-rows-min mb-12">
+                </div>
+            
+            <div id="load-more-container" class="flex justify-center pb-12 pt-6">
+                <button onclick="loadNextBatch()" id="btn-load-more" 
+                    class="px-8 py-2.5 bg-gas-card border border-gas-border rounded-md text-gas-text text-xs font-bold hover:bg-gas-hover hover:border-gas-subtext/50 transition-all hidden shadow-sm flex items-center gap-2 group">
+                    <span>Load More Skills</span> 
+                    <i class="fa-solid fa-chevron-down group-hover:translate-y-0.5 transition-transform"></i>
+                </button>
+            </div>
+
+            <footer class="pb-10 pt-4 flex flex-col items-center justify-center gap-4 relative z-10">
+                <div class="w-12 h-[1px] bg-gradient-to-r from-transparent via-gas-border to-transparent mb-2"></div>
+                <div onclick="copyWechat()" class="cursor-pointer group relative">
+                    <div class="absolute -inset-1 bg-gas-green/20 rounded-full blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
+                    <div class="relative flex items-center gap-3 px-5 py-2 bg-gas-card border border-gas-border rounded-full shadow-lg hover:border-gas-green/40 hover:bg-[#151515] transition-all duration-300">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-black/50 flex items-center justify-center border border-gas-border/50 group-hover:border-gas-green/50 transition-colors">
+                                <i class="fa-brands fa-weixin text-gas-green text-xs"></i>
+                            </span>
+                            <span class="text-[10px] text-gas-subtext uppercase tracking-widest font-bold">Connect</span>
+                        </div>
+                        <div class="h-3 w-[1px] bg-gas-border"></div>
+                        <div class="flex items-center gap-2">
+                            <span id="footer-wx-id" class="text-xs font-mono text-gas-text font-medium group-hover:text-white transition-colors">aamecc</span>
+                            <i class="fa-regular fa-copy text-[10px] text-gas-subtext opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300"></i>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-[9px] text-gas-subtext/30 font-mono tracking-tight hover:text-gas-subtext/60 transition-colors cursor-default">
+                    GasGx Network &copy; 2026
+                </p>
+            </footer>
+            <div id="loader" class="absolute inset-0 flex flex-col items-center justify-center bg-gas-bg z-10">
+                <div class="flex flex-col items-center gap-4">
+                    <i class="fa-solid fa-circle-notch fa-spin text-4xl text-gas-green"></i>
+                    <p class="text-xs text-gas-subtext font-mono uppercase tracking-widest animate-pulse">Syncing ClawdBot Neural Net...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="install-modal-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center modal-enter transition-modal p-4">
+        <div class="bg-gas-card border border-gas-border w-full max-w-xl rounded-xl shadow-2xl overflow-hidden relative" onclick="event.stopPropagation()">
+            
+            <div class="flex justify-between items-start p-5 border-b border-gas-border bg-gas-hover/30">
+                <div>
+                    <div class="flex items-center gap-2 text-gas-green mb-1.5">
+                        <span class="font-mono text-lg">>_</span> 
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-gas-green/30 px-1.5 rounded bg-gas-green/5">Installation</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-gas-text leading-tight" id="modal-title">Skill Name</h3>
+                </div>
+                <button onclick="closeModal()" class="text-gas-subtext hover:text-gas-text p-1 rounded hover:bg-gas-hover transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <p class="text-sm text-gas-subtext">Run the following command in your terminal or ask your bot:</p>
+                
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-bold text-gas-subtext uppercase tracking-wider pl-1">Terminal Command</label>
+                    <div class="bg-[#050505] dark:bg-gray-100 border border-gas-border rounded-lg p-3.5 flex items-center justify-between group hover:border-gas-green/40 transition-colors shadow-inner">
+                        <code class="text-sm font-mono text-gas-green truncate mr-4 select-all" id="modal-cmd-install">...</code>
+                        <button onclick="copyText('modal-cmd-install')" class="text-gas-subtext hover:text-white p-2 rounded hover:bg-white/10 transition-colors" title="Copy">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-bold text-gas-subtext uppercase tracking-wider pl-1 flex items-center gap-2">
+                        <span>Natural Language Prompt</span>
+                    </label>
+                    <div class="bg-[#050505] dark:bg-gray-100 border border-gas-border rounded-lg p-3.5 flex items-center justify-between group hover:border-gas-green/40 transition-colors shadow-inner">
+                        <code class="text-sm font-mono text-gas-subtext truncate mr-4 select-all" id="modal-cmd-bot">...</code>
+                        <button onclick="copyText('modal-cmd-bot')" class="text-gas-subtext hover:text-white p-2 rounded hover:bg-white/10 transition-colors" title="Copy">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-blue-500/5 border border-blue-500/10 rounded-lg p-4 flex gap-3">
+                    <i class="fa-solid fa-circle-info text-blue-400 mt-0.5"></i>
+                    <div class="text-xs text-blue-400/90 space-y-1">
+                        <p class="font-bold">Prerequisites</p>
+                        <p class="opacity-80">Requires <span class="font-mono bg-blue-500/10 px-1 rounded">OpenClaw</span> runtime installed.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-5 pt-0 flex gap-3">
+                <button onclick="copyText('modal-cmd-install')" class="flex-1 bg-gas-green hover:bg-[#4cc01d] text-black font-bold py-3 rounded-lg text-xs uppercase tracking-wide shadow-lg shadow-green-900/20 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-terminal"></i> Copy Command
+                </button>
+                <a id="modal-link" href="#" target="_blank" class="flex-1 bg-gas-hover border border-gas-border text-gas-text hover:bg-gas-border font-bold py-3 rounded-lg text-xs uppercase tracking-wide transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> View Source
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG & UTILS ---
+        const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+        const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const PAGE_SIZE = 16;
+        let currentOffset = 0;
+        let allSkillsCache = [];
+        let filteredSkills = [];
+        let activeTag = null;
+        let isDarkMode = true;
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (localStorage.getItem('theme') === 'light') toggleTheme(false);
+            await fetchAllData();
+        });
+
+        // --- THEME ---
+        window.toggleTheme = function(forceSwitch = true) {
+            if(forceSwitch) isDarkMode = !isDarkMode;
+            else isDarkMode = false;
+
+            const body = document.body;
+            const icon = document.getElementById('theme-icon');
+            const text = document.getElementById('theme-text');
+
+            if (isDarkMode) {
+                body.classList.remove('light-mode');
+                icon.classList.replace('fa-toggle-off', 'fa-toggle-on');
+                icon.classList.remove('text-gray-400');
+                icon.classList.add('text-gas-green');
+                text.innerHTML = '<i class="fa-solid fa-moon w-3 text-center"></i> Dark Mode';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.add('light-mode');
+                icon.classList.replace('fa-toggle-on', 'fa-toggle-off');
+                icon.classList.remove('text-gas-green');
+                icon.classList.add('text-gray-400');
+                text.innerHTML = '<i class="fa-regular fa-sun w-3 text-center"></i> Light Mode';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // --- DATA FETCH ---
+        async function fetchAllData() {
+            try {
+                const { data, error } = await client
+                    .from('claw_skills')
+                    .select('*')
+                    .order('id', { ascending: true });
+
+                if (error) throw error;
+                
+                allSkillsCache = data;
+                filteredSkills = data;
+                
+                renderSidebar(allSkillsCache);
+                renderGrid();
+                
+                document.getElementById('loader').classList.add('hidden');
+
+            } catch (e) {
+                console.error("Fetch Error:", e);
+                document.getElementById('loader').innerHTML = `<p class="text-red-500 font-mono">Error connecting to database.</p>`;
+            }
+        }
+
+        // --- RENDER: SIDEBAR ---
+        function renderSidebar(skills) {
+            const counts = {};
+            skills.forEach(s => {
+                if(s.tags && Array.isArray(s.tags)) {
+                    s.tags.forEach(t => {
+                        if(t.length < 25) counts[t] = (counts[t] || 0) + 1;
+                    });
+                }
+            });
+            
+            const sortedTags = Object.entries(counts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 50);
+
+            const container = document.getElementById('tag-list');
+            container.innerHTML = sortedTags.map(([tag, count]) => {
+                const colorStyle = getTagColorStyle(tag);
+                return `
+                <button onclick="filterByTag('${tag}', this)" 
+                    class="tag-item flex items-center gap-1.5 px-2 py-0.5 rounded-md border transition-all duration-150 hover:opacity-80 active:scale-95 ${colorStyle}">
+                    <span class="font-semibold text-[11px] tracking-tight">${tag}</span>
+                    <span class="bg-black/30 dark:bg-white/20 px-1 rounded-[3px] text-[9px] min-w-[14px] text-center font-mono opacity-70">${count}</span>
+                </button>
+                `;
+            }).join('');
+        }
+
+        function getTagColorStyle(tag) {
+            const t = tag.toLowerCase();
+            if (['office', 'browser', 'search'].includes(t)) return 'bg-[#0f172a] text-[#60a5fa] border-[#1d4ed8]/50'; 
+            if (['automation', 'productivity', 'workflow'].includes(t)) return 'bg-[#1e1b4b] text-[#c084fc] border-[#6b21a8]/50'; 
+            if (['api', 'ai', 'gpt', 'llm', 'clawdbot', 'moltbot'].includes(t)) return 'bg-[#271c19] text-[#fbbf24] border-[#b45309]/50'; 
+            if (['security', 'audit', 'crypto'].includes(t)) return 'bg-[#022c22] text-[#34d399] border-[#047857]/50'; 
+            if (['finance', 'money', 'stripe'].includes(t)) return 'bg-[#1e1b4b] text-[#818cf8] border-[#3730a3]/50'; 
+            if (t === 'latest') return 'bg-[#064e3b] text-[#34d399] border-[#059669]'; 
+            return 'bg-[#18181b] text-[#a1a1aa] border-[#27272a]'; 
+        }
+
+        // --- RENDER: GRID ---
+        function renderGrid(append = false) {
+            const grid = document.getElementById('skill-grid');
+            if (!append) { 
+                grid.innerHTML = ''; 
+                currentOffset = 0; 
+            }
+            
+            const nextBatch = filteredSkills.slice(currentOffset, currentOffset + PAGE_SIZE);
+            
+            if (nextBatch.length === 0 && !append) {
+                grid.innerHTML = '<div class="col-span-full text-center text-gas-subtext py-20 font-mono text-xs">No skills match your filter.</div>';
+            } else {
+                nextBatch.forEach(skill => grid.innerHTML += createCardHTML(skill));
+            }
+            
+            currentOffset += nextBatch.length;
+            updateFooter();
+        }
+
+        window.loadNextBatch = function() { renderGrid(true); }
+
+        function updateFooter() {
+            document.getElementById('display-count').innerText = currentOffset;
+            document.getElementById('total-count').innerText = filteredSkills.length;
+            
+            const btn = document.getElementById('btn-load-more');
+            if (currentOffset >= filteredSkills.length) {
+                btn.classList.add('hidden');
+            } else {
+                btn.classList.remove('hidden');
+                btn.innerHTML = `<span>Load More</span> <i class="fa-solid fa-chevron-down ml-2"></i>`;
+            }
+        }
+
+        function createCardHTML(skill) {
+            const tagsHtml = (skill.tags || []).slice(0, 3).map(t => {
+                let style = getTagColorStyle(t); 
+                return `<span class="px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${style}">${t}</span>`;
+            }).join('');
+            
+            const skillData = encodeURIComponent(JSON.stringify(skill));
+
+            return `
+                <div class="bg-gas-card border border-gas-border rounded-xl p-5 flex flex-col h-full hover:border-gas-green/30 transition-all duration-300 group hover:-translate-y-1 hover:shadow-lg">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="text-sm font-bold text-gas-text line-clamp-1 group-hover:text-gas-green transition-colors cursor-pointer" title="${skill.title}">${skill.title}</h3>
+                        <a href="${skill.official_link}" target="_blank" class="text-gas-subtext hover:text-gas-text transition-colors p-1"><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>
+                    </div>
+                    
+                    <div class="text-[10px] text-gas-subtext font-mono mb-3 truncate opacity-60 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 bg-gas-green rounded-full"></span> /${skill.slug}
+                    </div>
+                    
+                    <p class="text-[11px] text-gas-subtext leading-relaxed mb-4 line-clamp-3 flex-1 h-[4.5em]">${skill.description || 'No description available.'}</p>
+                    
+                    <div class="flex flex-wrap gap-1.5 mb-4 min-h-[24px]">
+                        ${tagsHtml}
+                    </div>
+
+                    <div class="border-t border-gas-border pt-3 flex items-center justify-between mb-3">
+                        <div class="flex gap-3 text-[10px] text-gas-subtext font-mono opacity-70">
+                            <span title="Stars"><i class="fa-regular fa-star mr-1"></i>${skill.stats?.stars || 0}</span>
+                            <span title="Downloads"><i class="fa-solid fa-download mr-1"></i>${skill.stats?.downloads || 0}</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="openModal('${skillData}')" class="w-full py-2 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all duration-300
+                        bg-[#5DD62C]/10 text-[#5DD62C] border border-[#5DD62C]/20
+                        hover:bg-[#5DD62C] hover:text-black hover:shadow-[0_0_15px_rgba(93,214,44,0.4)]
+                        active:scale-[0.98]">
+                        Install
+                    </button>
+                </div>
+            `;
+        }
+
+        // --- INTERACTION ---
+        window.filterByTag = function(tag, el) {
+            document.querySelectorAll('.tag-item').forEach(b => {
+                b.classList.remove('tag-active', 'opacity-100');
+                b.classList.add('opacity-70'); 
+            });
+            el.classList.add('tag-active', 'opacity-100');
+            el.classList.remove('opacity-70');
+            
+            document.getElementById('reset-btn').classList.remove('hidden');
+            activeTag = tag;
+            document.getElementById('search-input').value = "";
+            applyFilters();
+        }
+
+        window.handleSearch = function() { applyFilters(); }
+
+        window.resetFilter = function() {
+            activeTag = null;
+            document.getElementById('search-input').value = "";
+            document.getElementById('reset-btn').classList.add('hidden');
+            document.querySelectorAll('.tag-item').forEach(b => {
+                b.classList.remove('tag-active');
+                b.classList.remove('opacity-70');
+            });
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            filteredSkills = allSkillsCache.filter(s => {
+                const matchesTag = activeTag ? (s.tags && s.tags.includes(activeTag)) : true;
+                const matchesSearch = query ? (s.title.toLowerCase().includes(query) || s.slug.includes(query)) : true;
+                return matchesTag && matchesSearch;
+            });
+            renderGrid();
+        }
+
+        // --- MODAL ---
+        window.openModal = function(data) {
+            const skill = JSON.parse(decodeURIComponent(data));
+            document.getElementById('modal-title').innerText = skill.title;
+            document.getElementById('modal-cmd-install').innerText = skill.install_command;
+            document.getElementById('modal-cmd-bot').innerText = skill.ask_bot_command;
+            const linkBtn = document.getElementById('modal-link');
+            if(linkBtn) linkBtn.href = skill.official_link;
+
+            const ov = document.getElementById('install-modal-overlay');
+            ov.classList.remove('modal-enter');
+            ov.classList.add('modal-active');
+        }
+
+        window.closeModal = function() {
+            const ov = document.getElementById('install-modal-overlay');
+            ov.classList.remove('modal-active');
+            ov.classList.add('modal-enter');
+        }
+        
+        window.copyText = function(id) {
+            const text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text);
+            Toastify({ 
+                text: "COPIED TO CLIPBOARD", 
+                duration: 2000, 
+                gravity: "bottom", 
+                position: "center", 
+                style: { 
+                    background: "#5DD62C", 
+                    color: "#000", 
+                    fontSize: "10px", 
+                    fontWeight: "bold",
+                    borderRadius: "4px",
+                    boxShadow: "0 0 20px rgba(93,214,44,0.3)"
+                } 
+            }).showToast();
+        }
+
+        // --- FOOTER SCRIPT ---
+        window.copyWechat = function() {
+            const wxId = document.getElementById('footer-wx-id').innerText;
+            navigator.clipboard.writeText(wxId);
+            
+            Toastify({ 
+                text: "WECHAT ID COPIED: " + wxId, 
+                duration: 3000, 
+                gravity: "bottom", 
+                position: "center", 
+                style: { 
+                    background: "#0F0F0F", 
+                    color: "#5DD62C", 
+                    border: "1px solid rgba(93,214,44,0.3)",
+                    fontSize: "10px", 
+                    fontWeight: "bold",
+                    fontFamily: "JetBrains Mono",
+                    borderRadius: "50px",
+                    boxShadow: "0 10px 30px -10px rgba(93,214,44,0.2)"
+                } 
+            }).showToast();
+        }
+        
+        document.getElementById('install-modal-overlay').addEventListener('click', closeModal);
+    </script>
+</body>
+</html>

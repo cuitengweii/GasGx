@@ -1,0 +1,31 @@
+:root {
+    color-scheme: dark;
+}
+
+body.gxf-flash-page {
+    background-color: #050505;
+    color: #f8f8f8;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+body.gxf-flash-page::-webkit-scrollbar {
+    width: 4px;
+}
+
+body.gxf-flash-page::-webkit-scrollbar-track {
+    background: #050505;
+}
+
+body.gxf-flash-page::-webkit-scrollbar-thumb {
+    background: #333;
+}
+
+body.gxf-flash-page::-webkit-scrollbar-thumb:hover {
+    background: #5dd62c;
+}
+
+/* Shared header styles are in news/shared/modules/styles/layout.shared.css */

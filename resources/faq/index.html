@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ | GasGx 常见问题解答</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 20px rgba(93, 214, 44, 0.6)',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #1a1a1a 1px, transparent 1px), linear-gradient(to bottom, #1a1a1a 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body { background-color: #0F0F0F; color: #F8F8F8; font-family: 'Inter', sans-serif; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+        
+        .gas-card { background-color: rgba(32, 32, 32, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        
+        /* Accordion Styles */
+        details > summary { list-style: none; cursor: pointer; transition: all 0.3s ease; }
+        details > summary::-webkit-details-marker { display: none; }
+        details[open] > summary { border-bottom-color: rgba(93, 214, 44, 0.3); }
+        details[open] > summary .arrow-icon { transform: rotate(180deg); color: #5DD62C; }
+        
+        .bg-grid { background-size: 40px 40px; mask-image: linear-gradient(to bottom, transparent, 10%, black, 90%, transparent); }
+    </style>
+    
+    <script>window.app = window.app || {};</script>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative selection:bg-gas-green selection:text-black">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-16 w-full relative">
+        <div class="absolute inset-0 bg-grid-pattern bg-grid opacity-20 pointer-events-none"></div>
+        
+        <section class="max-w-[1400px] mx-auto px-6 py-16 text-center relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gas-green/30 bg-gas-green/10 text-gas-green text-xs font-bold tracking-wider mb-6">
+                <i class="fa-solid fa-circle-question"></i>
+                <span data-i18n="hero_badge">KNOWLEDGE BASE</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold mb-6">
+                <span data-i18n="page_title_1">Frequently Asked</span> <span class="text-gas-green" data-i18n="page_title_2">Questions</span>
+            </h1>
+            <p class="text-lg text-gas-subtext max-w-3xl mx-auto" data-i18n="page_desc">
+                探索关于天然气发电挖矿的运作原理、经济模型、环保价值及合规路径的深度解答。
+            </p>
+        </section>
+
+        <section class="max-w-4xl mx-auto px-6 pb-20 space-y-12">
+            
+            <div>
+                <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3 border-l-4 border-gas-green pl-4">
+                    <span data-i18n="sec1_title">基础概念与运作原理</span>
+                </h2>
+                <div class="space-y-4">
+                    <details class="gas-card rounded-xl overflow-hidden group">
+                        <summary class="flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 font-bold text-lg select-none">
+                            <span data-i18n="q1">Q1：什么是“天然气发电挖矿”？</span>
+                            <i class="fa-solid fa-chevron-down arrow-icon text-gas-subtext transition-transform"></i>
+                        </summary>
+                        <div class="p-6 text-gas-subtext leading-relaxed border-t border-white/5">
+                            <p data-i18n="a1">这是一种基于“工业共生”理念的能源利用模式，旨在将能源行业的“废料”转化为算力行业的“燃料”。具体做法是在油气田井口部署模块化的天然气发电机组和集装箱式数据中心。利用原本因缺乏管道设施而只能被燃烧（Flaring）或直接排放（Venting）的伴生气（Associated Gas）或搁浅气（Stranded Gas）驱动发电机产生电力，现场直接供给比特币矿机或 AI 服务器进行计算。GasGx 将此称为“数字火炬缓解”（Digital Flare Mitigation, DFM）技术。</p>
+                        </div>
+                    </details>
+
+                    <details class="gas-card rounded-xl overflow-hidden group">
+                        <summary class="flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 font-bold text-lg select-none">
+                            <span data-i18n="q2">Q2：为什么不把这些天然气通过管道输送出去？</span>
+                            <i class="fa-solid fa-chevron-down arrow-icon text-gas-subtext transition-transform"></i>
+                        </summary>
+                        <div class="p-6 text-gas-subtext leading-relaxed border-t border-white/5 space-y-3">
+                            <p data-i18n="a2_intro">主要是由于经济性和基础设施限制：</p>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong class="text-white">资源浪费规模：</strong>全球每年约有 1450 亿立方米的天然气被燃烧掉，价值超过 300 亿美元。</li>
+                                <li><strong class="text-white">经济痛点：</strong>许多油气田位于偏远地区，建设天然气管道成本极高。如果不进行现场消纳，石油公司为了开采高价值的原油，被迫将其作为废料处理。</li>
+                                <li><strong class="text-white">搁浅定义：</strong>这些无法输送的气体被称为“搁浅气体”，通过现场发电挖矿，省去了昂贵的中游管道运输环节，实现了能源的就地增值。</li>
+                            </ul>
+                        </div>
+                    </details>
+
+                    <details class="gas-card rounded-xl overflow-hidden group">
+                        <summary class="flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 font-bold text-lg select-none">
+                            <span data-i18n="q3">Q3：整个系统的核心组件有哪些？</span>
+                            <i class="fa-solid fa-chevron-down arrow-icon text-gas-subtext transition-transform"></i>
+                        </summary>
+                        <div class="p-6 text-gas-subtext leading-relaxed border-t border-white/5">
+                            <p class="mb-3" data-i18n="a3_intro">主要包括五个关键环节：</p>
+                            <ol class="list-decimal pl-5 space-y-2">
+                                <li><strong class="text-white">气体捕获与预处理：</strong>包括脱水器和脱硫装置，用于去除水分、硫化氢（H₂S）等杂质。</li>
+                                <li><strong class="text-white">发电机组：</strong>通常采用往复式燃气发电机（如 INNIO Jenbacher、Waukesha 系列）或微型燃气轮机，燃烧效率可达 99% 以上。</li>
+                                <li><strong class="text-white">模块化算力中心：</strong>集成了矿机、配电和冷却系统的集装箱（如 Linkmine 的 MinerPower 气算一体集装箱），支持“插电即开机”。</li>
+                                <li><strong class="text-white">冷却系统：</strong>采用液冷（Hydro-cooling）或浸没式冷却，以适应高密度算力需求。</li>
+                                <li><strong class="text-white">网络连接：</strong>针对偏远地区，通常集成 Starlink 卫星通信或光纤回传。</li>
+                            </ol>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3 border-l-4 border-gas-green pl-4">
+                    <span data-i18n="sec2_title">经济效益与成本</span>
+                </h2>
+                <div class="space-y-4">
+                    <details class="gas-card rounded-xl overflow-hidden group">
+                        <summary class="flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 font-bold text-lg select-none">
+                            <span data-i18n="q4">Q4：相比传统电网挖矿，天然气发电挖矿的成本优势有多大？</span>
+                            <i class="fa-solid fa-chevron-down arrow-icon text-gas-subtext transition-transform"></i>
+                        </summary>
+                        <div class="p-6 text-gas-subtext leading-relaxed border-t border-white/5 space-y-3">
+                            <p data-i18n="a4_intro">优势主要体现在将能源成本（OPEX）与电网价格解耦，成本可降低约 30%-40% 甚至更多。</p>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong class="text-white">传统电网成本：</strong>工业电价通常在 $0.06 - $0.14/kWh 之间，且面临高峰电价和需量电费的压力。</li>
+                                <li><strong class="text-white">离网发电成本：</strong>气源成本接近零甚至为负（油企付费处理），综合发电成本（LCOE）通常在 $0.02 - $0.05/kWh。LINKMINE 项目实测发电成本可低至 $0.043/kWh。</li>
+                                <li><strong class="text-white">抗风险能力：</strong>即使在比特币减半周期后，极低的能源成本（$0.02/kWh 左右）能确保项目在币价低迷时仍保持正向现金流。</li>
+                            </ul>
+                        </div>
+                    </details>
+
+                    <details class="gas-card rounded-xl overflow-hidden group">
+                        <summary class="flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 font-bold text-lg select-none">
+                            <span data-i18n="q5">Q5：对于石油和天然气公司来说，有什么经济利益？</span>
+                            <i class="fa-solid fa-chevron-down arrow-icon text-gas-subtext transition-transform"></i>
+                        </summary>
+                        <div class="p-6 text-gas-subtext leading-relaxed border-t border-white/5">
+                            <p class="mb-3" data-i18n="a5_intro">石油公司可从“负资产”转向“正收益”：</p>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong class="text-white">规避罚款：</strong>避免因超标燃烧面临的巨额环保罚款（如美国新墨西哥州曾开出 4000 万美元罚单）。</li>
+                                <li><strong class="text-white">资产货币化：</strong>将原本需要花钱处理的废气转化为电力销售收入或特许权使用费。</li>
+                                <li><strong class="text-white">ESG 评级提升：</strong>响应世界银行“2030 零常规火炬”倡议，提升企业绿色融资能力。</li>
+                            </ul>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3 border-l-4 border-gas-green pl-4">
+                    <span data-i18n="sec3_title">环境影响与 ESG</span>
+                </h2>
+                <div class="space-y-4">
+                    <details class="gas-card rounded-xl overflow-hidden group">
+                        <summary class="flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 font-bold text-lg select-none">
+                            <span data-i18n="q6">Q6：燃烧天然气挖矿真的环保吗？还是“漂绿”？</span>
+                            <i class="fa-solid fa-chevron-down arrow-icon text-gas-subtext transition-transform"></i>
+                        </summary>
+                        <div class="p-6 text-gas-subtext leading-relaxed border-t border-white/5 space-y-3">
+                            <p data-i18n="a6_intro">科学数据支持其为有效的减排手段，即“甲烷减排”。</p>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong class="text-white">甲烷危害：</strong>甲烷在 20 年内的温室效应是二氧化碳的 84 倍。</li>
+                                <li><strong class="text-white">效率对比：</strong>传统火炬燃烧效率约为 91%，意味着约 9% 的甲烷会逃逸到大气中；而高效燃气发电机组可实现 >99.9% 的甲烷破坏率。</li>
+                                <li><strong class="text-white">减排量化：</strong>理论上，利用搁浅气挖矿可减少全球 23% 的甲烷排放。以 LINKMINE 项目为例，其碳负属性每年可产生约 180 万美元的碳权收益。</li>
+                            </ul>
+                        </div>
+                    </details>
+
+                    <details class="gas-card rounded-xl overflow-hidden group">
+                        <summary class="flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 font-bold text-lg select-none">
+                            <span data-i18n="q7">Q7：这是否符合国际环保倡议？</span>
+                            <i class="fa-solid fa-chevron-down arrow-icon text-gas-subtext transition-transform"></i>
+                        </summary>
+                        <div class="p-6 text-gas-subtext leading-relaxed border-t border-white/5 space-y-3">
+                            <p data-i18n="a7_intro">是的，该模式与全球去碳化目标高度一致。</p>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong class="text-white">国际倡议：</strong>完全符合世界银行“2030 年零常规燃烧”（Zero Routine Flaring by 2030）倡议。</li>
+                                <li><strong class="text-white">碳信用认证：</strong>项目可依据 Verra 新标准 VMR0016 开发碳信用（Carbon Credits），将减排量资产化并进行交易。</li>
+                            </ul>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3 border-l-4 border-gas-green pl-4">
+                    <span data-i18n="sec4_title">技术挑战与解决方案</span>
+                </h2>
+                <div class="space-y-4">
+                    <details class="gas-card rounded-xl overflow-hidden group">
+                        <summary class="flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 font-bold text-lg select-none">
+                            <span data-i18n="q8">Q8：如果天然气中含有剧毒的硫化氢（H₂S），还能挖矿吗？</span>
+                            <i class="fa-solid fa-chevron-down arrow-icon text-gas-subtext transition-transform"></i>
+                        </summary>
+                        <div class="p-6 text-gas-subtext leading-relaxed border-t border-white/5 space-y-3">
+                            <p data-i18n="a8_intro">可以，但必须克服“酸性气”的技术壁垒。</p>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong class="text-white">材料要求：</strong>所有管道和阀门需符合 NACE MR0175/ISO 15156 抗硫腐蚀标准。</li>
+                                <li><strong class="text-white">处理工艺：</strong>对于低浓度硫化氢，使用三嗪（Triazine）等化学清除剂；对于高浓度，采用受阻胺（FLEXSORB）工艺进行选择性去除。GasGx 的技术方案已包含针对酸性气的模块化处理单元。</li>
+                            </ul>
+                        </div>
+                    </details>
+
+                    <details class="gas-card rounded-xl overflow-hidden group">
+                        <summary class="flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 font-bold text-lg select-none">
+                            <span data-i18n="q9">Q9：挖矿设备如何适应油田的恶劣环境？</span>
+                            <i class="fa-solid fa-chevron-down arrow-icon text-gas-subtext transition-transform"></i>
+                        </summary>
+                        <div class="p-6 text-gas-subtext leading-relaxed border-t border-white/5 space-y-3">
+                            <p data-i18n="a9_intro">采用工业级防护和先进冷却技术：</p>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong class="text-white">集装箱化：</strong>使用“Hash Hut”等集装箱设计，防尘、防雨，支持 -40℃ 至 +45℃ 的极端环境运行。</li>
+                                <li><strong class="text-white">液冷技术：</strong>引入 Antminer S21 XP Hydro 等液冷矿机，配合 HydroCooling 水冷矿箱，能效比更佳且隔绝了外部沙尘对芯片的损害。</li>
+                                <li><strong class="text-white">智能负载：</strong>使用 LinkBrain 等 AI 系统实时匹配燃气供应与算力负载，波动率可控制在 ≤2%。</li>
+                            </ul>
+                        </div>
+                    </details>
+
+                    <details class="gas-card rounded-xl overflow-hidden group">
+                        <summary class="flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 font-bold text-lg select-none">
+                            <span data-i18n="q10">Q10：什么是“热电联供”（CHP）在挖矿中的应用？</span>
+                            <i class="fa-solid fa-chevron-down arrow-icon text-gas-subtext transition-transform"></i>
+                        </summary>
+                        <div class="p-6 text-gas-subtext leading-relaxed border-t border-white/5 space-y-3">
+                            <p data-i18n="a10_intro">这是一个提升能源利用率的高级阶段。</p>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong class="text-white">热循环利用：</strong>回收发电机产生的废热，可用于防冻或进一步的工业用途。例如，LINKMINE 计划在三期工程启用热循环系统，将综合能源利用效率从 35% 提升至 60%。</li>
+                                <li><strong class="text-white">余热价值：</strong>除了提升效率，还能通过热能管理降低整体运营成本。</li>
+                            </ul>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3 border-l-4 border-gas-green pl-4">
+                    <span data-i18n="sec5_title">全球趋势与监管</span>
+                </h2>
+                <div class="space-y-4">
+                    <details class="gas-card rounded-xl overflow-hidden group">
+                        <summary class="flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 font-bold text-lg select-none">
+                            <span data-i18n="q11">Q11：目前哪些国家和地区是这一领域的热点？</span>
+                            <i class="fa-solid fa-chevron-down arrow-icon text-gas-subtext transition-transform"></i>
+                        </summary>
+                        <div class="p-6 text-gas-subtext leading-relaxed border-t border-white/5 space-y-3">
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong class="text-white">北美：</strong>美国得克萨斯州（ERCOT 市场）和北达科他州是先行者。加拿大艾伯塔省对 <10MW 的自用离网发电有豁免政策，便于快速部署。</li>
+                                <li><strong class="text-white">南美：</strong>阿根廷 Vaca Muerta 盆地，YPF（国家石油公司）与科技公司合作，利用丰富的页岩气资源挖矿。</li>
+                                <li><strong class="text-white">独联体地区：</strong>俄罗斯和哈萨克斯坦利用伴生气解决电力短缺问题，并逐步完善加密货币挖矿的立法框架。</li>
+                            </ul>
+                        </div>
+                    </details>
+
+                    <details class="gas-card rounded-xl overflow-hidden group">
+                        <summary class="flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 font-bold text-lg select-none">
+                            <span data-i18n="q12">Q12：未来的发展趋势是什么？</span>
+                            <i class="fa-solid fa-chevron-down arrow-icon text-gas-subtext transition-transform"></i>
+                        </summary>
+                        <div class="p-6 text-gas-subtext leading-relaxed border-t border-white/5 space-y-3">
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong class="text-white">AI 算力转型：</strong>随着 AI 数据中心电力需求预计增长 165%，GasGx 模式正从比特币挖矿向高性能计算（HPC）和 AI 训练中心转型，作为稳定的基荷电源。</li>
+                                <li><strong class="text-white">金融化（RWA）：</strong>算力资产和碳信用正在被打包成资产支持证券（ABS）或 REITs，例如 LINKMINE 计划将碳权收益资产证券化。</li>
+                                <li><strong class="text-white">氢能结合：</strong>未来项目将预留氢能副产接口，向综合能源服务商升级。</li>
+                            </ul>
+                        </div>
+                    </details>
+
+                    <details class="gas-card rounded-xl overflow-hidden group">
+                        <summary class="flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 font-bold text-lg select-none">
+                            <span data-i18n="q13">Q13：在该领域运营面临哪些主要的监管风险？</span>
+                            <i class="fa-solid fa-chevron-down arrow-icon text-gas-subtext transition-transform"></i>
+                        </summary>
+                        <div class="p-6 text-gas-subtext leading-relaxed border-t border-white/5 space-y-3">
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong class="text-white">排放合规：</strong>美国 EPA Quad O 法规要求燃烧装置必须达到 95% 以上的破坏效率，这是硬性合规门槛。</li>
+                                <li><strong class="text-white">离网界定：</strong>如加拿大艾伯塔省，需确保发电“仅供自用”（Own-Use）以获得监管豁免，否则需通过复杂的审批。</li>
+                                <li><strong class="text-white">政策波动：</strong>部分国家（如吉尔吉斯斯坦）可能在能源短缺时限制挖矿，但离网伴生气发电通常作为“解决方案”而非“负担”被允许甚至鼓励。</li>
+                            </ul>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        // 虽然页面主要以中文呈现，但保留 I18N 结构以便未来扩展
+        const I18N_DATA = {
+            'zh': {
+                'tagline': '天然气发电挖矿助手',
+                'nav_home': '首页',
+                'nav_videos': '视频与教程',
+                'nav_faq': '常见问答 FAQ',
+                'hero_badge': '知识库',
+                'page_title_1': '常见问题',
+                'page_title_2': '解答',
+                'page_desc': '探索关于天然气发电挖矿的运作原理、经济模型、环保价值及合规路径的深度解答。',
+                'sec1_title': '基础概念与运作原理',
+                'sec2_title': '经济效益与成本',
+                'sec3_title': '环境影响与 ESG',
+                'sec4_title': '技术挑战与解决方案',
+                'sec5_title': '全球趋势与监管',
+                'footerTagline': '让天然气发电挖矿更简单',
+                'contact_us': '联系我们',
+                'privacy_policy': '隐私政策',
+                // Q&A 标题
+                'q1': 'Q1：什么是“天然气发电挖矿”？',
+                'q2': 'Q2：为什么不把这些天然气通过管道输送出去？',
+                'q3': 'Q3：整个系统的核心组件有哪些？',
+                'q4': 'Q4：相比传统电网挖矿，天然气发电挖矿的成本优势有多大？',
+                'q5': 'Q5：对于石油和天然气公司来说，有什么经济利益？',
+                'q6': 'Q6：燃烧天然气挖矿真的环保吗？还是“漂绿”？',
+                'q7': 'Q7：这是否符合国际环保倡议？',
+                'q8': 'Q8：如果天然气中含有剧毒的硫化氢（H₂S），还能挖矿吗？',
+                'q9': 'Q9：挖矿设备如何适应油田的恶劣环境？',
+                'q10': 'Q10：什么是“热电联供”（CHP）在挖矿中的应用？',
+                'q11': 'Q11：目前哪些国家和地区是这一领域的热点？',
+                'q12': 'Q12：未来的发展趋势是什么？',
+                'q13': 'Q13：在该领域运营面临哪些主要的监管风险？'
+            },
+            'en': {
+                'tagline': 'Natural Gas Power Mining Assistant',
+                'nav_home': 'Home',
+                'nav_videos': 'Videos & Tutorials',
+                'nav_faq': 'FAQ',
+                'hero_badge': 'KNOWLEDGE BASE',
+                'page_title_1': 'Frequently Asked',
+                'page_title_2': 'Questions',
+                'page_desc': 'Explore deep insights into the mechanics, economics, ESG values, and compliance pathways of gas-to-power mining.',
+                'sec1_title': 'Basic Concepts & Operations',
+                'sec2_title': 'Economics & Costs',
+                'sec3_title': 'Environment & ESG',
+                'sec4_title': 'Technical Challenges',
+                'sec5_title': 'Global Trends & Regulations',
+                'footerTagline': 'Making natural gas power mining easier',
+                'contact_us': 'Contact Us',
+                'privacy_policy': 'Privacy Policy',
+                'q1': 'Q1: What is "Natural Gas Power Mining"?',
+                'q2': 'Q2: Why not transport this gas via pipelines?',
+                'q3': 'Q3: What are the core components of the system?',
+                'q4': 'Q4: How does the cost compare to traditional grid mining?',
+                'q5': 'Q5: What are the economic benefits for oil & gas companies?',
+                'q6': 'Q6: Is burning gas for mining truly eco-friendly?',
+                'q7': 'Q7: Does this align with international environmental initiatives?',
+                'q8': 'Q8: Can we mine with high H2S (sour) gas?',
+                'q9': 'Q9: How do mining rigs survive harsh oilfield environments?',
+                'q10': 'Q10: What is CHP application in mining?',
+                'q11': 'Q11: Which regions are hotspots for this sector?',
+                'q12': 'Q12: What are the future trends?',
+                'q13': 'Q13: What are the main regulatory risks?'
+            },
+            'ru': {
+                'tagline': 'Помощник по майнингу на газе',
+                'nav_home': 'Главная',
+                'nav_videos': 'Видео и уроки',
+                'nav_faq': 'ЧаВо (FAQ)',
+                'hero_badge': 'БАЗА ЗНАНИЙ',
+                'page_title_1': 'Часто Задаваемые',
+                'page_title_2': 'Вопросы',
+                'page_desc': 'Изучите механику, экономику, ESG-ценности и нормативные пути газового майнинга.',
+                'sec1_title': 'Основы и Принципы',
+                'sec2_title': 'Экономика и Затраты',
+                'sec3_title': 'Окружающая среда и ESG',
+                'sec4_title': 'Технические Вызовы',
+                'sec5_title': 'Глобальные Тренды',
+                'footerTagline': 'Майнинг на газе стал проще',
+                'contact_us': 'Контакты',
+                'privacy_policy': 'Политика конфиденциальности',
+                'q1': 'Q1: Что такое «Майнинг на природном газе»?',
+                'q2': 'Q2: Почему бы не транспортировать этот газ по трубопроводам?',
+                'q3': 'Q3: Каковы основные компоненты системы?',
+                'q4': 'Q4: Какова экономия по сравнению с сетевым майнингом?',
+                'q5': 'Q5: Каковы выгоды для нефтегазовых компаний?',
+                'q6': 'Q6: Действительно ли это экологично?',
+                'q7': 'Q7: Соответствует ли это международным инициативам?',
+                'q8': 'Q8: Можно ли майнить на высокосернистом газе (H2S)?',
+                'q9': 'Q9: Как оборудование выживает в суровых условиях?',
+                'q10': 'Q10: Что такое когенерация (CHP) в майнинге?',
+                'q11': 'Q11: Какие регионы являются горячими точками?',
+                'q12': 'Q12: Каковы будущие тренды?',
+                'q13': 'Q13: Каковы основные регуляторные риски?'
+            }
+        };
+
+        window.app = {
+            lang: localStorage.getItem('gas_lang') || 'en',
+            
+            init() {
+                this.setLanguage(this.lang);
+            },
+
+            setLanguage(lang) {
+                this.lang = lang;
+                localStorage.setItem('gas_lang', lang);
+                const dict = I18N_DATA[lang] || I18N_DATA['en'];
+
+                // Update Buttons
+                ['zh','en','ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    if(btn) {
+                        if (l === lang) {
+                            btn.classList.remove('text-gas-subtext', 'font-medium');
+                            btn.classList.add('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                        } else {
+                            btn.classList.remove('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                            btn.classList.add('text-gas-subtext', 'font-medium');
+                        }
+                    }
+                });
+
+                // Update Text
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key]) {
+                        const icon = el.querySelector('i');
+                        if (icon) {
+                            el.innerHTML = ''; 
+                            el.appendChild(icon);
+                            el.append(' ' + dict[key]);
+                        } else {
+                            el.innerText = dict[key];
+                        }
+                    }
+                });
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => window.app.init());
+        } else {
+            window.app.init();
+        }
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

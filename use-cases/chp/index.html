@@ -1,0 +1,426 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHP & CCHP Cogeneration Solutions - GasGx</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(93, 214, 44, 0.4)',
+                        'glow-sm': '0 0 10px rgba(93, 214, 44, 0.2)',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+        
+        .gas-card:hover {
+            border-color: rgba(93, 214, 44, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+        }
+        .nav-item-link:hover, .nav-item-link.active { color: #5DD62C; }
+        
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after, .nav-item-link.active::after { width: 100%; }
+
+        .section-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255,165,0,0.08) 0%, rgba(0,0,0,0) 70%); /* Orange tint for Heat */
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="bg-grid-pattern">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-24 pb-12 w-full relative overflow-hidden">
+        
+        <section class="max-w-7xl mx-auto px-4 mb-20 relative">
+            <div class="section-glow top-0 left-1/2 -translate-x-1/2"></div>
+            
+            <div class="text-center relative z-10 pt-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-500/30 bg-orange-500/10 text-orange-400 text-xs font-mono mb-6">
+                    <i class="fa-solid fa-fire-burner"></i>
+                    <span data-i18n="hero_badge">Efficiency > 80%</span>
+                </div>
+                <h1 data-i18n="hero_title" class="text-4xl md:text-6xl font-black mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400">
+                    CHP 热电联供解决方案
+                </h1>
+                <p data-i18n="hero_desc" class="text-xl text-gas-subtext max-w-3xl mx-auto leading-relaxed">
+                    不仅是电力，更是能源的极致利用。回收发电废热，将综合效率从传统的 40% 提升至 80% 以上，创造第三重收入流。
+                </p>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 mb-24">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="order-2 md:order-1">
+                    <div class="gas-card p-8 rounded-2xl relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-orange-600/10 rounded-full blur-2xl"></div>
+                        <h3 data-i18n="sec1_title" class="text-2xl font-bold text-white mb-4">工业供汽与区域供暖</h3>
+                        <p data-i18n="sec1_desc" class="text-gray-400 mb-6 leading-relaxed">
+                            利用余热锅炉回收燃气机组排气热量。在生产比特币和电力的同时，向周边工业设施或居民社区销售蒸汽与热水。
+                        </p>
+                        <ul class="space-y-4">
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-arrow-trend-up text-gas-green mt-1"></i>
+                                <div>
+                                    <strong data-i18n="sec1_point1_title" class="text-white block text-sm">能效跃升</strong>
+                                    <span data-i18n="sec1_point1_desc" class="text-sm text-gray-500">从单一发电的 35%-40% 效率提升至热电联产的 80%+。</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-money-bill-trend-up text-orange-400 mt-1"></i>
+                                <div>
+                                    <strong data-i18n="sec1_point2_title" class="text-white block text-sm">多重收入流</strong>
+                                    <span data-i18n="sec1_point2_desc" class="text-sm text-gray-500">电力销售 + 算力收益 + 热力销售 (Steam/Heat Sales)。</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="order-1 md:order-2 text-center flex justify-center items-center">
+                     <div class="relative w-64 h-64">
+                         <svg viewBox="0 0 36 36" class="w-full h-full block">
+                            <path class="text-gray-800" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="2" />
+                            <path class="text-orange-500 drop-shadow-[0_0_10px_rgba(249,115,22,0.5)]" stroke-dasharray="85, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="2" />
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="text-4xl font-black text-white">85%</span>
+                            <span data-i18n="efficiency_label" class="text-xs text-gray-400 uppercase tracking-wide">Efficiency</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 mb-24">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="text-center flex justify-center">
+                    <i class="fa-solid fa-leaf text-[120px] text-gas-green/20 animate-float"></i>
+                </div>
+                <div>
+                    <h3 data-i18n="sec2_title" class="text-2xl font-bold text-white mb-4">现代农业与碳汇温室</h3>
+                    <p data-i18n="sec2_desc" class="text-gray-400 mb-6 leading-relaxed">
+                        将天然气清洁燃烧产生的热量和 CO₂ 输送至温室，打造“热+碳”协同的现代农业生态。
+                    </p>
+                    <div class="space-y-4">
+                        <div class="bg-[#1a1a1a] p-5 rounded border border-white/5">
+                            <h4 class="flex items-center gap-2 font-bold text-white text-sm mb-2">
+                                <i class="fa-solid fa-seedling text-gas-green"></i> <span data-i18n="sec2_sub1_title">碳汇农业</span>
+                            </h4>
+                            <p data-i18n="sec2_sub1_desc" class="text-sm text-gray-500">利用 CO₂ 促进植物光合作用，实现碳捕获的同时增加农作物产量。Genesis Digital Assets (GDA) 已成功落地此类项目。</p>
+                        </div>
+                        <div class="bg-[#1a1a1a] p-5 rounded border border-white/5">
+                            <h4 class="flex items-center gap-2 font-bold text-white text-sm mb-2">
+                                <i class="fa-solid fa-sack-dollar text-gas-green"></i> <span data-i18n="sec2_sub2_title">经济效益</span>
+                            </h4>
+                            <p data-i18n="sec2_sub2_desc" class="text-sm text-gray-500">以 LINKMINE 模式为例，通过温室农业碳汇分成，预计每年可为项目增收 200 万美元。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 mb-20">
+            <div class="flex items-center gap-4 mb-8">
+                <h2 data-i18n="sec3_title" class="text-3xl font-bold text-white">驱动制冷 (CCHP)</h2>
+                <div class="h-px bg-white/10 flex-1"></div>
+            </div>
+            
+            <div class="bg-gas-card p-8 rounded-xl border border-white/5 relative overflow-hidden flex flex-col md:flex-row items-center gap-8">
+                <div class="flex-1">
+                    <h4 class="text-xl font-bold mb-3 text-white" data-i18n="sec3_sub_title">冷热电三联供</h4>
+                    <p class="text-gray-400 mb-4 leading-relaxed" data-i18n="sec3_desc">
+                        利用废热驱动吸收式制冷机 (Absorption Chillers)。将原本排放的热能转化为冷能，为数据中心或矿场本身提供冷却。
+                    </p>
+                    <div class="inline-block bg-blue-900/20 border border-blue-500/30 rounded px-4 py-2 text-blue-400 text-sm font-bold">
+                        <i class="fa-solid fa-snowflake mr-2"></i> <span data-i18n="sec3_stat">降低 PUE，综合能效再升 15%</span>
+                    </div>
+                </div>
+                <div class="w-full md:w-1/3 flex justify-center">
+                    <i class="fa-solid fa-fan text-8xl text-blue-500/20 animate-spin-slow"></i>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-4xl mx-auto px-4 text-center mb-12">
+            <div class="bg-gradient-to-r from-orange-500/10 to-transparent p-1 rounded-2xl">
+                <div class="bg-[#151515] rounded-xl p-8 md:p-12">
+                    <h2 data-i18n="cta_title" class="text-2xl md:text-3xl font-bold mb-4">最大化您的能源价值</h2>
+                    <p data-i18n="cta_desc" class="text-gray-400 mb-8">不仅仅是发电。探索如何通过 CHP 系统将废热转化为利润。</p>
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <a href="/tools/energy-conversion" class="px-8 py-3 bg-gas-green text-black font-bold rounded hover:bg-white transition-all shadow-glow">
+                            <i class="fa-solid fa-fire mr-2"></i> <span data-i18n="cta_btn_calc">能电转换计算器</span>
+                        </a>
+                        <a href="/about/contact" class="px-8 py-3 border border-white/20 text-white font-medium rounded hover:border-gas-green hover:text-gas-green transition-all">
+                            <span data-i18n="cta_btn_contact">咨询热能方案</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        const AppData = {
+            navigation: [
+                { title: "nav_home", path: "/index.html", type: "link" },
+                { title: "nav_oil", path: "/use-cases/oilfield", type: "link" },
+                { title: "nav_ind", path: "/use-cases/industrial", type: "link" },
+                { title: "nav_mining", path: "/use-cases/mining", type: "link" },
+                { title: "nav_chp", path: "/use-cases/chp", type: "link" } // Active
+            ],
+            
+            i18n: {
+                zh: {
+                    tagline: "天然气发电挖矿助手",
+                    footerTagline: "让天然气发电挖矿更简单",
+                    // Navigation
+                    nav_home: "首页",
+                    nav_oil: "油气井 / 伴生气",
+                    nav_ind: "工业与园区能源",
+                    nav_mining: "挖矿 / 数据中心",
+                    nav_chp: "CHP 热电联供",
+                    // Hero
+                    hero_badge: "综合效率 > 80%",
+                    hero_title: "CHP 热电联供解决方案",
+                    hero_desc: "不仅是电力，更是能源的极致利用。回收发电废热，将综合效率从传统的 40% 提升至 80% 以上，创造第三重收入流。",
+                    efficiency_label: "综合热效率",
+                    // Section 1: Industrial
+                    sec1_title: "工业供汽与区域供暖",
+                    sec1_desc: "利用余热锅炉回收燃气机组排气热量。在生产比特币和电力的同时，向周边工业设施或居民社区销售蒸汽与热水。",
+                    sec1_point1_title: "能效跃升",
+                    sec1_point1_desc: "从单一发电的 35%-40% 效率提升至热电联产的 80%+。",
+                    sec1_point2_title: "多重收入流",
+                    sec1_point2_desc: "电力销售 + 算力收益 + 热力销售 (Steam/Heat Sales)。",
+                    // Section 2: Agriculture
+                    sec2_title: "现代农业与碳汇温室",
+                    sec2_desc: "将天然气清洁燃烧产生的热量和 CO₂ 输送至温室，打造“热+碳”协同的现代农业生态。",
+                    sec2_sub1_title: "碳汇农业",
+                    sec2_sub1_desc: "利用 CO₂ 促进植物光合作用，实现碳捕获的同时增加农作物产量。Genesis Digital Assets (GDA) 已成功落地此类项目。",
+                    sec2_sub2_title: "经济效益",
+                    sec2_sub2_desc: "以 LINKMINE 模式为例，通过温室农业碳汇分成，预计每年可为项目增收 200 万美元。",
+                    // Section 3: Cooling
+                    sec3_title: "驱动制冷 (CCHP)",
+                    sec3_sub_title: "冷热电三联供",
+                    sec3_desc: "利用废热驱动吸收式制冷机 (Absorption Chillers)。将原本排放的热能转化为冷能，为数据中心或矿场本身提供冷却。",
+                    sec3_stat: "降低 PUE，综合能效再升 15%",
+                    // CTA
+                    cta_title: "最大化您的能源价值",
+                    cta_desc: "不仅仅是发电。探索如何通过 CHP 系统将废热转化为利润。",
+                    cta_btn_calc: "能电转换计算器",
+                    cta_btn_contact: "咨询热能方案"
+                },
+                en: {
+                    tagline: "Natural Gas Power Mining Assistant",
+                    footerTagline: "Making natural gas power mining easier",
+                    // Navigation
+                    nav_home: "Home",
+                    nav_oil: "Oilfield / Associated Gas",
+                    nav_ind: "Industrial / Park",
+                    nav_mining: "Mining / Data Center",
+                    nav_chp: "CHP Cogeneration",
+                    // Hero
+                    hero_badge: "Efficiency > 80%",
+                    hero_title: "CHP Cogeneration Solutions",
+                    hero_desc: "Beyond power generation. Recycled waste heat boosts total efficiency from 40% to over 80%, creating a third revenue stream.",
+                    efficiency_label: "Thermal Efficiency",
+                    // Section 1: Industrial
+                    sec1_title: "Industrial Steam & District Heating",
+                    sec1_desc: "Recover exhaust heat via waste heat boilers. Sell steam and hot water to nearby industries or communities while producing Bitcoin and power.",
+                    sec1_point1_title: "Efficiency Leap",
+                    sec1_point1_desc: "Jump from 35-40% electrical efficiency to 80%+ combined thermal efficiency.",
+                    sec1_point2_title: "Triple Revenue",
+                    sec1_point2_desc: "Power Sales + Mining Rewards + Heat/Steam Sales.",
+                    // Section 2: Agriculture
+                    sec2_title: "Modern Agriculture & Carbon Sink",
+                    sec2_desc: "Channeling heat and clean CO₂ from gas combustion into greenhouses for a synergistic 'Heat + Carbon' agricultural ecosystem.",
+                    sec2_sub1_title: "Carbon Sink Agriculture",
+                    sec2_sub1_desc: "Using CO₂ to boost photosynthesis and crop yields. Successfully implemented by Genesis Digital Assets (GDA).",
+                    sec2_sub2_title: "Economic Impact",
+                    sec2_sub2_desc: "The LINKMINE model projects an additional $2M/year revenue through agricultural carbon sink partnerships.",
+                    // Section 3: Cooling
+                    sec3_title: "Absorption Cooling (CCHP)",
+                    sec3_sub_title: "Combined Cooling, Heat & Power",
+                    sec3_desc: "Drive Absorption Chillers with waste heat. Convert exhaust energy into cooling for the data center itself.",
+                    sec3_stat: "Lower PUE, Efficiency +15%",
+                    // CTA
+                    cta_title: "Maximize Energy Value",
+                    cta_desc: "More than just power. Discover how to turn waste heat into profit with CHP.",
+                    cta_btn_calc: "Energy Converter",
+                    cta_btn_contact: "Get Thermal Solution"
+                },
+                ru: {
+                    tagline: "Помощник по газовому майнингу",
+                    footerTagline: "Майнинг на газе проще",
+                    // Navigation
+                    nav_home: "Главная",
+                    nav_oil: "Нефтегаз / ПНГ",
+                    nav_ind: "Пром. энергия",
+                    nav_mining: "Майнинг / ЦОД",
+                    nav_chp: "ТЭЦ (CHP)",
+                    // Hero
+                    hero_badge: "КПД > 80%",
+                    hero_title: "Решения ТЭЦ (Когенерация)",
+                    hero_desc: "Больше, чем просто электричество. Утилизация тепла повышает общий КПД с 40% до 80%+, создавая третий поток доходов.",
+                    efficiency_label: "Тепловой КПД",
+                    // Section 1: Industrial
+                    sec1_title: "Промышленный пар и отопление",
+                    sec1_desc: "Утилизация выхлопных газов через котлы-утилизаторы. Продажа пара и горячей воды заводам или жилым районам параллельно с майнингом.",
+                    sec1_point1_title: "Скачок эффективности",
+                    sec1_point1_desc: "Рост с 35-40% электрического КПД до 80%+ общего теплового КПД.",
+                    sec1_point2_title: "Тройной доход",
+                    sec1_point2_desc: "Продажа ЭЭ + Майнинг + Продажа тепла/пара.",
+                    // Section 2: Agriculture
+                    sec2_title: "Агрокультура и Карбоновый след",
+                    sec2_desc: "Направление тепла и чистого CO₂ в теплицы для создания экосистемы «Тепло + Углерод».",
+                    sec2_sub1_title: "Карбоновое земледелие",
+                    sec2_sub1_desc: "Использование CO₂ для фотосинтеза. Успешно реализовано Genesis Digital Assets (GDA).",
+                    sec2_sub2_title: "Экономика",
+                    sec2_sub2_desc: "Модель LINKMINE прогнозирует доп. доход $2 млн/год за счет агро-партнерств.",
+                    // Section 3: Cooling
+                    sec3_title: "Абсорбционное охлаждение (CCHP)",
+                    sec3_sub_title: "Тригенерация",
+                    sec3_desc: "Использование тепла для питания абсорбционных чиллеров. Превращение выхлопов в холод для охлаждения дата-центра.",
+                    sec3_stat: "Ниже PUE, КПД +15%",
+                    // CTA
+                    cta_title: "Максимизация ценности",
+                    cta_desc: "Не только электричество. Узнайте, как превратить тепло в прибыль с ТЭЦ.",
+                    cta_btn_calc: "Конвертер энергии",
+                    cta_btn_contact: "Тепловое решение"
+                }
+            }
+        };
+
+        const app = {
+            currentLang: 'en',
+
+            init() {
+                this.updateContent();
+                this.updateActiveLangState();
+            },
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                this.updateContent();
+                this.updateActiveLangState();
+            },
+
+            t(key) {
+                const dict = AppData.i18n[this.currentLang];
+                return (dict && dict[key]) ? dict[key] : key;
+            },
+
+            updateActiveLangState() {
+                const buttonClasses = {
+                    active: "text-black bg-gas-green shadow-glow font-bold",
+                    inactive: "text-gas-subtext hover:text-white hover:bg-white/5 font-medium"
+                };
+
+                ['zh', 'en', 'ru'].forEach(lang => {
+                    const btn = document.getElementById(`btn-lang-${lang}`);
+                    if(btn) {
+                        btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center cursor-pointer ${lang === this.currentLang ? buttonClasses.active : buttonClasses.inactive}`;
+                    }
+                });
+            },
+
+            updateContent() {
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    el.innerText = this.t(key);
+                });
+            },
+        };
+
+        // Start
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = app;
+            app.init();
+        });
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

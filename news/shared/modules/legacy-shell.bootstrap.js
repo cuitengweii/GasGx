@@ -1,0 +1,219 @@
+import { mountSharedHeader, mountSharedFooter, renderSharedAuthState } from './layout.shared.js';
+import { HEADER_NAVIGATION } from '../config/navigation.config.js';
+
+const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+const LEGACY_HIDDEN_STYLE_ID = 'gsh-legacy-hidden-style';
+const LEGACY_HIDDEN_CLASS = 'gsh-legacy-hidden';
+
+function ensureLegacyHiddenStyle() {
+    if (document.getElementById(LEGACY_HIDDEN_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = LEGACY_HIDDEN_STYLE_ID;
+    style.textContent = `
+        .${LEGACY_HIDDEN_CLASS} { display: none !important; }
+    `;
+    document.head.appendChild(style);
+}
+
+function ensureSharedStylesheet() {
+    const marker = '/news/shared/modules/styles/layout.shared.css';
+    const exists = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some((link) => String(link.href || '').includes(marker));
+    if (exists) return;
+
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = marker;
+    document.head.appendChild(link);
+}
+
+function ensureSlot(id, position) {
+    const existing = document.getElementById(id);
+    if (existing) return existing;
+
+    const slot = document.createElement('div');
+    slot.id = id;
+
+    if (position === 'start') {
+        document.body.insertBefore(slot, document.body.firstChild);
+    } else {
+        document.body.appendChild(slot);
+    }
+
+    return slot;
+}
+
+function hideLegacyHeaderFooter() {
+    ensureLegacyHiddenStyle();
+
+    Array.from(document.body.children).forEach((node) => {
+        if (node.id === 'gsh-header-slot' || node.id === 'gsh-footer-slot') return;
+        if (node.tagName === 'HEADER' || node.tagName === 'FOOTER') {
+            node.classList.add(LEGACY_HIDDEN_CLASS);
+        }
+    });
+
+    [
+        'global-menu-overlay',
+        'global-mobile-menu',
+        'mobile-menu-overlay',
+        'mobile-menu-container',
+        'desktop-nav',
+        'auth-btn-container',
+        'header-account-trigger',
+        'mobile-trigger-text',
+        'gxf-header-account-trigger',
+        'gxf-mobile-trigger-text',
+    ].forEach((id) => {
+        const node = document.getElementById(id);
+        if (node) node.classList.add(LEGACY_HIDDEN_CLASS);
+    });
+}
+
+function detectPage(pathname) {
+    return pathname.startsWith('/news/flash') ? 'flash' : 'news-home';
+}
+
+function detectActiveTitle(pathname) {
+    const path = pathname.toLowerCase();
+    if (path.startsWith('/news/flash')) return 'FLASH';
+    if (path.startsWith('/news/gas-energy')) return 'GAS ENERGY';
+    if (path.startsWith('/news/generators')) return 'GENERATORS';
+    if (path.startsWith('/news/mining')) return 'MINING';
+    if (path.startsWith('/news/insights')) return 'INSIGHTS';
+    if (path.startsWith('/news/data') || path === '/news/data.html') return 'DATA';
+    if (path.startsWith('/news/events')) return 'EVENTS';
+    return 'HOME';
+}
+
+function toggleNewsHomeMenu(idPrefix) {
+    const menu = document.getElementById(`${idPrefix}-mobile-menu-container`);
+    const overlay = document.getElementById(`${idPrefix}-mobile-menu-overlay`);
+    if (!menu || !overlay) return;
+
+    const hidden = menu.classList.contains('translate-x-full');
+    if (hidden) {
+        menu.classList.remove('translate-x-full');
+        overlay.classList.remove('hidden');
+    } else {
+        menu.classList.add('translate-x-full');
+        overlay.classList.add('hidden');
+    }
+}
+
+function toggleFlashMenu(idPrefix) {
+    const drawer = document.getElementById(`${idPrefix}-mobile-menu-drawer`);
+    const overlay = document.getElementById(`${idPrefix}-mobile-menu-overlay`);
+    if (!drawer || !overlay) return;
+
+    const hidden = drawer.classList.contains('translate-x-full');
+    if (hidden) {
+        drawer.classList.remove('translate-x-full');
+        overlay.classList.remove('hidden', 'opacity-0');
+    } else {
+        drawer.classList.add('translate-x-full');
+        overlay.classList.add('opacity-0');
+        setTimeout(() => overlay.classList.add('hidden'), 300);
+    }
+}
+
+function ensureMobileToggleBridge(page, appGlobal, idPrefix) {
+    if (!window[appGlobal]) window[appGlobal] = {};
+    window[appGlobal].toggleMobileMenu = () => {
+        if (page === 'flash') toggleFlashMenu(idPrefix);
+        else toggleNewsHomeMenu(idPrefix);
+    };
+}
+
+async function resolveDisplayName(client, sessionUser) {
+    if (!sessionUser) return null;
+    const meta = sessionUser.user_metadata || {};
+    const fallback = meta.full_name || (sessionUser.email ? sessionUser.email.split('@')[0] : 'Sign In');
+
+    try {
+        const { data: profile } = await client.from('profiles').select('full_name').eq('id', sessionUser.id).single();
+        if (profile && profile.full_name) return profile.full_name;
+    } catch (e) {
+        console.log('Legacy shell profile fetch warning:', e);
+    }
+
+    return fallback;
+}
+
+function applySharedNavState({ page, idPrefix, currentUser, displayName, activeTitle, activePath }) {
+    renderSharedAuthState({
+        page,
+        idPrefix,
+        navigation: HEADER_NAVIGATION,
+        currentUser,
+        displayName,
+        accountUrl: '/news/flash/account.html',
+        signInUrl: '/news/flash/user.html',
+        activeTitle,
+        activePath,
+    });
+}
+
+async function initAuthBridge({ page, idPrefix, activeTitle, activePath }) {
+    let currentUser = null;
+    let displayName = null;
+
+    applySharedNavState({ page, idPrefix, currentUser, displayName, activeTitle, activePath });
+
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') return;
+
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    try {
+        const {
+            data: { session },
+        } = await client.auth.getSession();
+
+        if (session) {
+            currentUser = session.user;
+            displayName = await resolveDisplayName(client, session.user);
+        }
+
+        applySharedNavState({ page, idPrefix, currentUser, displayName, activeTitle, activePath });
+
+        client.auth.onAuthStateChange(async (_event, sessionValue) => {
+            currentUser = sessionValue ? sessionValue.user : null;
+            displayName = currentUser ? await resolveDisplayName(client, currentUser) : null;
+            applySharedNavState({ page, idPrefix, currentUser, displayName, activeTitle, activePath });
+        });
+    } catch (e) {
+        console.error('Legacy shell auth bridge failed:', e);
+    }
+}
+
+function normalizeLegacyBodyLayout(pathname) {
+    const path = pathname.toLowerCase();
+    if (path === '/news/flash/account.html' || path === '/news/flash/user.html') {
+        document.body.classList.remove('h-screen', 'overflow-hidden');
+        document.body.classList.add('min-h-screen');
+    }
+}
+
+function mountLegacyShell() {
+    const pathname = window.location.pathname;
+    const page = detectPage(pathname);
+    const activeTitle = detectActiveTitle(pathname);
+    const activePath = pathname;
+    const idPrefix = page === 'flash' ? 'gxf' : 'ggx';
+    const appGlobal = page === 'flash' ? 'GGXFlashApp' : 'GGXNewsHomeApp';
+
+    ensureSharedStylesheet();
+    normalizeLegacyBodyLayout(pathname);
+    hideLegacyHeaderFooter();
+
+    const headerSlot = ensureSlot('gsh-header-slot', 'start');
+    const footerSlot = ensureSlot('gsh-footer-slot', 'end');
+
+    mountSharedHeader(headerSlot, { page, idPrefix, appGlobal });
+    mountSharedFooter(footerSlot, { variant: 'full' });
+    ensureMobileToggleBridge(page, appGlobal, idPrefix);
+    initAuthBridge({ page, idPrefix, activeTitle, activePath });
+}
+
+document.addEventListener('DOMContentLoaded', mountLegacyShell);
+

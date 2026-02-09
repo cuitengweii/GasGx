@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7x24 Flash News - GasGx Mining</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: { bg: '#050505', card: '#0F0F0F', border: '#1F1F1F', green: '#5DD62C', accent: '#FFFFFF', subtext: '#888888' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        header: ['Oswald', 'sans-serif']
+                    },
+                    boxShadow: {
+                        neon: '0 0 15px rgba(93, 214, 44, 0.3)',
+                        'neon-strong': '0 0 30px rgba(93, 214, 44, 0.6)'
+                    },
+                    animation: { marquee: 'marquee 50s linear infinite' },
+                    keyframes: {
+                        marquee: {
+                            '0%': { transform: 'translateX(0%)' },
+                            '100%': { transform: 'translateX(-50%)' }
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+
+    <link rel="stylesheet" href="../shared/modules/styles/layout.shared.css">
+    <link rel="stylesheet" href="./modules/styles/header.module.css">
+    <link rel="stylesheet" href="./modules/styles/main.module.css">
+    <link rel="stylesheet" href="./modules/styles/footer.module.css">
+</head>
+<body class="gxf-flash-page">
+    <div id="gxf-header-slot"></div>
+    <div id="gxf-main-slot" class="flex-grow"></div>
+    <div id="gxf-footer-slot"></div>
+
+    <script type="module" src="./modules/flash.bootstrap.js"></script>
+</body>
+</html>

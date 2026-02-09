@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx Industry Report 2026: Natural Gas Power & Mining</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 20px rgba(93, 214, 44, 0.6)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Component Styles matching template */
+        .gas-panel {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        .gas-panel:hover {
+            border-color: rgba(93, 214, 44, 0.3);
+            box-shadow: 0 0 15px rgba(93, 214, 44, 0.15);
+        }
+
+        .report-card {
+            background-color: rgba(32, 32, 32, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 0.75rem;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #FFFFFF 0%, #5DD62C 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Typography for Report */
+        h2 { font-size: 1.875rem; font-weight: 700; color: #fff; margin-top: 3rem; margin-bottom: 1.5rem; border-left: 4px solid #5DD62C; padding-left: 1rem; scroll-margin-top: 100px; }
+        h3 { font-size: 1.5rem; font-weight: 600; color: #e2e8f0; margin-top: 2rem; margin-bottom: 1rem; scroll-margin-top: 100px; }
+        h4 { font-size: 1.125rem; font-weight: 600; color: #5DD62C; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        p { margin-bottom: 1.25rem; line-height: 1.75; color: #94a3b8; }
+        ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1.25rem; color: #94a3b8; }
+        li { margin-bottom: 0.5rem; }
+        .citation { font-size: 0.75rem; color: #5DD62C; vertical-align: super; margin-left: 2px; text-decoration: none; opacity: 0.8; cursor: pointer; }
+
+        /* Tables */
+        .report-table { width: 100%; border-collapse: collapse; margin: 2rem 0; font-size: 0.9rem; overflow: hidden; border-radius: 8px; }
+        .report-table th { background-color: rgba(93, 214, 44, 0.1); color: #5DD62C; font-weight: 600; text-align: left; padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .report-table td { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #ccc; background-color: rgba(255,255,255,0.02); }
+        .report-table tr:hover td { background-color: rgba(255,255,255,0.05); }
+
+        /* TOC Links */
+        .toc-link { display: block; padding: 0.5rem 0; color: #94a3b8; transition: all 0.2s; font-size: 0.9rem; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 1rem; }
+        .toc-link:hover { color: #5DD62C; border-left-color: #5DD62C; padding-left: 1.2rem; background: linear-gradient(90deg, rgba(93, 214, 44, 0.05), transparent); }
+        .toc-sub-link { padding-left: 2rem; font-size: 0.85rem; }
+
+        /* Animations */
+        @keyframes floatPulse {
+            0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); }
+        }
+        .float-btn { animation: floatPulse 2s infinite; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+    </style>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative">
+
+    <div id="ggx-site-header-slot"></div>
+
+<header class="relative pt-32 pb-20 px-6 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center bg-no-repeat">
+        <div class="absolute inset-0 bg-[#0F0F0F]/90"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-[#0F0F0F]"></div>
+        
+        <div class="container mx-auto relative z-10">
+            <div class="max-w-5xl">
+                <div class="inline-block px-3 py-1 border border-gas-green/30 rounded-full bg-gas-green/10 text-gas-green text-xs font-bold uppercase tracking-wider mb-6">
+                    GasGx Strategic Report
+                </div>
+                <h1 class="text-4xl md:text-6xl font-black mb-6 tracking-tight text-white leading-tight">
+                    GasGx Industry Report 2026: <br>
+                    <span class="gradient-text">Industrial Convergence of Energy & Compute</span>
+                </h1>
+                <p class="text-lg text-gas-subtext max-w-2xl mb-10 leading-relaxed font-light">
+                    Market dynamics, technical evolution, regulatory reshaping, and economic models in the 1 ZettaHash era.
+                </p>
+                
+                <div class="flex flex-wrap gap-6 text-sm font-mono text-gray-400">
+                    <span class="flex items-center gap-2"><i class="fa-regular fa-calendar text-gas-green"></i> Jan 20, 2026</span>
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-layer-group text-gas-green"></i> 169 Source Index</span>
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-bolt text-gas-green"></i> 1,000 EH/s Milestone</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full max-w-[1600px] mx-auto px-4 pb-20 relative z-10">
+        <div class="flex flex-col lg:flex-row gap-8 xl:gap-12">
+            
+            <aside class="w-full lg:w-[280px] shrink-0 hidden lg:block">
+                <div class="sticky top-24 gas-panel rounded-xl p-5 shadow-glow-strong border-l-2 border-gas-green">
+                    <h3 class="!mt-0 !text-sm text-white font-bold mb-4 border-b border-white/10 pb-3 flex items-center gap-2 uppercase tracking-wide">
+                        <i class="fa-solid fa-list-ul text-gas-green"></i> Contents
+                    </h3>
+                    <nav class="flex flex-col max-h-[70vh] overflow-y-auto pr-1 custom-scrollbar space-y-1">
+                        <a href="#section-1" class="toc-link">1. Executive Summary</a>
+                        <a href="#section-2" class="toc-link">2. Macro Environment</a>
+                        <a href="#section-2-1" class="toc-link toc-sub-link">2.1 Gas Market Dynamics</a>
+                        <a href="#section-2-2" class="toc-link toc-sub-link">2.2 Bitcoin Economics</a>
+                        <a href="#section-2-3" class="toc-link toc-sub-link">2.3 Regulatory Storm</a>
+                        <a href="#section-3" class="toc-link">3. Technical Evolution</a>
+                        <a href="#section-3-1" class="toc-link toc-sub-link">3.1 Hardware: 15 J/TH</a>
+                        <a href="#section-3-2" class="toc-link toc-sub-link">3.2 Immersion Cooling</a>
+                        <a href="#section-4" class="toc-link">4. Business Model</a>
+                        <a href="#section-4-1" class="toc-link toc-sub-link">4.1 LCOE Analysis</a>
+                        <a href="#section-4-2" class="toc-link toc-sub-link">4.2 Carbon Credits</a>
+                        <a href="#section-5" class="toc-link">5. Competition</a>
+                        <a href="#section-6" class="toc-link">6. From BTC to AI</a>
+                        <a href="#section-7" class="toc-link">7. Outlook & Risks</a>
+                        <a href="#references" class="toc-link border-t border-white/10 mt-2 pt-2"><i class="fa-solid fa-book-open text-xs mr-2"></i>References</a>
+                    </nav>
+                </div>
+            </aside>
+
+            <article class="flex-1 report-card p-6 md:p-12 min-w-0">
+                
+                <section id="section-1">
+                    <h2>1. Executive Summary: The Industrial Convergence</h2>
+                    <p>
+                        In 2026, the boundary between the global digital asset mining industry and the traditional energy sector has completely blurred. With the Bitcoin network hashrate officially breaking the <strong>1 ZettaHash (1,000 EH/s)</strong> threshold <a href="#ref-1" class="citation">[1]</a>, and the exponential explosion of power demand from Artificial Intelligence (AI), Gas-to-Compute (GasGx) has evolved from a marginal arbitrage strategy into an indispensable "flexible load" layer of energy infrastructure.
+                    </p>
+                    <p>
+                        The 2026 market is defined by "High Difficulty" and "High Compliance." While the global crypto mining market size reached approximately $4.6 billion in 2025 with a CAGR of 12% projected towards 2030 <a href="#ref-3" class="citation">[3]</a>, growth is uneven. Traditional grid-connected miners face the dual squeeze of volatile electricity prices and connection backlogs. Conversely, GasGx projects utilizing Stranded Gas and Associated Gas are becoming the new darlings of capital expenditure due to their unique "negative cost energy" attributes and ESG compliance value.
+                    </p>
+                    <div class="gas-panel p-6 rounded-xl border-l-4 border-gas-green my-8">
+                        <h4 class="!mt-0 text-white uppercase text-sm mb-2">Key Driver: The WEC Mandate</h4>
+                        <p class="!mb-0 text-sm">
+                            The core driver is the "Waste Emissions Charge" (WEC) from the U.S. Inflation Reduction Act (IRA), fully implemented in 2026. It imposes a punitive fee of <strong>$1,500 per ton</strong> on excess methane emissions <a href="#ref-5" class="citation">[5]</a>. This policy has fundamentally altered cost structures; deploying onsite mining is no longer just about earning Bitcoin, but about avoiding massive environmental fines.
+                        </p>
+                    </div>
+                </section>
+
+                <section id="section-2">
+                    <h2>2. Global Macro Energy & Compute Environment (2026)</h2>
+                    
+                    <div id="section-2-1">
+                        <h3>2.1 Global Natural Gas Market Dynamics</h3>
+                        <p>
+                            Entering 2026, the global natural gas market is in a critical cycle of supply-demand rebalancing. Despite the rise of renewables, the new base load added by data centers and AI clusters has reinforced natural gas's role as a grid stabilizer.
+                        </p>
+                        <h4>USA Henry Hub & LNG Effects</h4>
+                        <p>
+                            The 2026 average spot price for Henry Hub is projected between <strong>$3.46 - $3.85/MMBtu</strong>, a significant rebound from the lows of 2024-2025 <a href="#ref-17" class="citation">[17]</a>. For grid-dependent miners, this raises marginal costs. However, for GasGx operators with stranded gas, rising main grid prices actually expand their relative advantage—since stranded gas often has a shadow price near zero (or negative), creating a massive arbitrage opportunity.
+                        </p>
+                        <h4>Canada AECO & Regional Arbitrage</h4>
+                        <p>
+                            The AECO benchmark price in Alberta is expected to rebound to $3.50-$3.82 CAD/GJ in 2026 <a href="#ref-20" class="citation">[20]</a>. Despite this, remote wells remain physically disconnected from pipelines. Canaan and Aurora AZ Energy's pilot projects in Calgary utilize this "stranded" gas to bypass pipeline costs and export energy value globally via hashrate <a href="#ref-15" class="citation">[15]</a>.
+                        </p>
+                    </div>
+
+                    <div id="section-2-2">
+                        <h3>2.2 Bitcoin Network Economics</h3>
+                        <p>
+                            In 2026, the network has fully digested the 2024 halving impact. With hashrate over 1 ZH/s, mining difficulty has surged 36% year-over-year. This growth is driven by hardware efficiency (computing inflation) rather than just price action. Miners with older generation hardware (>30 J/TH) have been flushed out.
+                        </p>
+                    </div>
+
+                    <div id="section-2-3">
+                        <h3>2.3 The Regulatory Storm</h3>
+                        <div class="overflow-x-auto">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Policy</th>
+                                        <th>Region</th>
+                                        <th>Core Content</th>
+                                        <th>GasGx Impact</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Methane WEC</td>
+                                        <td>USA (Federal)</td>
+                                        <td>$1,500/ton fee on methane for >25k ton CO2e facilities</td>
+                                        <td><span class="text-gas-green font-bold">Major Bull Case</span>. Mining gear becomes a compliance tool to avoid fines <a href="#ref-5" class="citation">[5]</a>.</td>
+                                    </tr>
+                                    <tr>
+                                        <td>ERCOT Registration</td>
+                                        <td>USA (Texas)</td>
+                                        <td>>75MW facilities must register and report load daily</td>
+                                        <td><span class="text-orange-400 font-bold">Compliance Cost</span>. Large miners need grid interaction capabilities <a href="#ref-24" class="citation">[24]</a>.</td>
+                                    </tr>
+                                    <tr>
+                                        <td>TIER Regulation</td>
+                                        <td>Canada (AB)</td>
+                                        <td>Carbon price ~$95 CAD/ton; supports offset credits</td>
+                                        <td><span class="text-gas-green font-bold">Double Revenue</span>. Compliant generation earns carbon credits <a href="#ref-7" class="citation">[7]</a>.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="section-3">
+                    <h2>3. Technical Infrastructure Evolution</h2>
+                    
+                    <div id="section-3-1">
+                        <h3>3.1 Hardware: The Moore's Law of 15 J/TH</h3>
+                        <p>
+                            Mainstream ASIC miners in 2026 have achieved a generational leap in efficiency, compressing from 20+ J/TH in 2024 to <strong>15-16 J/TH</strong> <a href="#ref-9" class="citation">[9]</a>. Canaan's <strong>Avalon A15 Pro</strong> series has become a star product, specifically optimized for the unstable voltage environments of oil fields.
+                        </p>
+                    </div>
+
+                    <div id="section-3-2">
+                        <h3>3.2 Cooling Revolution: Immersion Dominance</h3>
+                        <p>
+                            <strong>Immersion Cooling</strong> is the 2026 industry standard for GasGx.
+                        </p>
+                        <ul class="space-y-2">
+                            <li><strong>Environment:</strong> Completely isolates chips from desert dust or arctic cold <a href="#ref-27" class="citation">[27]</a>.</li>
+                            <li><strong>Overclocking:</strong> Safely boosts hash rate output by 40% due to high specific heat capacity of fluids <a href="#ref-11" class="citation">[11]</a>.</li>
+                            <li><strong>ROI:</strong> Despite higher CAPEX (~$375k/MW), the ROI beats air cooling within 12-18 months <a href="#ref-30" class="citation">[30]</a>.</li>
+                        </ul>
+                    </div>
+
+                    <div id="section-3-3">
+                        <h3>3.3 Modular Generation</h3>
+                        <p>
+                            <strong>LoadSync</strong> technology (patent by Upstream Data) allows millisecond-level synchronization between miner load and generator output, preventing downtime during gas flow fluctuations <a href="#ref-31" class="citation">[31]</a>.
+                        </p>
+                    </div>
+                </section>
+
+                <section id="section-4">
+                    <h2>4. Business Model & Economic Analysis</h2>
+                    
+                    <div id="section-4-1">
+                        <h3>4.1 Cost Structure (LCOE Analysis)</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                            <div>
+                                <p class="text-sm mb-4">
+                                    In stranded gas scenarios, fuel cost is effectively $0. The All-in electricity cost (including O&M) is approximately <strong>$0.02 - $0.03/kWh</strong>. Compared to the Texas industrial grid rate of $0.05-$0.07/kWh, off-grid GasGx maintains a >50% cost advantage <a href="#ref-36" class="citation">[36]</a>.
+                                </p>
+                                <div class="w-full bg-[#151515] p-4 rounded-xl border border-white/5 h-64">
+                                    <canvas id="costChart"></canvas>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="mb-2 text-sm text-gas-green/80 font-mono">Table: 1MW Off-Grid Immersion CAPEX</p>
+                                <table class="report-table !mt-0">
+                                    <tbody>
+                                        <tr>
+                                            <td>Generator (1.2MW)</td>
+                                            <td class="text-right text-white">$180k - $250k</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Miners (A15/S21 x250)</td>
+                                            <td class="text-right text-white">$600k - $800k</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Immersion Container</td>
+                                            <td class="text-right text-white">$200k - $250k</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Infra & Install</td>
+                                            <td class="text-right text-white">$50k - $80k</td>
+                                        </tr>
+                                        <tr class="bg-white/10 font-bold text-gas-green border-t border-gas-green">
+                                            <td>TOTAL CAPEX</td>
+                                            <td class="text-right">$1.03M - $1.38M</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="section-4-2">
+                        <h3>4.2 Revenue Stacking: Carbon Credits</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                            <div class="p-4 bg-[#1a1a1a] border border-white/5 rounded-lg">
+                                <h4 class="text-white mb-2 !mt-0">Avoiding WEC Fines</h4>
+                                <p class="text-sm">
+                                    For a facility venting 1,000 tons of methane, the fine is <strong>$1.5M/year</strong>. GasGx eliminates this fine, creating a "negative cost" baseline <a href="#ref-30" class="citation">[30]</a>.
+                                </p>
+                            </div>
+                            <div class="p-4 bg-[#1a1a1a] border border-white/5 rounded-lg">
+                                <h4 class="text-white mb-2 !mt-0">TIER Credits (Alberta)</h4>
+                                <p class="text-sm">
+                                    A 1MW project reduces ~12k tons of CO2e annually. At ~$95 CAD/ton, this yields <strong>~$1.2M CAD/year</strong> in credit revenue, covering almost all OPEX <a href="#ref-15" class="citation">[15]</a>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="section-4-3">
+                        <h3>4.3 Profitability Sensitivity</h3>
+                        <p>
+                            In the 2026 baseline scenario (BTC $90k, Difficulty 1.1 ZH/s), pure mining payback is 8-10 months. When stacking carbon credits or WEC fine avoidance, payback drops to <strong>4-6 months</strong>.
+                        </p>
+                        <div id="plotlySurface" class="w-full h-[450px] border border-white/5 rounded-xl bg-[#151515] overflow-hidden mt-6 shadow-glow-sm"></div>
+                        <p class="text-center text-xs text-gray-500 mt-2">Interactive: Analyze Daily Profit based on BTC Price (Y) vs Energy Cost (X)</p>
+                    </div>
+                </section>
+
+                <section id="section-5">
+                    <h2>5. Competitive Landscape</h2>
+                    <p>
+                        The settlement of the patent dispute between <strong>Crusoe Energy</strong> and <strong>Upstream Data</strong> <a href="#ref-13" class="citation">[13]</a> has eliminated the legal sword of Damocles, leading to an explosion of modular solutions.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <div class="gas-panel p-6 rounded-lg">
+                            <h4 class="text-white !mt-0"><i class="fa-solid fa-industry text-gas-green mr-2"></i> Canaan</h4>
+                            <p class="text-sm mt-2">Transitioning from hardware sales to vertical integration. Partnering with Aurora AZ Energy to operate sites directly, trading "equipment for hashrate" <a href="#ref-15" class="citation">[15]</a>.</p>
+                        </div>
+                        <div class="gas-panel p-6 rounded-lg">
+                            <h4 class="text-white !mt-0"><i class="fa-solid fa-cloud text-blue-400 mr-2"></i> Crusoe Energy</h4>
+                            <p class="text-sm mt-2">Pivoting to AI Cloud. Upgrading the narrative to "Green AI Infrastructure" and solving fiber connectivity challenges to attract sovereign fund investment <a href="#ref-13" class="citation">[13]</a>.</p>
+                        </div>
+                        <div class="gas-panel p-6 rounded-lg">
+                            <h4 class="text-white !mt-0"><i class="fa-solid fa-bolt text-purple-400 mr-2"></i> Greenidge</h4>
+                            <p class="text-sm mt-2">Hybrid model. Selling power to the grid during peak prices and self-mining during troughs, while introducing AI inference loads <a href="#ref-42" class="citation">[42]</a>.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="section-6">
+                    <h2>6. From Bitcoin to AI: The Second Curve</h2>
+                    <p>
+                        While AI/HPC offers 3-5x the revenue potential per MWh compared to Bitcoin mining, physical constraints limit deployment at remote wells <a href="#ref-41" class="citation">[41]</a>.
+                    </p>
+                    <ul class="space-y-4 my-6">
+                        <li class="flex items-start gap-3 bg-white/5 p-4 rounded-lg">
+                            <i class="fa-solid fa-network-wired text-red-400 mt-1"></i>
+                            <div>
+                                <strong class="text-white">Network Latency:</strong> AI training requires fiber optics, which Starlink cannot replace for large clusters.
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3 bg-white/5 p-4 rounded-lg">
+                            <i class="fa-solid fa-server text-gas-green mt-1"></i>
+                            <div>
+                                <strong class="text-white">The 2026 Reality - Inference at the Edge:</strong> GasGx AI attempts focus on <strong>Inference</strong> and batch rendering. These tasks tolerate higher latency and are suitable for edge gas power plants.
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+
+                <section id="section-7">
+                    <h2>7. Future Outlook & Risks</h2>
+                    <ul class="space-y-2 mb-8 list-disc pl-5">
+                        <li><strong>Regulatory Risk:</strong> Despite WEC benefits, environmental groups still challenge GasGx for extending the fossil fuel lifecycle <a href="#ref-44" class="citation">[44]</a>.</li>
+                        <li><strong>Depletion Risk:</strong> Associated gas volume declines over time, necessitating <strong>Skid-mounted</strong> (mobile) solutions.</li>
+                        <li><strong>Obsolescence:</strong> 30 J/TH machines are effectively e-waste in 2026.</li>
+                    </ul>
+                    <div class="mt-8 p-8 border border-white/10 rounded-2xl bg-[#0a0a0a] text-center relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gas-green/5 blur-3xl rounded-full transform scale-75"></div>
+                        <h3 class="!mt-0 !text-2xl text-white relative z-10">Conclusion: Distributed Compute Utilities</h3>
+                        <p class="text-gray-400 relative z-10 max-w-2xl mx-auto mt-4">
+                            2026 marks the "Industrial Year One" for GasGx. In 3-5 years, we will see the rise of Distributed Compute Utilities—companies that produce neither oil nor grid electricity, but convert geological energy directly into digital intelligence.
+                        </p>
+                    </div>
+                </section>
+
+                <div id="references" class="mt-16 pt-8 border-t border-white/10 text-xs text-gray-500 font-mono">
+                    <p class="mb-4 font-bold text-white uppercase tracking-wider">Primary Sources Index</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                        <p>[1] The Block: 2026 Bitcoin Mining Outlook</p>
+                        <p>[3] Grand View Research: Mining Market Outlook</p>
+                        <p>[5] Biden White House: Methane Emissions Reduction Action Plan</p>
+                        <p>[7] Alberta.ca: TIER Regulation</p>
+                        <p>[9] Canaan Avalon A15 Technical Specs</p>
+                        <p>[13] Blockspace Media: Crusoe vs Upstream Patent Dispute</p>
+                        <p>[15] PR Newswire: Canaan Inc. Gas-to-Computing Pilot</p>
+                        <p>[30] QuoteColo: Immersion Cooling ROI Analysis</p>
+                        <p>[31] Upstream Data: LoadSync Technology</p>
+                        <p>[36] Earthjustice: Subsidizing Crypto Mining</p>
+                    </div>
+                </div>
+
+            </article>
+        </div>
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+    
+    <!--<button onclick="captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group" title="Share Snapshot">
+        <i class="fa-solid fa-camera text-xl"></i>
+    </button>-->
+
+    <script>
+        // 1. Back to Top Logic
+        window.addEventListener('scroll', () => {
+            const btn = document.getElementById('backToTopBtn');
+            if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                btn.classList.remove('translate-y-20', 'opacity-0');
+            } else {
+                btn.classList.add('translate-y-20', 'opacity-0');
+            }
+        });
+
+        // 2. Screenshot Logic
+        function captureAndShare() {
+            window.scrollTo(0, 0);
+            setTimeout(() => {
+                html2canvas(document.body, {
+                    backgroundColor: '#0F0F0F',
+                    scale: 2
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'GasGx-2026-Report.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                });
+            }, 500);
+        }
+
+        // 3. Chart.js - Cost Comparison (Embedded in Section 4.1)
+        const ctxCost = document.getElementById('costChart').getContext('2d');
+        new Chart(ctxCost, {
+            type: 'bar',
+            data: {
+                labels: ['Grid Power', 'GasGx Off-Grid'],
+                datasets: [
+                    {
+                        label: 'Electricity (OpEx)',
+                        data: [7.5, 2.8], // Cents/kWh
+                        backgroundColor: '#C84C4C',
+                    },
+                    {
+                        label: 'Infrastucture',
+                        data: [1.5, 3.5],
+                        backgroundColor: '#444',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#999', usePointStyle: true } },
+                    tooltip: { backgroundColor: '#222', titleColor: '#fff', bodyColor: '#ccc' }
+                },
+                scales: {
+                    x: { stacked: true, grid: { display: false }, ticks: { color: '#999' } },
+                    y: { 
+                        stacked: true, 
+                        grid: { color: 'rgba(255,255,255,0.05)' }, 
+                        ticks: { color: '#999' },
+                        title: { display: true, text: 'Cent / kWh', color: '#666' }
+                    }
+                }
+            }
+        });
+
+        // 4. Plotly 3D Surface (Embedded in Section 4.3)
+        const electricityCosts = [0.02, 0.03, 0.04, 0.05, 0.06];
+        const btcPrices = [40000, 60000, 80000, 100000, 120000];
+        const z_data = [];
+
+        for (let i = 0; i < btcPrices.length; i++) {
+            let row = [];
+            for (let j = 0; j < electricityCosts.length; j++) {
+                // Simplified Profitability Model
+                let val = (btcPrices[i] * 0.0005) - (electricityCosts[j] * 50000); 
+                row.push(val);
+            }
+            z_data.push(row);
+        }
+
+        const greenScale = [[0, '#000000'], [0.5, '#337418'], [1, '#5DD62C']];
+
+        const plotlyData = [{
+            z: z_data,
+            x: electricityCosts.map(c => '$' + c),
+            y: btcPrices.map(p => '$' + (p/1000) + 'k'),
+            type: 'surface',
+            colorscale: greenScale, 
+            showscale: false,
+            contours: {
+                z: { show: true, usecolormap: true, highlightcolor: "#fff", project: { z: true } }
+            }
+        }];
+
+        const plotlyLayout = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#94a3b8', family: 'Inter' },
+            margin: { l: 0, r: 0, b: 0, t: 0 },
+            scene: {
+                xaxis: { title: 'Energy Cost/kWh', gridcolor: '#333' },
+                yaxis: { title: 'BTC Price', gridcolor: '#333' },
+                zaxis: { title: 'Profitability', gridcolor: '#333' },
+                camera: { eye: { x: 1.5, y: 1.5, z: 1.2 } }
+            }
+        };
+
+        Plotly.newPlot('plotlySurface', plotlyData, plotlyLayout, {responsive: true, displayModeBar: false});
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

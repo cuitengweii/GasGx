@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx - Generator Rankings</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 20px rgba(93, 214, 44, 0.6)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* Card Frosted Effect (Common) */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* --- Nav Animations --- */
+        .mega-menu { display: none; position: absolute; top: 100%; left: 0; width: 100%; background-color: #151515; border-top: 1px solid rgba(255, 255, 255, 0.1); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 1.5rem 0; box-shadow: 0 20px 40px rgba(0,0,0,0.5); z-index: 40; }
+        .group:hover .mega-menu { display: block; animation: slideDown 0.2s ease-out; }
+        .dropdown-menu { display: none; position: absolute; top: 100%; min-width: 220px; background-color: #151515; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0 0 8px 8px; padding: 0.5rem 0; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 40; }
+        .group:hover .dropdown-menu { display: block; animation: slideDown 0.2s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .nav-item-link { position: relative; padding: 1.5rem 0.5rem; color: #94a3b8; transition: color 0.3s; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+        .nav-item-link:hover { color: #5DD62C; }
+        .nav-item-link::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background-color: #5DD62C; transition: width 0.3s; }
+        .nav-item-link:hover::after { width: 100%; }
+
+        /* --- Footer & Misc --- */
+        .footer-link { color: #94a3b8; transition: all 0.2s; font-size: 0.8rem; white-space: nowrap; }
+        .footer-link:hover { color: #5DD62C; }
+        .mobile-submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .footer-accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        @keyframes floatPulse { 0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); } 100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); } }
+        .float-btn { animation: floatPulse 2s infinite; }
+
+        /* --- Ranking Specific Styles --- */
+        .ranking-card {
+            background-color: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .ranking-card:hover {
+            border-color: rgba(93, 214, 44, 0.3);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .ranking-table th {
+            background-color: #222;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem;
+            font-weight: 600;
+        }
+        .ranking-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #e2e8f0;
+            font-size: 0.875rem;
+        }
+        .ranking-table tr:last-child td { border-bottom: none; }
+        .ranking-table tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
+
+        /* Tab Styles */
+        .tab-btn {
+            padding: 0.5rem 1.25rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+        .tab-btn.active {
+            background-color: #5DD62C;
+            color: #000;
+            box-shadow: 0 0 15px rgba(93, 214, 44, 0.4);
+        }
+        .tab-btn.inactive {
+            color: #94a3b8;
+            border-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+        .tab-btn.inactive:hover {
+            border-color: #5DD62C;
+            color: #5DD62C;
+        }
+
+        #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: 0.6; }
+    </style>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative">
+
+    <canvas id="starfield"></canvas>
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-24 pb-16 px-4 relative z-10 w-full max-w-[1400px] mx-auto">
+        
+        <div class="text-center mb-10 animate-[slideDown_0.5s_ease-out]">
+            <h1 class="text-3xl md:text-5xl font-bold text-white mb-3">
+                <span class="text-gas-green">GasGx</span> <span data-i18n="page_title">Generator Rankings</span>
+            </h1>
+            <p class="text-gray-400 max-w-2xl mx-auto text-sm md:text-base" data-i18n="page_subtitle">
+                Comprehensive evaluation system based on real measured data and market models.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-3 mb-10" id="tabs-container">
+            <button onclick="window.app.switchTab('tab-1')" class="tab-btn active" data-target="tab-1" data-i18n="tab_performance">🚀 Performance</button>
+            <button onclick="window.app.switchTab('tab-2')" class="tab-btn inactive" data-target="tab-2" data-i18n="tab_economics">💰 Economics</button>
+            <button onclick="window.app.switchTab('tab-3')" class="tab-btn inactive" data-target="tab-3" data-i18n="tab_reliability">🛡️ Reliability</button>
+            <button onclick="window.app.switchTab('tab-4')" class="tab-btn inactive" data-target="tab-4" data-i18n="tab_quality">🍃 Quality/Eco</button>
+            <button onclick="window.app.switchTab('tab-5')" class="tab-btn inactive" data-target="tab-5" data-i18n="tab_system">⚙️ System</button>
+            <button onclick="window.app.switchTab('tab-6')" class="tab-btn inactive" data-target="tab-6" data-i18n="tab_regional">🌍 Regional</button>
+        </div>
+
+        <div id="tab-content-container">
+            
+            <div id="tab-1" class="tab-pane block opacity-100 transition-opacity duration-300">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="ranking-card">
+                        <div class="px-6 py-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
+                            <h5 class="text-gas-green font-bold text-lg"><i class="fa-solid fa-trophy mr-2"></i><span data-i18n="rank_top">Comprehensive Top</span></h5>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full ranking-table text-left">
+                                <thead><tr>
+                                    <th data-i18n="col_brand">Brand</th>
+                                    <th data-i18n="col_model">Model</th>
+                                    <th data-i18n="col_score">Score</th>
+                                    <th data-i18n="col_power">Power (kW)</th>
+                                </tr></thead>
+                                <tbody>
+                                    <tr><td>Jenbacher</td><td>J920</td><td class="text-gas-green font-mono font-bold">91.1</td><td>9352.0</td></tr>
+                                    <tr><td>Jenbacher</td><td>J620</td><td class="text-gas-green font-mono font-bold">90.2</td><td>3360.0</td></tr>
+                                    <tr><td>MWM</td><td>TCG 3020 V20</td><td class="text-gas-green font-mono font-bold">88.9</td><td>2300.0</td></tr>
+                                    <tr><td>MWM</td><td>TCG 2032B V16</td><td class="text-gas-green font-mono font-bold">88.8</td><td>4500.0</td></tr>
+                                    <tr><td>Caterpillar</td><td>CG260-16</td><td class="text-gas-green font-mono font-bold">88.6</td><td>4500.0</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="ranking-card">
+                        <div class="px-6 py-4 border-b border-white/5 bg-white/5">
+                            <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-bolt mr-2 text-yellow-400"></i><span data-i18n="rank_elec_eff">Elec. Efficiency</span></h5>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full ranking-table text-left">
+                                <thead><tr><th data-i18n="col_brand">Brand</th><th data-i18n="col_model">Model</th><th data-i18n="col_eff">Eff (%)</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Jenbacher</td><td>J920</td><td class="font-mono">46.5</td></tr>
+                                    <tr><td>Jenbacher</td><td>J620</td><td class="font-mono">45.9</td></tr>
+                                    <tr><td>MWM</td><td>TCG 3020 V20</td><td class="font-mono">45.0</td></tr>
+                                    <tr><td>MWM</td><td>TCG 2032B V16</td><td class="font-mono">44.6</td></tr>
+                                    <tr><td>Caterpillar</td><td>CG260-16</td><td class="font-mono">44.6</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="ranking-card">
+                        <div class="px-6 py-4 border-b border-white/5 bg-white/5">
+                            <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-fire mr-2 text-orange-500"></i><span data-i18n="rank_therm_eff">Thermal Efficiency</span></h5>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full ranking-table text-left">
+                                <thead><tr><th data-i18n="col_brand">Brand</th><th data-i18n="col_model">Model</th><th data-i18n="col_therm_eff">Thermal Eff (%)</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Baker Hughes</td><td>LM9000</td><td class="font-mono">51.0</td></tr>
+                                    <tr><td>Baker Hughes</td><td>LMS100PB+</td><td class="font-mono">50.0</td></tr>
+                                    <tr><td>VMAN</td><td>DT30/YDT30</td><td class="font-mono">48.85</td></tr>
+                                    <tr><td>VMAN</td><td>DT30+/YDT30</td><td class="font-mono">48.85</td></tr>
+                                    <tr><td>Baker Hughes</td><td>PGT25+/LM2500+G5</td><td class="font-mono">47.0</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="ranking-card">
+                        <div class="px-6 py-4 border-b border-white/5 bg-white/5">
+                            <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-arrow-trend-down mr-2 text-blue-400"></i><span data-i18n="rank_gas_con">Gas Consumption</span></h5>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full ranking-table text-left">
+                                <thead><tr><th data-i18n="col_brand">Brand</th><th data-i18n="col_model">Model</th><th data-i18n="col_rate">Rate (m³/kWh)</th></tr></thead>
+                                <tbody>
+                                    <tr><td>VMAN</td><td>DT11/YDT11</td><td class="font-mono text-gas-green">0.225</td></tr>
+                                    <tr><td>MWM</td><td>TCG 2032B V16</td><td class="font-mono">0.228</td></tr>
+                                    <tr><td>Caterpillar</td><td>CG260-16</td><td class="font-mono">0.230</td></tr>
+                                    <tr><td>Waukesha</td><td>VHP 5 Series</td><td class="font-mono">0.233</td></tr>
+                                    <tr><td>Jenbacher</td><td>J620</td><td class="font-mono">0.234</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-2" class="tab-pane hidden opacity-0 transition-opacity duration-300">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="ranking-card">
+                        <div class="px-6 py-4 border-b border-white/5 bg-white/5">
+                            <h5 class="text-gas-green font-bold text-lg"><i class="fa-solid fa-coins mr-2"></i><span data-i18n="rank_roi">Best ROI</span></h5>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full ranking-table text-left">
+                                <thead><tr><th data-i18n="col_brand">Brand</th><th data-i18n="col_model">Model</th><th data-i18n="col_roi">ROI (%)</th><th data-i18n="col_price">Est. Price</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Baker Hughes</td><td>LMS100PB+</td><td class="text-gas-green font-bold">127.9</td><td>108,108,000</td></tr>
+                                    <tr><td>VMAN</td><td>DT11/YDT11</td><td class="text-gas-green font-bold">126.6</td><td>221,200</td></tr>
+                                    <tr><td>Baudouin</td><td>10LT</td><td>126.3</td><td>234,600</td></tr>
+                                    <tr><td>Deutz</td><td>TCG 7.8 H₂</td><td>125.6</td><td>222,860</td></tr>
+                                    <tr><td>Cummins</td><td>K50N-G10</td><td>125.4</td><td>1,123,100</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="ranking-card">
+                        <div class="px-6 py-4 border-b border-white/5 bg-white/5">
+                            <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-percent mr-2"></i><span data-i18n="rank_lcoe">Lowest LCOE</span></h5>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full ranking-table text-left">
+                                <thead><tr><th data-i18n="col_brand">Brand</th><th data-i18n="col_model">Model</th><th data-i18n="col_lcoe">LCOE ($/kWh)</th></tr></thead>
+                                <tbody>
+                                    <tr><td>VMAN</td><td>DT11/YDT11</td><td class="text-gas-green font-mono">0.518</td></tr>
+                                    <tr><td>MWM</td><td>TCG 2032B V16</td><td class="font-mono">0.530</td></tr>
+                                    <tr><td>Caterpillar</td><td>CG260-16</td><td class="font-mono">0.532</td></tr>
+                                    <tr><td>Waukesha</td><td>VHP</td><td class="font-mono">0.538</td></tr>
+                                    <tr><td>Waukesha</td><td>VHP 5 Series</td><td class="font-mono">0.539</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-3" class="tab-pane hidden opacity-0 transition-opacity duration-300">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="ranking-card">
+                        <div class="px-6 py-4 border-b border-white/5 bg-white/5">
+                            <h5 class="text-gas-green font-bold text-lg"><i class="fa-solid fa-shield-halved mr-2"></i><span data-i18n="rank_reliability">Reliability Score</span></h5>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full ranking-table text-left">
+                                <thead><tr><th data-i18n="col_brand">Brand</th><th data-i18n="col_model">Model</th><th>MTBF (h)</th><th data-i18n="col_score">Score</th></tr></thead>
+                                <tbody>
+                                    <tr><td>MWM</td><td>TCG 3016 V16</td><td>59,976</td><td class="text-gas-green font-bold">98</td></tr>
+                                    <tr><td>Caterpillar</td><td>CG170-12</td><td>58,660</td><td class="text-gas-green font-bold">96</td></tr>
+                                    <tr><td>Cummins</td><td>K19N-G4</td><td>59,504</td><td>85</td></tr>
+                                    <tr><td>MWM</td><td>TCG 3016 V08</td><td>59,099</td><td>84</td></tr>
+                                    <tr><td>WEICHAI</td><td>WPG125*9NG</td><td>58,952</td><td>80</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="ranking-card">
+                        <div class="px-6 py-4 border-b border-white/5 bg-white/5">
+                            <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-wrench mr-2"></i><span data-i18n="rank_maintenance">Maintenance Interval</span></h5>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full ranking-table text-left">
+                                <thead><tr><th data-i18n="col_brand">Brand</th><th data-i18n="col_model">Model</th><th data-i18n="col_interval">Interval (h)</th></tr></thead>
+                                <tbody>
+                                    <tr><td>XICHAI</td><td>6DK1</td><td class="font-mono">4000</td></tr>
+                                    <tr><td>Waukesha</td><td>VGF</td><td class="font-mono">4000</td></tr>
+                                    <tr><td>VMAN</td><td>CHG622V20</td><td class="font-mono">4000</td></tr>
+                                    <tr><td>VMAN</td><td>DT58</td><td class="font-mono">4000</td></tr>
+                                    <tr><td>XICHAI</td><td>6DH1</td><td class="font-mono">4000</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-4" class="tab-pane hidden opacity-0 transition-opacity duration-300">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="ranking-card">
+                        <div class="px-6 py-4 border-b border-white/5 bg-white/5">
+                            <h5 class="text-gas-green font-bold text-lg"><i class="fa-solid fa-leaf mr-2"></i><span data-i18n="rank_emission">Low Emissions (NOx)</span></h5>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full ranking-table text-left">
+                                <thead><tr><th data-i18n="col_brand">Brand</th><th data-i18n="col_model">Model</th><th data-i18n="col_nox">NOx Level</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Baker Hughes</td><td>Frame 7/1EA</td><td class="text-gas-green font-bold">4</td></tr>
+                                    <tr><td>Baker Hughes</td><td>Frame 9/1E</td><td class="text-gas-green font-bold">5</td></tr>
+                                    <tr><td>Baker Hughes</td><td>NovaLT™16</td><td>15</td></tr>
+                                    <tr><td>Baker Hughes</td><td>Frame 5/2E</td><td>15</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="ranking-card">
+                        <div class="px-6 py-4 border-b border-white/5 bg-white/5">
+                            <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-volume-xmark mr-2"></i><span data-i18n="rank_noise">Lowest Noise</span></h5>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full ranking-table text-left">
+                                <thead><tr><th data-i18n="col_brand">Brand</th><th data-i18n="col_model">Model</th><th data-i18n="col_noise">Noise (dB)</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Cummins</td><td>GTA855GCE</td><td class="font-mono">65</td></tr>
+                                    <tr><td>Hualing</td><td>CM6T18</td><td class="font-mono">65</td></tr>
+                                    <tr><td>Doosan</td><td>GV222TI V12</td><td class="font-mono">65</td></tr>
+                                    <tr><td>Deutz</td><td>TCG 2015 V8</td><td class="font-mono">65</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-5" class="tab-pane hidden opacity-0 transition-opacity duration-300">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="ranking-card">
+                        <div class="px-6 py-4 border-b border-white/5 bg-white/5">
+                            <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-gears mr-2"></i><span data-i18n="rank_alternator">Alternator Pairing</span></h5>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full ranking-table text-left">
+                                <thead><tr><th data-i18n="col_brand">Brand</th><th data-i18n="col_count">Count</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Leroy Somer</td><td>30</td></tr>
+                                    <tr><td>Engga</td><td>23</td></tr>
+                                    <tr><td>Marathon</td><td>20</td></tr>
+                                    <tr><td>Stamford</td><td>16</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="ranking-card">
+                        <div class="px-6 py-4 border-b border-white/5 bg-white/5">
+                            <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-microchip mr-2"></i><span data-i18n="rank_control">Control Systems</span></h5>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full ranking-table text-left">
+                                <thead><tr><th data-i18n="col_system">System</th><th data-i18n="col_count">Count</th></tr></thead>
+                                <tbody>
+                                    <tr><td>ECU High Pressure Common Rail</td><td>28</td></tr>
+                                    <tr><td>Baker Hughes Control</td><td>8</td></tr>
+                                    <tr><td>Woodward / ComAp</td><td>7</td></tr>
+                                    <tr><td>Heinemann / PG+</td><td>7</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-6" class="tab-pane hidden opacity-0 transition-opacity duration-300">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                    <div class="ranking-card">
+                        <div class="px-4 py-3 border-b border-white/5 bg-white/5"><h5 class="font-bold"><span data-i18n="market_usa">🇺🇸 USA Market</span></h5></div>
+                        <div class="p-4">
+                            <ul class="space-y-2 text-sm text-gray-400">
+                                <li class="flex justify-between"><span>XICHAI</span> <span class="text-white">6DH1</span></li>
+                                <li class="flex justify-between"><span>VMAN</span> <span class="text-white">DT11/YDT11</span></li>
+                                <li class="flex justify-between"><span>VMAN</span> <span class="text-white">DT30/YDT30</span></li>
+                                <li class="flex justify-between"><span>VMAN</span> <span class="text-white">DT58</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="ranking-card">
+                        <div class="px-4 py-3 border-b border-white/5 bg-white/5"><h5 class="font-bold"><span data-i18n="market_canada">🇨🇦 Canada Market</span></h5></div>
+                        <div class="p-4">
+                            <ul class="space-y-2 text-sm text-gray-400">
+                                <li class="flex justify-between"><span>VMAN</span> <span class="text-white">CHG622V16</span></li>
+                                <li class="flex justify-between"><span>VMAN</span> <span class="text-white">CHG622V20</span></li>
+                                <li class="flex justify-between"><span>Waukesha</span> <span class="text-white">16V275GL+</span></li>
+                                <li class="flex justify-between"><span>MWM</span> <span class="text-white">TCG 3016</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="ranking-card">
+                        <div class="px-4 py-3 border-b border-white/5 bg-white/5"><h5 class="font-bold"><span data-i18n="market_me">🇦🇪 Middle East</span></h5></div>
+                        <div class="p-4">
+                            <ul class="space-y-2 text-sm text-gray-400">
+                                <li class="flex justify-between"><span>XICHAI</span> <span class="text-white">6DK1</span></li>
+                                <li class="flex justify-between"><span>VMAN</span> <span class="text-white">DT15/YDT15</span></li>
+                                <li class="flex justify-between"><span>Waukesha</span> <span class="text-white">12V275GL+</span></li>
+                                <li class="flex justify-between"><span>Waukesha</span> <span class="text-white">VGF</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="ranking-card">
+                        <div class="px-4 py-3 border-b border-white/5 bg-white/5"><h5 class="font-bold"><span data-i18n="market_russia">🇷🇺 Russia Market</span></h5></div>
+                        <div class="p-4">
+                            <ul class="space-y-2 text-sm text-gray-400">
+                                <li class="flex justify-between"><span>XICHAI</span> <span class="text-white">6DLD</span></li>
+                                <li class="flex justify-between"><span>VMAN</span> <span class="text-white">CET13</span></li>
+                                <li class="flex justify-between"><span>MWM</span> <span class="text-white">TCG 3016 V16</span></li>
+                                <li class="flex justify-between"><span>MWM</span> <span class="text-white">TCG 2032B</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <button onclick="window.app.captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group" title="Share Snapshot">
+        <i class="fa-solid fa-camera text-xl"></i>
+    </button>
+
+    <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-95 opacity-0" id="shareModalContent">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-check text-2xl text-gas-green"></i></div>
+                <h3 class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3>
+                <p class="text-sm text-gray-400">Full page captured successfully.</p>
+            </div>
+            <button onclick="window.app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyBUEXdeSB7Ue0gkwcXN3j76ymyCbngxufY", authDomain: "gasgxmining.firebaseapp.com", projectId: "gasgxmining", storageBucket: "gasgxmining.firebasestorage.app", messagingSenderId: "465579060005", appId: "1:465579060005:web:ee20cb21ed58020c4a88cc", measurementId: "G-ZHNSQ29181" };
+        const fbApp = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(fbApp);
+        const auth = getAuth(fbApp);
+        const provider = new GoogleAuthProvider();
+
+        const els = { loginBtn: document.getElementById('auth-login-btn'), userProfile: document.getElementById('auth-user-profile'), userAvatar: document.getElementById('auth-user-avatar'), dropdownUsername: document.getElementById('dropdown-username'), mobLoginBtn: document.getElementById('mob-auth-login-btn'), mobUserProfile: document.getElementById('mob-auth-user-profile'), mobUserAvatar: document.getElementById('mob-auth-user-avatar'), mobUsername: document.getElementById('mob-auth-username') };
+
+        window.AuthApp = {
+            signIn: async () => { try { await signInWithPopup(auth, provider); } catch (error) { console.error("Login failed:", error); alert("Login failed."); } },
+            signOut: async () => { try { await signOut(auth); } catch (error) { console.error("Logout failed:", error); } }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                if(els.loginBtn) { els.loginBtn.classList.add('hidden'); els.loginBtn.classList.remove('flex'); }
+                if(els.userProfile) { els.userProfile.classList.remove('hidden'); els.userProfile.classList.add('flex'); }
+                if(els.userAvatar) els.userAvatar.src = user.photoURL; if(els.dropdownUsername) els.dropdownUsername.innerText = user.displayName;
+                if(els.mobLoginBtn) els.mobLoginBtn.classList.add('hidden');
+                if(els.mobUserProfile) { els.mobUserProfile.classList.remove('hidden'); els.mobUserProfile.classList.add('flex'); }
+                if(els.mobUserAvatar) els.mobUserAvatar.src = user.photoURL; if(els.mobUsername) els.mobUsername.innerText = user.displayName;
+
+            } else {
+                if(els.loginBtn) { els.loginBtn.classList.remove('hidden'); els.loginBtn.classList.add('flex'); }
+                if(els.userProfile) { els.userProfile.classList.add('hidden'); els.userProfile.classList.remove('flex'); }
+                if(els.mobLoginBtn) els.mobLoginBtn.classList.remove('hidden');
+                if(els.mobUserProfile) { els.mobUserProfile.classList.add('hidden'); els.mobUserProfile.classList.remove('flex'); }
+
+            }
+        });
+    </script>
+
+    <script>
+        const AppData = {
+    // 导航结构保持不变
+    navigation: [
+        { title: "首页", path: "/index.html", type: "link", icon: "fa-solid fa-house" },
+        { title: "解决方案", path: "/solutions", type: "menu", children: [{ title: "油气井/伴生气发电", path: "/solutions/oilfield" }, { title: "工业园区与分布式能源", path: "/solutions/industrial" }, { title: "数据中心 / 挖矿电力", path: "/solutions/mining" }, { title: "热电联供 CHP", path: "/solutions/chp" }] },
+        { title: "机型库", path: "/products", type: "mega", sections: [ { header: "按功率分类", items: [ { title: "小于 500 kW", path: "/products/power-range/0-500kw" }, { title: "500 – 1,000 kW", path: "/products/power-range/500-1000kw" }, { title: "1 MW 以上", path: "/products/power-range/1mw-plus" } ] }, { header: "按冷却方式", items: [ { title: "风冷", path: "/products/cooling/air" }, { title: "液冷", path: "/products/cooling/liquid" } ] }, { header: "按气源类型", items: [ { title: "天然气", path: "/products/gas/natural" }, { title: "伴生气", path: "/products/gas/associated" }, { title: "低甲烷值气", path: "/products/gas/low-methane" } ] }, { header: "按部署形式", items: [ { title: "集装箱机组", path: "/products/deployment/container" }, { title: "一体化机组 AIS", path: "/products/deployment/ais" }, { title: "滑撬式机组", path: "/products/deployment/skid" } ] }, { header: "按品牌", items: [ { title: "全部品牌", path: "/products/brands" }, { title: "中国生产", path: "/products/brands/china" }, { title: "海外生产", path: "/products/brands/overseas" } ] } ] },
+        { title: "排行榜", path: "/rankings", type: "mega", gridCols: "grid-cols-6", sections: [ { header: "性能榜", items: [ { title: "综合性能 TOP 榜", path: "/rankings/performance" }, { title: "高效率榜", path: "/rankings/efficiency" }, { title: "天然气内燃机发电效率排行榜", path: "/rankings/engine-efficiency" }, { title: "天然气内燃机热效率排行榜", path: "/rankings/thermal-efficiency" }, { title: "天然气内燃机耗气量排行榜", path: "/rankings/gas-consumption" } ] }, { header: "经济性榜", items: [ { title: "最佳 ROI 榜", path: "/rankings/roi" }, { title: "最低发电成本 LCOE 榜", path: "/rankings/lcoe" }, { title: "天然气内燃机折旧排行榜", path: "/rankings/depreciation" }, { title: "天然气内燃机投资回报率排行榜", path: "/rankings/engine-roi" } ] }, { header: "可靠性榜", items: [ { title: "高可靠机组榜", path: "/rankings/reliability" }, { title: "最长 MTBF 榜", path: "/rankings/mtbf" }, { title: "天然气内燃机保养时间排行榜", path: "/rankings/maintenance-interval" }, { title: "天然气内燃机备件保障排行榜", path: "/rankings/spare-parts" } ] }, { header: "品质与环保榜", items: [ { title: "天然气内燃机排放排行榜", path: "/rankings/emissions" }, { title: "天然气内燃机噪音排行榜", path: "/rankings/noise" } ] }, { header: "系统能力榜", items: [ { title: "天然气内燃机发电机排行榜", path: "/rankings/generator" }, { title: "天然气内燃机控制系统排行榜", path: "/rankings/control-system" } ] }, { header: "区域榜", items: [ { title: "美国市场榜", path: "/rankings/usa" }, { title: "加拿大市场榜", path: "/rankings/canada" }, { title: "中东市场榜", path: "/rankings/middle-east" }, { title: "俄罗斯市场榜", path: "/rankings/russia" } ] } ] },
+        { title: "应用场景", path: "/use-cases", type: "menu", children: [ { title: "油气井 / 伴生气", path: "/use-cases/oilfield" }, { title: "工业与园区能源", path: "/use-cases/industrial" }, { title: "挖矿 / 数据中心", path: "/use-cases/mining" }, { title: "CHP 热电联供", path: "/use-cases/chp" } ] },
+        { title: "工具箱", path: "/tools", type: "mega", gridCols: "grid-cols-5", sections: [ { header: "经济测算工具", items: [ { title: "LCOE 成本计算器", path: "/tools/lcoe-calculator" }, { title: "ROI 回报估算器", path: "/tools/roi" }, { title: "燃气发电挖矿收益计算器", path: "/tools/mining-power-calc" }, { title: "蒙特卡洛模拟盈利分析", path: "/tools/monte-carlo-profit" }, { title: "天然气发电耗气成本分析", path: "/tools/gas-cost-analysis" } ] }, { header: "工程与技术工具", items: [ { title: "气质适配工具", path: "/tools/gas-fit" }, { title: "排放估算工具", path: "/tools/emission" }, { title: "气体分析计算器", path: "/tools/gas-analyzer" }, { title: "能电转换计算器", path: "/tools/energy-conversion" }, { title: "天然气主要成分热值表", path: "/tools/gas-composition-heat" } ] }, { header: "项目与选型工具", items: [ { title: "站点匹配向导", path: "/tools/site-fit" }, { title: "气源所在地分析", path: "/tools/gas-location-analysis" }, { title: "燃气发动机选型与运营经济性", path: "/tools/engine-selection" }, { title: "天然气发电机机油消耗率", path: "/tools/oil-consumption" }, { title: "车机 VS 工业机 10MW 对比分析", path: "/tools/vehicle-vs-industrial-10mw" }, { title: "多机型对比 3 年运营数据", path: "/tools/3y-compare" } ] }, { header: "矿工专区（托管与算力分析）", items: [ { title: "挖矿收益计算器", path: "/tools/mining-income-calculator" }, { title: "矿机盈利能力计算器", path: "/tools/miner-profitability" }, { title: "矿机选购速查", path: "/tools/miner-buying-guide" } ] }, { header: "全球支持与合规", items: [ { title: "加拿大 AECO 天然气价格预测", path: "/tools/aeco-price-forecast" }, { title: "全球物流运输推荐", path: "/tools/global-logistics" }, { title: "全球合规政策", path: "/tools/global-compliance" } ] } ] },
+        { title: "资料中心", path: "/resources", type: "mega", gridCols: "grid-cols-4", sections: [ { header: "文档", items: [ { title: "白皮书", path: "/resources/whitepapers" }, { title: "行业报告", path: "/resources/reports" } ] }, { header: "案例", items: [ { title: "全部案例", path: "/resources/case-studies" }, { title: "按区域查看", path: "/resources/case-studies/regions" }, { title: "按场景查看", path: "/resources/case-studies/scenarios" } ] }, { header: "技术库", items: [ { title: "技术参数表", path: "/resources/datasheets" }, { title: "认证与合规文件", path: "/resources/certifications" } ] }, { header: "媒体与支持", items: [ { title: "视频与教程", path: "/resources/videos" }, { title: "常见问答 FAQ", path: "/resources/faq" } ] } ] },
+        { title: "服务支持", path: "/support", type: "menu", children: [ { title: "服务网络", path: "/support/network" }, { title: "技术支持", path: "/support/tech" }, { title: "售后与保养", path: "/support/service" } ] },
+        { title: "关于我们", path: "/about", type: "menu", children: [ { title: "公司介绍", path: "/about/company" }, { title: "联系我们", path: "/about/contact" } ] }
+    ],
+    i18n: {
+        zh: {
+            tagline: "天然气发电挖矿助手", footerTagline: "让天然气发电挖矿更简单", auth_login: "登录", auth_logout: "退出登录", privacy_policy: "隐私权政策", 
+            
+            // 保持中文键值对，用于回退
+            "首页": "首页", "解决方案": "解决方案", "机型库": "机型库", "排行榜": "排行榜", "应用场景": "应用场景", "工具箱": "工具箱", "资料中心": "资料中心", "服务支持": "服务支持", "关于我们": "关于我们", "联系我们": "联系我们",
+            
+            // Ranking Content
+            page_title: "发电机排行榜", page_subtitle: "基于真实测量数据和市场模型的综合评估系统。",
+            tab_performance: "🚀 性能", tab_economics: "💰 经济性", tab_reliability: "🛡️ 可靠性", tab_quality: "🍃 环保/品质", tab_system: "⚙️ 系统", tab_regional: "🌍 区域",
+            rank_top: "综合 TOP 榜", rank_elec_eff: "发电效率", rank_therm_eff: "热效率", rank_gas_con: "耗气量 (越低越好)", rank_roi: "最佳 ROI", rank_lcoe: "最低发电成本 LCOE", rank_reliability: "可靠性评分", rank_maintenance: "保养间隔", rank_emission: "低排放 (NOx)", rank_noise: "最低噪音", rank_alternator: "发电机适配", rank_control: "控制系统",
+            market_usa: "🇺🇸 美国市场", market_canada: "🇨🇦 加拿大市场", market_me: "🇦🇪 中东市场", market_russia: "🇷🇺 俄罗斯市场",
+            col_brand: "品牌", col_model: "型号", col_score: "评分", col_power: "功率 (kW)", col_eff: "效率 (%)", col_therm_eff: "热效率 (%)", col_rate: "耗气率 (m³/kWh)", col_roi: "回报率 (%)", col_price: "预估价格", col_lcoe: "度电成本 ($/kWh)", col_mtbf: "平均故障间隔 (h)", col_interval: "间隔 (小时)", col_nox: "NOx 水平", col_noise: "噪音 (dB)", col_count: "数量", col_system: "系统"
+        },
+        en: {
+            tagline: "Natural Gas Power Mining Assistant", footerTagline: "Making natural gas power mining easier", auth_login: "Login", auth_logout: "Logout", privacy_policy: "Privacy Policy",
+            
+            // Main Nav
+            "首页": "Home", "解决方案": "Solutions", "机型库": "Products", "排行榜": "Rankings", "应用场景": "Use Cases", "工具箱": "Tools", "资料中心": "Resources", "服务支持": "Support", "关于我们": "About Us", "联系我们": "Contact Us",
+            
+            // Sub Menus & Mega Menus (MISSING IN YOUR ORIGINAL CODE)
+            "油气井/伴生气发电": "Oilfield / Associated Gas", "工业园区与分布式能源": "Industrial / Distributed", "数据中心 / 挖矿电力": "Data Center / Mining", "热电联供 CHP": "CHP Cogeneration",
+            
+            // Product Menu Headers
+            "按功率分类": "By Power", "按冷却方式": "By Cooling", "按气源类型": "By Gas Type", "按部署形式": "By Deployment", "按品牌": "By Brand",
+            "小于 500 kW": "< 500 kW", "500 – 1,000 kW": "500 – 1,000 kW", "1 MW 以上": "1 MW+", "风冷": "Air Cooled", "液冷": "Liquid Cooled", "天然气": "Natural Gas", "伴生气": "Associated Gas", "低甲烷值气": "Low Methane Gas", "集装箱机组": "Containerized", "一体化机组 AIS": "AIS Integrated", "滑撬式机组": "Skid Mounted", "全部品牌": "All Brands", "中国生产": "Made in China", "海外生产": "Overseas Made",
+
+            // Rankings Menu Headers
+            "性能榜": "Performance", "经济性榜": "Economics", "可靠性榜": "Reliability", "品质与环保榜": "Quality/Eco", "系统能力榜": "System Cap", "区域榜": "Regional",
+            "综合性能 TOP 榜": "Comprehensive Top", "高效率榜": "High Efficiency", "天然气内燃机发电效率排行榜": "Elec. Efficiency Rank", "天然气内燃机热效率排行榜": "Thermal Eff. Rank", "天然气内燃机耗气量排行榜": "Gas Consumption Rank",
+            "最佳 ROI 榜": "Best ROI", "最低发电成本 LCOE 榜": "Lowest LCOE", "天然气内燃机折旧排行榜": "Depreciation Rank", "天然气内燃机投资回报率排行榜": "ROI Rank",
+            "高可靠机组榜": "High Reliability", "最长 MTBF 榜": "Longest MTBF", "天然气内燃机保养时间排行榜": "Maintenance Interval", "天然气内燃机备件保障排行榜": "Spare Parts Supply",
+            "天然气内燃机排放排行榜": "Emissions Rank", "天然气内燃机噪音排行榜": "Noise Rank", "天然气内燃机发电机排行榜": "Alternator Rank", "天然气内燃机控制系统排行榜": "Control System Rank",
+            "美国市场榜": "USA Market", "加拿大市场榜": "Canada Market", "中东市场榜": "Middle East Market", "俄罗斯市场榜": "Russia Market",
+
+            // Tools Menu Headers
+            "经济测算工具": "Economic Tools", "工程与技术工具": "Engineering Tools", "项目与选型工具": "Project Selection", "矿工专区（托管与算力分析）": "Miner Zone", "全球支持与合规": "Global Support",
+            "LCOE 成本计算器": "LCOE Calculator", "ROI 回报估算器": "ROI Estimator", "燃气发电挖矿收益计算器": "Mining Profit Calc", "蒙特卡洛模拟盈利分析": "Monte Carlo Analysis", "天然气发电耗气成本分析": "Gas Cost Analysis",
+            "气质适配工具": "Gas Adaptability", "排放估算工具": "Emission Estimator", "气体分析计算器": "Gas Analyzer", "能电转换计算器": "Energy Conversion", "天然气主要成分热值表": "Gas Heat Value Table",
+            "站点匹配向导": "Site Fit Wizard", "气源所在地分析": "Location Analysis", "燃气发动机选型与运营经济性": "Engine Selection", "天然气发电机机油消耗率": "Oil Consumption", "车机 VS 工业机 10MW 对比分析": "Vehicle vs Ind. Engine", "多机型对比 3 年运营数据": "3-Year Data Compare",
+            "挖矿收益计算器": "Mining Income Calc", "矿机盈利能力计算器": "Miner Profitability", "矿机选购速查": "Miner Buying Guide",
+            "加拿大 AECO 天然气价格预测": "AECO Price Forecast", "全球物流运输推荐": "Global Logistics", "全球合规政策": "Global Compliance",
+
+            // Resources & Support
+            "文档": "Documents", "案例": "Case Studies", "技术库": "Tech Library", "媒体与支持": "Media & Support",
+            "白皮书": "Whitepapers", "行业报告": "Industry Reports", "全部案例": "All Cases", "按区域查看": "By Region", "按场景查看": "By Scenario",
+            "技术参数表": "Datasheets", "认证与合规文件": "Certifications", "视频与教程": "Videos & Tutorials", "常见问答 FAQ": "FAQ",
+            "服务网络": "Service Network", "技术支持": "Tech Support", "售后与保养": "After-sales & Maint.",
+            "公司介绍": "Company Intro",
+            
+            // Use Cases
+            "油气井 / 伴生气": "Oilfield / Associated", "工业与园区能源": "Industrial / Park", "挖矿 / 数据中心": "Mining / Data Center", "CHP 热电联供": "CHP",
+
+            // Ranking Page Content
+            page_title: "Generator Rankings", page_subtitle: "Comprehensive evaluation system based on real measured data and market models.",
+            tab_performance: "🚀 Performance", tab_economics: "💰 Economics", tab_reliability: "🛡️ Reliability", tab_quality: "🍃 Quality/Eco", tab_system: "⚙️ System", tab_regional: "🌍 Regional",
+            rank_top: "Comprehensive Top", rank_elec_eff: "Elec. Efficiency", rank_therm_eff: "Thermal Efficiency", rank_gas_con: "Gas Consumption", rank_roi: "Best ROI", rank_lcoe: "Lowest LCOE", rank_reliability: "Reliability Score", rank_maintenance: "Maintenance Interval", rank_emission: "Low Emissions (NOx)", rank_noise: "Lowest Noise", rank_alternator: "Alternator Pairing", rank_control: "Control Systems",
+            market_usa: "🇺🇸 USA Market", market_canada: "🇨🇦 Canada Market", market_me: "🇦🇪 Middle East", market_russia: "🇷🇺 Russia Market",
+            col_brand: "Brand", col_model: "Model", col_score: "Score", col_power: "Power (kW)", col_eff: "Eff (%)", col_therm_eff: "Thermal Eff (%)", col_rate: "Rate (m³/kWh)", col_roi: "ROI (%)", col_price: "Est. Price", col_lcoe: "LCOE ($/kWh)", col_mtbf: "MTBF (h)", col_interval: "Interval (h)", col_nox: "NOx Level", col_noise: "Noise (dB)", col_count: "Count", col_system: "System"
+        },
+        ru: {
+            tagline: "Помощник по газовому майнингу", footerTagline: "Майнинг на газе проще", auth_login: "Войти", auth_logout: "Выйти", privacy_policy: "Политика конфиденциальности",
+            
+            // Main Nav
+            "首页": "Главная", "解决方案": "Решения", "机型库": "Продукты", "排行榜": "Рейтинги", "应用场景": "Кейсы", "工具箱": "Инструменты", "资料中心": "Ресурсы", "服务支持": "Поддержка", "关于我们": "О нас", "联系我们": "Контакты",
+            
+            // Mega Menu Headers (Simplified for RU example)
+            "按功率分类": "По мощности", "按冷却方式": "Охлаждение", "按气源类型": "Тип газа", "按部署形式": "Исполнение", "按品牌": "Бренд",
+            "小于 500 kW": "< 500 кВт", "500 – 1,000 kW": "500 – 1,000 кВт", "1 MW 以上": "1 МВт+", "风冷": "Воздушное", "液冷": "Жидкостное",
+            "油气井/伴生气发电": "Нефтегазовые месторождения", "工业园区与分布式能源": "Промышленные парки", "数据中心 / 挖矿电力": "ЦОД / Майнинг", "热电联供 CHP": "Когенерация (CHP)",
+            
+            // Ranking Content
+            page_title: "Рейтинг Генераторов", page_subtitle: "Комплексная система оценки на основе реальных данных и рыночных моделей.",
+            tab_performance: "🚀 Производ.", tab_economics: "💰 Экономика", tab_reliability: "🛡️ Надежность", tab_quality: "🍃 Качество", tab_system: "⚙️ Системы", tab_regional: "🌍 Регионы",
+            rank_top: "Топ рейтинг", rank_elec_eff: "Эл. КПД", rank_therm_eff: "Тепл. КПД", rank_gas_con: "Расход газа", rank_roi: "Лучший ROI", rank_lcoe: "Мин. LCOE", rank_reliability: "Надежность", rank_maintenance: "Интервал ТО", rank_emission: "Выбросы (NOx)", rank_noise: "Шум", rank_alternator: "Генераторы", rank_control: "Системы упр.",
+            market_usa: "🇺🇸 Рынок США", market_canada: "🇨🇦 Рынок Канады", market_me: "🇦🇪 Ближний Восток", market_russia: "🇷🇺 Рынок РФ",
+            col_brand: "Бренд", col_model: "Модель", col_score: "Счет", col_power: "Мощность", col_eff: "КПД (%)", col_therm_eff: "Тепл. КПД (%)", col_rate: "Расход (м³/кВтч)", col_roi: "ROI (%)", col_price: "Цена", col_lcoe: "LCOE ($/кВтч)", col_mtbf: "MTBF (ч)", col_interval: "Интервал (ч)", col_nox: "Уровень NOx", col_noise: "Шум (дБ)", col_count: "Кол-во", col_system: "Система"
+        }
+    }
+};
+
+        window.app = {
+            currentLang: 'en',
+            isMobileMenuOpen: false,
+init() {
+                this.updateStaticText();
+                this.createStarfield();
+                
+                // [新增] 初始化时检查 URL 并切换 Tab
+                this.handleUrlRouting();
+
+                // ... 原有的 scroll 逻辑 ...
+                window.onscroll = () => {
+                    const btn = document.getElementById('backToTopBtn');
+                    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                        btn.classList.remove('translate-y-20', 'opacity-0');
+                    } else {
+                        btn.classList.add('translate-y-20', 'opacity-0');
+                    }
+                };
+            },
+            // [新增] URL 路由处理函数
+            handleUrlRouting() {
+                // 1. 定义 URL 关键词与 Tab ID 的映射关系
+                // 这样你可以支持 /rankings/performance 或 /rankings/roi 等多种别名
+                const routeMap = {
+                    // Tab 1: 性能
+                    'performance': 'tab-1',
+                    'efficiency': 'tab-1',
+                    'top': 'tab-1',
+                    
+                    // Tab 2: 经济性
+                    'economics': 'tab-2',
+                    'roi': 'tab-2',
+                    'lcoe': 'tab-2',
+                    
+                    // Tab 3: 可靠性
+                    'reliability': 'tab-3',
+                    'maintenance': 'tab-3',
+                    
+                    // Tab 4: 环保/品质
+                    'quality': 'tab-4',
+                    'emissions': 'tab-4',
+                    'noise': 'tab-4',
+                    
+                    // Tab 5: 系统
+                    'system': 'tab-5',
+                    'control': 'tab-5',
+                    
+                    // Tab 6: 区域
+                    'regional': 'tab-6',
+                    'regions': 'tab-6',
+                    'usa': 'tab-6',
+                    'russia': 'tab-6'
+                };
+
+                // 2. 获取 URL 路径的最后一部分
+                // 例如: https://www.gasgx.com/rankings/performance -> 获取 "performance"
+                // 移除末尾可能存在的斜杠，然后分割
+                const pathSegments = window.location.pathname.replace(/\/$/, '').split('/');
+                const lastSegment = pathSegments[pathSegments.length - 1].toLowerCase();
+
+                // 3. 优先匹配路径
+                if (routeMap[lastSegment]) {
+                    this.switchTab(routeMap[lastSegment]);
+                } 
+                // 4. (可选) 如果路径没匹配到，检查 URL 参数 ?tab=xxx 作为备选
+                else {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const queryTab = urlParams.get('tab'); // 获取 ?tab=value
+                    if (queryTab && routeMap[queryTab.toLowerCase()]) {
+                        this.switchTab(routeMap[queryTab.toLowerCase()]);
+                    } else {
+                        // 默认显示第一个 Tab (如果都没匹配到)
+                        this.switchTab('tab-1');
+                    }
+                }
+            },
+
+            // --- Starfield Effect ---
+            createStarfield() {
+                const canvas = document.getElementById('starfield');
+                if(!canvas) return;
+                const ctx = canvas.getContext('2d');
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                
+                const stars = [];
+                for(let i=0; i<200; i++) {
+                    stars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, radius: Math.random() * 1.5, alpha: Math.random() });
+                }
+                function animate() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    stars.forEach(star => {
+                        ctx.beginPath();
+                        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+                        ctx.fill();
+                        star.alpha += (Math.random() - 0.5) * 0.05;
+                        if(star.alpha < 0) star.alpha = 0;
+                        if(star.alpha > 1) star.alpha = 1;
+                    });
+                    requestAnimationFrame(animate);
+                }
+                animate();
+            },
+
+            // --- Ranking Tab Logic ---
+            switchTab(tabId) {
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    if (btn.dataset.target === tabId) {
+                        btn.classList.add('active'); btn.classList.remove('inactive');
+                    } else {
+                        btn.classList.remove('active'); btn.classList.add('inactive');
+                    }
+                });
+                document.querySelectorAll('.tab-pane').forEach(pane => { pane.classList.add('hidden', 'opacity-0'); });
+                const target = document.getElementById(tabId);
+                target.classList.remove('hidden');
+                setTimeout(() => { target.classList.remove('opacity-0'); }, 50);
+            },
+
+            // --- Auth Reminder ---
+
+            // --- i18n & Core ---
+            setLanguage(lang) {
+                this.currentLang = lang;
+                ['zh', 'en', 'ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+                    const activeClass = "text-black bg-gas-green shadow-glow font-bold";
+                    const inactiveClass = "text-gas-subtext hover:text-white hover:bg-white/5 font-medium";
+                    const mobActiveClass = "text-black bg-gas-green font-bold";
+                    const mobInactiveClass = "text-gray-400 font-medium";
+                    if (btn) btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center ${l === lang ? activeClass : inactiveClass}`;
+                    if (mobBtn) mobBtn.className = `px-4 py-2 rounded-full text-xs transition-all ${l === lang ? mobActiveClass : mobInactiveClass}`;
+                });
+                this.updateStaticText();
+            },
+            t(key) { return AppData.i18n[this.currentLang][key] || key; },
+
+            // --- Renders ---
+            captureAndShare() {
+                window.scrollTo(0, 0); const watermark = document.createElement('div'); watermark.id = 'temp-watermark';
+                Object.assign(watermark.style, { position: 'absolute', top: 0, left: 0, width: '100%', height: document.body.scrollHeight + 'px', zIndex: 9999, pointerEvents: 'none', display: 'flex', flexWrap: 'wrap', alignContent: 'space-around', justifyContent: 'space-around', overflow: 'hidden', opacity: '0.15' });
+                const textHtml = `<div style="text-align:center; transform: rotate(-30deg); margin: 100px;"><div style="font-size: 24px; font-weight: bold; color: #5DD62C;">www.gasgx.com</div><div style="font-size: 16px; color: #fff;">Natural Gas Power Mining Assistant</div></div>`;
+                const count = Math.ceil(document.body.scrollHeight / 400) * 3; watermark.innerHTML = textHtml.repeat(count); document.body.appendChild(watermark);
+                setTimeout(() => { html2canvas(document.body, { backgroundColor: '#0F0F0F', scrollY: 0, useCORS: true, scale: 2 }).then(canvas => { const link = document.createElement('a'); link.download = 'GasGx-Page-Capture.png'; link.href = canvas.toDataURL('image/png'); link.click(); document.body.removeChild(watermark); const modal = document.getElementById('shareModal'); modal.classList.remove('hidden'); setTimeout(() => modal.querySelector('div').classList.remove('scale-95', 'opacity-0'), 10); }).catch(err => { console.error(err); if(document.getElementById('temp-watermark')) document.body.removeChild(watermark); alert('Capture failed.'); }); }, 500);
+            },
+            closeModal() { const modal = document.getElementById('shareModal'); const content = modal.querySelector('div'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => modal.classList.add('hidden'), 300); },
+            updateStaticText() {
+                const taglineEl = document.getElementById('header-tagline'); const footerTaglineEl = document.querySelector('[data-i18n="footerTagline"]');
+                if(taglineEl) taglineEl.innerText = this.t('tagline'); if(footerTaglineEl) footerTaglineEl.innerText = this.t('footerTagline');
+                document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if (key !== 'tagline' && key !== 'footerTagline') { el.innerText = this.t(key); } });
+            }
+        };
+
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', () => window.app.init()); } else { window.app.init(); }
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>
+
+

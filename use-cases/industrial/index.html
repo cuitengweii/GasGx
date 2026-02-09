@@ -1,0 +1,471 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial & Park Power Solutions - GasGx</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(93, 214, 44, 0.4)',
+                        'glow-sm': '0 0 10px rgba(93, 214, 44, 0.2)',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+        
+        .gas-card:hover {
+            border-color: rgba(93, 214, 44, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+        }
+        .nav-item-link:hover, .nav-item-link.active { color: #5DD62C; }
+        
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after, .nav-item-link.active::after { width: 100%; }
+
+        .section-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(93,214,44,0.08) 0%, rgba(0,0,0,0) 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="bg-grid-pattern">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-24 pb-12 w-full relative overflow-hidden">
+        
+        <section class="max-w-7xl mx-auto px-4 mb-20 relative">
+            <div class="section-glow top-0 left-1/2 -translate-x-1/2"></div>
+            
+            <div class="text-center relative z-10 pt-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gas-green/30 bg-gas-green/10 text-gas-green text-xs font-mono mb-6">
+                    <i class="fa-solid fa-industry"></i>
+                    <span data-i18n="hero_badge">Behind-the-Meter Solutions</span>
+                </div>
+                <h1 data-i18n="hero_title" class="text-4xl md:text-6xl font-black mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-500">
+                    工业园区与分布式能源
+                </h1>
+                <p data-i18n="hero_desc" class="text-xl text-gas-subtext max-w-3xl mx-auto leading-relaxed">
+                    针对电网连接延迟与电价波动，提供“表后发电”与“灵活负载”平衡方案。规避电网瓶颈，实现气算直连。
+                </p>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 mb-24">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="order-2 md:order-1">
+                    <div class="gas-card p-8 rounded-2xl relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 rounded-full blur-2xl"></div>
+                        <h3 data-i18n="sec1_title" class="text-2xl font-bold text-white mb-4">规避电网瓶颈</h3>
+                        <p data-i18n="sec1_desc" class="text-gray-400 mb-6 leading-relaxed">
+                            随着 AI 数据中心需求预计到 2030 年增长 165%，电网扩容和输电许可往往需要数年时间。
+                        </p>
+                        <ul class="space-y-4">
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-clock text-yellow-500 mt-1"></i>
+                                <div>
+                                    <strong data-i18n="sec1_point1_title" class="text-white block text-sm">跳过排队周期</strong>
+                                    <span data-i18n="sec1_point1_desc" class="text-sm text-gray-500">无需等待漫长的电网接入审批，直接部署园区内燃气发电设施。</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-network-wired text-gas-green mt-1"></i>
+                                <div>
+                                    <strong data-i18n="sec1_point2_title" class="text-white block text-sm">气算直连</strong>
+                                    <span data-i18n="sec1_point2_desc" class="text-sm text-gray-500">在负荷中心直接发电，减少输电损耗，提高能源利用率。</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="order-1 md:order-2 text-center md:text-left flex justify-center">
+                    <div class="relative">
+                        <i class="fa-solid fa-tower-observation text-[100px] text-gray-700 absolute top-0 left-0 opacity-50"></i>
+                        <i class="fa-solid fa-xmark text-red-500 text-6xl absolute top-8 left-8"></i>
+                        <i class="fa-solid fa-server text-[120px] text-gas-green/20 ml-20 mt-10 relative z-10 animate-pulse"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 mb-24">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="text-center flex justify-center">
+                    <i class="fa-solid fa-chart-line text-[120px] text-gas-green/20"></i>
+                </div>
+                <div>
+                    <h3 data-i18n="sec2_title" class="text-2xl font-bold text-white mb-4">灵活负载与需求响应</h3>
+                    <p data-i18n="sec2_desc" class="text-gray-400 mb-6 leading-relaxed">
+                        在园区内部署比特币矿机作为“可中断负载” (Interruptible Load)。将原本固定的工业用电转化为可调节的智能电网节点。
+                    </p>
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="bg-[#1a1a1a] p-5 rounded border border-white/5 hover:border-gas-green/30 transition-colors">
+                            <div class="flex items-start gap-4">
+                                <div class="text-gas-green text-xl"><i class="fa-solid fa-bolt"></i></div>
+                                <div>
+                                    <h4 data-i18n="sec2_sub1_title" class="font-bold text-white text-sm mb-1">削峰填谷</h4>
+                                    <p data-i18n="sec2_sub1_desc" class="text-sm text-gray-500">在电价飙升或电网负荷高峰期，矿机自动关机，将电力释放给园区关键生产线或卖回电网。</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-[#1a1a1a] p-5 rounded border border-white/5 hover:border-gas-green/30 transition-colors">
+                            <div class="flex items-start gap-4">
+                                <div class="text-gas-green text-xl"><i class="fa-solid fa-scale-balanced"></i></div>
+                                <div>
+                                    <h4 data-i18n="sec2_sub2_title" class="font-bold text-white text-sm mb-1">监管合规与自用豁免</h4>
+                                    <p data-i18n="sec2_sub2_desc" class="text-sm text-gray-500">利用 <10MW 自用豁免条款（如加拿大艾伯塔省）加速落地，同时需严谨设计法律架构，规避违规售电风险。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 mb-20">
+            <div class="flex items-center gap-4 mb-8">
+                <h2 data-i18n="cases_title" class="text-3xl font-bold text-white">应用案例</h2>
+                <div class="h-px bg-white/10 flex-1"></div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="gas-card p-6 rounded-xl group hover:border-gas-green/50 cursor-pointer">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="bg-blue-900/30 text-blue-400 text-xs px-2 py-1 rounded border border-blue-500/30" data-i18n="case1_loc">USA (Texas)</div>
+                        <i class="fa-solid fa-arrow-right -rotate-45 text-gray-600 group-hover:text-gas-green transition-colors"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-2">Riot Platforms (ERCOT)</h4>
+                    <p data-i18n="case1_desc" class="text-sm text-gray-400 mb-4">
+                        通过参与 ERCOT 的需求响应计划，在电价高峰期主动削减负荷，单月获得巨额能源信用，大幅降低综合电力成本。
+                    </p>
+                    <div class="flex gap-4 border-t border-white/5 pt-4">
+                        <div>
+                            <span class="block text-xl font-bold text-gas-green">$31.7M</span>
+                            <span data-i18n="case_stat_credit" class="text-[10px] text-gray-500 uppercase">Energy Credits (1 Month)</span>
+                        </div>
+                        <div>
+                            <span class="block text-xl font-bold text-white">Flexible</span>
+                            <span data-i18n="case_stat_type" class="text-[10px] text-gray-500 uppercase">Load Strategy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gas-card p-6 rounded-xl group hover:border-gas-green/50 cursor-pointer">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="bg-red-900/30 text-red-400 text-xs px-2 py-1 rounded border border-red-500/30" data-i18n="case2_loc">Canada (Alberta)</div>
+                        <i class="fa-solid fa-arrow-right -rotate-45 text-gray-600 group-hover:text-gas-green transition-colors"></i>
+                    </div>
+                    <h4 class="text-xl font-bold mb-2" data-i18n="case2_title">Regulatory Compliance: Self-Use</h4>
+                    <p data-i18n="case2_desc" class="text-sm text-gray-400 mb-4">
+                        针对 Link Global 曾因未获审批运营受罚的案例，强调在艾伯塔省利用 10MW 以下“自用发电”豁免权的重要性与法律界限。
+                    </p>
+                    <div class="flex gap-4 border-t border-white/5 pt-4">
+                        <div>
+                            <span class="block text-xl font-bold text-gas-green">&lt; 10 MW</span>
+                            <span data-i18n="case_stat_limit" class="text-[10px] text-gray-500 uppercase">Exemption Limit</span>
+                        </div>
+                        <div>
+                            <span class="block text-xl font-bold text-white">Strict</span>
+                            <span data-i18n="case_stat_compliance" class="text-[10px] text-gray-500 uppercase">Legal Structure</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-4xl mx-auto px-4 text-center mb-12">
+            <div class="bg-gradient-to-r from-gas-green/10 to-transparent p-1 rounded-2xl">
+                <div class="bg-[#151515] rounded-xl p-8 md:p-12">
+                    <h2 data-i18n="cta_title" class="text-2xl md:text-3xl font-bold mb-4">工业园区电力优化</h2>
+                    <p data-i18n="cta_desc" class="text-gray-400 mb-8">面对电网容量不足或电费过高？了解我们的模块化燃气发电方案。</p>
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <a href="/tools/lcoe-calculator" class="px-8 py-3 bg-gas-green text-black font-bold rounded hover:bg-white transition-all shadow-glow">
+                            <i class="fa-solid fa-calculator mr-2"></i> <span data-i18n="cta_btn_calc">LCOE 成本计算</span>
+                        </a>
+                        <a href="/about/contact" class="px-8 py-3 border border-white/20 text-white font-medium rounded hover:border-gas-green hover:text-gas-green transition-all">
+                            <span data-i18n="cta_btn_contact">咨询解决方案</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        const AppData = {
+            navigation: [
+                { title: "nav_home", path: "/index.html", type: "link" },
+                { title: "nav_oil", path: "/use-cases/oilfield", type: "link" },
+                { title: "nav_ind", path: "/use-cases/industrial", type: "link" }, // Active
+                { title: "nav_mining", path: "/use-cases/mining", type: "link" },
+                { title: "nav_chp", path: "/use-cases/chp", type: "link" }
+            ],
+            
+            i18n: {
+                zh: {
+                    tagline: "天然气发电挖矿助手",
+                    footerTagline: "让天然气发电挖矿更简单",
+                    // Navigation
+                    nav_home: "首页",
+                    nav_oil: "油气井 / 伴生气",
+                    nav_ind: "工业与园区能源",
+                    nav_mining: "挖矿 / 数据中心",
+                    nav_chp: "CHP 热电联供",
+                    // Hero
+                    hero_badge: "表后发电 (Behind-the-Meter)",
+                    hero_title: "工业园区与分布式能源",
+                    hero_desc: "针对电网连接延迟与电价波动，提供“表后发电”与“灵活负载”平衡方案。规避电网瓶颈，实现气算直连。",
+                    // Section 1
+                    sec1_title: "规避电网瓶颈",
+                    sec1_desc: "随着 AI 数据中心需求激增（预计到 2030 年增长 165%），电网扩容和输电许可往往需要数年时间。",
+                    sec1_point1_title: "跳过排队周期",
+                    sec1_point1_desc: "无需等待漫长的电网接入审批，直接部署园区内燃气发电设施。",
+                    sec1_point2_title: "气算直连",
+                    sec1_point2_desc: "在负荷中心直接发电，减少输电损耗，提高能源利用率。",
+                    // Section 2
+                    sec2_title: "灵活负载与需求响应",
+                    sec2_desc: "在园区内部署比特币矿机作为“可中断负载” (Interruptible Load)。将原本固定的工业用电转化为可调节的智能电网节点。",
+                    sec2_sub1_title: "削峰填谷",
+                    sec2_sub1_desc: "在电价飙升或电网负荷高峰期，矿机自动关机，将电力释放给园区关键生产线或卖回电网。",
+                    sec2_sub2_title: "监管合规与自用豁免",
+                    sec2_sub2_desc: "利用 <10MW 自用豁免条款（如加拿大艾伯塔省）加速落地，同时需严谨设计法律架构，规避违规售电风险。",
+                    // Cases
+                    cases_title: "应用案例",
+                    case1_loc: "美国 (德克萨斯州)",
+                    case1_desc: "Riot Platforms 通过参与 ERCOT 的需求响应计划，在电价高峰期主动削减负荷，单月获得巨额能源信用，大幅降低综合电力成本。",
+                    case_stat_credit: "单月能源信用收益",
+                    case_stat_type: "负载策略",
+                    case2_loc: "加拿大 (艾伯塔省)",
+                    case2_title: "合规案例：自用发电",
+                    case2_desc: "针对 Link Global 曾因未获审批运营受罚的案例，强调在艾伯塔省利用 10MW 以下“自用发电”豁免权的重要性与法律界限。",
+                    case_stat_limit: "豁免上限",
+                    case_stat_compliance: "法律架构",
+                    // CTA
+                    cta_title: "工业园区电力优化",
+                    cta_desc: "面对电网容量不足或电费过高？了解我们的模块化燃气发电方案。",
+                    cta_btn_calc: "LCOE 成本计算",
+                    cta_btn_contact: "咨询解决方案"
+                },
+                en: {
+                    tagline: "Natural Gas Power Mining Assistant",
+                    footerTagline: "Making natural gas power mining easier",
+                    // Navigation
+                    nav_home: "Home",
+                    nav_oil: "Oilfield / Associated Gas",
+                    nav_ind: "Industrial / Park",
+                    nav_mining: "Mining / Data Center",
+                    nav_chp: "CHP Cogeneration",
+                    // Hero
+                    hero_badge: "Behind-the-Meter Solutions",
+                    hero_title: "Industrial & Park Power",
+                    hero_desc: "Addressing grid interconnection delays and price volatility with independent power generation and flexible load balancing.",
+                    // Section 1
+                    sec1_title: "Bypassing Grid Bottlenecks",
+                    sec1_desc: "With AI data center demand projected to grow 165% by 2030, grid expansion and transmission permits often take years.",
+                    sec1_point1_title: "Skip the Queue",
+                    sec1_point1_desc: "Deploy on-site gas generation immediately without waiting for long utility interconnection approvals.",
+                    sec1_point2_title: "Gas-Compute Direct",
+                    sec1_point2_desc: "Generate power directly at the load center, reducing transmission losses and improving efficiency.",
+                    // Section 2
+                    sec2_title: "Flexible Load & Demand Response",
+                    sec2_desc: "Deploy Bitcoin miners as 'Interruptible Load' within the park. Transform fixed industrial consumption into a smart grid node.",
+                    sec2_sub1_title: "Peak Shaving",
+                    sec2_sub1_desc: "Miners shut down during price spikes or peak demand, releasing power to the park or selling back to the grid.",
+                    sec2_sub2_title: "Compliance & Exemptions",
+                    sec2_sub2_desc: "Leverage <10MW self-use exemptions (e.g., Alberta) for speed, while maintaining strict legal separation to avoid utility regulations.",
+                    // Cases
+                    cases_title: "Case Studies",
+                    case1_loc: "USA (Texas)",
+                    case1_desc: "Riot Platforms participated in ERCOT's demand response, curtailing load during peaks to earn $31.7M in energy credits in a single month.",
+                    case_stat_credit: "Energy Credits (1 Month)",
+                    case_stat_type: "Load Strategy",
+                    case2_loc: "Canada (Alberta)",
+                    case2_title: "Compliance: Self-Generation",
+                    case2_desc: "Highlighting the importance of the <10MW 'self-use' exemption in Alberta to avoid penalties seen in the Link Global case.",
+                    case_stat_limit: "Exemption Limit",
+                    case_stat_compliance: "Legal Structure",
+                    // CTA
+                    cta_title: "Optimize Industrial Power",
+                    cta_desc: "Facing grid capacity limits or high rates? Explore our modular gas power solutions.",
+                    cta_btn_calc: "LCOE Calculator",
+                    cta_btn_contact: "Contact Us"
+                },
+                ru: {
+                    tagline: "Помощник по газовому майнингу",
+                    footerTagline: "Майнинг на газе проще",
+                    // Navigation
+                    nav_home: "Главная",
+                    nav_oil: "Нефтегаз / ПНГ",
+                    nav_ind: "Пром. энергия",
+                    nav_mining: "Майнинг / ЦОД",
+                    nav_chp: "ТЭЦ (CHP)",
+                    // Hero
+                    hero_badge: "Генерация за счетчиком (BTM)",
+                    hero_title: "Промышленные парки и энергия",
+                    hero_desc: "Решение проблем с подключением к сети и волатильностью цен с помощью автономной генерации и балансировки нагрузки.",
+                    // Section 1
+                    sec1_title: "Обход ограничений сети",
+                    sec1_desc: "Спрос на ЦОД для ИИ вырастет на 165% к 2030 году. Очереди на подключение к сети и разрешения занимают годы.",
+                    sec1_point1_title: "Без очередей",
+                    sec1_point1_desc: "Развертывание газовой генерации на объекте без длительного ожидания одобрения сетей.",
+                    sec1_point2_title: "Газ-Вычисления",
+                    sec1_point2_desc: "Генерация прямо в центре нагрузок, снижение потерь при передаче.",
+                    // Section 2
+                    sec2_title: "Гибкая нагрузка и Demand Response",
+                    sec2_desc: "Использование майнеров как «прерываемой нагрузки». Превращение фиксированного потребления в умный узел сети.",
+                    sec2_sub1_title: "Срезание пиков",
+                    sec2_sub1_desc: "Майнеры отключаются при скачках цен, высвобождая энергию для завода или продажи в сеть.",
+                    sec2_sub2_title: "Комплаенс и льготы",
+                    sec2_sub2_desc: "Использование льгот для «собственных нужд» <10 МВт (напр. Альберта) при строгом соблюдении юридических норм.",
+                    // Cases
+                    cases_title: "Кейсы",
+                    case1_loc: "США (Техас)",
+                    case1_desc: "Riot Platforms участвовала в программе ERCOT, отключаясь в пики и заработав $31.7 млн кредитов за один месяц.",
+                    case_stat_credit: "Энергокредиты (Мес.)",
+                    case_stat_type: "Стратегия",
+                    case2_loc: "Канада (Альберта)",
+                    case2_title: "Комплаенс: Собственная генерация",
+                    case2_desc: "Важность соблюдения лимита <10 МВт для «собственных нужд» во избежание штрафов, как в случае с Link Global.",
+                    case_stat_limit: "Лимит льготы",
+                    case_stat_compliance: "Юр. структура",
+                    // CTA
+                    cta_title: "Оптимизация энергии",
+                    cta_desc: "Ограничения мощности или высокие тарифы? Узнайте о наших модульных решениях.",
+                    cta_btn_calc: "Расчет LCOE",
+                    cta_btn_contact: "Связаться"
+                }
+            }
+        };
+
+        const app = {
+            currentLang: 'en',
+
+            init() {
+                this.updateContent();
+                this.updateActiveLangState();
+            },
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                this.updateContent();
+                this.updateActiveLangState();
+            },
+
+            t(key) {
+                const dict = AppData.i18n[this.currentLang];
+                return (dict && dict[key]) ? dict[key] : key;
+            },
+
+            updateActiveLangState() {
+                const buttonClasses = {
+                    active: "text-black bg-gas-green shadow-glow font-bold",
+                    inactive: "text-gas-subtext hover:text-white hover:bg-white/5 font-medium"
+                };
+
+                ['zh', 'en', 'ru'].forEach(lang => {
+                    const btn = document.getElementById(`btn-lang-${lang}`);
+                    if(btn) {
+                        btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center cursor-pointer ${lang === this.currentLang ? buttonClasses.active : buttonClasses.inactive}`;
+                    }
+                });
+            },
+
+            updateContent() {
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    el.innerText = this.t(key);
+                });
+            },
+        };
+
+        // Start
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = app;
+            app.init();
+        });
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

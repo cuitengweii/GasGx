@@ -1,0 +1,580 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7x24 Flash News - GasGx Mining</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: { bg: '#050505', card: '#0F0F0F', border: '#1F1F1F', green: '#5DD62C', accent: '#FFFFFF', subtext: '#888888' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        header: ['Oswald', 'sans-serif'],
+                    },
+                    boxShadow: { 'neon': '0 0 15px rgba(93, 214, 44, 0.2)' },
+                    animation: { 'marquee': 'marquee 80s linear infinite' },
+                    keyframes: {
+                        marquee: {
+                            '0%': { transform: 'translateX(0%)' },
+                            '100%': { transform: 'translateX(-50%)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body { background-color: #050505; color: #F8F8F8; font-family: 'Inter', sans-serif; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #333; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+        .header-glass { background: rgba(5, 5, 5, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .tech-card { background: #0F0F0F; border: 1px solid #1F1F1F; position: relative; overflow: hidden; transition: all 0.3s ease; }
+        
+        /* Flash Timeline Specific Styles */
+        .timeline-line { position: absolute; left: 140px; top: 0; bottom: 0; width: 1px; background: #1F1F1F; }
+        .timeline-dot { position: absolute; left: 136px; top: 24px; width: 9px; height: 9px; border-radius: 50%; background: #5DD62C; box-shadow: 0 0 10px rgba(93, 214, 44, 0.5); z-index: 10; }
+        .date-divider { position: relative; z-index: 20; background: #050505; display: inline-block; padding: 4px 12px; border: 1px solid #333; border-radius: 20px; font-size: 12px; font-weight: bold; color: #aaa; margin: 20px 0 20px 100px; }
+        
+        /* Time Reveal Animation */
+        @keyframes timeReveal {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-time-reveal {
+            animation: timeReveal 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        /* Mobile Specific Overrides */
+        @media (max-width: 1024px) {
+            .timeline-line { display: none; }
+            .timeline-dot { display: none; }
+            .date-divider { display: none; } 
+        }
+
+        /* Toast & Modal */
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; pointer-events: none; }
+        .toast { background: rgba(20, 20, 20, 0.95); border: 1px solid #333; border-left: 3px solid #5DD62C; color: #fff; padding: 12px 24px; margin-bottom: 10px; border-radius: 4px; opacity: 0; transform: translateY(-20px); transition: all 0.3s ease; pointer-events: auto; font-size: 14px; display: flex; items-center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 9999; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .poster-preview-card { transform: scale(0.95); transition: transform 0.3s ease; max-height: 90vh; overflow-y: auto; }
+        .modal-overlay.active .poster-preview-card { transform: scale(1); }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative">
+
+    <div id="toast-container"></div>
+
+    <div id="poster-modal" class="modal-overlay">
+        <div class="poster-preview-card bg-[#111] border border-white/10 rounded-2xl p-6 w-full max-w-md flex flex-col items-center relative shadow-2xl">
+            <button onclick="window.app.closePosterModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <h3 class="text-white font-bold mb-6 text-lg uppercase tracking-wider"><span class="text-gas-green">Share</span> Poster</h3>
+            <div id="generated-poster-container" class="w-full mb-6 rounded-lg overflow-hidden border border-white/5 shadow-lg min-h-[200px] bg-[#050505] flex items-center justify-center">
+                <i class="fa-solid fa-circle-notch fa-spin text-gas-green text-2xl"></i>
+            </div>
+            <div class="flex gap-4 w-full">
+                <button onclick="window.app.downloadGeneratedPoster()" class="flex-1 bg-gas-green text-black font-bold py-3 rounded-lg hover:bg-white transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-download"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <header class="fixed top-0 w-full z-50 header-glass h-16">
+        <div class="max-w-[1600px] mx-auto px-4 lg:px-6 h-full flex justify-between items-center">
+            <div class="flex items-center gap-8 h-full">
+                <a href="/news/index.html" class="flex items-center gap-1 group">
+                    <div class="flex flex-col justify-center -space-y-1">
+                        <span class="text-2xl font-bold italic text-white tracking-tighter font-header group-hover:text-gas-green transition-colors">GasGx</span>
+                        <span class="text-[9px] font-bold text-gas-green tracking-[0.2em] uppercase leading-none pl-0.5">MINING NEWS</span>
+                    </div>
+                </a>
+                <nav id="desktop-nav" class="hidden lg:flex items-center gap-1 h-full pl-6 border-l border-white/5 ml-4"></nav>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="window.app.toggleMobileMenu()" class="lg:hidden text-white text-lg ml-2"><i class="fa-solid fa-bars"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="pt-16 bg-[#080808] border-b border-white/5 relative z-40 shadow-sm">
+        <div class="max-w-[1800px] mx-auto flex items-center h-8 overflow-hidden">
+            <div class="flex items-center gap-2 px-4 h-full shrink-0 border-r border-white/10 bg-[#050505] z-10">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gas-green opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-gas-green"></span>
+                </span>
+                <span class="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Live Data</span>
+            </div>
+            <div class="flex-1 overflow-hidden relative h-full flex items-center">
+                <div id="live-data-container" class="animate-marquee whitespace-nowrap flex items-center gap-12 px-4">
+                    <div class="text-xs font-mono text-gray-600">Initializing Data Stream...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mobile-menu-container" class="fixed inset-0 z-50 bg-[#050505] transform translate-x-full transition-transform duration-300 lg:hidden flex flex-col pt-20 px-6">
+        <button onclick="window.app.toggleMobileMenu()" class="absolute top-5 right-5 text-gray-500 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+        <div id="mobile-nav-links" class="space-y-6 text-xl font-bold text-gray-300"></div>
+    </div>
+
+    <main class="flex-grow w-full max-w-[1200px] mx-auto px-4 lg:px-6 py-8 pb-8">
+        
+        <div class="flex flex-col lg:flex-row gap-0 lg:gap-12 items-start relative">
+            
+            <div class="w-full lg:w-[70%] relative min-h-screen">
+                
+                <div class="flex items-center justify-between mb-8 pb-4 border-b border-white/10">
+                    <h1 class="text-2xl font-bold text-white uppercase tracking-wider flex items-center gap-3">
+                        <i class="fa-solid fa-bolt text-gas-green animate-pulse"></i> 
+                        7x24 Flash News
+                    </h1>
+                    <div class="flex gap-2">
+                        <button onclick="window.app.reloadFlash()" class="group flex items-center gap-2 px-4 py-2 rounded-full bg-[#111] border border-white/10 hover:border-gas-green hover:bg-[#1a1a1a] transition-all cursor-pointer">
+                            <span class="text-xs font-bold text-gray-400 group-hover:text-white uppercase tracking-wide">Click to update</span>
+                            <i class="fa-solid fa-rotate-right text-gas-green group-hover:rotate-180 transition-transform duration-700"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="flash-timeline-container" class="relative">
+                    <div class="hidden lg:block timeline-line"></div>
+                    
+                    <div id="flash-items-wrapper" class="space-y-0">
+                        <div class="text-center py-20 text-gray-500"><i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4"></i><br>Syncing Flash News...</div>
+                    </div>
+                    
+                    <div class="mt-12 text-center pl-0 lg:pl-[140px]">
+                        <button id="load-more-btn" onclick="window.app.loadMoreFlash()" class="px-8 py-3 rounded-full border border-white/10 text-xs font-bold text-white hover:bg-white hover:text-black transition-all uppercase tracking-wide">Load More</button>
+                        <div id="load-more-spinner" class="hidden text-gas-green"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hidden lg:flex w-[30%] flex-col gap-6 sticky top-24">
+                
+                <div class="rounded-xl overflow-hidden relative group cursor-pointer border border-white/10 hover:border-gas-green/50 transition-all duration-500 shadow-2xl" onclick="window.open('https://www.gasgx.com', '_blank')">
+                    <div class="absolute inset-0 bg-gradient-to-br from-[#0f0f0f] via-[#050505] to-[#000]"></div>
+                    <div class="absolute inset-0 bg-[linear-gradient(rgba(93,214,44,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(93,214,44,0.03)_1px,transparent_1px)] bg-[size:20px_20px]"></div>
+                    
+                    <div class="relative z-10 p-8 flex flex-col items-center text-center h-full justify-center min-h-[240px]">
+                        <div class="w-16 h-16 rounded-full bg-[#111] border border-gas-green/30 flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(93,214,44,0.15)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(93,214,44,0.4)] transition-all duration-500">
+                            <span class="text-2xl font-bold italic text-gas-green font-header tracking-tighter">Gx</span>
+                        </div>
+                        
+                        <h3 class="text-white font-bold text-xl mb-2 font-header tracking-wide uppercase">GASGX.COM</h3>
+                        <p class="text-[11px] text-gray-400 mb-6 leading-relaxed max-w-[200px]">The definitive intelligence platform for energy-compute convergence.</p>
+                        
+                        <button class="bg-gas-green text-black font-bold text-[10px] px-6 py-2.5 rounded-full hover:bg-white hover:scale-105 transition-all uppercase tracking-widest shadow-lg shadow-gas-green/10">
+                            Visit Official Site
+                        </button>
+                    </div>
+                    
+                    <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-gas-green/10 blur-[60px] rounded-full pointer-events-none group-hover:bg-gas-green/20 transition-colors"></div>
+                </div>
+
+                <div class="tech-card rounded-xl p-6 bg-[#080808]">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-widest">Market Pulse</h3>
+                        <span class="w-2 h-2 rounded-full bg-gas-green animate-pulse"></span>
+                    </div>
+                    <div id="sidebar-market-pulse" class="space-y-3">
+                        <div class="h-10 bg-[#111] animate-pulse rounded"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="bg-[#020202] border-t border-[#1F1F1F] mt-auto pt-10 pb-8 text-sm relative z-20">
+        <div class="max-w-[1600px] mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2"><span class="text-2xl font-bold italic text-white tracking-tighter">GasGx</span></div>
+                    <p class="text-xs text-gray-500 leading-relaxed">The definitive intelligence platform for the energy-compute convergence.</p>
+                </div>
+                <div><h4 class="text-white font-bold text-xs uppercase tracking-widest mb-4">Public Services</h4><ul class="space-y-3 text-xs text-gray-500"><li>Mining Calculator</li><li>Gas Price Index</li><li>Miner Rankings</li><li>API Docs</li></ul></div>
+                <div><h4 class="text-white font-bold text-xs uppercase tracking-widest mb-4">Legal</h4><ul class="space-y-3 text-xs text-gray-500"><li>Privacy Policy</li><li>Terms of Service</li><li>Contact Us</li></ul></div>
+                <div>
+                    <h4 class="text-white font-bold text-xs uppercase tracking-widest mb-4">Connect</h4>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-black hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-x-twitter text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#229ED9] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-telegram text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#5865F2] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-discord text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#FF0000] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-youtube text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#0077B5] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-linkedin text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#1877F2] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-facebook text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#000000] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-tiktok text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#07C160] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-weixin text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#25D366] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-whatsapp text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#E1306C] hover:text-white transition-all hover:-translate-y-1"><i class="fa-brands fa-instagram text-lg"></i></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 transition-all hover:-translate-y-1 hover:bg-[#FF2442] hover:text-white" title="Xiaohongshu"><span class="font-black text-[9px] leading-none" style="font-family: 'PingFang SC', sans-serif;">小红书</span></a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-[#111] flex items-center justify-center text-gray-400 hover:bg-[#FF9900] hover:text-white transition-all hover:-translate-y-1"><i class="fa-solid fa-circle-play text-lg"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-white/5 pt-8 text-xs text-gray-600 text-center">© 2026 GasGx Technology. All rights reserved.</div>
+        </div>
+    </footer>
+
+    <button id="back-to-top-btn" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="fixed right-6 bottom-24 w-10 h-10 bg-[#111] border border-gas-green text-gas-green rounded-full flex items-center justify-center z-40 hover:scale-110 transition-all duration-300 shadow-neon group opacity-0 pointer-events-none"><i class="fa-solid fa-arrow-up group-hover:-translate-y-0.5 transition-transform"></i></button>
+
+    <div id="poster-capture-area" style="position: absolute; top: -9999px; left: -9999px; width: 450px; background: #080808; padding: 40px; border: 1px solid #1F1F1F;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #5DD62C; padding-bottom: 20px; margin-bottom: 25px;">
+            <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 32px; font-weight: 800; color: white; font-family: 'Oswald', sans-serif; letter-spacing: -1px; font-style: italic;">GasGx</span>
+                <span style="font-size: 10px; color: #5DD62C; letter-spacing: 4px; font-weight: bold;">MINING NEWS</span>
+            </div>
+            <div style="background: #5DD62C; color: black; font-weight: bold; font-size: 12px; padding: 4px 8px; border-radius: 4px;">7x24 FLASH</div>
+        </div>
+        <div id="poster-content" style="min-height: 180px;">
+            <div id="poster-time" style="color: #5DD62C; font-family: 'JetBrains Mono', monospace; font-size: 14px; margin-bottom: 12px; font-weight: bold;"></div>
+            <h2 id="poster-title" style="color: white; font-size: 22px; font-weight: 700; line-height: 1.3; margin-bottom: 20px; font-family: 'Inter', sans-serif;"></h2>
+            <p id="poster-text" style="color: #cccccc; font-size: 14px; line-height: 1.6; font-family: 'Inter', sans-serif; text-align: justify; white-space: pre-wrap;"></p>
+        </div>
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+                <div style="color: white; font-weight: bold; font-size: 14px; margin-bottom: 4px;">Global Energy Intelligence</div>
+                <div style="color: #666; font-size: 10px;">Powered by GasGx Technology</div>
+            </div>
+            <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+                <div id="poster-qrcode" style="background: white; padding: 4px; border-radius: 4px;"></div>
+                <div style="color: #5DD62C; font-size: 10px; font-weight: bold; letter-spacing: 1px;">www.gasgx.com</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+        
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const AppData = {
+            navigation: [
+                { title: "Home", path: "/news/index.html" },
+                { title: "Gas Energy", path: "/news/gas-energy.html" },
+                { title: "Generators", path: "/news/generators.html" },
+                { title: "Bitcoin Mining", path: "/news/bitcoin-mining.html" },
+                { title: "Flash", path: "/news/flash.html" }, 
+                { title: "Insights", path: "/news/insights.html" },
+                { title: "Data", path: "/news/data.html" },
+                { title: "Events", path: "/news/events.html" },
+            ]
+        };
+
+        window.app = {
+            state: {
+                offset: 0,
+                limit: 20,
+                isLoading: false,
+                flashData: [],
+                generatedPosterUrl: null,
+                lastDateHeader: null
+            },
+
+            init() {
+                this.renderNav();
+                this.loadLiveData();
+                this.loadSidebarPulse();
+                this.loadFlashFeed(true);
+
+                window.addEventListener('scroll', () => {
+                    const btn = document.getElementById('back-to-top-btn');
+                    if (window.scrollY > 300) btn.classList.remove('opacity-0', 'pointer-events-none');
+                    else btn.classList.add('opacity-0', 'pointer-events-none');
+                });
+            },
+            
+            showToast(message, type = 'success') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check text-gas-green' : 'fa-info-circle text-blue-400'}"></i> <span>${message}</span>`;
+                container.appendChild(toast);
+                toast.offsetHeight;
+                toast.classList.add('show');
+                setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
+            },
+
+            renderNav() {
+                // Highlight Flash
+                const navLinks = AppData.navigation.map(item => {
+                    const isActive = item.title === 'Flash' || window.location.pathname.includes(item.path);
+                    const colorClass = isActive ? 'text-gas-green' : 'text-gray-400';
+                    return `<a href="${item.path}" class="${colorClass} text-xs font-bold hover:text-white px-4 py-2 transition-colors uppercase tracking-wide rounded-full whitespace-nowrap">${item.title}</a>`;
+                }).join('');
+                document.getElementById('desktop-nav').innerHTML = navLinks;
+                
+                const mobLinks = AppData.navigation.map(item => `<a href="${item.path}" class="block py-4 border-b border-white/10 hover:text-gas-green">${item.title}</a>`).join('');
+                document.getElementById('mobile-nav-links').innerHTML = mobLinks;
+            },
+            toggleMobileMenu() { document.getElementById('mobile-menu-container').classList.toggle('translate-x-full'); },
+
+            reloadFlash() {
+                this.loadFlashFeed(true);
+            },
+
+            loadMoreFlash() {
+                if (!this.state.isLoading) this.loadFlashFeed(false);
+            },
+
+            async loadFlashFeed(isReset = false) {
+                const wrapper = document.getElementById('flash-items-wrapper');
+                const spinner = document.getElementById('load-more-spinner');
+                const btn = document.getElementById('load-more-btn');
+
+                if (isReset) {
+                    this.state.offset = 0;
+                    this.state.lastDateHeader = null;
+                    this.state.flashData = [];
+                    wrapper.innerHTML = '<div class="text-center py-20 text-gray-500"><i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4"></i><br>Syncing Flash News...</div>';
+                } else {
+                    this.state.isLoading = true;
+                    btn.classList.add('hidden');
+                    spinner.classList.remove('hidden');
+                }
+
+                try {
+                    // [Fix v1.1] Sort by 'news_flash_time' instead of 'created_at' to handle backfilled data correctly
+                    const { data, error } = await _supabase
+                        .from('flash_news')
+                        .select('*')
+                        .order('news_flash_time', { ascending: false })
+                        .range(this.state.offset, this.state.offset + this.state.limit - 1);
+
+                    if (error) throw error;
+
+                    if (isReset) wrapper.innerHTML = '';
+                    if (!data || data.length === 0) {
+                        if (isReset) wrapper.innerHTML = '<div class="text-center py-20 text-gray-500">No flash news available.</div>';
+                        btn.style.display = 'none';
+                        return;
+                    }
+
+                    this.state.flashData = [...this.state.flashData, ...data];
+
+                    let html = '';
+                    
+                    data.forEach(item => {
+                        const dateObj = new Date(item.created_at);
+                        const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+                        const displayDate = dateObj.toLocaleDateString('en-US', dateOptions); 
+                        
+                        const timeStr = item.news_flash_time ? 
+                            (item.news_flash_time.includes('T') ? new Date(item.news_flash_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12:false}) : item.news_flash_time) 
+                            : dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12:false});
+                        
+                        if (displayDate !== this.state.lastDateHeader) {
+                            html += `<div class="date-divider">${displayDate}</div>`;
+                            this.state.lastDateHeader = displayDate;
+                        }
+
+                        html += `
+                        <div class="flex lg:block gap-4 pb-8 lg:pb-0" id="flash-${item.id}">
+
+                            <div class="lg:hidden flex flex-col items-center shrink-0 w-4 relative">
+                                <div class="absolute top-0 bottom-0 w-[1px] bg-[#333]"></div>
+                                <div class="relative w-2 h-2 rounded-full bg-gas-green shadow-neon mt-[26px] z-10"></div>
+                            </div>
+
+                            <div class="relative flex-1 flex flex-col lg:flex-row group lg:min-h-[120px] bg-[#111] lg:bg-transparent border border-white/10 lg:border-none rounded-xl lg:rounded-none p-5 lg:p-0 shadow-lg lg:shadow-none">
+                                
+                                <div class="hidden lg:block w-[140px] shrink-0 text-right pr-8 pt-6">
+                                    <span class="animate-time-reveal inline-block font-mono text-gray-400 text-sm font-bold group-hover:text-gas-green transition-colors">${timeStr}</span>
+                                </div>
+                                <div class="hidden lg:block timeline-dot bg-[#1F1F1F] border border-gray-700 group-hover:bg-gas-green group-hover:border-gas-green transition-colors"></div>
+
+                                <div class="flex-1 min-w-0 lg:pl-12 lg:pr-4 lg:pt-4 lg:pb-6 lg:border-l lg:border-transparent lg:hover:bg-white/5 lg:rounded-r-xl transition-colors">
+                                    
+                                    <div class="lg:hidden flex items-center justify-between mb-3 border-b border-white/5 pb-2">
+                                        <span class="animate-time-reveal font-mono text-gas-green font-bold text-xs tracking-wider">${timeStr}</span>
+                                        <span class="text-[10px] text-gray-600 font-bold uppercase">${displayDate}</span>
+                                    </div>
+
+                                    <h3 class="text-lg lg:text-xl font-bold text-white mb-3 leading-relaxed lg:leading-snug group-hover:text-gas-green transition-colors cursor-pointer select-text text-left break-words">
+                                        ${item.title}
+                                    </h3>
+                                    
+                                    <div class="text-[#BBBBBB] text-[15px] lg:text-sm leading-7 lg:leading-relaxed mb-4 text-left whitespace-pre-wrap select-text font-light line-clamp-[20] overflow-hidden text-ellipsis break-words">${(item.content || '').trim()}</div>
+
+                                    <div class="flex items-center justify-between lg:justify-end gap-3 pt-3 border-t border-white/10 lg:border-none lg:pt-0">
+                                        <span class="lg:hidden text-[10px] text-gray-600 font-mono uppercase tracking-widest">Share</span>
+                                        <div class="flex items-center gap-4 lg:gap-5">
+                                            <button onclick="window.app.openPosterModal('${item.id}')" class="w-8 h-8 lg:w-auto lg:h-auto flex items-center justify-center rounded-full bg-white/5 lg:bg-transparent text-gray-400 hover:text-gas-green hover:bg-white/10 lg:hover:bg-transparent transition-all" title="Generate Poster">
+                                                <i class="fa-solid fa-camera text-sm lg:text-lg"></i>
+                                            </button>
+                                            
+                                            <button onclick="window.app.shareX('${item.id}')" class="w-8 h-8 lg:w-auto lg:h-auto flex items-center justify-center rounded-full bg-white/5 lg:bg-transparent text-gray-400 hover:text-white hover:bg-white/10 lg:hover:bg-transparent transition-all" title="Copy & Share to X">
+                                                <i class="fa-brands fa-x-twitter text-sm lg:text-lg"></i>
+                                            </button>
+                                            
+                                            <button onclick="window.app.shareLinkedIn('${item.id}')" class="w-8 h-8 lg:w-auto lg:h-auto flex items-center justify-center rounded-full bg-white/5 lg:bg-transparent text-gray-400 hover:text-[#0077B5] hover:bg-white/10 lg:hover:bg-transparent transition-all" title="Copy & Share to LinkedIn">
+                                                <i class="fa-brands fa-linkedin text-sm lg:text-lg"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                    });
+
+                    wrapper.insertAdjacentHTML('beforeend', html);
+                    this.state.offset += data.length;
+                    
+                    spinner.classList.add('hidden');
+                    btn.classList.remove('hidden');
+                    if (data.length < this.state.limit) {
+                        btn.innerText = "No More News";
+                        btn.disabled = true;
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+
+                } catch (e) {
+                    console.error(e);
+                    this.showToast('Error loading news', 'error');
+                } finally {
+                    this.state.isLoading = false;
+                }
+            },
+
+            async loadSidebarPulse() {
+                const container = document.getElementById('sidebar-market-pulse');
+                if(!container) return;
+                try {
+                    const { data } = await _supabase.from('market_metrics').select('*').limit(5);
+                    if(data) {
+                        container.innerHTML = data.map(item => `
+                            <div class="flex items-center justify-between border-b border-white/5 pb-2 last:border-0">
+                                <div>
+                                    <div class="text-[10px] text-gray-500 uppercase">${item.label}</div>
+                                    <div class="text-sm font-mono font-bold text-white">${item.value} <span class="text-[10px] text-gray-600">${item.unit||''}</span></div>
+                                </div>
+                                <div class="${item.trend=='up'?'text-gas-green':(item.trend=='down'?'text-red-500':'text-gray-500')} text-xs font-bold">
+                                    ${item.change_24h}
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                } catch(e) {}
+            },
+
+            async loadLiveData() {
+                 const container = document.getElementById('live-data-container');
+                 try {
+                     const { data } = await _supabase.from('homepage_scrolling_data').select('*').order('sort_order');
+                     if (data && data.length > 0) {
+                         const itemsHtml = data.map(item => {
+                             let color = item.status === 'positive' ? 'text-gas-green' : (item.status === 'negative' ? 'text-red-500' : 'text-gray-500');
+                             return `<div class="flex items-center gap-2 text-xs font-mono text-gray-400 whitespace-nowrap"><span class="text-purple-400 font-bold">${item.label}</span><span class="text-white font-bold">${item.display_value}</span>${item.unit?`<span class="text-gray-500 text-[10px]">${item.unit}</span>`:''}<span class="${color} text-[10px] ml-1">${item.secondary_text||''}</span></div>`;
+                         }).join('');
+                         container.innerHTML = `<div class="flex items-center gap-12">${itemsHtml}</div>`.repeat(2);
+                     }
+                 } catch(e) {}
+            },
+
+            async openPosterModal(id) {
+                const item = this.state.flashData.find(i => i.id == id);
+                if (!item) return;
+
+                const modal = document.getElementById('poster-modal');
+                const container = document.getElementById('generated-poster-container');
+                container.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-gas-green text-2xl"></i>';
+                modal.classList.add('active');
+
+                document.getElementById('poster-time').innerText = item.news_flash_time || new Date().toLocaleTimeString();
+                document.getElementById('poster-title').innerText = item.title;
+                document.getElementById('poster-text').innerText = item.content;
+
+                const qrContainer = document.getElementById('poster-qrcode');
+                qrContainer.innerHTML = ''; 
+                new QRCode(qrContainer, {
+                    text: window.location.href,
+                    width: 60, height: 60,
+                    colorDark : "#000000", colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+
+                await new Promise(r => setTimeout(r, 200)); 
+
+                try {
+                    const canvas = await html2canvas(document.getElementById('poster-capture-area'), {
+                        backgroundColor: '#080808', scale: 2, logging: false
+                    });
+                    this.state.generatedPosterUrl = canvas.toDataURL('image/png');
+                    const img = new Image();
+                    img.src = this.state.generatedPosterUrl;
+                    img.className = "w-full h-auto block";
+                    container.innerHTML = '';
+                    container.appendChild(img);
+                } catch (e) {
+                    this.showToast('Generation failed', 'error');
+                }
+            },
+            closePosterModal() { document.getElementById('poster-modal').classList.remove('active'); },
+            downloadGeneratedPoster() {
+                if (!this.state.generatedPosterUrl) return;
+                const link = document.createElement('a');
+                link.download = `GasGx-Flash-${Date.now()}.png`;
+                link.href = this.state.generatedPosterUrl;
+                link.click();
+            },
+            
+            shareX(id) {
+                const item = this.state.flashData.find(i => i.id == id);
+                if (!item) return;
+                const copyText = `${item.title}\n\n${item.content}\n\nSource: GasGx Mining News`;
+                
+                navigator.clipboard.writeText(copyText).then(() => {
+                    this.showToast('Copied! Opening X...', 'success');
+                    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(item.title + "...")}&url=${encodeURIComponent(window.location.href)}`;
+                    setTimeout(() => window.open(tweetUrl, '_blank'), 500);
+                }).catch(() => {
+                    this.showToast('Clipboard failed, opening X anyway.', 'error');
+                    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}`, '_blank');
+                });
+            },
+
+            shareLinkedIn(id) {
+                const item = this.state.flashData.find(i => i.id == id);
+                if (!item) return;
+                const copyText = `${item.title}\n\n${item.content}\n\nSource: GasGx Mining News`;
+
+                navigator.clipboard.writeText(copyText).then(() => {
+                    this.showToast('Copied! Paste on LinkedIn.', 'success');
+                    setTimeout(() => window.open('https://www.linkedin.com/feed/', '_blank'), 800);
+                }).catch(() => {
+                     window.open('https://www.linkedin.com/feed/', '_blank');
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => window.app.init());
+    </script>
+<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js"></script>
+</body>
+</html>
+

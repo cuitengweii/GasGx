@@ -1,0 +1,192 @@
+.gxf-main-module .gxf-timeline-line {
+    position: absolute;
+    left: 140px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: #1f1f1f;
+}
+
+.gxf-main-module .gxf-timeline-dot {
+    position: absolute;
+    left: 136px;
+    top: 24px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(93, 214, 44, 0.5);
+    z-index: 10;
+}
+
+.gxf-main-module .gxf-date-divider {
+    position: relative;
+    z-index: 20;
+    background: #050505;
+    display: inline-block;
+    padding: 4px 12px;
+    border: 1px solid #333;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #aaa;
+    margin: 20px 0 20px 100px;
+}
+
+.gxf-main-module .gxf-news-item-scroll-target {
+    scroll-margin-top: 180px;
+}
+
+.gxf-main-module #gxf-poster-qrcode img {
+    display: block;
+}
+
+.gxf-main-module #gxf-toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.gxf-main-module .gxf-toast {
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid #333;
+    border-left: 3px solid #5dd62c;
+    color: #fff;
+    padding: 12px 24px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s ease;
+    pointer-events: auto;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+}
+
+.gxf-main-module .gxf-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.gxf-main-module .gxf-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    padding: 20px;
+}
+
+.gxf-main-module .gxf-modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.gxf-main-module .gxf-poster-preview-card {
+    transform: scale(0.98);
+    transition: transform 0.3s ease;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.gxf-main-module .gxf-modal-overlay.active .gxf-poster-preview-card {
+    transform: scale(1);
+}
+
+.gxf-main-module #gxf-generated-poster-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    min-height: 200px;
+    background: #050505;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.gxf-main-module #gxf-generated-poster-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.gxf-main-module .gxf-thinking-circle {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background-color: #5dd62c;
+    border-radius: 50%;
+    animation: gxf-thinking-pulse 1s infinite ease-in-out;
+    margin-right: 10px;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+@keyframes gxf-thinking-pulse {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+        box-shadow: 0 0 10px #5dd62c;
+    }
+    100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+}
+
+.gxf-main-module .gxf-typing::after {
+    content: '|';
+    display: inline-block;
+    vertical-align: bottom;
+    animation: gxf-blink 1s step-start infinite;
+    color: #5dd62c;
+    margin-left: 2px;
+    opacity: 0.8;
+}
+
+@keyframes gxf-blink {
+    50% {
+        opacity: 0;
+    }
+}
+
+.gxf-main-module .gxf-poster-bg {
+    background-color: #030303;
+    background-image: radial-gradient(circle at 100% 0%, rgba(93, 214, 44, 0.08) 0%, transparent 40%),
+        linear-gradient(135deg, rgba(15, 15, 15, 1) 0%, rgba(5, 5, 5, 1) 100%);
+}
+
+@media (max-width: 1024px) {
+    .gxf-main-module .gxf-timeline-line {
+        display: none;
+    }
+
+    .gxf-main-module .gxf-timeline-dot {
+        display: none;
+    }
+
+    .gxf-main-module .gxf-date-divider {
+        display: none;
+    }
+
+    .gxf-main-module .gxf-news-item-scroll-target {
+        scroll-margin-top: 160px;
+    }
+}

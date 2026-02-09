@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx: Natural Gas Power Generation & Mining Whitepaper</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 20px rgba(93, 214, 44, 0.6)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Unified Card Style matching index.html */
+        .gas-panel {
+            background-color: rgba(32, 32, 32, 0.95); /* #202020 */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .gas-panel:hover {
+            border-color: rgba(93, 214, 44, 0.3); /* Gas Green border on hover */
+            box-shadow: 0 0 15px rgba(93, 214, 44, 0.15);
+        }
+
+        /* Gradient Text aligned with Brand */
+        .gradient-text {
+            background: linear-gradient(135deg, #FFFFFF 0%, #5DD62C 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Navigation Link Hover */
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-link:hover::after { width: 100%; }
+        .nav-link:hover { color: #5DD62C; }
+
+        .chart-container { position: relative; width: 100%; max-width: 700px; margin-left: auto; margin-right: auto; height: 400px; max-height: 450px; }
+        
+        /* Step Cards */
+        .step-card { transition: transform 0.3s ease, border-color 0.3s ease; }
+        .step-card:hover { transform: translateY(-5px); border-color: #5DD62C; }
+
+        /* ADDED: Floating Share Button Animation */
+        @keyframes floatPulse {
+            0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); }
+        }
+        .float-btn {
+            animation: floatPulse 2s infinite;
+        }
+    </style>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="antialiased overflow-x-hidden flex flex-col min-h-screen relative">
+
+    <div id="ggx-site-header-slot"></div>
+
+<header class="relative pt-32 pb-20 px-6 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center bg-no-repeat">
+        <div class="absolute inset-0 bg-[#0F0F0F]/90"></div>
+        
+        <div class="container mx-auto relative z-10 text-center">
+            <div class="inline-block px-3 py-1 border border-gas-green/30 rounded-full bg-gas-green/10 text-gas-green text-xs font-bold uppercase tracking-wider mb-6">2026 Whitepaper</div>
+            <h1 class="text-5xl md:text-7xl font-bold mb-6 tracking-tight text-white">
+                <span class="gradient-text">Stranded Energy</span><br>
+                Reshaping Global Computation
+            </h1>
+            <p class="text-xl text-gas-subtext max-w-3xl mx-auto mb-10 leading-relaxed font-light">
+                Transforming 151 billion cubic meters of wasted natural gas into the backbone of the decentralized digital economy and AI infrastructure.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mt-12">
+                <div class="gas-panel p-6 rounded-xl border-t-2 border-gas-green">
+                    <div class="text-4xl font-bold text-white mb-2">151 BCM</div>
+                    <div class="text-[10px] text-gas-green uppercase tracking-widest font-bold">Gas Flared Globally</div>
+                </div>
+                <div class="gas-panel p-6 rounded-xl border-t-2 border-white/20">
+                    <div class="text-4xl font-bold text-white mb-2">$63 Billion</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Lost Economic Value</div>
+                </div>
+                <div class="gas-panel p-6 rounded-xl border-t-2 border-white/20">
+                    <div class="text-4xl font-bold text-white mb-2">389 MT</div>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">CO2e Emissions</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section id="overview" class="py-20 px-6 bg-gas-bg">
+        <div class="container mx-auto">
+            <div class="mb-16 max-w-4xl">
+                <h2 class="text-3xl md:text-4xl font-bold mb-6 border-l-4 border-gas-green pl-4 text-white">The Energy-Compute Paradox</h2>
+                <p class="text-lg text-gray-400 font-light leading-relaxed">
+                    We face a dual crisis: The energy sector burns billions of dollars in "stranded gas" due to lack of pipeline infrastructure. Simultaneously, the digital economy—driven by Bitcoin mining and explosive AI growth—is starving for low-cost, reliable power. <span class="text-white font-medium">GasGx bridges this gap through Industrial Symbiosis.</span>
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="space-y-6">
+                    <div class="gas-panel p-8 rounded-2xl">
+                        <h3 class="text-xl font-bold text-white mb-6 border-b border-white/10 pb-4">Market Misalignment</h3>
+                        <ul class="space-y-6 text-gray-300">
+                            <li class="flex items-start gap-4">
+                                <div class="w-8 h-8 rounded-full bg-red-900/20 border border-red-500/30 flex items-center justify-center shrink-0 text-red-500">
+                                    <i class="fa-solid fa-fire-flame-curved text-sm"></i>
+                                </div>
+                                <div>
+                                    <strong class="text-white block mb-1">Wasted Resources</strong>
+                                    <span class="text-sm text-gray-400">Global flaring has returned to 2007 highs. This gas is trapped geographically, making pipeline transport economically unviable.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-4">
+                                <div class="w-8 h-8 rounded-full bg-red-900/20 border border-red-500/30 flex items-center justify-center shrink-0 text-red-500">
+                                    <i class="fa-solid fa-arrow-trend-up text-sm"></i>
+                                </div>
+                                <div>
+                                    <strong class="text-white block mb-1">Rising Compute Costs</strong>
+                                    <span class="text-sm text-gray-400">Post-halving Bitcoin mining requires electricity under $0.04/kWh. Grid prices often exceed $0.07-$0.12/kWh.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-4">
+                                <div class="w-8 h-8 rounded-full bg-gas-green/10 border border-gas-green/30 flex items-center justify-center shrink-0 text-gas-green shadow-glow">
+                                    <i class="fa-solid fa-check text-sm"></i>
+                                </div>
+                                <div>
+                                    <strong class="text-white block mb-1">The GasGx Solution</strong>
+                                    <span class="text-sm text-gray-400">Deploying mobile "Hash Huts" directly to the wellhead. We bring the consumer to the energy, eliminating transmission costs.</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center">
+                    <div class="w-full text-center mb-6">
+                        <h4 class="text-sm font-bold uppercase tracking-wider text-gray-400">Global Flaring Leaders vs. Mining Potential</h4>
+                        <p class="text-xs text-gray-600 mt-1">Volume of wasted gas (BCM) by country</p>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="flaringChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="solution" class="py-20 px-6 bg-[#151515]">
+        <div class="container mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4 text-white">Digital Flare Mitigation Architecture</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">
+                    A modular, mobile infrastructure converting hazardous waste into high-performance compute.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-6xl mx-auto relative">
+                
+                <div class="step-card gas-panel p-6 rounded-xl relative group z-10">
+                    <div class="absolute -top-3 -left-3 w-8 h-8 bg-gas-green rounded-full flex items-center justify-center font-bold text-black shadow-glow text-sm">1</div>
+                    <div class="h-16 flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-cloud text-4xl text-gray-600 group-hover:text-white transition-colors"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-center mb-2 text-white group-hover:text-gas-green transition-colors">Stranded Gas</h3>
+                    <p class="text-xs text-center text-gray-400 leading-relaxed">Associated petroleum gas (APG) from oil wells or landfill methane is captured instead of burned.</p>
+                </div>
+
+                <div class="hidden md:flex items-center justify-center text-gray-700 text-xl"><i class="fa-solid fa-arrow-right"></i></div>
+
+                <div class="step-card gas-panel p-6 rounded-xl relative group z-10">
+                    <div class="absolute -top-3 -left-3 w-8 h-8 bg-gas-card border border-gas-green text-gas-green rounded-full flex items-center justify-center font-bold text-sm">2</div>
+                    <div class="h-16 flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-gears text-4xl text-gray-600 group-hover:text-white transition-colors"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-center mb-2 text-white group-hover:text-gas-green transition-colors">Generation Unit</h3>
+                    <p class="text-xs text-center text-gray-400 leading-relaxed">Gas flows into reciprocating generators (e.g., MP-500WF) with acid gas treatment capabilities.</p>
+                </div>
+
+                <div class="hidden md:flex items-center justify-center text-gray-700 text-xl"><i class="fa-solid fa-arrow-right"></i></div>
+
+                <div class="step-card gas-panel p-6 rounded-xl relative group z-10">
+                    <div class="absolute -top-3 -left-3 w-8 h-8 bg-gas-card border border-gas-green text-gas-green rounded-full flex items-center justify-center font-bold text-sm">3</div>
+                    <div class="h-16 flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-server text-4xl text-gray-600 group-hover:text-white transition-colors"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-center mb-2 text-white group-hover:text-gas-green transition-colors">Hash Huts</h3>
+                    <p class="text-xs text-center text-gray-400 leading-relaxed">Electricity powers on-site containerized ASICs or AI GPUs using hydro-cooling (PUE < 1.05).</p>
+                </div>
+
+                <div class="hidden md:flex items-center justify-center text-gray-700 text-xl"><i class="fa-solid fa-arrow-right"></i></div>
+
+                <div class="step-card gas-panel p-6 rounded-xl relative group z-10">
+                    <div class="absolute -top-3 -left-3 w-8 h-8 bg-gas-green rounded-full flex items-center justify-center font-bold text-black shadow-glow text-sm">4</div>
+                    <div class="h-16 flex items-center justify-center mb-4">
+                        <i class="fa-brands fa-bitcoin text-4xl text-gray-600 group-hover:text-white transition-colors"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-center mb-2 text-white group-hover:text-gas-green transition-colors">Value Output</h3>
+                    <p class="text-xs text-center text-gray-400 leading-relaxed">Output includes Bitcoin rewards, carbon credits (ERUs), and AI inference results.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section id="economics" class="py-20 px-6 bg-gas-bg">
+        <div class="container mx-auto">
+            <h2 class="text-3xl md:text-4xl font-bold mb-10 border-l-4 border-gas-green pl-4 text-white">Economic Feasibility</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div class="flex flex-col justify-center">
+                    <p class="text-gray-400 mb-8 text-lg font-light">
+                        The core advantage of GasGx is <strong class="text-white">energy arbitrage</strong>. By utilizing "free" or negative-cost fuel (where producers pay to remove gas), the Levelized Cost of Electricity (LCOE) drops significantly below grid parity.
+                    </p>
+                    
+                    <div class="mb-6">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-xs uppercase tracking-wider text-gray-500 font-bold">Industrial Grid Rate</span>
+                            <span class="text-xl font-bold text-white">$0.075 <span class="text-xs text-gray-500">/ kWh</span></span>
+                        </div>
+                        <div class="w-full bg-[#222] h-3 rounded-full overflow-hidden border border-white/5">
+                            <div class="bg-gray-600 h-full rounded-full" style="width: 100%"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-xs uppercase tracking-wider text-gas-green font-bold shadow-glow">GasGx DFM Generation</span>
+                            <span class="text-3xl font-bold text-gas-green">$0.028 <span class="text-xs text-gray-500">/ kWh</span></span>
+                        </div>
+                        <div class="w-full bg-[#222] h-3 rounded-full overflow-hidden border border-white/5">
+                            <div class="bg-gas-green h-full rounded-full shadow-glow" style="width: 37%"></div>
+                        </div>
+                        <p class="text-right text-xs text-gas-green mt-1 font-bold">63% Savings</p>
+                    </div>
+
+                    <div class="mt-4 p-4 bg-[#151515] border border-white/5 rounded-lg">
+                        <p class="text-[10px] text-gray-500 italic">
+                            *Based on 2025-2026 projections for North American deployment (Texas/Alberta) using 10MW modular sites.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center">
+                    <div class="w-full bg-[#151515] p-6 rounded-xl border border-white/5">
+                        <h4 class="text-sm font-bold text-white mb-6 text-center">Cost Composition: Grid vs. GasGx Off-Grid</h4>
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="costChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-16">
+                 <h3 class="text-xl font-bold mb-6 text-center text-white">Profitability Sensitivity Surface</h3>
+                 <p class="text-center text-sm text-gray-400 mb-8">Interactive analysis of Daily Profit based on BTC Price and Energy Cost.</p>
+                 <div id="plotlySurface" class="w-full h-[500px] border border-white/5 rounded-xl bg-[#151515] overflow-hidden"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="esg" class="py-20 px-6 bg-[#151515]">
+        <div class="container mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div class="order-2 md:order-1 flex flex-col items-center justify-center">
+                     <div class="w-full bg-[#0F0F0F] p-6 rounded-xl border border-white/5">
+                        <div class="chart-container">
+                            <canvas id="esgChart"></canvas>
+                        </div>
+                     </div>
+                </div>
+                <div class="order-1 md:order-2">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-6 border-l-4 border-gas-green pl-4 text-white">ESG & Carbon Credits</h2>
+                    <h3 class="text-xl text-white font-semibold mb-4">The Methane Multiplier Effect</h3>
+                    <p class="text-gray-400 mb-6 leading-relaxed">
+                        Methane (CH4) is <strong class="text-gas-green">84x more potent</strong> than CO2 over a 20-year period. Venting or inefficient flaring releases vast amounts of CH4.
+                    </p>
+                    <p class="text-gray-400 mb-6 leading-relaxed">
+                        By using high-efficiency reciprocating engines, GasGx achieves <strong class="text-gas-green">99.9% combustion efficiency</strong>. We convert the methane into CO2 and water vapor. While CO2 is still a greenhouse gas, the net reduction in Global Warming Potential (GWP) is over 63%.
+                    </p>
+                    <div class="gas-panel p-6 rounded-xl border-l-4 border-gas-green">
+                        <h4 class="text-white font-bold text-sm uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-earth-americas text-gas-green"></i> World Bank Initiative
+                        </h4>
+                        <p class="text-xs text-gray-400 mt-2">
+                            Directly supports the "Zero Routine Flaring by 2030" initiative, allowing oil producers to monetize waste while complying with strict EPA and global regulations.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="future" class="py-20 px-6 bg-gas-bg">
+        <div class="container mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4 text-white">Future Horizon: From BTC to AI</h2>
+                <p class="text-gray-400 max-w-3xl mx-auto">
+                    The infrastructure built for Bitcoin mining today is the foundation for the AI data centers of tomorrow.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+                <div class="gas-panel p-8 rounded-xl hover:border-gas-green/50 transition-colors group">
+                    <div class="text-white text-2xl mb-4 group-hover:text-gas-green transition-colors"><i class="fa-solid fa-globe"></i></div>
+                    <h3 class="text-lg font-bold text-white mb-2">Global Expansion</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed">Expanding beyond North America to Vaca Muerta (Argentina) and Central Asia (Kazakhstan), navigating regulatory landscapes to unlock gigawatts of power.</p>
+                </div>
+                <div class="gas-panel p-8 rounded-xl hover:border-gas-green/50 transition-colors group">
+                    <div class="text-white text-2xl mb-4 group-hover:text-gas-green transition-colors"><i class="fa-solid fa-microchip"></i></div>
+                    <h3 class="text-lg font-bold text-white mb-2">AI Transition</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed">Retrofitting sites with HPC GPUs. GasGx sites provide the baseload power stability required for AI inference, unlike intermittent renewables.</p>
+                </div>
+                <div class="gas-panel p-8 rounded-xl hover:border-gas-green/50 transition-colors group">
+                    <div class="text-white text-2xl mb-4 group-hover:text-gas-green transition-colors"><i class="fa-solid fa-coins"></i></div>
+                    <h3 class="text-lg font-bold text-white mb-2">Financialization</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed">Tokenization of Real World Assets (RWA). GasGx aims to create asset-backed securities based on the hash rate and carbon credits generated.</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center">
+                <h4 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-8">Projected Global Power Demand (2024-2030)</h4>
+                <div class="chart-container w-full max-w-4xl bg-[#151515] p-4 rounded-xl border border-white/5">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <button onclick="captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group" title="Share Snapshot">
+        <i class="fa-solid fa-camera text-xl"></i>
+        <span class="absolute right-14 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
+            Share Page
+        </span>
+    </button>
+
+    <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-95 opacity-0" id="shareModalContent">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-check text-2xl text-gas-green"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3>
+                <p class="text-sm text-gray-400">Full page captured successfully.</p>
+            </div>
+            <button onclick="closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // --- ADDED: Back to Top Logic ---
+        window.addEventListener('scroll', () => {
+            const btn = document.getElementById('backToTopBtn');
+            if (btn) {
+                if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                    btn.classList.remove('translate-y-20', 'opacity-0');
+                } else {
+                    btn.classList.add('translate-y-20', 'opacity-0');
+                }
+            }
+        });
+
+        // --- ADDED: Screenshot & Share Functionality ---
+        function captureAndShare() {
+            // Scroll to top to capture full context
+            window.scrollTo(0, 0);
+
+            // Add Watermark Layer
+            const watermark = document.createElement('div');
+            watermark.id = 'temp-watermark';
+            Object.assign(watermark.style, {
+                position: 'absolute', top: 0, left: 0, width: '100%', height: document.body.scrollHeight + 'px',
+                zIndex: 9999, pointerEvents: 'none', display: 'flex', flexWrap: 'wrap', 
+                alignContent: 'space-around', justifyContent: 'space-around', overflow: 'hidden', opacity: '0.15'
+            });
+
+            const textHtml = `<div style="text-align:center; transform: rotate(-30deg); margin: 100px;">
+                                <div style="font-size: 24px; font-weight: bold; color: #5DD62C;">www.gasgx.com</div>
+                                <div style="font-size: 16px; color: #fff;">Natural Gas Power Mining Assistant</div>
+                              </div>`;
+            
+            // Repeat watermark based on page height
+            const count = Math.ceil(document.body.scrollHeight / 400) * 3;
+            watermark.innerHTML = textHtml.repeat(count);
+            document.body.appendChild(watermark);
+
+            // Capture
+            setTimeout(() => {
+                html2canvas(document.body, {
+                    backgroundColor: '#0F0F0F',
+                    scrollY: 0,
+                    useCORS: true,
+                    scale: 2 // High resolution
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'GasGx-Whitepaper-Capture.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    document.body.removeChild(watermark);
+                    
+                    // Show Success Modal
+                    const modal = document.getElementById('shareModal');
+                    const content = document.getElementById('shareModalContent');
+                    modal.classList.remove('hidden');
+                    // Small delay to trigger transition
+                    setTimeout(() => {
+                        content.classList.remove('scale-95', 'opacity-0');
+                        content.classList.add('scale-100', 'opacity-100');
+                    }, 10);
+                }).catch(err => {
+                    console.error(err);
+                    if(document.getElementById('temp-watermark')) document.body.removeChild(watermark);
+                    alert('Capture failed.');
+                });
+            }, 500);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('shareModal');
+            const content = document.getElementById('shareModalContent');
+            
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // --- Chart Configuration (Existing Code Preserved) ---
+        
+        // Brand Colors
+        const BRAND_GREEN = '#5DD62C';
+        const BRAND_GREEN_DIM = 'rgba(93, 214, 44, 0.2)';
+        const TEXT_COLOR = '#94a3b8';
+        const GRID_COLOR = 'rgba(255, 255, 255, 0.05)';
+
+        // Defaults
+        Chart.defaults.color = TEXT_COLOR;
+        Chart.defaults.font.family = 'Inter';
+        
+        // Tooltip Styling
+        const tooltipConfig = {
+            backgroundColor: 'rgba(20, 20, 20, 0.9)',
+            titleColor: '#fff',
+            bodyColor: '#ccc',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            padding: 10,
+            displayColors: false,
+        };
+
+        // Utility
+        function splitLabel(label) {
+            if (label.length > 16) return label.split(' ');
+            return label;
+        }
+
+        // 1. Flaring Chart
+        const ctxFlaring = document.getElementById('flaringChart').getContext('2d');
+        new Chart(ctxFlaring, {
+            type: 'bar',
+            data: {
+                labels: ['Russia', 'Iran', 'Iraq', 'USA', 'Venezuela', 'GasGx Target'].map(splitLabel),
+                datasets: [{
+                    label: 'Flared Gas (BCM)',
+                    data: [25.5, 18.5, 17.8, 17.2, 8.1, 5.0], 
+                    backgroundColor: [
+                        '#333', '#333', '#333', 
+                        '#555', // USA
+                        '#333', 
+                        BRAND_GREEN // Target
+                    ],
+                    borderRadius: 4,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: tooltipConfig
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: GRID_COLOR, drawBorder: false },
+                        border: { display: false }
+                    },
+                    x: {
+                        grid: { display: false },
+                        border: { display: false }
+                    }
+                }
+            }
+        });
+
+        // 2. Cost Chart
+        const ctxCost = document.getElementById('costChart').getContext('2d');
+        new Chart(ctxCost, {
+            type: 'bar',
+            data: {
+                labels: ['Traditional Grid', 'GasGx Off-Grid'].map(splitLabel),
+                datasets: [
+                    {
+                        label: 'Electricity (OpEx)',
+                        data: [75, 28],
+                        backgroundColor: '#C84C4C', // Muted Red
+                    },
+                    {
+                        label: 'Infrastructure (CapEx)',
+                        data: [15, 35],
+                        backgroundColor: '#444', // Dark Grey
+                    },
+                    {
+                        label: 'O&M',
+                        data: [10, 12],
+                        backgroundColor: '#666', // Medium Grey
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
+                    tooltip: tooltipConfig
+                },
+                scales: {
+                    x: { stacked: true, grid: { display: false } },
+                    y: { 
+                        stacked: true, 
+                        grid: { color: GRID_COLOR, drawBorder: false },
+                        border: { display: false },
+                        title: { display: true, text: 'Cent / kWh' }
+                    }
+                }
+            }
+        });
+
+        // 3. ESG Chart
+        const ctxESG = document.getElementById('esgChart').getContext('2d');
+        new Chart(ctxESG, {
+            type: 'bar',
+            data: {
+                labels: ['Standard Flaring', 'GasGx Combustion'].map(splitLabel),
+                datasets: [{
+                    label: 'Global Warming Potential',
+                    data: [84, 28], 
+                    backgroundColor: [
+                        '#C84C4C', // Red
+                        BRAND_GREEN // Green
+                    ],
+                    borderRadius: 4,
+                    barThickness: 40
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: tooltipConfig,
+                    title: {
+                        display: true,
+                        text: 'CO2 Equivalent Intensity (20yr)',
+                        color: '#fff',
+                        align: 'start',
+                        padding: { bottom: 20 }
+                    }
+                },
+                scales: {
+                    x: { grid: { color: GRID_COLOR }, border: { display: false } },
+                    y: { grid: { display: false }, border: { display: false } }
+                }
+            }
+        });
+
+        // 4. Trend Chart
+        const ctxTrend = document.getElementById('trendChart').getContext('2d');
+        new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+                labels: ['2024', '2025', '2026', '2027', '2028', '2029', '2030'],
+                datasets: [
+                    {
+                        label: 'Bitcoin Mining Demand',
+                        data: [18, 22, 25, 28, 30, 32, 35], 
+                        borderColor: '#666',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointBackgroundColor: '#000',
+                        pointBorderColor: '#666'
+                    },
+                    {
+                        label: 'AI Data Center Demand',
+                        data: [15, 25, 45, 70, 100, 135, 165], 
+                        borderColor: BRAND_GREEN,
+                        backgroundColor: 'rgba(93, 214, 44, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointBackgroundColor: '#000',
+                        pointBorderColor: BRAND_GREEN,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } },
+                    tooltip: tooltipConfig
+                },
+                scales: {
+                    y: {
+                        grid: { color: GRID_COLOR, drawBorder: false },
+                        title: { display: true, text: 'Gigawatts (GW)' }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // 5. Plotly 3D Surface
+        const electricityCosts = [0.02, 0.03, 0.04, 0.05, 0.06];
+        const btcPrices = [40000, 60000, 80000, 100000, 120000];
+        const z_data = [];
+
+        for (let i = 0; i < btcPrices.length; i++) {
+            let row = [];
+            for (let j = 0; j < electricityCosts.length; j++) {
+                let val = (btcPrices[i] * 0.0005) - (electricityCosts[j] * 50000); 
+                row.push(val);
+            }
+            z_data.push(row);
+        }
+
+        // Custom Green Color Scale
+        const greenScale = [
+            [0, '#000000'],
+            [0.5, '#337418'],
+            [1, '#5DD62C']
+        ];
+
+        const plotlyData = [{
+            z: z_data,
+            x: electricityCosts.map(c => '$' + c),
+            y: btcPrices.map(p => '$' + (p/1000) + 'k'),
+            type: 'surface',
+            colorscale: greenScale, 
+            showscale: false,
+            contours: {
+                z: { show: true, usecolormap: true, highlightcolor: "#fff", project: { z: true } }
+            }
+        }];
+
+        const plotlyLayout = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#94a3b8', family: 'Inter' },
+            margin: { l: 0, r: 0, b: 0, t: 0 },
+            scene: {
+                xaxis: { title: 'Energy Cost/kWh', gridcolor: '#333', zerolinecolor: '#333', showbackground: false },
+                yaxis: { title: 'BTC Price', gridcolor: '#333', zerolinecolor: '#333', showbackground: false },
+                zaxis: { title: 'Profitability', gridcolor: '#333', zerolinecolor: '#333', showbackground: false },
+                camera: { eye: { x: 1.5, y: 1.5, z: 1.2 } }
+            }
+        };
+
+        Plotly.newPlot('plotlySurface', plotlyData, plotlyLayout, {responsive: true, displayModeBar: false});
+
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

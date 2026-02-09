@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx Tools</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: "#0F0F0F",
+                            card: "#202020",
+                            green: "#5DD62C",
+                            darkGreen: "#337418",
+                            text: "#F8F8F8",
+                            subtext: "#94a3b8"
+                        }
+                    },
+                    fontFamily: {
+                        sans: ["Inter", "sans-serif"]
+                    },
+                    boxShadow: {
+                        glow: "0 0 10px rgba(93, 214, 44, 0.3)",
+                        "glow-strong": "0 0 20px rgba(93, 214, 44, 0.6)"
+                    }
+                }
+            }
+        };
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: "Inter", sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+        .tool-card {
+            background: linear-gradient(135deg, #202020 0%, #181818 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 16px;
+        }
+        .tool-card h2 {
+            color: #5DD62C;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+        .tool-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .tool-card li + li {
+            margin-top: 8px;
+        }
+        .tool-card a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 14px;
+            line-height: 1.5;
+            transition: color 0.2s ease;
+        }
+        .tool-card a:hover {
+            color: #5DD62C;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative">
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-24 pb-12 px-4 md:px-6">
+        <section class="max-w-[1400px] mx-auto">
+            <header class="mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">
+                    <span class="text-gas-green">GasGx</span> Tools Directory
+                </h1>
+                <p class="text-gray-400 text-sm md:text-base">
+                    Quick index of all tools pages.
+                </p>
+            </header>
+
+            <div class="tool-grid">
+                <article class="tool-card">
+                    <h2>Economic Tools</h2>
+                    <ul>
+                        <li><a href="/tools/lcoe-calculator/">LCOE Calculator</a></li>
+                        <li><a href="/tools/roi/">ROI Estimator</a></li>
+                        <li><a href="/tools/mining-income-calculator/">Gas Mining Revenue</a></li>
+                        <li><a href="/tools/monte-carlo-profit/">Monte Carlo Sim</a></li>
+                        <li><a href="/tools/gas-cost-analysis/">Gas Cost Analysis</a></li>
+                    </ul>
+                </article>
+
+                <article class="tool-card">
+                    <h2>Engineering Tools</h2>
+                    <ul>
+                        <li><a href="/tools/gas-fit/">Gas Fit Tool</a></li>
+                        <li><a href="/tools/emission/">Emission Estimator</a></li>
+                        <li><a href="/tools/gas-analyzer/">Gas Analyzer</a></li>
+                        <li><a href="/tools/energy-conversion/">Energy Conversion</a></li>
+                        <li><a href="/tools/gas-composition-heat/">Heat Value Table</a></li>
+                    </ul>
+                </article>
+
+                <article class="tool-card">
+                    <h2>Selection Tools</h2>
+                    <ul>
+                        <li><a href="/tools/site-fit/">Site Fit Wizard</a></li>
+                        <li><a href="/tools/gas-location-analysis/">Location Analysis</a></li>
+                        <li><a href="/tools/engine-selection/">Engine Selection & Econ</a></li>
+                        <li><a href="/tools/oil-consumption/">Oil Consumption</a></li>
+                        <li><a href="/tools/vehicle-vs-industrial-10mw/">Vehicle vs. Ind. (10MW)</a></li>
+                        <li><a href="/tools/3y-compare/">3-Year Ops Data</a></li>
+                    </ul>
+                </article>
+
+                <article class="tool-card">
+                    <h2>Miners Zone</h2>
+                    <ul>
+                        <li><a href="/tools/mining-power-calc/">Mining Revenue Calc</a></li>
+                        <li><a href="/tools/miner-profitability/">Miner Profitability</a></li>
+                        <li><a href="/tools/miner-buying-guide/">Miner Buyer Guide</a></li>
+                    </ul>
+                </article>
+
+                <article class="tool-card">
+                    <h2>Global Support</h2>
+                    <ul>
+                        <li><a href="/tools/aeco-price-forecast/">AECO Price Forecast</a></li>
+                        <li><a href="/tools/global-logistics/">Global Logistics</a></li>
+                        <li><a href="/tools/global-compliance/">Global Compliance</a></li>
+                    </ul>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

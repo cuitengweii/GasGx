@@ -1,0 +1,921 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miner Buying Guide - GasGx</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome 6.5.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- html2canvas for Screenshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* Card Frosted Glass Effect */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        /* Miner Card Specifics */
+        .miner-card {
+            transition: all 0.3s ease;
+            border-top: 2px solid transparent;
+        }
+        .miner-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-top-color: #5DD62C;
+        }
+
+        /* Mega Menu Animation */
+        .mega-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: #151515;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .mega-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        /* Dropdown Menu Animation */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            min-width: 220px;
+            background-color: #151515;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0 0 8px 8px;
+            padding: 0.5rem 0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .dropdown-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-item-link:hover { color: #5DD62C; }
+        
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after { width: 100%; }
+
+        /* Footer Link Hover */
+        .footer-link {
+            color: #94a3b8;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .footer-link:hover {
+            color: #5DD62C;
+        }
+
+        /* Mobile Menu Styles */
+        #mobile-menu-container {
+            transition: transform 0.3s ease-in-out;
+        }
+        .mobile-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        /* Footer Accordion (Mobile) */
+        .footer-accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        /* Floating Share Button Animation */
+        @keyframes floatPulse {
+            0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); }
+        }
+        .float-btn {
+            animation: floatPulse 2s infinite;
+        }
+
+        /* Custom Input Style for Elec Cost */
+        .gas-input {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            width: 70px;
+            text-align: center;
+        }
+        .gas-input:focus {
+            outline: none;
+            border-color: #5DD62C;
+        }
+
+        /* --- FIX: FORCE SELECT OPTIONS TO BE DARK --- */
+        select {
+            background-color: transparent;
+            color: #fff;
+            appearance: none; /* Helps with some browser defaults */
+            -webkit-appearance: none;
+            padding-right: 1.5rem; /* Space for custom arrow if needed, though we rely on container */
+            cursor: pointer;
+        }
+        /* Style for the dropdown options */
+        select option {
+            background-color: #202020;
+            color: #F8F8F8;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-24 pb-12 px-4 w-full max-w-[1800px] mx-auto">
+        
+        <!-- Page Title & Intro -->
+        <div class="mb-8 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-2" data-i18n="矿机选购速查">Miner Buying Guide</h2>
+            <p class="text-gray-400 text-sm md:text-base max-w-2xl mx-auto" data-i18n="矿机选购副标题">Comprehensive specifications for the latest ASIC miners. Compare hashrate, efficiency, and power consumption.</p>
+        </div>
+
+        <!-- Filter & Calculation Bar -->
+        <div class="gas-card rounded-xl p-4 mb-8 sticky top-20 z-30 shadow-xl border-t border-gas-green/20">
+            <div class="flex flex-col lg:flex-row gap-4 items-center justify-between">
+                
+                <!-- Filters Group -->
+                <div class="flex flex-wrap gap-3 w-full lg:w-auto items-center justify-center lg:justify-start">
+                    
+                    <!-- Brand Filter -->
+                    <div class="flex items-center gap-2 bg-[#111] px-3 py-1.5 rounded-lg border border-white/5 relative">
+                        <i class="fa-solid fa-industry text-gas-green text-xs absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        <select id="brandFilter" onchange="renderMiners()" class="bg-transparent text-sm text-white focus:outline-none cursor-pointer pl-8 pr-8 py-1.5 w-full">
+                            <option value="all" data-i18n="所有品牌">All Brands</option>
+                            <option value="Bitmain">Bitmain (Antminer)</option>
+                            <option value="Bitdeer">Bitdeer (SEALMINER)</option>
+                            <option value="Whatsminer">Whatsminer (MicroBT)</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                    </div>
+
+                    <!-- Cooling Filter -->
+                    <div class="flex items-center gap-2 bg-[#111] px-3 py-1.5 rounded-lg border border-white/5 relative">
+                        <i class="fa-solid fa-fan text-gas-green text-xs absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        <select id="coolingFilter" onchange="renderMiners()" class="bg-transparent text-sm text-white focus:outline-none cursor-pointer pl-8 pr-8 py-1.5 w-full">
+                            <option value="all" data-i18n="所有冷却">All Cooling</option>
+                            <option value="Air" data-i18n="风冷">Air Cooled</option>
+                            <option value="Liquid" data-i18n="液冷">Liquid Cooled</option>
+                        </select>
+                         <i class="fa-solid fa-chevron-down text-[10px] text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <!-- Profitability Settings -->
+                <div class="flex items-center gap-4 bg-[#111]/50 px-4 py-2 rounded-lg border border-white/5 mt-3 lg:mt-0">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-yellow-400 text-xs"></i>
+                        <span class="text-xs text-gray-400 hidden sm:inline" data-i18n="电费成本">Elec Cost</span>
+                        <div class="relative flex items-center">
+                            <span class="absolute left-2 text-gray-500 text-xs">$</span>
+                            <input type="number" id="elecCostInput" value="0.05" step="0.01" class="gas-input pl-4 text-sm" oninput="renderMiners()">
+                            <span class="ml-1 text-xs text-gray-500">/kWh</span>
+                        </div>
+                    </div>
+                    
+                    <div class="h-4 w-px bg-white/10 hidden sm:block"></div>
+
+                    <div class="flex flex-col items-end">
+                        <div class="text-[10px] text-gray-500 uppercase tracking-wider" data-i18n="当前算力价格">Hashprice Ref</div>
+                        <div class="text-xs font-bold text-gas-green">$0.09 <span class="text-gray-500 font-normal">/TH/Day</span></div>
+                    </div>
+                </div>
+
+                <!-- Stats Summary -->
+                <div class="text-xs text-gray-500 font-mono min-w-[80px] text-right hidden xl:block">
+                    <span id="minerCount" class="text-white font-bold">0</span> <span data-i18n="台矿机">Models</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Miners Grid -->
+        <div id="minerGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+            <!-- JS Generated Cards -->
+        </div>
+
+        <div class="mt-8 text-center text-xs text-gray-600">
+            * Profitability is estimated based on static network difficulty and assumes 100% uptime. Real-world results may vary. <br>
+            * 盈利预估基于静态全网难度，假设100%在线率。实际结果可能有所偏差。
+        </div>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <!-- Floating Canvas-Style Share Button (Right Side) -->
+    <button onclick="app.captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group" title="Share Snapshot">
+        <i class="fa-solid fa-camera text-xl"></i>
+        <!-- Tooltip -->
+        <span class="absolute right-14 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
+            Share Page
+        </span>
+    </button>
+
+    <!-- Back to Top -->
+    <button onclick="window.scrollTo({top:0, behavior:'smooth'})" id="backToTopBtn" class="fixed bottom-6 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-[0_0_15px_rgba(93,214,44,0.5)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-95 opacity-0" id="shareModalContent">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-check text-2xl text-gas-green"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3>
+                <p class="text-sm text-gray-400">Full page captured successfully.</p>
+            </div>
+            <button onclick="app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+
+    <script>
+        // --- DATA SECTION: MINERS (Bitmain + Bitdeer + Whatsminer) ---
+        // Normalized cooling to "Air" and "Liquid"
+        const minersData = [
+            // Bitmain (Antminer)
+            { model: "Antminer S21 XP", brand: "Bitmain", algo: "SHA256", hashrate: 270, power: 3645, efficiency: 13.5, unit: "TH/s", cooling: "Air", icon: "fa-fire" },
+            { model: "Antminer S21 XP Hyd", brand: "Bitmain", algo: "SHA256", hashrate: 473, power: 5676, efficiency: 12.0, unit: "TH/s", cooling: "Liquid", icon: "fa-water" },
+            { model: "Antminer S21 Hyd", brand: "Bitmain", algo: "SHA256", hashrate: 335, power: 5360, efficiency: 16.0, unit: "TH/s", cooling: "Liquid", icon: "fa-water" },
+            { model: "Antminer S21", brand: "Bitmain", algo: "SHA256", hashrate: 200, power: 3500, efficiency: 17.5, unit: "TH/s", cooling: "Air", icon: "fa-fire" },
+            { model: "Antminer T21", brand: "Bitmain", algo: "SHA256", hashrate: 190, power: 3610, efficiency: 19.0, unit: "TH/s", cooling: "Air", icon: "fa-fire" },
+            { model: "Antminer L7", brand: "Bitmain", algo: "Scrypt", hashrate: 9050, power: 3260, efficiency: 0.36, unit: "MH/s", cooling: "Air", icon: "fa-bolt" },
+            
+            // Bitdeer (SEALMINER)
+            { model: "SEALMINER A3 Hydro", brand: "Bitdeer", algo: "SHA256", hashrate: 500, power: 6750, efficiency: 13.5, unit: "TH/s", cooling: "Liquid", icon: "fa-water" },
+            { model: "SEALMINER A3 Pro Hyd", brand: "Bitdeer", algo: "SHA256", hashrate: 660, power: 8250, efficiency: 12.5, unit: "TH/s", cooling: "Liquid", icon: "fa-water" },
+            { model: "SEALMINER A2 Pro", brand: "Bitdeer", algo: "SHA256", hashrate: 260, power: 3874, efficiency: 14.9, unit: "TH/s", cooling: "Air", icon: "fa-fire" },
+            { model: "SEALMINER A2 Pro Hyd", brand: "Bitdeer", algo: "SHA256", hashrate: 500, power: 7450, efficiency: 14.9, unit: "TH/s", cooling: "Liquid", icon: "fa-water" },
+            { model: "SEALMINER A2", brand: "Bitdeer", algo: "SHA256", hashrate: 226, power: 3729, efficiency: 16.5, unit: "TH/s", cooling: "Air", icon: "fa-fire" },
+
+            // Whatsminer (MicroBT) - Normalized Immersion/Hydro to Liquid
+            { model: "WhatsMiner M63S++", brand: "Whatsminer", algo: "SHA256", hashrate: 464, power: 7192, efficiency: 15.5, unit: "TH/s", cooling: "Liquid", icon: "fa-water" },
+            { model: "WhatsMiner M73", brand: "Whatsminer", algo: "SHA256", hashrate: 512, power: 7424, efficiency: 14.5, unit: "TH/s", cooling: "Liquid", icon: "fa-water" },
+            { model: "WhatsMiner M66S", brand: "Whatsminer", algo: "SHA256", hashrate: 288, power: 5328, efficiency: 18.5, unit: "TH/s", cooling: "Liquid", icon: "fa-water" },
+            { model: "WhatsMiner M60S+", brand: "Whatsminer", algo: "SHA256", hashrate: 188, power: 3384, efficiency: 18.0, unit: "TH/s", cooling: "Air", icon: "fa-fire" },
+            { model: "WhatsMiner M60S", brand: "Whatsminer", algo: "SHA256", hashrate: 186, power: 3441, efficiency: 18.5, unit: "TH/s", cooling: "Air", icon: "fa-fire" },
+            { model: "WhatsMiner M70S", brand: "Whatsminer", algo: "SHA256", hashrate: 250, power: 3375, efficiency: 13.5, unit: "TH/s", cooling: "Air", icon: "fa-fire" },
+            { model: "WhatsMiner M50S++", brand: "Whatsminer", algo: "SHA256", hashrate: 158, power: 3318, efficiency: 21.0, unit: "TH/s", cooling: "Air", icon: "fa-fire" }
+        ];
+
+        // Constants for Calculation
+        const CONSTANTS = {
+            hashprice: 0.09, // $/TH/Day (SHA256)
+            scryptRevenue: 0.005, // $/MH/Day (Rough estimate for L7)
+        };
+
+        const AppData = {
+            navigation: Array.isArray(window.GASGX_SITE_SHELL_CONFIG?.navigation)
+                ? window.GASGX_SITE_SHELL_CONFIG.navigation
+                : [],
+            i18n: {
+                zh: {
+                    tagline: "天然气发电挖矿助手",
+                    footerTagline: "让天然气发电挖矿更简单",
+                    // New Keys for Miner Page
+                    "矿机选购速查": "矿机选购速查",
+                    "矿机选购副标题": "最新 ASIC 矿机综合参数表。对比算力、能效和功耗。",
+                    "所有品牌": "所有品牌",
+                    "所有冷却": "所有冷却",
+                    "风冷": "风冷",
+                    "液冷": "液冷",
+                    "台矿机": "台机型",
+                    "算力": "算力",
+                    "功耗": "功耗",
+                    "能效": "能效比",
+                    "算法": "算法",
+                    "电费成本": "电费成本",
+                    "当前算力价格": "当前算力价格",
+                    "日收益": "日收益估算",
+                    "日电费": "日电费",
+                    "日净利": "日净利",
+                },
+                en: {
+                    tagline: "Natural Gas Power Mining Assistant",
+                    footerTagline: "Making natural gas power mining easier",
+                    // New Keys
+                    "矿机选购速查": "Miner Buying Guide",
+                    "矿机选购副标题": "Comprehensive specifications for the latest ASIC miners. Compare hashrate, efficiency, and power.",
+                    "所有品牌": "All Brands",
+                    "所有冷却": "All Cooling",
+                    "风冷": "Air Cooled",
+                    "液冷": "Liquid Cooled",
+                    "台矿机": "Models Found",
+                    "算力": "Hashrate",
+                    "功耗": "Power",
+                    "能效": "Efficiency",
+                    "算法": "Algorithm",
+                    "电费成本": "Elec Cost",
+                    "当前算力价格": "Hashprice Ref",
+                    "日收益": "Daily Revenue",
+                    "日电费": "Daily Power Cost",
+                    "日净利": "Daily Net Profit",
+                    "首页": "Home",
+                    "解决方案": "Solutions",
+                    "机型库": "Products",
+                    "排行榜": "Rankings",
+                    "应用场景": "Use Cases",
+                    "工具箱": "Tools",
+                    "资料中心": "Resources",
+                    "服务支持": "Support",
+                    "关于我们": "About Us",
+                    "联系我们": "Contact Us",
+                    "油气井/伴生气发电": "Oil & Gas Power",
+                    "工业园区与分布式能源": "Industrial Power",
+                    "数据中心 / 挖矿电力": "Data Center / Mining",
+                    "热电联供 CHP": "CHP Cogeneration",
+                    "按功率分类": "By Power",
+                    "按冷却方式": "By Cooling",
+                    "按气源类型": "By Gas Type",
+                    "按部署形式": "By Deployment",
+                    "按品牌": "By Brand",
+                    "小于 500 kW": "< 500 kW",
+                    "500 – 1,000 kW": "500 – 1,000 kW",
+                    "1 MW 以上": "1 MW+",
+                    "风冷": "Air Cooled",
+                    "液冷": "Liquid Cooled",
+                    "天然气": "Natural Gas",
+                    "伴生气": "Associated Gas",
+                    "低甲烷值气": "Low Methane Gas",
+                    "集装箱机组": "Containerized",
+                    "一体化机组 AIS": "Integrated (AIS)",
+                    "滑撬式机组": "Skid Mounted",
+                    "全部品牌": "All Brands",
+                    "中国生产": "Made in China",
+                    "海外生产": "Overseas Brands",
+                    "性能榜": "Performance",
+                    "经济性榜": "Economics",
+                    "可靠性榜": "Reliability",
+                    "品质与环保榜": "Quality & Eco",
+                    "系统能力榜": "System Cap.",
+                    "区域榜": "Regions",
+                    "综合性能 TOP 榜": "Top Performance",
+                    "高效率榜": "High Efficiency",
+                    "天然气内燃机发电效率排行榜": "Elec. Efficiency Rank",
+                    "天然气内燃机热效率排行榜": "Thermal Efficiency Rank",
+                    "天然气内燃机耗气量排行榜": "Gas Consumption Rank",
+                    "最佳 ROI 榜": "Best ROI",
+                    "最低发电成本 LCOE 榜": "Lowest LCOE",
+                    "天然气内燃机折旧排行榜": "Depreciation Rank",
+                    "天然气内燃机投资回报率排行榜": "ROI Rank",
+                    "高可靠机组榜": "High Reliability",
+                    "最长 MTBF 榜": "Longest MTBF",
+                    "天然气内燃机保养时间排行榜": "Maintenance Interval Rank",
+                    "天然气内燃机备件保障排行榜": "Spare Parts Rank",
+                    "天然气内燃机排放排行榜": "Emission Rank",
+                    "天然气内燃机噪音排行榜": "Noise Rank",
+                    "天然气内燃机发电机排行榜": "Generator Rank",
+                    "天然气内燃机控制系统排行榜": "Control System Rank",
+                    "美国市场榜": "USA Market",
+                    "加拿大市场榜": "Canada Market",
+                    "中东市场榜": "Middle East Market",
+                    "俄罗斯市场榜": "Russia Market",
+                    "油气井 / 伴生气": "Oilfield / Associated Gas",
+                    "工业与园区能源": "Industrial & Park",
+                    "挖矿 / 数据中心": "Mining / Data Center",
+                    "CHP 热电联供": "CHP",
+                    "经济测算工具": "Economic Tools",
+                    "工程与技术工具": "Engineering Tools",
+                    "项目与选型工具": "Selection Tools",
+                    "矿工专区（托管与算力分析）": "Miners Zone",
+                    "全球支持与合规": "Global Support",
+                    "LCOE 成本计算器": "LCOE Calculator",
+                    "ROI 回报估算器": "ROI Estimator",
+                    "燃气发电挖矿收益计算器": "Gas Mining Revenue",
+                    "蒙特卡洛模拟盈利分析": "Monte Carlo Sim",
+                    "天然气发电耗气成本分析": "Gas Cost Analysis",
+                    "气质适配工具": "Gas Fit Tool",
+                    "排放估算工具": "Emission Estimator",
+                    "气体分析计算器": "Gas Analyzer",
+                    "能电转换计算器": "Energy Conversion",
+                    "天然气主要成分热值表": "Heat Value Table",
+                    "站点匹配向导": "Site Fit Wizard",
+                    "气源所在地分析": "Location Analysis",
+                    "燃气发动机选型与运营经济性": "Engine Selection & Econ",
+                    "天然气发电机机油消耗率": "Oil Consumption",
+                    "车机 VS 工业机 10MW 对比分析": "Vehicle vs Ind. (10MW)",
+                    "多机型对比 3 年运营数据": "3-Year Ops Data",
+                    "挖矿收益计算器": "Mining Revenue Calc",
+                    "矿机盈利能力计算器": "Miner Profitability",
+                    "矿机选购速查": "Miner Buyer Guide",
+                    "加拿大 AECO 天然气价格预测": "AECO Price Forecast",
+                    "全球物流运输推荐": "Global Logistics",
+                    "全球合规政策": "Global Compliance",
+                    "文档": "Documents",
+                    "案例": "Case Studies",
+                    "技术库": "Tech Library",
+                    "媒体与支持": "Media & Support",
+                    "白皮书": "Whitepapers",
+                    "行业报告": "Industry Reports",
+                    "全部案例": "All Cases",
+                    "按区域查看": "By Region",
+                    "按场景查看": "By Scenario",
+                    "技术参数表": "Datasheets",
+                    "认证与合规文件": "Certifications",
+                    "视频与教程": "Videos & Tutorials",
+                    "常见问答 FAQ": "FAQ",
+                    "服务网络": "Service Network",
+                    "技术支持": "Tech Support",
+                    "售后与保养": "After-sales",
+                    "公司介绍": "Company Profile"
+                },
+                ru: {
+                    tagline: "Помощник по газовому майнингу",
+                    footerTagline: "Майнинг на газе проще",
+                    // New Keys
+                    "矿机选购速查": "Гид по выбору майнеров",
+                    "矿机选购副标题": "Полные характеристики последних ASIC майнеров. Сравнение хешрейта и эффективности.",
+                    "所有品牌": "Все бренды",
+                    "所有冷却": "Все типы охл.",
+                    "风冷": "Воздушное",
+                    "液冷": "Жидкостное",
+                    "台矿机": "моделей",
+                    "算力": "Хешрейт",
+                    "功耗": "Мощность",
+                    "能效": "Эффективность",
+                    "算法": "Алгоритм",
+                    "电费成本": "Цена Э/Э",
+                    "当前算力价格": "Hashprice Ref",
+                    "日收益": "Доход/день",
+                    "日电费": "Расход/день",
+                    "日净利": "Прибыль/день",
+                    "首页": "Главная",
+                    "解决方案": "Решения",
+                    "机型库": "Продукты",
+                    "排行榜": "Рейтинги",
+                    "应用场景": "Кейсы",
+                    "工具箱": "Инструменты",
+                    "资料中心": "Ресурсы",
+                    "服务支持": "Поддержка",
+                    "关于我们": "О нас",
+                    "联系我们": "Контакты",
+                    "油气井/伴生气发电": "Нефтегаз",
+                    "工业园区与分布式能源": "Пром. энергия",
+                    "数据中心 / 挖矿电力": "Майнинг",
+                    "热电联供 CHP": "Когенерация",
+                    "按功率分类": "По мощности",
+                    "按冷却方式": "По охлаждению",
+                    "按气源类型": "По типу газа",
+                    "按部署形式": "По типу",
+                    "按品牌": "По бренду",
+                    "小于 500 kW": "< 500 кВт",
+                    "500 – 1,000 kW": "500 – 1,000 кВт",
+                    "1 MW 以上": "1 МВт+",
+                    "风冷": "Воздушное",
+                    "液冷": "Жидкостное",
+                    "天然气": "Природный газ",
+                    "伴生气": "Попутный газ",
+                    "低甲烷值气": "Низкий метан",
+                    "集装箱机组": "Контейнерные",
+                    "一体化机组 AIS": "Интегрированные",
+                    "滑撬式机组": "На раме",
+                    "全部品牌": "Все бренды",
+                    "中国生产": "Китай",
+                    "海外生产": "Зарубежные",
+                    "性能榜": "Производ.",
+                    "经济性榜": "Экономика",
+                    "可靠性榜": "Надежность",
+                    "品质与环保榜": "Качество",
+                    "系统能力榜": "Системы",
+                    "区域榜": "Регионы",
+                    "综合性能 TOP 榜": "Топ прозвод.",
+                    "高效率榜": "Выс. эффективность",
+                    "天然气内燃机发电效率排行榜": "Эл. КПД",
+                    "天然气内燃机热效率排行榜": "Тепл. КПД",
+                    "天然气内燃机耗气量排行榜": "Расход газа",
+                    "最佳 ROI 榜": "Лучший ROI",
+                    "最低发电成本 LCOE 榜": "Мин. LCOE",
+                    "天然气内燃机折旧排行榜": "Амортизация",
+                    "天然气内燃机投资回报率排行榜": "Рейтинг ROI",
+                    "高可靠机组榜": "Надежность",
+                    "最长 MTBF 榜": "Макс. MTBF",
+                    "天然气内燃机保养时间排行榜": "Интервал ТО",
+                    "天然气内燃机备件保障排行榜": "Запчасти",
+                    "天然气内燃机排放排行榜": "Выбросы",
+                    "天然气内燃机噪音排行榜": "Шум",
+                    "天然气内燃机发电机排行榜": "Генераторы",
+                    "天然气内燃机控制系统排行榜": "Системы упр.",
+                    "美国市场榜": "Рынок США",
+                    "加拿大市场榜": "Рынок Канады",
+                    "中东市场榜": "Ближний Восток",
+                    "俄罗斯市场榜": "Рынок РФ",
+                    "油气井 / 伴生气": "Нефтегаз",
+                    "工业与园区能源": "Пром. зоны",
+                    "挖矿 / 数据中心": "Майнинг ЦОД",
+                    "CHP 热电联供": "ТЭЦ",
+                    "经济测算工具": "Экономика",
+                    "工程与技术工具": "Инжиниринг",
+                    "项目与选型工具": "Подбор",
+                    "矿工专区（托管与算力分析）": "Майнерам",
+                    "全球支持与合规": "Поддержка",
+                    "LCOE 成本计算器": "LCOE Кальк.",
+                    "ROI 回报估算器": "ROI Оценка",
+                    "燃气发电挖矿收益计算器": "Доход майнинга",
+                    "蒙特卡洛模拟盈利分析": "Монте-Карло",
+                    "天然气发电耗气成本分析": "Затраты на газ",
+                    "气质适配工具": "Анализ газа",
+                    "排放估算工具": "Выбросы",
+                    "气体分析计算器": "Газовый анализ",
+                    "能电转换计算器": "Конвертер",
+                    "天然气主要成分热值表": "Таблица тепла",
+                    "站点匹配向导": "Подбор площадки",
+                    "气源所在地分析": "Локация",
+                    "燃气发动机选型与运营经济性": "Выбор двигателя",
+                    "天然气发电机机油消耗率": "Расход масла",
+                    "车机 VS 工业机 10MW 对比分析": "Авто vs Пром",
+                    "多机型对比 3 年运营数据": "Данные за 3 года",
+                    "挖矿收益计算器": "Доходность",
+                    "矿机盈利能力计算器": "Рентабельность",
+                    "矿机选购速查": "Выбор майнера",
+                    "加拿大 AECO 天然气价格预测": "Прогноз AECO",
+                    "全球物流运输推荐": "Логистика",
+                    "全球合规政策": "Комплаенс",
+                    "文档": "Документы",
+                    "案例": "Кейсы",
+                    "技术库": "Тех. база",
+                    "媒体与支持": "Медиа",
+                    "白皮书": "Whitepapers",
+                    "行业报告": "Отчеты",
+                    "全部案例": "Все кейсы",
+                    "按区域查看": "По регионам",
+                    "按场景查看": "По сценариям",
+                    "技术参数表": "Спецификации",
+                    "认证与合规文件": "Сертификаты",
+                    "视频与教程": "Видео",
+                    "常见问答 FAQ": "FAQ",
+                    "服务网络": "Сервис",
+                    "技术支持": "Техподдержка",
+                    "售后与保养": "Обслуживание",
+                    "公司介绍": "О компании"
+                }
+            }
+        };
+
+        const app = {
+            currentLang: 'en', // Default to English
+            isMobileMenuOpen: false,
+
+            init() {
+                this.updateStaticText();
+                
+                // Init Custom Page Logic
+                renderMiners();
+
+                // Back to Top Scroll Logic
+                window.onscroll = () => {
+                    const btn = document.getElementById('backToTopBtn');
+                    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                        btn.classList.remove('translate-y-20', 'opacity-0');
+                    } else {
+                        btn.classList.add('translate-y-20', 'opacity-0');
+                    }
+                };
+            },
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+                
+                ['zh', 'en'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+                
+                    if (btn) {
+                        btn.className = `ggx-lang-option ${l === lang ? "is-active" : ""}`;
+                    }
+                
+                    if (mobBtn) {
+                        mobBtn.className = `ggx-lang-btn ggx-lang-btn-mobile ${l === lang ? "text-gas-green font-semibold" : "text-gray-500 hover:text-gray-300"}`;
+                    }
+                });
+
+                this.updateStaticText();
+                renderMiners(); // Rerender content in new language
+            },
+
+            t(key) {
+
+                if (key && typeof key === 'object') {
+
+                    return key[this.currentLang] || key.en || key.zh || '';
+
+                }
+
+
+                const dict = AppData.i18n[this.currentLang] || AppData.i18n.en || {};
+
+                return Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : key;
+
+            },
+
+            // Footer Toggle Function (Mobile)
+
+            captureAndShare() {
+                // Scroll to top
+                window.scrollTo(0, 0);
+
+                // Add Watermark Layer
+                const watermark = document.createElement('div');
+                watermark.id = 'temp-watermark';
+                Object.assign(watermark.style, {
+                    position: 'absolute', top: 0, left: 0, width: '100%', height: document.body.scrollHeight + 'px',
+                    zIndex: 9999, pointerEvents: 'none', display: 'flex', flexWrap: 'wrap', 
+                    alignContent: 'space-around', justifyContent: 'space-around', overflow: 'hidden', opacity: '0.15'
+                });
+
+                const textHtml = `<div style="text-align:center; transform: rotate(-30deg); margin: 100px;">
+                                    <div style="font-size: 24px; font-weight: bold; color: #5DD62C;">www.gasgx.com</div>
+                                    <div style="font-size: 16px; color: #fff;">Natural Gas Power Mining Assistant</div>
+                                  </div>`;
+                
+                // Repeat watermark
+                const count = Math.ceil(document.body.scrollHeight / 400) * 3;
+                watermark.innerHTML = textHtml.repeat(count);
+                document.body.appendChild(watermark);
+
+                // Capture
+                setTimeout(() => {
+                    html2canvas(document.body, {
+                        backgroundColor: '#0F0F0F',
+                        scrollY: 0,
+                        useCORS: true,
+                        scale: 2
+                    }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = 'GasGx-Miner-Guide.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        document.body.removeChild(watermark);
+                        
+                        // Show Success Modal
+                        const modal = document.getElementById('shareModal');
+                        modal.classList.remove('hidden');
+                        setTimeout(() => modal.querySelector('div').classList.remove('scale-95', 'opacity-0'), 10);
+                    }).catch(err => {
+                        console.error(err);
+                        if(document.getElementById('temp-watermark')) document.body.removeChild(watermark);
+                        alert('Capture failed.');
+                    });
+                }, 500);
+            },
+
+            closeModal() {
+                const modal = document.getElementById('shareModal');
+                const content = modal.querySelector('div');
+                content.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            },
+
+            updateStaticText() {
+                const taglineEl = document.getElementById('header-tagline');
+                const footerTaglineEl = document.querySelector('[data-i18n="footerTagline"]');
+                
+                if(taglineEl) taglineEl.innerText = this.t('tagline');
+                if(footerTaglineEl) footerTaglineEl.innerText = this.t('footerTagline');
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (key !== 'tagline' && key !== 'footerTagline') { 
+                        el.innerText = this.t(key);
+                    }
+                });
+            }
+        };
+
+        // --- MINER PAGE FUNCTIONALITY ---
+        function renderMiners() {
+            const coolingFilter = document.getElementById('coolingFilter').value;
+            const brandFilter = document.getElementById('brandFilter').value;
+            
+            // Get Input Values for Calc
+            const elecCost = parseFloat(document.getElementById('elecCostInput').value) || 0.05;
+            
+            const container = document.getElementById('minerGrid');
+            const countLabel = document.getElementById('minerCount');
+            
+            container.innerHTML = '';
+
+            const filtered = minersData.filter(miner => {
+                const matchCool = coolingFilter === 'all' || miner.cooling === coolingFilter;
+                const matchBrand = brandFilter === 'all' || miner.brand === brandFilter;
+                return matchCool && matchBrand;
+            });
+
+            countLabel.innerText = filtered.length;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-gray-500">No miners found matching your filters.</div>`;
+                return;
+            }
+
+            filtered.forEach(miner => {
+                const isLiquid = miner.cooling === "Liquid"; // Covers both Hydro and Immersion from old data
+                
+                let coolingBadgeClass = 'bg-orange-900/30 text-orange-400 border-orange-800'; // Air default
+                let coolingIcon = 'fa-fan';
+                let coolingLabel = app.t('风冷');
+
+                if (isLiquid) {
+                    coolingBadgeClass = 'bg-blue-900/30 text-blue-400 border-blue-800';
+                    coolingIcon = 'fa-water';
+                    coolingLabel = app.t('液冷');
+                }
+
+                // Profit Calc
+                let dailyRevenue = 0;
+                if (miner.algo === 'SHA256') {
+                    dailyRevenue = miner.hashrate * CONSTANTS.hashprice;
+                } else if (miner.algo === 'Scrypt') {
+                    // L7 is MH/s, standard scrypt rev is roughly $0.005/MH (Placeholder, variable)
+                    dailyRevenue = miner.hashrate * CONSTANTS.scryptRevenue; 
+                }
+
+                const dailyCost = (miner.power / 1000) * 24 * elecCost;
+                const dailyProfit = dailyRevenue - dailyCost;
+                const profitClass = dailyProfit > 0 ? 'text-gas-green' : 'text-red-500';
+
+                const card = `
+                <div class="gas-card rounded-xl p-5 miner-card relative group flex flex-col justify-between h-full">
+                    <!-- Top Badge -->
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[10px] uppercase font-bold text-gray-500 tracking-wider">${miner.brand}</span>
+                        <div class="text-[10px] px-2 py-0.5 rounded border border-white/10 ${coolingBadgeClass} flex items-center gap-1">
+                            <i class="fa-solid ${coolingIcon}"></i> ${coolingLabel}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <!-- Icon Placeholder -->
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center border border-white/5 group-hover:border-gas-green/50 transition-colors shrink-0">
+                                <i class="fa-solid ${miner.icon} text-lg text-gray-400 group-hover:text-gas-green transition-colors"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-white leading-tight">${miner.model}</h3>
+                                <p class="text-[10px] text-gray-500 bg-white/5 inline-block px-1.5 rounded mt-1">${miner.algo}</p>
+                            </div>
+                        </div>
+
+                        <!-- Stats Grid -->
+                        <div class="grid grid-cols-2 gap-y-2 gap-x-2 text-sm mb-4 bg-black/20 p-3 rounded-lg border border-white/5">
+                            <div class="flex flex-col">
+                                <span class="text-gray-500 text-[10px] uppercase">${app.t('算力')}</span>
+                                <span class="font-bold text-white text-base">${miner.hashrate} <span class="text-xs font-normal text-gray-500">${miner.unit}</span></span>
+                            </div>
+                            <div class="flex flex-col text-right">
+                                <span class="text-gray-500 text-[10px] uppercase">${app.t('能效')}</span>
+                                <span class="text-white font-mono">${miner.efficiency} <span class="text-[10px] text-gray-500">J/T</span></span>
+                            </div>
+                            <div class="col-span-2 border-t border-white/5 my-1"></div>
+                            <div class="flex flex-col">
+                                <span class="text-gray-500 text-[10px] uppercase">${app.t('功耗')}</span>
+                                <span class="text-white font-mono">${miner.power} <span class="text-[10px] text-gray-500">W</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Simplified Profit Section -->
+                    <div class="mt-auto bg-[#111] rounded-lg p-3 border border-white/5">
+                        <div class="flex justify-between items-center text-xs mb-1">
+                            <span class="text-gray-500">${app.t('日收益')}</span>
+                            <span class="text-gray-300">$${dailyRevenue.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs mb-2">
+                            <span class="text-gray-500">${app.t('日电费')}</span>
+                            <span class="text-gray-400">-$${dailyCost.toFixed(2)}</span>
+                        </div>
+                        <div class="border-t border-white/10 pt-2 flex justify-between items-center">
+                            <span class="text-xs font-bold text-gray-300 uppercase">${app.t('日净利')}</span>
+                            <span class="text-base font-bold ${profitClass} font-mono">$${dailyProfit.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        // Start
+        const bootAppWithSharedShell = () => {
+            window.app = app;
+            const start = () => {
+                if (app.__sharedBooted) return;
+                app.__sharedBooted = true;
+                app.init();
+            };
+
+            if (window.GasGxSharedUI && window.GasGxSharedUI.mounted) {
+                start();
+            } else {
+                document.addEventListener('gasgx:shared-ui-ready', start, { once: true });
+            }
+        };
+
+        bootAppWithSharedShell();
+    </script>
+</body>
+</html>

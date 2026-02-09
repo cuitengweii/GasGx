@@ -1,0 +1,518 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GASGX // QUANTUM NEXUS // LEVEL 5 ACCESS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030507;
+            --panel: rgba(10, 15, 20, 0.65);
+            --cyan: #00f3ff;
+            --cyan-dim: rgba(0, 243, 255, 0.1);
+            --orange: #ff9e00;
+            --red: #ff2a2a;
+            --green: #00ff41;
+            --border: 1px solid rgba(0, 243, 255, 0.2);
+        }
+        
+        body { 
+            background-color: var(--bg); 
+            color: var(--cyan); 
+            font-family: 'Share Tech Mono', monospace; 
+            overflow: hidden; 
+            margin: 0; padding: 0;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 40, 50, 0.2) 0%, transparent 80%),
+                linear-gradient(0deg, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0) 50%);
+            background-size: 100% 100%, 100% 4px;
+        }
+
+        /* 复杂边框裁剪 */
+        .clip-box {
+            clip-path: polygon(
+                0 0, 20px 0, 30px 10px, 
+                calc(100% - 30px) 10px, calc(100% - 20px) 0, 100% 0, 
+                100% calc(100% - 10px), calc(100% - 10px) 100%, 
+                10px 100%, 0 calc(100% - 10px)
+            );
+            border: 1px solid rgba(0, 243, 255, 0.3); /* Fallback */
+            background: var(--panel);
+            backdrop-filter: blur(5px);
+            position: relative;
+        }
+        /* 模拟边框绘制 */
+        .clip-box::before {
+            content: ''; position: absolute; inset: 0; 
+            background: linear-gradient(90deg, var(--cyan) 0%, transparent 20%, transparent 80%, var(--cyan) 100%);
+            opacity: 0.2; pointer-events: none;
+        }
+
+        /* 动画效果 */
+        @keyframes scan { 0% { top: -10%; opacity: 0; } 50% { opacity: 0.5; } 100% { top: 110%; opacity: 0; } }
+        .scanline { position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: var(--cyan); opacity: 0.3; animation: scan 3s linear infinite; box-shadow: 0 0 10px var(--cyan); pointer-events: none; z-index: 999; }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .blink { animation: blink 1s step-end infinite; }
+        .blink-fast { animation: blink 0.1s step-end infinite; }
+
+        @keyframes glitch { 
+            0% { transform: translate(0); } 
+            20% { transform: translate(-2px, 2px); } 
+            40% { transform: translate(-2px, -2px); } 
+            60% { transform: translate(2px, 2px); } 
+            80% { transform: translate(2px, -2px); } 
+            100% { transform: translate(0); } 
+        }
+        .glitch:hover { animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite; color: var(--red); }
+
+        /* 滚动条隐藏 */
+        ::-webkit-scrollbar { width: 0px; }
+
+        /* 布局网格 */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            grid-template-rows: 60px 1fr 200px 30px;
+            gap: 10px;
+            height: 100vh;
+            padding: 10px;
+        }
+
+        .header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--cyan-dim); }
+        .sidebar-left { grid-row: 2 / 4; display: flex; flex-direction: column; gap: 10px; }
+        .center-stage { grid-row: 2 / 3; position: relative; border: 1px solid var(--cyan-dim); overflow: hidden; }
+        .sidebar-right { grid-row: 2 / 4; display: flex; flex-direction: column; gap: 10px; }
+        .bottom-deck { grid-column: 2 / 3; grid-row: 3 / 4; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .footer { grid-column: 1 / -1; display: flex; align-items: center; background: rgba(0,0,0,0.8); border-top: 1px solid var(--cyan-dim); font-size: 10px; }
+
+        /* 文字样式 */
+        h2 { font-family: 'Rajdhani', sans-serif; font-weight: 700; text-transform: uppercase; margin: 0; font-size: 14px; letter-spacing: 2px; color: var(--cyan); display: flex; align-items: center; gap: 5px; }
+        h2::before { content: ''; width: 5px; height: 5px; background: var(--cyan); display: inline-block; }
+        
+        .data-row { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.1); }
+        .data-row:hover { background: var(--cyan-dim); color: #fff; }
+        .hex-dump { font-size: 8px; color: #444; word-break: break-all; line-height: 10px; opacity: 0.7; }
+        
+        /* 进度条 */
+        .bar-container { width: 100%; height: 4px; background: #111; margin-top: 2px; }
+        .bar-fill { height: 100%; background: var(--cyan); width: 0%; transition: width 0.5s; position: relative; }
+        .bar-fill::after { content: ''; position: absolute; right: 0; top: 0; width: 2px; height: 6px; background: #fff; margin-top: -1px; }
+
+        /* 开机遮罩 */
+        #boot-screen {
+            position: fixed; inset: 0; background: #000; z-index: 10000;
+            display: flex; flex-direction: column; justify-content: flex-end; padding: 50px;
+            font-family: 'Share Tech Mono'; color: var(--green); font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanline"></div>
+
+    <div id="boot-screen">
+        <div id="boot-log">
+            > KERNEL_INIT... OK<br>
+            > LOADING GAS_GX_MODULES...<br>
+            > DECRYPTING STREAM...<br>
+        </div>
+        <div style="width: 300px; height: 2px; background: #333; margin-top: 20px;">
+            <div id="boot-bar" style="width: 0%; height: 100%; background: var(--green);"></div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <header class="header px-4 clip-box">
+            <div class="flex items-center gap-4">
+                <i class="fa-solid fa-cube text-3xl animate-spin text-cyan-400"></i>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-[0.2em] glitch cursor-pointer">GASGX <span class="text-white">NEXUS</span></h1>
+                    <div class="text-[9px] tracking-[0.5em] text-gray-400">CLASS 5 INTEL // ENCRYPTED</div>
+                </div>
+            </div>
+            <div class="flex gap-8 text-xs font-mono">
+                <div class="text-right">
+                    <div class="text-gray-500 text-[9px]">NET_HASH</div>
+                    <div class="text-lg font-bold text-white">742.1 <span class="text-xs text-gray-500">EH/s</span></div>
+                </div>
+                <div class="text-right">
+                    <div class="text-gray-500 text-[9px]">GAS_PRICE</div>
+                    <div class="text-lg font-bold text-orange-400">$1.84 <span class="text-xs text-gray-500">MMBtu</span></div>
+                </div>
+                <div class="text-right border-l border-white/10 pl-4">
+                    <div class="text-[9px] text-gray-500">SYSTEM TIME</div>
+                    <div id="clock" class="text-lg font-bold text-cyan-300">00:00:00</div>
+                </div>
+            </div>
+        </header>
+
+        <aside class="sidebar-left">
+            <div class="clip-box p-3 flex-1 flex flex-col gap-4">
+                <h2>Node Status</h2>
+                <div class="space-y-2">
+                    <div class="data-row"><span>US-EAST-1</span><span class="text-green-400">ONLINE</span></div>
+                    <div class="data-row"><span>US-WEST-2</span><span class="text-green-400">ONLINE</span></div>
+                    <div class="data-row"><span>EU-CENTRAL</span><span class="text-orange-400">LATENCY</span></div>
+                    <div class="data-row"><span>ASIA-PAC</span><span class="text-green-400">ONLINE</span></div>
+                </div>
+                
+                <div class="h-px bg-white/10 my-2"></div>
+                
+                <h2>Resource Load</h2>
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between text-[9px] mb-1"><span>CPU_CORE_0</span><span>84%</span></div>
+                        <div class="bar-container"><div class="bar-fill" style="width: 84%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[9px] mb-1"><span>CPU_CORE_1</span><span>62%</span></div>
+                        <div class="bar-container"><div class="bar-fill" style="width: 62%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[9px] mb-1"><span>MEM_ALLOC</span><span>41%</span></div>
+                        <div class="bar-container"><div class="bar-fill" style="width: 41%; background: var(--green);"></div></div>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-hidden relative mt-2 border border-white/5 bg-black p-1">
+                    <div class="absolute top-0 left-0 text-[8px] text-gray-600 bg-black px-1">HEX_DUMP</div>
+                    <div class="hex-dump mt-4" id="hex-stream"></div>
+                </div>
+            </div>
+
+            <div class="clip-box p-3 h-48">
+                <h2>Thermal Cam</h2>
+                <div class="relative w-full h-full mt-2 bg-black border border-white/10 overflow-hidden">
+                    <div class="absolute inset-0 bg-[url('https://assets.codepen.io/13471/sparkles.gif')] opacity-20 mix-blend-screen"></div>
+                    <div class="absolute inset-0" style="background: radial-gradient(circle at 30% 40%, rgba(255,0,0,0.4), transparent 40%), radial-gradient(circle at 70% 60%, rgba(0,0,255,0.4), transparent 40%); filter: blur(10px);"></div>
+                    <div class="absolute top-2 left-2 text-[10px] text-red-500 font-bold blink">WARN: ZONE 4</div>
+                    <canvas id="waveCanvas" class="absolute bottom-0 left-0 w-full h-20 opacity-50"></canvas>
+                </div>
+            </div>
+        </aside>
+
+        <section class="center-stage bg-black relative">
+            <div class="absolute inset-0" style="background-image: linear-gradient(var(--cyan-dim) 1px, transparent 1px), linear-gradient(90deg, var(--cyan-dim) 1px, transparent 1px); background-size: 50px 50px; opacity: 0.3;"></div>
+            
+            <canvas id="mapCanvas" class="block w-full h-full"></canvas>
+
+            <div class="absolute top-4 left-4 border border-cyan-500/50 bg-black/80 p-2 text-[10px] w-40">
+                <div class="text-cyan-400 font-bold mb-1">TARGET LOCK</div>
+                <div class="flex justify-between"><span>LAT:</span><span id="lat-val">34.0522</span></div>
+                <div class="flex justify-between"><span>LON:</span><span id="lon-val">-118.243</span></div>
+                <div class="mt-2 h-1 bg-gray-800"><div class="h-full bg-cyan-400 w-1/2 animate-pulse"></div></div>
+            </div>
+
+            <div class="absolute bottom-4 right-4 text-right">
+                <div class="text-[10px] text-gray-400">RENDER ENGINE</div>
+                <div class="text-xl font-bold text-white">WEBGL_2.0</div>
+            </div>
+            
+            <div class="absolute top-1/2 left-1/2 w-20 h-20 border border-white/20 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+                <div class="w-1 h-1 bg-red-500 rounded-full blink-fast"></div>
+                <div class="absolute top-0 left-0 w-2 h-2 border-t border-l border-cyan-500"></div>
+                <div class="absolute top-0 right-0 w-2 h-2 border-t border-r border-cyan-500"></div>
+                <div class="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-cyan-500"></div>
+                <div class="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-cyan-500"></div>
+            </div>
+        </section>
+
+        <aside class="sidebar-right">
+            <div class="clip-box p-3 h-1/3 flex flex-col">
+                <h2>Network Eff.</h2>
+                <div class="flex-1 relative mt-2">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="clip-box p-3 h-1/3 flex flex-col">
+                <h2>Price Correlation</h2>
+                <div class="flex-1 relative mt-2">
+                    <canvas id="candleChart"></canvas>
+                </div>
+            </div>
+
+            <div class="clip-box p-3 flex-1 overflow-hidden flex flex-col">
+                <h2>System Logs</h2>
+                <div class="font-mono text-[9px] text-green-500/80 overflow-y-hidden relative h-full mt-2" id="log-container">
+                    </div>
+            </div>
+        </aside>
+
+        <section class="bottom-deck">
+            <div class="clip-box p-2 relative">
+                <h2 class="text-[10px]">Hashrate Volatility (24H)</h2>
+                <div class="h-32 w-full mt-2"><canvas id="lineChart1"></canvas></div>
+            </div>
+            <div class="clip-box p-2 relative">
+                 <h2 class="text-[10px]">Energy Mix Distribution</h2>
+                 <div class="h-32 w-full mt-2"><canvas id="barChart1"></canvas></div>
+            </div>
+            <div class="clip-box p-2 relative bg-red-900/10 border-red-500/30">
+                 <h2 class="text-[10px] text-red-400">Alerts / Anomalies</h2>
+                 <div class="mt-2 space-y-2 text-[10px]">
+                     <div class="bg-red-500/20 text-red-200 p-1 border-l-2 border-red-500 flex justify-between">
+                         <span>HIGH_TEMP DETECTED</span> <span class="blink">CRITICAL</span>
+                     </div>
+                     <div class="bg-orange-500/20 text-orange-200 p-1 border-l-2 border-orange-500 flex justify-between">
+                         <span>PACKET_LOSS > 5%</span> <span>WARN</span>
+                     </div>
+                     <div class="bg-gray-800 p-1 flex justify-between text-gray-400">
+                         <span>DAEMON_RESTART</span> <span>INFO</span>
+                     </div>
+                 </div>
+            </div>
+        </section>
+
+        <footer class="footer px-4 gap-6 text-gray-500 uppercase tracking-wider">
+            <div class="flex items-center gap-2"><div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> CONNECTION ESTABLISHED</div>
+            <div class="flex-1 overflow-hidden relative h-full flex items-center">
+                <div style="animation: ticker 15s linear infinite; white-space: nowrap;">
+                    BLOCK #839102 FOUND [ANTPOOL] --- GAS PRICE SPIKE DETECTED IN ALBERTA REGION --- NEW ASIC FIRMWARE V2.1 DEPLOYED --- DIFFICULTY ADJUSTMENT IN 204 BLOCKS ---
+                </div>
+            </div>
+            <div>VER 4.9.2</div>
+        </footer>
+    </div>
+
+    <style>
+        @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+    </style>
+
+    <script>
+        // --- BOOT SEQUENCE ---
+        window.addEventListener('load', () => {
+            const bar = document.getElementById('boot-bar');
+            const screen = document.getElementById('boot-screen');
+            const log = document.getElementById('boot-log');
+            
+            let w = 0;
+            const int = setInterval(() => {
+                w += Math.random() * 10;
+                if(w > 100) w = 100;
+                bar.style.width = w + '%';
+                
+                if(Math.random() > 0.7) {
+                    log.innerHTML += `> MODULE_${Math.floor(Math.random()*999)} LOADED<br>`;
+                }
+
+                if(w === 100) {
+                    clearInterval(int);
+                    setTimeout(() => {
+                        screen.style.opacity = '0';
+                        screen.style.pointerEvents = 'none';
+                    }, 500);
+                }
+            }, 100);
+        });
+
+        // --- CLOCK ---
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toISOString().split('T')[1].split('.')[0];
+            // Random coordinate update
+            document.getElementById('lat-val').innerText = (34 + Math.random()).toFixed(4);
+            document.getElementById('lon-val').innerText = (-118 + Math.random()).toFixed(4);
+        }, 1000);
+
+        // --- HEX STREAM GENERATOR ---
+        const hexContainer = document.getElementById('hex-stream');
+        setInterval(() => {
+            let hex = '';
+            for(let i=0; i<300; i++) {
+                hex += Math.floor(Math.random()*16).toString(16).toUpperCase() + (i%24===0 ? '<br>' : ' ');
+            }
+            hexContainer.innerHTML = hex;
+        }, 200);
+
+        // --- LOG STREAM GENERATOR ---
+        const logContainer = document.getElementById('log-container');
+        const logMessages = ["HANDSHAKE_ACK", "PACKET_RECEIVED", "SYNCING_HEADER", "VALIDATING_BLOCK", "UPDATING_PEERS", "MEMPOOL_FLUSH", "SIGNATURE_VERIFIED"];
+        setInterval(() => {
+            const msg = logMessages[Math.floor(Math.random() * logMessages.length)];
+            const div = document.createElement('div');
+            div.innerHTML = `<span class="text-cyan-600">[${new Date().toLocaleTimeString()}]</span> ${msg} <span class="text-gray-600">ID:${Math.floor(Math.random()*1000)}</span>`;
+            logContainer.prepend(div);
+            if(logContainer.children.length > 20) logContainer.lastChild.remove();
+        }, 800);
+
+        // --- CHART CONFIGURATION (Chart.js) ---
+        Chart.defaults.color = '#666';
+        Chart.defaults.font.family = 'Share Tech Mono';
+        Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+        Chart.defaults.plugins.legend.display = false;
+
+        // 1. Radar Chart (Network Efficiency)
+        new Chart(document.getElementById('radarChart'), {
+            type: 'radar',
+            data: {
+                labels: ['SPEED', 'COST', 'SECURE', 'RELIABLE', 'SCALE'],
+                datasets: [{
+                    data: [90, 80, 95, 85, 70],
+                    backgroundColor: 'rgba(0, 243, 255, 0.2)',
+                    borderColor: '#00f3ff',
+                    borderWidth: 1,
+                    pointBackgroundColor: '#fff'
+                }]
+            },
+            options: {
+                scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false } } }
+            }
+        });
+
+        // 2. Line Chart (Volatility) - Dynamic
+        const lineCtx = document.getElementById('lineChart1').getContext('2d');
+        const gradient = lineCtx.createLinearGradient(0,0,0,200);
+        gradient.addColorStop(0, 'rgba(0, 255, 65, 0.4)');
+        gradient.addColorStop(1, 'rgba(0, 255, 65, 0)');
+
+        const lineChart = new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: Array(20).fill(''),
+                datasets: [{
+                    data: Array.from({length: 20}, () => Math.random() * 100),
+                    borderColor: '#00ff41',
+                    borderWidth: 1.5,
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }]
+            },
+            options: { scales: { x: {display:false}, y: {display:false, min: 0, max: 120} }, animation: false }
+        });
+        
+        setInterval(() => {
+            const data = lineChart.data.datasets[0].data;
+            data.shift();
+            data.push(Math.random() * 100);
+            lineChart.update();
+        }, 1000);
+
+        // 3. Bar Chart (Energy)
+        new Chart(document.getElementById('barChart1'), {
+            type: 'bar',
+            data: {
+                labels: ['GAS', 'WIND', 'SOLAR', 'COAL', 'HYDRO'],
+                datasets: [{
+                    data: [45, 25, 15, 10, 5],
+                    backgroundColor: ['#00f3ff', '#00ff41', '#ff9e00', '#ff2a2a', '#aaa']
+                }]
+            },
+            options: { indexAxis: 'y', scales: { x: {display:false} } }
+        });
+
+        // --- CUSTOM CANVAS ANIMATIONS ---
+
+        // 1. Center Map (Particle Network)
+        const mapCanvas = document.getElementById('mapCanvas');
+        const mapCtx = mapCanvas.getContext('2d');
+        let width, height;
+        const nodes = [];
+
+        function resizeMap() {
+            width = mapCanvas.width = mapCanvas.offsetWidth;
+            height = mapCanvas.height = mapCanvas.offsetHeight;
+        }
+        window.addEventListener('resize', resizeMap);
+        resizeMap();
+
+        class Node {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2 + 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if(this.x < 0 || this.x > width) this.vx *= -1;
+                if(this.y < 0 || this.y > height) this.vy *= -1;
+            }
+            draw() {
+                mapCtx.fillStyle = '#00f3ff';
+                mapCtx.beginPath();
+                mapCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                mapCtx.fill();
+            }
+        }
+
+        for(let i=0; i<40; i++) nodes.push(new Node());
+
+        function animateMap() {
+            mapCtx.fillStyle = 'rgba(0, 0, 0, 0.1)'; // Trail effect
+            mapCtx.fillRect(0, 0, width, height);
+
+            // Draw World Map Outline (Simulated)
+            mapCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+            mapCtx.lineWidth = 2;
+            mapCtx.beginPath();
+            mapCtx.moveTo(width*0.1, height*0.3);
+            mapCtx.lineTo(width*0.3, height*0.2);
+            mapCtx.lineTo(width*0.4, height*0.4);
+            mapCtx.stroke(); // Just random shapes to imply continents
+
+            nodes.forEach(node => {
+                node.update();
+                node.draw();
+                
+                // Connections
+                nodes.forEach(other => {
+                    const dx = node.x - other.x;
+                    const dy = node.y - other.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if(dist < 100) {
+                        mapCtx.strokeStyle = `rgba(0, 243, 255, ${1 - dist/100})`;
+                        mapCtx.lineWidth = 0.5;
+                        mapCtx.beginPath();
+                        mapCtx.moveTo(node.x, node.y);
+                        mapCtx.lineTo(other.x, other.y);
+                        mapCtx.stroke();
+                    }
+                });
+            });
+            requestAnimationFrame(animateMap);
+        }
+        animateMap();
+
+        // 2. Wave Canvas (Sine Waves)
+        const waveCanvas = document.getElementById('waveCanvas');
+        const waveCtx = waveCanvas.getContext('2d');
+        let waveOffset = 0;
+
+        function animateWave() {
+            waveCanvas.width = waveCanvas.offsetWidth;
+            waveCanvas.height = waveCanvas.offsetHeight;
+            const w = waveCanvas.width;
+            const h = waveCanvas.height;
+
+            waveCtx.clearRect(0, 0, w, h);
+            
+            for(let i=0; i<3; i++) {
+                waveCtx.beginPath();
+                waveCtx.strokeStyle = i===0 ? 'rgba(255,0,0,0.5)' : 'rgba(0,243,255,0.3)';
+                waveCtx.lineWidth = 2;
+                for(let x=0; x<w; x+=5) {
+                    const y = h/2 + Math.sin((x + waveOffset + i*100) * 0.02) * 20;
+                    if(x===0) waveCtx.moveTo(x,y);
+                    else waveCtx.lineTo(x,y);
+                }
+                waveCtx.stroke();
+            }
+            waveOffset += 2;
+            requestAnimationFrame(animateWave);
+        }
+        animateWave();
+
+    </script>
+<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js"></script>
+</body>
+</html>
+

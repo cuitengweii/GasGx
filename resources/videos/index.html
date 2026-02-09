@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Videos & Tutorials | GasGx 视频资源库</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 15px rgba(93, 214, 44, 0.4)',
+                        'cyber': '0 0 25px rgba(93, 214, 44, 0.2)',
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #1a1a1a 1px, transparent 1px), linear-gradient(to bottom, #1a1a1a 1px, transparent 1px)",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body { background-color: #0F0F0F; color: #F8F8F8; font-family: 'Inter', sans-serif; overflow-x: hidden; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+        
+        .gas-card { background-color: rgba(32, 32, 32, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .bg-grid { background-size: 40px 40px; mask-image: linear-gradient(to bottom, transparent, 10%, black, 90%, transparent); }
+
+        /* --- 炫酷视频框 (Cyber Frame) --- */
+        .video-wrapper {
+            position: relative;
+            padding: 2px;
+            background: linear-gradient(45deg, #333, #000);
+            clip-path: polygon(
+                0 0, 
+                100% 0, 
+                100% calc(100% - 20px), 
+                calc(100% - 20px) 100%, 
+                0 100%
+            );
+            transition: all 0.3s ease;
+        }
+
+        .video-wrapper::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, #5DD62C, transparent);
+            background-size: 200% 100%;
+            z-index: -1;
+            animation: border-shine 4s linear infinite;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .video-wrapper:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(93, 214, 44, 0.15);
+        }
+        
+        .video-wrapper:hover::before {
+            opacity: 1;
+        }
+
+        .video-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            clip-path: polygon(
+                0 0, 
+                100% 0, 
+                100% calc(100% - 19px), 
+                calc(100% - 19px) 100%, 
+                0 100%
+            );
+            overflow: hidden;
+        }
+
+        .corner-deco {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 10;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .corner-tl { top: 0; left: 0; border-top-color: #5DD62C; border-left-color: #5DD62C; }
+        .corner-br { bottom: 0; right: 0; border-bottom-color: #5DD62C; border-right-color: #5DD62C; transform: translate(-2px, -2px); }
+
+        @keyframes border-shine {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+    </style>
+    
+    <script>window.app = window.app || {};</script>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative selection:bg-gas-green selection:text-black">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-16 w-full relative">
+        <div class="absolute inset-0 bg-grid-pattern bg-grid opacity-20 pointer-events-none"></div>
+        
+        <section class="max-w-[1400px] mx-auto px-6 py-16 text-center relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gas-green/30 bg-gas-green/10 text-gas-green text-xs font-bold tracking-wider mb-6">
+                <i class="fa-solid fa-play"></i>
+                <span data-i18n="hero_badge">LEARNING CENTER</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold mb-6">
+                <span data-i18n="page_title_1">Video</span> <span class="text-gas-green">&</span> <span data-i18n="page_title_2">Tutorial Library</span>
+            </h1>
+            <p class="text-lg text-gas-subtext max-w-3xl mx-auto" data-i18n="page_desc">
+                从“商业模式扫盲”到“深度技术实操”，为您提供完整的视觉化学习路径。深入理解数字火炬缓解 (DFM) 的核心价值。
+            </p>
+        </section>
+
+        <section class="max-w-[1200px] mx-auto px-6 pb-20">
+            <h2 class="text-2xl font-bold text-white mb-8 flex items-center gap-3 border-l-4 border-gas-green pl-4">
+                <span data-i18n="sec1_title">入门必看：商业模式与愿景</span>
+            </h2>
+            
+            <div class="grid lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2">
+                    <div class="video-wrapper aspect-video w-full h-full">
+                        <div class="corner-deco corner-tl"></div>
+                        <div class="corner-deco corner-br"></div>
+                        <div class="video-inner">
+                            <iframe class="w-full h-full" src="https://www.youtube.com/embed/0CerPYbKx78" title="Turning Fireballs into Bitcoin" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <span class="text-gas-green text-xs font-bold tracking-wider mb-1 block" data-i18n="v1_badge">TEDx TALK</span>
+                        <h3 class="text-2xl font-bold text-white leading-tight" data-i18n="v1_title">Turning Fireballs into Bitcoin</h3>
+                        <p class="text-gray-400 text-sm mt-2" data-i18n="v1_desc">Crusoe Energy 创始人 Cully Cavness 的经典演讲。通俗易懂地解释了如何利用油田废气解决两大全球难题：能源浪费与高能耗计算。</p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-1 flex flex-col gap-4">
+                    <div class="video-wrapper aspect-video w-full">
+                        <div class="corner-deco corner-tl w-6 h-6"></div>
+                        <div class="corner-deco corner-br w-6 h-6"></div>
+                        <div class="video-inner relative bg-[#111]">
+                            <iframe class="w-full h-full" src="https://www.youtube.com/embed/5fw3r1TRJOo" title="How Gas-to-Crypto Works" frameborder="0" allow="fullscreen"></iframe>
+                        </div>
+                    </div>
+                    <div class="gas-card p-5 border border-white/5 flex-grow flex flex-col justify-center">
+                        <h4 class="text-lg font-bold text-white mb-2" data-i18n="v2_title">它是如何运作的？</h4>
+                        <p class="text-xs text-gray-400 mb-3" data-i18n="v2_desc">从井口采气、预处理（脱水/脱硫）、发电机发电到矿箱计算的全流程解构。</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-white/5 rounded text-[10px] text-gas-green border border-gas-green/20" data-i18n="tag_dfm">DFM技术</span>
+                            <span class="px-2 py-1 bg-white/5 rounded text-[10px] text-gas-green border border-gas-green/20" data-i18n="tag_esg">ESG价值</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-[1200px] mx-auto px-6 pb-20">
+            <h2 class="text-2xl font-bold text-white mb-8 flex items-center gap-3 border-l-4 border-gas-green pl-4">
+                <span data-i18n="sec2_title">实地考察：全球项目案例</span>
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="group">
+                    <div class="video-wrapper aspect-video mb-4">
+                        <div class="corner-deco corner-tl"></div>
+                        <div class="corner-deco corner-br"></div>
+                        <div class="video-inner">
+                            <iframe class="w-full h-full" src="https://www.youtube.com/embed/Q_BigzY7liU" title="Mining Bitcoin in Texas Oilfields" frameborder="0" allow="fullscreen"></iframe>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-xl font-bold text-white group-hover:text-gas-green transition-colors" data-i18n="v3_title">德克萨斯油田的比特币矿场</h3>
+                            <span class="px-2 py-1 bg-gas-green/10 text-gas-green text-[10px] font-bold rounded border border-gas-green/20" data-i18n="tag_vlog">VLOG</span>
+                        </div>
+                        <p class="text-sm text-gas-subtext mt-2" data-i18n="v3_desc">深入西德克萨斯油田，实拍燃气发电机组与矿箱的连接细节。展示如何在野外环境处理伴生气。</p>
+                    </div>
+                </div>
+
+                <div class="group">
+                    <div class="video-wrapper aspect-video mb-4">
+                        <div class="corner-deco corner-tl"></div>
+                        <div class="corner-deco corner-br"></div>
+                        <div class="video-inner">
+                            <iframe class="w-full h-full" src="https://www.youtube.com/embed/SDcNjZt0tgg" title="YPF Luz Project" frameborder="0" allow="fullscreen"></iframe>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <h3 class="text-xl font-bold text-white group-hover:text-gas-green transition-colors" data-i18n="v4_title">阿根廷 Vaca Muerta 的能源主权</h3>
+                            <span class="px-2 py-1 bg-blue-500/10 text-blue-400 text-[10px] font-bold rounded border border-blue-500/20" data-i18n="tag_case">CASE STUDY</span>
+                        </div>
+                        <p class="text-sm text-gas-subtext mt-2" data-i18n="v4_desc">聚焦 YPF（阿根廷国家石油公司）如何利用 Vaca Muerta 盆地的搁浅气进行挖矿，实现能源出口。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-[1200px] mx-auto px-6 pb-20">
+            <h2 class="text-2xl font-bold text-white mb-8 flex items-center gap-3 border-l-4 border-gas-green pl-4">
+                <span data-i18n="sec3_title">技术深度与实操教程</span>
+            </h2>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="gas-card p-4 rounded-xl hover:border-gas-green transition-colors group">
+                    <div class="relative aspect-video rounded overflow-hidden bg-black mb-4 border border-white/10">
+                        <iframe class="w-full h-full" src="https://www.youtube.com/embed/tWjRobXzDJk" title="Jenbacher Maintenance" frameborder="0" allow="fullscreen"></iframe>
+                    </div>
+                    <h4 class="text-white font-bold mb-1 group-hover:text-gas-green" data-i18n="v5_title">Jenbacher 发电机操作指南</h4>
+                    <p class="text-xs text-gas-subtext" data-i18n="v5_desc">INNIO Jenbacher 燃气引擎的手动启停与基础维护逻辑。</p>
+                </div>
+
+                <div class="gas-card p-4 rounded-xl hover:border-gas-green transition-colors group">
+                    <div class="relative aspect-video rounded overflow-hidden bg-black mb-4 border border-white/10">
+                        <iframe class="w-full h-full" src="https://www.youtube.com/embed/ZQNstJaUGl4" title="Amine Sweetening" frameborder="0" allow="fullscreen"></iframe>
+                    </div>
+                    <h4 class="text-white font-bold mb-1 group-hover:text-gas-green" data-i18n="v6_title">酸性气处理系统演示</h4>
+                    <p class="text-xs text-gas-subtext" data-i18n="v6_desc">胺液（Amine）脱硫塔的设计与工作原理，解决高含硫气体难题。</p>
+                </div>
+
+                <div class="gas-card p-4 rounded-xl hover:border-gas-green transition-colors group">
+                    <div class="relative aspect-video rounded overflow-hidden bg-black mb-4 border border-white/10">
+                        <iframe class="w-full h-full" src="https://www.youtube.com/embed/ibad0Vlfpvg" title="Mining Container" frameborder="0" allow="fullscreen"></iframe>
+                    </div>
+                    <h4 class="text-white font-bold mb-1 group-hover:text-gas-green" data-i18n="v7_title">Hash Hut 部署概览</h4>
+                    <p class="text-xs text-gas-subtext" data-i18n="v7_desc">模块化矿箱（Mining Container）的内部结构与快速部署方案。</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-[1200px] mx-auto px-6 pb-20">
+            <div class="gas-card border border-dashed border-white/20 rounded-xl p-8 bg-[#151515] relative overflow-hidden">
+                <div class="absolute -right-10 -top-10 w-40 h-40 bg-gas-green/5 rounded-full blur-3xl"></div>
+                
+                <div class="flex items-center justify-between mb-6 relative z-10">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-lock text-gas-green"></i>
+                        <span data-i18n="sec4_title">内部培训模块 (Coming Soon)</span>
+                    </h2>
+                    <span class="text-xs bg-gas-green/10 text-gas-green px-2 py-1 rounded border border-gas-green/20 font-mono" data-i18n="tag_internal">INTERNAL ONLY</span>
+                </div>
+                
+                <div class="grid md:grid-cols-3 gap-6 relative z-10">
+                    <div class="flex gap-4 items-start opacity-60 hover:opacity-100 transition-opacity cursor-not-allowed">
+                        <div class="w-10 h-10 rounded bg-white/5 flex items-center justify-center text-gas-green shrink-0 border border-white/5">
+                            <i class="fa-solid fa-calculator"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-bold text-sm" data-i18n="m1_title">财务测算模型</h4>
+                            <p class="text-xs text-gas-subtext mt-1" data-i18n="m1_desc">LCOE 与 ROI 计算器实操，针对投资人与 CFO。</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 items-start opacity-60 hover:opacity-100 transition-opacity cursor-not-allowed">
+                        <div class="w-10 h-10 rounded bg-white/5 flex items-center justify-center text-gas-green shrink-0 border border-white/5">
+                            <i class="fa-solid fa-scale-balanced"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-bold text-sm" data-i18n="m2_title">合规申报指南</h4>
+                            <p class="text-xs text-gas-subtext mt-1" data-i18n="m2_desc">艾伯塔省离网豁免申请与 AUC Rule 007 解读。</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 items-start opacity-60 hover:opacity-100 transition-opacity cursor-not-allowed">
+                        <div class="w-10 h-10 rounded bg-white/5 flex items-center justify-center text-gas-green shrink-0 border border-white/5">
+                            <i class="fa-solid fa-helmet-safety"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-bold text-sm" data-i18n="m3_title">HSE 安全演练</h4>
+                            <p class="text-xs text-gas-subtext mt-1" data-i18n="m3_desc">含硫气井 H₂S 泄漏应急演练与呼吸器使用规范。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script>
+        const I18N_DATA = {
+            'zh': {
+                'tagline': '天然气发电挖矿助手',
+                'nav_home': '首页',
+                'nav_videos': '视频与教程',
+                'nav_faq': '常见问答 FAQ',
+                'hero_badge': '学习中心',
+                'page_title_1': '视频',
+                'page_title_2': '教程资源库',
+                'page_desc': '从“商业模式扫盲”到“深度技术实操”，为您提供完整的视觉化学习路径。深入理解数字火炬缓解 (DFM) 的核心价值。',
+                'sec1_title': '入门必看：商业模式与愿景',
+                'v1_badge': 'TEDx 演讲',
+                'v1_title': '把火球变成比特币',
+                'v1_desc': 'Crusoe Energy 创始人 Cully Cavness 的经典演讲。通俗易懂地解释了如何利用油田废气解决两大全球难题：能源浪费与高能耗计算。',
+                'v2_title': '它是如何运作的？',
+                'v2_desc': '从井口采气、预处理（脱水/脱硫）、发电机发电到矿箱计算的全流程解构。',
+                'tag_dfm': 'DFM技术',
+                'tag_esg': 'ESG价值',
+                'sec2_title': '实地考察：全球项目案例',
+                'v3_title': '德克萨斯油田的比特币矿场',
+                'tag_vlog': 'VLOG',
+                'v3_desc': '深入西德克萨斯油田，实拍燃气发电机组与矿箱的连接细节。展示如何在野外环境处理伴生气。',
+                'v4_title': '阿根廷 Vaca Muerta 的能源主权',
+                'tag_case': '案例研究',
+                'v4_desc': '聚焦 YPF（阿根廷国家石油公司）如何利用 Vaca Muerta 盆地的搁浅气进行挖矿，实现能源出口。',
+                'sec3_title': '技术深度与实操教程',
+                'v5_title': 'Jenbacher 发电机操作指南',
+                'v5_desc': 'INNIO Jenbacher 燃气引擎的手动启停与基础维护逻辑。',
+                'v6_title': '酸性气处理系统演示',
+                'v6_desc': '胺液（Amine）脱硫塔的设计与工作原理，解决高含硫气体难题。',
+                'v7_title': 'Hash Hut 部署概览',
+                'v7_desc': '模块化矿箱（Mining Container）的内部结构与快速部署方案。',
+                'sec4_title': '内部培训模块 (即将上线)',
+                'tag_internal': '仅限内部',
+                'm1_title': '财务测算模型',
+                'm1_desc': 'LCOE 与 ROI 计算器实操，针对投资人与 CFO。',
+                'm2_title': '合规申报指南',
+                'm2_desc': '艾伯塔省离网豁免申请与 AUC Rule 007 解读。',
+                'm3_title': 'HSE 安全演练',
+                'm3_desc': '含硫气井 H₂S 泄漏应急演练与呼吸器使用规范。',
+                'footerTagline': '让天然气发电挖矿更简单',
+                'contact_us': '联系我们',
+                'privacy_policy': '隐私政策'
+            },
+            'en': {
+                'tagline': 'Natural Gas Power Mining Assistant',
+                'nav_home': 'Home',
+                'nav_videos': 'Videos & Tutorials',
+                'nav_faq': 'FAQ',
+                'hero_badge': 'LEARNING CENTER',
+                'page_title_1': 'Video',
+                'page_title_2': 'Tutorial Library',
+                'page_desc': 'From business models to technical deep dives, providing a complete visual learning path. Understand the core value of Digital Flare Mitigation (DFM).',
+                'sec1_title': 'Must Watch: Vision & Model',
+                'v1_badge': 'TEDx TALK',
+                'v1_title': 'Turning Fireballs into Bitcoin',
+                'v1_desc': 'Classic talk by Crusoe Energy founder Cully Cavness. Explaining how to solve two global problems with oilfield waste gas.',
+                'v2_title': 'How it Works?',
+                'v2_desc': 'Full process breakdown from wellhead gas capture, pretreatment, generation to mining computation.',
+                'tag_dfm': 'DFM Tech',
+                'tag_esg': 'ESG Value',
+                'sec2_title': 'Field Operations: Global Cases',
+                'v3_title': 'Mining Bitcoin in Texas Oilfields',
+                'tag_vlog': 'VLOG',
+                'v3_desc': 'Deep dive into West Texas oilfields, showing connection details between gas gensets and mining containers.',
+                'v4_title': 'Argentina Vaca Muerta Energy Sovereignty',
+                'tag_case': 'CASE STUDY',
+                'v4_desc': 'Focus on how YPF (Argentina National Oil Co.) uses stranded gas in Vaca Muerta for mining.',
+                'sec3_title': 'Technical Deep Dives',
+                'v5_title': 'Jenbacher Genset Operation',
+                'v5_desc': 'Manual start/stop and basic maintenance logic for INNIO Jenbacher gas engines.',
+                'v6_title': 'Sour Gas Treatment Demo',
+                'v6_desc': 'Design and working principle of Amine sweetening towers for high sulfur gas.',
+                'v7_title': 'Hash Hut Deployment Overview',
+                'v7_desc': 'Internal structure and rapid deployment scheme of modular mining containers.',
+                'sec4_title': 'Internal Training (Coming Soon)',
+                'tag_internal': 'INTERNAL ONLY',
+                'm1_title': 'Financial Modeling',
+                'm1_desc': 'LCOE & ROI calculator practice for investors and CFOs.',
+                'm2_title': 'Compliance Guide',
+                'm2_desc': 'Alberta off-grid exemption application and AUC Rule 007 interpretation.',
+                'm3_title': 'HSE Safety Drills',
+                'm3_desc': 'H₂S leak emergency response and respirator usage standards.',
+                'footerTagline': 'Making natural gas power mining easier',
+                'contact_us': 'Contact Us',
+                'privacy_policy': 'Privacy Policy'
+            },
+            'ru': {
+                'tagline': 'Помощник по майнингу на газе',
+                'nav_home': 'Главная',
+                'nav_videos': 'Видео и уроки',
+                'nav_faq': 'ЧаВо (FAQ)',
+                'hero_badge': 'ЦЕНТР ОБУЧЕНИЯ',
+                'page_title_1': 'Библиотека',
+                'page_title_2': 'Видео и Уроков',
+                'page_desc': 'От бизнес-моделей до технических деталей, полный визуальный путь обучения. Поймите ценность DFM.',
+                'sec1_title': 'Обязательно к просмотру',
+                'v1_badge': 'TEDx TALK',
+                'v1_title': 'Превращая огненные шары в Биткойн',
+                'v1_desc': 'Классическая лекция основателя Crusoe Energy. Как попутный газ решает проблемы энергетики.',
+                'v2_title': 'Как это работает?',
+                'v2_desc': 'Полный разбор процесса: от сбора газа, очистки, генерации до майнинга.',
+                'tag_dfm': 'Технология DFM',
+                'tag_esg': 'Ценность ESG',
+                'sec2_title': 'Полевые операции',
+                'v3_title': 'Майнинг на месторождениях Техаса',
+                'tag_vlog': 'ВЛОГ',
+                'v3_desc': 'Погружение в нефтяные поля Западного Техаса, детали подключения генераторов и контейнеров.',
+                'v4_title': 'Энергетический суверенитет Аргентины',
+                'tag_case': 'КЕЙС',
+                'v4_desc': 'Как YPF использует попутный газ в Вака Муэрта для майнинга.',
+                'sec3_title': 'Технические детали',
+                'v5_title': 'Эксплуатация генератора Jenbacher',
+                'v5_desc': 'Логика ручного запуска/останова и обслуживания двигателей INNIO Jenbacher.',
+                'v6_title': 'Очистка высокосернистого газа',
+                'v6_desc': 'Принцип работы аминовых башен для очистки газа от сероводорода.',
+                'v7_title': 'Развертывание Hash Hut',
+                'v7_desc': 'Внутренняя структура и схема быстрого развертывания модульных контейнеров.',
+                'sec4_title': 'Внутреннее обучение (Скоро)',
+                'tag_internal': 'ТОЛЬКО ДЛЯ ПЕРСОНАЛА',
+                'm1_title': 'Финансовое моделирование',
+                'm1_desc': 'Калькулятор LCOE и ROI для инвесторов и финансовых директоров.',
+                'm2_title': 'Руководство по комплаенсу',
+                'm2_desc': 'Заявка на освобождение от сети в Альберте и правила AUC 007.',
+                'm3_title': 'Учения по ТБ (HSE)',
+                'm3_desc': 'Действия при утечке H₂S и использование респираторов.',
+                'footerTagline': 'Майнинг на газе стал проще',
+                'contact_us': 'Контакты',
+                'privacy_policy': 'Политика конфиденциальности'
+            }
+        };
+
+        window.app = {
+            lang: localStorage.getItem('gas_lang') || 'en',
+            
+            init() {
+                this.setLanguage(this.lang);
+            },
+
+            setLanguage(lang) {
+                this.lang = lang;
+                localStorage.setItem('gas_lang', lang);
+                const dict = I18N_DATA[lang] || I18N_DATA['en'];
+
+                // Update Buttons
+                ['zh','en','ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    if(btn) {
+                        if (l === lang) {
+                            btn.classList.remove('text-gas-subtext', 'font-medium');
+                            btn.classList.add('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                        } else {
+                            btn.classList.remove('text-black', 'bg-gas-green', 'shadow-glow', 'font-bold');
+                            btn.classList.add('text-gas-subtext', 'font-medium');
+                        }
+                    }
+                });
+
+                // Update Text
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key]) {
+                        const icon = el.querySelector('i');
+                        if (icon) {
+                            el.innerHTML = ''; 
+                            el.appendChild(icon);
+                            el.append(' ' + dict[key]);
+                        } else {
+                            el.innerText = dict[key];
+                        }
+                    }
+                });
+            }
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => window.app.init());
+        } else {
+            window.app.init();
+        }
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>

@@ -1,0 +1,866 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx - Site Fit Wizard</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome 6.5.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- html2canvas for Screenshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8'  
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* 卡片磨砂效果 */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        /* Form Selection Styles */
+        .select-card {
+            background-color: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .select-card:hover {
+            border-color: #5DD62C;
+            transform: translateY(-2px);
+            background-color: #222;
+        }
+        .select-card.selected {
+            background-color: rgba(93, 214, 44, 0.1);
+            border-color: #5DD62C;
+            box-shadow: 0 0 15px rgba(93, 214, 44, 0.2);
+        }
+        .select-card.selected::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            color: #5DD62C;
+            font-size: 12px;
+        }
+        
+        /* Animated Reveal */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+
+        /* Mega Menu & Existing Styles */
+        .mega-menu { display: none; position: absolute; top: 100%; left: 0; width: 100%; background-color: #151515; border-top: 1px solid rgba(255, 255, 255, 0.1); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 1.5rem 0; box-shadow: 0 20px 40px rgba(0,0,0,0.5); z-index: 40; }
+        .group:hover .mega-menu { display: block; animation: slideDown 0.2s ease-out; }
+        .dropdown-menu { display: none; position: absolute; top: 100%; min-width: 220px; background-color: #151515; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0 0 8px 8px; padding: 0.5rem 0; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 40; }
+        .group:hover .dropdown-menu { display: block; animation: slideDown 0.2s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .nav-item-link { position: relative; padding: 1.5rem 0.5rem; color: #94a3b8; transition: color 0.3s; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+        .nav-item-link:hover { color: #5DD62C; }
+        .nav-item-link::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background-color: #5DD62C; transition: width 0.3s; }
+        .nav-item-link:hover::after { width: 100%; }
+        .footer-link { color: #94a3b8; transition: all 0.2s; font-size: 0.8rem; white-space: nowrap; }
+        .footer-link:hover { color: #5DD62C; }
+        #mobile-menu-container { transition: transform 0.3s ease-in-out; }
+        .mobile-submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .footer-accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        @keyframes floatPulse { 0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); } 100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); } }
+        .float-btn { animation: floatPulse 2s infinite; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen relative">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-24 pb-12 px-4 w-full bg-[#0F0F0F] relative overflow-hidden">
+        <!-- Background Decor -->
+        <div class="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gas-green/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <div class="max-w-6xl mx-auto relative z-10">
+            <!-- Hero Header -->
+            <div class="text-center mb-10">
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-3" data-sf-i18n="pageTitle">Site Match Wizard</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto" data-sf-i18n="pageDesc">Comprehensive analysis of your gas site potential across 8 dimensions. Get expert feasibility ratings instantly.</p>
+            </div>
+
+            <!-- Wizard Container -->
+            <div id="wizard-container" class="bg-[#1a1a1a] border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
+                
+                <!-- Input Section -->
+                <div id="input-section">
+                    <!-- Progress Section Titles -->
+                    <div class="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
+                        <h3 class="text-xl font-bold text-gas-green flex items-center gap-2">
+                            <i class="fa-solid fa-sliders"></i> <span data-sf-i18n="configTitle">Project Parameters</span>
+                        </h3>
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs text-gray-500" id="progress-text">0/8 Selected</span>
+                            <button onclick="SiteFit.resetForm()" class="text-xs text-gray-500 hover:text-white underline" data-sf-i18n="resetBtn">Reset</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8">
+                        
+                        <!-- Col 1 -->
+                        <div class="space-y-8">
+                            <!-- 1. Location -->
+                            <div>
+                                <label class="block text-sm font-bold text-gray-300 mb-3" data-sf-i18n="labelLocation">1. Location</label>
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                    <button onclick="SiteFit.select('location', 'usa')" class="select-card p-3 rounded text-center" data-val="usa"><span class="text-xl block mb-1">🇺🇸</span><span class="text-[10px] text-gray-300" data-sf-i18n="optUSA">USA</span></button>
+                                    <button onclick="SiteFit.select('location', 'canada')" class="select-card p-3 rounded text-center" data-val="canada"><span class="text-xl block mb-1">🇨🇦</span><span class="text-[10px] text-gray-300" data-sf-i18n="optCanada">Canada</span></button>
+                                    <button onclick="SiteFit.select('location', 'russia')" class="select-card p-3 rounded text-center" data-val="russia"><span class="text-xl block mb-1">🇷🇺</span><span class="text-[10px] text-gray-300" data-sf-i18n="optRussia">Russia</span></button>
+                                    <button onclick="SiteFit.select('location', 'kazakhstan')" class="select-card p-3 rounded text-center" data-val="kazakhstan"><span class="text-xl block mb-1">🇰🇿</span><span class="text-[10px] text-gray-300" data-sf-i18n="optKazakhstan">Kazakh</span></button>
+                                    <button onclick="SiteFit.select('location', 'indonesia')" class="select-card p-3 rounded text-center" data-val="indonesia"><span class="text-xl block mb-1">🇮🇩</span><span class="text-[10px] text-gray-300" data-sf-i18n="optIndonesia">Indo</span></button>
+                                </div>
+                            </div>
+
+                            <!-- 2. Gas Type -->
+                            <div>
+                                <label class="block text-sm font-bold text-gray-300 mb-3" data-sf-i18n="labelGasType">2. Gas Type</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="SiteFit.select('gasType', 'wellhead')" class="select-card p-3 rounded text-center" data-val="wellhead"><i class="fa-solid fa-bore-hole text-gas-green mb-1 text-sm"></i><div class="text-[10px] text-gray-300" data-sf-i18n="optWellhead">Wellhead</div></button>
+                                    <button onclick="SiteFit.select('gasType', 'pipeline')" class="select-card p-3 rounded text-center" data-val="pipeline"><i class="fa-solid fa-code-branch text-blue-400 mb-1 text-sm"></i><div class="text-[10px] text-gray-300" data-sf-i18n="optPipeline">Pipeline</div></button>
+                                    <button onclick="SiteFit.select('gasType', 'flare')" class="select-card p-3 rounded text-center" data-val="flare"><i class="fa-solid fa-fire text-orange-500 mb-1 text-sm"></i><div class="text-[10px] text-gray-300" data-sf-i18n="optFlare">Flare/Assoc.</div></button>
+                                </div>
+                            </div>
+
+                            <!-- 3. Goal -->
+                            <div>
+                                <label class="block text-sm font-bold text-gray-300 mb-3" data-sf-i18n="labelGoal">3. Primary Goal</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button onclick="SiteFit.select('goal', 'mining')" class="select-card p-3 rounded text-left pl-3" data-val="mining">
+                                        <div class="text-xs font-bold text-white mb-0.5" data-sf-i18n="optMining">Crypto Mining</div>
+                                        <!-- Added data-sf-i18n to subtext -->
+                                        <div class="text-[10px] text-gray-500" data-sf-i18n="subMining">Self-consumption</div>
+                                    </button>
+                                    <button onclick="SiteFit.select('goal', 'selling')" class="select-card p-3 rounded text-left pl-3" data-val="selling">
+                                        <div class="text-xs font-bold text-white mb-0.5" data-sf-i18n="optSelling">Sell to Grid</div>
+                                        <!-- Added data-sf-i18n to subtext -->
+                                        <div class="text-[10px] text-gray-500" data-sf-i18n="subSelling">PPA/Grid Export</div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 4. Budget -->
+                            <div>
+                                <label class="block text-sm font-bold text-gray-300 mb-3" data-sf-i18n="labelBudget">4. Investment</label>
+                                <div class="flex gap-2">
+                                    <button onclick="SiteFit.select('budget', 'low')" class="select-card flex-1 py-2 rounded text-center text-xs text-gray-300" data-val="low" data-sf-i18n="optBudgetLow">< $500k</button>
+                                    <button onclick="SiteFit.select('budget', 'med')" class="select-card flex-1 py-2 rounded text-center text-xs text-gray-300" data-val="med">$500k - $2M</button>
+                                    <button onclick="SiteFit.select('budget', 'high')" class="select-card flex-1 py-2 rounded text-center text-xs text-gray-300" data-val="high" data-sf-i18n="optBudgetHigh">> $2M</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Col 2 -->
+                        <div class="space-y-8">
+                            <!-- 5. Electricity (New) -->
+                            <div>
+                                <label class="block text-sm font-bold text-gray-300 mb-3" data-sf-i18n="labelElec">5. Grid Connection</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="SiteFit.select('elec', 'offgrid')" class="select-card p-3 rounded text-center" data-val="offgrid">
+                                        <i class="fa-solid fa-island-tropical text-yellow-400 mb-1 text-sm"></i>
+                                        <div class="text-[10px] text-gray-300 font-bold" data-sf-i18n="optOffgrid">Off-Grid</div>
+                                        <!-- Added data-sf-i18n to subtext -->
+                                        <div class="text-[9px] text-gray-500 mt-0.5" data-sf-i18n="subOffgrid">Island Mode</div>
+                                    </button>
+                                    <button onclick="SiteFit.select('elec', 'grid')" class="select-card p-3 rounded text-center" data-val="grid">
+                                        <i class="fa-solid fa-tower-cell text-blue-400 mb-1 text-sm"></i>
+                                        <div class="text-[10px] text-gray-300 font-bold" data-sf-i18n="optGrid">Grid Available</div>
+                                        <!-- Added data-sf-i18n to subtext -->
+                                        <div class="text-[9px] text-gray-500 mt-0.5" data-sf-i18n="subGrid">Grid Tied</div>
+                                    </button>
+                                    <button onclick="SiteFit.select('elec', 'unknown')" class="select-card p-3 rounded text-center" data-val="unknown">
+                                        <i class="fa-solid fa-question text-gray-500 mb-1 text-sm"></i>
+                                        <div class="text-[10px] text-gray-300 font-bold" data-sf-i18n="optUnknown">Unknown</div>
+                                        <!-- Added data-sf-i18n to subtext -->
+                                        <div class="text-[9px] text-gray-500 mt-0.5" data-sf-i18n="subElecUnknown">Not Sure</div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 6. Gas Quality (New) -->
+                            <div>
+                                <label class="block text-sm font-bold text-gray-300 mb-3" data-sf-i18n="labelQuality">6. Gas Quality</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="SiteFit.select('quality', 'sweet')" class="select-card p-3 rounded text-center" data-val="sweet">
+                                        <div class="text-xs font-bold text-white mb-0.5" data-sf-i18n="optSweet">Sweet Gas</div>
+                                        <!-- Added data-sf-i18n to subtext -->
+                                        <div class="text-[10px] text-gray-500" data-sf-i18n="subSweet">Clean, dry</div>
+                                    </button>
+                                    <button onclick="SiteFit.select('quality', 'sour')" class="select-card p-3 rounded text-center" data-val="sour">
+                                        <div class="text-xs font-bold text-white mb-0.5" data-sf-i18n="optSour">Sour/Wet</div>
+                                        <!-- Added data-sf-i18n to subtext -->
+                                        <div class="text-[10px] text-gray-500" data-sf-i18n="subSour">H2S / H2O</div>
+                                    </button>
+                                    <button onclick="SiteFit.select('quality', 'unknown')" class="select-card p-3 rounded text-center" data-val="unknown">
+                                        <div class="text-xs font-bold text-white mb-0.5" data-sf-i18n="optUnknown">Unknown</div>
+                                        <!-- Added data-sf-i18n to subtext -->
+                                        <div class="text-[10px] text-gray-500" data-sf-i18n="subQualUnknown">Need Test</div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 7. Timeline (New) -->
+                            <div>
+                                <label class="block text-sm font-bold text-gray-300 mb-3" data-sf-i18n="labelTimeline">7. Timeline</label>
+                                <div class="flex gap-2">
+                                    <button onclick="SiteFit.select('timeline', 'asap')" class="select-card flex-1 py-2 rounded text-center text-xs text-gray-300" data-val="asap" data-sf-i18n="optASAP">< 3 Months</button>
+                                    <button onclick="SiteFit.select('timeline', 'soon')" class="select-card flex-1 py-2 rounded text-center text-xs text-gray-300" data-val="soon">3 - 6 Months</button>
+                                    <button onclick="SiteFit.select('timeline', 'plan')" class="select-card flex-1 py-2 rounded text-center text-xs text-gray-300" data-val="plan" data-sf-i18n="optPlan">Planning</button>
+                                </div>
+                            </div>
+
+                            <!-- 8. Mode (New) -->
+                            <div>
+                                <label class="block text-sm font-bold text-gray-300 mb-3" data-sf-i18n="labelMode">8. Operation Mode</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button onclick="SiteFit.select('mode', 'self')" class="select-card p-3 rounded text-left pl-3" data-val="self">
+                                        <div class="text-xs font-bold text-white mb-0.5" data-sf-i18n="optSelf">Self-Run</div>
+                                        <!-- Added data-sf-i18n to subtext -->
+                                        <div class="text-[10px] text-gray-500" data-sf-i18n="subSelf">Own & Operate</div>
+                                    </button>
+                                    <button onclick="SiteFit.select('mode', 'host')" class="select-card p-3 rounded text-left pl-3" data-val="host">
+                                        <div class="text-xs font-bold text-white mb-0.5" data-sf-i18n="optHost">Hosting</div>
+                                        <!-- Added data-sf-i18n to subtext -->
+                                        <div class="text-[10px] text-gray-500" data-sf-i18n="subHost">Managed Svc</div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-8">
+                        <button onclick="SiteFit.analyze()" id="analyze-btn" class="w-full bg-gas-green text-black font-bold py-4 rounded-lg hover:bg-white transition-colors shadow-[0_0_20px_rgba(93,214,44,0.3)] disabled:opacity-30 disabled:cursor-not-allowed">
+                            <span data-sf-i18n="btnAnalyze">GENERATE 8-DIMENSION ANALYSIS</span> <i class="fa-solid fa-chart-pie ml-2"></i>
+                        </button>
+                        <p class="text-center text-[10px] text-gray-600 mt-2">*Analysis provided by GasGx Heuristic Engine v2.0</p>
+                    </div>
+                </div>
+
+                <!-- RESULTS SECTION (Hidden by default) -->
+                <div id="result-section" class="hidden animate-fade-in pt-8 border-t border-white/10 mt-8">
+                    <div class="flex flex-col md:flex-row gap-8">
+                        
+                        <!-- Left: Status & Score -->
+                        <div class="w-full md:w-1/3 border-r border-white/5 pr-0 md:pr-6">
+                            <h4 class="text-gray-400 text-xs uppercase tracking-widest mb-4" data-sf-i18n="resFeasibility">Feasibility</h4>
+                            
+                            <div id="res-badge" class="inline-block px-4 py-2 rounded bg-gas-green/20 text-gas-green border border-gas-green font-bold text-lg mb-4">
+                                HIGH POTENTIAL
+                            </div>
+
+                            <p id="res-summary" class="text-sm text-gray-300 leading-relaxed mb-6">
+                                Loading analysis...
+                            </p>
+
+                            <!-- Mini Metrics -->
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                        <span data-sf-i18n="metricTech">Tech Difficulty</span>
+                                        <span id="score-tech">Medium</span>
+                                    </div>
+                                    <div class="h-1.5 w-full bg-[#111] rounded-full overflow-hidden">
+                                        <div id="bar-tech" class="h-full bg-yellow-500 w-1/2 transition-all duration-1000"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                        <span data-sf-i18n="metricReg">Regulatory Risk</span>
+                                        <span id="score-reg">High</span>
+                                    </div>
+                                    <div class="h-1.5 w-full bg-[#111] rounded-full overflow-hidden">
+                                        <div id="bar-reg" class="h-full bg-red-500 w-3/4 transition-all duration-1000"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                        <span data-sf-i18n="metricEcon">Economics</span>
+                                        <span id="score-econ">Excellent</span>
+                                    </div>
+                                    <div class="h-1.5 w-full bg-[#111] rounded-full overflow-hidden">
+                                        <div id="bar-econ" class="h-full bg-gas-green w-full transition-all duration-1000"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Recommendations -->
+                        <div class="w-full md:w-2/3">
+                            <h4 class="text-gray-400 text-xs uppercase tracking-widest mb-4" data-sf-i18n="resRec">Recommendations</h4>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                                <div class="bg-[#111] p-4 rounded border border-white/5">
+                                    <i class="fa-solid fa-server text-gas-green mb-2"></i>
+                                    <div class="text-xs text-gray-500 mb-1" data-sf-i18n="recScale">Suggested Scale</div>
+                                    <div id="val-scale" class="text-lg font-bold text-white">-</div>
+                                </div>
+                                <div class="bg-[#111] p-4 rounded border border-white/5">
+                                    <i class="fa-solid fa-money-bill-trend-up text-gas-green mb-2"></i>
+                                    <div class="text-xs text-gray-500 mb-1" data-sf-i18n="recRoi">Est. Payback</div>
+                                    <div id="val-roi" class="text-lg font-bold text-white">-</div>
+                                </div>
+                            </div>
+
+                            <div class="bg-blue-900/10 border border-blue-500/20 p-4 rounded mb-6">
+                                <h5 class="text-blue-400 font-bold text-sm mb-2"><i class="fa-solid fa-lightbulb mr-2"></i> <span data-sf-i18n="resStrategy">Strategic Advice</span></h5>
+                                <div id="val-strategy" class="text-xs text-gray-300">
+                                    -
+                                </div>
+                            </div>
+
+                            <div class="flex gap-4">
+                                <button onclick="SiteFit.resetForm()" class="flex-1 py-3 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white text-sm font-medium">
+                                    <span data-sf-i18n="btnBack">Start Over</span>
+                                </button>
+                                <a href="/about/contact" class="flex-1 py-3 rounded bg-white text-black text-center hover:bg-gray-200 font-bold text-sm">
+                                    <span data-sf-i18n="btnContact">Talk to Expert</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+    <!-- MAIN CONTENT END -->
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <!-- Floating Canvas-Style Share Button (Right Side) -->
+    <button onclick="app.captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group" title="Share Snapshot">
+        <i class="fa-solid fa-camera text-xl"></i>
+        <!-- Tooltip -->
+        <span class="absolute right-14 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
+            Share Page
+        </span>
+    </button>
+
+    <!-- Back to Top -->
+    <button onclick="window.scrollTo({top:0, behavior:'smooth'})" id="backToTopBtn" class="fixed bottom-6 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-[0_0_15px_rgba(93,214,44,0.5)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-95 opacity-0" id="shareModalContent">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-check text-2xl text-gas-green"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3>
+                <p class="text-sm text-gray-400">Full page captured successfully.</p>
+            </div>
+            <button onclick="app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+
+    <script>
+        // --- ORIGINAL APP DATA (FROZEN) ---
+        const AppData = {
+            navigation: Array.isArray(window.GASGX_SITE_SHELL_CONFIG?.navigation)
+                ? window.GASGX_SITE_SHELL_CONFIG.navigation
+                : [],
+            i18n: {
+                zh: { tagline: "天然气发电挖矿助手", footerTagline: "让天然气发电挖矿更简单", "首页": "首页", "解决方案": "解决方案", "机型库": "机型库", "排行榜": "排行榜", "应用场景": "应用场景", "工具箱": "工具箱", "资料中心": "资料中心", "服务支持": "服务支持", "关于我们": "关于我们", "联系我们": "联系我们" },
+                en: { tagline: "Natural Gas Power Mining Assistant", footerTagline: "Making natural gas power mining easier", "首页": "Home", "解决方案": "Solutions", "机型库": "Products", "排行榜": "Rankings", "应用场景": "Use Cases", "工具箱": "Tools", "资料中心": "Resources", "服务支持": "Support", "关于我们": "About Us", "联系 us": "Contact Us", "油气井/伴生气发电": "Oil & Gas Power", "工业园区与分布式能源": "Industrial Power", "数据中心 / 挖矿电力": "Data Center / Mining", "热电联供 CHP": "CHP Cogeneration", "按功率分类": "By Power", "按冷却方式": "By Cooling", "按气源类型": "By Gas Type", "按部署形式": "By Deployment", "按品牌": "By Brand", "小于 500 kW": "< 500 kW", "500 – 1,000 kW": "500 – 1,000 kW", "1 MW 以上": "1 MW+", "风冷": "Air Cooled", "液冷": "Liquid Cooled", "天然气": "Natural Gas", "伴生气": "Associated Gas", "低甲烷值气": "Low Methane Gas", "集装箱机组": "Containerized", "一体化机组 AIS": "Integrated (AIS)", "滑撬式机组": "Skid Mounted", "全部品牌": "All Brands", "中国生产": "Made in China", "海外生产": "Overseas Brands", "性能榜": "Performance", "经济性榜": "Economics", "可靠性榜": "Reliability", "品质与环保榜": "Quality & Eco", "系统能力榜": "System Cap.", "区域榜": "Regions", "综合性能 TOP 榜": "Top Performance", "高效率榜": "High Efficiency", "天然气内燃机发电效率排行榜": "Elec. Efficiency Rank", "天然气内燃机热效率排行榜": "Thermal Efficiency Rank", "天然气内燃机耗气量排行榜": "Gas Consumption Rank", "最佳 ROI 榜": "Best ROI", "最低发电成本 LCOE 榜": "Lowest LCOE", "天然气内燃机折旧排行榜": "Depreciation Rank", "天然气内燃机投资回报率排行榜": "ROI Rank", "高可靠机组榜": "High Reliability", "最长 MTBF 榜": "Longest MTBF", "天然气内燃机保养时间排行榜": "Maintenance Interval Rank", "天然气内燃机备件保障排行榜": "Spare Parts Rank", "天然气内燃机排放排行榜": "Emission Rank", "天然气内燃机噪音排行榜": "Noise Rank", "天然气内燃机发电机排行榜": "Generator Rank", "天然气内燃机控制系统排行榜": "Control System Rank", "美国市场榜": "USA Market", "加拿大市场榜": "Canada Market", "中东市场榜": "Middle East Market", "俄罗斯市场榜": "Russia Market", "油气井 / 伴生气": "Oilfield / Associated Gas", "工业与园区能源": "Industrial & Park", "挖矿 / 数据中心": "Mining / Data Center", "CHP 热电联供": "CHP", "经济测算工具": "Economic Tools", "工程与技术工具": "Engineering Tools", "项目与选型工具": "Selection Tools", "矿工专区（托管与算力分析）": "Miners Zone", "全球支持与合规": "Global Support", "LCOE 成本计算器": "LCOE Calculator", "ROI 回报估算器": "ROI Estimator", "燃气发电挖矿收益计算器": "Gas Mining Revenue", "蒙特卡洛模拟盈利分析": "Monte Carlo Sim", "天然气发电耗气成本分析": "Gas Cost Analysis", "气质适配工具": "Gas Fit Tool", "排放估算工具": "Emission Estimator", "气体分析计算器": "Gas Analyzer", "能电转换计算器": "Energy Conversion", "天然气主要成分热值表": "Heat Value Table", "站点匹配向导": "Site Fit Wizard", "气源所在地分析": "Location Analysis", "燃气发动机选型与运营经济性": "Engine Selection & Econ", "天然气发电机机油消耗率": "Oil Consumption", "车机 VS 工业机 10MW 对比分析": "Vehicle vs Ind. (10MW)", "多机型对比 3 年运营数据": "3-Year Ops Data", "挖矿收益计算器": "Mining Revenue Calc", "矿机盈利能力计算器": "Miner Profitability", "矿机选购速查": "Miner Buyer Guide", "加拿大 AECO 天然气价格预测": "AECO Price Forecast", "全球物流运输推荐": "Global Logistics", "全球合规政策": "Global Compliance", "文档": "Documents", "案例": "Case Studies", "技术库": "Tech Library", "媒体与支持": "Media & Support", "白皮书": "Whitepapers", "行业报告": "Industry Reports", "全部案例": "All Cases", "按区域查看": "By Region", "按场景查看": "By Scenario", "技术参数表": "Datasheets", "认证与合规文件": "Certifications", "视频与教程": "Videos & Tutorials", "常见问答 FAQ": "FAQ", "服务网络": "Service Network", "技术支持": "Tech Support", "售后与保养": "After-sales", "公司介绍": "Company Profile" },
+                ru: { tagline: "Помощник по газовому майнингу", footerTagline: "Майнинг на газе проще", "首页": "Главная", "解决方案": "Решения", "机型库": "Продукты", "排行榜": "Рейтинги", "应用场景": "Кейсы", "工具箱": "Инструменты", "资料中心": "Ресурсы", "服务支持": "Поддержка", "关于我们": "О нас", "联系我们": "Контакты", "油气井/伴生气发电": "Нефтегаз", "工业园区与分布式能源": "Пром. энергия", "数据中心 / 挖矿电力": "Майнинг", "热电联供 CHP": "Когенерация", "按功率分类": "По мощности", "按冷却方式": "По охлаждению", "按气源类型": "По типу газа", "按部署形式": "По типу", "按品牌": "По бренду", "小于 500 kW": "< 500 кВт", "500 – 1,000 kW": "500 – 1,000 кВт", "1 MW 以上": "1 МВт+", "风冷": "Воздушное", "液冷": "Жидкостное", "天然气": "Природный газ", "伴生气": "Попутный газ", "低甲烷值气": "Низкий метан", "集装箱机组": "Контейнерные", "一体化机组 AIS": "Интегрированные", "滑撬式机组": "На раме", "全部品牌": "Все бренды", "中国生产": "Китай", "海外生产": "Зарубежные", "性能榜": "Производ.", "经济性榜": "Экономика", "可靠性榜": "Надежность", "品质与环保榜": "Качество", "系统能力榜": "Системы", "区域榜": "Регионы", "综合性能 TOP 榜": "Топ прозвод.", "高效率榜": "Выс. эффективность", "天然气内燃机发电效率排行榜": "Эл. КПД", "天然气内燃机热效率排行榜": "Тепл. КПД", "天然气内燃机耗气量排行榜": "Расход газа", "最佳 ROI 榜": "Лучший ROI", "最低发电成本 LCOE 榜": "Мин. LCOE", "天然气内燃机折旧排行榜": "Амортизация", "天然气内燃机投资回报率排行榜": "Рейтинг ROI", "高可靠机组榜": "Надежность", "最长 MTBF 榜": "Макс. MTBF", "天然气内燃机保养时间排行榜": "Интервал ТО", "天然气内燃机备件保障排行榜": "Запчасти", "天然气内燃机排放排行榜": "Выбросы", "天然气内燃机噪音排行榜": "Шум", "天然气内燃机发电机排行榜": "Генераторы", "天然气内燃机控制系统排行榜": "Системы упр.", "美国市场榜": "Рынок США", "加拿大市场榜": "Рынок Канады", "中东市场榜": "Ближний Восток", "俄罗斯市场榜": "Рынок РФ", "油气井 / 伴生气": "Нефтегаз", "工业与园区能源": "Пром. зоны", "挖矿 / 数据中心": "Майнинг ЦОД", "CHP 热电联供": "ТЭЦ", "经济测算工具": "Экономика", "工程与技术工具": "Инжиниринг", "项目与选型工具": "Подбор", "矿工专区（托管与算力分析）": "Майнерам", "全球支持与合规": "Поддержка", "LCOE 成本计算器": "LCOE Кальк.", "ROI 回报估算器": "ROI Оценка", "燃气发电挖矿收益计算器": "Доход майнинга", "蒙特卡洛模拟盈利分析": "Монте-Карло", "天然气发电耗气成本分析": "Затраты на газ", "气质适配工具": "Анализ газа", "排放估算工具": "Выбросы", "气体分析计算器": "Газовый анализ", "能电转换计算器": "Конвертер", "天然气主要成分热值表": "Таблица тепла", "站点匹配向导": "Подбор площадки", "气源所在地分析": "Локация", "燃气发动机选型与运营经济性": "Выбор двигателя", "天然气发电机机油消耗率": "Расход масла", "车机 VS 工业机 10MW 对比分析": "Авто vs Пром", "多机型对比 3 年运营数据": "Данные за 3 года", "挖矿收益计算器": "Доходность", "矿机盈利能力计算器": "Рентабельность", "矿机选购速查": "Выбор майнера", "加拿大 AECO 天然气价格预测": "Прогноз AECO", "全球物流运输推荐": "Логистика", "全球合规政策": "Комплаенс", "文档": "Документы", "案例": "Кейсы", "技术库": "Тех. база", "媒体与支持": "Медиа", "白皮书": "Whitepapers", "行业报告": "Отчеты", "全部案例": "Все кейсы", "按区域查看": "По регионам", "按场景查看": "По сценариям", "技术参数表": "Спецификации", "认证与合规文件": "Сертификаты", "视频与教程": "Видео", "常见问答 FAQ": "FAQ", "服务网络": "Сервис", "技术支持": "Техподдержка", "售后与保养": "Обслуживание", "公司介绍": "О компании" }
+            }
+        };
+
+        const app = {
+            currentLang: 'en',
+            isMobileMenuOpen: false,
+            init() { 
+                this.updateStaticText(); 
+                window.onscroll = () => { 
+                    const btn = document.getElementById('backToTopBtn'); 
+                    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) { 
+                        btn.classList.remove('translate-y-20', 'opacity-0'); 
+                    } else { 
+                        btn.classList.add('translate-y-20', 'opacity-0'); 
+                    } 
+                }; 
+            },
+            setLanguage(lang) {
+                this.currentLang = lang;
+                ['zh', 'en'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+                
+                    if (btn) {
+                        btn.className = `ggx-lang-option ${l === lang ? "is-active" : ""}`;
+                    }
+                
+                    if (mobBtn) {
+                        mobBtn.className = `ggx-lang-btn ggx-lang-btn-mobile ${l === lang ? "text-gas-green font-semibold" : "text-gray-500 hover:text-gray-300"}`;
+                    }
+                });
+                this.updateStaticText();
+                
+                // --- DIRECT INTEGRATION OF SITEFIT ---
+                if (window.SiteFit) window.SiteFit.updateLanguage(lang);
+            },
+                        t(key) {
+                if (key && typeof key === 'object') {
+                    return key[this.currentLang] || key.en || key.zh || '';
+                }
+
+                const dict = AppData.i18n[this.currentLang] || AppData.i18n.en || {};
+                return Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : key;
+            },
+            captureAndShare() { window.scrollTo(0, 0); const watermark = document.createElement('div'); watermark.id = 'temp-watermark'; Object.assign(watermark.style, { position: 'absolute', top: 0, left: 0, width: '100%', height: document.body.scrollHeight + 'px', zIndex: 9999, pointerEvents: 'none', display: 'flex', flexWrap: 'wrap', alignContent: 'space-around', justifyContent: 'space-around', overflow: 'hidden', opacity: '0.15' }); const textHtml = `<div style="text-align:center; transform: rotate(-30deg); margin: 100px;"><div style="font-size: 24px; font-weight: bold; color: #5DD62C;">www.gasgx.com</div><div style="font-size: 16px; color: #fff;">Natural Gas Power Mining Assistant</div></div>`; const count = Math.ceil(document.body.scrollHeight / 400) * 3; watermark.innerHTML = textHtml.repeat(count); document.body.appendChild(watermark); setTimeout(() => { html2canvas(document.body, { backgroundColor: '#0F0F0F', scrollY: 0, useCORS: true, scale: 2 }).then(canvas => { const link = document.createElement('a'); link.download = 'GasGx-Page-Capture.png'; link.href = canvas.toDataURL('image/png'); link.click(); document.body.removeChild(watermark); const modal = document.getElementById('shareModal'); modal.classList.remove('hidden'); setTimeout(() => modal.querySelector('div').classList.remove('scale-95', 'opacity-0'), 10); }).catch(err => { console.error(err); if(document.getElementById('temp-watermark')) document.body.removeChild(watermark); alert('Capture failed.'); }); }, 500); },
+            closeModal() { const modal = document.getElementById('shareModal'); const content = modal.querySelector('div'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => modal.classList.add('hidden'), 300); },
+            updateStaticText() { const taglineEl = document.getElementById('header-tagline'); const footerTaglineEl = document.querySelector('[data-i18n="footerTagline"]'); if(taglineEl) taglineEl.innerText = this.t('tagline'); if(footerTaglineEl) footerTaglineEl.innerText = this.t('footerTagline'); document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if (key !== 'tagline' && key !== 'footerTagline') { el.innerText = this.t(key); } }); }
+        };
+        const bootAppWithSharedShell = () => {
+            window.app = app;
+            const start = () => {
+                if (app.__sharedBooted) return;
+                app.__sharedBooted = true;
+                app.init();
+            };
+
+            if (window.GasGxSharedUI && window.GasGxSharedUI.mounted) {
+                start();
+            } else {
+                document.addEventListener('gasgx:shared-ui-ready', start, { once: true });
+            }
+        };
+
+        bootAppWithSharedShell();
+
+        /* =========================================
+           NEW LOGIC: Site Fit Wizard (SiteFit)
+           ========================================= */
+        
+        const SiteFit = {
+            state: {
+                location: null, gasType: null, goal: null, budget: null,
+                elec: null, quality: null, timeline: null, mode: null
+            },
+            
+            i18n: {
+                zh: {
+                    pageTitle: "气源站点匹配向导",
+                    pageDesc: "选择相关选项以评估您的天然气来源。即刻获取商业可行性分析、推荐规模与回报估算。",
+                    configTitle: "项目参数配置 (8项)",
+                    resetBtn: "重置",
+                    
+                    labelLocation: "1. 气源所在地",
+                    optUSA: "美国", optCanada: "加拿大", optRussia: "俄罗斯", optKazakhstan: "哈萨克斯坦", optIndonesia: "印度尼西亚",
+                    
+                    labelGasType: "2. 气源类型",
+                    optWellhead: "气井气", optPipeline: "管网气", optFlare: "火炬/伴生气",
+                    
+                    labelGoal: "3. 主要目标",
+                    optMining: "加密挖矿", optSelling: "并网售电",
+                    // Subtext Translations
+                    subMining: "自发自用", subSelling: "签署PPA协议",
+                    
+                    labelBudget: "4. 投资能力",
+                    optBudgetLow: "50万刀以内", optBudgetHigh: "200万刀以上",
+
+                    // New Dimensions
+                    labelElec: "5. 电力接入",
+                    optOffgrid: "离网模式", optGrid: "可并网", optUnknown: "不清楚",
+                    // Subtext Translations
+                    subOffgrid: "孤岛运行", subGrid: "并网售电", subElecUnknown: "不确定",
+
+                    labelQuality: "6. 气体情况",
+                    optSweet: "干气/净气", optSour: "酸气/湿气", optUnknown: "不清楚",
+                    // Subtext Translations
+                    subSweet: "清洁，干燥", subSour: "含硫 / 含水", subQualUnknown: "需检测",
+
+                    labelTimeline: "7. 落地周期",
+                    optASAP: "< 3个月", optPlan: "规划中",
+
+                    labelMode: "8. 运营偏好",
+                    optSelf: "自投自营", optHost: "托管服务",
+                    // Subtext Translations
+                    subSelf: "持有资产", subHost: "托管运维",
+                    
+                    btnAnalyze: "生成全维度分析报告",
+                    btnBack: "重新评估",
+                    btnContact: "咨询专家",
+
+                    // Report Headers (Static)
+                    resFeasibility: "商业可行性",
+                    resRec: "配置建议",
+                    recScale: "建议装机规模",
+                    recRoi: "预计回本周期",
+                    resStrategy: "运营策略",
+                    metricTech: "技术难度", metricReg: "合规风险", metricEcon: "经济性"
+                },
+                en: {
+                    pageTitle: "Site Match Wizard",
+                    pageDesc: "Comprehensive analysis of your gas site potential across 8 dimensions. Get expert feasibility ratings instantly.",
+                    configTitle: "Project Parameters (8 Dimensions)",
+                    resetBtn: "Reset",
+                    
+                    labelLocation: "1. Location",
+                    optUSA: "USA", optCanada: "Canada", optRussia: "Russia", optKazakhstan: "Kazakhstan", optIndonesia: "Indo",
+                    
+                    labelGasType: "2. Gas Type",
+                    optWellhead: "Wellhead", optPipeline: "Pipeline", optFlare: "Flare/Assoc.",
+                    
+                    labelGoal: "3. Primary Goal",
+                    optMining: "Crypto Mining", optSelling: "Sell to Grid",
+                    // Subtext Translations
+                    subMining: "Self-consumption", subSelling: "PPA/Grid Export",
+                    
+                    labelBudget: "4. Investment",
+                    optBudgetLow: "< $500k", optBudgetHigh: "> $2M",
+
+                    // New Dimensions
+                    labelElec: "5. Grid Connection",
+                    optOffgrid: "Off-Grid", optGrid: "Grid Available", optUnknown: "Unknown",
+                    // Subtext Translations
+                    subOffgrid: "Island Mode", subGrid: "Grid Tied", subElecUnknown: "Not Sure",
+
+                    labelQuality: "6. Gas Quality",
+                    optSweet: "Sweet Gas", optSour: "Sour/Wet", optUnknown: "Unknown",
+                    // Subtext Translations
+                    subSweet: "Clean, dry", subSour: "H2S / H2O", subQualUnknown: "Need Test",
+
+                    labelTimeline: "7. Timeline",
+                    optASAP: "< 3 Months", optPlan: "Planning",
+
+                    labelMode: "8. Operation Mode",
+                    optSelf: "Self-Run", optHost: "Hosting",
+                    // Subtext Translations
+                    subSelf: "Own & Operate", subHost: "Managed Svc",
+                    
+                    btnAnalyze: "GENERATE 8-DIMENSION ANALYSIS",
+                    btnBack: "Start Over",
+                    btnContact: "Talk to Expert",
+
+                    resFeasibility: "Feasibility",
+                    resRec: "Recommendations",
+                    recScale: "Suggested Scale",
+                    recRoi: "Est. Payback",
+                    resStrategy: "Strategic Advice",
+                    metricTech: "Tech Difficulty", metricReg: "Regulatory Risk", metricEcon: "Economics"
+                },
+                ru: {
+                    pageTitle: "Мастер подбора площадки",
+                    pageDesc: "Комплексный анализ вашей площадки по 8 параметрам. Получите экспертную оценку.",
+                    configTitle: "Параметры (8 шт)",
+                    resetBtn: "Сброс",
+                    
+                    labelLocation: "1. Локация",
+                    optUSA: "США", optCanada: "Канада", optRussia: "РФ", optKazakhstan: "Казахстан", optIndonesia: "Индонезия",
+                    
+                    labelGasType: "2. Тип газа",
+                    optWellhead: "Скважина", optPipeline: "Труба", optFlare: "Факел",
+                    
+                    labelGoal: "3. Цель",
+                    optMining: "Майнинг", optSelling: "В сеть",
+                    // Subtext Translations
+                    subMining: "Для себя", subSelling: "PPA Контракт",
+                    
+                    labelBudget: "4. Бюджет",
+                    optBudgetLow: "< $500k", optBudgetHigh: "> $2M",
+
+                    labelElec: "5. Электросеть",
+                    optOffgrid: "Остров", optGrid: "Есть сеть", optUnknown: "Не знаю",
+                    // Subtext Translations
+                    subOffgrid: "Автономно", subGrid: "В сеть", subElecUnknown: "Не уверен",
+
+                    labelQuality: "6. Качество",
+                    optSweet: "Чистый", optSour: "Кислый/Влаж.", optUnknown: "Не знаю",
+                    // Subtext Translations
+                    subSweet: "Сухой газ", subSour: "H2S / Вода", subQualUnknown: "Нужен тест",
+
+                    labelTimeline: "7. Сроки",
+                    optASAP: "< 3 мес", optPlan: "План",
+
+                    labelMode: "8. Режим",
+                    optSelf: "Сам", optHost: "Хостинг",
+                    // Subtext Translations
+                    subSelf: "Свой проект", subHost: "Сервис",
+                    
+                    btnAnalyze: "ГЕНЕРИРОВАТЬ АНАЛИЗ",
+                    btnBack: "Заново",
+                    btnContact: "Эксперт",
+
+                    resFeasibility: "Рентабельность",
+                    resRec: "Рекомендации",
+                    recScale: "Мощность",
+                    recRoi: "Окупаемость",
+                    resStrategy: "Стратегия",
+                    metricTech: "Тех. сложность", metricReg: "Риски", metricEcon: "Экономика"
+                }
+            },
+
+            // FORCE UPDATE LOGIC
+            updateLanguage(lang) {
+                const dict = this.i18n[lang] || this.i18n['en'];
+                document.querySelectorAll('[data-sf-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-sf-i18n');
+                    if(dict[key]) el.innerText = dict[key];
+                });
+                
+                // Regenerate result text if visible (this is key to updating dynamic content)
+                if (!document.getElementById('result-section').classList.contains('hidden')) {
+                    this.analyze();
+                }
+            },
+
+            select(category, value) {
+                this.state[category] = value;
+                const btn = document.querySelector(`button[data-val="${value}"][onclick*="${category}"]`);
+                if(!btn) return;
+                const parent = btn.parentElement;
+                parent.querySelectorAll('.select-card').forEach(el => el.classList.remove('selected'));
+                btn.classList.add('selected');
+                this.checkCompleteness();
+            },
+
+            checkCompleteness() {
+                // Count filled keys
+                const keys = Object.keys(this.state);
+                const filled = keys.filter(k => this.state[k] !== null).length;
+                document.getElementById('progress-text').innerText = `${filled}/8 Selected`;
+
+                const btn = document.getElementById('analyze-btn');
+                if (filled === 8) {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-30', 'cursor-not-allowed');
+                } else {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-30', 'cursor-not-allowed');
+                }
+            },
+
+            resetForm() {
+                this.state = { location: null, gasType: null, goal: null, budget: null, elec: null, quality: null, timeline: null, mode: null };
+                document.querySelectorAll('.select-card').forEach(el => el.classList.remove('selected'));
+                document.getElementById('result-section').classList.add('hidden');
+                document.getElementById('input-section').classList.remove('hidden');
+                this.checkCompleteness();
+            },
+
+            analyze() {
+                const s = this.state;
+                const lang = app.currentLang; // Current Language for dynamic generation
+                
+                // Initialize default metrics
+                let scores = { tech: 50, reg: 50, econ: 50 }; 
+                let advice = [];
+                let roi = "12-18 Months";
+                let scale = "1MW Container";
+                let feasibility = "FEASIBLE";
+                let color = "text-gas-green";
+
+                // --- HELPER FOR DYNAMIC TEXT GENERATION ---
+                const addAdvice = (zh, en, ru) => {
+                    if (lang === 'zh') advice.push(zh);
+                    else if (lang === 'ru') advice.push(ru);
+                    else advice.push(en);
+                };
+
+                // --- LOGIC ENGINE V2 ---
+
+                // 1. Location & Reg
+                if (['usa', 'canada'].includes(s.location)) {
+                    scores.reg = 85; // High strictness
+                    scores.econ = 60; // Expensive labor/ops
+                    addAdvice(
+                        "该地区环保法规极为严格（EPA标准），需预留合规成本。",
+                        "Strict EPA/Environmental compliance required. Budget for compliance.",
+                        "Требуется строгое соблюдение экологических норм (EPA)."
+                    );
+                    if (s.mode === 'self') {
+                        addAdvice(
+                            "自营模式下，建议在当地组建专业的运维团队。",
+                            "For Self-Run mode, ensure you have a local O&M team.",
+                            "Для самостоятельной работы требуется местная команда эксплуатации."
+                        );
+                    }
+                } else {
+                    scores.reg = 30; // Loose
+                    scores.econ = 90; // Low gas cost
+                    addAdvice(
+                        "低气价区域，重点关注物流与资产安全。",
+                        "Low gas cost region. Focus on logistics and asset security.",
+                        "Регион с дешевым газом. Внимание на логистику и безопасность."
+                    );
+                }
+
+                // 2. Gas Quality (Huge Tech Impact)
+                if (s.quality === 'sour') {
+                    scores.tech += 40;
+                    addAdvice(
+                        "检测到含硫/湿气，必须配置前处理脱硫塔（>500ppm）。",
+                        "High H2S/H2O detected. Gas Scrubbers (>500ppm) are MANDATORY.",
+                        "Высокое содержание H2S/H2O. Скрубберы обязательны."
+                    );
+                    scores.econ -= 20; // Higher CapEx
+                }
+
+                // 3. Elec Mode
+                if (s.elec === 'grid' && s.goal === 'mining') {
+                    addAdvice(
+                        "建议保留市电作为备用电源，以保证 98% 以上的在线率。",
+                        "Grid backup recommended to ensure >98% mining uptime.",
+                        "Рекомендуется резервное питание от сети для аптайма >98%."
+                    );
+                } else if (s.elec === 'offgrid') {
+                    scores.tech += 20;
+                    addAdvice(
+                        "离网孤岛运行，控制系统需配置 N+1 冗余。",
+                        "Island mode requires N+1 redundancy in control systems.",
+                        "Для автономной работы требуется резервирование N+1."
+                    );
+                }
+
+                // 4. Budget & Scale
+                if (s.budget === 'low') {
+                    scale = lang === 'zh' ? "250kW - 500kW 单机" : (lang === 'ru' ? "250-500 кВт Блок" : "250kW - 500kW Unit");
+                } else if (s.budget === 'high') {
+                    scale = lang === 'zh' ? "多台 1MW+ 并机" : (lang === 'ru' ? "Несколько блоков 1 МВт+" : "Multiple 1MW+ Units");
+                }
+
+                // 5. Timeline
+                if (s.timeline === 'asap') {
+                    if (s.location === 'indonesia' || s.location === 'russia') {
+                        addAdvice(
+                            "警告：海运物流可能导致工期延误超过 3 个月。",
+                            "Warning: Shipping logistics may delay timeline by >3 months.",
+                            "Внимание: Логистика может задержать проект на >3 месяца."
+                        );
+                    }
+                }
+
+                // Final Feasibility Logic
+                if (scores.econ < 40) {
+                    feasibility = "LOW RETURN";
+                    color = "text-yellow-500";
+                    roi = "36+ Months";
+                } else if (scores.tech > 80 && s.budget === 'low') {
+                    feasibility = "HIGH RISK";
+                    color = "text-red-500";
+                    addAdvice(
+                        "预算不足以支撑处理劣质气源所需的技术投入。",
+                        "Budget too low for required technical complexity (gas treatment).",
+                        "Бюджет слишком мал для сложной подготовки газа."
+                    );
+                } else {
+                    feasibility = "HIGH POTENTIAL";
+                    color = "text-gas-green";
+                    if (['russia', 'kazakhstan'].includes(s.location)) {
+                        roi = lang === 'zh' ? "6-10 个月" : (lang === 'ru' ? "6-10 Месяцев" : "6-10 Months");
+                    }
+                }
+
+                // Translation Mapping for Result Headers & Badges
+                const resultDict = {
+                    'FEASIBLE': { zh: '项目可行', en: 'FEASIBLE', ru: 'РЕНТАБЕЛЬНО' },
+                    'HIGH POTENTIAL': { zh: '潜力巨大', en: 'HIGH POTENTIAL', ru: 'ВЫСОКИЙ ПОТЕНЦИАЛ' },
+                    'LOW RETURN': { zh: '回报较低', en: 'LOW RETURN', ru: 'НИЗКИЙ ДОХОД' },
+                    'HIGH RISK': { zh: '高风险', en: 'HIGH RISK', ru: 'ВЫСОКИЙ РИСК' }
+                };
+
+                // Render
+                const resSection = document.getElementById('result-section');
+                resSection.classList.remove('hidden');
+                
+                const badge = document.getElementById('res-badge');
+                badge.innerText = resultDict[feasibility][lang] || feasibility;
+                badge.className = `inline-block px-4 py-2 rounded bg-opacity-20 border font-bold text-lg mb-4 ${color.replace('text-', 'bg-')} ${color} ${color.replace('text-', 'border-')}`;
+
+                document.getElementById('val-scale').innerText = scale;
+                document.getElementById('val-roi').innerText = roi;
+                
+                // Advice formatting
+                const mainAdvice = advice.length > 0 ? advice[0] : (lang==='zh'?"标准配置推荐。":(lang==='ru'?"Рекомендуется стандартная конфигурация.":"Standard configuration recommended."));
+                document.getElementById('res-summary').innerText = mainAdvice;
+                document.getElementById('val-strategy').innerHTML = `<ul class="list-disc pl-4 space-y-1">${advice.map(a => `<li>${a}</li>`).join('')}</ul>`;
+
+                // Bars
+                document.getElementById('bar-tech').style.width = scores.tech + '%';
+                document.getElementById('bar-reg').style.width = scores.reg + '%';
+                document.getElementById('bar-econ').style.width = scores.econ + '%';
+                
+                // Labels
+                const getLabel = (score) => {
+                    if (score < 30) return lang==='zh'?'低':(lang==='ru'?'Низкий':'Low');
+                    if (score < 70) return lang==='zh'?'中':(lang==='ru'?'Средний':'Medium');
+                    return lang==='zh'?'高':(lang==='ru'?'Высокий':'High');
+                };
+                document.getElementById('score-tech').innerText = getLabel(scores.tech);
+                document.getElementById('score-reg').innerText = getLabel(scores.reg);
+                document.getElementById('score-econ').innerText = scores.econ > 70 ? (lang==='zh'?'优秀':(lang==='ru'?'Отлично':'Excellent')) : getLabel(scores.econ);
+            }
+        };
+
+        // Initial Call
+        SiteFit.updateLanguage(app.currentLang);
+
+    </script>
+</body>
+</html>
