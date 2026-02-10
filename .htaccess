@@ -1,8 +1,0 @@
- # 匹配二级域名openclaw.xxx.com，指向根目录的blog文件夹
-<IfModule mod_rewrite.c>
-RewriteEngine On
-# 替换成你的二级域名和一级域名（不要改^和$）
-RewriteCond %{HTTP_HOST} ^openclaw.gasgx.com$
-# 替换成目标目录（/openclaw/，末尾斜杠要加），R=301是永久重定向，L是终止规则
-RewriteRule ^(.*)$ /openclaw/$1 [L,NC]
-</IfModule>
