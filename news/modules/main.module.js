@@ -4,12 +4,15 @@ import { HEADER_NAVIGATION } from '../shared/config/navigation.config.js';
 
 const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
-
 const API_BASE = 'https://api.theblockbeats.news/v1/open-api/open-flash';
-const PROXY_URL = 'https://corsproxy.io/?';
+const FLASH_PROXY_BASES = ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='];
+const FLASH_FETCH_TIMEOUT_MS = 15000;
+
 const SHARE_URL = 'https://www.gasgx.com/news/flash/';
 const DB_NAME = 'GasGxFlashDB';
 const DB_VERSION = 1;
+const FLASH_FETCH_LIMIT = 120;
+const FLASH_POLL_INTERVAL_MS = 600000;
 
 const MAIN_TEMPLATE = `
 <section class="ggx-main-module">
@@ -196,6 +199,9 @@ export function createNewsHomeApp() {
             currentUser: null,
             displayName: null,
             currentPosterData: { title: '', content: '', time: '' },
+            flashPollTimer: null,
+            flashVisibilityHandler: null,
+            lastFlashAutoFetchAt: 0,
         },
 
         async init() {
@@ -209,7 +215,19 @@ export function createNewsHomeApp() {
             if (document.getElementById('ggx-flash-news-container')) {
                 await this.loadFlashFromDB();
                 this.fetchAndMergeFlash();
-                setInterval(() => this.fetchAndMergeFlash(true), 60000);
+                this.state.lastFlashAutoFetchAt = Date.now();
+                if (this.state.flashPollTimer) clearInterval(this.state.flashPollTimer);
+                this.state.flashPollTimer = setInterval(() => {
+                    if (!document.hidden && this.shouldRunFlashAutoFetch()) this.fetchAndMergeFlash(true);
+                }, FLASH_POLL_INTERVAL_MS);
+
+                if (this.state.flashVisibilityHandler) {
+                    document.removeEventListener('visibilitychange', this.state.flashVisibilityHandler);
+                }
+                this.state.flashVisibilityHandler = () => {
+                    if (!document.hidden && this.shouldRunFlashAutoFetch()) this.fetchAndMergeFlash(true);
+                };
+                document.addEventListener('visibilitychange', this.state.flashVisibilityHandler);
             }
 
             const posterModal = document.getElementById('ggx-poster-modal');
@@ -330,34 +348,97 @@ export function createNewsHomeApp() {
             }
         },
 
+        shouldRunFlashAutoFetch() {
+            return Date.now() - this.state.lastFlashAutoFetchAt >= FLASH_POLL_INTERVAL_MS;
+        },
+
         async fetchAndMergeFlash(isAuto = false) {
+            if (isAuto) this.state.lastFlashAutoFetchAt = Date.now();
             try {
-                const urlEN = PROXY_URL + encodeURIComponent(`${API_BASE}?size=20&page=1&lang=en`);
-                const resEN = await fetch(urlEN);
-                if (!resEN.ok) throw new Error('API Error');
-                const jsonEN = await resEN.json();
+                const normalized = await this.fetchFlashApiItems('en');
 
-                const newDataEN = this.parseJsonData(jsonEN);
-                if (newDataEN.length > 0) {
-                    const existingIds = new Set(this.state.flashData.map((n) => n.id));
-                    const uniqueNew = newDataEN.filter((n) => !existingIds.has(n.id));
+                if (normalized.length > 0) {
+                    const existingIds = new Set(this.state.flashData.map((n) => String(n.id)));
+                    const freshCount = normalized.filter((item) => !existingIds.has(String(item.id))).length;
 
-                    if (uniqueNew.length > 0) {
-                        const dbItems = uniqueNew.map((item) => ({
-                            id: item.id,
-                            title: item.title,
-                            content: item.content,
-                            link: item.link,
-                            timestamp: item.time.getTime(),
-                        }));
-                        await DB.put('news', dbItems);
-                        this.state.flashData = [...uniqueNew, ...this.state.flashData].sort((a, b) => b.time - a.time);
-                        if (!isAuto) this.showToast(`Synced ${uniqueNew.length} new flash stories.`);
+                    this.state.flashData = normalized;
+                    const dbItems = normalized.map((item) => ({
+                        id: item.id,
+                        title: item.title,
+                        content: item.content,
+                        link: item.link,
+                        timestamp: item.time.getTime(),
+                    }));
+                    await DB.put('news', dbItems);
+
+                    if (!isAuto) {
+                        if (freshCount > 0) this.showToast(`Synced ${freshCount} new flash stories.`);
+                        else this.showToast('Flash feed is up to date.');
                     }
                 }
                 this.renderFlashSidebar();
             } catch (e) {
                 console.error('Fetch Error:', e);
+            }
+        },
+
+        getFlashApiUrl(lang = 'en') {
+            const params = new URLSearchParams({ size: '20', page: '1', lang });
+            return `${API_BASE}?${params.toString()}`;
+        },
+
+        getFlashRequestCandidates(lang = 'en') {
+            const originUrl = this.getFlashApiUrl(lang);
+            const proxies = [...FLASH_PROXY_BASES];
+            for (let i = proxies.length - 1; i > 0; i -= 1) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [proxies[i], proxies[j]] = [proxies[j], proxies[i]];
+            }
+            return [originUrl, ...proxies.map((proxyBase) => `${proxyBase}${encodeURIComponent(originUrl)}`)];
+        },
+
+        async fetchFlashApiItems(lang = 'en') {
+            const candidates = this.getFlashRequestCandidates(lang);
+            let lastError = null;
+
+            for (const candidateUrl of candidates) {
+                let timeoutId = null;
+                try {
+                    const controller = new AbortController();
+                    timeoutId = setTimeout(() => controller.abort(), FLASH_FETCH_TIMEOUT_MS);
+                    const response = await fetch(candidateUrl, {
+                        method: 'GET',
+                        headers: { Accept: 'application/json' },
+                        credentials: 'omit',
+                        cache: 'default',
+                        signal: controller.signal,
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    const text = await response.text();
+                    const json = this.safeParseJson(text);
+                    if (!json) throw new Error('Invalid JSON payload');
+
+                    const parsed = this.parseFlashApiData(json);
+                    if (parsed.length === 0) throw new Error('No flash records in payload');
+                    return parsed;
+                } catch (error) {
+                    lastError = error;
+                } finally {
+                    if (timeoutId) clearTimeout(timeoutId);
+                }
+            }
+
+            throw lastError || new Error('Flash API and proxy fallbacks all failed');
+        },
+
+        safeParseJson(text) {
+            try {
+                return JSON.parse(text);
+            } catch {
+                return null;
             }
         },
 
@@ -369,26 +450,36 @@ export function createNewsHomeApp() {
             return (tempDiv.textContent || tempDiv.innerText || '').trim();
         },
 
-        parseJsonData(jsonRes) {
+        parseFlashApiData(jsonRes) {
             let data = jsonRes;
-            if (jsonRes.contents) {
+            if (jsonRes && typeof jsonRes.contents === 'string') {
                 try {
                     data = JSON.parse(jsonRes.contents);
                 } catch {
                     return [];
                 }
             }
+
             if (!data || !data.data || !Array.isArray(data.data.data)) return [];
-            return data.data.data.map((item) => {
-                const timeMs = parseInt(item.create_time, 10) * 1000;
-                return {
-                    id: item.id,
-                    title: item.title,
-                    content: this.cleanContent(item.content),
-                    time: new Date(timeMs),
-                    link: item.link || '',
-                };
-            });
+
+            return data.data.data
+                .slice(0, FLASH_FETCH_LIMIT)
+                .map((item) => {
+                    const createTime = Number.parseInt(item.create_time, 10);
+                    const title = String(item.title || '').trim();
+                    const content = this.cleanContent(String(item.content || ''));
+                    const link = String(item.link || '').trim();
+                    const id = item.id || link || `${title}-${createTime || Date.now()}`;
+                    const time = Number.isFinite(createTime) ? new Date(createTime * 1000) : new Date();
+                    return {
+                        id: String(id),
+                        title: title || 'Untitled',
+                        content: content || '',
+                        link: link || '#',
+                        time,
+                    };
+                })
+                .filter((item) => item.id && item.title);
         },
 
         forceRefreshFlash() {
@@ -509,21 +600,23 @@ export function createNewsHomeApp() {
             }
 
             try {
-                const urlCN = PROXY_URL + encodeURIComponent(`${API_BASE}?size=20&page=1&lang=cn`);
-                const res = await fetch(urlCN);
-                const jsonCN = await res.json();
-                const dataCN = this.parseJsonData(jsonCN);
-                const match = dataCN.find((n) => n.id === id || String(n.id) === String(id));
+                const translateText = async (text) => {
+                    const chunks = text.match(/[\s\S]{1,450}/g) || [];
+                    const translatedChunks = await Promise.all(
+                        chunks.map(async (chunk) => {
+                            const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=en|zh-CN`);
+                            const data = await res.json();
+                            return data.responseData.translatedText;
+                        })
+                    );
+                    return translatedChunks.join('');
+                };
 
-                if (match) {
-                    const transObj = { id, title: match.title, content: match.content };
-                    await DB.put('translations', transObj);
-                    this.state.translations[id] = transObj;
-                    this.applyTranslation(id, transObj);
-                } else {
-                    this.showToast('Translation not found', 'info');
-                    btnIcon.className = 'fa-solid fa-language text-xs';
-                }
+                const [transTitle, transContent] = await Promise.all([translateText(item.title), translateText(item.content)]);
+                const transObj = { id, title: transTitle, content: transContent };
+                await DB.put('translations', transObj);
+                this.state.translations[id] = transObj;
+                this.applyTranslation(id, transObj);
             } catch (e) {
                 console.error('Translation fetch error:', e);
                 this.showToast('Translation error', 'error');

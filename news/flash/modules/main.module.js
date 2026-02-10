@@ -4,9 +4,10 @@ import { HEADER_NAVIGATION } from '../../shared/config/navigation.config.js';
 
 const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
-
 const API_BASE = 'https://api.theblockbeats.news/v1/open-api/open-flash';
-const PROXY_URL = 'https://corsproxy.io/?';
+const FLASH_PROXY_BASES = ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='];
+const FLASH_FETCH_TIMEOUT_MS = 15000;
+
 const HASHTAGS = '#GasGx #NaturalGas #EnergyMining #BitcoinMining';
 const SHARE_URL = 'https://www.gasgx.com/news/flash/';
 
@@ -14,6 +15,8 @@ const CACHE_KEY_EN = 'gasgx_en_v9_stable';
 const CACHE_KEY_CN = 'gasgx_cn_v9_stable';
 const MAX_CACHE_SIZE = 100;
 const ITEMS_PER_PAGE = 15;
+const FLASH_FETCH_LIMIT = 120;
+const FLASH_POLL_INTERVAL_MS = 600000;
 
 const MAIN_TEMPLATE = `
 <section class="gxf-main-module">
@@ -142,13 +145,30 @@ export function createFlashApp() {
             user: null,
             displayName: null,
             bookmarks: new Set(),
+            pollTimer: null,
+            visibilityHandler: null,
+            lastAutoFetchAt: 0,
         },
         async init() {
             await this.initAuth();
             this.renderNav();
+            this.loadLiveData();
             this.loadFromCache();
             this.fetchAndMerge();
-            setInterval(() => this.fetchAndMerge(true), 60000);
+            this.state.lastAutoFetchAt = Date.now();
+
+            if (this.state.pollTimer) clearInterval(this.state.pollTimer);
+            this.state.pollTimer = setInterval(() => {
+                if (!document.hidden && this.shouldRunAutoFetch()) this.fetchAndMerge(true);
+            }, FLASH_POLL_INTERVAL_MS);
+
+            if (this.state.visibilityHandler) {
+                document.removeEventListener('visibilitychange', this.state.visibilityHandler);
+            }
+            this.state.visibilityHandler = () => {
+                if (!document.hidden && this.shouldRunAutoFetch()) this.fetchAndMerge(true);
+            };
+            document.addEventListener('visibilitychange', this.state.visibilityHandler);
 
             window.addEventListener('scroll', () => {
                 const btn = document.getElementById('gxf-back-to-top-btn');
@@ -214,6 +234,26 @@ export function createFlashApp() {
                 }
             } catch (e) {
                 console.log('Fetch bookmarks failed:', e);
+            }
+        },
+
+        async loadLiveData() {
+            const container = document.getElementById('gxf-live-data-container');
+            if (!container) return;
+
+            try {
+                const { data } = await _supabase.from('homepage_scrolling_data').select('*').order('sort_order', { ascending: true });
+                if (data && data.length > 0) {
+                    const itemsHtml = data
+                        .map((item) => {
+                            const color = item.status === 'positive' ? 'text-gas-green' : item.status === 'negative' ? 'text-red-500' : 'text-gray-500';
+                            return `<div class="flex items-center gap-2 text-xs font-mono text-gray-400 whitespace-nowrap"><span class="text-purple-400 font-bold">${item.label}</span><span class="text-white font-bold">${item.display_value}</span>${item.unit ? `<span class="text-gray-500 text-[10px]">${item.unit}</span>` : ''}${item.secondary_text ? `<span class="${color} text-[10px] ml-1">${item.secondary_text}</span>` : ''}</div>`;
+                        })
+                        .join('');
+                    container.innerHTML = `<div class="flex items-center gap-12">${itemsHtml}</div>`.repeat(2);
+                }
+            } catch (e) {
+                console.error('Live data load failed:', e);
             }
         },
 
@@ -335,6 +375,10 @@ export function createFlashApp() {
             localStorage.setItem(CACHE_KEY_CN, JSON.stringify(this.state.translations));
         },
 
+        shouldRunAutoFetch() {
+            return Date.now() - this.state.lastAutoFetchAt >= FLASH_POLL_INTERVAL_MS;
+        },
+
         forceRefresh() {
             const icon = document.getElementById('gxf-sync-icon');
             if (icon) icon.classList.add('fa-spin');
@@ -349,66 +393,93 @@ export function createFlashApp() {
 
         async fetchAndMerge(isAuto = false) {
             const wrapper = document.getElementById('gxf-flash-items-wrapper');
+            if (isAuto) this.state.lastAutoFetchAt = Date.now();
             try {
-                const urlEN = PROXY_URL + encodeURIComponent(`${API_BASE}?size=20&page=1&lang=en`);
-                const resEN = await fetch(urlEN);
-                if (!resEN.ok) throw new Error('API Error');
-                const jsonEN = await resEN.json();
-                const newDataEN = this.parseJsonData(jsonEN);
+                const normalized = await this.fetchFlashApiItems('en');
 
-                if (newDataEN.length > 0) {
-                    const existingIds = new Set(this.state.allNews.map((n) => n.id));
-                    const uniqueNew = newDataEN.filter((n) => !existingIds.has(n.id));
-
-                    if (uniqueNew.length > 0) {
-                        this.state.allNews = [...uniqueNew, ...this.state.allNews].sort((a, b) => b.time - a.time);
-                        if (!isAuto) this.showToast(`Synced ${uniqueNew.length} new stories.`);
-
-                        const queuePayload = uniqueNew
-                            .filter((item) => item.link)
-                            .map((item) => ({
-                                link: item.link,
-                                category: 'flash',
-                                notes: 'null',
-                                status: 'pending',
-                                tag_choice: 'flash',
-                                publisher: 'GasGx-Researcher',
-                                secondary_tag: 'flash',
-                            }));
-
-                        if (queuePayload.length > 0) {
-                            _supabase
-                                .from('scrape_queue')
-                                .upsert(queuePayload, { onConflict: 'link', ignoreDuplicates: true })
-                                .then(({ error }) => {
-                                    if (error) console.error('Auto-scrape queue error:', error);
-                                    else console.log(`Queued ${queuePayload.length} items for scraping.`);
-                                });
-                        }
+                if (normalized.length === 0) {
+                    if (this.state.allNews.length === 0 && wrapper) {
+                        wrapper.innerHTML = '<div class="text-center py-20 text-gray-500">No flash news available.</div>';
                     }
+                    return;
                 }
 
+                const existingIds = new Set(this.state.allNews.map((item) => String(item.id)));
+                const freshCount = normalized.filter((item) => !existingIds.has(String(item.id))).length;
+
+                this.state.allNews = normalized;
                 this.saveToCache();
                 this.renderList();
 
-                const urlCN = PROXY_URL + encodeURIComponent(`${API_BASE}?size=20&page=1&lang=cn`);
-                fetch(urlCN)
-                    .then((res) => res.json())
-                    .then((jsonCN) => {
-                        const newDataCN = this.parseJsonData(jsonCN);
-                        if (newDataCN.length > 0) {
-                            newDataCN.forEach((item) => {
-                                this.state.translations[item.id] = { title: item.title, content: item.content };
-                            });
-                            this.saveToCache();
-                        }
-                    })
-                    .catch((e) => console.log('CN ignored', e));
+                if (!isAuto) {
+                    if (freshCount > 0) this.showToast(`Synced ${freshCount} new stories.`);
+                    else this.showToast('Flash feed is up to date.');
+                }
             } catch (e) {
                 console.error('Fetch Error:', e);
                 if (this.state.allNews.length === 0 && wrapper) {
                     wrapper.innerHTML = '<div class="text-center py-20 text-red-500">Connection Failed. <button onclick="window.GGXFlashApp && window.GGXFlashApp.forceRefresh()" class="underline">Retry</button></div>';
                 }
+            }
+        },
+
+        getFlashApiUrl(lang = 'en') {
+            const params = new URLSearchParams({ size: '20', page: '1', lang });
+            return `${API_BASE}?${params.toString()}`;
+        },
+
+        getFlashRequestCandidates(lang = 'en') {
+            const originUrl = this.getFlashApiUrl(lang);
+            const proxies = [...FLASH_PROXY_BASES];
+            for (let i = proxies.length - 1; i > 0; i -= 1) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [proxies[i], proxies[j]] = [proxies[j], proxies[i]];
+            }
+            return [originUrl, ...proxies.map((proxyBase) => `${proxyBase}${encodeURIComponent(originUrl)}`)];
+        },
+
+        async fetchFlashApiItems(lang = 'en') {
+            const candidates = this.getFlashRequestCandidates(lang);
+            let lastError = null;
+
+            for (const candidateUrl of candidates) {
+                let timeoutId = null;
+                try {
+                    const controller = new AbortController();
+                    timeoutId = setTimeout(() => controller.abort(), FLASH_FETCH_TIMEOUT_MS);
+                    const response = await fetch(candidateUrl, {
+                        method: 'GET',
+                        headers: { Accept: 'application/json' },
+                        credentials: 'omit',
+                        cache: 'default',
+                        signal: controller.signal,
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    const text = await response.text();
+                    const json = this.safeParseJson(text);
+                    if (!json) throw new Error('Invalid JSON payload');
+
+                    const parsed = this.parseFlashApiData(json);
+                    if (parsed.length === 0) throw new Error('No flash records in payload');
+                    return parsed;
+                } catch (error) {
+                    lastError = error;
+                } finally {
+                    if (timeoutId) clearTimeout(timeoutId);
+                }
+            }
+
+            throw lastError || new Error('Flash API and proxy fallbacks all failed');
+        },
+
+        safeParseJson(text) {
+            try {
+                return JSON.parse(text);
+            } catch {
+                return null;
             }
         },
 
@@ -420,26 +491,36 @@ export function createFlashApp() {
             return (tempDiv.textContent || tempDiv.innerText || '').trim();
         },
 
-        parseJsonData(jsonRes) {
+        parseFlashApiData(jsonRes) {
             let data = jsonRes;
-            if (jsonRes.contents) {
+            if (jsonRes && typeof jsonRes.contents === 'string') {
                 try {
                     data = JSON.parse(jsonRes.contents);
                 } catch {
                     return [];
                 }
             }
+
             if (!data || !data.data || !Array.isArray(data.data.data)) return [];
-            return data.data.data.map((item) => {
-                const timeMs = parseInt(item.create_time, 10) * 1000;
-                return {
-                    id: item.id,
-                    title: item.title,
-                    content: this.cleanContent(item.content),
-                    time: new Date(timeMs),
-                    link: item.link || '',
-                };
-            });
+
+            return data.data.data
+                .slice(0, FLASH_FETCH_LIMIT)
+                .map((item) => {
+                    const createTime = Number.parseInt(item.create_time, 10);
+                    const title = String(item.title || '').trim();
+                    const content = this.cleanContent(String(item.content || ''));
+                    const link = String(item.link || '').trim();
+                    const id = item.id || link || `${title}-${createTime || Date.now()}`;
+                    const time = Number.isFinite(createTime) ? new Date(createTime * 1000) : new Date();
+                    return {
+                        id: String(id),
+                        title: title || 'Untitled',
+                        content: content || '',
+                        link: link || '#',
+                        time,
+                    };
+                })
+                .filter((item) => item.id && item.title);
         },
 
         async typeWriter(element, text) {
@@ -618,18 +699,16 @@ export function createFlashApp() {
             }
         },
 
-        async updatePosterDOM(item) {
+        async updatePosterDOM(item, displayTitle, displayContent) {
             const posterTime = document.getElementById('gxf-poster-time-text');
             const posterTitle = document.getElementById('gxf-poster-title');
             const posterText = document.getElementById('gxf-poster-text');
-            const sourceTitle = document.getElementById(`gxf-title-${item.id}`);
-            const sourceText = document.getElementById(`gxf-content-${item.id}`);
             const qrContainer = document.getElementById('gxf-poster-qrcode');
-            if (!posterTime || !posterTitle || !posterText || !sourceTitle || !sourceText || !qrContainer) return;
+            if (!posterTime || !posterTitle || !posterText || !qrContainer) return;
 
             posterTime.innerText = `${item.time.toLocaleDateString()} ${item.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`;
-            posterTitle.innerText = sourceTitle.innerText;
-            posterText.innerText = sourceText.innerText;
+            posterTitle.innerText = displayTitle || item.title || '';
+            posterText.innerText = displayContent || item.content || '';
             qrContainer.innerHTML = '';
             new QRCode(qrContainer, {
                 text: SHARE_URL,
@@ -643,18 +722,120 @@ export function createFlashApp() {
         },
 
         async generateCanvas() {
+            const captureEl = document.getElementById('gxf-poster-capture-area');
+            if (!captureEl) return this.generateFallbackPoster();
+
             try {
-                const canvas = await html2canvas(document.getElementById('gxf-poster-capture-area'), {
-                    backgroundColor: null,
-                    scale: 3,
-                    logging: false,
-                    useCORS: true,
-                });
+                const canvas = await Promise.race([
+                    html2canvas(captureEl, {
+                        backgroundColor: null,
+                        scale: 3,
+                        logging: false,
+                        useCORS: true,
+                    }),
+                    new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('Poster render timeout')), 12000);
+                    }),
+                ]);
                 const url = canvas.toDataURL('image/png');
                 this.state.generatedPosterUrl = url;
                 return url;
             } catch (e) {
                 console.error('Canvas error:', e);
+                return this.generateFallbackPoster();
+            }
+        },
+
+        wrapPosterText(ctx, text, maxWidth, maxLines) {
+            const source = String(text || '').replace(/\s+/g, ' ').trim();
+            if (!source) return [];
+
+            const lines = [];
+            let current = '';
+            for (const ch of source) {
+                const trial = current + ch;
+                if (ctx.measureText(trial).width <= maxWidth) {
+                    current = trial;
+                } else {
+                    if (current) lines.push(current.trim());
+                    current = ch;
+                    if (lines.length >= maxLines) break;
+                }
+            }
+            if (current && lines.length < maxLines) lines.push(current.trim());
+            if (lines.length === maxLines && source.length > lines.join('').length) {
+                lines[maxLines - 1] = `${lines[maxLines - 1].replace(/\.\.\.$/, '')}...`;
+            }
+            return lines;
+        },
+
+        generateFallbackPoster() {
+            try {
+                const width = 1080;
+                const height = 1420;
+                const padding = 72;
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return null;
+
+                const title = this.state.currentPosterData.title || 'GasGx Flash';
+                const content = this.state.currentPosterData.content || '';
+                const time = this.state.currentPosterData.time || new Date().toLocaleString();
+
+                const bg = ctx.createLinearGradient(0, 0, width, height);
+                bg.addColorStop(0, '#0a0a0a');
+                bg.addColorStop(1, '#030303');
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, width, height);
+
+                ctx.strokeStyle = 'rgba(93, 214, 44, 0.35)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(24, 24, width - 48, height - 48);
+
+                ctx.fillStyle = '#5DD62C';
+                ctx.font = 'bold 42px Oswald, Inter, sans-serif';
+                ctx.fillText('GasGx FLASH', padding, 120);
+
+                ctx.fillStyle = '#A4A4A4';
+                ctx.font = '28px Inter, sans-serif';
+                ctx.fillText(time, padding, 168);
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 58px Inter, sans-serif';
+                const titleLines = this.wrapPosterText(ctx, title, width - padding * 2, 4);
+                let cursorY = 270;
+                titleLines.forEach((line) => {
+                    ctx.fillText(line, padding, cursorY);
+                    cursorY += 78;
+                });
+
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(padding, cursorY + 12);
+                ctx.lineTo(width - padding, cursorY + 12);
+                ctx.stroke();
+
+                ctx.fillStyle = '#CFCFCF';
+                ctx.font = '36px Inter, sans-serif';
+                const bodyLines = this.wrapPosterText(ctx, content, width - padding * 2, 12);
+                cursorY += 74;
+                bodyLines.forEach((line) => {
+                    ctx.fillText(line, padding, cursorY);
+                    cursorY += 52;
+                });
+
+                ctx.fillStyle = '#5DD62C';
+                ctx.font = 'bold 28px Inter, sans-serif';
+                ctx.fillText('www.gasgx.com/news/flash/', padding, height - 92);
+
+                const url = canvas.toDataURL('image/png');
+                this.state.generatedPosterUrl = url;
+                return url;
+            } catch (error) {
+                console.error('Fallback poster error:', error);
                 return null;
             }
         },
@@ -665,11 +846,12 @@ export function createFlashApp() {
 
             const srcTitle = document.getElementById(`gxf-title-${id}`);
             const srcContent = document.getElementById(`gxf-content-${id}`);
-            if (!srcTitle || !srcContent) return;
+            const displayTitle = (srcTitle && srcTitle.innerText.trim()) || item.title || '';
+            const displayContent = (srcContent && srcContent.innerText.trim()) || item.content || '';
 
             this.state.currentPosterData = {
-                title: srcTitle.innerText,
-                content: srcContent.innerText,
+                title: displayTitle,
+                content: displayContent,
                 time: item.time.toLocaleString(),
             };
 
@@ -679,7 +861,7 @@ export function createFlashApp() {
 
             container.innerHTML = '<div class="absolute inset-0 flex items-center justify-center"><i class="fa-solid fa-circle-notch fa-spin text-gas-green text-2xl"></i></div>';
             modal.classList.add('active');
-            await this.updatePosterDOM(item);
+            await this.updatePosterDOM(item, displayTitle, displayContent);
             const url = await this.generateCanvas();
             if (url) {
                 const img = new Image();
@@ -687,6 +869,7 @@ export function createFlashApp() {
                 container.innerHTML = '';
                 container.appendChild(img);
             } else {
+                container.innerHTML = '<div class="w-full min-h-[220px] flex items-center justify-center text-sm text-red-400">Poster generation failed. Please retry.</div>';
                 this.showToast('Generation failed', 'error');
             }
         },
