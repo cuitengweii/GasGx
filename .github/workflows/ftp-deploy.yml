@@ -22,3 +22,9 @@ jobs:
         password: ${{ secrets.FTP_PASSWORD }}
         # 下面这行请改成您服务器上的实际目录，例如 /www/wwwroot/gasgx/
         server-dir: /
+        # 👇 新增下面这行：告诉它不要传这几个顽固文件
+        exclude: |
+          **/.user.ini
+          **/.htaccess
+          **/.git*
+          **/.git*/**
