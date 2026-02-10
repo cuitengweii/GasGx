@@ -71,32 +71,26 @@ const MAIN_TEMPLATE = `
                 </div>
             </div>
 
-            <div class="lg:col-span-4 pl-0 lg:pl-6 space-y-6 flex flex-col">
-                <div class="ggx-tech-card rounded-xl p-6 bg-[#080808]">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2"><span class="w-1 h-4 bg-gas-green block"></span> 7x24 Flash</h3>
-                        <div class="flex items-center gap-2">
-                            <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gas-green opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-gas-green"></span></span>
-                            <button onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.forceRefreshFlash()" class="text-gray-500 hover:text-white" aria-label="Refresh Flash">
-                                <i id="ggx-flash-sync-icon" class="fa-solid fa-rotate-right text-xs"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="relative pl-6 space-y-6 max-h-[800px] overflow-y-auto pr-2 custom-scrollbar" id="ggx-flash-news-container">
-                        <div class="absolute left-[7px] top-2 bottom-0 w-[1px] bg-white/10"></div>
-                        <div class="text-gray-600 text-xs italic p-2 text-center">Syncing flash news...</div>
-                    </div>
-                </div>
-
+            <div class="lg:col-span-4 pl-0 lg:pl-6 space-y-6 flex flex-col self-start h-fit">
                 <div class="grid grid-cols-2 gap-3">
-                    <a href="#" class="ggx-tech-card rounded-lg p-4 flex flex-col items-center justify-center gap-2 group hover:bg-[#151515]">
+                    <a href="#" class="ggx-tech-card ggx-sidebar-card rounded-lg p-4 flex flex-col items-center justify-center gap-2 group hover:bg-[#151515]">
                         <i class="fa-solid fa-server text-xl text-gray-500 group-hover:text-gas-green transition-colors"></i><span class="text-xs font-bold text-white">Miners</span>
                     </a>
-                    <a href="#" class="ggx-tech-card rounded-lg p-4 flex flex-col items-center justify-center gap-2 group hover:bg-[#151515]">
+                    <a href="#" class="ggx-tech-card ggx-sidebar-card rounded-lg p-4 flex flex-col items-center justify-center gap-2 group hover:bg-[#151515]">
                         <i class="fa-solid fa-fan text-xl text-gray-500 group-hover:text-gas-green transition-colors"></i><span class="text-xs font-bold text-white">Generators</span>
                     </a>
                 </div>
+
+                <a href="https://www.gasgx.com/news/article/745/" target="_blank" rel="noopener noreferrer" class="ggx-tech-card ggx-sidebar-card ggx-sidebar-ad rounded-xl overflow-hidden relative group cursor-pointer block">
+                    <img src="/news/advertisement/gasgx.png" alt="GasGx Featured Ad" loading="lazy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onerror="this.src='/news/advertisement/zhanwei.jpg'">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent"></div>
+                    <div class="absolute left-4 right-4 bottom-4">
+                        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-white/90 uppercase tracking-wider bg-black/45 border border-white/10 rounded-full px-2 py-1">
+                            <i class="fa-solid fa-bolt text-gas-green"></i>
+                            Sponsored
+                        </span>
+                    </div>
+                </a>
             </div>
         </div>
     </main>
@@ -212,9 +206,11 @@ export function createNewsHomeApp() {
             this.loadLiveData();
             this.loadFeed('latest', true);
 
-            await this.loadFlashFromDB();
-            this.fetchAndMergeFlash();
-            setInterval(() => this.fetchAndMergeFlash(true), 60000);
+            if (document.getElementById('ggx-flash-news-container')) {
+                await this.loadFlashFromDB();
+                this.fetchAndMergeFlash();
+                setInterval(() => this.fetchAndMergeFlash(true), 60000);
+            }
 
             const posterModal = document.getElementById('ggx-poster-modal');
             if (posterModal) {
@@ -649,6 +645,26 @@ export function createNewsHomeApp() {
             return `https://www.gasgx.com/news/article/${articleId}/images/${normalizedCover}`;
         },
 
+        getAuthorAvatarUrl(item) {
+            const fallback = '/news/author_avatar/GasGx-Researcher.png';
+            if (!item || typeof item !== 'object') return fallback;
+
+            const articleId = item.app_id || item.api_id || item.id;
+            const authorAvatar = String(item.author_avatar || '').trim();
+            if (authorAvatar) {
+                if (/^https?:\/\//i.test(authorAvatar)) return authorAvatar;
+                const normalizedAvatar = authorAvatar.replace(/^\.?\/*(images\/)?/i, '');
+                if (articleId) return `https://www.gasgx.com/news/article/${articleId}/images/${normalizedAvatar}`;
+            }
+
+            const publisher = String(item.publisher || '').trim().toLowerCase();
+            if (publisher.includes('blockbeats')) return '/news/author_avatar/Blockbeats.png';
+            if (publisher.includes('odaily')) return '/news/author_avatar/Odaily.png';
+            if (publisher.includes('techflow')) return '/news/author_avatar/Techflow.png';
+            if (publisher.includes('wushuo') || publisher.includes('wu shuo')) return '/news/author_avatar/WuShuoBlock.png';
+            return fallback;
+        },
+
         getArticleUrl(item) {
             if (!item) return '#';
             const articleId = item.app_id || item.api_id || item.id;
@@ -793,15 +809,18 @@ export function createNewsHomeApp() {
 
                         if (category === 'latest') {
                             return `
-                                <article class="ggx-tech-card rounded-lg p-0 flex flex-col md:flex-row group h-auto md:h-44 cursor-pointer mb-4" onclick="window.location.href='${articleUrl}'">
-                                    <div class="w-full md:w-60 h-44 md:h-full overflow-hidden shrink-0 relative"><img src="${imgUrl}" loading="lazy" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.style.display='none'"></div>
-                                    <div class="flex-1 p-5 ggx-card-body">
+                                <article class="ggx-tech-card ggx-latest-card rounded-lg p-0 flex flex-col md:flex-row group h-auto cursor-pointer mb-4" onclick="window.location.href='${articleUrl}'">
+                                    <div class="ggx-latest-cover w-full md:w-60 overflow-hidden shrink-0 relative"><img src="${imgUrl}" loading="lazy" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='https://www.gasgx.com/news/advertisement/zhanwei.jpg'"></div>
+                                    <div class="flex-1 p-5 ggx-card-body ggx-latest-card-body">
                                         <div>
                                             <div class="flex items-center gap-2 mb-2"><span class="text-[10px] font-bold text-gas-green uppercase border border-gas-green/30 px-1.5 rounded">${tagDisplay}</span><span class="text-[10px] text-gray-500">${new Date(art.time).toLocaleDateString()}</span></div>
-                                            <h3 class="text-lg font-bold text-white mb-2 leading-snug group-hover:text-gas-green transition-colors">${art.main_title}</h3>
+                                            <h3 class="text-lg font-bold text-white mb-2 leading-snug group-hover:text-gas-green transition-colors line-clamp-2">${art.main_title}</h3>
                                             <p class="text-gray-400 text-sm line-clamp-2">${art.subheading || ''}</p>
                                         </div>
-                                        <div class="flex items-center justify-between mt-2 pt-3 border-t border-white/5"><span class="text-xs text-gray-500">By <span class="text-white">${art.publisher || 'GasGx Team'}</span></span></div>
+                                        <div class="flex items-center gap-2 mt-1 pt-3 border-t border-white/5">
+                                            <img src="${this.getAuthorAvatarUrl(art)}" alt="${art.publisher || 'GasGx Team'}" loading="lazy" class="w-7 h-7 rounded-full object-cover border border-white/10 bg-[#111]" onerror="this.onerror=null;this.src='/news/author_avatar/GasGx-Researcher.png'">
+                                            <span class="text-xs text-gray-500 min-w-0 truncate">By <span class="text-white">${art.publisher || 'GasGx Team'}</span></span>
+                                        </div>
                                     </div>
                                 </article>`;
                         }
@@ -850,4 +869,3 @@ export function createNewsHomeApp() {
         },
     };
 }
-
