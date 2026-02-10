@@ -6,6 +6,17 @@
     }
 
     const DEFAULT_CHAT_API_URL = "http://localhost:8000/chat";
+    const SUPABASE_SDK_URL = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+    const MAIN_AUTH_DEFAULTS = Object.freeze({
+        storageKey: "gasgx-main-auth",
+        signInUrl: "/account/user.html",
+        accountUrl: "/account/account.html",
+        signOutRedirectUrl: "/account/user.html",
+        returnUrlStorageKey: "gx_main_return_url",
+        supabaseUrl: "https://mkpcliytqudclkwtewru.supabase.co",
+        supabaseKey: "sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw"
+    });
+    const MAIN_AUTH_FALLBACK_AVATAR = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2232%22 fill=%22%23121812%22/%3E%3Cpath d=%22M32 33c7.18 0 13-5.82 13-13S39.18 7 32 7 19 12.82 19 20s5.82 13 13 13Zm0 4c-9.94 0-18 6.27-18 14v2h36v-2c0-7.73-8.06-14-18-14Z%22 fill=%22%235DD62C%22/%3E%3C/svg%3E";
     const SHARED_TEXT = {
         en: {
             tagline: "Natural Gas Power Mining Assistant",
@@ -36,16 +47,14 @@
     const HEADER_TEMPLATE = `
 <header class="fixed top-0 w-full z-[300] gas-card h-16 transition-all duration-300">
     <div class="max-w-[1800px] mx-auto px-4 h-full flex justify-between items-center relative">
-        <div class="flex items-center gap-3 w-auto shrink-0 mr-2 xl:mr-4">
-            <a href="/index.html" class="flex items-center gap-2 group">
+        <div class="flex flex-col justify-center gap-0.5 w-auto shrink-0 mr-2 xl:mr-4 leading-none">
+            <a href="/index.html" class="group">
                 <h1 class="text-xl md:text-2xl font-bold tracking-wider text-gas-green hover:text-white transition-colors cursor-pointer">GasGx</h1>
             </a>
-            <div class="flex flex-col justify-center border-l border-gray-700 pl-2 md:pl-3 h-6 md:h-8">
-                <span id="header-tagline" class="block text-gas-green text-[8px] sm:text-[10px] md:text-xs font-bold tracking-wide leading-tight">Natural Gas Power Mining Assistant</span>
-            </div>
+            <span id="header-tagline" class="block text-gas-green text-[8px] sm:text-[9px] xl:text-[10px] font-bold tracking-wide leading-tight max-w-[240px] truncate">Natural Gas Power Mining Assistant</span>
         </div>
 
-        <nav id="desktop-nav" class="hidden 2xl:flex items-center justify-center gap-1 xl:gap-2 2xl:gap-6 h-full flex-1"></nav>
+        <nav id="desktop-nav" class="hidden xl:flex items-center justify-start 2xl:justify-center gap-1 xl:gap-2 2xl:gap-6 h-full flex-1 min-w-0 px-1"></nav>
 
         <div class="flex items-center gap-2 xl:gap-4 w-auto shrink-0 justify-end ml-2 xl:ml-4">
             <div class="hidden md:flex relative items-center">
@@ -84,7 +93,7 @@
                 </div>
             </div>
 
-            <button id="mobile-menu-btn" data-ggx-action="toggle-mobile-menu" class="2xl:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative" aria-label="Toggle mobile menu">
+            <button id="mobile-menu-btn" data-ggx-action="toggle-mobile-menu" class="xl:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative" aria-label="Toggle mobile menu">
                 <i class="fa-solid fa-bars"></i>
             </button>
         </div>
@@ -135,31 +144,39 @@
                 i18nKey: "privacy_policy"
             },
             socialLinks: [
-                { id: "tiktok", enabled: true, mode: "link", href: "https://www.tiktok.com/", iconClass: "fa-brands fa-tiktok", ariaLabel: "Open TikTok" },
+                { id: "x", enabled: true, mode: "link", href: "https://x.com/", iconClass: "fa-brands fa-x-twitter", ariaLabel: "Open X" },
+                { id: "telegram", enabled: true, mode: "link", href: "https://t.me/", iconClass: "fa-brands fa-telegram", ariaLabel: "Open Telegram" },
+                { id: "discord", enabled: true, mode: "link", href: "https://discord.com/", iconClass: "fa-brands fa-discord", ariaLabel: "Open Discord" },
+                { id: "youtube", enabled: true, mode: "link", href: "https://www.youtube.com/", iconClass: "fa-brands fa-youtube", ariaLabel: "Open YouTube" },
                 { id: "linkedin", enabled: true, mode: "link", href: "https://www.linkedin.com/", iconClass: "fa-brands fa-linkedin", ariaLabel: "Open LinkedIn" },
                 { id: "facebook", enabled: true, mode: "link", href: "https://www.facebook.com/", iconClass: "fa-brands fa-facebook", ariaLabel: "Open Facebook" },
-                { id: "x", enabled: true, mode: "link", href: "https://x.com/", iconClass: "fa-brands fa-x-twitter", ariaLabel: "Open X" }
+                { id: "tiktok", enabled: true, mode: "link", href: "https://www.tiktok.com/", iconClass: "fa-brands fa-tiktok", ariaLabel: "Open TikTok" },
+                { id: "wechat", enabled: true, mode: "qr", qrType: "wechat", iconClass: "fa-brands fa-weixin", ariaLabel: "Open WeChat QR" },
+                { id: "whatsapp", enabled: true, mode: "link", href: "https://wa.me/", iconClass: "fa-brands fa-whatsapp", ariaLabel: "Open WhatsApp" },
+                { id: "instagram", enabled: true, mode: "link", href: "https://www.instagram.com/", iconClass: "fa-brands fa-instagram", ariaLabel: "Open Instagram" },
+                { id: "xhs", enabled: true, mode: "link", href: "https://www.xiaohongshu.com/", text: "XHS", ariaLabel: "Open Xiaohongshu" },
+                { id: "video", enabled: true, mode: "link", href: "/news/index.html", iconClass: "fa-solid fa-circle-play", ariaLabel: "Open Video Channel" }
             ]
         }
     };
 
     const BACK_TO_TOP_TEMPLATE = `
-<button id="backToTopBtn" class="fixed bottom-24 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-[0_0_15px_rgba(93,214,44,0.5)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer" aria-label="Back to top">
+<button id="backToTopBtn" class="fixed bottom-60 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-[0_0_15px_rgba(93,214,44,0.5)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer" aria-label="Back to top">
     <i class="fa-solid fa-arrow-up"></i>
 </button>`;
 
     const CHATBOT_TEMPLATE = `
-<div id="ggx-chat-wrapper" class="fixed top-1/2 right-4 z-[90] -translate-y-1/2 flex flex-col items-end font-sans font-inter">
-    <div id="ggx-chat-window" class="hidden flex flex-col w-[340px] md:w-[380px] h-[500px] max-h-[80vh] bg-[#1a1a1a]/95 backdrop-blur-xl border border-gas-green/30 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.7)] overflow-hidden transition-all duration-300 origin-bottom-right transform scale-95 opacity-0 mb-4">
-        <div class="bg-[#111] p-4 flex justify-between items-center border-b border-white/5 shadow-md z-10 shrink-0">
+<div id="ggx-chat-wrapper" class="fixed bottom-44 right-5 z-[88] flex flex-col items-end font-sans font-inter">
+    <div id="ggx-chat-window" class="hidden flex flex-col w-[320px] md:w-[360px] h-[460px] max-h-[75vh] bg-[#101214]/92 backdrop-blur-xl border border-white/12 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.45)] overflow-hidden transition-all duration-300 origin-bottom-right transform scale-95 opacity-0 mb-3">
+        <div class="bg-[#0d0f10]/85 p-4 flex justify-between items-center border-b border-white/8 z-10 shrink-0">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-gas-green/20 border border-gas-green flex items-center justify-center">
-                    <i class="fa-solid fa-robot text-gas-green text-sm"></i>
+                <div class="w-8 h-8 rounded-full bg-[#141a16] border border-gas-green/45 flex items-center justify-center">
+                    <i class="fa-solid fa-robot text-gas-green text-[13px]"></i>
                 </div>
                 <div>
-                    <h3 class="text-white font-bold text-sm tracking-wide">GasGx AI Assistant</h3>
+                    <h3 class="text-white font-semibold text-sm tracking-wide">GasGx Assistant</h3>
                     <div class="flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 bg-gas-green rounded-full animate-pulse"></span>
+                        <span class="w-1.5 h-1.5 bg-gas-green/80 rounded-full"></span>
                         <span class="text-[10px] text-gray-400 uppercase font-medium">Online</span>
                     </div>
                 </div>
@@ -169,15 +186,15 @@
             </button>
         </div>
 
-        <div id="ggx-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0F0F0F] min-h-0 scroll-smooth">
+        <div id="ggx-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0c0e0f]/95 min-h-0 scroll-smooth">
             <div class="text-center mb-2">
-                <span class="text-[10px] text-gray-600 bg-[#1a1a1a] px-2 py-1 rounded-full">Today</span>
+                <span class="text-[10px] text-gray-600 bg-[#17191a] px-2 py-1 rounded-full">Today</span>
             </div>
             <div class="flex flex-col items-start max-w-[85%] space-y-1">
                 <div class="flex items-center gap-2 mb-1">
                     <span class="text-[10px] text-gray-500 ml-1">GasGx Bot</span>
                 </div>
-                <div class="bg-[#252525] text-gray-200 px-4 py-3 rounded-2xl rounded-tl-none text-sm border border-white/5 shadow-sm leading-relaxed">
+                <div class="bg-[#1b1d1f] text-gray-200 px-4 py-3 rounded-2xl rounded-tl-none text-sm border border-white/8 shadow-sm leading-relaxed">
                     Hello! I am your GasGx Power Assistant.<br><br>
                     Ask me about:
                     <ul class="list-disc pl-4 mt-1 text-gray-400">
@@ -189,18 +206,18 @@
             </div>
         </div>
 
-        <div id="ggx-chat-loading" class="hidden px-4 pb-2 bg-[#0F0F0F] shrink-0">
-            <div class="flex items-center gap-2 text-gas-green bg-[#1a1a1a] w-fit px-3 py-1.5 rounded-full text-xs border border-white/5">
+        <div id="ggx-chat-loading" class="hidden px-4 pb-2 bg-[#0c0e0f]/95 shrink-0">
+            <div class="flex items-center gap-2 text-gas-green bg-[#161a18] w-fit px-3 py-1.5 rounded-full text-xs border border-gas-green/20">
                 <i class="fa-solid fa-circle-notch fa-spin"></i>
                 <span>Thinking...</span>
             </div>
         </div>
 
-        <div class="p-3 bg-[#111] border-t border-white/5 shrink-0">
+        <div class="p-3 bg-[#0d0f10]/90 border-t border-white/8 shrink-0">
             <div class="relative flex items-center gap-2">
-                <input type="text" id="ggx-chat-user-input" class="flex-1 bg-[#1a1a1a] border border-white/10 rounded-full pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-gas-green focus:shadow-[0_0_10px_rgba(93,214,44,0.1)] transition-all placeholder-gray-600" placeholder="Type a question..." autocomplete="off">
-                <button id="ggx-chat-send-btn" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-gas-green rounded-full flex items-center justify-center text-black hover:bg-white hover:scale-105 transition-all shadow-glow cursor-pointer" aria-label="Send chat message">
-                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                <input type="text" id="ggx-chat-user-input" class="flex-1 bg-[#17191b] border border-white/12 rounded-full pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-gas-green/60 transition-all placeholder-gray-600" placeholder="Type a question..." autocomplete="off">
+                <button id="ggx-chat-send-btn" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#121915] border border-gas-green/40 rounded-full flex items-center justify-center text-gas-green hover:border-gas-green hover:bg-[#162019] transition-all cursor-pointer" aria-label="Send chat message">
+                    <i class="fa-solid fa-paper-plane text-xs"></i>
                 </button>
             </div>
             <div class="text-center mt-2">
@@ -209,15 +226,31 @@
         </div>
     </div>
 
-    <button id="ggx-chat-toggle-btn" class="w-14 h-14 bg-gas-green rounded-full ggx-chat-attention flex items-center justify-center text-black text-2xl hover:bg-white transition-all duration-300 group z-50 relative shadow-lg" aria-label="Open chat window">
-        <i id="ggx-chat-toggle-icon" class="fa-solid fa-robot"></i>
-        <span data-ggx-chat-unread class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-[#0F0F0F]"></span>
+    <div class="flex items-center gap-2">
+        <button id="ggx-chat-dock-btn" class="w-8 h-8 rounded-full bg-[#0e1210]/88 border border-white/10 text-gray-400 hover:text-white hover:border-gas-green/45 transition-colors flex items-center justify-center" aria-label="Hide chat to right side">
+            <i class="fa-solid fa-angle-right text-xs"></i>
+        </button>
+        <button id="ggx-chat-toggle-btn" class="w-12 h-12 bg-[#0f1311]/88 border border-gas-green/35 rounded-full ggx-chat-attention flex items-center justify-center text-gas-green text-lg hover:border-gas-green hover:bg-[#121913] transition-all duration-300 group z-50 relative shadow-[0_10px_28px_rgba(0,0,0,0.45)]" aria-label="Open chat window">
+            <i id="ggx-chat-toggle-icon" class="fa-solid fa-robot"></i>
+            <span data-ggx-chat-unread class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-gas-green rounded-full border border-[#0F0F0F]"></span>
+        </button>
+    </div>
+    <button id="ggx-chat-undock-btn" class="hidden fixed right-0 bottom-44 h-12 w-7 rounded-l-full bg-[#0f1311]/90 border border-r-0 border-gas-green/35 text-gas-green hover:text-white hover:border-gas-green transition-colors flex items-center justify-center shadow-[0_10px_28px_rgba(0,0,0,0.45)]" aria-label="Show chat button">
+        <i class="fa-solid fa-angle-left text-xs"></i>
     </button>
 </div>`;
 
     const state = {
         mounted: false,
         actionBound: false
+    };
+    const authBridgeState = {
+        initPromise: null,
+        initialized: false,
+        authListenerBound: false,
+        currentUser: null,
+        client: null,
+        runtimeConfig: null
     };
 
     function getSiteShellConfig() {
@@ -878,13 +911,18 @@
         if (!id) return "";
 
         const fallbackMap = {
-            tiktok: "https://www.tiktok.com/",
-            linkedin: "https://www.linkedin.com/",
-            facebook: "https://www.facebook.com/",
             x: "https://x.com/",
             twitter: "https://x.com/",
+            telegram: "https://t.me/",
+            discord: "https://discord.com/",
             youtube: "https://www.youtube.com/",
-            instagram: "https://www.instagram.com/"
+            linkedin: "https://www.linkedin.com/",
+            facebook: "https://www.facebook.com/",
+            tiktok: "https://www.tiktok.com/",
+            whatsapp: "https://wa.me/",
+            instagram: "https://www.instagram.com/",
+            xhs: "https://www.xiaohongshu.com/",
+            video: "/news/index.html"
         };
         return fallbackMap[id] || "";
     }
@@ -898,18 +936,30 @@
     function buildFooterSocialEntry(item) {
         if (isFooterSocialHidden(item)) return "";
 
+        const itemId = String((item && item.id) || "").trim().toLowerCase();
+        const safeItemId = itemId.replace(/[^a-z0-9_-]/g, "");
         const iconClass = escapeHtml(item.iconClass || "fa-solid fa-link");
-        const commonClass = "ggx-social-btn focus:outline-none";
-        const href = resolveFooterSocialHref(item);
-        if (!href) return "";
-
-        const target = escapeHtml(item.target || "_blank");
-        const rel = escapeHtml(item.rel || "noopener noreferrer");
+        const commonClass = `ggx-social-btn ${safeItemId ? `ggx-social-btn-${safeItemId}` : ""} focus:outline-none`;
+        const mode = String(item.mode || "link").trim().toLowerCase();
+        const iconText = typeof item.text === "string" && item.text.trim() ? item.text.trim() : "";
+        const iconHtml = iconText
+            ? `<span class="font-black text-[7px] leading-none">${escapeHtml(iconText)}</span>`
+            : `<i class="${iconClass} text-xs"></i>`;
         const resolvedTitle = getLabelValue(item.title, getCurrentLang());
         const title = typeof resolvedTitle === "string" && resolvedTitle.trim() ? resolvedTitle.trim() : "";
         const ariaLabel = escapeHtml(item.ariaLabel || title || item.id || "Social link");
         const titleAttr = title ? ` title="${escapeHtml(title)}"` : "";
-        return `<a href="${escapeHtml(href)}" target="${target}" rel="${rel}" class="${commonClass}" aria-label="${ariaLabel}"${titleAttr}><i class="${iconClass} text-lg"></i></a>`;
+
+        if (mode === "qr") {
+            const qrType = escapeHtml(item.qrType || item.id || "wechat");
+            return `<button type="button" data-ggx-action="open-qr" data-ggx-qr-type="${qrType}" class="${commonClass}" aria-label="${ariaLabel}"${titleAttr}>${iconHtml}</button>`;
+        }
+
+        const href = resolveFooterSocialHref(item);
+        if (!href) return "";
+        const target = escapeHtml(item.target || "_blank");
+        const rel = escapeHtml(item.rel || "noopener noreferrer");
+        return `<a href="${escapeHtml(href)}" target="${target}" rel="${rel}" class="${commonClass}" aria-label="${ariaLabel}"${titleAttr}>${iconHtml}</a>`;
     }
 
     function buildFooterTemplate() {
@@ -917,7 +967,9 @@
         const contactHtml = buildFooterContact(footerConfig.contact);
         const privacyHtml = buildFooterPrivacyLink(footerConfig.privacyPolicy);
         const socialHtml = footerConfig.socialLinks.map(buildFooterSocialEntry).join("");
-        const socialContainer = socialHtml ? `<div class="flex items-center gap-4">${socialHtml}</div>` : "";
+        const socialContainer = socialHtml
+            ? `<div class="ggx-connect-inline"><div class="ggx-connect-grid">${socialHtml}</div></div>`
+            : "";
 
         return `
 <footer class="bg-[#0a0a0a] border-t border-white/10 mt-auto pt-10 pb-8 relative z-10">
@@ -933,15 +985,269 @@
             </div>
         </div>
         <div id="footer-links" class="mb-10 space-y-2"></div>
-        <div class="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-white/5">
-            <div class="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-600">
-                <span>&copy; 2026 GasGx. All rights reserved.</span><span class="hidden sm:inline text-gray-700">|</span>
-                ${privacyHtml}
+        <div class="ggx-footer-bottom pt-6 border-t border-white/5">
+            <div class="ggx-footer-meta">
+                <div class="ggx-footer-top-row">
+                    <div class="ggx-footer-brand-inline">
+                        <a href="/index.html" class="ggx-footer-logo" aria-label="GasGx Home">GasGx</a>
+                        <p class="ggx-footer-meta-tag text-sm text-gray-400">Energy-compute infrastructure for mining operators.</p>
+                    </div>
+                    ${socialContainer}
+                </div>
+                <div class="ggx-footer-legal-row">
+                    <div class="ggx-footer-legal flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-600">
+                        <span>&copy; 2026 GasGx. All rights reserved.</span><span class="text-gray-700">|</span>
+                        ${privacyHtml}
+                    </div>
+                </div>
             </div>
-            ${socialContainer}
         </div>
     </div>
 </footer>`;
+    }
+
+    function isNewsPath(pathnameCandidate) {
+        const pathname = String(pathnameCandidate || (window.location && window.location.pathname) || "/").toLowerCase();
+        return pathname === "/news" || pathname.startsWith("/news/");
+    }
+
+    function getMainAuthConfig() {
+        const runtimeConfig = window.GASGX_SHARED_CONFIG;
+        const sourceConfig = runtimeConfig && typeof runtimeConfig.mainAuth === "object"
+            ? runtimeConfig.mainAuth
+            : {};
+
+        function pickString(key, fallback) {
+            const candidate = sourceConfig && typeof sourceConfig[key] === "string"
+                ? sourceConfig[key].trim()
+                : "";
+            return candidate || fallback;
+        }
+
+        return {
+            storageKey: pickString("storageKey", MAIN_AUTH_DEFAULTS.storageKey),
+            signInUrl: pickString("signInUrl", MAIN_AUTH_DEFAULTS.signInUrl),
+            accountUrl: pickString("accountUrl", MAIN_AUTH_DEFAULTS.accountUrl),
+            signOutRedirectUrl: pickString("signOutRedirectUrl", MAIN_AUTH_DEFAULTS.signOutRedirectUrl),
+            returnUrlStorageKey: pickString("returnUrlStorageKey", MAIN_AUTH_DEFAULTS.returnUrlStorageKey),
+            supabaseUrl: pickString("supabaseUrl", MAIN_AUTH_DEFAULTS.supabaseUrl),
+            supabaseKey: pickString("supabaseKey", MAIN_AUTH_DEFAULTS.supabaseKey)
+        };
+    }
+
+    function getMainAuthElements() {
+        return {
+            loginBtn: document.getElementById("auth-login-btn"),
+            userProfile: document.getElementById("auth-user-profile"),
+            userAvatar: document.getElementById("auth-user-avatar"),
+            dropdownUsername: document.getElementById("dropdown-username"),
+            mobLoginBtn: document.getElementById("mob-auth-login-btn"),
+            mobUserProfile: document.getElementById("mob-auth-user-profile"),
+            mobUserAvatar: document.getElementById("mob-auth-user-avatar"),
+            mobUsername: document.getElementById("mob-auth-username")
+        };
+    }
+
+    function setAuthElementVisibility(node, visible) {
+        if (!node) return;
+        node.classList.toggle("hidden", !visible);
+        node.classList.toggle("flex", visible);
+    }
+
+    function resolveMainAuthDisplayName(user, profileName) {
+        if (!user) return "Sign In";
+        if (profileName && String(profileName).trim()) return String(profileName).trim();
+
+        const meta = user.user_metadata && typeof user.user_metadata === "object"
+            ? user.user_metadata
+            : {};
+        const fromMeta = meta.full_name || meta.name;
+        if (fromMeta && String(fromMeta).trim()) return String(fromMeta).trim();
+
+        if (typeof user.email === "string" && user.email.includes("@")) {
+            return user.email.split("@")[0];
+        }
+        return "Sign In";
+    }
+
+    function resolveMainAuthAvatar(user) {
+        if (!user) return MAIN_AUTH_FALLBACK_AVATAR;
+        const meta = user.user_metadata && typeof user.user_metadata === "object"
+            ? user.user_metadata
+            : {};
+        return meta.avatar_url || meta.picture || MAIN_AUTH_FALLBACK_AVATAR;
+    }
+
+    function applyMainAuthState(user, displayName) {
+        const els = getMainAuthElements();
+        if (user) {
+            setAuthElementVisibility(els.loginBtn, false);
+            setAuthElementVisibility(els.userProfile, true);
+            setAuthElementVisibility(els.mobLoginBtn, false);
+            setAuthElementVisibility(els.mobUserProfile, true);
+
+            const avatar = resolveMainAuthAvatar(user);
+            if (els.userAvatar) els.userAvatar.src = avatar;
+            if (els.mobUserAvatar) els.mobUserAvatar.src = avatar;
+            if (els.dropdownUsername) els.dropdownUsername.textContent = displayName;
+            if (els.mobUsername) els.mobUsername.textContent = displayName;
+            return;
+        }
+
+        setAuthElementVisibility(els.loginBtn, true);
+        setAuthElementVisibility(els.userProfile, false);
+        setAuthElementVisibility(els.mobLoginBtn, true);
+        setAuthElementVisibility(els.mobUserProfile, false);
+    }
+
+    async function fetchMainAuthProfileName(userId) {
+        if (!authBridgeState.client || !userId) return null;
+        try {
+            const { data: profile } = await authBridgeState.client
+                .from("profiles")
+                .select("full_name")
+                .eq("id", userId)
+                .single();
+            return profile && profile.full_name ? profile.full_name : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    async function applyMainAuthUser(user) {
+        authBridgeState.currentUser = user || null;
+        if (!authBridgeState.currentUser) {
+            applyMainAuthState(null, "Sign In");
+            return;
+        }
+
+        const profileName = await fetchMainAuthProfileName(authBridgeState.currentUser.id);
+        const displayName = resolveMainAuthDisplayName(authBridgeState.currentUser, profileName);
+        applyMainAuthState(authBridgeState.currentUser, displayName);
+    }
+
+    function saveMainReturnUrl() {
+        const config = authBridgeState.runtimeConfig || getMainAuthConfig();
+        try {
+            if (isNewsPath()) return;
+            const pathname = String((window.location && window.location.pathname) || "/").toLowerCase();
+            if (pathname.startsWith("/account/user")) return;
+            if (pathname.startsWith("/account/account")) return;
+            window.sessionStorage.setItem(config.returnUrlStorageKey, window.location.href);
+        } catch (error) {
+            // Ignore storage failures in restricted environments.
+        }
+    }
+
+    async function mainAuthBridgeSignIn() {
+        if (isNewsPath()) return undefined;
+        const config = authBridgeState.runtimeConfig || getMainAuthConfig();
+        if (authBridgeState.currentUser) {
+            window.location.href = config.accountUrl;
+            return undefined;
+        }
+
+        saveMainReturnUrl();
+        window.location.href = config.signInUrl;
+        return undefined;
+    }
+
+    async function mainAuthBridgeSignOut() {
+        if (isNewsPath()) return undefined;
+        const config = authBridgeState.runtimeConfig || getMainAuthConfig();
+
+        if (authBridgeState.client) {
+            try {
+                await authBridgeState.client.auth.signOut();
+            } catch (error) {
+                console.error("Main auth sign-out failed:", error);
+            }
+        }
+
+        authBridgeState.currentUser = null;
+        applyMainAuthState(null, "Sign In");
+        window.location.href = config.signOutRedirectUrl;
+        return undefined;
+    }
+
+    function loadSupabaseSdk() {
+        if (window.supabase && typeof window.supabase.createClient === "function") {
+            return Promise.resolve(window.supabase);
+        }
+
+        if (window.__ggxMainSupabasePromise) {
+            return window.__ggxMainSupabasePromise;
+        }
+
+        window.__ggxMainSupabasePromise = new Promise((resolve, reject) => {
+            const existingScript = document.querySelector(`script[src="${SUPABASE_SDK_URL}"]`);
+            if (existingScript) {
+                existingScript.addEventListener("load", () => resolve(window.supabase), { once: true });
+                existingScript.addEventListener("error", () => reject(new Error("Failed to load Supabase SDK")), { once: true });
+                if (window.supabase && typeof window.supabase.createClient === "function") {
+                    resolve(window.supabase);
+                }
+                return;
+            }
+
+            const script = document.createElement("script");
+            script.src = SUPABASE_SDK_URL;
+            script.async = true;
+            script.onload = () => resolve(window.supabase);
+            script.onerror = () => reject(new Error("Failed to load Supabase SDK"));
+            document.head.appendChild(script);
+        });
+
+        return window.__ggxMainSupabasePromise;
+    }
+
+    function ensureMainAuthBridge() {
+        if (isNewsPath()) return Promise.resolve();
+        if (authBridgeState.initPromise) return authBridgeState.initPromise;
+
+        authBridgeState.runtimeConfig = getMainAuthConfig();
+        const existingAuth = window.AuthApp && typeof window.AuthApp === "object"
+            ? window.AuthApp
+            : {};
+        window.AuthApp = Object.assign({}, existingAuth, {
+            __ggxMainAuthBridge: true,
+            signIn: mainAuthBridgeSignIn,
+            signOut: mainAuthBridgeSignOut
+        });
+
+        applyMainAuthState(null, "Sign In");
+
+        authBridgeState.initPromise = (async () => {
+            try {
+                const supabaseSdk = await loadSupabaseSdk();
+                if (!supabaseSdk || typeof supabaseSdk.createClient !== "function") {
+                    return;
+                }
+
+                authBridgeState.client = supabaseSdk.createClient(
+                    authBridgeState.runtimeConfig.supabaseUrl,
+                    authBridgeState.runtimeConfig.supabaseKey,
+                    { auth: { storageKey: authBridgeState.runtimeConfig.storageKey } }
+                );
+
+                const { data: { session } } = await authBridgeState.client.auth.getSession();
+                await applyMainAuthUser(session && session.user ? session.user : null);
+
+                if (!authBridgeState.authListenerBound) {
+                    authBridgeState.client.auth.onAuthStateChange(async (_event, sessionState) => {
+                        await applyMainAuthUser(sessionState && sessionState.user ? sessionState.user : null);
+                    });
+                    authBridgeState.authListenerBound = true;
+                }
+            } catch (error) {
+                console.warn("Main auth bridge init failed:", error);
+                await applyMainAuthUser(null);
+            } finally {
+                authBridgeState.initialized = true;
+            }
+        })();
+
+        return authBridgeState.initPromise;
     }
 
     function callApp(method, ...args) {
@@ -954,10 +1260,17 @@
 
     function callAuth(method) {
         const auth = window.AuthApp;
-        if (!auth || typeof auth[method] !== "function") {
-            return undefined;
+        if (auth && typeof auth[method] === "function") {
+            return auth[method]();
         }
-        return auth[method]();
+
+        if (method === "signIn") {
+            return mainAuthBridgeSignIn();
+        }
+        if (method === "signOut") {
+            return mainAuthBridgeSignOut();
+        }
+        return undefined;
     }
 
     function openQr(type) {
@@ -971,6 +1284,17 @@
         const slot = document.getElementById(slotId);
         if (!slot) return null;
         slot.innerHTML = html;
+        return slot;
+    }
+
+    function ensureSlot(slotId) {
+        let slot = document.getElementById(slotId);
+        if (slot) return slot;
+        if (!document.body) return null;
+
+        slot = document.createElement("div");
+        slot.id = slotId;
+        document.body.appendChild(slot);
         return slot;
     }
 
@@ -1112,6 +1436,8 @@
 
         const chatWindow = document.getElementById("ggx-chat-window");
         const toggleBtn = document.getElementById("ggx-chat-toggle-btn");
+        const dockBtn = document.getElementById("ggx-chat-dock-btn");
+        const undockBtn = document.getElementById("ggx-chat-undock-btn");
         const toggleIcon = document.getElementById("ggx-chat-toggle-icon");
         const closeBtn = document.getElementById("ggx-chat-close-btn");
         const messagesContainer = document.getElementById("ggx-chat-messages");
@@ -1128,8 +1454,10 @@
         const chatApiUrl = typeof runtimeConfig.chatApiUrl === "string" && runtimeConfig.chatApiUrl.trim()
             ? runtimeConfig.chatApiUrl.trim()
             : DEFAULT_CHAT_API_URL;
+        const dockStorageKey = "gasgx-chat-docked";
 
         let isChatOpen = false;
+        let isChatDocked = false;
 
         function scrollToBottom() {
             requestAnimationFrame(function () {
@@ -1138,6 +1466,7 @@
         }
 
         function setChatOpen(nextOpen) {
+            if (isChatDocked) return;
             isChatOpen = nextOpen;
             if (isChatOpen) {
                 chatWindow.classList.remove("hidden");
@@ -1161,6 +1490,26 @@
                 }, 300);
                 toggleIcon.classList.remove("fa-chevron-down");
                 toggleIcon.classList.add("fa-robot");
+            }
+        }
+
+        function setChatDocked(nextDocked) {
+            isChatDocked = !!nextDocked;
+            wrapper.classList.toggle("ggx-chat-is-docked", isChatDocked);
+            if (dockBtn) dockBtn.classList.toggle("hidden", isChatDocked);
+            if (undockBtn) undockBtn.classList.toggle("hidden", !isChatDocked);
+
+            if (isChatDocked) {
+                isChatOpen = false;
+                chatWindow.classList.add("hidden", "scale-95", "opacity-0");
+                toggleIcon.classList.remove("fa-chevron-down");
+                toggleIcon.classList.add("fa-robot");
+            }
+
+            try {
+                window.localStorage.setItem(dockStorageKey, isChatDocked ? "1" : "0");
+            } catch (error) {
+                // Ignore storage failures in restricted environments.
             }
         }
 
@@ -1217,8 +1566,23 @@
         }
 
         toggleBtn.addEventListener("click", function () {
+            if (isChatDocked) {
+                setChatDocked(false);
+            }
             setChatOpen(!isChatOpen);
         });
+
+        if (dockBtn) {
+            dockBtn.addEventListener("click", function () {
+                setChatDocked(true);
+            });
+        }
+
+        if (undockBtn) {
+            undockBtn.addEventListener("click", function () {
+                setChatDocked(false);
+            });
+        }
 
         if (closeBtn) {
             closeBtn.addEventListener("click", function () {
@@ -1237,11 +1601,18 @@
             }
         });
 
+        try {
+            setChatDocked(window.localStorage.getItem(dockStorageKey) === "1");
+        } catch (error) {
+            setChatDocked(false);
+        }
+
         wrapper.dataset.ggxBound = "1";
     }
 
     function mount() {
         if (state.mounted) {
+            ensureMainAuthBridge();
             runAppIntegrationHooks();
             refreshShellNavigation(true);
             syncLanguageUI(getCurrentLang());
@@ -1254,13 +1625,16 @@
         mountSlot("ggx-site-footer-slot", buildFooterTemplate());
 
         if (runtimeConfig.backToTopEnabled !== false) {
+            ensureSlot("ggx-back-to-top-slot");
             mountSlot("ggx-back-to-top-slot", BACK_TO_TOP_TEMPLATE);
         }
 
         if (runtimeConfig.chatbotEnabled !== false) {
+            ensureSlot("ggx-chatbot-slot");
             mountSlot("ggx-chatbot-slot", CHATBOT_TEMPLATE);
         }
 
+        ensureMainAuthBridge();
         bindActionDelegation();
         initBackToTop();
         initChatbot();
@@ -1294,7 +1668,8 @@
         refreshNavigation: refreshShellNavigation,
         syncLanguageUI: syncLanguageUI,
         initBackToTop: initBackToTop,
-        initChatbot: initChatbot
+        initChatbot: initChatbot,
+        ensureMainAuthBridge: ensureMainAuthBridge
     };
 
     if (document.readyState === "loading") {

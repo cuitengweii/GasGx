@@ -214,10 +214,49 @@
         .text-rank-1 { color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
         .text-rank-2 { color: #C0C0C0; text-shadow: 0 0 5px rgba(192, 192, 192, 0.5); }
         .text-rank-3 { color: #CD7F32; text-shadow: 0 0 5px rgba(205, 127, 50, 0.5); }
+
+        /* Home-only shell overrides: align mobile header menu with /news/index.html style */
+        body.home-shell-news-style #ggx-site-header-slot .gas-card {
+            background: rgba(5, 5, 5, 0.78) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        body.home-shell-news-style #ggx-site-header-slot #mobile-menu-container {
+            left: auto;
+            right: 0;
+            width: min(82vw, 16rem);
+            background: rgba(15, 15, 15, 0.95);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 250;
+        }
+
+        body.home-shell-news-style #ggx-site-header-slot #index-mobile-menu-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 240;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        body.home-shell-news-style #ggx-site-header-slot #mobile-menu-container[data-ggx-open="1"] + #index-mobile-menu-overlay {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
     </style>
     <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
 </head>
-<body class="flex flex-col min-h-screen relative">
+<body class="flex flex-col min-h-screen relative home-shell-news-style">
 
     <div id="ggx-site-header-slot"></div>
 
@@ -352,30 +391,189 @@
 <script src="/shared/ui/site-shell.config.js"></script>
 <script src="/shared/ui/site-shell.shared.js"></script>
 <script src="/shared/i18n/index.i18n.js"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        const firebaseConfig = { apiKey: "AIzaSyBUEXdeSB7Ue0gkwcXN3j76ymyCbngxufY", authDomain: "gasgxmining.firebaseapp.com", projectId: "gasgxmining", storageBucket: "gasgxmining.firebasestorage.app", messagingSenderId: "465579060005", appId: "1:465579060005:web:ee20cb21ed58020c4a88cc", measurementId: "G-ZHNSQ29181" };
-        const fbApp = initializeApp(firebaseConfig);
-        const auth = getAuth(fbApp);
-        const provider = new GoogleAuthProvider();
-        const els = { loginBtn: document.getElementById('auth-login-btn'), userProfile: document.getElementById('auth-user-profile'), userAvatar: document.getElementById('auth-user-avatar'), dropdownUsername: document.getElementById('dropdown-username'), mobLoginBtn: document.getElementById('mob-auth-login-btn'), mobUserProfile: document.getElementById('mob-auth-user-profile'), mobUserAvatar: document.getElementById('mob-auth-user-avatar'), mobUsername: document.getElementById('mob-auth-username') };
-        window.AuthApp = { signIn: async () => { try { await signInWithPopup(auth, provider); } catch (error) { console.error("Login failed:", error); alert("Login failed."); } }, signOut: async () => { try { await signOut(auth); } catch (error) { console.error("Logout failed:", error); } } };
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                if(els.loginBtn) { els.loginBtn.classList.add('hidden'); els.loginBtn.classList.remove('flex'); }
-                if(els.userProfile) { els.userProfile.classList.remove('hidden'); els.userProfile.classList.add('flex'); }
-                if(els.userAvatar) els.userAvatar.src = user.photoURL; if(els.dropdownUsername) els.dropdownUsername.innerText = user.displayName;
-                if(els.mobLoginBtn) els.mobLoginBtn.classList.add('hidden');
-                if(els.mobUserProfile) { els.mobUserProfile.classList.remove('hidden'); els.mobUserProfile.classList.add('flex'); }
-                if(els.mobUserAvatar) els.mobUserAvatar.src = user.photoURL; if(els.mobUsername) els.mobUsername.innerText = user.displayName;
-            } else {
-                if(els.loginBtn) { els.loginBtn.classList.remove('hidden'); els.loginBtn.classList.add('flex'); }
-                if(els.userProfile) { els.userProfile.classList.add('hidden'); els.userProfile.classList.remove('flex'); }
-                if(els.mobLoginBtn) els.mobLoginBtn.classList.remove('hidden');
-                if(els.mobUserProfile) { els.mobUserProfile.classList.add('hidden'); els.mobUserProfile.classList.remove('flex'); }
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        (() => {
+            const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
+            const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+            const MAIN_AUTH_STORAGE_KEY = 'gasgx-main-auth';
+            const SIGN_IN_URL = '/account/user.html';
+            const SIGN_OUT_REDIRECT_URL = '/account/user.html';
+            const ACCOUNT_URL = '/account/account.html';
+            const FALLBACK_AVATAR = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2232%22 fill=%22%23121812%22/%3E%3Cpath d=%22M32 33c7.18 0 13-5.82 13-13S39.18 7 32 7 19 12.82 19 20s5.82 13 13 13Zm0 4c-9.94 0-18 6.27-18 14v2h36v-2c0-7.73-8.06-14-18-14Z%22 fill=%22%235DD62C%22/%3E%3C/svg%3E';
+
+            let supabaseClient = null;
+            let currentUser = null;
+
+            function getEls() {
+                return {
+                    loginBtn: document.getElementById('auth-login-btn'),
+                    userProfile: document.getElementById('auth-user-profile'),
+                    userAvatar: document.getElementById('auth-user-avatar'),
+                    dropdownUsername: document.getElementById('dropdown-username'),
+                    mobLoginBtn: document.getElementById('mob-auth-login-btn'),
+                    mobUserProfile: document.getElementById('mob-auth-user-profile'),
+                    mobUserAvatar: document.getElementById('mob-auth-user-avatar'),
+                    mobUsername: document.getElementById('mob-auth-username')
+                };
             }
-        });
+
+            function setFlexVisibility(node, visible) {
+                if (!node) return;
+                node.classList.toggle('hidden', !visible);
+                node.classList.toggle('flex', visible);
+            }
+
+            function resolveDisplayName(user, profileName) {
+                if (!user) return 'Sign In';
+                if (profileName && String(profileName).trim()) return String(profileName).trim();
+
+                const meta = user.user_metadata || {};
+                const fromMeta = meta.full_name || meta.name;
+                if (fromMeta && String(fromMeta).trim()) return String(fromMeta).trim();
+
+                if (typeof user.email === 'string' && user.email.includes('@')) {
+                    return user.email.split('@')[0];
+                }
+                return 'Sign In';
+            }
+
+            function resolveAvatar(user) {
+                if (!user) return FALLBACK_AVATAR;
+                const meta = user.user_metadata || {};
+                return meta.avatar_url || meta.picture || FALLBACK_AVATAR;
+            }
+
+            function applyAuthState(user, displayName) {
+                const els = getEls();
+                if (user) {
+                    setFlexVisibility(els.loginBtn, false);
+                    setFlexVisibility(els.userProfile, true);
+                    setFlexVisibility(els.mobLoginBtn, false);
+                    setFlexVisibility(els.mobUserProfile, true);
+
+                    const avatar = resolveAvatar(user);
+                    if (els.userAvatar) els.userAvatar.src = avatar;
+                    if (els.mobUserAvatar) els.mobUserAvatar.src = avatar;
+                    if (els.dropdownUsername) els.dropdownUsername.innerText = displayName;
+                    if (els.mobUsername) els.mobUsername.innerText = displayName;
+                } else {
+                    setFlexVisibility(els.loginBtn, true);
+                    setFlexVisibility(els.userProfile, false);
+                    setFlexVisibility(els.mobLoginBtn, true);
+                    setFlexVisibility(els.mobUserProfile, false);
+                }
+            }
+
+            async function fetchProfileName(userId) {
+                if (!supabaseClient || !userId) return null;
+                try {
+                    const { data: profile } = await supabaseClient
+                        .from('profiles')
+                        .select('full_name')
+                        .eq('id', userId)
+                        .single();
+                    return profile && profile.full_name ? profile.full_name : null;
+                } catch (error) {
+                    console.log('Home shell profile fetch warning:', error);
+                    return null;
+                }
+            }
+
+            async function applyUserFromSession(user) {
+                currentUser = user || null;
+                if (!currentUser) {
+                    applyAuthState(null, 'Sign In');
+                    return;
+                }
+
+                const profileName = await fetchProfileName(currentUser.id);
+                const displayName = resolveDisplayName(currentUser, profileName);
+                applyAuthState(currentUser, displayName);
+            }
+
+            function ensureNewsStyleMobileOverlay() {
+                const menu = document.getElementById('mobile-menu-container');
+                if (!menu) return;
+                if (!menu.dataset.ggxOpen) menu.dataset.ggxOpen = '0';
+                if (document.getElementById('index-mobile-menu-overlay')) return;
+
+                const overlay = document.createElement('button');
+                overlay.type = 'button';
+                overlay.id = 'index-mobile-menu-overlay';
+                overlay.setAttribute('aria-label', 'Close mobile menu');
+                overlay.addEventListener('click', () => {
+                    const menuBtn = document.getElementById('mobile-menu-btn');
+                    if (menu.dataset.ggxOpen === '1' && menuBtn) menuBtn.click();
+                });
+
+                menu.insertAdjacentElement('afterend', overlay);
+            }
+
+            window.AuthApp = {
+                signIn: async () => {
+                    window.location.href = currentUser ? ACCOUNT_URL : SIGN_IN_URL;
+                },
+                signOut: async () => {
+                    if (supabaseClient) {
+                        try {
+                            await supabaseClient.auth.signOut();
+                        } catch (error) {
+                            console.error('Logout failed:', error);
+                        }
+                    }
+                    currentUser = null;
+                    applyAuthState(null, 'Sign In');
+                    window.location.href = SIGN_OUT_REDIRECT_URL;
+                }
+            };
+
+            async function initSupabaseAuth() {
+                if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+                    applyAuthState(null, 'Sign In');
+                    return;
+                }
+
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                    auth: { storageKey: MAIN_AUTH_STORAGE_KEY }
+                });
+
+                try {
+                    const {
+                        data: { session }
+                    } = await supabaseClient.auth.getSession();
+
+                    await applyUserFromSession(session ? session.user : null);
+                } catch (error) {
+                    console.error('Home shell auth init failed:', error);
+                    applyAuthState(null, 'Sign In');
+                }
+
+                supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+                    await applyUserFromSession(session ? session.user : null);
+                });
+            }
+
+            async function bootHomeShellBridge() {
+                ensureNewsStyleMobileOverlay();
+                await initSupabaseAuth();
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bootHomeShellBridge, { once: true });
+            } else {
+                bootHomeShellBridge();
+            }
+
+            document.addEventListener('gasgx:shared-ui-ready', () => {
+                ensureNewsStyleMobileOverlay();
+                if (currentUser) {
+                    applyAuthState(currentUser, resolveDisplayName(currentUser));
+                } else {
+                    applyAuthState(null, 'Sign In');
+                }
+            });
+        })();
     </script>
 
     <script>
@@ -867,4 +1065,3 @@ window.app = {
 </script>
 </body>
 </html>
-

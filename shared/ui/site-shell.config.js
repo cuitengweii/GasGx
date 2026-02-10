@@ -852,14 +852,44 @@
                 },
                 "socialLinks": [
                         {
-                                "id": "tiktok",
+                                "id": "x",
                                 "enabled": true,
                                 "mode": "link",
-                                "href": "https://www.tiktok.com/",
+                                "href": "https://x.com/",
                                 "target": "_blank",
                                 "rel": "noopener noreferrer",
-                                "iconClass": "fa-brands fa-tiktok",
-                                "ariaLabel": "Open TikTok"
+                                "iconClass": "fa-brands fa-x-twitter",
+                                "ariaLabel": "Open X"
+                        },
+                        {
+                                "id": "telegram",
+                                "enabled": true,
+                                "mode": "link",
+                                "href": "https://t.me/",
+                                "target": "_blank",
+                                "rel": "noopener noreferrer",
+                                "iconClass": "fa-brands fa-telegram",
+                                "ariaLabel": "Open Telegram"
+                        },
+                        {
+                                "id": "discord",
+                                "enabled": true,
+                                "mode": "link",
+                                "href": "https://discord.com/",
+                                "target": "_blank",
+                                "rel": "noopener noreferrer",
+                                "iconClass": "fa-brands fa-discord",
+                                "ariaLabel": "Open Discord"
+                        },
+                        {
+                                "id": "youtube",
+                                "enabled": true,
+                                "mode": "link",
+                                "href": "https://www.youtube.com/",
+                                "target": "_blank",
+                                "rel": "noopener noreferrer",
+                                "iconClass": "fa-brands fa-youtube",
+                                "ariaLabel": "Open YouTube"
                         },
                         {
                                 "id": "linkedin",
@@ -882,14 +912,62 @@
                                 "ariaLabel": "Open Facebook"
                         },
                         {
-                                "id": "x",
+                                "id": "tiktok",
                                 "enabled": true,
                                 "mode": "link",
-                                "href": "https://x.com/",
+                                "href": "https://www.tiktok.com/",
                                 "target": "_blank",
                                 "rel": "noopener noreferrer",
-                                "iconClass": "fa-brands fa-x-twitter",
-                                "ariaLabel": "Open X"
+                                "iconClass": "fa-brands fa-tiktok",
+                                "ariaLabel": "Open TikTok"
+                        },
+                        {
+                                "id": "wechat",
+                                "enabled": true,
+                                "mode": "qr",
+                                "qrType": "wechat",
+                                "iconClass": "fa-brands fa-weixin",
+                                "ariaLabel": "Open WeChat QR"
+                        },
+                        {
+                                "id": "whatsapp",
+                                "enabled": true,
+                                "mode": "link",
+                                "href": "https://wa.me/",
+                                "target": "_blank",
+                                "rel": "noopener noreferrer",
+                                "iconClass": "fa-brands fa-whatsapp",
+                                "ariaLabel": "Open WhatsApp"
+                        },
+                        {
+                                "id": "instagram",
+                                "enabled": true,
+                                "mode": "link",
+                                "href": "https://www.instagram.com/",
+                                "target": "_blank",
+                                "rel": "noopener noreferrer",
+                                "iconClass": "fa-brands fa-instagram",
+                                "ariaLabel": "Open Instagram"
+                        },
+                        {
+                                "id": "xhs",
+                                "enabled": true,
+                                "mode": "link",
+                                "href": "https://www.xiaohongshu.com/",
+                                "target": "_blank",
+                                "rel": "noopener noreferrer",
+                                "text": "XHS",
+                                "ariaLabel": "Open Xiaohongshu"
+                        },
+                        {
+                                "id": "video",
+                                "enabled": true,
+                                "mode": "link",
+                                "href": "/news/index.html",
+                                "target": "_blank",
+                                "rel": "noopener noreferrer",
+                                "iconClass": "fa-solid fa-circle-play",
+                                "ariaLabel": "Open Video Channel"
                         }
                 ]
         }
