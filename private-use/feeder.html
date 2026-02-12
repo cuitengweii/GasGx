@@ -111,6 +111,25 @@
         .grid-select { display: grid; gap: 8px; }
         .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
         .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .secondary-groups { display: flex; flex-direction: column; gap: 12px; }
+        .secondary-group {
+            background: #0b0b0b;
+            border: 1px solid #1f1f1f;
+            border-radius: 10px;
+            padding: 10px;
+        }
+        .secondary-group.active-group {
+            border-color: #355929;
+            box-shadow: inset 0 0 0 1px rgba(93, 214, 44, 0.15);
+        }
+        .secondary-group-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #8f959e;
+            margin-bottom: 8px;
+        }
         @media (max-width: 380px) {
             .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
         }
@@ -221,11 +240,9 @@
 
         <div>
             <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider" data-i18n="secondaryTag">Secondary Tag</label>
-            <div class="grid-select grid-cols-3" id="secondary_tag-container"></div>
-            <div id="secondary_tag-custom-wrapper" class="custom-input-wrapper">
-                <input type="text" id="secondary_tag-custom-input" class="input-gas border-gas-green" data-i18n-placeholder="secondaryTagCustomPlaceholder" placeholder="Type custom Sec Tag..." oninput="syncCustomValue('secondary_tag', this.value)">
-            </div>
-            <input type="hidden" id="secondary_tag" value=""> 
+            <div id="secondary_tag-groups" class="secondary-groups"></div>
+            <input type="hidden" id="secondary_tag" value="">
+            <input type="hidden" id="secondary_tag_group" value="gas-energy">
         </div>
 
         <button type="submit" id="submitBtn" class="btn-gas mt-6 flex items-center justify-center gap-3">
@@ -385,20 +402,42 @@
             { id: 'custom', label: { en: '+ DIY', zh: '+ 自定义' } }
         ];
 
+        const SECONDARY_TAG_GROUP_IDS = ['gas-energy', 'generators', 'bitcoin-mining'];
+        const SECONDARY_TAG_SECTION_PREFIX = 'secondary_tag__';
+        const DEFAULT_SECONDARY_TAG_GROUP = 'gas-energy';
+        let activeSecondaryTagGroup = DEFAULT_SECONDARY_TAG_GROUP;
+        const secondaryCustomOpenState = {};
+        SECONDARY_TAG_GROUP_IDS.forEach((groupId) => {
+            secondaryCustomOpenState[groupId] = false;
+        });
+
+        function cloneOptionItems(items) {
+            return (items || []).map((item) => ({
+                ...item,
+                label: (item && typeof item.label === 'object' && item.label !== null)
+                    ? { ...item.label }
+                    : item.label
+            }));
+        }
+
+        const secondaryTagOptionsByGroup = {};
+        SECONDARY_TAG_GROUP_IDS.forEach((groupId) => {
+            secondaryTagOptionsByGroup[groupId] = cloneOptionItems(secTags);
+        });
+
         // --- DIY Cache (LocalStorage) ---
         const CUSTOM_STORE_PREFIX = 'gasgx_feeder_custom_';
         const CUSTOM_MAX = 12;
         const baseOptions = {
             category: categories,
             publisher: publishers,
-            tag: mainTags,
-            secondary_tag: secTags
+            tag: mainTags
         };
         const gridConfigMap = {
             category: { containerId: 'category-container', items: categories, defaultVal: 'gas-energy' },
             publisher: { containerId: 'publisher-container', items: publishers, defaultVal: 'GasGx-Researcher' },
             tag: { containerId: 'tag-container', items: mainTags, defaultVal: 'Hardware' },
-            secondary_tag: { containerId: 'secondary_tag-container', items: secTags, defaultVal: '' }
+            secondary_tag: { containerId: 'secondary_tag-groups', items: secTags, defaultVal: '' }
         };
         const LAST_STORE_KEY = 'gasgx_feeder_last_state';
         const manualOverride = {};
@@ -430,11 +469,27 @@
             Object.entries(gridConfigMap).forEach(([inputId, cfg]) => {
                 renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
             });
+            const categoryValue = document.getElementById('category') ? document.getElementById('category').value : '';
+            const targetGroup = normalizeSecondaryTagGroupId(categoryValue);
+            if (targetGroup) {
+                activeSecondaryTagGroup = targetGroup;
+                const groupInput = document.getElementById('secondary_tag_group');
+                if (groupInput) groupInput.value = targetGroup;
+            }
+            renderSecondaryTagGroups();
             renderHistory();
         }
 
         function normalizeValue(value) {
             return (value || '').toString().trim();
+        }
+
+        function escapeHtmlAttr(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
         }
 
         function normalizeSectionKey(rawSection) {
@@ -445,6 +500,60 @@
             if (section === 'secondary') return 'secondary_tag';
             if (section === 'secondarytag') return 'secondary_tag';
             return REMOTE_OPTION_SECTIONS.includes(section) ? section : '';
+        }
+
+        function normalizeSecondaryTagGroupId(rawValue) {
+            const value = normalizeValue(rawValue).toLowerCase();
+            if (!value) return '';
+            if (value === 'btc-mining') return 'bitcoin-mining';
+            return SECONDARY_TAG_GROUP_IDS.includes(value) ? value : '';
+        }
+
+        function getSecondaryTagSection(groupId = activeSecondaryTagGroup) {
+            const normalizedGroup = normalizeSecondaryTagGroupId(groupId) || DEFAULT_SECONDARY_TAG_GROUP;
+            return `${SECONDARY_TAG_SECTION_PREFIX}${normalizedGroup}`;
+        }
+
+        function getSecondaryTagGroupFromSection(rawSection) {
+            const section = normalizeValue(rawSection).toLowerCase();
+            if (!section) return '';
+            if (section.startsWith(SECONDARY_TAG_SECTION_PREFIX)) {
+                return normalizeSecondaryTagGroupId(section.slice(SECONDARY_TAG_SECTION_PREFIX.length));
+            }
+            if (section === 'secondary_tag' || section === 'secondary' || section === 'secondarytag') {
+                return DEFAULT_SECONDARY_TAG_GROUP;
+            }
+            return '';
+        }
+
+        function resolveRemoteSectionForInput(inputId, groupId = '') {
+            const normalizedInputId = normalizeSectionKey(inputId);
+            if (!normalizedInputId) return '';
+            if (normalizedInputId === 'secondary_tag') return getSecondaryTagSection(groupId || activeSecondaryTagGroup);
+            return normalizedInputId;
+        }
+
+        function resolveLocalCacheKey(inputId, groupId = '') {
+            const normalizedInputId = normalizeSectionKey(inputId);
+            if (normalizedInputId === 'secondary_tag') return getSecondaryTagSection(groupId || activeSecondaryTagGroup);
+            return inputId;
+        }
+
+        function getOptionItemsByInput(inputId, groupId = '') {
+            const normalizedInputId = normalizeSectionKey(inputId);
+            if (!normalizedInputId) return [];
+            if (normalizedInputId === 'secondary_tag') {
+                const normalizedGroup = normalizeSecondaryTagGroupId(groupId || activeSecondaryTagGroup) || DEFAULT_SECONDARY_TAG_GROUP;
+                return secondaryTagOptionsByGroup[normalizedGroup] || [];
+            }
+            return baseOptions[normalizedInputId] || [];
+        }
+
+        function getCategoryLabelById(categoryId) {
+            const key = normalizeValue(categoryId).toLowerCase();
+            if (!key) return '';
+            const match = categories.find(item => normalizeValue(item.id).toLowerCase() === key);
+            return match ? getLocalizedLabel(match.label) : categoryId;
         }
 
         function ensureCustomOption(items) {
@@ -488,43 +597,68 @@
                 const grouped = {
                     category: [],
                     publisher: [],
-                    tag: [],
-                    secondary_tag: []
+                    tag: []
                 };
+                const groupedSecondary = {};
+                SECONDARY_TAG_GROUP_IDS.forEach((groupId) => {
+                    groupedSecondary[groupId] = [];
+                });
+                const legacySecondary = [];
 
                 data.forEach((row) => {
-                    const section = normalizeSectionKey(row.section);
                     const optionId = normalizeValue(row.option_id);
-                    if (!section || !optionId || optionId.toLowerCase() === 'custom') return;
+                    if (!optionId || optionId.toLowerCase() === 'custom') return;
 
-                    grouped[section].push({
+                    const optionItem = {
                         id: optionId,
                         label: {
                             en: normalizeValue(row.label_en) || optionId,
                             zh: normalizeValue(row.label_zh) || normalizeValue(row.label_en) || optionId
                         }
-                    });
+                    };
+
+                    const rawSection = normalizeValue(row.section).toLowerCase();
+                    const secondaryGroup = getSecondaryTagGroupFromSection(row.section);
+                    if (secondaryGroup && rawSection.startsWith(SECONDARY_TAG_SECTION_PREFIX)) {
+                        groupedSecondary[secondaryGroup].push(optionItem);
+                        return;
+                    }
+                    if (rawSection === 'secondary_tag' || rawSection === 'secondary' || rawSection === 'secondarytag') {
+                        legacySecondary.push(optionItem);
+                        return;
+                    }
+
+                    const section = normalizeSectionKey(row.section);
+                    if (!section || section === 'secondary_tag') return;
+                    grouped[section].push(optionItem);
                 });
 
                 const optionMap = {
                     category: categories,
                     publisher: publishers,
-                    tag: mainTags,
-                    secondary_tag: secTags
+                    tag: mainTags
                 };
 
                 Object.entries(grouped).forEach(([section, items]) => {
                     if (!items.length) return;
                     replaceOptionItems(optionMap[section], items);
                 });
+
+                SECONDARY_TAG_GROUP_IDS.forEach((groupId) => {
+                    const byGroup = groupedSecondary[groupId];
+                    const fallbackItems = legacySecondary;
+                    const nextItems = byGroup.length ? byGroup : fallbackItems;
+                    if (!nextItems.length) return;
+                    replaceOptionItems(secondaryTagOptionsByGroup[groupId], nextItems);
+                });
             } catch (e) {
                 console.warn('Load feeder options exception:', e);
             }
         }
 
-        async function saveCustomOptionRemote(inputId, value) {
+        async function saveCustomOptionRemote(inputId, value, groupId = '') {
             if (!remoteOptionsTableReady) return;
-            const section = normalizeSectionKey(inputId);
+            const section = resolveRemoteSectionForInput(inputId, groupId);
             const optionId = normalizeValue(value);
             if (!section || !optionId) return;
             try {
@@ -547,9 +681,9 @@
             }
         }
 
-        async function removeCustomOptionRemote(inputId, value) {
+        async function removeCustomOptionRemote(inputId, value, groupId = '') {
             if (!remoteOptionsTableReady) return;
-            const section = normalizeSectionKey(inputId);
+            const section = resolveRemoteSectionForInput(inputId, groupId);
             const optionId = normalizeValue(value);
             if (!section || !optionId) return;
             try {
@@ -591,17 +725,26 @@
             }
         }
 
-        function persistCustomValue(inputId, value) {
+        function persistCustomValue(inputId, value, groupId = '') {
             const val = normalizeValue(value);
             if (!val) return;
-            const baseList = (baseOptions[inputId] || []).map(item => (item.id || '').toString().toLowerCase());
+            const baseList = getOptionItemsByInput(inputId, groupId).map(item => (item.id || '').toString().toLowerCase());
             if (baseList.includes(val.toLowerCase())) return;
-            let list = loadCustomOptions(inputId);
+            const section = resolveRemoteSectionForInput(inputId, groupId);
+            saveCustomOptionRemote(inputId, val, groupId);
+
+            // Remote-first mode: once remote table is ready, do not keep local cache as source of truth.
+            if (section && remoteOptionsTableReady) {
+                upsertOptionInMemory(section, val, val);
+                return;
+            }
+
+            const storeKey = resolveLocalCacheKey(inputId, groupId);
+            let list = loadCustomOptions(storeKey);
             list.unshift(val);
             list = list.filter((v, idx, arr) => arr.findIndex(x => x.toLowerCase() === v.toLowerCase()) === idx);
             if (list.length > CUSTOM_MAX) list = list.slice(0, CUSTOM_MAX);
-            saveCustomOptions(inputId, list);
-            saveCustomOptionRemote(inputId, val);
+            saveCustomOptions(storeKey, list);
         }
 
         function saveLastSelections(data) {
@@ -624,6 +767,15 @@
                         if (hiddenInput) hiddenInput.value = data[inputId];
                     }
                 });
+                if (data.secondary_tag_group) {
+                    const savedGroup = normalizeSecondaryTagGroupId(data.secondary_tag_group);
+                    if (savedGroup) activeSecondaryTagGroup = savedGroup;
+                }
+                const savedCategory = data.category;
+                const targetGroup = normalizeSecondaryTagGroupId(savedCategory);
+                if (targetGroup) activeSecondaryTagGroup = targetGroup;
+                const groupInput = document.getElementById('secondary_tag_group');
+                if (groupInput) groupInput.value = activeSecondaryTagGroup;
             } catch (e) {
                 console.warn('Load last selections failed:', e);
             }
@@ -635,8 +787,161 @@
             if (!force && manualOverride[inputId]) return;
             const hiddenInput = document.getElementById(inputId);
             if (hiddenInput) hiddenInput.value = val;
+            if (inputId === 'category') {
+                const targetGroup = normalizeSecondaryTagGroupId(val);
+                if (targetGroup) {
+                    activeSecondaryTagGroup = targetGroup;
+                    const groupInput = document.getElementById('secondary_tag_group');
+                    if (groupInput) groupInput.value = targetGroup;
+                    renderSecondaryTagGroups();
+                }
+            }
             const cfg = gridConfigMap[inputId];
             if (cfg) renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
+        }
+
+        function getOptionTargetListBySection(section) {
+            const rawSection = normalizeValue(section);
+            if (!rawSection) return [];
+            const groupId = getSecondaryTagGroupFromSection(rawSection);
+            if (groupId && rawSection.toLowerCase().startsWith(SECONDARY_TAG_SECTION_PREFIX)) {
+                return secondaryTagOptionsByGroup[groupId] || [];
+            }
+            const normalizedSection = normalizeSectionKey(rawSection);
+            if (!normalizedSection) return [];
+            if (normalizedSection === 'secondary_tag') {
+                return secondaryTagOptionsByGroup[DEFAULT_SECONDARY_TAG_GROUP] || [];
+            }
+            return baseOptions[normalizedSection] || [];
+        }
+
+        function upsertOptionInMemory(section, optionId, labelEn = optionId, labelZh = optionId) {
+            const val = normalizeValue(optionId);
+            if (!val) return;
+            const targetItems = getOptionTargetListBySection(section);
+            if (!Array.isArray(targetItems)) return;
+
+            const key = val.toLowerCase();
+            const existingIndex = targetItems.findIndex(item => normalizeValue(item && item.id).toLowerCase() === key);
+            if (existingIndex >= 0) {
+                if (normalizeValue(targetItems[existingIndex].id).toLowerCase() === 'custom') return;
+                targetItems[existingIndex] = {
+                    ...targetItems[existingIndex],
+                    id: val,
+                    label: {
+                        en: normalizeValue(labelEn) || val,
+                        zh: normalizeValue(labelZh) || normalizeValue(labelEn) || val
+                    }
+                };
+                return;
+            }
+
+            const customIndex = targetItems.findIndex(item => normalizeValue(item && item.id).toLowerCase() === 'custom');
+            const newItem = {
+                id: val,
+                label: {
+                    en: normalizeValue(labelEn) || val,
+                    zh: normalizeValue(labelZh) || normalizeValue(labelEn) || val
+                }
+            };
+            if (customIndex >= 0) {
+                targetItems.splice(customIndex, 0, newItem);
+            } else {
+                targetItems.push(newItem);
+            }
+        }
+
+        function removeOptionInMemory(section, optionId) {
+            const val = normalizeValue(optionId);
+            if (!val) return;
+            const targetItems = getOptionTargetListBySection(section);
+            if (!Array.isArray(targetItems) || !targetItems.length) return;
+            const keep = targetItems.filter((item) => normalizeValue(item && item.id).toLowerCase() !== val.toLowerCase());
+            replaceOptionItems(targetItems, keep);
+        }
+
+        async function migrateLocalCachedOptionsToRemote(inputIds = REMOTE_OPTION_SECTIONS) {
+            if (!remoteOptionsTableReady) return 0;
+
+            const sections = Array.from(new Set(
+                (inputIds || [])
+                    .map(normalizeSectionKey)
+                    .filter(Boolean)
+            ));
+            if (!sections.length) return 0;
+
+            const payload = [];
+            const touchedStoreKeys = new Set();
+            const dedupe = new Set();
+
+            const migrationEntries = [];
+            sections.forEach((section) => {
+                if (section === 'secondary_tag') {
+                    migrationEntries.push({
+                        localKey: 'secondary_tag',
+                        section: getSecondaryTagSection(DEFAULT_SECONDARY_TAG_GROUP)
+                    });
+                    SECONDARY_TAG_GROUP_IDS.forEach((groupId) => {
+                        migrationEntries.push({
+                            localKey: getSecondaryTagSection(groupId),
+                            section: getSecondaryTagSection(groupId)
+                        });
+                    });
+                    return;
+                }
+                migrationEntries.push({ localKey: section, section });
+            });
+
+            migrationEntries.forEach(({ localKey, section }) => {
+                const localList = loadCustomOptions(localKey);
+                if (!localList.length) return;
+
+                const seen = new Set();
+                localList.forEach((rawValue, index) => {
+                    const optionId = normalizeValue(rawValue);
+                    if (!optionId || optionId.toLowerCase() === 'custom') return;
+                    const key = optionId.toLowerCase();
+                    if (seen.has(key)) return;
+                    seen.add(key);
+                    const rowKey = `${section}::${key}`;
+                    if (dedupe.has(rowKey)) return;
+                    dedupe.add(rowKey);
+                    payload.push({
+                        section,
+                        option_id: optionId,
+                        label_en: optionId,
+                        label_zh: optionId,
+                        sort_order: 900 + index,
+                        is_active: true
+                    });
+                    touchedStoreKeys.add(localKey);
+                });
+            });
+
+            if (!payload.length) return 0;
+
+            try {
+                const { error } = await client
+                    .from(FEEDER_OPTIONS_TABLE)
+                    .upsert(payload, { onConflict: 'section,option_id' });
+                if (error) {
+                    console.warn('Migrate cached options to Supabase failed:', error);
+                    return 0;
+                }
+
+                // Clear migrated local cache to keep remote as single source of truth.
+                touchedStoreKeys.forEach((storeKey) => {
+                    try {
+                        localStorage.removeItem(getStoreKey(storeKey));
+                    } catch (e) {
+                        console.warn('Clear migrated local cache failed:', e);
+                    }
+                });
+                return payload.length;
+            } catch (e) {
+                console.warn('Migrate cached options exception:', e);
+                return 0;
+            }
         }
 
         function parseUrlSafe(url) {
@@ -688,8 +993,11 @@
             applySelection('publisher', detectedPublisher, true);
         }
 
-        function mergeOptions(inputId, items) {
-            const customValues = loadCustomOptions(inputId);
+        function mergeOptions(inputId, items, groupId = '') {
+            const section = normalizeSectionKey(inputId);
+            if (section && remoteOptionsTableReady) return items;
+
+            const customValues = loadCustomOptions(resolveLocalCacheKey(inputId, groupId));
             if (!customValues.length) return items;
             const customItems = customValues.map(val => ({ id: val, label: val, _isCustom: true }));
             const seen = new Set();
@@ -712,6 +1020,109 @@
                 }
             }
             return merged;
+        }
+
+        function collectDisplayedOptionPayload(inputId, groupId = '') {
+            const normalizedInputId = normalizeSectionKey(inputId);
+            if (!normalizedInputId) return [];
+            if (normalizedInputId === 'secondary_tag' && !groupId) {
+                return SECONDARY_TAG_GROUP_IDS.flatMap((gId) => collectDisplayedOptionPayload('secondary_tag', gId));
+            }
+
+            const cfg = gridConfigMap[inputId];
+            if (!cfg) return [];
+            const mergedItems = mergeOptions(inputId, getOptionItemsByInput(inputId, groupId), groupId);
+            const section = resolveRemoteSectionForInput(inputId, groupId);
+            if (!section) return [];
+            const seen = new Set();
+            const payload = [];
+            mergedItems.forEach((item, index) => {
+                const optionId = normalizeValue(item && item.id);
+                if (!optionId || optionId.toLowerCase() === 'custom') return;
+                const dedupeKey = optionId.toLowerCase();
+                if (seen.has(dedupeKey)) return;
+                seen.add(dedupeKey);
+
+                const rawLabel = item && item.label;
+                const labelEn = normalizeValue(
+                    rawLabel && typeof rawLabel === 'object'
+                        ? (rawLabel.en || rawLabel.zh)
+                        : rawLabel
+                ) || optionId;
+                const labelZh = normalizeValue(
+                    rawLabel && typeof rawLabel === 'object'
+                        ? (rawLabel.zh || rawLabel.en)
+                        : rawLabel
+                ) || labelEn;
+
+                payload.push({
+                    section,
+                    option_id: optionId,
+                    label_en: labelEn,
+                    label_zh: labelZh,
+                    sort_order: index + 1,
+                    is_active: true
+                });
+            });
+            return payload;
+        }
+
+        async function syncDisplayedOptionsToRemote(inputIds = ['tag', 'secondary_tag']) {
+            if (!remoteOptionsTableReady) return;
+
+            const normalizedInputIds = Array.from(new Set(
+                (inputIds || [])
+                    .map(normalizeSectionKey)
+                    .filter(Boolean)
+            ));
+            if (!normalizedInputIds.length) return;
+
+            const sections = Array.from(new Set(
+                normalizedInputIds.flatMap((inputId) => {
+                    if (inputId === 'secondary_tag') {
+                        return SECONDARY_TAG_GROUP_IDS.map((groupId) => resolveRemoteSectionForInput('secondary_tag', groupId));
+                    }
+                    return [resolveRemoteSectionForInput(inputId)];
+                }).filter(Boolean)
+            ));
+            if (!sections.length) return;
+
+            const displayPayload = normalizedInputIds.flatMap((inputId) => collectDisplayedOptionPayload(inputId));
+            if (!displayPayload.length) return;
+
+            try {
+                const { data, error } = await client
+                    .from(FEEDER_OPTIONS_TABLE)
+                    .select('section, option_id, is_active')
+                    .in('section', sections);
+                if (error) {
+                    console.warn('Load options for display sync failed:', error);
+                    return;
+                }
+
+                const remoteState = new Map();
+                (data || []).forEach((row) => {
+                    const section = normalizeValue(row.section).toLowerCase();
+                    const optionId = normalizeValue(row.option_id);
+                    if (!section || !optionId) return;
+                    remoteState.set(`${section}::${optionId.toLowerCase()}`, Boolean(row.is_active));
+                });
+
+                const payloadToUpsert = displayPayload.filter((item) => {
+                    const key = `${item.section}::${item.option_id.toLowerCase()}`;
+                    return !remoteState.has(key) || !remoteState.get(key);
+                });
+                if (!payloadToUpsert.length) return;
+
+                const { error: upsertError } = await client
+                    .from(FEEDER_OPTIONS_TABLE)
+                    .upsert(payloadToUpsert, { onConflict: 'section,option_id' });
+                if (upsertError) {
+                    console.warn('Upsert display sync options failed:', upsertError);
+                }
+            } catch (e) {
+                console.warn('Sync displayed options to Supabase exception:', e);
+            }
         }
 
         // --- 1. Paste Logic (点击图标触发) ---
@@ -744,11 +1155,77 @@
         }
 
         // --- 2. Grid & DIY Logic ---
+        function renderSecondaryTagGroups() {
+            const container = document.getElementById('secondary_tag-groups');
+            const hiddenInput = document.getElementById('secondary_tag');
+            const groupInput = document.getElementById('secondary_tag_group');
+            if (!container || !hiddenInput) return;
+
+            const selectedValue = normalizeValue(hiddenInput.value);
+            const selectedKey = selectedValue.toLowerCase();
+            const normalizedActiveGroup = normalizeSecondaryTagGroupId(
+                (groupInput && groupInput.value) || activeSecondaryTagGroup
+            ) || DEFAULT_SECONDARY_TAG_GROUP;
+            activeSecondaryTagGroup = normalizedActiveGroup;
+            if (groupInput) groupInput.value = normalizedActiveGroup;
+
+            container.innerHTML = SECONDARY_TAG_GROUP_IDS.map((groupId) => {
+                const mergedItems = mergeOptions(
+                    'secondary_tag',
+                    getOptionItemsByInput('secondary_tag', groupId),
+                    groupId
+                );
+                const isActiveGroup = groupId === activeSecondaryTagGroup;
+                const customOpen = Boolean(secondaryCustomOpenState[groupId]);
+                const customInputValue = customOpen && isActiveGroup ? escapeHtmlAttr(selectedValue) : '';
+
+                const cardsHtml = mergedItems.map((item) => {
+                    const encodedId = encodeURIComponent(item.id);
+                    const customClass = item._isCustom ? 'custom-item' : '';
+                    const optionKey = normalizeValue(item.id).toLowerCase();
+                    const isActive = isActiveGroup && selectedKey && optionKey === selectedKey;
+                    const deleteBtn = item._isCustom
+                        ? `<button type="button" class="delete-x" onclick="removeCustomOption(event, 'secondary_tag', '${encodedId}', '${groupId}')" aria-label="${t('deleteCachedOption')}">x</button>`
+                        : '';
+                    return `
+                        <div class="option-card ${customClass} ${isActive ? 'active' : ''} ${item.id === 'custom' ? 'border-dashed border-gray-600 text-gray-500' : ''}"
+                             onclick="handleSelection('secondary_tag', '${encodedId}', this, '${groupId}')">
+                            ${getLocalizedLabel(item.label)}
+                            ${deleteBtn}
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="secondary-group ${isActiveGroup ? 'active-group' : ''}">
+                        <div class="secondary-group-title">${getCategoryLabelById(groupId)}</div>
+                        <div class="grid-select grid-cols-3">${cardsHtml}</div>
+                        <div id="secondary_tag-custom-wrapper-${groupId}" class="custom-input-wrapper ${customOpen ? 'show' : ''}">
+                            <input type="text"
+                                   id="secondary_tag-custom-input-${groupId}"
+                                   class="input-gas border-gas-green"
+                                   data-i18n-placeholder="secondaryTagCustomPlaceholder"
+                                   placeholder="${escapeHtmlAttr(t('secondaryTagCustomPlaceholder'))}"
+                                   value="${customInputValue}"
+                                   oninput="syncCustomValue('secondary_tag', this.value, '${groupId}')">
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         function renderGrid(containerId, inputId, items, defaultVal) {
+            if (inputId === 'secondary_tag') {
+                renderSecondaryTagGroups();
+                return;
+            }
+
             const container = document.getElementById(containerId);
             const hiddenInput = document.getElementById(inputId);
-            const mergedItems = mergeOptions(inputId, items);
-            
+            if (!container || !hiddenInput) return;
+            const resolvedItems = getOptionItemsByInput(inputId);
+            const mergedItems = mergeOptions(inputId, resolvedItems.length ? resolvedItems : items);
+
             // Set default logic
             if(!hiddenInput.value && defaultVal) hiddenInput.value = defaultVal;
             const hasCurrentValue = mergedItems.some(item => item.id === hiddenInput.value);
@@ -771,24 +1248,50 @@
                     </div>
                 `;
             }).join('');
-            
+
             // Init check: if default was custom, show input
-            if(hiddenInput.value === 'custom') {
-               const wrap = document.getElementById(`${inputId}-custom-wrapper`);
-               if(wrap) wrap.classList.add('show');
-            }
+            const wrap = document.getElementById(`${inputId}-custom-wrapper`);
+            if (wrap) wrap.classList.toggle('show', hiddenInput.value === 'custom');
         }
 
-        function handleSelection(inputId, value, element) {
+        function handleSelection(inputId, value, element, groupId = '') {
             const decodedValue = decodeURIComponent(value);
             const hiddenInput = document.getElementById(inputId);
+            if (!hiddenInput) return;
+            manualOverride[inputId] = true;
+
+            if (inputId === 'secondary_tag') {
+                const normalizedGroup = normalizeSecondaryTagGroupId(groupId) || DEFAULT_SECONDARY_TAG_GROUP;
+                activeSecondaryTagGroup = normalizedGroup;
+                const groupInput = document.getElementById('secondary_tag_group');
+                if (groupInput) groupInput.value = normalizedGroup;
+
+                SECONDARY_TAG_GROUP_IDS.forEach((gId) => {
+                    secondaryCustomOpenState[gId] = false;
+                });
+
+                if (decodedValue === 'custom') {
+                    secondaryCustomOpenState[normalizedGroup] = true;
+                    const customInput = document.getElementById(`secondary_tag-custom-input-${normalizedGroup}`);
+                    hiddenInput.value = customInput ? customInput.value : '';
+                    renderSecondaryTagGroups();
+                    const nextInput = document.getElementById(`secondary_tag-custom-input-${normalizedGroup}`);
+                    if (nextInput) nextInput.focus();
+                } else {
+                    hiddenInput.value = decodedValue;
+                    renderSecondaryTagGroups();
+                }
+
+                if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(5);
+                return;
+            }
+
             const customWrapper = document.getElementById(`${inputId}-custom-wrapper`);
             const customInput = document.getElementById(`${inputId}-custom-input`);
-            manualOverride[inputId] = true;
 
             // 1. UI Style Update
             const siblings = element.parentElement.children;
-            for(let el of siblings) el.classList.remove('active');
+            for (let el of siblings) el.classList.remove('active');
             element.classList.add('active');
 
             // 2. Data Logic
@@ -798,7 +1301,7 @@
                 if(customInput) {
                     customInput.focus();
                     // If user already typed something, use that. If empty, it's empty string.
-                    hiddenInput.value = customInput.value; 
+                    hiddenInput.value = customInput.value;
                 }
             } else {
                 // Hide Input & Set Value
@@ -806,28 +1309,69 @@
                 hiddenInput.value = decodedValue;
             }
 
+            if (inputId === 'category' && decodedValue !== 'custom') {
+                const targetGroup = normalizeSecondaryTagGroupId(decodedValue);
+                if (targetGroup) {
+                    activeSecondaryTagGroup = targetGroup;
+                    const groupInput = document.getElementById('secondary_tag_group');
+                    if (groupInput) groupInput.value = targetGroup;
+                    renderSecondaryTagGroups();
+                }
+            }
+
             // Haptic
             if(window.navigator && window.navigator.vibrate) window.navigator.vibrate(5);
         }
 
         // Called when user types in DIY box: Syncs to the hidden input which Supabase uses
-        function syncCustomValue(inputId, val) {
-            document.getElementById(inputId).value = val;
+        function syncCustomValue(inputId, val, groupId = '') {
+            const hiddenInput = document.getElementById(inputId);
+            if (!hiddenInput) return;
+            if (inputId === 'secondary_tag') {
+                const normalizedGroup = normalizeSecondaryTagGroupId(groupId) || DEFAULT_SECONDARY_TAG_GROUP;
+                activeSecondaryTagGroup = normalizedGroup;
+                const groupInput = document.getElementById('secondary_tag_group');
+                if (groupInput) groupInput.value = normalizedGroup;
+                secondaryCustomOpenState[normalizedGroup] = true;
+            }
+            hiddenInput.value = val;
             manualOverride[inputId] = true;
         }
 
-        function removeCustomOption(event, inputId, encodedValue) {
+        function removeCustomOption(event, inputId, encodedValue, groupId = '') {
             if (event) event.stopPropagation();
             const val = decodeURIComponent(encodedValue || '');
             if (!val) return;
-            let list = loadCustomOptions(inputId);
+
+            const normalizedGroup = normalizeSecondaryTagGroupId(groupId) || activeSecondaryTagGroup;
+            const storeKey = resolveLocalCacheKey(inputId, normalizedGroup);
+            let list = loadCustomOptions(storeKey);
             list = list.filter(v => v.toLowerCase() !== val.toLowerCase());
-            saveCustomOptions(inputId, list);
-            removeCustomOptionRemote(inputId, val);
+            saveCustomOptions(storeKey, list);
+
+            const remoteSection = resolveRemoteSectionForInput(inputId, normalizedGroup);
+            if (remoteSection && remoteOptionsTableReady) {
+                removeOptionInMemory(remoteSection, val);
+            }
+            removeCustomOptionRemote(inputId, val, normalizedGroup);
+
             const hiddenInput = document.getElementById(inputId);
-            if (hiddenInput && hiddenInput.value && hiddenInput.value.toLowerCase() === val.toLowerCase()) {
+            const hiddenGroupInput = document.getElementById('secondary_tag_group');
+            if (
+                hiddenInput &&
+                hiddenInput.value &&
+                hiddenInput.value.toLowerCase() === val.toLowerCase() &&
+                (inputId !== 'secondary_tag' || normalizeSecondaryTagGroupId(hiddenGroupInput && hiddenGroupInput.value) === normalizedGroup)
+            ) {
                 hiddenInput.value = '';
             }
+
+            if (inputId === 'secondary_tag') {
+                secondaryCustomOpenState[normalizedGroup] = false;
+                renderSecondaryTagGroups();
+                return;
+            }
+
             const cfg = gridConfigMap[inputId];
             if (cfg) renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
         }
@@ -904,6 +1448,9 @@
             btn.disabled = true;
             btn.style.opacity = '0.7';
 
+            // Keep displayed tags aligned with remote option table before submit.
+            await syncDisplayedOptionsToRemote(['tag', 'secondary_tag']);
+
             // Data Gathering
             const link = document.getElementById('link').value;
             const category = document.getElementById('category').value;
@@ -916,6 +1463,9 @@
             const publisher = document.getElementById('publisher').value;
             const tag_choice = document.getElementById('tag').value;
             const secondary_tag = document.getElementById('secondary_tag').value;
+            const secondary_tag_group = normalizeSecondaryTagGroupId(
+                document.getElementById('secondary_tag_group').value
+            ) || activeSecondaryTagGroup;
             const parsedUrl = parseUrlSafe(link);
             const source_host = parsedUrl ? (parsedUrl.hostname || '').toLowerCase().replace(/^www\./, '') : '';
             const source_path = parsedUrl ? (parsedUrl.pathname || '') : '';
@@ -926,6 +1476,7 @@
                 publisher,
                 tag_choice,
                 secondary_tag,
+                secondary_tag_group,
                 ui_lang: currentLang,
                 submitted_at
             });
@@ -977,12 +1528,12 @@
                     persistCustomValue('category', category);
                     persistCustomValue('publisher', publisher);
                     persistCustomValue('tag', tag_choice);
-                    persistCustomValue('secondary_tag', secondary_tag);
+                    persistCustomValue('secondary_tag', secondary_tag, secondary_tag_group);
                     
                     showToast(`✅ ${t('toastPublishSuccess')}`);
                     
                     // Save last selections for faster next entry
-                    saveLastSelections({ category, publisher, tag: tag_choice, secondary_tag });
+                    saveLastSelections({ category, publisher, tag: tag_choice, secondary_tag, secondary_tag_group });
                     manualOverride.category = false;
                     manualOverride.publisher = false;
                     manualOverride.tag = false;
@@ -1015,6 +1566,11 @@
         // Init
         document.addEventListener('DOMContentLoaded', async () => {
             await loadRemoteOptionConfig();
+            const migratedCount = await migrateLocalCachedOptionsToRemote(REMOTE_OPTION_SECTIONS);
+            if (migratedCount > 0) {
+                await loadRemoteOptionConfig();
+                console.info(`Migrated ${migratedCount} cached options to Supabase.`);
+            }
             loadLastSelections();
             applyI18n();
 

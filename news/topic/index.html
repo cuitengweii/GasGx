@@ -135,8 +135,48 @@
         .topic-card:hover { border-color: rgba(93,214,44,0.4); box-shadow: 0 0 18px rgba(93,214,44,0.15); }
         .topic-pill { border: 1px solid rgba(255,255,255,0.12); color: #d1d5db; font-size: 11px; font-weight: 700; padding: 6px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.08em; }
         .topic-pill:hover { color: #5DD62C; border-color: rgba(93,214,44,0.5); }
+        .topic-main {
+            padding-top: 6rem;
+        }
         .topic-article { display: block; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); padding: 12px 14px; border-radius: 10px; }
         .topic-article:hover { border-color: rgba(93,214,44,0.4); background: rgba(93,214,44,0.05); }
+        .topic-article-meta-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 0.75rem;
+            align-items: start;
+        }
+        .topic-article-date {
+            font-size: 11px;
+            color: #6b7280;
+            font-family: 'JetBrains Mono', monospace;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.02em;
+            line-height: 1.1;
+            white-space: nowrap;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        /* Shared shell injects its own top bar; remove duplicate top spacing on topic main area. */
+        #gsh-header-slot ~ main.topic-main {
+            padding-top: 1.25rem !important;
+        }
+        @media (max-width: 640px) {
+            .topic-main {
+                padding-top: 5.5rem;
+            }
+            #gsh-header-slot ~ main.topic-main {
+                padding-top: 0.75rem !important;
+            }
+            .topic-article-meta-row {
+                grid-template-columns: 1fr;
+                gap: 0.4rem;
+            }
+            .topic-article-date {
+                text-align: left;
+            }
+        }
     
         .ad-glow {
             position: relative;
@@ -223,7 +263,7 @@
         <div id="mobile-nav-links" class="space-y-4"></div>
     </div>
 
-    <main class="flex-grow w-full max-w-[1600px] mx-auto px-4 lg:px-6 pt-24 pb-16">
+    <main class="topic-main flex-grow w-full max-w-[1600px] mx-auto px-4 lg:px-6 pb-16">
         
         <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-[10px] uppercase font-bold tracking-wider text-gray-500 mb-6">
             <a href="https://www.gasgx.com/news" class="hover:text-gas-green transition-colors">Home</a>
@@ -545,11 +585,14 @@
                     const avatarUrl = (apiId && avatarFile)
                         ? `https://www.gasgx.com/news/article/${apiId}/images/${avatarFile}`
                         : '';
+                    const dateHtml = date
+                        ? `<div class="topic-article-date" title="${date}">${date}</div>`
+                        : '';
                     return `
                         <a href="${articleUrl}" class="topic-article article-item" target="_blank" rel="nofollow noopener noreferrer">
-                            <div class="flex items-start justify-between gap-4">
+                            <div class="topic-article-meta-row">
                                 <div class="text-base text-white font-semibold">${title}</div>
-                                <div class="text-[10px] text-gray-500 font-mono">${date}</div>
+                                ${dateHtml}
                             </div>
                             <div class="flex items-center gap-2 mt-2">
                                 <img src="${avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(publisher)}&background=111&color=fff`}"
@@ -678,4 +721,3 @@
     <script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js"></script>
 </body>
 </html>
-
