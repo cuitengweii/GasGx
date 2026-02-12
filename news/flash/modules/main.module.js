@@ -56,7 +56,7 @@ const MAIN_TEMPLATE = `
         </div>
     </div>
 
-    <main class="flex-grow w-full max-w-[1200px] mx-auto px-4 lg:px-6 py-6">
+    <main class="flex-grow w-full max-w-[1200px] mx-auto px-4 lg:px-6 py-6 overflow-x-hidden">
         <div class="gxf-main-layout flex flex-col lg:flex-row gap-0 lg:gap-12 items-start relative min-w-0">
             <div class="gxf-primary-column w-full lg:w-[70%] relative min-h-screen min-w-0">
                 <div id="gxf-flash-timeline-container" class="relative">
@@ -660,11 +660,7 @@ export function createFlashApp() {
                 const saveIconClass = isSaved ? 'fa-solid fa-bookmark text-gas-green' : 'fa-regular fa-bookmark';
 
                 html += `
-                <div class="flex lg:block gap-4 pb-8 gxf-news-item-scroll-target min-w-0" id="gxf-flash-${item.id}">
-                    <div class="lg:hidden flex flex-col items-center shrink-0 w-4 relative">
-                        <div class="absolute top-0 bottom-0 w-[1px] bg-[#333]"></div>
-                        <div class="relative w-2 h-2 rounded-full bg-gas-green shadow-neon mt-[26px] z-10"></div>
-                    </div>
+                <div class="pb-8 gxf-news-item-scroll-target min-w-0" id="gxf-flash-${item.id}">
                     <div class="relative flex-1 w-full min-w-0 flex flex-col lg:flex-row group lg:min-h-[120px] bg-[#111] lg:bg-transparent border border-white/10 lg:border-none rounded-xl p-5 lg:p-0 shadow-lg lg:shadow-none max-w-full">
                         <div class="hidden lg:block w-[140px] shrink-0 text-right pr-8 pt-6 font-mono text-gray-400 text-sm font-bold group-hover:text-gas-green transition-colors">${timeStr}</div>
                         <div class="hidden lg:block gxf-timeline-dot bg-[#1F1F1F] border border-gray-700 group-hover:bg-gas-green transition-colors"></div>

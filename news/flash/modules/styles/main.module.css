@@ -1,7 +1,7 @@
 .gxf-main-module {
     width: 100%;
     max-width: 100%;
-    overflow-x: clip;
+    overflow-x: hidden;
 }
 
 .gxf-main-module .gxf-timeline-line {
@@ -199,6 +199,21 @@
     .gxf-main-module #gxf-flash-items-wrapper {
         width: 100%;
         min-width: 0;
+    }
+
+    .gxf-main-module .gxf-news-item-scroll-target {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .gxf-main-module .gxf-news-item-scroll-target > .lg\:hidden {
+        display: none !important;
+    }
+
+    .gxf-main-module .gxf-news-item-scroll-target > .relative {
+        width: 100% !important;
+        min-width: 0 !important;
     }
 
     .gxf-main-module .gxf-page-title {
