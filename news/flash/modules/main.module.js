@@ -45,9 +45,9 @@ const MAIN_TEMPLATE = `
     </div>
 
     <div class="sticky top-16 z-30 bg-[#050505]/95 backdrop-blur border-b border-white/5 shadow-lg">
-        <div class="max-w-[1200px] mx-auto px-4 lg:px-6 py-3 flex items-center justify-between">
-            <h1 class="text-xl font-bold text-white uppercase tracking-wider flex items-center gap-3"><i class="fa-solid fa-bolt text-gas-green animate-pulse"></i> 7x24 Flash News</h1>
-            <div class="flex gap-2">
+        <div class="max-w-[1200px] mx-auto px-4 lg:px-6 py-3 flex items-center justify-between gap-3 min-w-0">
+            <h1 class="gxf-page-title min-w-0 flex-1 text-base sm:text-xl font-bold text-white uppercase tracking-wider flex items-center gap-2 sm:gap-3"><i class="fa-solid fa-bolt text-gas-green animate-pulse shrink-0"></i><span class="truncate">7x24 Flash News</span></h1>
+            <div class="flex gap-2 shrink-0">
                 <button onclick="window.GGXFlashApp && window.GGXFlashApp.forceRefresh()" class="group flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#111] border border-white/10 hover:border-gas-green hover:bg-[#1a1a1a] transition-all cursor-pointer">
                     <span class="text-[10px] font-bold text-gray-400 group-hover:text-white uppercase tracking-wide">Sync</span>
                     <i id="gxf-sync-icon" class="fa-solid fa-rotate-right text-gas-green transition-transform duration-700 text-xs"></i>
@@ -57,11 +57,11 @@ const MAIN_TEMPLATE = `
     </div>
 
     <main class="flex-grow w-full max-w-[1200px] mx-auto px-4 lg:px-6 py-6">
-        <div class="flex flex-col lg:flex-row gap-0 lg:gap-12 items-start relative">
-            <div class="w-full lg:w-[70%] relative min-h-screen">
+        <div class="gxf-main-layout flex flex-col lg:flex-row gap-0 lg:gap-12 items-start relative min-w-0">
+            <div class="gxf-primary-column w-full lg:w-[70%] relative min-h-screen min-w-0">
                 <div id="gxf-flash-timeline-container" class="relative">
                     <div class="hidden lg:block gxf-timeline-line"></div>
-                    <div id="gxf-flash-items-wrapper" class="space-y-0"><div class="text-center py-20 text-gray-500"><i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4"></i><br>Syncing News...</div></div>
+                    <div id="gxf-flash-items-wrapper" class="space-y-0 min-w-0"><div class="text-center py-20 text-gray-500"><i class="fa-solid fa-circle-notch fa-spin text-3xl mb-4"></i><br>Syncing News...</div></div>
                     <div id="gxf-pagination-controls" class="mt-12 text-center pl-0 lg:pl-[140px] pb-10">
                         <button id="gxf-load-more-btn" onclick="window.GGXFlashApp && window.GGXFlashApp.loadMoreLocal()" class="hidden px-8 py-3 rounded-full border border-white/10 text-xs font-bold text-white hover:bg-white hover:text-black transition-all uppercase tracking-wide">Load More History</button>
                         <div id="gxf-no-more-msg" class="hidden text-xs text-gray-600 font-mono uppercase tracking-widest"><span class="inline-block w-2 h-2 rounded-full bg-gray-800 mr-2"></span> No more history</div>
@@ -69,7 +69,7 @@ const MAIN_TEMPLATE = `
                 </div>
             </div>
 
-            <div class="hidden lg:flex w-[30%] flex-col gap-6 sticky top-40">
+            <div class="gxf-secondary-column hidden lg:flex w-[30%] flex-col gap-6 sticky top-40">
                 <div class="rounded-xl overflow-hidden relative group cursor-pointer border border-white/10 hover:border-gas-green/50 transition-all duration-500 shadow-2xl" onclick="window.open('https://www.gasgx.com', '_blank')">
                     <div class="absolute inset-0 bg-gradient-to-br from-[#0f0f0f] via-[#050505] to-[#000]"></div>
                     <div class="absolute inset-0 bg-[linear-gradient(rgba(93,214,44,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(93,214,44,0.03)_1px,transparent_1px)] bg-[size:20px_20px]"></div>
@@ -660,27 +660,27 @@ export function createFlashApp() {
                 const saveIconClass = isSaved ? 'fa-solid fa-bookmark text-gas-green' : 'fa-regular fa-bookmark';
 
                 html += `
-                <div class="flex lg:block gap-4 pb-8 gxf-news-item-scroll-target" id="gxf-flash-${item.id}">
+                <div class="flex lg:block gap-4 pb-8 gxf-news-item-scroll-target min-w-0" id="gxf-flash-${item.id}">
                     <div class="lg:hidden flex flex-col items-center shrink-0 w-4 relative">
                         <div class="absolute top-0 bottom-0 w-[1px] bg-[#333]"></div>
                         <div class="relative w-2 h-2 rounded-full bg-gas-green shadow-neon mt-[26px] z-10"></div>
                     </div>
-                    <div class="relative flex-1 flex flex-col lg:flex-row group lg:min-h-[120px] bg-[#111] lg:bg-transparent border border-white/10 lg:border-none rounded-xl p-5 lg:p-0 shadow-lg lg:shadow-none max-w-full">
+                    <div class="relative flex-1 w-full min-w-0 flex flex-col lg:flex-row group lg:min-h-[120px] bg-[#111] lg:bg-transparent border border-white/10 lg:border-none rounded-xl p-5 lg:p-0 shadow-lg lg:shadow-none max-w-full">
                         <div class="hidden lg:block w-[140px] shrink-0 text-right pr-8 pt-6 font-mono text-gray-400 text-sm font-bold group-hover:text-gas-green transition-colors">${timeStr}</div>
                         <div class="hidden lg:block gxf-timeline-dot bg-[#1F1F1F] border border-gray-700 group-hover:bg-gas-green transition-colors"></div>
                         <div class="flex-1 min-w-0 lg:pl-12 lg:pr-4 lg:pt-4 lg:pb-6 lg:border-l lg:border-transparent lg:hover:bg-white/5 transition-colors">
-                            <div class="lg:hidden flex items-center justify-between mb-3 border-b border-white/5 pb-2">
+                            <div class="lg:hidden flex items-center justify-between gap-3 min-w-0 mb-3 border-b border-white/5 pb-2">
                                 <span class="font-mono text-gas-green font-bold text-xs tracking-wider">${timeStr}</span>
-                                <span class="text-[10px] text-gray-600 font-bold uppercase">${displayDate}</span>
+                                <span class="text-[10px] text-gray-600 font-bold uppercase truncate text-right">${displayDate}</span>
                             </div>
                             <h3 id="gxf-title-${item.id}" onclick="window.open('${item.link}', '_blank')" class="text-lg lg:text-xl font-bold text-white mb-3 leading-relaxed group-hover:text-gas-green transition-colors cursor-pointer text-left break-words">${item.title}</h3>
                             <div id="gxf-content-${item.id}" class="text-[#BBBBBB] text-[15px] lg:text-sm leading-7 mb-4 text-left whitespace-pre-wrap font-light break-all line-clamp-4 overflow-hidden transition-all">${item.content}</div>
-                            <div class="flex items-center justify-between pt-3 border-t border-white/10 lg:border-none">
-                                <div class="flex items-center gap-4">
+                            <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/10 lg:border-none">
+                                <div class="flex items-center gap-4 min-w-0">
                                     ${isLong ? `<button id="gxf-btn-expand-${item.id}" onclick="window.GGXFlashApp && window.GGXFlashApp.toggleExpand('${item.id}')" class="text-xs text-gas-green hover:text-white font-bold uppercase transition-colors">Show More</button>` : ''}
                                     <button id="gxf-btn-trans-${item.id}" onclick="window.GGXFlashApp && window.GGXFlashApp.translateItem('${item.id}')" class="text-gray-500 hover:text-gas-green transition-colors flex items-center gap-1" title="Translate"><i class="fa-solid fa-language text-lg"></i></button>
                                 </div>
-                                <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-4 shrink-0">
                                     <button onclick="window.GGXFlashApp && window.GGXFlashApp.toggleBookmark('${item.id}')" class="text-gray-500 hover:text-gas-green transition-colors" title="Save to Library"><i id="gxf-btn-icon-save-${item.id}" class="${saveIconClass} text-sm"></i></button>
                                     <button onclick="window.GGXFlashApp && window.GGXFlashApp.openPosterModal('${item.id}')" class="text-gray-500 hover:text-gas-green" title="Poster"><i class="fa-solid fa-camera text-sm"></i></button>
                                     <button onclick="window.GGXFlashApp && window.GGXFlashApp.shareX('${item.id}')" class="text-gray-500 hover:text-white" title="Quick Share to X"><i class="fa-brands fa-x-twitter text-sm"></i></button>

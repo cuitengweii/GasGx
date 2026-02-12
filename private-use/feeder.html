@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GasGx 移动采集台 v23</title>
+    <title>GasGx Mobile Feeder v23</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -80,6 +80,34 @@
         .btn-gas { background: #5DD62C; color: black; font-weight: 800; padding: 16px; border-radius: 12px; width: 100%; text-transform: uppercase; letter-spacing: 1px; font-size: 16px; box-shadow: 0 4px 15px rgba(93, 214, 44, 0.2); transition: all 0.2s; }
         .btn-gas:active { transform: scale(0.96); opacity: 0.9; }
 
+        .lang-switch {
+            display: flex;
+            align-items: center;
+            border: 1px solid #2b2b2b;
+            background: #101010;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .lang-btn {
+            min-width: 42px;
+            height: 28px;
+            padding: 0 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #8a8a8a;
+            background: transparent;
+            border: none;
+            transition: all 0.2s;
+        }
+        .lang-btn.active {
+            background: #5DD62C;
+            color: #050505;
+        }
+        .lang-btn:not(.active):hover {
+            color: #d0d0d0;
+            background: #161616;
+        }
+
         .grid-select { display: grid; gap: 8px; }
         .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
         .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
@@ -129,24 +157,30 @@
                         <i class="fa-solid fa-gas-pump text-gas-green text-sm"></i>
                     </div>
                     <div>
-                        <h1 class="text-lg font-bold font-mono text-white tracking-tight">GasGx Feeder</h1>
-                        <p class="app-subtitle text-[10px] text-gray-500 uppercase tracking-widest">Mobile Link Control</p>
+                        <h1 class="text-lg font-bold font-mono text-white tracking-tight" data-i18n="appName">GasGx Feeder</h1>
+                        <p class="app-subtitle text-[10px] text-gray-500 uppercase tracking-widest" data-i18n="appSubtitle">Mobile Link Control</p>
                     </div>
                 </div>
-                <div class="text-xs text-gas-green font-mono bg-gas-green/10 px-2 py-1 rounded">v23.0</div>
+                <div class="flex items-center gap-2">
+                    <div class="lang-switch">
+                        <button type="button" id="langBtnEn" class="lang-btn active" onclick="setLanguage('en')">EN</button>
+                        <button type="button" id="langBtnZh" class="lang-btn" onclick="setLanguage('zh')">中文</button>
+                    </div>
+                    <div class="text-xs text-gas-green font-mono bg-gas-green/10 px-2 py-1 rounded">v23.0</div>
+                </div>
             </div>
 
             <div class="sticky-url">
                 <label class="flex justify-between text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">
-                    <span>Target URL</span>
-                    <span class="text-gas-green text-[10px]"><i class="fa-solid fa-bolt"></i> Ready</span>
+                    <span data-i18n="targetUrl">Target URL</span>
+                    <span class="text-gas-green text-[10px]"><i class="fa-solid fa-bolt"></i> <span data-i18n="ready">Ready</span></span>
                 </label>
                 <div class="url-shell">
                     <input type="url" id="link" class="url-input" placeholder="https://..." required form="taskForm" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false">
-                    <button type="button" onclick="triggerPaste()" class="url-paste-btn" aria-label="Paste link">
+                    <button type="button" onclick="triggerPaste()" class="url-paste-btn" aria-label="Paste link" data-i18n-aria="pasteLink">
                         <i class="fa-solid fa-link text-lg"></i>
                     </button>
-                    <button type="submit" form="taskForm" class="url-send-btn" aria-label="Send">
+                    <button type="submit" form="taskForm" class="url-send-btn" aria-label="Send" data-i18n-aria="send">
                         <i class="fa-solid fa-paper-plane text-base"></i>
                     </button>
                 </div>
@@ -159,57 +193,57 @@
     <form id="taskForm" class="px-4 pt-2 pb-6 space-y-6">
 
         <div>
-            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Category</label>
+            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider" data-i18n="category">Category</label>
             <div class="grid-select grid-cols-3" id="category-container"></div>
             <div id="category-custom-wrapper" class="custom-input-wrapper">
-                <input type="text" id="category-custom-input" class="input-gas border-gas-green" placeholder="输入自定义 Category..." oninput="syncCustomValue('category', this.value)" onblur="persistCustomValue('category', this.value)">
+                <input type="text" id="category-custom-input" class="input-gas border-gas-green" data-i18n-placeholder="categoryCustomPlaceholder" placeholder="Type custom Category..." oninput="syncCustomValue('category', this.value)">
             </div>
             <input type="hidden" id="category" value="gas-energy">
         </div>
 
-        <div>
-            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Publisher</label>
+        <div id="publisher-section" class="hidden">
+            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider" data-i18n="publisher">Publisher</label>
             <div class="grid-select grid-cols-3" id="publisher-container"></div>
             <div id="publisher-custom-wrapper" class="custom-input-wrapper">
-                <input type="text" id="publisher-custom-input" class="input-gas border-gas-green" placeholder="输入自定义 Publisher..." oninput="syncCustomValue('publisher', this.value)" onblur="persistCustomValue('publisher', this.value)">
+                <input type="text" id="publisher-custom-input" class="input-gas border-gas-green" data-i18n-placeholder="publisherCustomPlaceholder" placeholder="Type custom Publisher..." oninput="syncCustomValue('publisher', this.value)">
             </div>
             <input type="hidden" id="publisher" value="GasGx-Researcher">
         </div>
 
         <div>
-            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Main Tag</label>
+            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider" data-i18n="mainTag">Main Tag</label>
             <div class="grid-select grid-cols-3" id="tag-container"></div>
             <div id="tag-custom-wrapper" class="custom-input-wrapper">
-                <input type="text" id="tag-custom-input" class="input-gas border-gas-green" placeholder="输入自定义 Tag..." oninput="syncCustomValue('tag', this.value)" onblur="persistCustomValue('tag', this.value)">
+                <input type="text" id="tag-custom-input" class="input-gas border-gas-green" data-i18n-placeholder="tagCustomPlaceholder" placeholder="Type custom Tag..." oninput="syncCustomValue('tag', this.value)">
             </div>
             <input type="hidden" id="tag" value="Hardware">
         </div>
 
         <div>
-            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Secondary Tag</label>
+            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider" data-i18n="secondaryTag">Secondary Tag</label>
             <div class="grid-select grid-cols-3" id="secondary_tag-container"></div>
             <div id="secondary_tag-custom-wrapper" class="custom-input-wrapper">
-                <input type="text" id="secondary_tag-custom-input" class="input-gas border-gas-green" placeholder="输入自定义 Sec Tag..." oninput="syncCustomValue('secondary_tag', this.value)" onblur="persistCustomValue('secondary_tag', this.value)">
+                <input type="text" id="secondary_tag-custom-input" class="input-gas border-gas-green" data-i18n-placeholder="secondaryTagCustomPlaceholder" placeholder="Type custom Sec Tag..." oninput="syncCustomValue('secondary_tag', this.value)">
             </div>
             <input type="hidden" id="secondary_tag" value=""> 
         </div>
 
         <button type="submit" id="submitBtn" class="btn-gas mt-6 flex items-center justify-center gap-3">
-            <span>SEND TO CLOUD</span>
+            <span data-i18n="sendToCloud">SEND TO CLOUD</span>
             <i class="fa-solid fa-paper-plane"></i>
         </button>
 
     </form>
 
     <div class="px-4 mt-2 mb-8">
-        <h3 class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-3 border-b border-gray-800 pb-2">Recent Generated Links</h3>
+        <h3 class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-3 border-b border-gray-800 pb-2" data-i18n="recentGeneratedLinks">Recent Generated Links</h3>
         <div id="history-list" class="space-y-3"></div>
-        <button onclick="clearHistory()" class="text-[10px] text-gray-600 mt-4 w-full text-center py-2 hover:text-red-500 transition-colors">Clear History</button>
+        <button onclick="clearHistory()" class="text-[10px] text-gray-600 mt-4 w-full text-center py-2 hover:text-red-500 transition-colors" data-i18n="clearHistory">Clear History</button>
     </div>
 
     <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 bg-[#111] border border-gas-green text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl opacity-0 transition-all pointer-events-none flex items-center gap-3 z-50 transform scale-90">
         <i class="fa-solid fa-circle-check text-gas-green text-lg"></i>
-        <span id="toast-msg">Task Added!</span>
+        <span id="toast-msg" data-i18n="toastDefault">Task Added!</span>
     </div>
 
     <script>
@@ -217,50 +251,138 @@
         const SUPABASE_URL = "https://mkpcliytqudclkwtewru.supabase.co";
         const SUPABASE_KEY = "sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw"; 
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const FEEDER_OPTIONS_TABLE = 'feeder_form_options';
+        const REMOTE_OPTION_SECTIONS = ['category', 'publisher', 'tag', 'secondary_tag'];
+        let remoteOptionsTableReady = false;
 
-        // Data Config
+        const I18N = {
+            en: {
+                pageTitle: 'GasGx Mobile Feeder v23',
+                appName: 'GasGx Feeder',
+                appSubtitle: 'Mobile Link Control',
+                targetUrl: 'Target URL',
+                ready: 'Ready',
+                category: 'Category',
+                publisher: 'Publisher',
+                mainTag: 'Main Tag',
+                secondaryTag: 'Secondary Tag',
+                categoryCustomPlaceholder: 'Type custom Category...',
+                publisherCustomPlaceholder: 'Type custom Publisher...',
+                tagCustomPlaceholder: 'Type custom Tag...',
+                secondaryTagCustomPlaceholder: 'Type custom Sec Tag...',
+                sendToCloud: 'SEND TO CLOUD',
+                recentGeneratedLinks: 'Recent Generated Links',
+                clearHistory: 'Clear History',
+                toastDefault: 'Task Added!',
+                pasteLink: 'Paste link',
+                send: 'Send',
+                deleteCachedOption: 'Delete cached option',
+                toastPasted: 'Content pasted',
+                toastClipboardEmpty: 'Clipboard is empty',
+                toastManualPaste: 'Please paste manually in input box',
+                toastPublishSuccess: 'Published successfully!',
+                toastSubmittedNoId: 'Submitted, but no ID returned',
+                toastErrorPrefix: 'Error: ',
+                statusSending: 'Sending...',
+                historyEmpty: 'No recent history'
+            },
+            zh: {
+                pageTitle: 'GasGx 移动采集台 v23',
+                appName: 'GasGx 采集台',
+                appSubtitle: '移动链接录入',
+                targetUrl: '目标链接',
+                ready: '就绪',
+                category: '分类',
+                publisher: '来源',
+                mainTag: '主标签',
+                secondaryTag: '次标签',
+                categoryCustomPlaceholder: '输入自定义 Category...',
+                publisherCustomPlaceholder: '输入自定义 Publisher...',
+                tagCustomPlaceholder: '输入自定义 Tag...',
+                secondaryTagCustomPlaceholder: '输入自定义 Secondary Tag...',
+                sendToCloud: '提交到云端',
+                recentGeneratedLinks: '最近生成链接',
+                clearHistory: '清空历史',
+                toastDefault: '任务已添加！',
+                pasteLink: '粘贴链接',
+                send: '发送',
+                deleteCachedOption: '删除缓存项',
+                toastPasted: '已粘贴内容',
+                toastClipboardEmpty: '剪贴板为空',
+                toastManualPaste: '请长按输入框手动粘贴',
+                toastPublishSuccess: '发布成功！',
+                toastSubmittedNoId: '已提交，但未返回ID',
+                toastErrorPrefix: '错误：',
+                statusSending: '发送中...',
+                historyEmpty: '暂无历史记录'
+            }
+        };
+
+        const LANG_STORE_KEY = 'gasgx_feeder_lang';
+        let currentLang = localStorage.getItem(LANG_STORE_KEY) === 'zh' ? 'zh' : 'en';
+
+        function t(key) {
+            const active = I18N[currentLang] || I18N.en;
+            return active[key] || I18N.en[key] || key;
+        }
+
+        function getLocalizedLabel(label) {
+            if (label && typeof label === 'object') {
+                return label[currentLang] || label.en || label.zh || '';
+            }
+            return String(label || '');
+        }
+
+        function setLanguage(lang) {
+            if (!I18N[lang]) return;
+            currentLang = lang;
+            localStorage.setItem(LANG_STORE_KEY, lang);
+            applyI18n();
+        }
+
+        // Data Config (parameter IDs stay in English)
         const categories = [
-            { id: 'gas-energy', label: 'Gas Energy' },
-            { id: 'generators', label: 'Generators' },
-            { id: 'bitcoin-mining', label: 'BTC Mining' },
-            { id: 'flash', label: 'Flash' },
-            { id: 'insights', label: 'Insights' },
-            { id: 'data', label: 'Data' },
-            { id: 'events', label: 'Events' },
-            { id: 'custom', label: '+ DIY' } 
+            { id: 'gas-energy', label: { en: 'Gas Energy', zh: '天然气能源' } },
+            { id: 'generators', label: { en: 'Generators', zh: '发电机' } },
+            { id: 'bitcoin-mining', label: { en: 'BTC Mining', zh: '比特币挖矿' } },
+            { id: 'flash', label: { en: 'Flash', zh: '快讯' } },
+            { id: 'insights', label: { en: 'Insights', zh: '洞察' } },
+            { id: 'data', label: { en: 'Data', zh: '数据' } },
+            { id: 'events', label: { en: 'Events', zh: '活动' } },
+            { id: 'custom', label: { en: '+ DIY', zh: '+ 自定义' } }
         ];
 
         const publishers = [
-            { id: 'GasGx-Researcher', label: 'GasGx' },
-            { id: 'WuShuoBlock', label: 'WuShuo' },
-            { id: 'Blockbeats', label: 'Blockbeats' },
-            { id: 'Chaincatcher', label: 'ChainC.' },
-            { id: 'Panewslab', label: 'Panews' },
-            { id: 'Odaily', label: 'Odaily' },
-            { id: 'Techflow', label: 'Techflow' },
-            { id: 'Linkein', label: 'LinkedIn' },
-            { id: 'custom', label: '+ DIY' }
+            { id: 'GasGx-Researcher', label: { en: 'GasGx', zh: 'GasGx' } },
+            { id: 'WuShuoBlock', label: { en: 'WuShuo', zh: '吴说' } },
+            { id: 'Blockbeats', label: { en: 'Blockbeats', zh: 'Blockbeats' } },
+            { id: 'Chaincatcher', label: { en: 'ChainC.', zh: '链捕手' } },
+            { id: 'Panewslab', label: { en: 'Panews', zh: 'Panews' } },
+            { id: 'Odaily', label: { en: 'Odaily', zh: 'Odaily' } },
+            { id: 'Techflow', label: { en: 'Techflow', zh: 'Techflow' } },
+            { id: 'Linkein', label: { en: 'LinkedIn', zh: '领英' } },
+            { id: 'custom', label: { en: '+ DIY', zh: '+ 自定义' } }
         ];
 
         const mainTags = [
-            { id: 'Hardware', label: 'Hardware' },
-            { id: 'Policy', label: 'Policy' },
-            { id: 'Finance', label: 'Finance' },
-            { id: 'Tech', label: 'Tech' },
-            { id: 'Market', label: 'Market' },
-            { id: 'custom', label: '+ DIY' }
+            { id: 'Hardware', label: { en: 'Hardware', zh: '硬件' } },
+            { id: 'Policy', label: { en: 'Policy', zh: '政策' } },
+            { id: 'Finance', label: { en: 'Finance', zh: '金融' } },
+            { id: 'Tech', label: { en: 'Tech', zh: '技术' } },
+            { id: 'Market', label: { en: 'Market', zh: '市场' } },
+            { id: 'custom', label: { en: '+ DIY', zh: '+ 自定义' } }
         ];
 
         const secTags = [
-            { id: 'Policy', label: 'Policy' },
-            { id: 'Newly released', label: 'New Release' },
-            { id: 'Guidance', label: 'Guidance' },
-            { id: 'Report', label: 'Report' },
-            { id: 'Hardware', label: 'Hardware' },
-            { id: 'Bitcoin', label: 'Bitcoin' },
-            { id: 'Mining', label: 'Mining' },
-            { id: 'Analysis', label: 'Analysis' },
-            { id: 'custom', label: '+ DIY' }
+            { id: 'Policy', label: { en: 'Policy', zh: '政策' } },
+            { id: 'Newly released', label: { en: 'New Release', zh: '最新发布' } },
+            { id: 'Guidance', label: { en: 'Guidance', zh: '指南' } },
+            { id: 'Report', label: { en: 'Report', zh: '报告' } },
+            { id: 'Hardware', label: { en: 'Hardware', zh: '硬件' } },
+            { id: 'Bitcoin', label: { en: 'Bitcoin', zh: '比特币' } },
+            { id: 'Mining', label: { en: 'Mining', zh: '挖矿' } },
+            { id: 'Analysis', label: { en: 'Analysis', zh: '分析' } },
+            { id: 'custom', label: { en: '+ DIY', zh: '+ 自定义' } }
         ];
 
         // --- DIY Cache (LocalStorage) ---
@@ -281,8 +403,167 @@
         const LAST_STORE_KEY = 'gasgx_feeder_last_state';
         const manualOverride = {};
 
+        function applyI18n() {
+            document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+            document.title = t('pageTitle');
+
+            document.querySelectorAll('[data-i18n]').forEach((node) => {
+                const key = node.getAttribute('data-i18n');
+                node.textContent = t(key);
+            });
+
+            document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {
+                const key = node.getAttribute('data-i18n-placeholder');
+                node.setAttribute('placeholder', t(key));
+            });
+
+            document.querySelectorAll('[data-i18n-aria]').forEach((node) => {
+                const key = node.getAttribute('data-i18n-aria');
+                node.setAttribute('aria-label', t(key));
+            });
+
+            const langBtnEn = document.getElementById('langBtnEn');
+            const langBtnZh = document.getElementById('langBtnZh');
+            if (langBtnEn) langBtnEn.classList.toggle('active', currentLang === 'en');
+            if (langBtnZh) langBtnZh.classList.toggle('active', currentLang === 'zh');
+
+            Object.entries(gridConfigMap).forEach(([inputId, cfg]) => {
+                renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
+            });
+            renderHistory();
+        }
+
         function normalizeValue(value) {
             return (value || '').toString().trim();
+        }
+
+        function normalizeSectionKey(rawSection) {
+            const section = normalizeValue(rawSection).toLowerCase();
+            if (!section) return '';
+            if (section === 'main_tag') return 'tag';
+            if (section === 'maintag') return 'tag';
+            if (section === 'secondary') return 'secondary_tag';
+            if (section === 'secondarytag') return 'secondary_tag';
+            return REMOTE_OPTION_SECTIONS.includes(section) ? section : '';
+        }
+
+        function ensureCustomOption(items) {
+            const dedup = [];
+            const seen = new Set();
+            (items || []).forEach((item) => {
+                const id = normalizeValue(item && item.id);
+                if (!id || id.toLowerCase() === 'custom') return;
+                const key = id.toLowerCase();
+                if (seen.has(key)) return;
+                seen.add(key);
+                dedup.push({
+                    id,
+                    label: item.label
+                });
+            });
+            dedup.push({ id: 'custom', label: { en: '+ DIY', zh: '+ 自定义' } });
+            return dedup;
+        }
+
+        function replaceOptionItems(targetItems, nextItems) {
+            targetItems.splice(0, targetItems.length, ...ensureCustomOption(nextItems));
+        }
+
+        async function loadRemoteOptionConfig() {
+            try {
+                const { data, error } = await client
+                    .from(FEEDER_OPTIONS_TABLE)
+                    .select('section, option_id, label_en, label_zh, sort_order, is_active')
+                    .eq('is_active', true)
+                    .order('sort_order', { ascending: true });
+
+                if (error) {
+                    console.warn('Load feeder options from Supabase failed:', error);
+                    return;
+                }
+
+                remoteOptionsTableReady = true;
+                if (!Array.isArray(data) || !data.length) return;
+
+                const grouped = {
+                    category: [],
+                    publisher: [],
+                    tag: [],
+                    secondary_tag: []
+                };
+
+                data.forEach((row) => {
+                    const section = normalizeSectionKey(row.section);
+                    const optionId = normalizeValue(row.option_id);
+                    if (!section || !optionId || optionId.toLowerCase() === 'custom') return;
+
+                    grouped[section].push({
+                        id: optionId,
+                        label: {
+                            en: normalizeValue(row.label_en) || optionId,
+                            zh: normalizeValue(row.label_zh) || normalizeValue(row.label_en) || optionId
+                        }
+                    });
+                });
+
+                const optionMap = {
+                    category: categories,
+                    publisher: publishers,
+                    tag: mainTags,
+                    secondary_tag: secTags
+                };
+
+                Object.entries(grouped).forEach(([section, items]) => {
+                    if (!items.length) return;
+                    replaceOptionItems(optionMap[section], items);
+                });
+            } catch (e) {
+                console.warn('Load feeder options exception:', e);
+            }
+        }
+
+        async function saveCustomOptionRemote(inputId, value) {
+            if (!remoteOptionsTableReady) return;
+            const section = normalizeSectionKey(inputId);
+            const optionId = normalizeValue(value);
+            if (!section || !optionId) return;
+            try {
+                const payload = {
+                    section,
+                    option_id: optionId,
+                    label_en: optionId,
+                    label_zh: optionId,
+                    sort_order: 999,
+                    is_active: true
+                };
+                const { error } = await client
+                    .from(FEEDER_OPTIONS_TABLE)
+                    .upsert([payload], { onConflict: 'section,option_id' });
+                if (error) {
+                    console.warn('Save custom option to Supabase failed:', error);
+                }
+            } catch (e) {
+                console.warn('Save custom option exception:', e);
+            }
+        }
+
+        async function removeCustomOptionRemote(inputId, value) {
+            if (!remoteOptionsTableReady) return;
+            const section = normalizeSectionKey(inputId);
+            const optionId = normalizeValue(value);
+            if (!section || !optionId) return;
+            try {
+                const { error } = await client
+                    .from(FEEDER_OPTIONS_TABLE)
+                    .delete()
+                    .eq('section', section)
+                    .eq('option_id', optionId);
+                if (error) {
+                    console.warn('Remove custom option from Supabase failed:', error);
+                }
+            } catch (e) {
+                console.warn('Remove custom option exception:', e);
+            }
         }
 
         function getStoreKey(inputId) {
@@ -320,6 +601,7 @@
             list = list.filter((v, idx, arr) => arr.findIndex(x => x.toLowerCase() === v.toLowerCase()) === idx);
             if (list.length > CUSTOM_MAX) list = list.slice(0, CUSTOM_MAX);
             saveCustomOptions(inputId, list);
+            saveCustomOptionRemote(inputId, val);
         }
 
         function saveLastSelections(data) {
@@ -340,7 +622,6 @@
                     if (data[inputId]) {
                         const hiddenInput = document.getElementById(inputId);
                         if (hiddenInput) hiddenInput.value = data[inputId];
-                        persistCustomValue(inputId, data[inputId]);
                     }
                 });
             } catch (e) {
@@ -354,31 +635,57 @@
             if (!force && manualOverride[inputId]) return;
             const hiddenInput = document.getElementById(inputId);
             if (hiddenInput) hiddenInput.value = val;
-            persistCustomValue(inputId, val);
             const cfg = gridConfigMap[inputId];
             if (cfg) renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
         }
 
-        function applyUrlHints(url) {
-            if (!url) return;
-            let parsedUrl;
+        function parseUrlSafe(url) {
+            if (!url) return null;
             try {
-                parsedUrl = new URL(url);
+                return new URL(url);
             } catch (e) {
                 try {
-                    parsedUrl = new URL(`https://${url}`);
+                    return new URL(`https://${url}`);
                 } catch (err) {
-                    return;
+                    return null;
                 }
             }
-            const host = (parsedUrl.hostname || '').toLowerCase();
-            if (host.includes('x.com') || host.includes('twitter.com')) {
-                applySelection('publisher', 'X');
-            } else if (host.includes('linkedin.com')) {
-                applySelection('publisher', 'Linkein');
-            } else if (host.includes('mp.weixin.qq.com') || host.includes('weixin.qq.com')) {
-                applySelection('publisher', 'Weixin');
-            }
+        }
+
+        function detectPublisherFromUrl(url) {
+            if (!url) return '';
+            const parsedUrl = parseUrlSafe(url);
+            if (!parsedUrl) return '';
+
+            const host = (parsedUrl.hostname || '').toLowerCase().replace(/^www\./, '');
+            const isHost = (domain) => host === domain || host.endsWith(`.${domain}`);
+
+            if (isHost('gasgx.com')) return 'GasGx-Researcher';
+            if (isHost('x.com') || isHost('twitter.com')) return 'X';
+            if (isHost('linkedin.com')) return 'Linkein';
+            if (isHost('wublock123.com')) return 'WuShuoBlock';
+            if (isHost('theblockbeats.news')) return 'Blockbeats';
+            if (isHost('chaincatcher.com')) return 'Chaincatcher';
+            if (isHost('panewslab.com')) return 'Panewslab';
+            if (isHost('odaily.news') || isHost('odaily.com')) return 'Odaily';
+            if (isHost('techflowpost.com')) return 'Techflow';
+            if (isHost('mp.weixin.qq.com') || isHost('weixin.qq.com')) return 'Weixin';
+
+            return '';
+        }
+
+        function isMissingColumnError(error) {
+            const code = (error && error.code ? String(error.code) : '').toUpperCase();
+            const msg = (error && error.message ? error.message : '').toLowerCase();
+            return code === 'PGRST204' || (msg.includes('column') && (msg.includes('does not exist') || msg.includes('schema cache')));
+        }
+
+        function applyUrlHints(url) {
+            if (!url) return;
+            const detectedPublisher = detectPublisherFromUrl(url);
+            if (!detectedPublisher) return;
+            manualOverride.publisher = false;
+            applySelection('publisher', detectedPublisher, true);
         }
 
         function mergeOptions(inputId, items) {
@@ -425,14 +732,14 @@
                     } else {
                         input.focus();
                     }
-                    showToast("已粘贴内容");
+                    showToast(t('toastPasted'));
                 } else {
-                    showToast("剪贴板为空");
+                    showToast(t('toastClipboardEmpty'));
                 }
             } catch (err) {
                 console.error(err);
                 // Fallback prompt for security restrictions
-                showToast("请长按输入框手动粘贴");
+                showToast(t('toastManualPaste'));
             }
         }
 
@@ -444,17 +751,22 @@
             
             // Set default logic
             if(!hiddenInput.value && defaultVal) hiddenInput.value = defaultVal;
+            const hasCurrentValue = mergedItems.some(item => item.id === hiddenInput.value);
+            if (!hasCurrentValue && hiddenInput.value !== 'custom') {
+                const firstNormal = mergedItems.find(item => item.id !== 'custom');
+                hiddenInput.value = firstNormal ? firstNormal.id : '';
+            }
 
             container.innerHTML = mergedItems.map(item => {
                 const encodedId = encodeURIComponent(item.id);
                 const customClass = item._isCustom ? 'custom-item' : '';
                 const deleteBtn = item._isCustom
-                    ? `<button type="button" class="delete-x" onclick="removeCustomOption(event, '${inputId}', '${encodedId}')" aria-label="Delete cached option">x</button>`
+                    ? `<button type="button" class="delete-x" onclick="removeCustomOption(event, '${inputId}', '${encodedId}')" aria-label="${t('deleteCachedOption')}">x</button>`
                     : '';
                 return `
                     <div class="option-card ${customClass} ${item.id === hiddenInput.value ? 'active' : ''} ${item.id === 'custom' ? 'border-dashed border-gray-600 text-gray-500' : ''}"
                          onclick="handleSelection('${inputId}', '${encodedId}', this)">
-                        ${item.label}
+                        ${getLocalizedLabel(item.label)}
                         ${deleteBtn}
                     </div>
                 `;
@@ -511,6 +823,7 @@
             let list = loadCustomOptions(inputId);
             list = list.filter(v => v.toLowerCase() !== val.toLowerCase());
             saveCustomOptions(inputId, list);
+            removeCustomOptionRemote(inputId, val);
             const hiddenInput = document.getElementById(inputId);
             if (hiddenInput && hiddenInput.value && hiddenInput.value.toLowerCase() === val.toLowerCase()) {
                 hiddenInput.value = '';
@@ -523,11 +836,12 @@
         function saveToHistory(newUrl, originalUrl) {
             let currentHistory = getCookie("gas_url_list_v2");
             let list = currentHistory ? JSON.parse(currentHistory) : [];
+            const timeLocale = currentLang === 'zh' ? 'zh-CN' : 'en-US';
             
             list.unshift({ 
                 newUrl: newUrl, 
                 originalUrl: originalUrl,
-                time: new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}) 
+                time: new Date().toLocaleTimeString(timeLocale, { hour: '2-digit', minute: '2-digit' })
             });
             
             if(list.length > 10) list.pop();
@@ -540,7 +854,7 @@
             const currentHistory = getCookie("gas_url_list_v2");
             
             if (!currentHistory) {
-                listEl.innerHTML = '<div class="p-4 text-center text-xs text-gray-600 italic bg-gas-card rounded-lg border border-gas-border">No recent history</div>';
+                listEl.innerHTML = `<div class="p-4 text-center text-xs text-gray-600 italic bg-gas-card rounded-lg border border-gas-border">${t('historyEmpty')}</div>`;
                 return;
             }
 
@@ -586,31 +900,71 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Sending...';
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('statusSending')}`;
             btn.disabled = true;
             btn.style.opacity = '0.7';
 
             // Data Gathering
             const link = document.getElementById('link').value;
             const category = document.getElementById('category').value;
+            const detectedPublisher = detectPublisherFromUrl(link);
+            if (detectedPublisher) {
+                document.getElementById('publisher').value = detectedPublisher;
+            } else if (!document.getElementById('publisher').value) {
+                document.getElementById('publisher').value = 'GasGx-Researcher';
+            }
             const publisher = document.getElementById('publisher').value;
             const tag_choice = document.getElementById('tag').value;
             const secondary_tag = document.getElementById('secondary_tag').value;
+            const parsedUrl = parseUrlSafe(link);
+            const source_host = parsedUrl ? (parsedUrl.hostname || '').toLowerCase().replace(/^www\./, '') : '';
+            const source_path = parsedUrl ? (parsedUrl.pathname || '') : '';
+            const submitted_at = new Date().toISOString();
+            const params_snapshot = JSON.stringify({
+                link,
+                category,
+                publisher,
+                tag_choice,
+                secondary_tag,
+                ui_lang: currentLang,
+                submitted_at
+            });
 
-            // Persist DIY values for reuse
-            persistCustomValue('category', category);
-            persistCustomValue('publisher', publisher);
-            persistCustomValue('tag', tag_choice);
-            persistCustomValue('secondary_tag', secondary_tag);
+            const corePayload = {
+                link,
+                category,
+                publisher,
+                tag_choice,
+                secondary_tag,
+                status: 'pending'
+            };
+
+            // Preferred payload: keeps core fields + optional extended params if table already has these columns.
+            const extendedPayload = {
+                ...corePayload,
+                source_host,
+                source_path,
+                ui_lang: currentLang,
+                feeder_version: 'v23.0',
+                submitted_at,
+                params_snapshot
+            };
 
             try {
-                const { data, error } = await client
+                let data;
+                let error;
+                ({ data, error } = await client
                     .from('scrape_queue')
-                    .insert([{ 
-                        link, category, publisher, tag_choice, secondary_tag, 
-                        status: 'pending' 
-                    }])
-                    .select();
+                    .insert([extendedPayload])
+                    .select());
+
+                // Fallback: keep compatibility with old table schema.
+                if (error && isMissingColumnError(error)) {
+                    ({ data, error } = await client
+                        .from('scrape_queue')
+                        .insert([corePayload])
+                        .select());
+                }
 
                 if (error) throw error;
 
@@ -618,8 +972,14 @@
                     const newId = data[0].id;
                     const newUrl = `https://www.gasgx.com/news/article/${newId}`;
                     saveToHistory(newUrl, link);
+
+                    // Persist DIY values only after successful submit
+                    persistCustomValue('category', category);
+                    persistCustomValue('publisher', publisher);
+                    persistCustomValue('tag', tag_choice);
+                    persistCustomValue('secondary_tag', secondary_tag);
                     
-                    showToast("✅ 发布成功!");
+                    showToast(`✅ ${t('toastPublishSuccess')}`);
                     
                     // Save last selections for faster next entry
                     saveLastSelections({ category, publisher, tag: tag_choice, secondary_tag });
@@ -640,11 +1000,11 @@
                         renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
                     });
                 } else {
-                    showToast("⚠️ 已提交，但未返回ID");
+                    showToast(`⚠️ ${t('toastSubmittedNoId')}`);
                 }
             } catch (err) {
                 console.error(err);
-                showToast("❌ Error: " + err.message);
+                showToast(`❌ ${t('toastErrorPrefix')}${err.message}`);
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
@@ -653,12 +1013,10 @@
         });
 
         // Init
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadRemoteOptionConfig();
             loadLastSelections();
-            Object.entries(gridConfigMap).forEach(([inputId, cfg]) => {
-                renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
-            });
-            renderHistory();
+            applyI18n();
 
             const linkInput = document.getElementById('link');
             if (linkInput) {

@@ -1,3 +1,9 @@
+.gxf-main-module {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+}
+
 .gxf-main-module .gxf-timeline-line {
     position: absolute;
     left: 140px;
@@ -174,6 +180,32 @@
 }
 
 @media (max-width: 1024px) {
+    .gxf-main-module .gxf-main-layout {
+        display: block;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .gxf-main-module .gxf-primary-column {
+        width: 100% !important;
+        min-width: 0;
+    }
+
+    .gxf-main-module .gxf-secondary-column {
+        display: none !important;
+    }
+
+    .gxf-main-module #gxf-flash-timeline-container,
+    .gxf-main-module #gxf-flash-items-wrapper {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .gxf-main-module .gxf-page-title {
+        font-size: 1rem;
+        line-height: 1.25rem;
+    }
+
     .gxf-main-module .gxf-timeline-line {
         display: none;
     }
