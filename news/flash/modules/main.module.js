@@ -44,7 +44,7 @@ const MAIN_TEMPLATE = `
         </div>
     </div>
 
-    <div class="sticky top-16 z-30 bg-[#050505]/95 backdrop-blur border-b border-white/5 shadow-lg">
+    <div class="relative z-30 bg-[#050505]/95 backdrop-blur border-b border-white/5 shadow-lg">
         <div class="max-w-[1200px] mx-auto px-4 lg:px-6 py-3 flex items-center justify-between gap-3 min-w-0">
             <h1 class="gxf-page-title min-w-0 flex-1 text-base sm:text-xl font-bold text-white uppercase tracking-wider flex items-center gap-2 sm:gap-3"><i class="fa-solid fa-bolt text-gas-green animate-pulse shrink-0"></i><span class="truncate">7x24 Flash News</span></h1>
             <div class="flex gap-2 shrink-0">
@@ -56,7 +56,7 @@ const MAIN_TEMPLATE = `
         </div>
     </div>
 
-    <main class="flex-grow w-full max-w-[1200px] mx-auto px-4 lg:px-6 py-6 overflow-x-hidden">
+    <main class="flex-grow w-full max-w-[1200px] mx-auto px-4 lg:px-6 pt-2 pb-6 overflow-x-hidden">
         <div class="gxf-main-layout flex flex-col lg:flex-row gap-0 lg:gap-12 items-start relative min-w-0">
             <div class="gxf-primary-column w-full lg:w-[70%] relative min-h-screen min-w-0">
                 <div id="gxf-flash-timeline-container" class="relative">
