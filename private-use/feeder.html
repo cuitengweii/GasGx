@@ -142,11 +142,13 @@
             min-height: 44px; word-break: break-word; line-height: 1.2;
             position: relative;
         }
+        .option-card.manage-item { padding-left: 22px; padding-right: 22px; }
         .option-card.custom-item { padding-right: 18px; }
         .option-card.active {
             background: rgba(93, 214, 44, 0.15); border-color: #5DD62C; color: #5DD62C;
             box-shadow: 0 0 8px rgba(93, 214, 44, 0.1);
         }
+        .option-card .edit-x,
         .option-card .delete-x {
             position: absolute; top: 4px; right: 4px;
             width: 16px; height: 16px; border-radius: 50%;
@@ -154,7 +156,29 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 11px; line-height: 1; cursor: pointer;
         }
+        .option-card .edit-x {
+            left: 4px;
+            right: auto;
+        }
         .option-card .delete-x:hover { color: #ff6b6b; border-color: #3a2a2a; }
+        .option-card .edit-x:hover { color: #5DD62C; border-color: #294220; }
+        .option-manage-btn {
+            min-height: 28px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid #2f2f2f;
+            background: #121212;
+            color: #9aa0a6;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .option-manage-btn.active {
+            border-color: #5DD62C;
+            color: #5DD62C;
+            background: rgba(93, 214, 44, 0.12);
+        }
         
         /* DIY 输入框动画 */
         .custom-input-wrapper { display: none; margin-top: 8px; animation: slideDown 0.2s ease-out; }
@@ -210,6 +234,9 @@
     <div class="capture-spacer"></div>
 
     <form id="taskForm" class="px-4 pt-2 pb-6 space-y-6">
+        <div class="flex justify-end">
+            <button type="button" id="optionManageBtn" class="option-manage-btn" onclick="toggleOptionManageMode()"></button>
+        </div>
 
         <div>
             <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider" data-i18n="category">Category</label>
@@ -301,7 +328,16 @@
                 toastSubmittedNoId: 'Submitted, but no ID returned',
                 toastErrorPrefix: 'Error: ',
                 statusSending: 'Sending...',
-                historyEmpty: 'No recent history'
+                historyEmpty: 'No recent history',
+                manageOptions: 'Edit Options',
+                manageOptionsDone: 'Done Editing',
+                editOptionLabel: 'Edit option',
+                toastManageModeOn: 'Option edit mode ON',
+                toastManageModeOff: 'Option edit mode OFF',
+                toastOptionRenamed: 'Option renamed',
+                renameOptionPrompt: 'Rename option',
+                renameOptionInvalid: 'Option name cannot be empty',
+                renameOptionFailed: 'Rename failed'
             },
             zh: {
                 pageTitle: 'GasGx 移动采集台 v23',
@@ -331,7 +367,16 @@
                 toastSubmittedNoId: '已提交，但未返回ID',
                 toastErrorPrefix: '错误：',
                 statusSending: '发送中...',
-                historyEmpty: '暂无历史记录'
+                historyEmpty: '暂无历史记录',
+                manageOptions: '编辑标签',
+                manageOptionsDone: '完成编辑',
+                editOptionLabel: '编辑选项',
+                toastManageModeOn: '已开启标签编辑模式',
+                toastManageModeOff: '已关闭标签编辑模式',
+                toastOptionRenamed: '标签已重命名',
+                renameOptionPrompt: '重命名标签',
+                renameOptionInvalid: '标签名称不能为空',
+                renameOptionFailed: '重命名失败'
             }
         };
 
@@ -355,6 +400,24 @@
             currentLang = lang;
             localStorage.setItem(LANG_STORE_KEY, lang);
             applyI18n();
+        }
+
+        function updateOptionManageBtn() {
+            const btn = document.getElementById('optionManageBtn');
+            if (!btn) return;
+            btn.classList.toggle('active', optionManageMode);
+            btn.textContent = optionManageMode ? t('manageOptionsDone') : t('manageOptions');
+        }
+
+        function toggleOptionManageMode() {
+            optionManageMode = !optionManageMode;
+            updateOptionManageBtn();
+            renderSecondaryTagGroups();
+            Object.entries(gridConfigMap).forEach(([inputId, cfg]) => {
+                if (inputId === 'secondary_tag') return;
+                renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
+            });
+            showToast(optionManageMode ? t('toastManageModeOn') : t('toastManageModeOff'));
         }
 
         // Data Config (parameter IDs stay in English)
@@ -441,6 +504,7 @@
         };
         const LAST_STORE_KEY = 'gasgx_feeder_last_state';
         const manualOverride = {};
+        let optionManageMode = false;
 
         function applyI18n() {
             document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
@@ -465,6 +529,7 @@
             const langBtnZh = document.getElementById('langBtnZh');
             if (langBtnEn) langBtnEn.classList.toggle('active', currentLang === 'en');
             if (langBtnZh) langBtnZh.classList.toggle('active', currentLang === 'zh');
+            updateOptionManageBtn();
 
             Object.entries(gridConfigMap).forEach(([inputId, cfg]) => {
                 renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
@@ -700,6 +765,60 @@
             }
         }
 
+        async function renameOptionRemote(inputId, oldValue, nextValue, groupId = '') {
+            if (!remoteOptionsTableReady) return false;
+            const section = resolveRemoteSectionForInput(inputId, groupId);
+            const oldOptionId = normalizeValue(oldValue);
+            const nextOptionId = normalizeValue(nextValue);
+            if (!section || !oldOptionId || !nextOptionId) return false;
+            if (oldOptionId.toLowerCase() === nextOptionId.toLowerCase()) return true;
+
+            try {
+                const { data: existingData, error: findError } = await client
+                    .from(FEEDER_OPTIONS_TABLE)
+                    .select('sort_order, is_active')
+                    .eq('section', section)
+                    .eq('option_id', oldOptionId)
+                    .limit(1);
+                if (findError) {
+                    console.warn('Load option before rename failed:', findError);
+                    return false;
+                }
+
+                const current = Array.isArray(existingData) && existingData.length ? existingData[0] : null;
+                const payload = {
+                    section,
+                    option_id: nextOptionId,
+                    label_en: nextOptionId,
+                    label_zh: nextOptionId,
+                    sort_order: current && typeof current.sort_order === 'number' ? current.sort_order : 999,
+                    is_active: current && typeof current.is_active === 'boolean' ? current.is_active : true
+                };
+
+                const { error: upsertError } = await client
+                    .from(FEEDER_OPTIONS_TABLE)
+                    .upsert([payload], { onConflict: 'section,option_id' });
+                if (upsertError) {
+                    console.warn('Rename option upsert failed:', upsertError);
+                    return false;
+                }
+
+                const { error: deleteOldError } = await client
+                    .from(FEEDER_OPTIONS_TABLE)
+                    .delete()
+                    .eq('section', section)
+                    .eq('option_id', oldOptionId);
+                if (deleteOldError) {
+                    console.warn('Rename option delete old failed:', deleteOldError);
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                console.warn('Rename option exception:', e);
+                return false;
+            }
+        }
+
         function getStoreKey(inputId) {
             return `${CUSTOM_STORE_PREFIX}${inputId}`;
         }
@@ -723,6 +842,18 @@
             } catch (e) {
                 console.warn('Save custom options failed:', e);
             }
+        }
+
+        function renameCustomOptionCache(inputId, oldValue, nextValue, groupId = '') {
+            const oldVal = normalizeValue(oldValue);
+            const nextVal = normalizeValue(nextValue);
+            if (!oldVal || !nextVal) return;
+            const storeKey = resolveLocalCacheKey(inputId, groupId);
+            let list = loadCustomOptions(storeKey);
+            if (!list.length) return;
+            list = list.map(item => normalizeValue(item).toLowerCase() === oldVal.toLowerCase() ? nextVal : item);
+            list = list.filter((v, idx, arr) => arr.findIndex(x => normalizeValue(x).toLowerCase() === normalizeValue(v).toLowerCase()) === idx);
+            saveCustomOptions(storeKey, list);
         }
 
         function persistCustomValue(inputId, value, groupId = '') {
@@ -858,6 +989,43 @@
             if (!Array.isArray(targetItems) || !targetItems.length) return;
             const keep = targetItems.filter((item) => normalizeValue(item && item.id).toLowerCase() !== val.toLowerCase());
             replaceOptionItems(targetItems, keep);
+        }
+
+        function renameOptionInMemory(section, oldOptionId, nextOptionId) {
+            const oldVal = normalizeValue(oldOptionId);
+            const nextVal = normalizeValue(nextOptionId);
+            if (!oldVal || !nextVal) return;
+            const targetItems = getOptionTargetListBySection(section);
+            if (!Array.isArray(targetItems) || !targetItems.length) return;
+
+            const oldKey = oldVal.toLowerCase();
+            const renamedItems = [];
+            const seen = new Set();
+
+            targetItems.forEach((item) => {
+                const id = normalizeValue(item && item.id);
+                if (!id || id.toLowerCase() === 'custom') return;
+                const idKey = id.toLowerCase();
+                const finalId = idKey === oldKey ? nextVal : id;
+                const finalKey = finalId.toLowerCase();
+                if (seen.has(finalKey)) return;
+                seen.add(finalKey);
+
+                if (idKey === oldKey) {
+                    renamedItems.push({
+                        ...item,
+                        id: nextVal,
+                        label: {
+                            en: nextVal,
+                            zh: nextVal
+                        }
+                    });
+                    return;
+                }
+                renamedItems.push(item);
+            });
+
+            replaceOptionItems(targetItems, renamedItems);
         }
 
         async function migrateLocalCachedOptionsToRemote(inputIds = REMOTE_OPTION_SECTIONS) {
@@ -1182,14 +1350,20 @@
                 const cardsHtml = mergedItems.map((item) => {
                     const encodedId = encodeURIComponent(item.id);
                     const customClass = item._isCustom ? 'custom-item' : '';
+                    const manageClass = optionManageMode && item.id !== 'custom' ? 'manage-item' : '';
                     const optionKey = normalizeValue(item.id).toLowerCase();
                     const isActive = isActiveGroup && selectedKey && optionKey === selectedKey;
-                    const deleteBtn = item._isCustom
+                    const showDeleteBtn = item._isCustom || (optionManageMode && item.id !== 'custom');
+                    const editBtn = optionManageMode && item.id !== 'custom'
+                        ? `<button type="button" class="edit-x" onclick="editOption(event, 'secondary_tag', '${encodedId}', '${groupId}')" aria-label="${t('editOptionLabel')}">e</button>`
+                        : '';
+                    const deleteBtn = showDeleteBtn
                         ? `<button type="button" class="delete-x" onclick="removeCustomOption(event, 'secondary_tag', '${encodedId}', '${groupId}')" aria-label="${t('deleteCachedOption')}">x</button>`
                         : '';
                     return `
-                        <div class="option-card ${customClass} ${isActive ? 'active' : ''} ${item.id === 'custom' ? 'border-dashed border-gray-600 text-gray-500' : ''}"
+                        <div class="option-card ${customClass} ${manageClass} ${isActive ? 'active' : ''} ${item.id === 'custom' ? 'border-dashed border-gray-600 text-gray-500' : ''}"
                              onclick="handleSelection('secondary_tag', '${encodedId}', this, '${groupId}')">
+                            ${editBtn}
                             ${getLocalizedLabel(item.label)}
                             ${deleteBtn}
                         </div>
@@ -1237,12 +1411,18 @@
             container.innerHTML = mergedItems.map(item => {
                 const encodedId = encodeURIComponent(item.id);
                 const customClass = item._isCustom ? 'custom-item' : '';
-                const deleteBtn = item._isCustom
+                const manageClass = optionManageMode && item.id !== 'custom' ? 'manage-item' : '';
+                const showDeleteBtn = item._isCustom || (optionManageMode && item.id !== 'custom');
+                const editBtn = optionManageMode && item.id !== 'custom'
+                    ? `<button type="button" class="edit-x" onclick="editOption(event, '${inputId}', '${encodedId}')" aria-label="${t('editOptionLabel')}">e</button>`
+                    : '';
+                const deleteBtn = showDeleteBtn
                     ? `<button type="button" class="delete-x" onclick="removeCustomOption(event, '${inputId}', '${encodedId}')" aria-label="${t('deleteCachedOption')}">x</button>`
                     : '';
                 return `
-                    <div class="option-card ${customClass} ${item.id === hiddenInput.value ? 'active' : ''} ${item.id === 'custom' ? 'border-dashed border-gray-600 text-gray-500' : ''}"
+                    <div class="option-card ${customClass} ${manageClass} ${item.id === hiddenInput.value ? 'active' : ''} ${item.id === 'custom' ? 'border-dashed border-gray-600 text-gray-500' : ''}"
                          onclick="handleSelection('${inputId}', '${encodedId}', this)">
+                        ${editBtn}
                         ${getLocalizedLabel(item.label)}
                         ${deleteBtn}
                     </div>
@@ -1321,6 +1501,62 @@
 
             // Haptic
             if(window.navigator && window.navigator.vibrate) window.navigator.vibrate(5);
+        }
+
+        async function editOption(event, inputId, encodedValue, groupId = '') {
+            if (event) event.stopPropagation();
+            const oldVal = normalizeValue(decodeURIComponent(encodedValue || ''));
+            if (!oldVal || oldVal.toLowerCase() === 'custom') return;
+
+            const promptTitle = `${t('renameOptionPrompt')}: ${oldVal}`;
+            const nextRaw = window.prompt(promptTitle, oldVal);
+            if (nextRaw === null) return;
+            const nextVal = normalizeValue(nextRaw);
+            if (!nextVal) {
+                showToast(t('renameOptionInvalid'));
+                return;
+            }
+            if (nextVal.toLowerCase() === 'custom') {
+                showToast(t('renameOptionInvalid'));
+                return;
+            }
+
+            const normalizedGroup = normalizeSecondaryTagGroupId(groupId) || activeSecondaryTagGroup;
+            const section = resolveRemoteSectionForInput(inputId, normalizedGroup);
+            if (!section) return;
+
+            const renameOk = remoteOptionsTableReady
+                ? await renameOptionRemote(inputId, oldVal, nextVal, normalizedGroup)
+                : false;
+            if (remoteOptionsTableReady && !renameOk) {
+                showToast(`${t('toastErrorPrefix')}${t('renameOptionFailed')}`);
+                return;
+            }
+
+            if (!remoteOptionsTableReady) {
+                renameCustomOptionCache(inputId, oldVal, nextVal, normalizedGroup);
+            }
+
+            renameOptionInMemory(section, oldVal, nextVal);
+
+            const hiddenInput = document.getElementById(inputId);
+            const hiddenGroupInput = document.getElementById('secondary_tag_group');
+            const hiddenGroup = normalizeSecondaryTagGroupId(hiddenGroupInput ? hiddenGroupInput.value : '');
+            if (
+                hiddenInput &&
+                normalizeValue(hiddenInput.value).toLowerCase() === oldVal.toLowerCase() &&
+                (inputId !== 'secondary_tag' || hiddenGroup === normalizedGroup)
+            ) {
+                hiddenInput.value = nextVal;
+            }
+
+            if (inputId === 'secondary_tag') {
+                renderSecondaryTagGroups();
+            } else {
+                const cfg = gridConfigMap[inputId];
+                if (cfg) renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
+            }
+            showToast(t('toastOptionRenamed'));
         }
 
         // Called when user types in DIY box: Syncs to the hidden input which Supabase uses
