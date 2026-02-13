@@ -1,0 +1,182 @@
+        body { background-color: #050505; color: #eee; -webkit-tap-highlight-color: transparent; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+        
+        .input-gas { background: #111; border: 1px solid #333; color: white; padding: 14px; width: 100%; border-radius: 12px; outline: none; transition: all 0.2s; font-size: 15px; }
+        .input-gas:focus { border-color: #5DD62C; background: #0a0a0a; }
+
+        :root { --capture-h: 164px; }
+        .capture-bar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+            background: rgba(5, 5, 5, 0.92);
+            border-bottom: 1px solid #1e1e1e;
+            backdrop-filter: blur(10px);
+        }
+        .capture-inner { max-width: 448px; margin: 0 auto; padding: calc(10px + env(safe-area-inset-top)) 16px 12px; }
+        .capture-spacer { height: var(--capture-h); }
+
+        .app-header { transition: all 0.2s ease; }
+        .app-subtitle { transition: opacity 0.2s ease; }
+        .capture-bar.compact .app-subtitle { opacity: 0; height: 0; overflow: hidden; }
+        .capture-bar.compact .app-header { margin-bottom: 6px; }
+        .app-logo { width: 36px; height: 36px; }
+        .capture-bar.compact .app-logo { width: 30px; height: 30px; }
+
+        .sticky-url {
+            position: relative;
+            background: rgba(5, 5, 5, 0.88);
+            border: 1px solid #1e1e1e; border-radius: 16px;
+            padding: 10px; backdrop-filter: blur(10px);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+        }
+        .url-shell {
+            background: #0f0f0f; border: 1px solid #2a2a2a;
+            border-radius: 14px; display: flex; align-items: center;
+            overflow: hidden;
+        }
+        .url-input {
+            background: transparent; border: 0; color: #f1f1f1;
+            padding: 14px 14px; flex: 1; font-size: 15px;
+        }
+        .url-input:focus { outline: none; }
+        .url-paste-btn {
+            width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+            background: #151515; border-left: 1px solid #2a2a2a; color: #9aa0a6;
+            transition: all 0.2s; cursor: pointer;
+        }
+        .url-paste-btn:hover { color: #5DD62C; background: #121a0f; }
+        .url-paste-btn:active { transform: scale(0.92); }
+        .url-send-btn {
+            width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+            background: #5DD62C; color: #0a0a0a; border-left: 1px solid #2a2a2a;
+            transition: all 0.2s; cursor: pointer; font-weight: 700;
+        }
+        .url-send-btn:hover { filter: brightness(0.95); }
+        .url-send-btn:active { transform: scale(0.92); }
+        
+        .btn-gas { background: #5DD62C; color: black; font-weight: 800; padding: 16px; border-radius: 12px; width: 100%; text-transform: uppercase; letter-spacing: 1px; font-size: 16px; box-shadow: 0 4px 15px rgba(93, 214, 44, 0.2); transition: all 0.2s; }
+        .btn-gas:active { transform: scale(0.96); opacity: 0.9; }
+
+        .lang-switch {
+            display: flex;
+            align-items: center;
+            border: 1px solid #2b2b2b;
+            background: #101010;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .lang-btn {
+            min-width: 42px;
+            height: 28px;
+            padding: 0 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #8a8a8a;
+            background: transparent;
+            border: none;
+            transition: all 0.2s;
+        }
+        .lang-btn.active {
+            background: #5DD62C;
+            color: #050505;
+        }
+        .lang-btn:not(.active):hover {
+            color: #d0d0d0;
+            background: #161616;
+        }
+
+        .grid-select { display: grid; gap: 8px; }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .secondary-groups { display: flex; flex-direction: column; gap: 12px; }
+        .secondary-group {
+            background: #0b0b0b;
+            border: 1px solid #1f1f1f;
+            border-radius: 10px;
+            padding: 10px;
+        }
+        .secondary-group.active-group {
+            border-color: #355929;
+            box-shadow: inset 0 0 0 1px rgba(93, 214, 44, 0.15);
+        }
+        .secondary-group-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #8f959e;
+            margin-bottom: 8px;
+        }
+        @media (max-width: 380px) {
+            .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        /* 选项卡片 */
+        .option-card {
+            background: #161616; border: 1px solid #333; border-radius: 8px;
+            padding: 10px 4px; text-align: center; font-size: 12px; font-weight: 600; color: #888;
+            cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+            min-height: 44px; word-break: break-word; line-height: 1.2;
+            position: relative;
+        }
+        .option-card.manage-item { padding-left: 22px; padding-right: 22px; }
+        .option-card.custom-item { padding-right: 18px; }
+        .option-card.active {
+            background: rgba(93, 214, 44, 0.15); border-color: #5DD62C; color: #5DD62C;
+            box-shadow: 0 0 8px rgba(93, 214, 44, 0.1);
+        }
+        .option-card .edit-x,
+        .option-card .delete-x {
+            position: absolute; top: 4px; right: 4px;
+            width: 16px; height: 16px; border-radius: 50%;
+            border: 1px solid #2e2e2e; background: #101010; color: #9aa0a6;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; line-height: 1; cursor: pointer;
+        }
+        .option-card .edit-x {
+            left: 4px;
+            right: auto;
+        }
+        .option-card .delete-x:hover { color: #ff6b6b; border-color: #3a2a2a; }
+        .option-card .edit-x:hover { color: #5DD62C; border-color: #294220; }
+        .option-manage-btn {
+            min-height: 28px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid #2f2f2f;
+            background: #121212;
+            color: #9aa0a6;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .option-manage-btn.active {
+            border-color: #5DD62C;
+            color: #5DD62C;
+            background: rgba(93, 214, 44, 0.12);
+        }
+        
+        /* DIY 输入框动画 */
+        .custom-input-wrapper { display: none; margin-top: 8px; animation: slideDown 0.2s ease-out; }
+        .custom-input-wrapper.show { display: block; }
+        .custom-input-row { display: flex; gap: 8px; align-items: center; }
+        .custom-input-row .input-gas { flex: 1; width: auto; }
+        .custom-add-btn {
+            display: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            border: 1px solid #2f2f2f;
+            background: #121212;
+            color: #5DD62C;
+            font-size: 18px;
+            font-weight: 700;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .manage-mode .custom-add-btn { display: inline-flex; }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
