@@ -278,6 +278,13 @@
             return (value || '').toString().trim();
         }
 
+        function encodeOptionId(value) {
+            // Keep decodeURIComponent compatibility while safely embedding in single-quoted inline handlers.
+            return encodeURIComponent(normalizeValue(value)).replace(/[!'()*]/g, (char) =>
+                `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+            );
+        }
+
         function escapeHtmlAttr(value) {
             return String(value || '')
                 .replace(/&/g, '&amp;')
@@ -1084,7 +1091,7 @@
             const customInputValue = customOpen ? escapeHtmlAttr(selectedValue) : '';
 
             const cardsHtml = mergedItems.map((item) => {
-                const encodedId = encodeURIComponent(item.id);
+                const encodedId = encodeOptionId(item.id);
                 const manageClass = optionManageMode && item.id !== 'custom' ? 'manage-item' : '';
                 const optionKey = normalizeValue(item.id).toLowerCase();
                 const isActive = selectedKey && optionKey === selectedKey;
@@ -1147,7 +1154,7 @@
             }
 
             container.innerHTML = mergedItems.map(item => {
-                const encodedId = encodeURIComponent(item.id);
+                const encodedId = encodeOptionId(item.id);
                 const manageClass = optionManageMode && item.id !== 'custom' ? 'manage-item' : '';
                 const showDeleteBtn = optionManageMode && item.id !== 'custom';
                 const editBtn = optionManageMode && item.id !== 'custom'
