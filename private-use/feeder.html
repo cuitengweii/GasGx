@@ -28,19 +28,19 @@
     </script>
     <style>
         body { background-color: #050505; color: #eee; -webkit-tap-highlight-color: transparent; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+        #appRoot { opacity: 1; transition: opacity 0.15s ease; }
+        body.app-loading #appRoot { opacity: 0; pointer-events: none; }
         
         .input-gas { background: #111; border: 1px solid #333; color: white; padding: 14px; width: 100%; border-radius: 12px; outline: none; transition: all 0.2s; font-size: 15px; }
         .input-gas:focus { border-color: #5DD62C; background: #0a0a0a; }
 
-        :root { --capture-h: 164px; }
         .capture-bar {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+            position: sticky; top: 0; z-index: 20;
             background: rgba(5, 5, 5, 0.92);
             border-bottom: 1px solid #1e1e1e;
             backdrop-filter: blur(10px);
         }
         .capture-inner { max-width: 448px; margin: 0 auto; padding: calc(10px + env(safe-area-inset-top)) 16px 12px; }
-        .capture-spacer { height: var(--capture-h); }
 
         .app-header { transition: all 0.2s ease; }
         .app-subtitle { transition: opacity 0.2s ease; }
@@ -84,36 +84,7 @@
         .btn-gas { background: #5DD62C; color: black; font-weight: 800; padding: 16px; border-radius: 12px; width: 100%; text-transform: uppercase; letter-spacing: 1px; font-size: 16px; box-shadow: 0 4px 15px rgba(93, 214, 44, 0.2); transition: all 0.2s; }
         .btn-gas:active { transform: scale(0.96); opacity: 0.9; }
 
-        .lang-switch {
-            display: flex;
-            align-items: center;
-            border: 1px solid #2b2b2b;
-            background: #101010;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .lang-btn {
-            min-width: 42px;
-            height: 28px;
-            padding: 0 8px;
-            font-size: 11px;
-            font-weight: 700;
-            color: #8a8a8a;
-            background: transparent;
-            border: none;
-            transition: all 0.2s;
-        }
-        .lang-btn.active {
-            background: #5DD62C;
-            color: #050505;
-        }
-        .lang-btn:not(.active):hover {
-            color: #d0d0d0;
-            background: #161616;
-        }
-
         .grid-select { display: grid; gap: 8px; }
-        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
         .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
         .secondary-groups { display: flex; flex-direction: column; gap: 12px; }
         .secondary-group {
@@ -138,7 +109,7 @@
             .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
         }
         
-        /* 选项卡片 */
+        /* Option cards */
         .option-card {
             background: #161616; border: 1px solid #333; border-radius: 8px;
             padding: 10px 4px; text-align: center; font-size: 12px; font-weight: 600; color: #888;
@@ -147,7 +118,6 @@
             position: relative;
         }
         .option-card.manage-item { padding-left: 22px; padding-right: 22px; }
-        .option-card.custom-item { padding-right: 18px; }
         .option-card.active {
             background: rgba(93, 214, 44, 0.15); border-color: #5DD62C; color: #5DD62C;
             box-shadow: 0 0 8px rgba(93, 214, 44, 0.1);
@@ -192,7 +162,7 @@
             opacity: 1;
         }
         
-        /* DIY 输入框动画 */
+        /* DIY input animation */
         .custom-input-wrapper { display: none; margin-top: 8px; animation: slideDown 0.2s ease-out; }
         .custom-input-wrapper.show { display: block; }
         .custom-input-row { display: flex; gap: 8px; align-items: center; }
@@ -219,7 +189,8 @@
         }
     </style>
 </head>
-<body class="max-w-md mx-auto relative">
+<body class="max-w-md mx-auto relative app-loading">
+    <div id="appRoot">
 
     <div id="captureBar" class="capture-bar">
         <div class="capture-inner">
@@ -229,15 +200,11 @@
                         <i class="fa-solid fa-gas-pump text-gas-green text-sm"></i>
                     </div>
                     <div>
-                        <h1 class="text-lg font-bold font-mono text-white tracking-tight" data-i18n="appName">GasGx Feeder</h1>
-                        <p class="app-subtitle text-[10px] text-gray-500 uppercase tracking-widest" data-i18n="appSubtitle">Mobile Link Control</p>
+                        <h1 class="text-lg font-bold font-mono text-white tracking-tight">GasGx Feeder</h1>
+                        <p class="app-subtitle text-[10px] text-gray-500 uppercase tracking-widest">Mobile Link Control</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="lang-switch">
-                        <button type="button" id="langBtnEn" class="lang-btn active" onclick="setLanguage('en')">EN</button>
-                        <button type="button" id="langBtnZh" class="lang-btn" onclick="setLanguage('zh')">中文</button>
-                    </div>
                     <div class="text-xs text-gas-green font-mono bg-gas-green/10 px-2 py-1 rounded">v23.0</div>
                     <button type="button" id="optionManageBtn" class="option-manage-btn" onclick="toggleOptionManageMode()"></button>
                 </div>
@@ -245,15 +212,15 @@
 
             <div class="sticky-url">
                 <label class="flex justify-between text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">
-                    <span data-i18n="targetUrl">Target URL</span>
-                    <span class="text-gas-green text-[10px]"><i class="fa-solid fa-bolt"></i> <span data-i18n="ready">Ready</span></span>
+                    <span>Target URL</span>
+                    <span class="text-gas-green text-[10px]"><i class="fa-solid fa-bolt"></i> <span>Ready</span></span>
                 </label>
                 <div class="url-shell">
                     <input type="url" id="link" class="url-input" placeholder="https://..." required form="taskForm" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false">
-                    <button type="button" onclick="triggerPaste()" class="url-paste-btn" aria-label="Paste link" data-i18n-aria="pasteLink">
+                    <button type="button" onclick="triggerPaste()" class="url-paste-btn" aria-label="Paste link">
                         <i class="fa-solid fa-link text-lg"></i>
                     </button>
-                    <button type="submit" form="taskForm" class="url-send-btn" aria-label="Send" data-i18n-aria="send">
+                    <button type="button" id="aiQuickSubmitBtn" onclick="handleAiQuickSubmit()" class="url-send-btn" aria-label="AI quick submit" title="AI quick submit">
                         <i class="fa-solid fa-paper-plane text-base"></i>
                     </button>
                 </div>
@@ -261,70 +228,69 @@
         </div>
     </div>
 
-    <div class="capture-spacer"></div>
-
     <form id="taskForm" class="px-4 pt-2 pb-6 space-y-6">
         <div>
-            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider" data-i18n="category">Category</label>
+            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Category</label>
             <div class="grid-select grid-cols-3" id="category-container"></div>
             <div id="category-custom-wrapper" class="custom-input-wrapper">
                 <div class="custom-input-row">
-                    <input type="text" id="category-custom-input" class="input-gas border-gas-green" data-i18n-placeholder="categoryCustomPlaceholder" placeholder="Type custom Category..." oninput="syncCustomValue('category', this.value)" onkeydown="handleCustomInputKeydown(event, 'category')">
-                    <button type="button" class="custom-add-btn" onclick="addCustomOptionFromInput('category')" data-i18n-aria="addOptionNow" aria-label="Add option">+</button>
+                    <input type="text" id="category-custom-input" class="input-gas border-gas-green" placeholder="Type custom Category..." oninput="syncCustomValue('category', this.value)" onkeydown="handleCustomInputKeydown(event, 'category')">
+                    <button type="button" class="custom-add-btn" onclick="addCustomOptionFromInput('category')" aria-label="Add option">+</button>
                 </div>
             </div>
             <input type="hidden" id="category" value="gas-energy">
         </div>
 
         <div id="publisher-section" class="hidden">
-            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider" data-i18n="publisher">Publisher</label>
+            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Publisher</label>
             <div class="grid-select grid-cols-3" id="publisher-container"></div>
             <div id="publisher-custom-wrapper" class="custom-input-wrapper">
                 <div class="custom-input-row">
-                    <input type="text" id="publisher-custom-input" class="input-gas border-gas-green" data-i18n-placeholder="publisherCustomPlaceholder" placeholder="Type custom Publisher..." oninput="syncCustomValue('publisher', this.value)" onkeydown="handleCustomInputKeydown(event, 'publisher')">
-                    <button type="button" class="custom-add-btn" onclick="addCustomOptionFromInput('publisher')" data-i18n-aria="addOptionNow" aria-label="Add option">+</button>
+                    <input type="text" id="publisher-custom-input" class="input-gas border-gas-green" placeholder="Type custom Publisher..." oninput="syncCustomValue('publisher', this.value)" onkeydown="handleCustomInputKeydown(event, 'publisher')">
+                    <button type="button" class="custom-add-btn" onclick="addCustomOptionFromInput('publisher')" aria-label="Add option">+</button>
                 </div>
             </div>
             <input type="hidden" id="publisher" value="GasGx-Researcher">
         </div>
 
         <div>
-            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider" data-i18n="mainTag">Main Tag</label>
+            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Main Tag</label>
             <div class="grid-select grid-cols-3" id="tag-container"></div>
             <div id="tag-custom-wrapper" class="custom-input-wrapper">
                 <div class="custom-input-row">
-                    <input type="text" id="tag-custom-input" class="input-gas border-gas-green" data-i18n-placeholder="tagCustomPlaceholder" placeholder="Type custom Tag..." oninput="syncCustomValue('tag', this.value)" onkeydown="handleCustomInputKeydown(event, 'tag')">
-                    <button type="button" class="custom-add-btn" onclick="addCustomOptionFromInput('tag')" data-i18n-aria="addOptionNow" aria-label="Add option">+</button>
+                    <input type="text" id="tag-custom-input" class="input-gas border-gas-green" placeholder="Type custom Tag..." oninput="syncCustomValue('tag', this.value)" onkeydown="handleCustomInputKeydown(event, 'tag')">
+                    <button type="button" class="custom-add-btn" onclick="addCustomOptionFromInput('tag')" aria-label="Add option">+</button>
                 </div>
             </div>
             <input type="hidden" id="tag" value="Hardware">
         </div>
 
         <div>
-            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider" data-i18n="secondaryTag">Secondary Tag</label>
+            <label class="block text-xs text-gray-500 mb-2 font-bold uppercase tracking-wider">Secondary Tag</label>
             <div id="secondary_tag-groups" class="secondary-groups"></div>
             <input type="hidden" id="secondary_tag" value="">
             <input type="hidden" id="secondary_tag_group" value="gas-energy">
         </div>
 
         <button type="submit" id="submitBtn" class="btn-gas mt-6 flex items-center justify-center gap-3">
-            <span data-i18n="sendToCloud">SEND TO CLOUD</span>
+            <span>SEND TO CLOUD</span>
             <i class="fa-solid fa-paper-plane"></i>
         </button>
 
     </form>
 
     <div class="px-4 mt-2 mb-8">
-        <h3 class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-3 border-b border-gray-800 pb-2" data-i18n="recentGeneratedLinks">Recent Generated Links</h3>
+        <h3 class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-3 border-b border-gray-800 pb-2">Recent Generated Links</h3>
         <div id="history-list" class="space-y-3"></div>
-        <button onclick="clearHistory()" class="text-[10px] text-gray-600 mt-4 w-full text-center py-2 hover:text-red-500 transition-colors" data-i18n="clearHistory">Clear History</button>
+        <button onclick="clearHistory()" class="text-[10px] text-gray-600 mt-4 w-full text-center py-2 hover:text-red-500 transition-colors">Clear History</button>
     </div>
 
     <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 bg-[#111] border border-gas-green text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl opacity-0 transition-all pointer-events-none flex items-center gap-3 z-50 transform scale-90">
         <i class="fa-solid fa-circle-check text-gas-green text-lg"></i>
-        <span id="toast-msg" data-i18n="toastDefault">Task Added!</span>
+        <span id="toast-msg">Task Added!</span>
     </div>
 
-    <script defer src="./feeder.js"></script>
+    </div>
+    <script defer src="./feeder.js?v=23.2"></script>
 </body>
 </html>

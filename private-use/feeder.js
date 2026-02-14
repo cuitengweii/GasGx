@@ -6,115 +6,44 @@
         const REMOTE_OPTION_SECTIONS = ['category', 'publisher', 'tag', 'secondary_tag'];
         let remoteOptionsTableReady = false;
 
-        const I18N = {
-            en: {
-                pageTitle: 'GasGx Mobile Feeder v23',
-                appName: 'GasGx Feeder',
-                appSubtitle: 'Mobile Link Control',
-                targetUrl: 'Target URL',
-                ready: 'Ready',
-                category: 'Category',
-                publisher: 'Publisher',
-                mainTag: 'Main Tag',
-                secondaryTag: 'Secondary Tag',
-                categoryCustomPlaceholder: 'Type custom Category...',
-                publisherCustomPlaceholder: 'Type custom Publisher...',
-                tagCustomPlaceholder: 'Type custom Tag...',
-                secondaryTagCustomPlaceholder: 'Type custom Sec Tag...',
-                sendToCloud: 'SEND TO CLOUD',
-                recentGeneratedLinks: 'Recent Generated Links',
-                clearHistory: 'Clear History',
-                toastDefault: 'Task Added!',
-                pasteLink: 'Paste link',
-                send: 'Send',
-                deleteCachedOption: 'Delete cached option',
-                toastPasted: 'Content pasted',
-                toastClipboardEmpty: 'Clipboard is empty',
-                toastManualPaste: 'Please paste manually in input box',
-                toastPublishSuccess: 'Published successfully!',
-                toastSubmittedNoId: 'Submitted, but no ID returned',
-                toastErrorPrefix: 'Error: ',
-                statusSending: 'Sending...',
-                historyEmpty: 'No recent history',
-                manageOptions: 'Edit Options',
-                manageOptionsDone: 'Done Editing',
-                editOptionLabel: 'Edit option',
-                toastManageModeOn: 'Option edit mode ON',
-                toastManageModeOff: 'Option edit mode OFF',
-                toastOptionRenamed: 'Option renamed',
-                renameOptionPrompt: 'Rename option',
-                renameOptionInvalid: 'Option name cannot be empty',
-                renameOptionFailed: 'Rename failed',
-                addOptionNow: 'Add option',
-                toastOptionAdded: 'Option added',
-                toastOptionExists: 'Option already exists',
-                addOptionFailed: 'Add option failed'
-            },
-            zh: {
-                pageTitle: 'GasGx 移动采集台 v23',
-                appName: 'GasGx 采集台',
-                appSubtitle: '移动链接录入',
-                targetUrl: '目标链接',
-                ready: '就绪',
-                category: '分类',
-                publisher: '来源',
-                mainTag: '主标签',
-                secondaryTag: '次标签',
-                categoryCustomPlaceholder: '输入自定义 Category...',
-                publisherCustomPlaceholder: '输入自定义 Publisher...',
-                tagCustomPlaceholder: '输入自定义 Tag...',
-                secondaryTagCustomPlaceholder: '输入自定义 Secondary Tag...',
-                sendToCloud: '提交到云端',
-                recentGeneratedLinks: '最近生成链接',
-                clearHistory: '清空历史',
-                toastDefault: '任务已添加！',
-                pasteLink: '粘贴链接',
-                send: '发送',
-                deleteCachedOption: '删除缓存项',
-                toastPasted: '已粘贴内容',
-                toastClipboardEmpty: '剪贴板为空',
-                toastManualPaste: '请长按输入框手动粘贴',
-                toastPublishSuccess: '发布成功！',
-                toastSubmittedNoId: '已提交，但未返回ID',
-                toastErrorPrefix: '错误：',
-                statusSending: '发送中...',
-                historyEmpty: '暂无历史记录',
-                manageOptions: '编辑标签',
-                manageOptionsDone: '完成编辑',
-                editOptionLabel: '编辑选项',
-                toastManageModeOn: '已开启标签编辑模式',
-                toastManageModeOff: '已关闭标签编辑模式',
-                toastOptionRenamed: '标签已重命名',
-                renameOptionPrompt: '重命名标签',
-                renameOptionInvalid: '标签名称不能为空',
-                renameOptionFailed: '重命名失败',
-                addOptionNow: '新增标签',
-                toastOptionAdded: '标签已新增',
-                toastOptionExists: '标签已存在',
-                addOptionFailed: '新增失败'
-            }
+        const TEXT = {
+            pageTitle: 'GasGx Mobile Feeder v23',
+            secondaryTagCustomPlaceholder: 'Type custom Sec Tag...',
+            deleteCachedOption: 'Delete cached option',
+            addOptionNow: 'Add option',
+            editOptionLabel: 'Edit option',
+            manageOptions: 'Edit Options',
+            manageOptionsDone: 'Done Editing',
+            toastManageModeOn: 'Option edit mode ON',
+            toastManageModeOff: 'Option edit mode OFF',
+            renameOptionPrompt: 'Rename option',
+            renameOptionInvalid: 'Option name cannot be empty',
+            renameOptionFailed: 'Rename failed',
+            toastErrorPrefix: 'Error: ',
+            toastPasted: 'Content pasted',
+            toastClipboardEmpty: 'Clipboard is empty',
+            toastManualPaste: 'Please paste manually in input box',
+            historyEmpty: 'No recent history',
+            statusSending: 'Sending...',
+            toastOptionRenamed: 'Option renamed',
+            toastOptionAdded: 'Option added',
+            toastOptionExists: 'Option already exists',
+            addOptionFailed: 'Add option failed',
+            toastPublishSuccess: 'Published successfully!',
+            toastSubmittedNoId: 'Submitted, but no ID returned',
+            toastAiNeedUrl: 'Please input URL first',
+            toastAiInvalidUrl: 'Invalid URL',
+            toastAiApplied: 'AI tags applied',
+            toastAiSecondaryAdded: 'AI added new secondary tag',
+            toastAiFailed: 'AI auto submit failed'
         };
 
-        const LANG_STORE_KEY = 'gasgx_feeder_lang';
-        let currentLang = localStorage.getItem(LANG_STORE_KEY) === 'zh' ? 'zh' : 'en';
-
         function t(key) {
-            const active = I18N[currentLang] || I18N.en;
-            return active[key] || I18N.en[key] || key;
+            return TEXT[key] || key;
         }
 
         function getLocalizedLabel(label) {
-            if (label && typeof label === 'object') {
-                return label[currentLang] || label.en || label.zh || '';
-            }
-            return String(label || '');
-        }
-
-        function setLanguage(lang) {
-            if (!I18N[lang]) return;
-            currentLang = lang;
-            localStorage.setItem(LANG_STORE_KEY, lang);
-            applyI18n();
+            return normalizeValue(label);
         }
 
         function updateOptionManageBtn() {
@@ -143,35 +72,35 @@
 
         // Data Config (parameter IDs stay in English)
         const categories = [
-            { id: 'gas-energy', label: { en: 'Gas Energy', zh: '天然气能源' } },
-            { id: 'generators', label: { en: 'Generators', zh: '发电机' } },
-            { id: 'bitcoin-mining', label: { en: 'BTC Mining', zh: '比特币挖矿' } },
-            { id: 'flash', label: { en: 'Flash', zh: '快讯' } },
-            { id: 'insights', label: { en: 'Insights', zh: '洞察' } },
-            { id: 'data', label: { en: 'Data', zh: '数据' } },
-            { id: 'events', label: { en: 'Events', zh: '活动' } },
-            { id: 'custom', label: { en: '+ DIY', zh: '+ 自定义' } }
+            { id: 'gas-energy', label: 'Gas Energy' },
+            { id: 'generators', label: 'Generators' },
+            { id: 'bitcoin-mining', label: 'BTC Mining' },
+            { id: 'flash', label: 'Flash' },
+            { id: 'insights', label: 'Insights' },
+            { id: 'data', label: 'Data' },
+            { id: 'events', label: 'Events' },
+            { id: 'custom', label: '+ DIY' }
         ];
 
         const publishers = [
-            { id: 'GasGx-Researcher', label: { en: 'GasGx', zh: 'GasGx' } },
-            { id: 'WuShuoBlock', label: { en: 'WuShuo', zh: '吴说' } },
-            { id: 'Blockbeats', label: { en: 'Blockbeats', zh: 'Blockbeats' } },
-            { id: 'Chaincatcher', label: { en: 'ChainC.', zh: '链捕手' } },
-            { id: 'Panewslab', label: { en: 'Panews', zh: 'Panews' } },
-            { id: 'Odaily', label: { en: 'Odaily', zh: 'Odaily' } },
-            { id: 'Techflow', label: { en: 'Techflow', zh: 'Techflow' } },
-            { id: 'Linkein', label: { en: 'LinkedIn', zh: '领英' } },
-            { id: 'custom', label: { en: '+ DIY', zh: '+ 自定义' } }
+            { id: 'GasGx-Researcher', label: 'GasGx' },
+            { id: 'WuShuoBlock', label: 'WuShuo' },
+            { id: 'Blockbeats', label: 'Blockbeats' },
+            { id: 'Chaincatcher', label: 'ChainC.' },
+            { id: 'Panewslab', label: 'Panews' },
+            { id: 'Odaily', label: 'Odaily' },
+            { id: 'Techflow', label: 'Techflow' },
+            { id: 'Linkein', label: 'LinkedIn' },
+            { id: 'custom', label: '+ DIY' }
         ];
 
         const mainTags = [
-            { id: 'Hardware', label: { en: 'Hardware', zh: '硬件' } },
-            { id: 'Policy', label: { en: 'Policy', zh: '政策' } },
-            { id: 'Finance', label: { en: 'Finance', zh: '金融' } },
-            { id: 'Tech', label: { en: 'Tech', zh: '技术' } },
-            { id: 'Market', label: { en: 'Market', zh: '市场' } },
-            { id: 'custom', label: { en: '+ DIY', zh: '+ 自定义' } }
+            { id: 'Hardware', label: 'Hardware' },
+            { id: 'Policy', label: 'Policy' },
+            { id: 'Finance', label: 'Finance' },
+            { id: 'Tech', label: 'Tech' },
+            { id: 'Market', label: 'Market' },
+            { id: 'custom', label: '+ DIY' }
         ];
 
         const SECONDARY_TAG_SECTION_PREFIX = 'secondary_tag__';
@@ -202,7 +131,7 @@
             secondaryTagGroupIds.forEach((groupId) => {
                 if (!Array.isArray(secondaryTagOptionsByGroup[groupId]) || !secondaryTagOptionsByGroup[groupId].length) {
                     secondaryTagOptionsByGroup[groupId] = [
-                        { id: 'custom', label: { en: '+ DIY', zh: '+ 自定义' } }
+                        { id: 'custom', label: '+ DIY' }
                     ];
                 }
             });
@@ -234,30 +163,122 @@
         const LAST_STORE_KEY = 'gasgx_feeder_last_state';
         const manualOverride = {};
         let optionManageMode = false;
+        let aiQuickBusy = false;
 
-        function applyI18n() {
-            document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+        const AI_SECONDARY_TAG_MAX_LENGTH = 40;
+        const AI_CATEGORY_RULES = {
+            'bitcoin-mining': [
+                'bitcoin', 'btc', 'mining', 'miner', 'hashrate', 'hash rate', 'asic', '挖矿', '矿机', '算力'
+            ],
+            'generators': [
+                'generator', 'genset', 'gas engine', 'turbine', 'microgrid', 'power plant', '发电机', '机组', '燃机'
+            ],
+            'events': [
+                'summit', 'conference', 'forum', 'expo', 'webinar', 'meetup', '活动', '大会', '峰会', '论坛'
+            ],
+            'data': [
+                'dataset', 'dashboard', 'index', 'statistics', 'data', 'report', 'metric', '数据', '统计', '图表'
+            ],
+            'insights': [
+                'insight', 'analysis', 'opinion', 'deep dive', 'research note', '观点', '解读', '深度', '研报'
+            ],
+            'flash': ['breaking', 'flash', 'quick update', 'just in', '快讯', '突发'],
+            'gas-energy': [
+                'natural gas', 'lng', 'pipeline', 'gas power', 'gas-to-power', 'flare gas', '天然气', '气电'
+            ]
+        };
+        const AI_MAIN_TAG_RULES = {
+            'Hardware': ['generator', 'genset', 'engine', 'turbine', 'rig', 'asic', '矿机', '设备', '机组'],
+            'Policy': ['policy', 'regulation', 'permit', 'approval', 'bill', 'law', 'government', '监管', '政策', '法案'],
+            'Finance': ['funding', 'investment', 'financing', 'revenue', 'profit', 'valuation', '融资', '投资', '营收'],
+            'Tech': ['technology', 'platform', 'software', 'ai', 'algorithm', 'optimization', '技术', '系统', '算法'],
+            'Market': ['market', 'price', 'demand', 'supply', 'trading', 'trend', '市场', '价格', '需求']
+        };
+        const AI_SECONDARY_RULES = {
+            'gas-energy': [
+                ['LNG', ['lng', '液化天然气']],
+                ['Pipeline', ['pipeline', '管道']],
+                ['Gas-to-Power', ['gas-to-power', 'gas power', '气电']],
+                ['Flare Gas', ['flare gas', 'flaring', '放空气', '火炬气']],
+                ['Gas Price', ['gas price', 'henry hub', '天然气价格']]
+            ],
+            'generators': [
+                ['Genset', ['genset', '发电机组', '发电机']],
+                ['Gas Turbine', ['gas turbine', '燃气轮机']],
+                ['Reciprocating Engine', ['reciprocating', '往复式发动机']],
+                ['Microgrid', ['microgrid', '微电网']],
+                ['Power Plant', ['power plant', '电厂']]
+            ],
+            'bitcoin-mining': [
+                ['ASIC', ['asic', '矿机']],
+                ['Hashrate', ['hashrate', 'hash rate', '算力']],
+                ['Off-grid Mining', ['off-grid', '离网']],
+                ['Gas-to-Power Mining', ['gas-to-power', 'flare gas', '天然气发电挖矿']],
+                ['Mining Policy', ['mining policy', 'mining ban', '矿业监管', '挖矿政策']]
+            ],
+            'flash': [
+                ['Breaking News', ['breaking', 'flash', '快讯', '突发']]
+            ],
+            'insights': [
+                ['Industry Analysis', ['analysis', 'insight', 'research', '深度', '解读']],
+                ['Interview', ['interview', '访谈']]
+            ],
+            'data': [
+                ['Dataset', ['dataset', '数据集']],
+                ['Dashboard', ['dashboard', '看板']],
+                ['Price Index', ['index', '价格指数']],
+                ['Metrics', ['metric', '统计', '指标']]
+            ],
+            'events': [
+                ['Conference', ['conference', '大会', '峰会']],
+                ['Webinar', ['webinar', '线上研讨会']],
+                ['Forum', ['forum', '论坛']]
+            ]
+        };
+        const AI_DEFAULT_SECONDARY_BY_CATEGORY = {
+            'gas-energy': 'Gas-to-Power',
+            'generators': 'Genset',
+            'bitcoin-mining': 'ASIC',
+            'flash': 'Breaking News',
+            'insights': 'Industry Analysis',
+            'data': 'Metrics',
+            'events': 'Conference'
+        };
+        const AI_CATEGORY_MAIN_BOOST = {
+            'gas-energy': 'Tech',
+            'generators': 'Hardware',
+            'bitcoin-mining': 'Hardware',
+            'flash': 'Market',
+            'insights': 'Tech',
+            'data': 'Market',
+            'events': 'Market'
+        };
+        const AI_CATEGORY_PICK_ORDER = [
+            'bitcoin-mining',
+            'generators',
+            'events',
+            'data',
+            'insights',
+            'flash',
+            'gas-energy'
+        ];
+        const AI_MAIN_TAG_PICK_ORDER = ['Hardware', 'Policy', 'Finance', 'Tech', 'Market'];
+        const AI_EN_STOPWORDS = new Set([
+            'the', 'and', 'for', 'with', 'from', 'this', 'that', 'into', 'over', 'about', 'news', 'post', 'update', 'daily'
+        ]);
+        const AI_ZH_STOPWORDS = new Set([
+            '天然气', '行业', '市场', '今日', '最新', '新闻', '报道', '分析'
+        ]);
+        const AI_GENERIC_SECONDARY_BLOCKLIST = new Set([
+            'gas', 'energy', 'market', 'news', 'flash', 'data', 'report', 'analysis', 'insight', 'event',
+            'article', 'post', 'source', 'default', 'general', 'industry', 'natural', 'mining', 'bitcoin',
+            'x', 'twitter', 'linkedin'
+        ]);
+
+        function renderStaticUi() {
+            document.documentElement.lang = 'en';
             document.title = t('pageTitle');
 
-            document.querySelectorAll('[data-i18n]').forEach((node) => {
-                const key = node.getAttribute('data-i18n');
-                node.textContent = t(key);
-            });
-
-            document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {
-                const key = node.getAttribute('data-i18n-placeholder');
-                node.setAttribute('placeholder', t(key));
-            });
-
-            document.querySelectorAll('[data-i18n-aria]').forEach((node) => {
-                const key = node.getAttribute('data-i18n-aria');
-                node.setAttribute('aria-label', t(key));
-            });
-
-            const langBtnEn = document.getElementById('langBtnEn');
-            const langBtnZh = document.getElementById('langBtnZh');
-            if (langBtnEn) langBtnEn.classList.toggle('active', currentLang === 'en');
-            if (langBtnZh) langBtnZh.classList.toggle('active', currentLang === 'zh');
             updateOptionManageBtn();
 
             Object.entries(gridConfigMap).forEach(([inputId, cfg]) => {
@@ -415,7 +436,7 @@
                     label: item.label
                 });
             });
-            dedup.push({ id: 'custom', label: { en: '+ DIY', zh: '+ 自定义' } });
+            dedup.push({ id: 'custom', label: '+ DIY' });
             return dedup;
         }
 
@@ -455,10 +476,7 @@
 
                     const optionItem = {
                         id: optionId,
-                        label: {
-                            en: normalizeValue(row.label_en) || optionId,
-                            zh: normalizeValue(row.label_zh) || normalizeValue(row.label_en) || optionId
-                        }
+                        label: normalizeValue(row.label_en) || optionId
                     };
 
                     const rawSection = normalizeValue(row.section).toLowerCase();
@@ -478,10 +496,7 @@
                         legacySecondaryByGroup[targetGroup].push({
                             ...optionItem,
                             id: decodedLegacy.optionId || optionId,
-                            label: {
-                                en: normalizeValue(row.label_en) || decodedLegacy.optionId || optionId,
-                                zh: normalizeValue(row.label_zh) || normalizeValue(row.label_en) || decodedLegacy.optionId || optionId
-                            }
+                            label: normalizeValue(row.label_en) || decodedLegacy.optionId || optionId
                         });
                         return;
                     }
@@ -754,7 +769,7 @@
             return baseOptions[normalizedSection] || [];
         }
 
-        function upsertOptionInMemory(section, optionId, labelEn = optionId, labelZh = optionId) {
+        function upsertOptionInMemory(section, optionId, label = optionId) {
             const val = normalizeValue(optionId);
             if (!val) return;
             const targetItems = getOptionTargetListBySection(section);
@@ -767,10 +782,7 @@
                 targetItems[existingIndex] = {
                     ...targetItems[existingIndex],
                     id: val,
-                    label: {
-                        en: normalizeValue(labelEn) || val,
-                        zh: normalizeValue(labelZh) || normalizeValue(labelEn) || val
-                    }
+                    label: normalizeValue(label) || val
                 };
                 return;
             }
@@ -778,10 +790,7 @@
             const customIndex = targetItems.findIndex(item => normalizeValue(item && item.id).toLowerCase() === 'custom');
             const newItem = {
                 id: val,
-                label: {
-                    en: normalizeValue(labelEn) || val,
-                    zh: normalizeValue(labelZh) || normalizeValue(labelEn) || val
-                }
+                label: normalizeValue(label) || val
             };
             if (customIndex >= 0) {
                 targetItems.splice(customIndex, 0, newItem);
@@ -823,10 +832,7 @@
                     renamedItems.push({
                         ...item,
                         id: nextVal,
-                        label: {
-                            en: nextVal,
-                            zh: nextVal
-                        }
+                        label: nextVal
                     });
                     return;
                 }
@@ -885,6 +891,705 @@
             applySelection('publisher', detectedPublisher, true);
         }
 
+        function normalizeAiKey(value) {
+            return normalizeValue(value).toLowerCase();
+        }
+
+        function containsCjk(value) {
+            return /[\u4e00-\u9fff]/.test(value || '');
+        }
+
+        function escapeRegex(value) {
+            return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function keywordHit(textLower, keyword) {
+            const kw = normalizeAiKey(keyword);
+            if (!kw) return false;
+            if (containsCjk(kw)) return textLower.includes(kw);
+            const pattern = new RegExp(`(^|[^a-z0-9])${escapeRegex(kw)}([^a-z0-9]|$)`);
+            return pattern.test(textLower);
+        }
+
+        function scoreWithKeywords(textLower, keywords = []) {
+            let score = 0;
+            (keywords || []).forEach((keyword) => {
+                if (keywordHit(textLower, keyword)) score += 1;
+            });
+            return score;
+        }
+
+        function scoreMap(textLower, mapping = {}) {
+            const scores = {};
+            Object.entries(mapping || {}).forEach(([label, keywords]) => {
+                scores[label] = scoreWithKeywords(textLower, keywords || []);
+            });
+            return scores;
+        }
+
+        function pickBestScore(scores, orderedCandidates = [], fallback = '') {
+            let best = fallback;
+            let bestScore = -1;
+            (orderedCandidates || []).forEach((candidate) => {
+                const score = Number(scores && scores[candidate]) || 0;
+                if (score > bestScore) {
+                    best = candidate;
+                    bestScore = score;
+                }
+            });
+            if (bestScore <= 0) return fallback;
+            return best;
+        }
+
+        function formatSecondaryTag(value, maxLen = AI_SECONDARY_TAG_MAX_LENGTH) {
+            let cleaned = normalizeValue(String(value || '').replace(/[\r\n\t]+/g, ' '));
+            cleaned = cleaned.replace(/^[ _\-.;:|/\\]+|[ _\-.;:|/\\]+$/g, '');
+            if (!cleaned) return '';
+            if (cleaned.length > maxLen) {
+                cleaned = cleaned.slice(0, maxLen).replace(/[ _\-.;:|/\\]+$/g, '');
+            }
+            return cleaned;
+        }
+
+        function safeDecodeURIComponent(value) {
+            try {
+                return decodeURIComponent(value);
+            } catch (e) {
+                return value;
+            }
+        }
+
+        function getAvailableOptionValues(inputId, groupId = '') {
+            return mergeOptions(getOptionItemsByInput(inputId, groupId))
+                .map((item) => normalizeValue(item && item.id))
+                .filter((id) => id && id.toLowerCase() !== 'custom');
+        }
+
+        function findCaseInsensitiveMatch(values = [], candidate = '') {
+            const targetKey = normalizeAiKey(candidate);
+            if (!targetKey) return '';
+            return (values || []).find((value) => normalizeAiKey(value) === targetKey) || '';
+        }
+
+        async function fetchTextWithTimeout(url, timeoutMs = 12000) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    signal: controller.signal,
+                    cache: 'no-store',
+                    headers: {
+                        'Accept': 'text/html,text/plain,application/json;q=0.9,*/*;q=0.8'
+                    }
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.text();
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        function buildAllOriginsUrl(targetUrl) {
+            return `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+        }
+
+        function buildJinaReaderUrl(targetUrl) {
+            const parsed = parseUrlSafe(targetUrl);
+            if (!parsed) return '';
+            const body = `${parsed.host}${parsed.pathname || ''}${parsed.search || ''}`;
+            return `https://r.jina.ai/http://${body}`;
+        }
+
+        function deriveTitleFromPath(targetUrl) {
+            const parsed = parseUrlSafe(targetUrl);
+            if (!parsed) return '';
+            const pathTokens = (parsed.pathname || '')
+                .split('/')
+                .map((segment) => normalizeValue(safeDecodeURIComponent(segment)))
+                .filter(Boolean)
+                .map((segment) => segment.replace(/[-_]+/g, ' '));
+            if (!pathTokens.length) return '';
+            return pathTokens[pathTokens.length - 1];
+        }
+
+        function toTitleCaseWords(value) {
+            return normalizeValue(value)
+                .split(' ')
+                .filter(Boolean)
+                .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+                .join(' ');
+        }
+
+        function normalizeAuthorCandidate(value) {
+            let text = normalizeValue(safeDecodeURIComponent(value || ''));
+            if (!text) return '';
+            text = text
+                .replace(/^[\s"'`([{<]+|[\s"'`)\]}>]+$/g, '')
+                .replace(/\s+/g, ' ')
+                .replace(/\b(?:posted by|author|by)\s*[:\-]\s*/i, '')
+                .replace(/\s*\(@[A-Za-z0-9_]{1,30}\)\s*$/, '')
+                .replace(/\s+on\s+(?:x|twitter|linkedin)\b.*$/i, '')
+                .replace(/\s*[|/]\s*(?:x|twitter|linkedin)\b.*$/i, '')
+                .replace(/^\s*(?:on\s+)?(?:x|twitter|linkedin)\s*[:\-]\s*/i, '')
+                .trim();
+            if (!text) return '';
+
+            const lowered = text.toLowerCase();
+            if (AI_GENERIC_SECONDARY_BLOCKLIST.has(lowered)) return '';
+            if (text.length > AI_SECONDARY_TAG_MAX_LENGTH) text = text.slice(0, AI_SECONDARY_TAG_MAX_LENGTH).trim();
+            if (text.length < 2) return '';
+            if (/^\d+$/.test(text)) return '';
+
+            return formatSecondaryTag(text);
+        }
+
+        function humanizeSlug(slug) {
+            const cleaned = normalizeValue(String(slug || ''))
+                .replace(/[-_]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            if (!cleaned) return '';
+            if (/^[A-Z0-9@_.-]+$/.test(cleaned)) return cleaned;
+            if (/^[a-z0-9 ]+$/.test(cleaned)) return toTitleCaseWords(cleaned);
+            return cleaned;
+        }
+
+        function isReservedXSegment(value) {
+            const key = normalizeAiKey(value);
+            if (!key) return true;
+            const reserved = new Set([
+                'i', 'home', 'explore', 'notifications', 'messages', 'settings', 'compose', 'search',
+                'intent', 'login', 'signup', 'share', 'hashtag'
+            ]);
+            return reserved.has(key);
+        }
+
+        function extractAuthorFromUrl(targetUrl) {
+            const parsed = parseUrlSafe(targetUrl);
+            if (!parsed) return '';
+            const host = (parsed.hostname || '').toLowerCase().replace(/^www\./, '');
+            const segments = (parsed.pathname || '')
+                .split('/')
+                .map((seg) => normalizeValue(safeDecodeURIComponent(seg)))
+                .filter(Boolean);
+            if (!segments.length) return '';
+
+            const isHost = (domain) => host === domain || host.endsWith(`.${domain}`);
+
+            if (isHost('x.com') || isHost('twitter.com')) {
+                const account = segments[0];
+                if (account && !isReservedXSegment(account)) {
+                    return normalizeAuthorCandidate(`@${account}`);
+                }
+                return '';
+            }
+
+            if (isHost('linkedin.com')) {
+                if ((segments[0] === 'in' || segments[0] === 'company') && segments[1]) {
+                    return normalizeAuthorCandidate(humanizeSlug(segments[1]));
+                }
+                if (segments[0] === 'posts' && segments[1]) {
+                    const authorSlug = normalizeValue(segments[1]).split('_')[0];
+                    if (authorSlug) return normalizeAuthorCandidate(humanizeSlug(authorSlug));
+                }
+                if (segments[0] === 'feed' && segments[1] === 'update') return '';
+            }
+
+            if (segments[0] && segments[0].startsWith('@')) {
+                return normalizeAuthorCandidate(segments[0]);
+            }
+
+            return '';
+        }
+
+        function extractAuthorFromTitleOrSnippet(title, snippet) {
+            const titleText = normalizeValue(title || '');
+            const snippetText = normalizeValue(snippet || '');
+
+            const applyPatterns = (sourceText) => {
+                if (!sourceText) return '';
+                const patterns = [
+                    /^(.{2,60}?)\s+on\s+(?:X|Twitter|LinkedIn)\b/i,
+                    /^(.{2,60}?)\s*[|/]\s*(?:X|Twitter|LinkedIn)\b/i,
+                    /^(.{2,60}?)\s*[:：]\s*["“]/i,
+                    /\bposted by\s+(.{2,60}?)(?:$|[|,.;])/i,
+                    /\bauthor\s*[:\-]\s*(.{2,60}?)(?:$|[|,.;])/i,
+                    /\bby\s+(.{2,60}?)(?:$|[|,.;])/i
+                ];
+                for (const pattern of patterns) {
+                    const match = sourceText.match(pattern);
+                    if (!match || !match[1]) continue;
+                    const candidate = normalizeAuthorCandidate(match[1]);
+                    if (candidate) return candidate;
+                }
+                return '';
+            };
+
+            let candidate = applyPatterns(titleText);
+            if (candidate) return candidate;
+            candidate = applyPatterns(snippetText);
+            if (candidate) return candidate;
+
+            const mentionMatch = (titleText || snippetText).match(/@([A-Za-z0-9_]{2,30})/);
+            if (mentionMatch && mentionMatch[1]) {
+                return normalizeAuthorCandidate(`@${mentionMatch[1]}`);
+            }
+            return '';
+        }
+
+        function extractAuthorCandidate(context = {}) {
+            const byTitle = extractAuthorFromTitleOrSnippet(context.title || '', context.snippet || '');
+            if (byTitle) return byTitle;
+
+            const byUrl = extractAuthorFromUrl(context.url || '');
+            if (byUrl) return byUrl;
+
+            return '';
+        }
+
+        function extractContentFromHtml(rawHtml) {
+            if (!rawHtml) return { title: '', snippet: '', body: '' };
+            let title = '';
+            let snippet = '';
+            let body = '';
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(rawHtml, 'text/html');
+                const getMeta = (selector) => {
+                    const el = doc.querySelector(selector);
+                    return normalizeValue(el && el.getAttribute('content'));
+                };
+                title = normalizeValue(
+                    getMeta('meta[property="og:title"]') ||
+                    getMeta('meta[name="twitter:title"]') ||
+                    (doc.title || '')
+                );
+                snippet = normalizeValue(
+                    getMeta('meta[property="og:description"]') ||
+                    getMeta('meta[name="description"]') ||
+                    getMeta('meta[name="twitter:description"]')
+                );
+                const bodyNode = doc.body || doc.documentElement;
+                body = normalizeValue(bodyNode ? (bodyNode.innerText || bodyNode.textContent || '') : '');
+            } catch (e) {
+                body = normalizeValue(String(rawHtml).replace(/<[^>]+>/g, ' '));
+            }
+            return { title, snippet, body };
+        }
+
+        function extractFromJinaReader(rawText) {
+            const text = String(rawText || '');
+            const titleMatch = text.match(/^\s*Title:\s*(.+)$/mi);
+            const title = normalizeValue(titleMatch && titleMatch[1]);
+            const contentParts = text.split('Markdown Content:');
+            const markdown = normalizeValue(contentParts.length > 1 ? contentParts.slice(1).join('Markdown Content:') : text);
+            const snippet = normalizeValue(markdown.slice(0, 3200));
+            return { title, snippet, body: markdown };
+        }
+
+        function isLikelyUsefulText(value) {
+            const text = normalizeValue(value);
+            if (!text) return false;
+            if (text.length < 80) return false;
+            const lower = text.toLowerCase();
+            if (lower.includes('enable javascript') && lower.length < 500) return false;
+            return true;
+        }
+
+        async function loadAiSourceContext(targetUrl) {
+            const parsed = parseUrlSafe(targetUrl);
+            if (!parsed) throw new Error(t('toastAiInvalidUrl'));
+            const normalizedUrl = parsed.href;
+            const sourceHost = (parsed.hostname || '').toLowerCase().replace(/^www\./, '');
+            const sourcePath = parsed.pathname || '';
+
+            let title = '';
+            let snippet = '';
+            let body = '';
+            let source = 'url-only';
+
+            try {
+                const rawHtml = await fetchTextWithTimeout(buildAllOriginsUrl(normalizedUrl), 12000);
+                const extracted = extractContentFromHtml(rawHtml);
+                title = extracted.title;
+                snippet = extracted.snippet;
+                body = extracted.body;
+                source = 'allorigins';
+            } catch (e) {
+                console.warn('AI context allorigins fetch failed:', e);
+            }
+
+            const initialText = normalizeValue([title, snippet, body].join(' '));
+            if (!isLikelyUsefulText(initialText)) {
+                const readerUrl = buildJinaReaderUrl(normalizedUrl);
+                if (readerUrl) {
+                    try {
+                        const readerText = await fetchTextWithTimeout(buildAllOriginsUrl(readerUrl), 12000);
+                        const extractedReader = extractFromJinaReader(readerText);
+                        title = title || extractedReader.title;
+                        snippet = snippet || extractedReader.snippet;
+                        body = normalizeValue([body, extractedReader.body].join(' '));
+                        source = source === 'url-only' ? 'jina-via-allorigins' : `${source}+jina`;
+                    } catch (e) {
+                        console.warn('AI context jina fetch failed:', e);
+                    }
+                }
+            }
+
+            if (!title) title = deriveTitleFromPath(normalizedUrl);
+            const combinedText = normalizeValue([
+                title,
+                snippet,
+                body.slice(0, 12000),
+                sourceHost,
+                sourcePath.replace(/[-_/]+/g, ' ')
+            ].join(' '));
+
+            return {
+                url: normalizedUrl,
+                sourceHost,
+                sourcePath,
+                title,
+                snippet,
+                text: combinedText,
+                source
+            };
+        }
+
+        function chooseCategoryByRules(textLower) {
+            const available = getAvailableOptionValues('category');
+            const byKey = new Map(available.map((value) => [normalizeAiKey(value), value]));
+            const scores = scoreMap(textLower, AI_CATEGORY_RULES);
+            const ordered = AI_CATEGORY_PICK_ORDER.filter((candidate) => byKey.has(candidate));
+            const bestKey = pickBestScore(scores, ordered, '');
+
+            if (bestKey && byKey.has(bestKey)) {
+                return { value: byKey.get(bestKey), scores };
+            }
+
+            const current = normalizeSecondaryTagGroupId(document.getElementById('category') && document.getElementById('category').value);
+            if (current && byKey.has(current)) return { value: byKey.get(current), scores };
+            if (byKey.has('gas-energy')) return { value: byKey.get('gas-energy'), scores };
+            return { value: available[0] || 'gas-energy', scores };
+        }
+
+        function chooseMainTagByRules(textLower, categoryId) {
+            const available = getAvailableOptionValues('tag');
+            const byKey = new Map(available.map((value) => [normalizeAiKey(value), value]));
+            const scores = scoreMap(textLower, AI_MAIN_TAG_RULES);
+            const boosted = AI_CATEGORY_MAIN_BOOST[normalizeAiKey(categoryId)];
+            if (boosted) scores[boosted] = (Number(scores[boosted]) || 0) + 1;
+
+            const ordered = AI_MAIN_TAG_PICK_ORDER.filter((candidate) => byKey.has(normalizeAiKey(candidate)));
+            const best = pickBestScore(scores, ordered, '');
+            const bestKey = normalizeAiKey(best);
+            if (best && byKey.has(bestKey)) return { value: byKey.get(bestKey), scores };
+
+            const currentTag = normalizeValue(document.getElementById('tag') && document.getElementById('tag').value);
+            const currentKey = normalizeAiKey(currentTag);
+            if (currentTag && byKey.has(currentKey)) return { value: byKey.get(currentKey), scores };
+            return { value: available[0] || 'Hardware', scores };
+        }
+
+        function isStrictSecondaryTagCandidate(candidate, categoryId, mainTag) {
+            const formatted = formatSecondaryTag(candidate);
+            const key = normalizeAiKey(formatted);
+            if (!formatted || !key) return false;
+            if (key.length < 2 || key.length > AI_SECONDARY_TAG_MAX_LENGTH) return false;
+            if (/^\d+$/.test(key)) return false;
+            if (key.includes('http') || key.includes('www')) return false;
+            if (AI_EN_STOPWORDS.has(key) || AI_ZH_STOPWORDS.has(key)) return false;
+            if (AI_GENERIC_SECONDARY_BLOCKLIST.has(key)) return false;
+            if (key === normalizeAiKey(categoryId)) return false;
+            if (key === normalizeAiKey(mainTag)) return false;
+            return true;
+        }
+
+        function pickDefaultSecondaryTag(categoryId, existingTags = []) {
+            const fallbackName = AI_DEFAULT_SECONDARY_BY_CATEGORY[normalizeAiKey(categoryId)];
+            const matched = findCaseInsensitiveMatch(existingTags, fallbackName);
+            if (matched) return matched;
+            return normalizeValue(existingTags[0] || '');
+        }
+
+        function countKeywordFrequency(textLower, keyword) {
+            const key = normalizeAiKey(keyword);
+            if (!key) return 0;
+            if (containsCjk(key)) {
+                let count = 0;
+                let index = textLower.indexOf(key);
+                while (index !== -1) {
+                    count += 1;
+                    index = textLower.indexOf(key, index + key.length);
+                }
+                return count;
+            }
+            const regex = new RegExp(`(^|[^a-z0-9])${escapeRegex(key)}([^a-z0-9]|$)`, 'g');
+            let count = 0;
+            while (regex.exec(textLower) !== null) count += 1;
+            return count;
+        }
+
+        function collectDynamicSecondaryCandidates(context = {}, blockedKeys = new Set()) {
+            const fullText = normalizeValue([
+                context.title || '',
+                context.snippet || '',
+                context.body || '',
+                context.url || ''
+            ].join(' '));
+            const titleText = normalizeValue(context.title || '');
+            const candidates = [];
+            const seen = new Set();
+
+            const pushCandidate = (rawValue, confidence, source) => {
+                const formatted = formatSecondaryTag(rawValue);
+                const key = normalizeAiKey(formatted);
+                if (!formatted || !key || seen.has(key)) return;
+                if (blockedKeys.has(key)) return;
+                if (AI_EN_STOPWORDS.has(key) || AI_ZH_STOPWORDS.has(key)) return;
+                if (AI_GENERIC_SECONDARY_BLOCKLIST.has(key)) return;
+                candidates.push({ value: formatted, confidence, source });
+                seen.add(key);
+            };
+
+            let match;
+            const hashtagRegex = /#([A-Za-z][A-Za-z0-9_+\-/]{1,30}|[\u4e00-\u9fff]{2,10})/g;
+            while ((match = hashtagRegex.exec(fullText)) !== null) {
+                pushCandidate(match[1], 4, 'hashtag');
+            }
+
+            const mentionRegex = /@([A-Za-z][A-Za-z0-9_]{1,30})/g;
+            while ((match = mentionRegex.exec(fullText)) !== null) {
+                pushCandidate(`@${match[1]}`, 4, 'mention');
+            }
+
+            const acronymRegex = /\b[A-Z]{2,10}\b/g;
+            while ((match = acronymRegex.exec(titleText || fullText)) !== null) {
+                pushCandidate(match[0], 3, 'acronym');
+            }
+
+            const nameRegex = /\b[A-Za-z][A-Za-z0-9+\-/]{2,30}\b/g;
+            while ((match = nameRegex.exec(titleText)) !== null) {
+                const token = match[0];
+                const normalized = normalizeAiKey(token);
+                if (AI_EN_STOPWORDS.has(normalized)) continue;
+                pushCandidate(token, 2, 'title-token');
+            }
+
+            const parsed = parseUrlSafe(context.url || '');
+            if (parsed) {
+                const pathTokens = (parsed.pathname || '')
+                    .split('/')
+                    .map((token) => safeDecodeURIComponent(token))
+                    .flatMap((token) => token.split(/[_-]+/))
+                    .map((token) => normalizeValue(token))
+                    .filter((token) => token.length >= 3 && !/^\d+$/.test(token));
+                pathTokens.forEach((token) => {
+                    pushCandidate(token, 2, 'path-token');
+                });
+            }
+
+            return candidates;
+        }
+
+        function chooseSecondaryTagByRules(categoryId, mainTag, textLower, context = {}) {
+            const normalizedCategory = normalizeSecondaryTagGroupId(categoryId) || normalizeAiKey(categoryId);
+            const existingTags = getAvailableOptionValues('secondary_tag', normalizedCategory);
+            const existingByKey = new Map(existingTags.map((tag) => [normalizeAiKey(tag), tag]));
+            const authorCandidate = extractAuthorCandidate(context);
+
+            if (authorCandidate && isStrictSecondaryTagCandidate(authorCandidate, categoryId, mainTag)) {
+                const existingAuthor = existingByKey.get(normalizeAiKey(authorCandidate));
+                if (existingAuthor) {
+                    return { value: existingAuthor, add: false, scores: {}, reason: 'author-existing' };
+                }
+                return { value: authorCandidate, add: true, scores: {}, reason: 'author-priority' };
+            }
+
+            const secondaryRules = AI_SECONDARY_RULES[normalizedCategory] || [];
+            const scoredCandidates = {};
+            secondaryRules.forEach(([tagName, keywords]) => {
+                const score = scoreWithKeywords(textLower, keywords || []);
+                if (score > 0) scoredCandidates[tagName] = score;
+            });
+            existingTags.forEach((tag) => {
+                if (scoredCandidates[tag]) return;
+                if (keywordHit(textLower, tag)) scoredCandidates[tag] = 1;
+            });
+
+            const ordered = [...existingTags, ...Object.keys(scoredCandidates)];
+            const bestCandidate = pickBestScore(scoredCandidates, ordered, '');
+            if (bestCandidate) {
+                const existing = existingByKey.get(normalizeAiKey(bestCandidate));
+                if (existing) {
+                    return { value: existing, add: false, scores: scoredCandidates, reason: 'existing-score' };
+                }
+                const score = Number(scoredCandidates[bestCandidate]) || 0;
+                const formattedBest = formatSecondaryTag(bestCandidate);
+                if (score >= 2 && isStrictSecondaryTagCandidate(formattedBest, categoryId, mainTag)) {
+                    return { value: formattedBest, add: true, scores: scoredCandidates, reason: 'rule-high-score' };
+                }
+            }
+
+            const blockedKeys = new Set([
+                normalizeAiKey(categoryId),
+                normalizeAiKey(mainTag),
+                ...AI_MAIN_TAG_PICK_ORDER.map((tag) => normalizeAiKey(tag)),
+                ...AI_CATEGORY_PICK_ORDER.map((tag) => normalizeAiKey(tag))
+            ]);
+            const dynamicCandidates = collectDynamicSecondaryCandidates(context, blockedKeys);
+            for (const candidate of dynamicCandidates) {
+                const existing = existingByKey.get(normalizeAiKey(candidate.value));
+                if (existing) {
+                    return { value: existing, add: false, scores: scoredCandidates, reason: `existing-${candidate.source}` };
+                }
+                if (!isStrictSecondaryTagCandidate(candidate.value, categoryId, mainTag)) continue;
+                const frequency = countKeywordFrequency(textLower, candidate.value);
+                if (
+                    candidate.confidence >= 4 ||
+                    (candidate.confidence >= 3 && frequency >= 1) ||
+                    (candidate.confidence >= 2 && frequency >= 2)
+                ) {
+                    return { value: candidate.value, add: true, scores: scoredCandidates, reason: candidate.source };
+                }
+            }
+
+            const fallback = pickDefaultSecondaryTag(categoryId, existingTags);
+            return { value: fallback, add: false, scores: scoredCandidates, reason: 'default' };
+        }
+
+        async function ensureSecondaryTagOption(tagValue, groupId) {
+            const normalizedGroup = normalizeSecondaryTagGroupId(groupId) || getFallbackSecondaryTagGroupId();
+            const formatted = formatSecondaryTag(tagValue);
+            if (!normalizedGroup || !formatted) return '';
+            const existing = findCaseInsensitiveMatch(getAvailableOptionValues('secondary_tag', normalizedGroup), formatted);
+            if (existing) return existing;
+
+            const section = resolveInMemorySectionForInput('secondary_tag', normalizedGroup);
+            if (section) upsertOptionInMemory(section, formatted, formatted);
+            if (remoteOptionsTableReady) {
+                await saveCustomOptionRemote('secondary_tag', formatted, normalizedGroup);
+            }
+            return formatted;
+        }
+
+        function applySecondaryTagSelection(tagValue, groupId) {
+            const normalizedGroup = normalizeSecondaryTagGroupId(groupId) || getFallbackSecondaryTagGroupId();
+            const hiddenInput = document.getElementById('secondary_tag');
+            const groupInput = document.getElementById('secondary_tag_group');
+            if (!hiddenInput || !normalizedGroup) return;
+
+            activeSecondaryTagGroup = normalizedGroup;
+            if (groupInput) groupInput.value = normalizedGroup;
+            hiddenInput.value = normalizeValue(tagValue);
+            manualOverride.secondary_tag = false;
+            renderSecondaryTagGroups();
+        }
+
+        async function analyzeAndApplyAiSuggestions(rawUrl) {
+            const parsed = parseUrlSafe(rawUrl);
+            if (!parsed) throw new Error(t('toastAiInvalidUrl'));
+
+            const normalizedUrl = parsed.href;
+            const linkInput = document.getElementById('link');
+            if (linkInput) linkInput.value = normalizedUrl;
+
+            manualOverride.publisher = false;
+            applyUrlHints(normalizedUrl);
+
+            const context = await loadAiSourceContext(normalizedUrl);
+            const textLower = normalizeAiKey(context.text || normalizedUrl);
+
+            const categoryResult = chooseCategoryByRules(textLower);
+            const categoryValue = normalizeValue(categoryResult.value);
+            applySelection('category', categoryValue, true);
+            manualOverride.category = false;
+
+            const mainTagResult = chooseMainTagByRules(textLower, categoryValue);
+            const mainTagValue = normalizeValue(mainTagResult.value);
+            applySelection('tag', mainTagValue, true);
+            manualOverride.tag = false;
+
+            const secondaryResult = chooseSecondaryTagByRules(
+                categoryValue,
+                mainTagValue,
+                textLower,
+                {
+                    title: context.title,
+                    snippet: context.snippet,
+                    body: context.text,
+                    url: normalizedUrl
+                }
+            );
+            let secondaryValue = formatSecondaryTag(secondaryResult.value);
+            let secondaryAdded = false;
+            if (secondaryValue && secondaryResult.add) {
+                secondaryValue = await ensureSecondaryTagOption(secondaryValue, categoryValue);
+                secondaryAdded = true;
+            }
+            applySecondaryTagSelection(secondaryValue, categoryValue);
+
+            return {
+                category: categoryValue,
+                mainTag: mainTagValue,
+                secondaryTag: secondaryValue,
+                secondaryAdded,
+                source: context.source
+            };
+        }
+
+        function setAiQuickButtonState(isBusy) {
+            const aiBtn = document.getElementById('aiQuickSubmitBtn');
+            if (!aiBtn) return;
+            if (!isBusy && btn && btn.disabled) return;
+            if (isBusy) {
+                if (!aiBtn.dataset.originalHtml) aiBtn.dataset.originalHtml = aiBtn.innerHTML;
+                aiBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-base"></i>';
+                aiBtn.disabled = true;
+                aiBtn.style.opacity = '0.7';
+                aiBtn.style.pointerEvents = 'none';
+                return;
+            }
+            aiBtn.innerHTML = aiBtn.dataset.originalHtml || '<i class="fa-solid fa-paper-plane text-base"></i>';
+            aiBtn.disabled = false;
+            aiBtn.style.opacity = '1';
+            aiBtn.style.pointerEvents = '';
+        }
+
+        async function handleAiQuickSubmit() {
+            if (aiQuickBusy) return;
+            const linkInput = document.getElementById('link');
+            const rawUrl = normalizeValue(linkInput && linkInput.value);
+            if (!rawUrl) {
+                showToast(`⚠️ ${t('toastAiNeedUrl')}`);
+                if (linkInput) linkInput.focus();
+                return;
+            }
+            if (!parseUrlSafe(rawUrl)) {
+                showToast(`⚠️ ${t('toastAiInvalidUrl')}`);
+                if (linkInput) linkInput.focus();
+                return;
+            }
+
+            aiQuickBusy = true;
+            setAiQuickButtonState(true);
+            try {
+                const result = await analyzeAndApplyAiSuggestions(rawUrl);
+                const summaryPrefix = result.secondaryAdded ? t('toastAiSecondaryAdded') : t('toastAiApplied');
+                showToast(`🤖 ${summaryPrefix}: ${result.category} / ${result.mainTag} / ${result.secondaryTag || '-'}`);
+                const formEl = document.getElementById('taskForm');
+                if (formEl) formEl.requestSubmit();
+            } catch (err) {
+                console.error(err);
+                const errMsg = normalizeValue(err && err.message);
+                showToast(`❌ ${t('toastAiFailed')}${errMsg ? ` (${errMsg})` : ''}`);
+            } finally {
+                aiQuickBusy = false;
+                setAiQuickButtonState(false);
+            }
+        }
+
         function mergeOptions(items) {
             const seen = new Set();
             const merged = [];
@@ -920,23 +1625,14 @@
                 seen.add(dedupeKey);
 
                 const rawLabel = item && item.label;
-                const labelEn = normalizeValue(
-                    rawLabel && typeof rawLabel === 'object'
-                        ? (rawLabel.en || rawLabel.zh)
-                        : rawLabel
-                ) || optionId;
-                const labelZh = normalizeValue(
-                    rawLabel && typeof rawLabel === 'object'
-                        ? (rawLabel.zh || rawLabel.en)
-                        : rawLabel
-                ) || labelEn;
+                const labelEn = normalizeValue(rawLabel) || optionId;
                 const remoteOptionId = toRemoteOptionId(inputId, optionId, groupId);
 
                 payload.push({
                     section,
                     option_id: remoteOptionId,
                     label_en: labelEn,
-                    label_zh: labelZh,
+                    label_zh: labelEn,
                     sort_order: index + 1,
                     is_active: true
                 });
@@ -1033,7 +1729,7 @@
             }
         }
 
-        // --- 1. Paste Logic (点击图标触发) ---
+        // --- 1. Paste logic ---
         async function triggerPaste(autoSend = false) {
             try {
                 const text = await navigator.clipboard.readText();
@@ -1121,7 +1817,6 @@
                             <input type="text"
                                    id="secondary_tag-custom-input-${groupId}"
                                    class="input-gas border-gas-green"
-                                   data-i18n-placeholder="secondaryTagCustomPlaceholder"
                                    placeholder="${escapeHtmlAttr(t('secondaryTagCustomPlaceholder'))}"
                                    value="${customInputValue}"
                                    oninput="syncCustomValue('secondary_tag', this.value, '${groupId}')"
@@ -1419,11 +2114,11 @@
             if (cfg) renderGrid(cfg.containerId, inputId, cfg.items, cfg.defaultVal);
         }
 
-        // --- 3. History Logic (双链接) ---
+        // --- 3. History ---
         function saveToHistory(newUrl, originalUrl) {
             let currentHistory = getCookie("gas_url_list_v2");
             let list = currentHistory ? JSON.parse(currentHistory) : [];
-            const timeLocale = currentLang === 'zh' ? 'zh-CN' : 'en-US';
+            const timeLocale = 'en-US';
             
             list.unshift({ 
                 newUrl: newUrl, 
@@ -1480,9 +2175,17 @@
             setTimeout(() => toast.classList.add('opacity-0', 'scale-90', 'pointer-events-none'), 3000);
         }
 
+        function markAppReady() {
+            if (document.body) document.body.classList.remove('app-loading');
+        }
+
+        // Fallback: always reveal app once page load completes.
+        window.addEventListener('load', markAppReady);
+
         // --- Submit ---
         const form = document.getElementById('taskForm');
         const btn = document.getElementById('submitBtn');
+        const aiQuickBtn = document.getElementById('aiQuickSubmitBtn');
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1490,6 +2193,11 @@
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${t('statusSending')}`;
             btn.disabled = true;
             btn.style.opacity = '0.7';
+            if (aiQuickBtn) {
+                aiQuickBtn.disabled = true;
+                aiQuickBtn.style.opacity = '0.7';
+                aiQuickBtn.style.pointerEvents = 'none';
+            }
 
             // Keep displayed tags aligned with remote option table before submit.
             await syncDisplayedOptionsToRemote(['tag', 'secondary_tag']);
@@ -1520,7 +2228,7 @@
                 tag_choice,
                 secondary_tag,
                 secondary_tag_group,
-                ui_lang: currentLang,
+                ui_lang: 'en',
                 submitted_at
             });
 
@@ -1538,7 +2246,7 @@
                 ...corePayload,
                 source_host,
                 source_path,
-                ui_lang: currentLang,
+                ui_lang: 'en',
                 feeder_version: 'v23.0',
                 submitted_at,
                 params_snapshot
@@ -1603,52 +2311,53 @@
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 btn.style.opacity = '1';
+                if (aiQuickBtn && !aiQuickBusy) {
+                    setAiQuickButtonState(false);
+                }
             }
         });
 
         // Init
         document.addEventListener('DOMContentLoaded', () => {
-            loadLastSelections();
-            applyI18n();
+            try {
+                loadLastSelections();
+                renderStaticUi();
+                markAppReady();
 
-            // Do not block first paint on remote option fetch.
-            setTimeout(async () => {
-                await loadRemoteOptionConfig();
-                applyI18n();
-            }, 0);
+                // Do not block first paint on remote option fetch.
+                setTimeout(async () => {
+                    await loadRemoteOptionConfig();
+                    renderStaticUi();
+                }, 0);
 
-            const linkInput = document.getElementById('link');
-            if (linkInput) {
-                linkInput.addEventListener('change', () => applyUrlHints(linkInput.value));
-                linkInput.addEventListener('paste', () => setTimeout(() => applyUrlHints(linkInput.value), 0));
-                linkInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const formEl = document.getElementById('taskForm');
-                        if (formEl) formEl.requestSubmit();
-                    }
-                });
-                linkInput.focus();
+                const linkInput = document.getElementById('link');
+                if (linkInput) {
+                    linkInput.addEventListener('change', () => applyUrlHints(linkInput.value));
+                    linkInput.addEventListener('paste', () => setTimeout(() => applyUrlHints(linkInput.value), 0));
+                    linkInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const formEl = document.getElementById('taskForm');
+                            if (formEl) formEl.requestSubmit();
+                        }
+                    });
+                    linkInput.focus();
+                }
+                if (aiQuickBtn && !aiQuickBtn.dataset.originalHtml) {
+                    aiQuickBtn.dataset.originalHtml = aiQuickBtn.innerHTML;
+                }
+            } finally {
+                markAppReady();
             }
         });
 
-        // Capture bar sizing + compact mode while scrolling
+        // Capture bar compact mode while scrolling
         const captureBar = document.getElementById('captureBar');
-
-        function updateCaptureHeight() {
-            if (!captureBar) return;
-            const height = captureBar.offsetHeight || 0;
-            document.documentElement.style.setProperty('--capture-h', `${height}px`);
-        }
 
         function setCompactMode(isCompact) {
             if (!captureBar) return;
             captureBar.classList.toggle('compact', isCompact);
-            updateCaptureHeight();
         }
-
-        updateCaptureHeight();
-        window.addEventListener('resize', updateCaptureHeight);
 
         let lastCompact = false;
         window.addEventListener('scroll', () => {
