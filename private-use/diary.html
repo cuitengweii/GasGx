@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记录到 Google Doc</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#050505] text-[#E5E5E5] flex items-center justify-center h-screen">
+
+    <div class="bg-[#0F0F0F] p-8 rounded-xl border border-white/10 w-full max-w-md shadow-2xl">
+        <h2 class="text-xl font-bold mb-4 text-white">日记速记</h2>
+        
+        <textarea id="inputText" rows="5" 
+            class="w-full bg-[#111] border border-white/20 rounded-lg p-3 text-sm text-white focus:border-[#5DD62C] focus:ring-1 focus:ring-[#5DD62C]/50 outline-none transition-all placeholder-gray-500 mb-4" 
+            placeholder="今天发生了什么？随便说说..."></textarea>
+            
+        <button id="submitBtn" onclick="sendToGoogleDoc()" 
+            class="w-full bg-[#5DD62C]/10 text-[#5DD62C] border border-[#5DD62C]/30 hover:bg-[#5DD62C] hover:text-black font-bold py-3 rounded-lg transition-all duration-300">
+            ✨ 保存到 Google Doc
+        </button>
+        
+        <p id="statusMsg" class="text-center text-xs mt-4 hidden"></p>
+    </div>
+
+    <script>
+        // 把这里换成你在 Google Apps Script 部署后得到的 Web 应用网址
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzXJYu_9tYrR30AJ_L-3VpBJfAuid3zglmf-1WUUkatofZ72FRisIBH-Zqz86k4V4Dz/exec";
+
+        async function sendToGoogleDoc() {
+            const inputField = document.getElementById('inputText');
+            const btn = document.getElementById('submitBtn');
+            const statusMsg = document.getElementById('statusMsg');
+            const content = inputField.value.trim();
+
+            if (!content) {
+                showStatus('请输入内容！', 'text-red-400');
+                return;
+            }
+
+            // UI 变为加载中状态
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
+            statusMsg.classList.add('hidden');
+
+            try {
+                // 发送 POST 请求到 Google Apps Script
+                // 注意：这里用 text/plain 是为了绕过浏览器的严格 CORS 预检请求 (Preflight)
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8', 
+                    },
+                    body: JSON.stringify({ content: content })
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showStatus('✅ 成功保存到文档！', 'text-[#5DD62C]');
+                    inputField.value = ''; // 清空输入框
+                } else {
+                    showStatus('❌ 保存失败：' + result.message, 'text-red-400');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('❌ 网络或跨域错误，请检查控制台', 'text-red-400');
+            } finally {
+                // 恢复按钮状态
+                btn.disabled = false;
+                btn.innerHTML = '✨ 保存到 Google Doc';
+            }
+        }
+
+        function showStatus(text, colorClass) {
+            const statusMsg = document.getElementById('statusMsg');
+            statusMsg.textContent = text;
+            statusMsg.className = `text-center text-xs mt-4 ${colorClass}`;
+            statusMsg.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
