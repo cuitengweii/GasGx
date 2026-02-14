@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gas Energy - GasGx Mining News</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: { bg: '#050505', card: '#0F0F0F', border: '#1F1F1F', green: '#5DD62C', accent: '#FFFFFF', subtext: '#888888' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        header: ['Oswald', 'sans-serif']
+                    },
+                    boxShadow: { neon: '0 0 15px rgba(93, 214, 44, 0.3)' },
+                    animation: { marquee: 'marquee 70s linear infinite' },
+                    keyframes: {
+                        marquee: {
+                            '0%': { transform: 'translateX(0%)' },
+                            '100%': { transform: 'translateX(-50%)' }
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+
+    <link rel="stylesheet" href="../shared/modules/styles/layout.shared.css">
+    <link rel="stylesheet" href="../shared/modules/styles/channel-page.shared.css">
+</head>
+<body class="ggx-channel-page">
+    <div id="ggx-header-slot"></div>
+    <div id="ggx-main-slot" class="flex-grow"></div>
+    <div id="ggx-footer-slot"></div>
+
+    <script type="module" src="./modules/channel.bootstrap.js"></script>
+</body>
+</html>
