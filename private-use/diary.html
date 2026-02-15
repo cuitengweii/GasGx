@@ -2,81 +2,2219 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>记录到 Google Doc</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-[#050505] text-[#E5E5E5] flex items-center justify-center h-screen">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Diary Mood</title>
+    <meta name="color-scheme" content="light">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Diary Mood">
+    <link rel="icon" type="image/svg+xml" href="./diary-logo.svg">
+    <link rel="apple-touch-icon" href="./diary-logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        :root {
+            --bg: #e9e9e5;
+            --ink: #171717;
+            --muted: #96918b;
+            --accent-soft: #a3d8b1;
+            --paper-grid: #e2e2de;
+            --paper: #f0f0eb;
+            --paper-border: #202020;
+            --red-ink: #cf6363;
+            --font-hand: "ZCOOL KuaiLe", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            --font-ui: "ZCOOL KuaiLe", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        }
 
-    <div class="bg-[#0F0F0F] p-8 rounded-xl border border-white/10 w-full max-w-md shadow-2xl">
-        <h2 class="text-xl font-bold mb-4 text-white">日记速记</h2>
-        
-        <textarea id="inputText" rows="5" 
-            class="w-full bg-[#111] border border-white/20 rounded-lg p-3 text-sm text-white focus:border-[#5DD62C] focus:ring-1 focus:ring-[#5DD62C]/50 outline-none transition-all placeholder-gray-500 mb-4" 
-            placeholder="今天发生了什么？随便说说..."></textarea>
-            
-        <button id="submitBtn" onclick="sendToGoogleDoc()" 
-            class="w-full bg-[#5DD62C]/10 text-[#5DD62C] border border-[#5DD62C]/30 hover:bg-[#5DD62C] hover:text-black font-bold py-3 rounded-lg transition-all duration-300">
-            ✨ 保存到 Google Doc
-        </button>
-        
-        <p id="statusMsg" class="text-center text-xs mt-4 hidden"></p>
+        * { box-sizing: border-box; }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--font-ui);
+            min-height: 100%;
+        }
+
+        .app {
+            width: min(100%, 430px);
+            height: 100dvh;
+            min-height: 100dvh;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .view {
+            display: none;
+            height: 100%;
+            min-height: 0;
+            padding: 4px 14px 22px;
+        }
+
+        .view.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .picker-stage {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 6px 0 2px;
+        }
+
+        .wheel-wrap {
+            position: relative;
+            width: min(100%, 404px);
+            height: clamp(320px, 52vh, 410px);
+            min-height: 320px;
+            display: grid;
+            place-items: center;
+        }
+
+        .mood-ring {
+            width: min(100%, 390px);
+            --ring-radius: 154px;
+            --ring-rotation: 0deg;
+            position: relative;
+            aspect-ratio: 1 / 1;
+            margin: 0;
+            touch-action: none;
+            cursor: grab;
+        }
+
+        .mood-ring.instant-rotate .mood-node {
+            transition: none !important;
+        }
+
+        .mood-ring.dragging {
+            cursor: grabbing;
+        }
+
+        .mood-ring::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: calc(var(--ring-radius) * 2);
+            height: calc(var(--ring-radius) * 2);
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 2px solid rgba(130, 130, 130, 0.26);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+            pointer-events: none;
+        }
+
+        .mood-node {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            border: 0;
+            background: transparent;
+            transform: translate(-50%, -50%) rotate(calc(var(--angle) + var(--ring-rotation))) translateY(calc(var(--ring-radius) * -1)) rotate(calc((var(--angle) + var(--ring-rotation)) * -1));
+            transition: transform var(--ring-transition, 520ms) var(--ring-ease, cubic-bezier(0.2, 0.86, 0.32, 1)), filter 220ms ease;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            color: #111;
+            font-size: 68px;
+            line-height: 1;
+            padding: 0;
+            box-shadow: none;
+            isolation: isolate;
+        }
+
+        .mood-node.active {
+            filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.14));
+            transform: translate(-50%, -50%) rotate(calc(var(--angle) + var(--ring-rotation))) translateY(calc(var(--ring-radius) * -1)) rotate(calc((var(--angle) + var(--ring-rotation)) * -1)) scale(2);
+        }
+
+        .mood-node:active {
+            transform: translate(-50%, -50%) rotate(calc(var(--angle) + var(--ring-rotation))) translateY(calc(var(--ring-radius) * -1)) rotate(calc((var(--angle) + var(--ring-rotation)) * -1)) scale(0.96);
+        }
+
+        .picker-confirm {
+            margin: 0 auto;
+            width: min(92%, 360px);
+            text-align: center;
+        }
+
+        .picker-confirm .tape {
+            font-size: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.16em;
+            line-height: 1.15;
+            padding: 6px 16px 4px;
+            background: linear-gradient(180deg, transparent 62%, var(--accent-soft) 62%);
+        }
+
+        .picker-confirm .tape::before,
+        .picker-confirm .tape::after {
+            top: 62%;
+            border-top: 12px solid transparent;
+            border-bottom: 12px solid transparent;
+        }
+
+        .picker-desc {
+            margin: 8px 0 0;
+            font-family: var(--font-hand);
+            font-size: 20px;
+            color: #6f6a64;
+            line-height: 1.25;
+        }
+
+        .tape {
+            font-family: var(--font-hand);
+            font-size: 36px;
+            line-height: 1;
+            display: inline-block;
+            padding: 4px 8px 2px;
+            background: linear-gradient(180deg, transparent 48%, var(--accent-soft) 48%);
+            position: relative;
+        }
+
+        .tape::before,
+        .tape::after {
+            content: "";
+            position: absolute;
+            width: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-top: 13px solid transparent;
+            border-bottom: 13px solid transparent;
+        }
+
+        .tape::before {
+            left: -12px;
+            border-right: 12px solid var(--accent-soft);
+        }
+
+        .tape::after {
+            right: -12px;
+            border-left: 12px solid var(--accent-soft);
+        }
+
+        .picker-bottom {
+            margin-top: 16px;
+            padding: 6px 0 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            line-height: 1;
+        }
+
+        .icon-btn {
+            border: 0;
+            background: transparent;
+            color: #111;
+            cursor: pointer;
+            width: 62px;
+            height: 62px;
+            border-radius: 31px;
+            display: grid;
+            place-items: center;
+        }
+
+        .icon-btn.center-next {
+            width: 72px;
+            height: 72px;
+            font-size: 58px;
+        }
+
+        .editor-view {
+            background:
+                linear-gradient(var(--paper-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--paper-grid) 1px, transparent 1px);
+            background-size: 22px 22px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .editor-dock {
+            margin-top: 6px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
+        }
+
+        .editor-tools {
+            margin-top: 10px;
+            padding: 0 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid #c6c6c1;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.58);
+        }
+
+        .editor-tools .icon-btn {
+            width: 56px;
+            height: 56px;
+            font-size: 0;
+        }
+
+        .editor-tools .icon-btn i {
+            font-size: 42px;
+            line-height: 1;
+        }
+
+        .editor-tools .icon-btn.plus-btn i {
+            font-size: 38px;
+        }
+
+        .plus-menu {
+            position: absolute;
+            left: 14px;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+            width: min(84vw, 340px);
+            background: #f4f4ef;
+            border: 1px solid #d8d8d2;
+            border-radius: 16px;
+            box-shadow: 0 14px 26px rgba(0, 0, 0, 0.16);
+            overflow: hidden;
+            display: none;
+            z-index: 48;
+        }
+
+        .plus-menu.show {
+            display: block;
+        }
+
+        .plus-item {
+            width: 100%;
+            border: 0;
+            border-bottom: 1px solid #dfdfda;
+            background: transparent;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #131313;
+            font-size: 34px;
+            font-family: var(--font-hand);
+            line-height: 1.05;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .plus-item:last-child {
+            border-bottom: 0;
+        }
+
+        .plus-item:active {
+            background: #ebebe5;
+        }
+
+        .plus-item i {
+            font-size: 30px;
+            color: #202020;
+        }
+
+        .paper {
+            margin: 4px auto 0;
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            border: 3px solid var(--paper-border);
+            background:
+                linear-gradient(var(--paper-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--paper-grid) 1px, transparent 1px),
+                var(--paper);
+            background-size: 22px 22px;
+            position: relative;
+            padding: 10px 14px 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .paper-header {
+            display: grid;
+            grid-template-columns: 132px 1fr 46px;
+            align-items: start;
+            gap: 6px;
+        }
+
+        .paper-date {
+            font-family: var(--font-hand);
+            font-size: 32px;
+            line-height: 1.05;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            color: #181818;
+            min-width: 102px;
+            justify-self: start;
+        }
+
+        .paper-date .weekday {
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: 0.02em;
+        }
+
+        .paper-date .solar {
+            font-size: 46px;
+            line-height: 0.92;
+        }
+
+        .paper-date .lunar {
+            font-size: 22px;
+            line-height: 1;
+            color: #45413d;
+            white-space: nowrap;
+        }
+
+        .weather-trigger {
+            width: 46px;
+            height: 46px;
+            border: 0;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.35);
+            color: #1f1f1f;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            font-size: 31px;
+            line-height: 1;
+            transition: transform 120ms ease, background 120ms ease;
+            justify-self: end;
+        }
+
+        .weather-trigger:hover {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .weather-trigger:active {
+            transform: scale(0.95);
+        }
+
+        .paper-hero {
+            justify-self: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .paper-emoji {
+            margin: 0;
+            width: 138px;
+            height: 138px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 68px;
+            background: transparent;
+            cursor: pointer;
+            transition: transform 120ms ease;
+        }
+
+        .paper-emoji:active {
+            transform: scale(0.96);
+        }
+
+        .paper-mood-title {
+            text-align: center;
+            margin-top: 2px;
+            font-size: 34px;
+        }
+
+        .paper-mood-title .tape {
+            cursor: pointer;
+            background: transparent;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.12em;
+            white-space: nowrap;
+        }
+
+        .paper-mood-title .tape::before,
+        .paper-mood-title .tape::after {
+            display: none;
+        }
+
+        .write-block {
+            margin-top: 8px;
+            color: #1d1d1d;
+            font-family: var(--font-hand);
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .time-mark {
+            font-size: 31px;
+            line-height: 1;
+            margin-bottom: 6px;
+            color: #1b1b1b;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .time-mark i {
+            font-size: 24px;
+            opacity: 0.92;
+        }
+
+        .time-mark .time-value {
+            line-height: 1;
+        }
+
+        .template-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-right: 2px;
+        }
+
+        .quick-fields {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-bottom: 6px;
+            background:
+                linear-gradient(var(--paper-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--paper-grid) 1px, transparent 1px),
+                var(--paper);
+            background-size: 22px 22px;
+        }
+
+        .quick-fields.missing {
+            animation: required-shake 360ms ease-in-out 1;
+            box-shadow: inset 0 0 0 2px rgba(209, 103, 103, 0.26);
+            border-radius: 8px;
+        }
+
+        .field-label {
+            font-size: 21px;
+            line-height: 1;
+            color: #7a746e;
+        }
+
+        .field-label.required::after {
+            content: " *";
+            color: #d16767;
+            font-size: 0.9em;
+        }
+
+        .tag-chips {
+            margin-top: 6px;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .tag-chip {
+            border: 2px solid #c8c4be;
+            background: #fff;
+            color: #46413d;
+            border-radius: 12px;
+            font-family: var(--font-hand);
+            font-size: 19px;
+            line-height: 1;
+            padding: 9px 4px;
+            cursor: pointer;
+            transition: all 120ms ease;
+            text-align: center;
+        }
+
+        .tag-chip.active {
+            border-color: #262626;
+            background: #262626;
+            color: #fff;
+        }
+
+        .energy-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #energyInput {
+            flex: 1;
+            accent-color: #262626;
+        }
+
+        .energy-value {
+            min-width: 58px;
+            text-align: right;
+            font-size: 22px;
+            line-height: 1;
+            color: #5f5953;
+        }
+
+        .structured-input {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            resize: none;
+            outline: none;
+            color: inherit;
+            font-family: inherit;
+            font-size: 22px;
+            line-height: 1.5;
+            flex: 0 0 auto;
+            min-height: 90px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            caret-color: #1d1d1d;
+            letter-spacing: 0.01em;
+            margin: 0;
+            padding: 2px 2px 8px 0;
+            color: #1d1d1d;
+        }
+
+        .structured-input.what-input {
+            min-height: 120px;
+        }
+
+        .structured-input.review-input {
+            min-height: 120px;
+        }
+
+        .attachment-list {
+            margin-top: 6px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            min-height: 0;
+        }
+
+        .attachment-chip {
+            max-width: 100%;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid #d3d3ce;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 20px;
+            font-family: var(--font-hand);
+            color: #44403b;
+        }
+
+        .chip-remove {
+            border: 0;
+            background: transparent;
+            color: #8a8580;
+            font-size: 22px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .status-msg {
+            display: none;
+        }
+
+        .status-msg.error { color: #b64545; }
+        .status-msg.ok { color: #2f8a4d; }
+        .status-msg.muted { color: #7f7a74; }
+
+        .weather-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.2);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 40;
+            padding: 20px;
+        }
+
+        .weather-modal.show {
+            display: flex;
+        }
+
+        .weather-panel {
+            width: min(92vw, 360px);
+            background: #fff;
+            border-radius: 10px;
+            padding: 18px 16px 14px;
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.18);
+        }
+
+        .weather-title {
+            margin: 0;
+            text-align: center;
+            font-family: var(--font-hand);
+            font-size: 38px;
+            line-height: 1;
+        }
+
+        .weather-grid {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .weather-option {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            background: transparent;
+            display: grid;
+            place-items: center;
+            color: #111;
+            font-size: 30px;
+            cursor: pointer;
+            transition: border-color 120ms ease, background 120ms ease;
+        }
+
+        .weather-option.active {
+            border-color: #53a2ff;
+            background: #eef5ff;
+        }
+
+        .weather-actions {
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .weather-action {
+            width: 56px;
+            height: 56px;
+            border: 0;
+            background: transparent;
+            font-size: 52px;
+            line-height: 1;
+            color: #111;
+            cursor: pointer;
+        }
+
+        .mood-panel {
+            width: min(92vw, 360px);
+        }
+
+        .mood-grid {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .mood-option {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            background: var(--mood-color, #f4b8b8);
+            font-size: 28px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+        }
+
+        .mood-option.active {
+            border-color: #53a2ff;
+            box-shadow: 0 0 0 3px rgba(83, 162, 255, 0.18);
+        }
+
+        .sticker-grid {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .sticker-option {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            background: #f3f3ee;
+            display: grid;
+            place-items: center;
+            font-size: 30px;
+            cursor: pointer;
+        }
+
+        .sticker-option:active {
+            border-color: #53a2ff;
+            background: #eef5ff;
+        }
+
+        .hold-tip {
+            position: fixed;
+            left: 50%;
+            top: 42%;
+            transform: translate(-50%, -50%);
+            background: rgba(17, 17, 17, 0.88);
+            color: #fff;
+            padding: 9px 14px;
+            border-radius: 10px;
+            font-size: 21px;
+            font-family: var(--font-hand);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 160ms ease;
+            z-index: 20;
+            white-space: nowrap;
+        }
+
+        .hold-tip.show { opacity: 1; }
+
+        .submit-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.16);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 90;
+            padding: 20px;
+        }
+
+        .submit-overlay.show {
+            display: flex;
+        }
+
+        .submit-card {
+            width: min(86vw, 300px);
+            border-radius: 20px;
+            border: 2px solid rgba(28, 28, 28, 0.14);
+            background: rgba(250, 250, 247, 0.95);
+            box-shadow: 0 16px 34px rgba(0, 0, 0, 0.2);
+            padding: 18px 16px 14px;
+            text-align: center;
+        }
+
+        .submit-emoji {
+            font-size: 48px;
+            line-height: 1;
+            animation: submit-pop 900ms ease-in-out infinite;
+            transform-origin: center bottom;
+        }
+
+        .submit-text {
+            margin-top: 10px;
+            font-family: var(--font-hand);
+            font-size: 26px;
+            color: #2f2b28;
+            line-height: 1.15;
+        }
+
+        .submit-dots {
+            margin-top: 10px;
+            display: inline-flex;
+            gap: 6px;
+        }
+
+        .submit-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #313131;
+            opacity: 0.24;
+            animation: submit-dot 800ms ease-in-out infinite;
+        }
+
+        .submit-dots span:nth-child(2) { animation-delay: 120ms; }
+        .submit-dots span:nth-child(3) { animation-delay: 240ms; }
+
+        .submit-overlay.success .submit-emoji {
+            animation: none;
+            filter: drop-shadow(0 4px 8px rgba(34, 128, 64, 0.25));
+        }
+
+        .submit-overlay.error .submit-emoji {
+            animation: submit-shake 340ms ease-in-out 1;
+        }
+
+        .submit-overlay.success .submit-dots,
+        .submit-overlay.error .submit-dots {
+            display: none;
+        }
+
+        @keyframes submit-pop {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-4px) scale(1.08); }
+        }
+
+        @keyframes submit-dot {
+            0%, 100% { opacity: 0.24; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(-2px); }
+        }
+
+        @keyframes submit-shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-4px); }
+            40% { transform: translateX(4px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+
+        @keyframes required-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            50% { transform: translateX(3px); }
+            75% { transform: translateX(-2px); }
+        }
+
+        @media (max-width: 390px) {
+            .mood-ring { --ring-radius: 142px; }
+            .mood-node { width: 86px; height: 86px; font-size: 56px; }
+            .tape { font-size: 30px; }
+            .wheel-wrap { height: clamp(300px, 48vh, 340px); min-height: 300px; }
+            .picker-confirm .tape { font-size: 30px; }
+            .picker-desc { font-size: 18px; }
+            .paper { min-height: 0; }
+            .paper-date { font-size: 28px; }
+            .paper-date .weekday { font-size: 22px; }
+            .paper-date .solar { font-size: 42px; }
+            .paper-date .lunar { font-size: 18px; }
+            .paper-emoji { width: 126px; height: 126px; font-size: 58px; margin-top: 0; }
+            .paper-mood-title { font-size: 30px; }
+            .editor-tools .icon-btn i { font-size: 40px; }
+            .editor-tools .icon-btn.plus-btn i { font-size: 36px; }
+            .weather-trigger { width: 42px; height: 42px; font-size: 26px; }
+            .time-mark { font-size: 28px; }
+            .field-label { font-size: 19px; }
+            .tag-chip { font-size: 17px; padding: 8px 2px; }
+            .energy-value { font-size: 20px; min-width: 52px; }
+            .structured-input { font-size: 20px; min-height: 100px; }
+            .status-msg { font-size: 17px; }
+            .plus-menu { width: min(84vw, 320px); bottom: calc(env(safe-area-inset-bottom, 0px) + 70px); }
+            .plus-item { font-size: 30px; }
+            .plus-item i { font-size: 26px; }
+            .attachment-chip { font-size: 18px; }
+            .submit-text { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="app">
+        <section id="pickerView" class="view active">
+            <div class="picker-stage">
+                <div class="wheel-wrap">
+                    <div id="moodRing" class="mood-ring"></div>
+                </div>
+                <div class="picker-confirm">
+                    <span id="pickerMoodTitle" class="tape">Hi,今天过的怎么样?</span>
+                    <p id="pickerMoodDesc" class="picker-desc">点一个表情，确认你此刻的心情。</p>
+                </div>
+            </div>
+            <div class="picker-bottom">
+                <button id="nextBtn" class="icon-btn center-next" type="button" aria-label="next">→</button>
+            </div>
+        </section>
+
+        <section id="editorView" class="view editor-view">
+            <article class="paper">
+                <div class="paper-header">
+                    <div id="paperDate" class="paper-date">
+                        <div class="weekday">周六</div>
+                        <div class="solar">02.14</div>
+                        <div class="lunar">农历腊月廿七</div>
+                    </div>
+                    <div class="paper-hero">
+                        <div id="paperEmoji" class="paper-emoji">🙂</div>
+                        <div class="paper-mood-title"><span id="paperMood" class="tape">扑通～❤️</span></div>
+                    </div>
+                    <button id="weatherBtn" class="weather-trigger" type="button" aria-label="选择天气">
+                        <i id="weatherBtnIcon" class="fa-solid fa-sun"></i>
+                    </button>
+                </div>
+
+                <div class="write-block">
+                    <div class="template-fields">
+                        <div class="quick-fields">
+                            <div>
+                                <div class="field-label required">标签与状态</div>
+                                <div id="tagChips" class="tag-chips"></div>
+                            </div>
+                            <div>
+                                <div class="field-label required">精力值</div>
+                                <div class="energy-row">
+                                    <input id="energyInput" type="range" min="1" max="10" step="1" value="8">
+                                    <span id="energyValue" class="energy-value">8/10</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="timeMark" class="time-mark">
+                            <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                            <span class="time-value">[18:54]</span>
+                        </div>
+                        <div class="field-label">今日记录 (What)</div>
+                        <textarea id="entryText" class="structured-input what-input" placeholder="每行一条，例如：推进了海外节点部署方案"></textarea>
+                        <div class="field-label">思考与复盘 (Why & How)</div>
+                        <textarea id="reviewText" class="structured-input review-input" placeholder="每行一条，例如：审批进度慢导致焦虑，需要备用方案"></textarea>
+                    </div>
+                </div>
+            </article>
+
+            <div class="editor-dock">
+                <div id="plusMenu" class="plus-menu" role="menu" aria-hidden="true">
+                    <button class="plus-item" type="button" data-action="camera">
+                        <span>拍摄照片</span><i class="fa-solid fa-camera"></i>
+                    </button>
+                    <button class="plus-item" type="button" data-action="album">
+                        <span>从相册选择</span><i class="fa-regular fa-images"></i>
+                    </button>
+                    <button class="plus-item" type="button" data-action="sticker">
+                        <span>自由贴图</span><i class="fa-regular fa-face-smile"></i>
+                    </button>
+                </div>
+
+                <div id="attachmentList" class="attachment-list"></div>
+
+                <div class="editor-tools">
+                    <button id="backBtn" class="icon-btn" type="button" aria-label="back">
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
+                    <button id="plusBtn" class="icon-btn plus-btn" type="button" aria-label="plus">
+                        <i class="fa-solid fa-circle-plus" aria-hidden="true"></i>
+                    </button>
+                    <button id="submitBtn" class="icon-btn" type="button" aria-label="submit">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="weatherModal" class="weather-modal" role="dialog" aria-modal="true" aria-labelledby="weatherTitle">
+        <div class="weather-panel">
+            <h3 id="weatherTitle" class="weather-title">晴天</h3>
+            <div id="weatherGrid" class="weather-grid"></div>
+            <div class="weather-actions">
+                <button id="weatherCancelBtn" class="weather-action" type="button" aria-label="取消">✕</button>
+                <button id="weatherConfirmBtn" class="weather-action" type="button" aria-label="确认">✓</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="moodModal" class="weather-modal" role="dialog" aria-modal="true" aria-labelledby="moodTitle">
+        <div class="weather-panel mood-panel">
+            <h3 id="moodTitle" class="weather-title">选择心情</h3>
+            <div id="moodGrid" class="mood-grid"></div>
+            <div class="weather-actions">
+                <button id="moodCancelBtn" class="weather-action" type="button" aria-label="取消">✕</button>
+                <button id="moodConfirmBtn" class="weather-action" type="button" aria-label="确认">✓</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="stickerModal" class="weather-modal" role="dialog" aria-modal="true" aria-labelledby="stickerTitle">
+        <div class="weather-panel mood-panel">
+            <h3 id="stickerTitle" class="weather-title">自由贴图</h3>
+            <div id="stickerGrid" class="sticker-grid"></div>
+            <div class="weather-actions">
+                <button id="stickerCancelBtn" class="weather-action" type="button" aria-label="关闭">✕</button>
+                <button id="stickerDoneBtn" class="weather-action" type="button" aria-label="完成">✓</button>
+            </div>
+        </div>
+    </div>
+
+    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
+    <input id="albumInput" type="file" accept="image/*" multiple hidden>
+
+    <div id="holdTip" class="hold-tip">描述</div>
+
+    <div id="submitOverlay" class="submit-overlay" aria-live="polite" aria-hidden="true">
+        <div class="submit-card">
+            <div id="submitEmoji" class="submit-emoji">📝</div>
+            <div id="submitText" class="submit-text">正在把日记写进本子里...</div>
+            <div class="submit-dots">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
     </div>
 
     <script>
-        // 把这里换成你在 Google Apps Script 部署后得到的 Web 应用网址
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzXJYu_9tYrR30AJ_L-3VpBJfAuid3zglmf-1WUUkatofZ72FRisIBH-Zqz86k4V4Dz/exec";
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbziXL0Tq1hVWXtkNQfFhlPq6HOLG-46goSYM__12qVDjHCR_LElTW5wNxisgA4smuzh/exec";
+        const REQUEST_TIMEOUT_MS = 60000;
+        const MAX_REQUEST_TIMEOUT_MS = 330000;
+        const SUCCESS_REDIRECT_DELAY_MS = 1000;
+        const MAX_SINGLE_ATTACHMENT_BYTES = 12 * 1024 * 1024;
+        const MAX_TOTAL_ATTACHMENT_BYTES = 20 * 1024 * 1024;
+        const DRAFT_KEY = "gasgx_diary_hand_draft_v1";
+        const STATE_KEY = "gasgx_diary_hand_state_v1";
+        const APP_TZ = "Asia/Shanghai";
+        const TAG_OPTIONS = ["个人", "灵感", "生活", "家庭"];
+        const DEFAULT_ENERGY = 8;
 
-        async function sendToGoogleDoc() {
-            const inputField = document.getElementById('inputText');
-            const btn = document.getElementById('submitBtn');
-            const statusMsg = document.getElementById('statusMsg');
-            const content = inputField.value.trim();
+        const moods = [
+            { id: "neutral", emoji: "😐", title: "平稳～🍃", desc: "今天心情平稳，节奏正常。", color: "#38d27a", angle: 144 },
+            { id: "happy", emoji: "😊", title: "扑通～❤️", desc: "开心又轻松，想记录好事。", color: "#f6acae", angle: 36 },
+            { id: "calm", emoji: "😌", title: "静静～🌿", desc: "情绪平静，适合慢慢整理想法。", color: "#c9e8a8", angle: 72 },
+            { id: "smile", emoji: "🙂", title: "不错～✨", desc: "今天整体不错，有值得感谢的瞬间。", color: "#f9d34f", angle: 108 },
+            { id: "angry", emoji: "😠", title: "有点炸～🔥", desc: "有不爽的点，先写下来再消化。", color: "#ff4b70", angle: 180 },
+            { id: "sad", emoji: "🙁", title: "有点低落～🫧", desc: "想慢慢写写今天的压力和感受。", color: "#c7a3de", angle: 216 },
+            { id: "wink", emoji: "😉", title: "调皮一下～🎈", desc: "有点小得意，今天挺有趣。", color: "#ffb35a", angle: 252 },
+            { id: "blue", emoji: "☹️", title: "闷闷的～☁️", desc: "状态偏低，可以先写三件小事。", color: "#77a7cf", angle: 288 },
+            { id: "gray", emoji: "😟", title: "担心中～🫠", desc: "有焦虑，写出来会轻一点。", color: "#7f8da4", angle: 324 },
+            { id: "tan", emoji: "😑", title: "有点累～🪫", desc: "疲惫感明显，记录后早点休息。", color: "#ba9a74", angle: 0 }
+        ];
 
-            if (!content) {
-                showStatus('请输入内容！', 'text-red-400');
-                return;
-            }
+        const weatherOptions = [
+            { id: "sunny", label: "晴天", iconClass: "fa-solid fa-sun" },
+            { id: "partly_cloudy", label: "晴间多云", iconClass: "fa-solid fa-cloud-sun" },
+            { id: "cloudy", label: "多云", iconClass: "fa-solid fa-cloud" },
+            { id: "night_cloudy", label: "夜间多云", iconClass: "fa-solid fa-cloud-moon" },
+            { id: "light_rain", label: "小雨", iconClass: "fa-solid fa-cloud-rain" },
+            { id: "heavy_rain", label: "大雨", iconClass: "fa-solid fa-cloud-showers-heavy" },
+            { id: "thunder", label: "雷阵雨", iconClass: "fa-solid fa-cloud-bolt" },
+            { id: "snow", label: "下雪", iconClass: "fa-solid fa-snowflake" },
+            { id: "fog", label: "雾", iconClass: "fa-solid fa-smog" },
+            { id: "windy", label: "大风", iconClass: "fa-solid fa-wind" },
+            { id: "tornado", label: "龙卷风", iconClass: "fa-solid fa-tornado" },
+            { id: "storm", label: "风暴", iconClass: "fa-solid fa-hurricane" },
+            { id: "drizzle", label: "阵雨", iconClass: "fa-solid fa-cloud-sun-rain" },
+            { id: "showers", label: "骤雨", iconClass: "fa-solid fa-umbrella" },
+            { id: "cold", label: "寒冷", iconClass: "fa-solid fa-temperature-low" },
+            { id: "rainbow", label: "雨后", iconClass: "fa-solid fa-rainbow" }
+        ];
+        const stickerOptions = ["✨", "❤️", "🌈", "🌙", "☕", "🎵", "🫧", "🌸", "📌", "📝", "💡", "🍀", "🔥", "✅", "❗", "🎈", "📎", "⭐"];
+        const attachmentMeta = {
+            camera: { label: "拍摄照片", icon: "📷" },
+            album: { label: "相册图片", icon: "🖼️" }
+        };
 
-            // UI 变为加载中状态
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 保存中...';
-            statusMsg.classList.add('hidden');
+        const pickerView = document.getElementById("pickerView");
+        const editorView = document.getElementById("editorView");
+        const moodRing = document.getElementById("moodRing");
+        const nextBtn = document.getElementById("nextBtn");
+        const backBtn = document.getElementById("backBtn");
+        const plusBtn = document.getElementById("plusBtn");
+        const plusMenu = document.getElementById("plusMenu");
+        const submitBtn = document.getElementById("submitBtn");
+        const pickerMoodTitle = document.getElementById("pickerMoodTitle");
+        const pickerMoodDesc = document.getElementById("pickerMoodDesc");
+        const weatherBtn = document.getElementById("weatherBtn");
+        const weatherBtnIcon = document.getElementById("weatherBtnIcon");
+        const weatherModal = document.getElementById("weatherModal");
+        const weatherTitle = document.getElementById("weatherTitle");
+        const weatherGrid = document.getElementById("weatherGrid");
+        const weatherCancelBtn = document.getElementById("weatherCancelBtn");
+        const weatherConfirmBtn = document.getElementById("weatherConfirmBtn");
+        const moodModal = document.getElementById("moodModal");
+        const moodGrid = document.getElementById("moodGrid");
+        const moodCancelBtn = document.getElementById("moodCancelBtn");
+        const moodConfirmBtn = document.getElementById("moodConfirmBtn");
+        const stickerModal = document.getElementById("stickerModal");
+        const stickerGrid = document.getElementById("stickerGrid");
+        const stickerCancelBtn = document.getElementById("stickerCancelBtn");
+        const stickerDoneBtn = document.getElementById("stickerDoneBtn");
+        const cameraInput = document.getElementById("cameraInput");
+        const albumInput = document.getElementById("albumInput");
+        const paperEmoji = document.getElementById("paperEmoji");
+        const paperMood = document.getElementById("paperMood");
+        const entryText = document.getElementById("entryText");
+        const reviewText = document.getElementById("reviewText");
+        const paperDate = document.getElementById("paperDate");
+        const timeMark = document.getElementById("timeMark");
+        const attachmentList = document.getElementById("attachmentList");
+        const statusMsg = document.getElementById("statusMsg");
+        const holdTip = document.getElementById("holdTip");
+        const submitOverlay = document.getElementById("submitOverlay");
+        const submitEmoji = document.getElementById("submitEmoji");
+        const submitText = document.getElementById("submitText");
+        const tagChips = document.getElementById("tagChips");
+        const energyInput = document.getElementById("energyInput");
+        const energyValue = document.getElementById("energyValue");
+        const quickFields = document.querySelector(".quick-fields");
 
-            try {
-                // 发送 POST 请求到 Google Apps Script
-                // 注意：这里用 text/plain 是为了绕过浏览器的严格 CORS 预检请求 (Preflight)
-                const response = await fetch(GAS_WEB_APP_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8', 
-                    },
-                    body: JSON.stringify({ content: content })
-                });
+        let selectedMoodId = moods[1].id;
+        let pendingMoodId = selectedMoodId;
+        let selectedWeatherId = "sunny";
+        let pendingWeatherId = "sunny";
+        let selectedTag = "";
+        let energyLevel = DEFAULT_ENERGY;
+        let tagSelectedForEntry = false;
+        let energySelectedForEntry = false;
+        let attachments = [];
+        let ringRotationDeg = 0;
+        let holdTimer = null;
+        let isSubmitting = false;
+        let ignoreNodeClickUntil = 0;
+        let ringSpinTimer = null;
+        let isRingSpinning = false;
+        const ringDrag = {
+            active: false,
+            pointerId: null,
+            startAngle: 0,
+            startRotation: 0,
+            moved: false,
+            lastAngle: 0,
+            lastTs: 0,
+            velocity: 0
+        };
 
-                const result = await response.json();
+        function setStatus(text, type = "muted") {
+            if (!statusMsg) return;
+            statusMsg.textContent = text;
+            statusMsg.className = `status-msg ${type}`;
+        }
 
-                if (result.status === 'success') {
-                    showStatus('✅ 成功保存到文档！', 'text-[#5DD62C]');
-                    inputField.value = ''; // 清空输入框
-                } else {
-                    showStatus('❌ 保存失败：' + result.message, 'text-red-400');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showStatus('❌ 网络或跨域错误，请检查控制台', 'text-red-400');
-            } finally {
-                // 恢复按钮状态
-                btn.disabled = false;
-                btn.innerHTML = '✨ 保存到 Google Doc';
+        function sleep(ms) {
+            return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
+        function showSubmitOverlay(mode = "loading", text = "正在提交...") {
+            if (!submitOverlay || !submitEmoji || !submitText) return;
+            submitOverlay.classList.add("show");
+            submitOverlay.classList.remove("success", "error");
+            submitOverlay.dataset.mode = mode;
+            submitOverlay.setAttribute("aria-hidden", "false");
+            submitText.textContent = text;
+            if (mode === "success") {
+                submitOverlay.classList.add("success");
+                submitEmoji.textContent = "🎉";
+            } else if (mode === "error") {
+                submitOverlay.classList.add("error");
+                submitEmoji.textContent = "🥲";
+            } else {
+                submitEmoji.textContent = "📝";
             }
         }
 
-        function showStatus(text, colorClass) {
-            const statusMsg = document.getElementById('statusMsg');
-            statusMsg.textContent = text;
-            statusMsg.className = `text-center text-xs mt-4 ${colorClass}`;
-            statusMsg.classList.remove('hidden');
+        function hideSubmitOverlay() {
+            if (!submitOverlay) return;
+            submitOverlay.classList.remove("show", "success", "error");
+            submitOverlay.dataset.mode = "";
+            submitOverlay.setAttribute("aria-hidden", "true");
+        }
+
+        function nudgeRequiredFields() {
+            if (!quickFields) return;
+            quickFields.classList.remove("missing");
+            quickFields.offsetHeight;
+            quickFields.classList.add("missing");
+            setTimeout(() => {
+                quickFields.classList.remove("missing");
+            }, 420);
+        }
+
+        function formatClock(date = new Date()) {
+            return date.toLocaleTimeString("zh-CN", {
+                timeZone: APP_TZ,
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false
+            });
+        }
+
+        function updateClock() {
+            const valueNode = timeMark.querySelector(".time-value");
+            const value = `[${formatClock()}]`;
+            if (valueNode) {
+                valueNode.textContent = value;
+            } else {
+                timeMark.textContent = value;
+            }
+        }
+
+        function getPanelDateInfo() {
+            const weekday = paperDate.querySelector(".weekday")?.textContent?.trim() || "";
+            const solar = paperDate.querySelector(".solar")?.textContent?.trim() || "";
+            const lunar = paperDate.querySelector(".lunar")?.textContent?.trim() || "";
+            return { weekday, solar, lunar };
+        }
+
+        function getPanelTimeMark() {
+            const valueNode = timeMark.querySelector(".time-value");
+            return (valueNode ? valueNode.textContent : timeMark.textContent || "").trim();
+        }
+
+        function normalizeEnergy(value) {
+            const n = Number(value);
+            if (!Number.isFinite(n)) return DEFAULT_ENERGY;
+            return Math.max(1, Math.min(10, Math.round(n)));
+        }
+
+        function updateEnergyUI() {
+            const normalized = normalizeEnergy(energyLevel);
+            energyLevel = normalized;
+            energyInput.value = String(normalized);
+            energyValue.textContent = `${normalized}/10`;
+        }
+
+        function renderTagChips() {
+            tagChips.innerHTML = "";
+            TAG_OPTIONS.forEach((tag) => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "tag-chip";
+                btn.textContent = `#${tag}`;
+                btn.classList.toggle("active", selectedTag === tag);
+                btn.setAttribute("aria-label", `标签 ${tag}`);
+                btn.addEventListener("click", () => {
+                    selectedTag = (selectedTag === tag) ? "" : tag;
+                    tagSelectedForEntry = selectedTag !== "";
+                    renderTagChips();
+                    saveDraft();
+                });
+                tagChips.appendChild(btn);
+            });
+        }
+
+        function getShanghaiDateParts(date = new Date()) {
+            const formatter = new Intl.DateTimeFormat("zh-CN", {
+                timeZone: APP_TZ,
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                weekday: "short"
+            });
+            const parts = formatter.formatToParts(date);
+            const map = {};
+            parts.forEach((part) => {
+                map[part.type] = part.value;
+            });
+            return {
+                dateLabel: `${map.year}-${map.month}-${map.day}`,
+                weekday: map.weekday || ""
+            };
+        }
+
+        function splitBulletItems(text) {
+            return String(text || "")
+                .split(/\r?\n/)
+                .map((line) => line.replace(/^\s*[*-]\s*/, "").trim())
+                .filter(Boolean);
+        }
+
+        function formatPaperDate(date = new Date()) {
+            const dateParts = getShanghaiDateParts(date);
+            const [, monthPart = "01", dayPart = "01"] = dateParts.dateLabel.split("-");
+            const month = monthPart;
+            const day = dayPart;
+            const weekday = dateParts.weekday;
+
+            let lunarLabel = "农历--";
+            try {
+                const lunarRaw = new Intl.DateTimeFormat("zh-CN-u-ca-chinese", {
+                    timeZone: APP_TZ,
+                    month: "long",
+                    day: "numeric"
+                }).format(date);
+                lunarLabel = `农历${lunarRaw.replace(/\s/g, "")}`;
+            } catch (err) {
+                console.debug("Lunar date unavailable:", err);
+            }
+
+            paperDate.innerHTML = `
+                <div class="weekday">${weekday}</div>
+                <div class="solar">${month}.${day}</div>
+                <div class="lunar">${lunarLabel}</div>
+            `;
+        }
+
+        function getSelectedMood() {
+            return moods.find((item) => item.id === selectedMoodId) || moods[0];
+        }
+
+        function getSelectedWeather() {
+            return weatherOptions.find((item) => item.id === selectedWeatherId) || weatherOptions[0];
+        }
+
+        function normalizeDegrees(value) {
+            let normalized = value % 360;
+            if (normalized < 0) normalized += 360;
+            return normalized;
+        }
+
+        function shortestDelta(current, target) {
+            return ((target - current + 540) % 360) - 180;
+        }
+
+        function clearRingSpinTimer() {
+            if (ringSpinTimer) {
+                clearTimeout(ringSpinTimer);
+                ringSpinTimer = null;
+            }
+        }
+
+        function resetRingMotionStyle() {
+            moodRing.style.removeProperty("--ring-transition");
+            moodRing.style.removeProperty("--ring-ease");
+        }
+
+        function cancelRingSpin() {
+            clearRingSpinTimer();
+            isRingSpinning = false;
+            resetRingMotionStyle();
+        }
+
+        function pickRandomMoodId(excludeId = "") {
+            const pool = moods.filter((mood) => mood.id !== excludeId);
+            const source = pool.length ? pool : moods;
+            return source[Math.floor(Math.random() * source.length)].id;
+        }
+
+        function getRingPointerAngle(clientX, clientY) {
+            const rect = moodRing.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const angle = Math.atan2(clientY - cy, clientX - cx) * (180 / Math.PI) + 90;
+            return normalizeDegrees(angle);
+        }
+
+        function getMoodClosestToBottom(rotationDeg = ringRotationDeg) {
+            const normalizedRotation = normalizeDegrees(rotationDeg);
+            let bestMoodId = selectedMoodId;
+            let minDistance = Number.POSITIVE_INFINITY;
+
+            moods.forEach((mood) => {
+                const nodeAngle = normalizeDegrees(mood.angle + normalizedRotation);
+                const distanceToBottom = Math.abs(shortestDelta(nodeAngle, 180));
+                if (distanceToBottom < minDistance) {
+                    minDistance = distanceToBottom;
+                    bestMoodId = mood.id;
+                }
+            });
+
+            return bestMoodId;
+        }
+
+        function startRingDrag(event) {
+            if (event.button !== undefined && event.button !== 0) return;
+            cancelRingSpin();
+            ringDrag.active = true;
+            ringDrag.pointerId = event.pointerId;
+            ringDrag.startAngle = getRingPointerAngle(event.clientX, event.clientY);
+            ringDrag.startRotation = ringRotationDeg;
+            ringDrag.moved = false;
+            ringDrag.lastAngle = ringDrag.startAngle;
+            ringDrag.lastTs = performance.now();
+            ringDrag.velocity = 0;
+            moodRing.classList.add("dragging", "instant-rotate");
+            try {
+                moodRing.setPointerCapture(event.pointerId);
+            } catch (err) {
+                console.debug("Pointer capture unavailable:", err);
+            }
+        }
+
+        function moveRingDrag(event) {
+            if (!ringDrag.active || event.pointerId !== ringDrag.pointerId) return;
+            const now = performance.now();
+            const currentAngle = getRingPointerAngle(event.clientX, event.clientY);
+            const delta = shortestDelta(ringDrag.startAngle, currentAngle);
+            const nextRotation = ringDrag.startRotation + delta;
+            const step = shortestDelta(ringDrag.lastAngle, currentAngle);
+            const dt = Math.max(1, now - ringDrag.lastTs);
+            ringDrag.velocity = step / dt;
+            ringDrag.lastAngle = currentAngle;
+            ringDrag.lastTs = now;
+            if (Math.abs(delta) > 2) {
+                ringDrag.moved = true;
+                clearTimeout(holdTimer);
+                hideHoldTip();
+            }
+            moodRing.style.setProperty("--ring-rotation", `${nextRotation}deg`);
+            ringRotationDeg = nextRotation;
+            const previewMoodId = getMoodClosestToBottom(nextRotation);
+            moodRing.querySelectorAll(".mood-node").forEach((node) => {
+                node.classList.toggle("active", node.dataset.id === previewMoodId);
+            });
+            event.preventDefault();
+        }
+
+        function spinRingToRandomMood(velocityDegPerMs = 0) {
+            cancelRingSpin();
+            isRingSpinning = true;
+            ignoreNodeClickUntil = Date.now() + 1000;
+            const direction = velocityDegPerMs === 0
+                ? (Math.random() < 0.5 ? 1 : -1)
+                : (velocityDegPerMs > 0 ? 1 : -1);
+            const speed = Math.min(1.2, Math.abs(velocityDegPerMs));
+            const extraTurns = Math.max(1, Math.min(4, 1 + Math.round(speed * 6)));
+            const targetMoodId = pickRandomMoodId(selectedMoodId);
+            const targetMood = moods.find((item) => item.id === targetMoodId);
+            if (!targetMood) {
+                isRingSpinning = false;
+                return;
+            }
+
+            const targetRotation = normalizeDegrees(180 - targetMood.angle);
+            const currentNormalized = normalizeDegrees(ringRotationDeg);
+            const directedDelta = direction > 0
+                ? (targetRotation - currentNormalized + 360) % 360
+                : -((currentNormalized - targetRotation + 360) % 360);
+            const destination = ringRotationDeg + directedDelta + direction * extraTurns * 360;
+            const durationMs = Math.round(900 + extraTurns * 220 + speed * 320);
+
+            moodRing.classList.remove("instant-rotate");
+            moodRing.style.setProperty("--ring-transition", `${durationMs}ms`);
+            moodRing.style.setProperty("--ring-ease", "cubic-bezier(0.08, 0.8, 0.16, 1)");
+            moodRing.style.setProperty("--ring-rotation", `${destination}deg`);
+            ringRotationDeg = destination;
+
+            ringSpinTimer = setTimeout(() => {
+                selectedMoodId = targetMoodId;
+                updateMoodUI(false);
+                saveDraft();
+                isRingSpinning = false;
+                resetRingMotionStyle();
+                ringSpinTimer = null;
+            }, durationMs + 30);
+        }
+
+        function endRingDrag(event) {
+            if (!ringDrag.active || event.pointerId !== ringDrag.pointerId) return;
+            moodRing.classList.remove("dragging", "instant-rotate");
+            if (ringDrag.moved) {
+                spinRingToRandomMood(ringDrag.velocity);
+            }
+            try {
+                moodRing.releasePointerCapture(event.pointerId);
+            } catch (err) {
+                console.debug("Pointer release unavailable:", err);
+            }
+            ringDrag.active = false;
+            ringDrag.pointerId = null;
+        }
+
+        function rotateRingToMood(moodId, animate = true) {
+            const mood = moods.find((item) => item.id === moodId);
+            if (!mood) return;
+
+            const targetRotation = normalizeDegrees(180 - mood.angle);
+            const nextRotation = animate
+                ? ringRotationDeg + shortestDelta(ringRotationDeg, targetRotation)
+                : targetRotation;
+
+            if (!animate) moodRing.classList.add("instant-rotate");
+            moodRing.style.setProperty("--ring-rotation", `${nextRotation}deg`);
+            ringRotationDeg = nextRotation;
+            if (!animate) {
+                moodRing.offsetHeight;
+                moodRing.classList.remove("instant-rotate");
+            }
+        }
+
+        function getPendingWeather() {
+            return weatherOptions.find((item) => item.id === pendingWeatherId) || weatherOptions[0];
+        }
+
+        function applyWeatherToUI() {
+            const weather = getSelectedWeather();
+            weatherBtnIcon.className = weather.iconClass;
+            weatherBtn.title = `天气：${weather.label}`;
+            weatherBtn.setAttribute("aria-label", `天气：${weather.label}`);
+        }
+
+        function renderWeatherGrid() {
+            weatherGrid.innerHTML = "";
+            weatherOptions.forEach((weather) => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "weather-option";
+                if (weather.id === pendingWeatherId) btn.classList.add("active");
+                btn.title = weather.label;
+                btn.setAttribute("aria-label", weather.label);
+                btn.innerHTML = `<i class="${weather.iconClass}" aria-hidden="true"></i>`;
+                btn.addEventListener("click", () => {
+                    pendingWeatherId = weather.id;
+                    weatherTitle.textContent = weather.label;
+                    weatherGrid.querySelectorAll(".weather-option").forEach((node) => node.classList.remove("active"));
+                    btn.classList.add("active");
+                });
+                weatherGrid.appendChild(btn);
+            });
+        }
+
+        function renderMoodGrid() {
+            moodGrid.innerHTML = "";
+            moods.forEach((mood) => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "mood-option";
+                if (mood.id === pendingMoodId) btn.classList.add("active");
+                btn.style.setProperty("--mood-color", mood.color);
+                btn.title = mood.title;
+                btn.setAttribute("aria-label", mood.title);
+                btn.textContent = mood.emoji;
+                btn.addEventListener("click", () => {
+                    pendingMoodId = mood.id;
+                    moodGrid.querySelectorAll(".mood-option").forEach((node) => node.classList.remove("active"));
+                    btn.classList.add("active");
+                });
+                moodGrid.appendChild(btn);
+            });
+        }
+
+        function openWeatherModal() {
+            closePlusMenu();
+            pendingWeatherId = selectedWeatherId;
+            weatherTitle.textContent = getPendingWeather().label;
+            renderWeatherGrid();
+            weatherModal.classList.add("show");
+        }
+
+        function closeWeatherModal(applySelection = false) {
+            if (applySelection) {
+                selectedWeatherId = pendingWeatherId;
+                applyWeatherToUI();
+                saveDraft();
+            }
+            weatherModal.classList.remove("show");
+        }
+
+        function openMoodModal() {
+            closePlusMenu();
+            pendingMoodId = selectedMoodId;
+            renderMoodGrid();
+            moodModal.classList.add("show");
+        }
+
+        function closeMoodModal(applySelection = false) {
+            if (applySelection) {
+                selectedMoodId = pendingMoodId;
+                updateMoodUI();
+                saveDraft();
+            }
+            moodModal.classList.remove("show");
+        }
+
+        function updateMoodUI(animate = true) {
+            const selected = getSelectedMood();
+            pickerMoodTitle.textContent = `${selected.emoji} ${selected.title}`;
+            pickerMoodDesc.textContent = selected.desc;
+            paperEmoji.textContent = selected.emoji;
+            paperEmoji.style.setProperty("--mood-color", selected.color);
+            paperMood.textContent = selected.title;
+            rotateRingToMood(selectedMoodId, animate);
+
+            moodRing.querySelectorAll(".mood-node").forEach((node) => {
+                node.classList.toggle("active", node.dataset.id === selectedMoodId);
+            });
+        }
+
+        function showHoldTip(text) {
+            holdTip.textContent = text;
+            holdTip.classList.add("show");
+        }
+
+        function hideHoldTip() {
+            holdTip.classList.remove("show");
+        }
+
+        function openPlusMenu() {
+            plusMenu.classList.add("show");
+            plusMenu.setAttribute("aria-hidden", "false");
+        }
+
+        function closePlusMenu() {
+            plusMenu.classList.remove("show");
+            plusMenu.setAttribute("aria-hidden", "true");
+        }
+
+        function togglePlusMenu() {
+            if (plusMenu.classList.contains("show")) {
+                closePlusMenu();
+            } else {
+                openPlusMenu();
+            }
+        }
+
+        function formatFileSize(size = 0) {
+            if (size < 1024) return `${size}B`;
+            if (size < 1024 * 1024) return `${Math.round(size / 1024)}KB`;
+            return `${(size / (1024 * 1024)).toFixed(1)}MB`;
+        }
+
+        function getTotalAttachmentSize() {
+            return attachments.reduce((total, item) => total + (Number(item.size) || 0), 0);
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const result = reader.result;
+                    if (typeof result !== "string") {
+                        reject(new Error("读取文件失败"));
+                        return;
+                    }
+                    const commaIndex = result.indexOf(",");
+                    if (commaIndex === -1) {
+                        reject(new Error("文件编码失败"));
+                        return;
+                    }
+                    resolve(result.slice(commaIndex + 1));
+                };
+                reader.onerror = () => reject(new Error("文件读取异常"));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function insertTextAtCursor(text) {
+            const targetInput = document.activeElement === reviewText ? reviewText : entryText;
+            const value = targetInput.value;
+            const start = targetInput.selectionStart ?? value.length;
+            const end = targetInput.selectionEnd ?? value.length;
+            targetInput.value = `${value.slice(0, start)}${text}${value.slice(end)}`;
+            const nextPos = start + text.length;
+            targetInput.setSelectionRange(nextPos, nextPos);
+            targetInput.focus();
+        }
+
+        function renderAttachmentList() {
+            attachmentList.innerHTML = "";
+            attachments.forEach((item, index) => {
+                const chip = document.createElement("div");
+                chip.className = "attachment-chip";
+
+                const label = attachmentMeta[item.kind]?.label || "附件";
+                const icon = attachmentMeta[item.kind]?.icon || "📎";
+                const text = document.createElement("span");
+                text.textContent = `${icon} ${label}: ${item.name} (${formatFileSize(item.size)})`;
+
+                const removeBtn = document.createElement("button");
+                removeBtn.type = "button";
+                removeBtn.className = "chip-remove";
+                removeBtn.dataset.index = String(index);
+                removeBtn.setAttribute("aria-label", `删除 ${item.name}`);
+                removeBtn.textContent = "✕";
+
+                chip.append(text, removeBtn);
+                attachmentList.appendChild(chip);
+            });
+        }
+
+        async function addAttachment(kind, file) {
+            if (!file) return;
+            const fileSize = Number(file.size) || 0;
+            if (fileSize > MAX_SINGLE_ATTACHMENT_BYTES) {
+                setStatus(`单个文件不能超过 ${formatFileSize(MAX_SINGLE_ATTACHMENT_BYTES)}`, "error");
+                return;
+            }
+            if (getTotalAttachmentSize() + fileSize > MAX_TOTAL_ATTACHMENT_BYTES) {
+                setStatus(`附件总大小不能超过 ${formatFileSize(MAX_TOTAL_ATTACHMENT_BYTES)}`, "error");
+                return;
+            }
+
+            const safeName = file.name || "未命名文件";
+            const mimeType = file.type || "application/octet-stream";
+            let base64 = "";
+            try {
+                base64 = await fileToBase64(file);
+            } catch (err) {
+                setStatus("文件读取失败，请重试", "error");
+                return;
+            }
+
+            attachments.push({
+                id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                kind,
+                name: safeName,
+                size: fileSize,
+                mimeType,
+                base64
+            });
+
+            const label = attachmentMeta[kind]?.label || "附件";
+            insertTextAtCursor(`\n[${label}] ${safeName}\n`);
+            renderAttachmentList();
+            saveDraft();
+            setStatus(`${label}已添加`, "muted");
+        }
+
+        async function handlePickedFiles(fileList, kind) {
+            const files = Array.from(fileList || []);
+            for (const file of files) {
+                await addAttachment(kind, file);
+            }
+        }
+
+        function renderStickerGrid() {
+            stickerGrid.innerHTML = "";
+            stickerOptions.forEach((sticker) => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "sticker-option";
+                btn.textContent = sticker;
+                btn.setAttribute("aria-label", `贴图 ${sticker}`);
+                btn.addEventListener("click", () => {
+                    insertTextAtCursor(sticker);
+                    closeStickerModal();
+                    saveDraft();
+                    setStatus("贴图已插入", "muted");
+                });
+                stickerGrid.appendChild(btn);
+            });
+        }
+
+        function openStickerModal() {
+            renderStickerGrid();
+            stickerModal.classList.add("show");
+        }
+
+        function closeStickerModal() {
+            stickerModal.classList.remove("show");
+        }
+
+        function handlePlusAction(action) {
+            switch (action) {
+                case "camera":
+                    cameraInput.value = "";
+                    cameraInput.click();
+                    break;
+                case "album":
+                    albumInput.value = "";
+                    albumInput.click();
+                    break;
+                case "sticker":
+                    openStickerModal();
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        function saveDraft() {
+            const payload = {
+                moodId: selectedMoodId,
+                weatherId: selectedWeatherId,
+                text: entryText.value,
+                reviewText: reviewText.value,
+                tag: selectedTag,
+                energy: energyLevel,
+                tagSelectedForEntry,
+                energySelectedForEntry
+            };
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+        }
+
+        function restoreDraft() {
+            const raw = localStorage.getItem(DRAFT_KEY);
+            if (!raw) return;
+            try {
+                const data = JSON.parse(raw);
+                if (data && typeof data === "object") {
+                    if (typeof data.moodId === "string") selectedMoodId = data.moodId;
+                    if (typeof data.weatherId === "string") selectedWeatherId = data.weatherId;
+                    if (typeof data.text === "string") entryText.value = data.text;
+                    if (typeof data.reviewText === "string") reviewText.value = data.reviewText;
+                    if (typeof data.tag === "string" && TAG_OPTIONS.includes(data.tag)) selectedTag = data.tag;
+                    if (Array.isArray(data.tags) && !selectedTag) {
+                        const oldTag = data.tags.map((item) => String(item || "").trim()).find((item) => TAG_OPTIONS.includes(item));
+                        if (oldTag) selectedTag = oldTag;
+                    }
+                    if (data.energy !== undefined) energyLevel = normalizeEnergy(data.energy);
+                    if (typeof data.tagSelectedForEntry === "boolean") {
+                        tagSelectedForEntry = data.tagSelectedForEntry;
+                    } else {
+                        tagSelectedForEntry = selectedTag !== "";
+                    }
+                    if (typeof data.energySelectedForEntry === "boolean") {
+                        energySelectedForEntry = data.energySelectedForEntry;
+                    } else {
+                        energySelectedForEntry = false;
+                    }
+                }
+            } catch (err) {
+                console.warn("Draft parse failed:", err);
+            }
+        }
+
+        function saveViewState(viewName) {
+            localStorage.setItem(STATE_KEY, viewName);
+        }
+
+        function restoreViewState() {
+            return localStorage.getItem(STATE_KEY) || "picker";
+        }
+
+        function renderMoodRing() {
+            moodRing.innerHTML = "";
+            moods.forEach((mood) => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "mood-node";
+                button.dataset.id = mood.id;
+                button.dataset.desc = mood.desc;
+                button.style.setProperty("--mood-color", mood.color);
+                button.style.setProperty("--angle", `${mood.angle}deg`);
+                button.textContent = mood.emoji;
+
+                button.addEventListener("click", () => {
+                    if (isRingSpinning) return;
+                    if (Date.now() < ignoreNodeClickUntil) return;
+                    selectedMoodId = mood.id;
+                    updateMoodUI();
+                    saveDraft();
+                });
+
+                const startHold = () => {
+                    clearTimeout(holdTimer);
+                    holdTimer = setTimeout(() => showHoldTip(mood.desc), 420);
+                };
+
+                const endHold = () => {
+                    clearTimeout(holdTimer);
+                    hideHoldTip();
+                };
+
+                button.addEventListener("mousedown", startHold);
+                button.addEventListener("touchstart", startHold, { passive: true });
+                button.addEventListener("mouseup", endHold);
+                button.addEventListener("mouseleave", endHold);
+                button.addEventListener("touchend", endHold);
+                button.addEventListener("touchcancel", endHold);
+
+                moodRing.appendChild(button);
+            });
+        }
+
+        function showPicker() {
+            closePlusMenu();
+            closeStickerModal();
+            pickerView.classList.add("active");
+            editorView.classList.remove("active");
+            saveViewState("picker");
+        }
+
+        function showEditor() {
+            closePlusMenu();
+            pickerView.classList.remove("active");
+            editorView.classList.add("active");
+            saveViewState("editor");
+            updateClock();
+            entryText.focus();
+        }
+
+        function composeStandardTemplate() {
+            const dateParts = getShanghaiDateParts();
+            const tagsLine = selectedTag ? `#${selectedTag}` : "（未选择）";
+            const energy = normalizeEnergy(energyLevel);
+            const panelTime = getPanelTimeMark();
+            const whatItems = splitBulletItems(entryText.value);
+            const reviewItems = splitBulletItems(reviewText.value);
+            const lines = [];
+            lines.push("---");
+            lines.push(`## ${dateParts.dateLabel} (${dateParts.weekday})`);
+            lines.push("");
+            lines.push(`**🕒 记录时分**：${panelTime || "--:--"}`);
+            lines.push("");
+            lines.push(`**🏷️ 标签与状态**：${tagsLine}| 精力值：${energy}/10`);
+            lines.push("");
+            lines.push("**📝 今日记录 (What)**");
+            (whatItems.length ? whatItems : ["（待补充）"]).forEach((item) => {
+                lines.push(`* ${item}`);
+            });
+            lines.push("");
+            lines.push("**🧠 思考与复盘 (Why & How)**");
+            (reviewItems.length ? reviewItems : ["（待补充）"]).forEach((item) => {
+                lines.push(`* ${item}`);
+            });
+            return lines.join("\n");
+        }
+
+        function setSubmitting(flag) {
+            isSubmitting = flag;
+            submitBtn.disabled = flag;
+            submitBtn.style.opacity = flag ? "0.5" : "1";
+        }
+
+        async function warmConnection() {
+            try {
+                await fetch(GAS_WEB_APP_URL, { method: "GET", mode: "no-cors", cache: "no-store" });
+            } catch (err) {
+                console.debug("Warmup skipped:", err);
+            }
+        }
+
+        async function submitDiary() {
+            if (isSubmitting) return;
+            const missingTag = !selectedTag || !tagSelectedForEntry;
+            const missingEnergy = !energySelectedForEntry;
+            if (missingTag || missingEnergy) {
+                nudgeRequiredFields();
+                let hint = "先把必选项选一下呀～";
+                if (missingTag && missingEnergy) hint = "先选标签并拖一下精力值吧～ ✨";
+                else if (missingTag) hint = "先点一个标签再继续呀～ 🏷️";
+                else if (missingEnergy) hint = "拖一下精力值滑杆再提交呀～ ⚡";
+                setStatus(hint, "error");
+                showSubmitOverlay("error", hint);
+                await sleep(1200);
+                hideSubmitOverlay();
+                return;
+            }
+            const whatText = entryText.value.trim();
+            const review = reviewText.value.trim();
+            if (!whatText && !review && attachments.length === 0) {
+                setStatus("请至少填写“今日记录”或“思考与复盘”", "error");
+                return;
+            }
+
+            setSubmitting(true);
+            setStatus("提交中...", "muted");
+            showSubmitOverlay("loading", "正在把今天写进日记本...");
+            saveDraft();
+
+            const selectedMood = getSelectedMood();
+            const selectedWeather = getSelectedWeather();
+            const panelDate = getPanelDateInfo();
+            const panelTime = getPanelTimeMark();
+            const templateText = composeStandardTemplate();
+            const requestBody = JSON.stringify({
+                content: templateText,
+                formattedEntry: templateText,
+                rawText: [whatText, review].filter(Boolean).join("\n"),
+                whatText,
+                reviewText: review,
+                tags: selectedTag ? [selectedTag] : [],
+                energy: normalizeEnergy(energyLevel),
+                mood: {
+                    id: selectedMood.id,
+                    emoji: selectedMood.emoji,
+                    title: selectedMood.title
+                },
+                weather: {
+                    id: selectedWeather.id,
+                    label: selectedWeather.label
+                },
+                panelDate,
+                panelTime,
+                attachments: attachments.map((item) => ({
+                    id: item.id,
+                    kind: item.kind,
+                    name: item.name,
+                    size: item.size,
+                    mimeType: item.mimeType || "application/octet-stream",
+                    base64: item.base64 || ""
+                }))
+            });
+            const requestBytes = new TextEncoder().encode(requestBody).length;
+            if (requestBytes > 24 * 1024 * 1024) {
+                setStatus("上传内容过大，请减少附件后重试", "error");
+                showSubmitOverlay("error", "内容太大啦，精简一点再试");
+                await sleep(1100);
+                hideSubmitOverlay();
+                setSubmitting(false);
+                return;
+            }
+            const payloadMb = requestBytes / (1024 * 1024);
+            const estimatedTimeoutMs = Math.min(
+                MAX_REQUEST_TIMEOUT_MS,
+                Math.max(
+                    REQUEST_TIMEOUT_MS,
+                    Math.ceil(payloadMb * 22000) + 40000
+                )
+            );
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), estimatedTimeoutMs);
+            const start = performance.now();
+
+            try {
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: requestBody,
+                    cache: "no-store",
+                    signal: controller.signal
+                });
+
+                const rawText = await response.text();
+                let result = null;
+                try {
+                    result = rawText ? JSON.parse(rawText) : null;
+                } catch (err) {
+                    console.warn("Non-JSON response:", rawText);
+                }
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        setStatus("401 未授权，请检查 Apps Script 访问权限", "error");
+                        showSubmitOverlay("error", "未授权，请检查脚本权限");
+                    } else {
+                        setStatus(`请求失败：HTTP ${response.status}`, "error");
+                        showSubmitOverlay("error", `请求失败：HTTP ${response.status}`);
+                    }
+                    await sleep(1200);
+                    hideSubmitOverlay();
+                    return;
+                }
+
+                if (result && result.status === "success") {
+                    const elapsed = Math.round(performance.now() - start);
+                    setStatus(`提交成功 ${elapsed}ms，正在返回首页...`, "ok");
+                    showSubmitOverlay("success", `提交成功 ${elapsed}ms`);
+                    await new Promise((resolve) => setTimeout(resolve, SUCCESS_REDIRECT_DELAY_MS));
+                    entryText.value = "";
+                    reviewText.value = "";
+                    selectedTag = "";
+                    energyLevel = DEFAULT_ENERGY;
+                    tagSelectedForEntry = false;
+                    energySelectedForEntry = false;
+                    attachments = [];
+                    renderTagChips();
+                    updateEnergyUI();
+                    renderAttachmentList();
+                    localStorage.removeItem(DRAFT_KEY);
+                    showPicker();
+                    setStatus("准备记录", "muted");
+                    hideSubmitOverlay();
+                } else {
+                    setStatus("提交失败，服务端返回异常", "error");
+                    showSubmitOverlay("error", "服务端返回异常，请重试");
+                    await sleep(1200);
+                    hideSubmitOverlay();
+                }
+            } catch (err) {
+                if (err && err.name === "AbortError") {
+                    setStatus("请求超时，请重试", "error");
+                    showSubmitOverlay("error", "请求超时，请重试");
+                } else {
+                    const msg = (err && err.message) ? `网络错误：${String(err.message).slice(0, 60)}` : "网络错误，请检查连接";
+                    setStatus(msg, "error");
+                    console.error("Submit failed:", err);
+                    showSubmitOverlay("error", "网络有点慢，稍后再试");
+                }
+                await sleep(1200);
+                hideSubmitOverlay();
+            } finally {
+                clearTimeout(timer);
+                if (submitOverlay?.dataset?.mode === "loading") hideSubmitOverlay();
+                setSubmitting(false);
+            }
+        }
+
+        function handleQuickSubmit(event) {
+            const isQuickSubmit = (event.ctrlKey || event.metaKey) && event.key === "Enter";
+            if (!isQuickSubmit) return;
+            event.preventDefault();
+            submitDiary();
+        }
+
+        renderMoodRing();
+        restoreDraft();
+        updateMoodUI(false);
+        applyWeatherToUI();
+        renderTagChips();
+        updateEnergyUI();
+        renderAttachmentList();
+        formatPaperDate();
+        updateClock();
+        warmConnection();
+
+        setInterval(updateClock, 15000);
+
+        nextBtn.addEventListener("click", showEditor);
+        backBtn.addEventListener("click", showPicker);
+        plusBtn.addEventListener("click", togglePlusMenu);
+        submitBtn.addEventListener("click", submitDiary);
+        moodRing.addEventListener("pointerdown", startRingDrag);
+        window.addEventListener("pointermove", moveRingDrag, { passive: false });
+        window.addEventListener("pointerup", endRingDrag);
+        window.addEventListener("pointercancel", endRingDrag);
+        plusMenu.addEventListener("click", (event) => {
+            const item = event.target.closest(".plus-item");
+            if (!item) return;
+            const action = item.dataset.action;
+            closePlusMenu();
+            handlePlusAction(action);
+        });
+        cameraInput.addEventListener("change", () => handlePickedFiles(cameraInput.files, "camera"));
+        albumInput.addEventListener("change", () => handlePickedFiles(albumInput.files, "album"));
+        attachmentList.addEventListener("click", (event) => {
+            const removeBtn = event.target.closest(".chip-remove");
+            if (!removeBtn) return;
+            const index = Number(removeBtn.dataset.index);
+            if (Number.isNaN(index) || index < 0 || index >= attachments.length) return;
+            attachments.splice(index, 1);
+            renderAttachmentList();
+            saveDraft();
+            setStatus("已删除附件", "muted");
+        });
+        weatherBtn.addEventListener("click", openWeatherModal);
+        weatherCancelBtn.addEventListener("click", () => closeWeatherModal(false));
+        weatherConfirmBtn.addEventListener("click", () => closeWeatherModal(true));
+        weatherModal.addEventListener("click", (event) => {
+            if (event.target === weatherModal) closeWeatherModal(false);
+        });
+        paperEmoji.addEventListener("click", openMoodModal);
+        paperMood.addEventListener("click", openMoodModal);
+        moodCancelBtn.addEventListener("click", () => closeMoodModal(false));
+        moodConfirmBtn.addEventListener("click", () => closeMoodModal(true));
+        moodModal.addEventListener("click", (event) => {
+            if (event.target === moodModal) closeMoodModal(false);
+        });
+        stickerCancelBtn.addEventListener("click", closeStickerModal);
+        stickerDoneBtn.addEventListener("click", closeStickerModal);
+        stickerModal.addEventListener("click", (event) => {
+            if (event.target === stickerModal) closeStickerModal();
+        });
+        energyInput.addEventListener("input", () => {
+            energyLevel = normalizeEnergy(energyInput.value);
+            energySelectedForEntry = true;
+            updateEnergyUI();
+            saveDraft();
+        });
+        entryText.addEventListener("input", saveDraft);
+        reviewText.addEventListener("input", saveDraft);
+        entryText.addEventListener("focus", closePlusMenu);
+        reviewText.addEventListener("focus", closePlusMenu);
+        entryText.addEventListener("keydown", handleQuickSubmit);
+        reviewText.addEventListener("keydown", handleQuickSubmit);
+
+        document.addEventListener("click", (event) => {
+            if (!plusMenu.classList.contains("show")) return;
+            const target = event.target;
+            if (plusMenu.contains(target) || plusBtn.contains(target)) return;
+            closePlusMenu();
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && plusMenu.classList.contains("show")) {
+                closePlusMenu();
+            }
+            if (event.key === "Escape" && weatherModal.classList.contains("show")) {
+                closeWeatherModal(false);
+            }
+            if (event.key === "Escape" && moodModal.classList.contains("show")) {
+                closeMoodModal(false);
+            }
+            if (event.key === "Escape" && stickerModal.classList.contains("show")) {
+                closeStickerModal();
+            }
+        });
+
+        if (restoreViewState() === "editor") {
+            showEditor();
         }
     </script>
 </body>
