@@ -195,7 +195,7 @@
 
                 <div class="tech-card rounded-xl p-6 bg-[#080808]">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-widest">Market Pulse</h3>
+                        <h3 class="text-sm font-bold text-white uppercase tracking-widest">Homepage Pulse</h3>
                         <span class="w-2 h-2 rounded-full bg-gas-green animate-pulse"></span>
                     </div>
                     <div id="sidebar-market-pulse" class="space-y-3">
@@ -465,16 +465,16 @@
                 const container = document.getElementById('sidebar-market-pulse');
                 if(!container) return;
                 try {
-                    const { data } = await _supabase.from('market_metrics').select('*').limit(5);
+                    const { data } = await _supabase.from('homepage_scrolling_data').select('*').order('sort_order').limit(5);
                     if(data) {
                         container.innerHTML = data.map(item => `
                             <div class="flex items-center justify-between border-b border-white/5 pb-2 last:border-0">
                                 <div>
                                     <div class="text-[10px] text-gray-500 uppercase">${item.label}</div>
-                                    <div class="text-sm font-mono font-bold text-white">${item.value} <span class="text-[10px] text-gray-600">${item.unit||''}</span></div>
+                                    <div class="text-sm font-mono font-bold text-white">${item.display_value ?? item.value ?? '--'} <span class="text-[10px] text-gray-600">${item.unit||''}</span></div>
                                 </div>
-                                <div class="${item.trend=='up'?'text-gas-green':(item.trend=='down'?'text-red-500':'text-gray-500')} text-xs font-bold">
-                                    ${item.change_24h}
+                                <div class="${item.status==='positive'?'text-gas-green':(item.status==='negative'?'text-red-500':'text-gray-500')} text-xs font-bold">
+                                    ${item.secondary_text ?? item.change_24h ?? '--'}
                                 </div>
                             </div>
                         `).join('');
@@ -577,4 +577,3 @@
 <script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js"></script>
 </body>
 </html>
-

@@ -317,7 +317,7 @@ function renderDataTemplate(config) {
         <section class="ggx-data-grid mt-4">
             <div class="ggx-channel-card p-4">
                 <div class="ggx-section-head">
-                    <h2><i class="fa-solid fa-wave-square"></i> Market Metrics</h2>
+                    <h2><i class="fa-solid fa-wave-square"></i> Homepage Metrics</h2>
                 </div>
                 <div id="ggx-metric-grid" class="ggx-metric-grid"></div>
             </div>
@@ -408,7 +408,7 @@ export function createChannelApp(channelKey) {
         state: {
             currentUser: null,
             displayName: null,
-            marketMetrics: [],
+            homepageMetrics: [],
             equipmentData: [],
             allArticles: [],
             filteredArticles: [],
@@ -428,7 +428,7 @@ export function createChannelApp(channelKey) {
 
             await Promise.allSettled([
                 this.loadArticles(),
-                this.loadMarketMetrics(),
+                this.loadHomepageMetrics(),
                 this.loadEquipmentData(),
                 this.loadSavedNews(),
             ]);
@@ -568,12 +568,27 @@ export function createChannelApp(channelKey) {
             }
         },
 
-        async loadMarketMetrics() {
+        async loadHomepageMetrics() {
             try {
-                const { data } = await _supabase.from('market_metrics').select('*').order('id', { ascending: true });
-                this.state.marketMetrics = Array.isArray(data) ? data : [];
+                const { data } = await _supabase
+                    .from('homepage_scrolling_data')
+                    .select('*')
+                    .order('sort_order', { ascending: true });
+
+                this.state.homepageMetrics = Array.isArray(data)
+                    ? data.map((item) => {
+                          const status = String(item.status || '').toLowerCase();
+                          const trend = status === 'positive' ? 'up' : status === 'negative' ? 'down' : 'flat';
+                          return {
+                              ...item,
+                              value: item.display_value ?? item.value ?? '--',
+                              change_24h: item.secondary_text ?? item.change_24h ?? '--',
+                              trend,
+                          };
+                      })
+                    : [];
             } catch {
-                this.state.marketMetrics = [];
+                this.state.homepageMetrics = [];
             }
         },
 
@@ -646,12 +661,15 @@ export function createChannelApp(channelKey) {
                 </div>
             `;
 
-            const spark = this.state.marketMetrics.find((item) => item.id === 'spark_spread') || this.state.marketMetrics[0];
+            const spark =
+                this.state.homepageMetrics.find((item) => String(item.id || '').toLowerCase() === 'spark_spread') ||
+                this.state.homepageMetrics.find((item) => String(item.label || '').toLowerCase().includes('spark')) ||
+                this.state.homepageMetrics[0];
             const equipmentTop = this.state.equipmentData[0];
 
             sidecards.innerHTML = `
                 <article class="ggx-channel-card ggx-mini-card">
-                    <h3>${escapeHtml(spark ? spark.label : 'Market Pulse')}</h3>
+                    <h3>${escapeHtml(spark ? spark.label : 'Homepage Pulse')}</h3>
                     <div class="ggx-mini-value">${escapeHtml(spark ? spark.value : '--')} <span class="text-sm text-gray-500">${escapeHtml(spark?.unit || '')}</span></div>
                     <p class="ggx-mini-caption">${escapeHtml(spark?.change_24h || 'No metric change available.')}</p>
                 </article>
@@ -734,7 +752,7 @@ export function createChannelApp(channelKey) {
                       .join('')
                 : '<li class="ggx-signal-item"><a href="#">No stream records yet.</a></li>';
 
-            const metrics = this.state.marketMetrics.slice(0, 4);
+            const metrics = this.state.homepageMetrics.slice(0, 4);
             const metricsHtml = metrics.length
                 ? metrics
                       .map(
@@ -745,7 +763,7 @@ export function createChannelApp(channelKey) {
                     </li>`
                       )
                       .join('')
-                : '<li class="ggx-signal-item"><a href="#">No market metrics available.</a></li>';
+                : '<li class="ggx-signal-item"><a href="#">No homepage metrics available.</a></li>';
 
             container.innerHTML = `
                 <section class="ggx-channel-card p-4">
@@ -764,7 +782,7 @@ export function createChannelApp(channelKey) {
 
                 <section class="ggx-channel-card p-4">
                     <div class="ggx-section-head">
-                        <h2><i class="fa-solid fa-chart-simple"></i> Metric Tape</h2>
+                            <h2><i class="fa-solid fa-chart-simple"></i> Metric Tape</h2>
                     </div>
                     <ul class="ggx-signal-list">${metricsHtml}</ul>
                 </section>
@@ -782,9 +800,9 @@ export function createChannelApp(channelKey) {
             const container = document.getElementById('ggx-metric-grid');
             if (!container) return;
 
-            const metrics = this.state.marketMetrics.slice(0, 8);
+            const metrics = this.state.homepageMetrics.slice(0, 8);
             if (metrics.length === 0) {
-                container.innerHTML = '<div class="ggx-empty">No market metrics in table.</div>';
+                container.innerHTML = '<div class="ggx-empty">No homepage metrics in table.</div>';
                 return;
             }
 

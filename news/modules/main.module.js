@@ -48,7 +48,7 @@ const MAIN_TEMPLATE = `
         <div class="mb-12">
             <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2 px-1">
                 <i class="fa-solid fa-wave-square text-gas-green"></i>
-                <span>Market Pulse</span>
+                <span>Homepage Pulse</span>
             </h3>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="ggx-market-pulse-container">
                 <div class="bg-[#111] h-24 rounded-xl animate-pulse"></div>
@@ -194,6 +194,8 @@ export function createNewsHomeApp() {
             currentOffset: 0,
             isLoading: false,
             flashData: [],
+            homepageMetricsCache: null,
+            homepageMetricsPromise: null,
             translations: {},
             generatedPosterUrl: null,
             currentUser: null,
@@ -242,6 +244,38 @@ export function createNewsHomeApp() {
                 if (btn) btn.classList.toggle('opacity-0', window.scrollY <= 300);
                 if (btn) btn.classList.toggle('pointer-events-none', window.scrollY <= 300);
             });
+        },
+
+        async ensureHomepageMetrics() {
+            if (Array.isArray(this.state.homepageMetricsCache)) {
+                return this.state.homepageMetricsCache;
+            }
+            if (this.state.homepageMetricsPromise) {
+                return this.state.homepageMetricsPromise;
+            }
+
+            this.state.homepageMetricsPromise = _supabase
+                .from('homepage_scrolling_data')
+                .select('*')
+                .order('sort_order', { ascending: true })
+                .then(({ data, error }) => {
+                    if (error) {
+                        console.error(error);
+                        return [];
+                    }
+                    return Array.isArray(data) ? data : [];
+                })
+                .catch((error) => {
+                    console.error(error);
+                    return [];
+                })
+                .finally(() => {
+                    this.state.homepageMetricsPromise = null;
+                });
+
+            const metrics = await this.state.homepageMetricsPromise;
+            this.state.homepageMetricsCache = metrics;
+            return metrics;
         },
 
         async initAuth() {
@@ -770,7 +804,12 @@ export function createNewsHomeApp() {
 
             try {
                 const { data: articles } = await _supabase.from('articles').select('*').in('homepage_mark', [1, 2, 3]).order('time', { ascending: false });
-                const { data: spark } = await _supabase.from('market_metrics').select('*').eq('id', 'spark_spread').single();
+                const metrics = await this.ensureHomepageMetrics();
+                const spark =
+                    metrics.find((item) => String(item.id || '').toLowerCase() === 'spark_spread') ||
+                    metrics.find((item) => String(item.label || '').toLowerCase().includes('spark')) ||
+                    metrics[0] ||
+                    null;
 
                 const sparkData = spark || {
                     label: 'Spark Spread',
@@ -778,8 +817,10 @@ export function createNewsHomeApp() {
                     value: '18.50',
                     unit: '$ / MWh',
                 };
-                const displayValue = sparkData.value.startsWith('$') ? sparkData.value : `$${sparkData.value}`;
-                const displayUnit = sparkData.unit.replace('$', '').trim();
+                const sparkValue = String(sparkData.display_value ?? sparkData.value ?? '--');
+                const displayValue = sparkValue.startsWith('$') ? sparkValue : `$${sparkValue}`;
+                const displayUnit = String(sparkData.unit || '').replace('$', '').trim();
+                const sparkChange = String(sparkData.secondary_text ?? sparkData.change_24h ?? 'Live from homepage data');
 
                 if (!articles || articles.length === 0) {
                     container.innerHTML = '<div class="col-span-4 text-center">No hero content.</div>';
@@ -806,7 +847,7 @@ export function createNewsHomeApp() {
                     ${hero2 ? `<div class="lg:col-span-1 lg:row-span-1 relative group rounded-xl overflow-hidden cursor-pointer ggx-tech-card border-0" onclick="window.location.href='${hero2Url}'"><img src="${img2}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"><div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent p-6 flex flex-col justify-end"><span class="text-gas-green text-[10px] font-bold uppercase mb-1">${hero2.secondary_tag || hero2.tag}</span><h3 class="text-lg font-bold text-white leading-snug">${hero2.main_title}</h3></div></div>` : '<div class="lg:col-span-1 lg:row-span-1 bg-[#111]"></div>'}
                     <div class="lg:col-span-1 lg:row-span-1 bg-[#111] border border-white/5 rounded-xl p-6 flex flex-col justify-between group cursor-pointer relative overflow-hidden">
                         <div class="grid-bg absolute inset-0"></div>
-                        <div class="relative z-10"><div class="flex justify-between items-start mb-4"><i class="fa-solid fa-chart-area text-2xl text-gas-green"></i><span class="text-[10px] text-gray-500 font-mono border border-gray-700 px-1 rounded">LIVE</span></div><h3 class="text-lg font-bold text-white mb-1">${sparkData.label}</h3><p class="text-xs text-gray-400">${sparkData.change_24h}</p></div>
+                        <div class="relative z-10"><div class="flex justify-between items-start mb-4"><i class="fa-solid fa-chart-area text-2xl text-gas-green"></i><span class="text-[10px] text-gray-500 font-mono border border-gray-700 px-1 rounded">LIVE</span></div><h3 class="text-lg font-bold text-white mb-1">${sparkData.label}</h3><p class="text-xs text-gray-400">${sparkChange}</p></div>
                         <div class="text-3xl font-mono font-bold text-white group-hover:text-gas-green transition-colors relative z-10">${displayValue} <span class="text-xs text-gray-500 font-sans font-normal">${displayUnit}</span></div>
                     </div>
                     ${hero3 ? `<div class="lg:col-span-2 lg:row-span-1 bg-[#121212] border border-white/5 rounded-xl p-6 flex items-center justify-between group cursor-pointer" onclick="window.location.href='${hero3Url}'"><div class="max-w-[70%]"><span class="text-orange-500 text-[10px] font-bold uppercase mb-2 block"><i class="fa-solid fa-fire mr-1"></i> ${hero3.secondary_tag || hero3.tag}</span><h3 class="text-xl font-bold text-white leading-snug group-hover:text-orange-400">${hero3.main_title}</h3></div><div class="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-500 group-hover:text-gas-green bg-[#1a1a1a]"><i class="fa-solid fa-arrow-right"></i></div></div>` : ''}
@@ -821,16 +862,23 @@ export function createNewsHomeApp() {
             if (!container) return;
 
             try {
-                const { data } = await _supabase.from('market_metrics').select('*');
-                if (data) {
-                    const filtered = data.filter((i) => i.id !== 'spark_spread').slice(0, 4);
-                    container.innerHTML = filtered
-                        .map((item) => {
-                            const trendClass = item.trend === 'up' ? 'text-gas-green' : item.trend === 'down' ? 'text-red-500' : 'text-blue-400';
-                            return `<div class="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 flex flex-col justify-between h-24 hover:border-gas-green/30 transition-all group"><div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider truncate">${item.label}</div><div><div class="text-xl font-mono font-bold text-white flex items-baseline gap-1">${item.value} <span class="text-[10px] text-gray-600 font-sans font-normal">${item.unit || ''}</span></div><div class="text-[10px] font-bold ${trendClass} mt-1 flex items-center gap-1">${item.trend === 'up' ? '<i class="fa-solid fa-caret-up"></i>' : item.trend === 'down' ? '<i class="fa-solid fa-caret-down"></i>' : ''} ${item.change_24h || '--'}</div></div></div>`;
-                        })
-                        .join('');
+                const metrics = await this.ensureHomepageMetrics();
+                const filtered = metrics
+                    .filter((i) => String(i.id || '').toLowerCase() !== 'spark_spread')
+                    .slice(0, 4);
+                if (!filtered.length) {
+                    container.innerHTML = '<div class="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 text-xs text-gray-500 col-span-full">No homepage metrics available.</div>';
+                    return;
                 }
+
+                container.innerHTML = filtered
+                    .map((item) => {
+                        const status = String(item.status || '').toLowerCase();
+                        const trendClass = status === 'positive' ? 'text-gas-green' : status === 'negative' ? 'text-red-500' : 'text-blue-400';
+                        const trendIcon = status === 'positive' ? '<i class="fa-solid fa-caret-up"></i>' : status === 'negative' ? '<i class="fa-solid fa-caret-down"></i>' : '';
+                        return `<div class="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 flex flex-col justify-between h-24 hover:border-gas-green/30 transition-all group"><div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider truncate">${item.label}</div><div><div class="text-xl font-mono font-bold text-white flex items-baseline gap-1">${item.display_value ?? item.value ?? '--'} <span class="text-[10px] text-gray-600 font-sans font-normal">${item.unit || ''}</span></div><div class="text-[10px] font-bold ${trendClass} mt-1 flex items-center gap-1">${trendIcon} ${item.secondary_text || '--'}</div></div></div>`;
+                    })
+                    .join('');
             } catch (e) {
                 console.error(e);
             }
@@ -841,7 +889,7 @@ export function createNewsHomeApp() {
             if (!container) return;
 
             try {
-                const { data } = await _supabase.from('homepage_scrolling_data').select('*').order('sort_order', { ascending: true });
+                const data = await this.ensureHomepageMetrics();
                 if (data && data.length > 0) {
                     const itemsHtml = data
                         .map((item) => {
