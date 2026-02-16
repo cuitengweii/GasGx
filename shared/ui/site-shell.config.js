@@ -16,39 +16,150 @@
                 },
                 {
                         "title": {
-                                "zh": "解决方案",
-                                "en": "Solutions"
+                                "zh": "新闻资讯",
+                                "en": "News"
                         },
-                        "path": "/solutions",
+                        "path": "/news",
                         "type": "menu",
                         "children": [
                                 {
                                         "title": {
-                                                "zh": "油气井/伴生气发电",
-                                                "en": "Oil/Gas Field Power"
+                                                "zh": "新闻首页",
+                                                "en": "News Home"
                                         },
-                                        "path": "/solutions/oilfield"
+                                        "path": "/news"
                                 },
                                 {
                                         "title": {
-                                                "zh": "工业园区与分布式能源",
-                                                "en": "Industrial Power"
+                                                "zh": "快讯",
+                                                "en": "Flash"
                                         },
-                                        "path": "/solutions/industrial"
+                                        "path": "/news/flash"
                                 },
                                 {
                                         "title": {
-                                                "zh": "数据中心 / 挖矿电力",
-                                                "en": "Data Center / Mining"
+                                                "zh": "天然气能源",
+                                                "en": "Gas Energy"
                                         },
-                                        "path": "/solutions/mining"
+                                        "path": "/news/gas-energy"
                                 },
                                 {
                                         "title": {
-                                                "zh": "热电联供 CHP",
-                                                "en": "CHP Cogeneration"
+                                                "zh": "发电机",
+                                                "en": "Generators"
                                         },
-                                        "path": "/solutions/chp"
+                                        "path": "/news/generators"
+                                },
+                                {
+                                        "title": {
+                                                "zh": "挖矿",
+                                                "en": "Mining"
+                                        },
+                                        "path": "/news/mining"
+                                },
+                                {
+                                        "title": {
+                                                "zh": "洞察",
+                                                "en": "Insights"
+                                        },
+                                        "path": "/news/insights"
+                                },
+                                {
+                                        "title": {
+                                                "zh": "数据",
+                                                "en": "Data"
+                                        },
+                                        "path": "/news/data"
+                                },
+                                {
+                                        "title": {
+                                                "zh": "活动",
+                                                "en": "Events"
+                                        },
+                                        "path": "/news/events"
+                                }
+                        ]
+                },
+                {
+                        "title": {
+                                "zh": "解决方案",
+                                "en": "Solutions"
+                        },
+                        "path": "/solutions",
+                        "type": "mega",
+                        "gridCols": "grid-cols-2",
+                        "sections": [
+                                {
+                                        "header": {
+                                                "zh": "Applications",
+                                                "en": "Applications"
+                                        },
+                                        "items": [
+                                                {
+                                                        "title": {
+                                                                "zh": "油气井/伴生气发电",
+                                                                "en": "Oil/Gas Field Power"
+                                                        },
+                                                        "path": "/solutions/oilfield"
+                                                },
+                                                {
+                                                        "title": {
+                                                                "zh": "工业园区与分布式能源",
+                                                                "en": "Industrial Power"
+                                                        },
+                                                        "path": "/solutions/industrial"
+                                                },
+                                                {
+                                                        "title": {
+                                                                "zh": "数据中心 / 挖矿电力",
+                                                                "en": "Data Center / Mining"
+                                                        },
+                                                        "path": "/solutions/mining"
+                                                },
+                                                {
+                                                        "title": {
+                                                                "zh": "热电联供 CHP",
+                                                                "en": "CHP Cogeneration"
+                                                        },
+                                                        "path": "/solutions/chp"
+                                                }
+                                        ]
+                                },
+                                {
+                                        "header": {
+                                                "zh": "Success Stories",
+                                                "en": "Success Stories"
+                                        },
+                                        "items": [
+                                                {
+                                                        "title": {
+                                                                "zh": "油气井 / 伴生气",
+                                                                "en": "Oilfield / Associated Gas"
+                                                        },
+                                                        "path": "/use-cases/oilfield"
+                                                },
+                                                {
+                                                        "title": {
+                                                                "zh": "工业与园区能源",
+                                                                "en": "Industrial & Park"
+                                                        },
+                                                        "path": "/use-cases/industrial"
+                                                },
+                                                {
+                                                        "title": {
+                                                                "zh": "挖矿 / 数据中心",
+                                                                "en": "Mining / Data Center"
+                                                        },
+                                                        "path": "/use-cases/mining"
+                                                },
+                                                {
+                                                        "title": {
+                                                                "zh": "CHP 热电联供",
+                                                                "en": "CHP"
+                                                        },
+                                                        "path": "/use-cases/chp"
+                                                }
+                                        ]
                                 }
                         ]
                 },
@@ -403,44 +514,6 @@
                                                         "path": "/rankings/russia"
                                                 }
                                         ]
-                                }
-                        ]
-                },
-                {
-                        "title": {
-                                "zh": "应用场景",
-                                "en": "Use Cases"
-                        },
-                        "path": "/use-cases",
-                        "type": "menu",
-                        "children": [
-                                {
-                                        "title": {
-                                                "zh": "油气井 / 伴生气",
-                                                "en": "Oilfield / Associated Gas"
-                                        },
-                                        "path": "/use-cases/oilfield"
-                                },
-                                {
-                                        "title": {
-                                                "zh": "工业与园区能源",
-                                                "en": "Industrial & Park"
-                                        },
-                                        "path": "/use-cases/industrial"
-                                },
-                                {
-                                        "title": {
-                                                "zh": "挖矿 / 数据中心",
-                                                "en": "Mining / Data Center"
-                                        },
-                                        "path": "/use-cases/mining"
-                                },
-                                {
-                                        "title": {
-                                                "zh": "CHP 热电联供",
-                                                "en": "CHP"
-                                        },
-                                        "path": "/use-cases/chp"
                                 }
                         ]
                 },
