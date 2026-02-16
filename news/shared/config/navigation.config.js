@@ -16,6 +16,12 @@ export const HEADER_NAVIGATION = [
         ],
     },
     {
+        title: 'GasGx',
+        path: '/index.html',
+        icon: 'fa-globe',
+        children: [],
+    },
+    {
         title: 'FLASH',
         path: '/news/flash',
         icon: 'fa-bolt',

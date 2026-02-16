@@ -4,6 +4,41 @@ import { HEADER_NAVIGATION } from '../config/navigation.config.js';
 const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
 const DEFAULT_COVER = '/news/advertisement/zhanwei.jpg';
+const GOOGLE_CHARTS_LOADER = 'https://www.gstatic.com/charts/loader.js';
+const CANADA_LOCAL_TIMEZONE = 'Asia/Shanghai';
+
+const CANADA_CHART_SPECS = {
+    gas_alberta_vs_regulated: {
+        containerId: 'ggx-chart-gas-alberta-vs-regulated',
+        seriesOrder: ['Gas Alberta', 'WTD AVG', 'DERS', 'AUI'],
+        colors: ['#6683a3', '#79c3a2', 'red', 'orange'],
+        lineIndexes: [2, 3],
+    },
+    retailer_rates: {
+        containerId: 'ggx-chart-retailer-rates',
+        seriesOrder: ['Monthly Index', 'Forecast', 'ATCO 5 Year', 'ENCOR 5 Year', 'ENMAX 5 Year'],
+        colors: ['red', '#6683a3', 'orange', '#79c3a2', 'purple'],
+        lineIndexes: [2, 3, 4],
+    },
+    aeco_ng_current: {
+        containerId: 'ggx-chart-aeco-ng-current',
+        seriesOrder: ['Daily Index', 'Monthly Index'],
+        colors: ['#6683a3', 'red'],
+        lineIndexes: [1],
+    },
+    aeco_ng_prior: {
+        containerId: 'ggx-chart-aeco-ng-prior',
+        seriesOrder: ['Daily Index', 'Monthly Index'],
+        colors: ['#6683a3', 'red'],
+        lineIndexes: [1],
+    },
+    aeco_c_futures: {
+        containerId: 'ggx-chart-aeco-c-futures',
+        seriesOrder: ['Current', 'One Year Ago', 'One Month Ago'],
+        colors: ['#6683a3', 'orange', 'red'],
+        lineIndexes: [1, 2],
+    },
+};
 
 const CHANNEL_CONFIGS = {
     'gas-energy': {
@@ -115,6 +150,59 @@ function getChannelConfig(channelKey) {
     return CHANNEL_CONFIGS[channelKey] || CHANNEL_CONFIGS.mining;
 }
 
+let googleChartsReadyPromise = null;
+
+function ensureScriptLoaded(src, id) {
+    return new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[src="${src}"]`);
+        if (existing) {
+            if (existing.dataset.loaded === 'true') {
+                resolve();
+                return;
+            }
+            existing.addEventListener('load', () => resolve(), { once: true });
+            existing.addEventListener('error', () => reject(new Error(`Failed to load script: ${src}`)), { once: true });
+            return;
+        }
+
+        const script = document.createElement('script');
+        if (id) script.id = id;
+        script.src = src;
+        script.async = true;
+        script.onload = () => {
+            script.dataset.loaded = 'true';
+            resolve();
+        };
+        script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+        document.head.appendChild(script);
+    });
+}
+
+async function ensureGoogleChartsLoaded() {
+    if (window.google?.visualization?.ComboChart) return;
+    if (googleChartsReadyPromise) {
+        await googleChartsReadyPromise;
+        return;
+    }
+
+    googleChartsReadyPromise = (async () => {
+        await ensureScriptLoaded(GOOGLE_CHARTS_LOADER, 'ggx-google-charts-loader');
+        await new Promise((resolve, reject) => {
+            if (!window.google?.charts) {
+                reject(new Error('Google Charts runtime unavailable.'));
+                return;
+            }
+            window.google.charts.load('current', { packages: ['corechart'] });
+            window.google.charts.setOnLoadCallback(() => {
+                if (window.google?.visualization?.ComboChart) resolve();
+                else reject(new Error('Google Charts corechart package failed to initialize.'));
+            });
+        });
+    })();
+
+    await googleChartsReadyPromise;
+}
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -155,6 +243,29 @@ function formatDateTime(value) {
         hour: '2-digit',
         minute: '2-digit',
     });
+}
+
+function formatUtcDateTime(value) {
+    if (!value) return '--';
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return '--';
+    return date.toISOString().replace('T', ' ').replace('.000Z', ' UTC');
+}
+
+function formatDateTimeByTimezone(value, timezone, locale = 'zh-CN') {
+    if (!value) return '--';
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return '--';
+    return new Intl.DateTimeFormat(locale, {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    }).format(date);
 }
 
 function cleanSummary(value) {
@@ -314,6 +425,71 @@ function renderDataTemplate(config) {
             <p class="ggx-mini-caption">${escapeHtml(config.pageSubtitle)}</p>
         </section>
 
+        <section class="ggx-channel-card p-4 mt-4">
+            <div class="ggx-section-head">
+                <h2><i class="fa-solid fa-leaf"></i> Canada Gas Dashboard</h2>
+                <span class="ggx-chip active">Integrated View</span>
+            </div>
+            <p class="ggx-mini-caption">Combined from the Canada dashboard and News Data terminal for one-page analysis.</p>
+
+            <div class="ggx-canada-run-grid mt-3">
+                <article class="ggx-canada-run-card">
+                    <div class="ggx-canada-run-label">Latest Successful Run</div>
+                    <div id="ggx-canada-run-local" class="ggx-canada-run-value">--</div>
+                    <div id="ggx-canada-run-utc" class="ggx-canada-run-meta">--</div>
+                    <div id="ggx-canada-run-id" class="ggx-canada-run-meta">run_id: --</div>
+                </article>
+                <article id="ggx-canada-status" class="ggx-canada-status-box">
+                    <span class="text-yellow-300 font-semibold">LOADING</span> Fetching Canada dashboard data...
+                </article>
+            </div>
+        </section>
+
+        <section class="ggx-canada-chart-grid mt-4">
+            <article class="ggx-channel-card p-4">
+                <div class="ggx-section-head">
+                    <h2><i class="fa-solid fa-chart-column"></i> Gas Alberta vs Regulated</h2>
+                </div>
+                <div id="ggx-chart-gas-alberta-vs-regulated" class="ggx-canada-chart"></div>
+            </article>
+            <article class="ggx-channel-card p-4">
+                <div class="ggx-section-head">
+                    <h2><i class="fa-solid fa-store"></i> Retailer Rates</h2>
+                </div>
+                <div id="ggx-chart-retailer-rates" class="ggx-canada-chart"></div>
+            </article>
+            <article class="ggx-channel-card p-4">
+                <div class="ggx-section-head">
+                    <h2><i class="fa-solid fa-calendar-day"></i> AECO Current Month</h2>
+                </div>
+                <div id="ggx-chart-aeco-ng-current" class="ggx-canada-chart"></div>
+            </article>
+            <article class="ggx-channel-card p-4">
+                <div class="ggx-section-head">
+                    <h2><i class="fa-solid fa-calendar-minus"></i> AECO Prior Month</h2>
+                </div>
+                <div id="ggx-chart-aeco-ng-prior" class="ggx-canada-chart"></div>
+            </article>
+        </section>
+
+        <section class="mt-4">
+            <article class="ggx-channel-card p-4">
+                <div class="ggx-section-head">
+                    <h2><i class="fa-solid fa-chart-line"></i> AECO C Futures Pricing</h2>
+                </div>
+                <div id="ggx-chart-aeco-c-futures" class="ggx-canada-chart"></div>
+            </article>
+        </section>
+
+        <section class="mt-4">
+            <article class="ggx-channel-card p-4">
+                <div class="ggx-section-head">
+                    <h2><i class="fa-solid fa-table"></i> Canada Static Tables (Parsed)</h2>
+                </div>
+                <div id="ggx-canada-static-tables" class="ggx-canada-static-grid"></div>
+            </article>
+        </section>
+
         <section class="ggx-data-grid mt-4">
             <div class="ggx-channel-card p-4">
                 <div class="ggx-section-head">
@@ -414,6 +590,14 @@ export function createChannelApp(channelKey) {
             filteredArticles: [],
             savedNews: [],
             eventsRows: [],
+            canadaRun: null,
+            canadaPointRows: [],
+            canadaTableRows: [],
+            canadaStatus: {
+                type: 'loading',
+                message: 'Fetching Canada dashboard data...',
+            },
+            canadaResizeBound: false,
             visibleCount: config.layout === 'events' ? 6 : 7,
             pageSize: config.layout === 'events' ? 6 : 6,
             scrollBound: false,
@@ -426,12 +610,14 @@ export function createChannelApp(channelKey) {
             this.renderNav();
             this.loadLiveData();
 
-            await Promise.allSettled([
+            const loadTasks = [
                 this.loadArticles(),
                 this.loadHomepageMetrics(),
                 this.loadEquipmentData(),
                 this.loadSavedNews(),
-            ]);
+            ];
+            if (config.layout === 'data') loadTasks.push(this.loadCanadaDashboardData());
+            await Promise.allSettled(loadTasks);
 
             if (config.layout === 'data') this.renderDataLayout();
             else if (config.layout === 'events') this.renderEventsLayout();
@@ -618,6 +804,81 @@ export function createChannelApp(channelKey) {
             }
         },
 
+        async loadCanadaDashboardData() {
+            this.state.canadaStatus = {
+                type: 'loading',
+                message: 'Fetching latest successful run from Supabase...',
+            };
+
+            try {
+                const run = await this.loadCanadaLatestRun();
+                this.state.canadaRun = run;
+
+                const rows = await this.loadCanadaRows(run.run_hour_utc);
+                this.state.canadaPointRows = rows.pointRows;
+                this.state.canadaTableRows = rows.tableRows;
+
+                if (!this.state.canadaPointRows.length) {
+                    this.state.canadaStatus = {
+                        type: 'error',
+                        message: `No point data found for run_hour ${run.run_hour_utc}.`,
+                    };
+                    return;
+                }
+
+                this.state.canadaStatus = {
+                    type: 'ok',
+                    message: `Loaded ${this.state.canadaPointRows.length} point rows and ${this.state.canadaTableRows.length} static tables.`,
+                };
+            } catch (error) {
+                console.error('Canada dashboard load failed:', error);
+                this.state.canadaRun = null;
+                this.state.canadaPointRows = [];
+                this.state.canadaTableRows = [];
+                this.state.canadaStatus = {
+                    type: 'error',
+                    message: error?.message || 'Failed to load Canada dashboard data.',
+                };
+            }
+        },
+
+        async loadCanadaLatestRun() {
+            const { data, error } = await _supabase
+                .from('canada_scrape_runs')
+                .select('run_id,run_at_utc,run_hour_utc,status,chart_success_count,point_count')
+                .eq('status', 'success')
+                .order('run_hour_utc', { ascending: false })
+                .limit(1);
+
+            if (error) throw error;
+            if (!Array.isArray(data) || !data.length) {
+                throw new Error('No successful Canada scrape run found.');
+            }
+            return data[0];
+        },
+
+        async loadCanadaRows(runHourUtc) {
+            const [pointsRes, tablesRes] = await Promise.all([
+                _supabase
+                    .from('canada_chart_points')
+                    .select('chart_id,chart_title,row_index,x_label,x_date,series_name,series_value,currency,unit')
+                    .eq('run_hour_utc', runHourUtc)
+                    .order('row_index', { ascending: true }),
+                _supabase
+                    .from('canada_chart_tables')
+                    .select('chart_id,chart_title,headers,table_rows,row_count,source_asset_url')
+                    .eq('run_hour_utc', runHourUtc),
+            ]);
+
+            if (pointsRes.error) throw pointsRes.error;
+            if (tablesRes.error) throw tablesRes.error;
+
+            return {
+                pointRows: Array.isArray(pointsRes.data) ? pointsRes.data : [],
+                tableRows: Array.isArray(tablesRes.data) ? tablesRes.data : [],
+            };
+        },
+
         loadMore() {
             this.state.visibleCount += this.state.pageSize;
             if (config.layout === 'events') this.renderEventsCards();
@@ -794,6 +1055,10 @@ export function createChannelApp(channelKey) {
             this.renderFuelMix();
             this.renderEquipmentTable();
             this.renderDataNotes();
+            this.renderCanadaDashboard().catch((error) => {
+                console.error('Canada dashboard render failed:', error);
+                this.setCanadaStatus('error', 'Failed to render Canada dashboard charts.');
+            });
         },
 
         renderDataMetrics() {
@@ -907,6 +1172,231 @@ export function createChannelApp(channelKey) {
                     `;
                 })
                 .join('');
+        },
+
+        setCanadaStatus(type, message) {
+            const container = document.getElementById('ggx-canada-status');
+            if (!container) return;
+
+            const normalizedType = String(type || 'loading').toLowerCase();
+            const color =
+                normalizedType === 'error'
+                    ? 'text-red-400'
+                    : normalizedType === 'ok'
+                      ? 'text-gas-green'
+                      : 'text-yellow-300';
+            container.innerHTML = `<span class="${color} font-semibold">${escapeHtml(normalizedType.toUpperCase())}</span> ${escapeHtml(message || '--')}`;
+        },
+
+        renderCanadaRunSummary() {
+            const runLocal = document.getElementById('ggx-canada-run-local');
+            const runUtc = document.getElementById('ggx-canada-run-utc');
+            const runId = document.getElementById('ggx-canada-run-id');
+            if (!runLocal || !runUtc || !runId) return;
+
+            const run = this.state.canadaRun;
+            if (!run) {
+                runLocal.textContent = '--';
+                runUtc.textContent = '--';
+                runId.textContent = 'run_id: --';
+                return;
+            }
+
+            runLocal.textContent = `${formatDateTimeByTimezone(run.run_at_utc, CANADA_LOCAL_TIMEZONE)} (${CANADA_LOCAL_TIMEZONE})`;
+            runUtc.textContent = formatUtcDateTime(run.run_at_utc);
+            runId.textContent = `run_id: ${run.run_id || '--'}`;
+        },
+
+        toCanadaChartMatrix(rows, seriesOrder) {
+            const grouped = new Map();
+            rows.forEach((row) => {
+                const xLabel = String(row?.x_label || '').trim();
+                if (!xLabel) return;
+
+                if (!grouped.has(xLabel)) {
+                    grouped.set(xLabel, {
+                        x_label: xLabel,
+                        x_date: row?.x_date || '',
+                        row_index: Number(row?.row_index) || 0,
+                        values: {},
+                    });
+                }
+
+                grouped.get(xLabel).values[row.series_name] = Number(row.series_value);
+            });
+
+            return Array.from(grouped.values())
+                .sort((a, b) => {
+                    if (a.x_date && b.x_date) return String(a.x_date).localeCompare(String(b.x_date));
+                    if (a.row_index !== b.row_index) return a.row_index - b.row_index;
+                    return a.x_label.localeCompare(b.x_label);
+                })
+                .map((item) => [item.x_label, ...seriesOrder.map((name) => item.values[name] ?? null)]);
+        },
+
+        drawCanadaComboChart(spec, rows) {
+            const container = document.getElementById(spec.containerId);
+            if (!container) return;
+
+            if (!Array.isArray(rows) || rows.length === 0) {
+                container.innerHTML = '<div class="ggx-empty">No chart data.</div>';
+                return;
+            }
+
+            const table = new window.google.visualization.DataTable();
+            table.addColumn('string', 'Date');
+            spec.seriesOrder.forEach((seriesName) => table.addColumn('number', seriesName));
+            table.addRows(this.toCanadaChartMatrix(rows, spec.seriesOrder));
+
+            const formatter = new window.google.visualization.NumberFormat({ prefix: '$' });
+            for (let index = 1; index <= spec.seriesOrder.length; index += 1) {
+                formatter.format(table, index);
+            }
+
+            const seriesConfig = {};
+            spec.lineIndexes.forEach((index) => {
+                seriesConfig[index] = { type: 'line' };
+            });
+
+            const options = {
+                width: '100%',
+                height: 420,
+                backgroundColor: 'transparent',
+                chartArea: { width: '80%', height: '72%' },
+                legend: { position: 'top', textStyle: { color: '#d1d5db', fontSize: 11 } },
+                bar: { groupWidth: 24 },
+                vAxis: {
+                    title: 'CDN$ / GJ',
+                    titleTextStyle: { color: '#e5e7eb', bold: true, fontSize: 13 },
+                    textStyle: { color: '#9ca3af', fontSize: 11 },
+                    gridlines: { color: '#2d2d2d' },
+                    format: 'currency',
+                },
+                hAxis: {
+                    slantedText: true,
+                    slantedTextAngle: 90,
+                    textStyle: { color: '#9ca3af', fontSize: 10 },
+                },
+                colors: spec.colors,
+                seriesType: 'bars',
+                series: seriesConfig,
+            };
+
+            const chart = new window.google.visualization.ComboChart(container);
+            chart.draw(table, options);
+        },
+
+        drawCanadaCharts() {
+            Object.entries(CANADA_CHART_SPECS).forEach(([chartId, spec]) => {
+                const rows = this.state.canadaPointRows.filter((row) => row.chart_id === chartId);
+                this.drawCanadaComboChart(spec, rows);
+            });
+        },
+
+        parseMaybeArray(value) {
+            if (Array.isArray(value)) return value;
+            if (typeof value !== 'string') return [];
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        },
+
+        getCanadaTableCellValue(row, header, index) {
+            if (row && typeof row === 'object' && !Array.isArray(row)) return row[header] ?? '';
+            if (Array.isArray(row)) return row[index] ?? '';
+            return '';
+        },
+
+        renderCanadaStaticTables() {
+            const wrap = document.getElementById('ggx-canada-static-tables');
+            if (!wrap) return;
+
+            if (!this.state.canadaTableRows.length) {
+                wrap.innerHTML = '<div class="ggx-empty">No parsed Canada static tables in this run.</div>';
+                return;
+            }
+
+            const preferredOrder = ['intra_alberta_cost_image', 'current_utility_delivery_costs_image'];
+            const sorted = [...this.state.canadaTableRows].sort((a, b) => {
+                const ai = preferredOrder.indexOf(a.chart_id);
+                const bi = preferredOrder.indexOf(b.chart_id);
+                if (ai === -1 && bi === -1) return String(a.chart_title || '').localeCompare(String(b.chart_title || ''));
+                if (ai === -1) return 1;
+                if (bi === -1) return -1;
+                return ai - bi;
+            });
+
+            wrap.innerHTML = sorted
+                .map((item) => {
+                    const headers = this.parseMaybeArray(item.headers);
+                    const rows = this.parseMaybeArray(item.table_rows);
+
+                    if (!headers.length) {
+                        return `
+                            <article class="ggx-channel-card p-4">
+                                <h3 class="ggx-event-title">${escapeHtml(item.chart_title || item.chart_id || 'Untitled')}</h3>
+                                <div class="ggx-empty mt-3">No parsed table headers in this record.</div>
+                            </article>
+                        `;
+                    }
+
+                    const headerHtml = headers
+                        .map((header) => `<th class="px-3 py-2 text-left text-[11px] uppercase tracking-wider text-gray-300 border-b border-white/10">${escapeHtml(header)}</th>`)
+                        .join('');
+                    const bodyHtml = rows
+                        .map((row) => {
+                            const isSection = row && typeof row === 'object' && !Array.isArray(row) && row._row_type === 'section';
+                            const cellHtml = headers
+                                .map((header, index) => {
+                                    const raw = this.getCanadaTableCellValue(row, header, index);
+                                    const value = isSection && header !== 'Component' ? '' : raw;
+                                    const cellClass = isSection && header === 'Component' ? 'ggx-canada-cell ggx-canada-cell-section' : 'ggx-canada-cell';
+                                    return `<td class="${cellClass}">${escapeHtml(value)}</td>`;
+                                })
+                                .join('');
+                            return `<tr>${cellHtml}</tr>`;
+                        })
+                        .join('');
+
+                    return `
+                        <article class="ggx-channel-card p-4">
+                            <h3 class="ggx-event-title">${escapeHtml(item.chart_title || item.chart_id || 'Untitled')}</h3>
+                            <div class="ggx-table-wrap mt-3">
+                                <table class="ggx-data-table ggx-canada-data-table">
+                                    <thead>
+                                        <tr>${headerHtml}</tr>
+                                    </thead>
+                                    <tbody>${bodyHtml}</tbody>
+                                </table>
+                            </div>
+                            <p class="ggx-mini-caption mt-3">Parsed rows: ${escapeHtml(String(item.row_count || 0))}</p>
+                        </article>
+                    `;
+                })
+                .join('');
+        },
+
+        async renderCanadaDashboard() {
+            this.renderCanadaRunSummary();
+            this.setCanadaStatus(this.state.canadaStatus.type, this.state.canadaStatus.message);
+            this.renderCanadaStaticTables();
+
+            if (!this.state.canadaPointRows.length) return;
+
+            await ensureGoogleChartsLoaded();
+            this.drawCanadaCharts();
+
+            if (!this.state.canadaResizeBound) {
+                this.state.canadaResizeBound = true;
+                let resizeTimer = null;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(() => this.drawCanadaCharts(), 180);
+                });
+            }
         },
 
         async buildEventsRows() {

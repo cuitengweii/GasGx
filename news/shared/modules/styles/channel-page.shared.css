@@ -420,6 +420,77 @@ body.ggx-channel-page::-webkit-scrollbar-thumb:hover {
     grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 
+.ggx-canada-run-grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: 1fr;
+}
+
+.ggx-canada-run-card,
+.ggx-canada-status-box {
+    padding: 0.9rem;
+    border: 1px solid var(--ggx-border);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.ggx-canada-run-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ggx-text-muted);
+}
+
+.ggx-canada-run-value {
+    margin-top: 0.45rem;
+    color: #fff;
+    font-size: 1.03rem;
+    font-weight: 700;
+}
+
+.ggx-canada-run-meta {
+    margin-top: 0.35rem;
+    color: #96a1af;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.ggx-canada-status-box {
+    color: #d1d7e0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.ggx-canada-chart-grid {
+    display: grid;
+    gap: 0.95rem;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.ggx-canada-chart {
+    width: 100%;
+    min-height: 420px;
+}
+
+.ggx-canada-static-grid {
+    display: grid;
+    gap: 0.9rem;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.ggx-canada-cell {
+    padding: 0.68rem 0.58rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e0e7f0;
+    text-align: left;
+    font-size: 12px;
+}
+
+.ggx-canada-cell-section {
+    color: color-mix(in srgb, var(--ggx-accent) 88%, white 10%);
+    font-weight: 700;
+}
+
 .ggx-metric-grid {
     display: grid;
     gap: 0.75rem;
@@ -616,6 +687,18 @@ body.ggx-channel-page::-webkit-scrollbar-thumb:hover {
 
     .ggx-data-grid {
         grid-template-columns: 1.1fr 1fr;
+    }
+
+    .ggx-canada-run-grid {
+        grid-template-columns: 1.25fr 1fr;
+    }
+
+    .ggx-canada-chart-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ggx-canada-static-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .ggx-events-grid {
