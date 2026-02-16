@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
@@ -69,6 +70,29 @@ def iter_index_files(root: Path) -> Iterable[Path]:
         yield index_file
 
 
+def resolve_lastmod(index_file: Path, root: Path) -> str:
+    rel = index_file.relative_to(root).as_posix()
+    git_date = ""
+
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "log", "-1", "--format=%cs", "--", rel],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            git_date = result.stdout.strip()
+    except OSError:
+        git_date = ""
+
+    if git_date:
+        return git_date
+
+    mtime = datetime.fromtimestamp(index_file.stat().st_mtime, tz=timezone.utc)
+    return mtime.strftime("%Y-%m-%d")
+
+
 def build_sitemap(root: Path, base_url: str) -> Element:
     base = base_url.rstrip("/")
     urlset = Element("urlset", xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
@@ -87,8 +111,7 @@ def build_sitemap(root: Path, base_url: str) -> Element:
         loc.text = f"{base}{route}" if route != "/" else f"{base}/"
 
         lastmod = SubElement(url, "lastmod")
-        mtime = datetime.fromtimestamp(index_file.stat().st_mtime, tz=timezone.utc)
-        lastmod.text = mtime.strftime("%Y-%m-%d")
+        lastmod.text = resolve_lastmod(index_file, root)
 
         changefreq, priority = infer_changefreq_priority(route)
         SubElement(url, "changefreq").text = changefreq
