@@ -11,33 +11,50 @@ const CANADA_CHART_SPECS = {
     gas_alberta_vs_regulated: {
         containerId: 'ggx-chart-gas-alberta-vs-regulated',
         seriesOrder: ['Gas Alberta', 'WTD AVG', 'DERS', 'AUI'],
-        colors: ['#6683a3', '#79c3a2', 'red', 'orange'],
+        colors: ['#3dd6f5', '#5dd62c', '#ff6b6b', '#f7b84a'],
         lineIndexes: [2, 3],
     },
     retailer_rates: {
         containerId: 'ggx-chart-retailer-rates',
         seriesOrder: ['Monthly Index', 'Forecast', 'ATCO 5 Year', 'ENCOR 5 Year', 'ENMAX 5 Year'],
-        colors: ['red', '#6683a3', 'orange', '#79c3a2', 'purple'],
+        colors: ['#ff6b6b', '#3dd6f5', '#f7b84a', '#5dd62c', '#a88bff'],
         lineIndexes: [2, 3, 4],
     },
     aeco_ng_current: {
         containerId: 'ggx-chart-aeco-ng-current',
         seriesOrder: ['Daily Index', 'Monthly Index'],
-        colors: ['#6683a3', 'red'],
+        colors: ['#3dd6f5', '#ff6b6b'],
         lineIndexes: [1],
     },
     aeco_ng_prior: {
         containerId: 'ggx-chart-aeco-ng-prior',
         seriesOrder: ['Daily Index', 'Monthly Index'],
-        colors: ['#6683a3', 'red'],
+        colors: ['#3dd6f5', '#ff6b6b'],
         lineIndexes: [1],
     },
     aeco_c_futures: {
         containerId: 'ggx-chart-aeco-c-futures',
         seriesOrder: ['Current', 'One Year Ago', 'One Month Ago'],
-        colors: ['#6683a3', 'orange', 'red'],
+        colors: ['#3dd6f5', '#f7b84a', '#ff6b6b'],
         lineIndexes: [1, 2],
     },
+};
+
+const GASGX_UI_ICONS = {
+    dashboard:
+        '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 9.5h10M7 13h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    chartBars:
+        '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19.5V12.5M12 19.5V8.5M19 19.5V5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4 19.5h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    rates:
+        '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 18.5h14M7.5 18.5v-5.5M12 18.5v-8.5M16.5 18.5v-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M5.5 8.5l3-3 2.5 2.5 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    currentMonth:
+        '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M4 9.5h16M9 3.8v3.4M15 3.8v3.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="14" r="2" fill="currentColor"/></svg>',
+    priorMonth:
+        '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M4 9.5h16M9 3.8v3.4M15 3.8v3.4M14.8 14h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    futures:
+        '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 18.5h15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M6 15.5l3.8-3.8 3 2.9 5.2-5.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 9.5h2.5V12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    table:
+        '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 10h17M9 10v8.5M14.8 10v8.5" stroke="currentColor" stroke-width="1.4"/></svg>',
 };
 
 const CHANNEL_CONFIGS = {
@@ -210,6 +227,10 @@ function escapeHtml(value) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+function renderGasGxUiIcon(iconName) {
+    return `<span class="ggx-ui-icon">${GASGX_UI_ICONS[iconName] || GASGX_UI_ICONS.dashboard}</span>`;
 }
 
 function toLower(value) {
@@ -422,15 +443,15 @@ function renderDataTemplate(config) {
     <main class="ggx-channel-main">
         <section class="ggx-channel-card ggx-mini-card" id="ggx-data-headline">
             <h3>${escapeHtml(config.pageTitle)}</h3>
-            <p class="ggx-mini-caption">${escapeHtml(config.pageSubtitle)}</p>
+            <p class="ggx-mini-caption">GasGx Canada dashboard one-page terminal with charts and parsed static tables.</p>
         </section>
 
         <section class="ggx-channel-card p-4 mt-4">
             <div class="ggx-section-head">
-                <h2><i class="fa-solid fa-leaf"></i> Canada Gas Dashboard</h2>
+                <h2>${renderGasGxUiIcon('dashboard')}<span>Canada Gas Dashboard</span></h2>
                 <span class="ggx-chip active">Integrated View</span>
             </div>
-            <p class="ggx-mini-caption">Combined from the Canada dashboard and News Data terminal for one-page analysis.</p>
+            <p class="ggx-mini-caption">Sourced from canada_scrape_runs, canada_chart_points and canada_chart_tables only.</p>
 
             <div class="ggx-canada-run-grid mt-3">
                 <article class="ggx-canada-run-card">
@@ -448,25 +469,25 @@ function renderDataTemplate(config) {
         <section class="ggx-canada-chart-grid mt-4">
             <article class="ggx-channel-card p-4">
                 <div class="ggx-section-head">
-                    <h2><i class="fa-solid fa-chart-column"></i> Gas Alberta vs Regulated</h2>
+                    <h2>${renderGasGxUiIcon('chartBars')}<span>Gas Alberta vs Regulated</span></h2>
                 </div>
                 <div id="ggx-chart-gas-alberta-vs-regulated" class="ggx-canada-chart"></div>
             </article>
             <article class="ggx-channel-card p-4">
                 <div class="ggx-section-head">
-                    <h2><i class="fa-solid fa-store"></i> Retailer Rates</h2>
+                    <h2>${renderGasGxUiIcon('rates')}<span>Retailer Rates</span></h2>
                 </div>
                 <div id="ggx-chart-retailer-rates" class="ggx-canada-chart"></div>
             </article>
             <article class="ggx-channel-card p-4">
                 <div class="ggx-section-head">
-                    <h2><i class="fa-solid fa-calendar-day"></i> AECO Current Month</h2>
+                    <h2>${renderGasGxUiIcon('currentMonth')}<span>AECO Current Month</span></h2>
                 </div>
                 <div id="ggx-chart-aeco-ng-current" class="ggx-canada-chart"></div>
             </article>
             <article class="ggx-channel-card p-4">
                 <div class="ggx-section-head">
-                    <h2><i class="fa-solid fa-calendar-minus"></i> AECO Prior Month</h2>
+                    <h2>${renderGasGxUiIcon('priorMonth')}<span>AECO Prior Month</span></h2>
                 </div>
                 <div id="ggx-chart-aeco-ng-prior" class="ggx-canada-chart"></div>
             </article>
@@ -475,7 +496,7 @@ function renderDataTemplate(config) {
         <section class="mt-4">
             <article class="ggx-channel-card p-4">
                 <div class="ggx-section-head">
-                    <h2><i class="fa-solid fa-chart-line"></i> AECO C Futures Pricing</h2>
+                    <h2>${renderGasGxUiIcon('futures')}<span>AECO C Futures Pricing</span></h2>
                 </div>
                 <div id="ggx-chart-aeco-c-futures" class="ggx-canada-chart"></div>
             </article>
@@ -484,42 +505,10 @@ function renderDataTemplate(config) {
         <section class="mt-4">
             <article class="ggx-channel-card p-4">
                 <div class="ggx-section-head">
-                    <h2><i class="fa-solid fa-table"></i> Canada Static Tables (Parsed)</h2>
+                    <h2>${renderGasGxUiIcon('table')}<span>Canada Static Tables (Parsed)</span></h2>
                 </div>
                 <div id="ggx-canada-static-tables" class="ggx-canada-static-grid"></div>
             </article>
-        </section>
-
-        <section class="ggx-data-grid mt-4">
-            <div class="ggx-channel-card p-4">
-                <div class="ggx-section-head">
-                    <h2><i class="fa-solid fa-wave-square"></i> Homepage Metrics</h2>
-                </div>
-                <div id="ggx-metric-grid" class="ggx-metric-grid"></div>
-            </div>
-
-            <div class="ggx-channel-card p-4">
-                <div class="ggx-section-head">
-                    <h2><i class="fa-solid fa-layer-group"></i> Fuel Mix Snapshot</h2>
-                </div>
-                <ul id="ggx-fuel-mix" class="ggx-signal-list"></ul>
-            </div>
-        </section>
-
-        <section class="ggx-data-grid mt-4">
-            <div class="ggx-channel-card p-4">
-                <div class="ggx-section-head">
-                    <h2><i class="fa-solid fa-server"></i> Equipment Data</h2>
-                </div>
-                <div id="ggx-equipment-table" class="ggx-table-wrap"></div>
-            </div>
-
-            <div class="ggx-channel-card p-4">
-                <div class="ggx-section-head">
-                    <h2><i class="fa-solid fa-file-lines"></i> Data Notes</h2>
-                </div>
-                <div id="ggx-data-notes" class="ggx-feed-stack"></div>
-            </div>
         </section>
     </main>
     <button id="ggx-to-top" class="ggx-to-top" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" aria-label="Back to top">
@@ -608,15 +597,13 @@ export function createChannelApp(channelKey) {
             this.applyTheme();
             await this.initAuth();
             this.renderNav();
-            this.loadLiveData();
+            if (config.layout !== 'data') this.loadLiveData();
+            else this.hideLiveDataStrip();
 
-            const loadTasks = [
-                this.loadArticles(),
-                this.loadHomepageMetrics(),
-                this.loadEquipmentData(),
-                this.loadSavedNews(),
-            ];
-            if (config.layout === 'data') loadTasks.push(this.loadCanadaDashboardData());
+            const loadTasks =
+                config.layout === 'data'
+                    ? [this.loadCanadaDashboardData()]
+                    : [this.loadArticles(), this.loadHomepageMetrics(), this.loadEquipmentData(), this.loadSavedNews()];
             await Promise.allSettled(loadTasks);
 
             if (config.layout === 'data') this.renderDataLayout();
@@ -686,6 +673,19 @@ export function createChannelApp(channelKey) {
                 activeTitle: config.navTitle,
                 activePath: window.location.pathname,
             });
+        },
+
+        hideLiveDataStrip() {
+            const liveData = document.getElementById('ggx-live-data-container');
+            if (!liveData) return;
+
+            const stripRow = liveData.parentElement?.parentElement;
+            const stripShell = stripRow?.parentElement;
+
+            if (stripRow) stripRow.remove();
+            if (stripShell) {
+                stripShell.classList.remove('border-b', 'border-white/5', 'shadow-sm');
+            }
         },
 
         toggleMobileMenu() {
@@ -1051,10 +1051,6 @@ export function createChannelApp(channelKey) {
         },
 
         renderDataLayout() {
-            this.renderDataMetrics();
-            this.renderFuelMix();
-            this.renderEquipmentTable();
-            this.renderDataNotes();
             this.renderCanadaDashboard().catch((error) => {
                 console.error('Canada dashboard render failed:', error);
                 this.setCanadaStatus('error', 'Failed to render Canada dashboard charts.');
@@ -1255,31 +1251,64 @@ export function createChannelApp(channelKey) {
 
             const seriesConfig = {};
             spec.lineIndexes.forEach((index) => {
-                seriesConfig[index] = { type: 'line' };
+                seriesConfig[index] = {
+                    type: 'line',
+                    lineWidth: 2.3,
+                    pointSize: 4.2,
+                    pointShape: 'circle',
+                    visibleInLegend: true,
+                };
             });
+
+            const containerWidth = container.clientWidth || container.offsetWidth || 0;
+            const isWide = containerWidth >= 1280;
+            const isMedium = containerWidth >= 820;
+            const chartAreaLeft = isWide ? 56 : isMedium ? 58 : 62;
+            const chartAreaWidth = isWide ? '90%' : isMedium ? '88%' : '80%';
+            const chartAreaHeight = isMedium ? '70%' : '66%';
 
             const options = {
                 width: '100%',
                 height: 420,
                 backgroundColor: 'transparent',
-                chartArea: { width: '80%', height: '72%' },
-                legend: { position: 'top', textStyle: { color: '#d1d5db', fontSize: 11 } },
-                bar: { groupWidth: 24 },
+                chartArea: {
+                    width: chartAreaWidth,
+                    height: chartAreaHeight,
+                    left: chartAreaLeft,
+                    top: 62,
+                    backgroundColor: { fill: 'rgba(255,255,255,0.02)', stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 },
+                },
+                legend: {
+                    position: 'top',
+                    alignment: 'start',
+                    maxLines: 2,
+                    textStyle: { color: '#d8dee9', fontSize: 11, bold: true },
+                },
+                bar: { groupWidth: '66%' },
+                focusTarget: 'category',
+                tooltip: {
+                    textStyle: { color: '#0e141c', fontSize: 11 },
+                    showColorCode: true,
+                },
+                crosshair: { trigger: 'focus', orientation: 'vertical', color: '#5dd62c' },
                 vAxis: {
                     title: 'CDN$ / GJ',
-                    titleTextStyle: { color: '#e5e7eb', bold: true, fontSize: 13 },
-                    textStyle: { color: '#9ca3af', fontSize: 11 },
-                    gridlines: { color: '#2d2d2d' },
+                    titleTextStyle: { color: '#e6edf5', bold: true, fontSize: 12 },
+                    textStyle: { color: '#a8b3c2', fontSize: 11 },
+                    gridlines: { color: 'rgba(255,255,255,0.14)' },
+                    minorGridlines: { color: 'rgba(255,255,255,0.06)' },
                     format: 'currency',
                 },
                 hAxis: {
                     slantedText: true,
-                    slantedTextAngle: 90,
-                    textStyle: { color: '#9ca3af', fontSize: 10 },
+                    slantedTextAngle: 65,
+                    textStyle: { color: '#a8b3c2', fontSize: 10 },
+                    baselineColor: 'rgba(255,255,255,0.14)',
                 },
                 colors: spec.colors,
                 seriesType: 'bars',
                 series: seriesConfig,
+                animation: { startup: true, duration: 480, easing: 'out' },
             };
 
             const chart = new window.google.visualization.ComboChart(container);
@@ -1344,10 +1373,10 @@ export function createChannelApp(channelKey) {
                     }
 
                     const headerHtml = headers
-                        .map((header) => `<th class="px-3 py-2 text-left text-[11px] uppercase tracking-wider text-gray-300 border-b border-white/10">${escapeHtml(header)}</th>`)
+                        .map((header) => `<th class="ggx-canada-head-cell">${escapeHtml(header)}</th>`)
                         .join('');
                     const bodyHtml = rows
-                        .map((row) => {
+                        .map((row, rowIndex) => {
                             const isSection = row && typeof row === 'object' && !Array.isArray(row) && row._row_type === 'section';
                             const cellHtml = headers
                                 .map((header, index) => {
@@ -1357,7 +1386,8 @@ export function createChannelApp(channelKey) {
                                     return `<td class="${cellClass}">${escapeHtml(value)}</td>`;
                                 })
                                 .join('');
-                            return `<tr>${cellHtml}</tr>`;
+                            const rowClass = isSection ? 'ggx-canada-row is-section' : `ggx-canada-row ${rowIndex % 2 === 0 ? 'is-even' : 'is-odd'}`;
+                            return `<tr class="${rowClass}">${cellHtml}</tr>`;
                         })
                         .join('');
 
