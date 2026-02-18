@@ -303,7 +303,7 @@ function cleanSummary(value) {
 function getArticleUrl(item) {
     if (!item || typeof item !== 'object') return '#';
 
-    const articleId = item.api_id || item.id;
+    const articleId = item.app_id || item.api_id || item.id;
     if (articleId) return `https://www.gasgx.com/news/article/${articleId}`;
 
     const link = String(item.link || '').trim();
@@ -313,7 +313,7 @@ function getArticleUrl(item) {
 function getImageUrl(item) {
     if (!item || typeof item !== 'object') return DEFAULT_COVER;
 
-    const articleId = item.api_id || item.id;
+    const articleId = item.app_id || item.api_id || item.id;
     const coverImage = String(item.cover_image || '').trim();
     if (!coverImage || !articleId) return DEFAULT_COVER;
 
@@ -324,11 +324,61 @@ function getImageUrl(item) {
 
 function hasRenderableCover(item) {
     if (!item || typeof item !== 'object') return false;
-    const articleId = item.api_id || item.id;
+    const articleId = item.app_id || item.api_id || item.id;
     const coverImage = String(item.cover_image || '').trim();
     if (!coverImage) return false;
     if (/^https?:\/\//i.test(coverImage)) return true;
     return Boolean(articleId);
+}
+
+function normalizeArticleText(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, ' ');
+}
+
+function normalizeCoverKey(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) {
+        try {
+            const parsed = new URL(raw);
+            return `${parsed.hostname}${parsed.pathname}`.toLowerCase();
+        } catch {
+            return raw.toLowerCase();
+        }
+    }
+    return raw.replace(/^\.?\/*(images\/)?/i, '').toLowerCase();
+}
+
+function getArticleDedupKey(item) {
+    if (!item || typeof item !== 'object') return '';
+
+    const title = normalizeArticleText(item.main_title);
+    const cover = normalizeCoverKey(item.cover_image);
+    const link = normalizeArticleText(item.link);
+    const summary = normalizeArticleText(item.subheading);
+
+    if (title && cover) return `tc:${title}|${cover}`;
+    if (title && link) return `tl:${title}|${link}`;
+    if (title && summary) return `ts:${title}|${summary.slice(0, 120)}`;
+    if (title) return `t:${title}`;
+    return String(item.app_id || item.api_id || item.id || '');
+}
+
+function dedupeArticles(items = []) {
+    if (!Array.isArray(items)) return [];
+    const seen = new Set();
+    const rows = [];
+
+    items.forEach((item) => {
+        const key = getArticleDedupKey(item);
+        if (key && seen.has(key)) return;
+        if (key) seen.add(key);
+        rows.push(item);
+    });
+    return rows;
 }
 
 function collectArticlesWithCover(primary = [], fallback = [], minCount = 0) {
@@ -338,7 +388,7 @@ function collectArticlesWithCover(primary = [], fallback = [], minCount = 0) {
     const pushRows = (rows) => {
         rows.forEach((row) => {
             if (!hasRenderableCover(row)) return;
-            const key = String(row.api_id || row.id || `${row.main_title || ''}-${row.time || ''}`);
+            const key = getArticleDedupKey(row) || String(row.app_id || row.api_id || row.id || `${row.main_title || ''}-${row.time || ''}`);
             if (seen.has(key)) return;
             seen.add(key);
             result.push(row);
@@ -399,7 +449,7 @@ function getAuthorAvatarUrl(item) {
     const fallback = '/news/author_avatar/GasGx-Researcher.png';
     if (!item || typeof item !== 'object') return fallback;
 
-    const articleId = item.api_id || item.id;
+    const articleId = item.app_id || item.api_id || item.id;
     const authorAvatar = String(item.author_avatar || '').trim();
     if (authorAvatar) {
         if (/^https?:\/\//i.test(authorAvatar)) return authorAvatar;
@@ -453,26 +503,46 @@ function matchArticleByRule(article, channelKey) {
     return score >= minScore;
 }
 
+function scoreArticleByRule(article, channelKey) {
+    const rule = CHANNEL_RULES[channelKey];
+    if (!rule) return 0;
+
+    const type = toLower(article.type);
+    const tag = toLower(article.tag);
+    const secondaryTag = toLower(article.secondary_tag);
+    const topics = toLower(article.topics);
+    const textBlock = [article.main_title, article.subheading, article.keywords, article.publisher].map((v) => String(v || '')).join(' ');
+
+    let score = 0;
+    if (containsAny(type, rule.types)) score += 6;
+    if (containsAny(tag, rule.tags)) score += 3;
+    if (containsAny(secondaryTag, rule.tags)) score += 2;
+    if (containsAny(topics, rule.keywords)) score += 3;
+    if (containsAny(textBlock, rule.keywords)) score += 2;
+    if (channelKey === 'events' && containsAny(textBlock, ['summit', 'expo', 'forum', 'conference', 'webinar'])) score += 2;
+    return score;
+}
+
 function filterArticlesByChannel(articles, channelKey) {
     if (!Array.isArray(articles)) return [];
 
-    const rule = CHANNEL_RULES[channelKey];
-    if (rule && Array.isArray(rule.types) && rule.types.length) {
-        const typeMatched = articles.filter((article) => containsAny(article.type, rule.types));
-        if (typeMatched.length >= 8) return typeMatched;
-        if (channelKey === 'events' && typeMatched.length >= 3) return typeMatched;
-    }
-
-    const matched = articles.filter((article) => matchArticleByRule(article, channelKey));
+    const source = dedupeArticles(articles);
+    const matched = source.filter((article) => matchArticleByRule(article, channelKey));
     const minMatched = channelKey === 'data' ? 6 : 10;
     if (matched.length >= minMatched) return matched;
 
-    if (channelKey === 'events') {
-        const byType = articles.filter((article) => toLower(article.type).includes('event'));
-        if (byType.length >= 3) return byType;
-    }
+    const scored = source
+        .map((article) => ({
+            article,
+            score: scoreArticleByRule(article, channelKey),
+            ts: new Date(article.time || 0).getTime() || 0,
+        }))
+        .sort((a, b) => (b.score !== a.score ? b.score - a.score : b.ts - a.ts));
 
-    return articles.slice(0, 32);
+    const positive = scored.filter((item) => item.score > 0).map((item) => item.article);
+    if (positive.length >= 6) return positive.slice(0, 48);
+
+    return source.slice(0, 48);
 }
 
 function renderEditorialTemplate(config) {
@@ -564,11 +634,9 @@ function renderGasEnergyTemplate(config) {
     </section>
 
     <!-- Pagination / Load More -->
-    <section class="pt-8 text-center">
-        <button type="button" class="inline-flex items-center justify-center rounded-xl border border-[#00E676]/65 px-6 py-3 text-sm font-semibold text-[#00E676] transition duration-300 hover:bg-[#00E676] hover:text-[#05210f] hover:shadow-[0_0_22px_rgba(0,230,118,0.26)]">
-            Load More Articles
-        </button>
-    </section>
+    <div class="ggx-load-more-wrap">
+        <button id="ggx-load-more-btn" class="ggx-load-more-btn" onclick="window.GGXChannelApp && window.GGXChannelApp.loadMore()">Load More Articles</button>
+    </div>
 </main>`;
 }
 
@@ -631,11 +699,9 @@ function renderGeneratorsTemplate(config) {
             </section>
 
             <!-- Pagination / Load More -->
-            <section class="pt-2 text-center">
-                <button type="button" class="inline-flex items-center justify-center rounded-xl border border-[#00E676]/65 px-6 py-3 text-sm font-semibold text-[#00E676] transition duration-300 hover:bg-[#00E676] hover:text-[#05210f] hover:shadow-[0_0_22px_rgba(0,230,118,0.26)]">
-                    Load More Articles
-                </button>
-            </section>
+            <div class="ggx-load-more-wrap">
+                <button id="ggx-load-more-btn" class="ggx-load-more-btn" onclick="window.GGXChannelApp && window.GGXChannelApp.loadMore()">Load More Articles</button>
+            </div>
         </div>
 
         <!-- Trending Tech Specs Sidebar (Desktop) -->
@@ -721,6 +787,10 @@ function renderBtcMiningTemplate(config) {
             <div class="ggx-empty col-span-full">Loading mining articles...</div>
         </div>
     </section>
+
+    <div class="ggx-load-more-wrap mt-5">
+        <button id="ggx-load-more-btn" class="ggx-load-more-btn" onclick="window.GGXChannelApp && window.GGXChannelApp.loadMore()">Load More Articles</button>
+    </div>
 
     <!-- Newsletter / Alert Signup -->
     <section class="mt-8 rounded-2xl border border-gray-700/90 bg-gray-800/70 p-6 sm:p-8">
@@ -821,6 +891,33 @@ function renderDataTemplate(config) {
                 <div id="ggx-canada-static-tables" class="ggx-canada-static-grid"></div>
             </article>
         </section>
+
+        <section class="mt-4">
+            <article class="ggx-channel-card p-4">
+                <div class="ggx-section-head">
+                    <h2><i class="fa-solid fa-signal"></i> Homepage Metrics</h2>
+                </div>
+                <div id="ggx-metric-grid" class="ggx-metric-grid"></div>
+            </article>
+        </section>
+
+        <section class="mt-4">
+            <article class="ggx-channel-card p-4">
+                <div class="ggx-section-head">
+                    <h2><i class="fa-solid fa-gears"></i> Equipment Baseline</h2>
+                </div>
+                <div id="ggx-equipment-table" class="ggx-table-wrap"></div>
+            </article>
+        </section>
+
+        <section class="mt-4">
+            <div class="ggx-section-head">
+                <h2><i class="fa-solid fa-book-open"></i> Data Notes</h2>
+            </div>
+            <div id="ggx-data-notes" class="ggx-events-grid">
+                <div class="ggx-empty">Loading data notes...</div>
+            </div>
+        </section>
     </main>
     <button id="ggx-to-top" class="ggx-to-top" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" aria-label="Back to top">
         <i class="fa-solid fa-arrow-up"></i>
@@ -904,8 +1001,8 @@ export function createChannelApp(channelKey) {
                 message: 'Fetching Canada dashboard data...',
             },
             canadaResizeBound: false,
-            visibleCount: config.layout === 'events' ? 6 : 7,
-            pageSize: config.layout === 'events' ? 6 : 6,
+            visibleCount: config.layout === 'editorial' ? 7 : 6,
+            pageSize: 6,
             scrollBound: false,
             activeTag: '',
         },
@@ -919,7 +1016,7 @@ export function createChannelApp(channelKey) {
 
             let loadTasks = [];
             if (config.layout === 'data') {
-                loadTasks = [this.loadCanadaDashboardData()];
+                loadTasks = [this.loadCanadaDashboardData(), this.loadArticles(), this.loadHomepageMetrics(), this.loadEquipmentData()];
             } else {
                 loadTasks = [this.loadArticles(), this.loadHomepageMetrics(), this.loadEquipmentData(), this.loadSavedNews()];
             }
@@ -1065,7 +1162,7 @@ export function createChannelApp(channelKey) {
 
         async loadArticles() {
             try {
-                const maxRows = config.layout === 'events' ? 599 : 199;
+                const maxRows = config.layout === 'events' ? 999 : 799;
                 const { data } = await _supabase.from('articles').select('*').order('time', { ascending: false }).range(0, maxRows);
                 this.state.allArticles = Array.isArray(data) ? data : [];
                 this.state.filteredArticles = filterArticlesByChannel(this.state.allArticles, channelKey);
@@ -1205,6 +1302,16 @@ export function createChannelApp(channelKey) {
             this.state.visibleCount += this.state.pageSize;
             if (config.layout === 'events') this.renderEventsCards();
             else if (config.layout === 'editorial') this.renderEditorialFeed();
+            else if (config.layout === 'gas-energy') this.renderGasEnergyLayout();
+            else if (config.layout === 'generators') this.renderGeneratorsLayout();
+            else if (config.layout === 'btc-mining') this.renderBtcMiningLayout();
+        },
+
+        toggleLoadMoreButton(visibleRows, totalRows) {
+            const btn = document.getElementById('ggx-load-more-btn');
+            if (!btn) return;
+            if (visibleRows >= totalRows) btn.style.display = 'none';
+            else btn.style.display = 'inline-flex';
         },
 
         renderEditorialLayout() {
@@ -1223,6 +1330,7 @@ export function createChannelApp(channelKey) {
             if (!rows.length) {
                 featuredContent.innerHTML = '<div class="ggx-empty">No featured article with cover image.</div>';
                 grid.innerHTML = '<div class="ggx-empty col-span-full">No article cards with cover image.</div>';
+                this.toggleLoadMoreButton(0, 0);
                 return;
             }
 
@@ -1253,9 +1361,11 @@ export function createChannelApp(channelKey) {
                 </footer>
             `;
 
-            const feedRows = rows.slice(1, 7);
+            const sourceRows = rows.slice(1);
+            const feedRows = sourceRows.slice(0, this.state.visibleCount);
             if (!feedRows.length) {
                 grid.innerHTML = '<div class="ggx-empty col-span-full">No additional article cards with cover image.</div>';
+                this.toggleLoadMoreButton(0, 0);
                 return;
             }
 
@@ -1284,6 +1394,8 @@ export function createChannelApp(channelKey) {
                     `;
                 })
                 .join('');
+
+            this.toggleLoadMoreButton(feedRows.length, sourceRows.length);
         },
 
         renderGeneratorsLayout() {
@@ -1297,6 +1409,7 @@ export function createChannelApp(channelKey) {
             if (!rows.length) {
                 featuredContent.innerHTML = '<div class="ggx-empty">No hardware spotlight with cover image.</div>';
                 grid.innerHTML = '<div class="ggx-empty col-span-full">No equipment cards with cover image.</div>';
+                this.toggleLoadMoreButton(0, 0);
             } else {
                 const featured = rows[0];
                 const featuredUrl = getArticleUrl(featured);
@@ -1324,9 +1437,11 @@ export function createChannelApp(channelKey) {
                     </footer>
                 `;
 
-                const feedRows = rows.slice(1, 7);
+                const sourceRows = rows.slice(1);
+                const feedRows = sourceRows.slice(0, this.state.visibleCount);
                 if (!feedRows.length) {
                     grid.innerHTML = '<div class="ggx-empty col-span-full">No equipment cards with cover image.</div>';
+                    this.toggleLoadMoreButton(0, 0);
                 } else {
                     grid.innerHTML = feedRows
                         .map((article) => {
@@ -1360,6 +1475,8 @@ export function createChannelApp(channelKey) {
                             `;
                         })
                         .join('');
+
+                    this.toggleLoadMoreButton(feedRows.length, sourceRows.length);
                 }
             }
 
@@ -1419,6 +1536,7 @@ export function createChannelApp(channelKey) {
             if (!rows.length) {
                 featuredContent.innerHTML = '<div class="ggx-empty">No featured mining article with cover image.</div>';
                 grid.innerHTML = '<div class="ggx-empty col-span-full">No mining cards with cover image.</div>';
+                this.toggleLoadMoreButton(0, 0);
                 return;
             }
 
@@ -1447,9 +1565,11 @@ export function createChannelApp(channelKey) {
                 </footer>
             `;
 
-            const feedRows = rows.slice(1, 7);
+            const sourceRows = rows.slice(1);
+            const feedRows = sourceRows.slice(0, this.state.visibleCount);
             if (!feedRows.length) {
                 grid.innerHTML = '<div class="ggx-empty col-span-full">No mining cards with cover image.</div>';
+                this.toggleLoadMoreButton(0, 0);
                 return;
             }
 
@@ -1478,6 +1598,8 @@ export function createChannelApp(channelKey) {
                     `;
                 })
                 .join('');
+
+            this.toggleLoadMoreButton(feedRows.length, sourceRows.length);
         },
 
         renderEditorialHero() {
@@ -1640,6 +1762,9 @@ export function createChannelApp(channelKey) {
         },
 
         renderDataLayout() {
+            this.renderDataMetrics();
+            this.renderEquipmentTable();
+            this.renderDataNotes();
             this.renderCanadaDashboard().catch((error) => {
                 console.error('Canada dashboard render failed:', error);
                 this.setCanadaStatus('error', 'Failed to render Canada dashboard charts.');
