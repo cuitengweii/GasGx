@@ -13,6 +13,9 @@ const DB_NAME = 'GasGxFlashDB';
 const DB_VERSION = 1;
 const FLASH_FETCH_LIMIT = 120;
 const FLASH_POLL_INTERVAL_MS = 600000;
+const HERO_IMAGE_ROTATE_INTERVAL_MS = 15 * 60 * 1000;
+const HERO_REFRESH_INTERVAL_MS = 60 * 1000;
+const HERO_FETCH_LIMIT = 60;
 
 const MAIN_TEMPLATE = `
 <section class="ggx-main-module">
@@ -204,12 +207,16 @@ export function createNewsHomeApp() {
             flashPollTimer: null,
             flashVisibilityHandler: null,
             lastFlashAutoFetchAt: 0,
+            heroRefreshTimer: null,
+            heroVisibilityHandler: null,
+            lastHeroRefreshAt: 0,
         },
 
         async init() {
             await this.initAuth();
             this.renderNav();
-            this.loadHero();
+            await this.loadHero();
+            this.startHeroAutoRefresh();
             this.loadMarketPulse();
             this.loadLiveData();
             this.loadFeed('latest', true);
@@ -244,6 +251,22 @@ export function createNewsHomeApp() {
                 if (btn) btn.classList.toggle('opacity-0', window.scrollY <= 300);
                 if (btn) btn.classList.toggle('pointer-events-none', window.scrollY <= 300);
             });
+        },
+
+        startHeroAutoRefresh() {
+            this.state.lastHeroRefreshAt = Date.now();
+            if (this.state.heroRefreshTimer) clearInterval(this.state.heroRefreshTimer);
+            this.state.heroRefreshTimer = setInterval(() => {
+                if (!document.hidden && this.shouldRunHeroAutoFetch()) this.loadHero(true);
+            }, HERO_REFRESH_INTERVAL_MS);
+
+            if (this.state.heroVisibilityHandler) {
+                document.removeEventListener('visibilitychange', this.state.heroVisibilityHandler);
+            }
+            this.state.heroVisibilityHandler = () => {
+                if (!document.hidden && this.shouldRunHeroAutoFetch()) this.loadHero(true);
+            };
+            document.addEventListener('visibilitychange', this.state.heroVisibilityHandler);
         },
 
         async ensureHomepageMetrics() {
@@ -384,6 +407,10 @@ export function createNewsHomeApp() {
 
         shouldRunFlashAutoFetch() {
             return Date.now() - this.state.lastFlashAutoFetchAt >= FLASH_POLL_INTERVAL_MS;
+        },
+
+        shouldRunHeroAutoFetch() {
+            return Date.now() - this.state.lastHeroRefreshAt >= HERO_REFRESH_INTERVAL_MS;
         },
 
         async fetchAndMergeFlash(isAuto = false) {
@@ -856,12 +883,41 @@ export function createNewsHomeApp() {
             return articleId ? `https://www.gasgx.com/news/article/${articleId}` : '#';
         },
 
-        async loadHero() {
+        getArticleIdentity(item) {
+            if (!item || typeof item !== 'object') return '';
+            return String(item.app_id || item.api_id || item.id || '');
+        },
+
+        getHeroRotationSeed() {
+            return Math.floor(Date.now() / HERO_IMAGE_ROTATE_INTERVAL_MS);
+        },
+
+        pickNextBySeed(items, seed, usedIds = new Set()) {
+            if (!Array.isArray(items) || items.length === 0) return null;
+            const normalizedUsed = new Set(Array.from(usedIds).map((id) => String(id)));
+            const start = Math.abs(seed) % items.length;
+            for (let offset = 0; offset < items.length; offset += 1) {
+                const candidate = items[(start + offset) % items.length];
+                const candidateId = this.getArticleIdentity(candidate);
+                if (!candidateId || !normalizedUsed.has(candidateId)) return candidate;
+            }
+            return null;
+        },
+
+        async loadHero(isAuto = false) {
             const container = document.getElementById('ggx-hero-grid-container');
             if (!container) return;
+            if (isAuto) this.state.lastHeroRefreshAt = Date.now();
 
             try {
-                const { data: articles } = await _supabase.from('articles').select('*').in('homepage_mark', [1, 2, 3]).order('time', { ascending: false });
+                const { data: articles, error: articlesError } = await _supabase
+                    .from('articles')
+                    .select('*')
+                    .not('time', 'is', null)
+                    .order('time', { ascending: false })
+                    .limit(HERO_FETCH_LIMIT);
+                if (articlesError) throw articlesError;
+
                 const metrics = await this.ensureHomepageMetrics();
                 const spark =
                     metrics.find((item) => String(item.id || '').toLowerCase() === 'spark_spread') ||
@@ -885,9 +941,23 @@ export function createNewsHomeApp() {
                     return;
                 }
 
-                const hero1 = articles.find((d) => d.homepage_mark === 1) || articles[0];
-                const hero2 = articles.find((d) => d.homepage_mark === 2);
-                const hero3 = articles.find((d) => d.homepage_mark === 3);
+                const imageCandidates = articles.filter((item) => this.hasRenderableCover(item));
+                const rotationSeed = this.getHeroRotationSeed();
+                const hero1 = this.pickNextBySeed(imageCandidates, rotationSeed) || articles[0];
+                const usedHeroIds = new Set();
+                const hero1Id = this.getArticleIdentity(hero1);
+                if (hero1Id) usedHeroIds.add(hero1Id);
+
+                const hero2 =
+                    this.pickNextBySeed(imageCandidates, rotationSeed + 1, usedHeroIds) ||
+                    this.pickNextBySeed(articles, rotationSeed + 1, usedHeroIds);
+                const hero2Id = this.getArticleIdentity(hero2);
+                if (hero2Id) usedHeroIds.add(hero2Id);
+
+                const textCandidates = articles.filter((item) => !this.hasRenderableCover(item));
+                const hero3 =
+                    this.pickNextBySeed(textCandidates, rotationSeed, usedHeroIds) ||
+                    this.pickNextBySeed(articles, rotationSeed + 2, usedHeroIds);
                 const img1 = this.getImageUrl(hero1);
                 const img2 = hero2 ? this.getImageUrl(hero2) : '';
                 const hero1Url = this.getArticleUrl(hero1);
