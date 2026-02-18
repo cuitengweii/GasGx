@@ -1032,14 +1032,16 @@ export function createNewsHomeApp() {
                 const hero3Url = hero3 ? this.getArticleUrl(hero3) : '#';
 
                 container.innerHTML = `
-                    <div class="lg:col-span-2 lg:row-span-2 relative group rounded-xl overflow-hidden cursor-pointer ggx-tech-card border-0" onclick="window.location.href='${hero1Url}'">
-                        <img src="${img1}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent p-8 flex flex-col justify-end">
-                            <div class="flex items-center gap-2 mb-3"><span class="bg-gas-green text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-neon uppercase tracking-wide">${hero1.secondary_tag || hero1.tag}</span><span class="text-gray-300 text-xs">${new Date(hero1.time).toLocaleDateString()}</span></div>
-                            <h2 class="text-3xl md:text-4xl font-bold text-white leading-tight mb-2 font-header">${hero1.main_title}</h2>
+                    <div class="lg:col-span-2 lg:row-span-2 relative group rounded-xl overflow-hidden cursor-pointer ggx-tech-card ggx-hero-card-main border-0" onclick="window.location.href='${hero1Url}'">
+                        <img src="${img1}" class="ggx-hero-image transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100">
+                        <div class="absolute inset-0 p-8 flex flex-col justify-end ggx-hero-overlay ggx-hero-overlay-main">
+                            <div class="ggx-hero-text-shell ggx-hero-text-shell-main">
+                                <div class="ggx-hero-meta mb-3"><span class="bg-gas-green text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-neon uppercase tracking-wide">${hero1.secondary_tag || hero1.tag}</span><span class="text-gray-300 text-xs">${new Date(hero1.time).toLocaleDateString()}</span></div>
+                                <h2 class="font-bold text-white mb-2 font-header ggx-hero-title ggx-hero-title-main">${hero1.main_title}</h2>
+                            </div>
                         </div>
                     </div>
-                    ${hero2 ? `<div class="lg:col-span-1 lg:row-span-1 relative group rounded-xl overflow-hidden cursor-pointer ggx-tech-card border-0" onclick="window.location.href='${hero2Url}'"><img src="${img2}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"><div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent p-6 flex flex-col justify-end"><span class="text-gas-green text-[10px] font-bold uppercase mb-1">${hero2.secondary_tag || hero2.tag}</span><h3 class="text-lg font-bold text-white leading-snug">${hero2.main_title}</h3></div></div>` : '<div class="lg:col-span-1 lg:row-span-1 bg-[#111]"></div>'}
+                    ${hero2 ? `<div class="lg:col-span-1 lg:row-span-1 relative group rounded-xl overflow-hidden cursor-pointer ggx-tech-card ggx-hero-card-compact border-0" onclick="window.location.href='${hero2Url}'"><img src="${img2}" class="ggx-hero-image transition-transform duration-700 group-hover:scale-110"><div class="absolute inset-0 p-6 flex flex-col justify-end ggx-hero-overlay ggx-hero-overlay-compact"><div class="ggx-hero-text-shell ggx-hero-text-shell-compact"><span class="text-gas-green text-[10px] font-bold uppercase mb-1">${hero2.secondary_tag || hero2.tag}</span><h3 class="font-bold text-white ggx-hero-title ggx-hero-title-compact">${hero2.main_title}</h3></div></div></div>` : '<div class="lg:col-span-1 lg:row-span-1 bg-[#111]"></div>'}
                     <div class="lg:col-span-1 lg:row-span-1 bg-[#111] border border-white/5 rounded-xl p-6 flex flex-col justify-between group cursor-pointer relative overflow-hidden">
                         <div class="grid-bg absolute inset-0"></div>
                         <div class="relative z-10"><div class="flex justify-between items-start mb-4"><i class="fa-solid fa-chart-area text-2xl text-gas-green"></i><span class="text-[10px] text-gray-500 font-mono border border-gray-700 px-1 rounded">LIVE</span></div><h3 class="text-lg font-bold text-white mb-1">${sparkData.label}</h3><p class="text-xs text-gray-400">${sparkChange}</p></div>
