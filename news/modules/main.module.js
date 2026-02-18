@@ -210,6 +210,7 @@ export function createNewsHomeApp() {
             heroRefreshTimer: null,
             heroVisibilityHandler: null,
             lastHeroRefreshAt: 0,
+            feedDedupKeys: new Set(),
         },
 
         async init() {
@@ -808,7 +809,7 @@ export function createNewsHomeApp() {
             return Boolean(articleId);
         },
 
-        async fetchFeedRows(category, from, limit) {
+        async fetchFeedRows(category, from, limit, seenDedupKeys = null) {
             if (category !== 'latest') {
                 let query = _supabase.from('articles').select('*').order('time', { ascending: false }).range(from, from + limit - 1);
                 query = query.eq('tag', `${category.charAt(0).toUpperCase()}${category.slice(1)}`);
@@ -826,6 +827,8 @@ export function createNewsHomeApp() {
             let cursor = from;
             let exhausted = false;
             const rows = [];
+            const pickedKeys = new Set();
+            const alreadySeen = seenDedupKeys instanceof Set ? seenDedupKeys : null;
 
             for (let guard = 0; guard < 10 && rows.length < limit; guard += 1) {
                 const { data, error } = await _supabase
@@ -842,7 +845,16 @@ export function createNewsHomeApp() {
                 }
 
                 cursor += chunk.length;
-                rows.push(...chunk.filter((item) => this.hasRenderableCover(item)));
+                const uniques = chunk.filter((item) => {
+                    if (!this.hasRenderableCover(item)) return false;
+                    const dedupKey = this.getArticleDedupKey(item) || `id:${this.getArticleIdentity(item)}`;
+                    if (!dedupKey) return true;
+                    if (pickedKeys.has(dedupKey)) return false;
+                    if (alreadySeen && alreadySeen.has(dedupKey)) return false;
+                    pickedKeys.add(dedupKey);
+                    return true;
+                });
+                rows.push(...uniques);
 
                 if (chunk.length < batchSize) {
                     exhausted = true;
@@ -850,8 +862,16 @@ export function createNewsHomeApp() {
                 }
             }
 
+            const finalRows = rows.slice(0, limit);
+            if (alreadySeen) {
+                finalRows.forEach((item) => {
+                    const dedupKey = this.getArticleDedupKey(item) || `id:${this.getArticleIdentity(item)}`;
+                    if (dedupKey) alreadySeen.add(dedupKey);
+                });
+            }
+
             return {
-                rows: rows.slice(0, limit),
+                rows: finalRows,
                 nextOffset: cursor,
                 exhausted,
             };
@@ -892,14 +912,56 @@ export function createNewsHomeApp() {
             return Math.floor(Date.now() / HERO_IMAGE_ROTATE_INTERVAL_MS);
         },
 
-        pickNextBySeed(items, seed, usedIds = new Set()) {
+        normalizeArticleText(value) {
+            return String(value || '')
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, ' ');
+        },
+
+        normalizeCoverKey(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            if (/^https?:\/\//i.test(raw)) {
+                try {
+                    const parsed = new URL(raw);
+                    return `${parsed.hostname}${parsed.pathname}`.toLowerCase();
+                } catch (e) {
+                    return raw.toLowerCase();
+                }
+            }
+            return raw.replace(/^\.?\/*(images\/)?/i, '').toLowerCase();
+        },
+
+        getArticleDedupKey(item) {
+            if (!item || typeof item !== 'object') return '';
+
+            const title = this.normalizeArticleText(item.main_title);
+            const cover = this.normalizeCoverKey(item.cover_image);
+            const link = this.normalizeArticleText(item.link);
+            const subheading = this.normalizeArticleText(item.subheading);
+
+            if (title && cover) return `tc:${title}::${cover}`;
+            if (title && link) return `tl:${title}::${link}`;
+            if (title && subheading) return `ts:${title}::${subheading}`;
+            if (title) return `t:${title}`;
+
+            const articleId = this.getArticleIdentity(item);
+            return articleId ? `id:${articleId}` : '';
+        },
+
+        pickNextBySeed(items, seed, usedIds = new Set(), usedDedupKeys = new Set()) {
             if (!Array.isArray(items) || items.length === 0) return null;
             const normalizedUsed = new Set(Array.from(usedIds).map((id) => String(id)));
+            const normalizedDedup = new Set(Array.from(usedDedupKeys).map((key) => String(key)));
             const start = Math.abs(seed) % items.length;
             for (let offset = 0; offset < items.length; offset += 1) {
                 const candidate = items[(start + offset) % items.length];
                 const candidateId = this.getArticleIdentity(candidate);
-                if (!candidateId || !normalizedUsed.has(candidateId)) return candidate;
+                const candidateKey = this.getArticleDedupKey(candidate);
+                const idDup = candidateId && normalizedUsed.has(candidateId);
+                const keyDup = candidateKey && normalizedDedup.has(candidateKey);
+                if (!idDup && !keyDup) return candidate;
             }
             return null;
         },
@@ -945,19 +1007,24 @@ export function createNewsHomeApp() {
                 const rotationSeed = this.getHeroRotationSeed();
                 const hero1 = this.pickNextBySeed(imageCandidates, rotationSeed) || articles[0];
                 const usedHeroIds = new Set();
+                const usedHeroDedupKeys = new Set();
                 const hero1Id = this.getArticleIdentity(hero1);
                 if (hero1Id) usedHeroIds.add(hero1Id);
+                const hero1Key = this.getArticleDedupKey(hero1);
+                if (hero1Key) usedHeroDedupKeys.add(hero1Key);
 
                 const hero2 =
-                    this.pickNextBySeed(imageCandidates, rotationSeed + 1, usedHeroIds) ||
-                    this.pickNextBySeed(articles, rotationSeed + 1, usedHeroIds);
+                    this.pickNextBySeed(imageCandidates, rotationSeed + 1, usedHeroIds, usedHeroDedupKeys) ||
+                    this.pickNextBySeed(articles, rotationSeed + 1, usedHeroIds, usedHeroDedupKeys);
                 const hero2Id = this.getArticleIdentity(hero2);
                 if (hero2Id) usedHeroIds.add(hero2Id);
+                const hero2Key = this.getArticleDedupKey(hero2);
+                if (hero2Key) usedHeroDedupKeys.add(hero2Key);
 
                 const textCandidates = articles.filter((item) => !this.hasRenderableCover(item));
                 const hero3 =
-                    this.pickNextBySeed(textCandidates, rotationSeed, usedHeroIds) ||
-                    this.pickNextBySeed(articles, rotationSeed + 2, usedHeroIds);
+                    this.pickNextBySeed(textCandidates, rotationSeed, usedHeroIds, usedHeroDedupKeys) ||
+                    this.pickNextBySeed(articles, rotationSeed + 2, usedHeroIds, usedHeroDedupKeys);
                 const img1 = this.getImageUrl(hero1);
                 const img2 = hero2 ? this.getImageUrl(hero2) : '';
                 const hero1Url = this.getArticleUrl(hero1);
@@ -1046,6 +1113,7 @@ export function createNewsHomeApp() {
             if (isReset) {
                 this.state.currentCategory = category;
                 this.state.currentOffset = 0;
+                this.state.feedDedupKeys = new Set();
                 container.innerHTML = '<div class="text-center text-gray-500 py-10"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading Articles...</div>';
                 container.className = category === 'latest' ? 'space-y-4 min-h-[300px]' : 'grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[300px]';
                 btnContainer.style.display = 'none';
@@ -1059,7 +1127,8 @@ export function createNewsHomeApp() {
             const from = this.state.currentOffset;
 
             try {
-                const { rows, nextOffset, exhausted } = await this.fetchFeedRows(category, from, limit);
+                const dedupTracker = category === 'latest' ? this.state.feedDedupKeys : null;
+                const { rows, nextOffset, exhausted } = await this.fetchFeedRows(category, from, limit, dedupTracker);
 
                 if (isReset && rows.length === 0) {
                     container.innerHTML = '<div class="text-center text-gray-500 py-8">No articles found in this section.</div>';
