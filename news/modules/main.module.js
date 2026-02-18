@@ -772,6 +772,64 @@ export function createNewsHomeApp() {
             return `https://www.gasgx.com/news/article/${articleId}/images/${normalizedCover}`;
         },
 
+        hasRenderableCover(item) {
+            if (!item || typeof item !== 'object') return false;
+            const articleId = item.app_id || item.api_id || item.id;
+            const coverImage = String(item.cover_image || '').trim();
+            if (!coverImage) return false;
+            if (/^https?:\/\//i.test(coverImage)) return true;
+            return Boolean(articleId);
+        },
+
+        async fetchFeedRows(category, from, limit) {
+            if (category !== 'latest') {
+                let query = _supabase.from('articles').select('*').order('time', { ascending: false }).range(from, from + limit - 1);
+                query = query.eq('tag', `${category.charAt(0).toUpperCase()}${category.slice(1)}`);
+                const { data, error } = await query;
+                if (error) throw error;
+                const rows = Array.isArray(data) ? data : [];
+                return {
+                    rows,
+                    nextOffset: from + rows.length,
+                    exhausted: rows.length < limit,
+                };
+            }
+
+            const batchSize = Math.max(limit, 8);
+            let cursor = from;
+            let exhausted = false;
+            const rows = [];
+
+            for (let guard = 0; guard < 10 && rows.length < limit; guard += 1) {
+                const { data, error } = await _supabase
+                    .from('articles')
+                    .select('*')
+                    .order('time', { ascending: false })
+                    .range(cursor, cursor + batchSize - 1);
+                if (error) throw error;
+
+                const chunk = Array.isArray(data) ? data : [];
+                if (!chunk.length) {
+                    exhausted = true;
+                    break;
+                }
+
+                cursor += chunk.length;
+                rows.push(...chunk.filter((item) => this.hasRenderableCover(item)));
+
+                if (chunk.length < batchSize) {
+                    exhausted = true;
+                    break;
+                }
+            }
+
+            return {
+                rows: rows.slice(0, limit),
+                nextOffset: cursor,
+                exhausted,
+            };
+        },
+
         getAuthorAvatarUrl(item) {
             const fallback = '/news/author_avatar/GasGx-Researcher.png';
             if (!item || typeof item !== 'object') return fallback;
@@ -929,20 +987,17 @@ export function createNewsHomeApp() {
 
             const limit = isReset ? 4 : 5;
             const from = this.state.currentOffset;
-            const to = from + limit - 1;
 
             try {
-                let query = _supabase.from('articles').select('*').order('time', { ascending: false }).range(from, to);
-                if (category !== 'latest') query = query.eq('tag', `${category.charAt(0).toUpperCase()}${category.slice(1)}`);
-                const { data } = await query;
+                const { rows, nextOffset, exhausted } = await this.fetchFeedRows(category, from, limit);
 
-                if (isReset && (!data || data.length === 0)) {
+                if (isReset && rows.length === 0) {
                     container.innerHTML = '<div class="text-center text-gray-500 py-8">No articles found in this section.</div>';
                     btnContainer.style.display = 'none';
                     return;
                 }
 
-                const html = data
+                const html = rows
                     .map((art) => {
                         const imgUrl = this.getImageUrl(art);
                         const articleUrl = this.getArticleUrl(art);
@@ -979,11 +1034,11 @@ export function createNewsHomeApp() {
                 if (isReset) container.innerHTML = html;
                 else container.insertAdjacentHTML('beforeend', html);
 
-                this.state.currentOffset += data.length;
+                this.state.currentOffset = nextOffset;
                 this.state.isLoading = false;
                 btnContainer.style.display = 'block';
                 spinner.classList.add('hidden');
-                if (data.length < limit) loadBtn.style.display = 'none';
+                if (exhausted || rows.length < limit) loadBtn.style.display = 'none';
                 else {
                     loadBtn.style.display = 'inline-block';
                     loadBtn.classList.remove('hidden');

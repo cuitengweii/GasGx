@@ -60,33 +60,33 @@ const GASGX_UI_ICONS = {
 const CHANNEL_CONFIGS = {
     'gas-energy': {
         navTitle: 'GAS ENERGY',
-        layout: 'editorial',
-        pageTitle: 'Gas Energy Command',
-        pageSubtitle: 'Pipeline volatility, flare capture and dispatch intelligence for power-dense compute operations.',
+        layout: 'gas-energy',
+        pageTitle: 'Gas Energy Insights',
+        pageSubtitle: 'Latest news, tech updates, and market analysis on natural gas power for crypto mining.',
         feedTitle: 'Energy Dispatch',
         icon: 'fa-fire-flame-curved',
-        accent: '#00d7ff',
-        accentSoft: 'rgba(0, 215, 255, 0.16)',
-        accentGlow: 'rgba(0, 215, 255, 0.35)',
+        accent: '#00E676',
+        accentSoft: 'rgba(0, 230, 118, 0.16)',
+        accentGlow: 'rgba(0, 230, 118, 0.36)',
         chips: ['Pipeline', 'Flare Recovery', 'Merchant Power'],
     },
     generators: {
         navTitle: 'GENERATORS',
-        layout: 'editorial',
-        pageTitle: 'Generator Fleet Monitor',
-        pageSubtitle: 'Track turbine and reciprocating engine narratives with operating context from hardware data.',
+        layout: 'generators',
+        pageTitle: 'Generators & Engines',
+        pageSubtitle: 'Hardware reviews, technical analysis, and equipment news.',
         feedTitle: 'Fleet Logs',
         icon: 'fa-gears',
-        accent: '#ff9f1c',
-        accentSoft: 'rgba(255, 159, 28, 0.16)',
-        accentGlow: 'rgba(255, 159, 28, 0.35)',
+        accent: '#00E676',
+        accentSoft: 'rgba(0, 230, 118, 0.16)',
+        accentGlow: 'rgba(0, 230, 118, 0.36)',
         chips: ['Gas Turbines', 'Recip Engines', 'Maintenance'],
     },
     mining: {
         navTitle: 'MINING',
-        layout: 'editorial',
-        pageTitle: 'Bitcoin Mining War Room',
-        pageSubtitle: 'Hashrate, ASIC cycle and market impact signals focused on energy-backed mining operations.',
+        layout: 'btc-mining',
+        pageTitle: 'BTC Mining Operations',
+        pageSubtitle: 'Economics, Hashrate Analysis, and Farm Management.',
         feedTitle: 'Mining Signals',
         icon: 'fa-bitcoin-sign',
         accent: '#f7931a',
@@ -289,6 +289,12 @@ function formatDateTimeByTimezone(value, timezone, locale = 'zh-CN') {
     }).format(date);
 }
 
+function toIsoDateTime(value) {
+    const date = value ? new Date(value) : new Date();
+    if (Number.isNaN(date.getTime())) return new Date().toISOString();
+    return date.toISOString();
+}
+
 function cleanSummary(value) {
     if (!value) return '';
     return String(value).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
@@ -314,6 +320,79 @@ function getImageUrl(item) {
     if (/^https?:\/\//i.test(coverImage)) return coverImage;
     const normalizedCover = coverImage.replace(/^\.?\/*(images\/)?/i, '');
     return `https://www.gasgx.com/news/article/${articleId}/images/${normalizedCover}`;
+}
+
+function hasRenderableCover(item) {
+    if (!item || typeof item !== 'object') return false;
+    const articleId = item.api_id || item.id;
+    const coverImage = String(item.cover_image || '').trim();
+    if (!coverImage) return false;
+    if (/^https?:\/\//i.test(coverImage)) return true;
+    return Boolean(articleId);
+}
+
+function collectArticlesWithCover(primary = [], fallback = [], minCount = 0) {
+    const result = [];
+    const seen = new Set();
+
+    const pushRows = (rows) => {
+        rows.forEach((row) => {
+            if (!hasRenderableCover(row)) return;
+            const key = String(row.api_id || row.id || `${row.main_title || ''}-${row.time || ''}`);
+            if (seen.has(key)) return;
+            seen.add(key);
+            result.push(row);
+        });
+    };
+
+    if (Array.isArray(primary)) pushRows(primary);
+    if (result.length < minCount && Array.isArray(fallback)) pushRows(fallback);
+    return result;
+}
+
+function estimateReadMinutes(article) {
+    const text = `${article?.main_title || ''} ${cleanSummary(article?.subheading) || ''}`.replace(/\s+/g, '');
+    const minutes = Math.ceil(text.length / 420);
+    return Math.max(3, Math.min(12, minutes || 3));
+}
+
+function articleTag(article, fallback = 'News') {
+    return article?.secondary_tag || article?.tag || article?.type || fallback;
+}
+
+function resolveTagTone(tag) {
+    const value = toLower(tag);
+    if (containsAny(value, ['market', 'spec', 'review', 'maintenance', 'price'])) return 'orange';
+    if (containsAny(value, ['compliance', 'policy', 'permit', 'regulation', 'bc'])) return 'purple';
+    return 'green';
+}
+
+function toneClasses(tone) {
+    if (tone === 'orange') {
+        return {
+            badge: 'border-[#FF6D00]/60 bg-[#FF6D00]/16 text-[#FF9D58]',
+            cardHover: 'hover:border-[#FF6D00]/70 hover:shadow-[0_0_18px_rgba(255,109,0,0.2)]',
+        };
+    }
+    if (tone === 'purple') {
+        return {
+            badge: 'border-purple-300/45 bg-purple-500/12 text-purple-200',
+            cardHover: 'hover:border-purple-300/65 hover:shadow-[0_0_18px_rgba(168,85,247,0.2)]',
+        };
+    }
+    return {
+        badge: 'border-[#00E676]/50 bg-[#00E676]/12 text-[#00E676]',
+        cardHover: 'hover:border-[#00E676]/70 hover:shadow-[0_0_18px_rgba(0,230,118,0.2)]',
+    };
+}
+
+function findMetricByKeywords(metrics = [], keywords = []) {
+    if (!Array.isArray(metrics)) return null;
+    return (
+        metrics.find((item) => containsAny(item.label, keywords)) ||
+        metrics.find((item) => containsAny(item.id, keywords)) ||
+        null
+    );
 }
 
 function getAuthorAvatarUrl(item) {
@@ -437,6 +516,238 @@ function renderEditorialTemplate(config) {
 </section>`;
 }
 
+function renderGasEnergyTemplate(config) {
+    return `
+<main id="gas-energy-news" class="mx-auto w-full max-w-[1700px] px-4 pb-12 pt-6 sm:px-6 lg:px-8">
+    <!-- Channel Header / Breadcrumb -->
+    <section class="mb-6 rounded-2xl border border-white/10 bg-[#121212]/80 p-5 sm:p-6 lg:p-7">
+        <p class="text-xs uppercase tracking-[0.22em] text-gray-400">
+            <a href="/news/" class="transition-colors hover:text-[#00E676]">Home</a>
+            <span class="px-2 text-gray-500">&gt;</span>
+            <span class="text-gray-300">Gas Energy</span>
+        </p>
+        <h1 class="mt-3 text-3xl font-bold text-white sm:text-4xl" style="font-family: 'Oswald', sans-serif;">
+            ${escapeHtml(config.pageTitle)}
+        </h1>
+        <p class="mt-3 max-w-3xl text-sm leading-relaxed text-gray-300 sm:text-base">
+            ${escapeHtml(config.pageSubtitle)}
+        </p>
+    </section>
+
+    <!-- Featured Hero Article -->
+    <article class="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-gray-900/90 transition duration-300 hover:border-[#00E676]/70 hover:shadow-[0_0_24px_rgba(0,230,118,0.2)]">
+        <div class="grid gap-0 lg:grid-cols-12">
+            <figure id="ggx-gas-featured-media" class="relative min-h-[220px] bg-gradient-to-br from-gray-800 to-[#1b1f2a] sm:min-h-[300px] lg:col-span-7 lg:min-h-[420px]">
+                <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(0,230,118,0.18),transparent_48%),radial-gradient(circle_at_80%_70%,rgba(168,85,247,0.16),transparent_46%)]"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-sm uppercase tracking-widest text-gray-400">
+                    Loading featured cover...
+                </div>
+            </figure>
+            <div id="ggx-gas-featured-content" class="flex flex-col justify-between p-5 sm:p-6 lg:col-span-5 lg:p-8">
+                <div class="ggx-empty">Loading featured article...</div>
+            </div>
+        </div>
+    </article>
+
+    <!-- Latest Articles Grid -->
+    <section aria-label="Latest gas energy articles">
+        <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-white sm:text-2xl">Latest Articles</h2>
+            <span class="rounded-full border border-orange-300/40 bg-orange-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-orange-200">
+                Mining + Gas Power
+            </span>
+        </div>
+
+        <div id="ggx-gas-article-grid" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div class="ggx-empty col-span-full">Loading gas energy articles...</div>
+        </div>
+    </section>
+
+    <!-- Pagination / Load More -->
+    <section class="pt-8 text-center">
+        <button type="button" class="inline-flex items-center justify-center rounded-xl border border-[#00E676]/65 px-6 py-3 text-sm font-semibold text-[#00E676] transition duration-300 hover:bg-[#00E676] hover:text-[#05210f] hover:shadow-[0_0_22px_rgba(0,230,118,0.26)]">
+            Load More Articles
+        </button>
+    </section>
+</main>`;
+}
+
+function renderGeneratorsTemplate(config) {
+    return `
+<main id="generators-news" class="mx-auto w-full max-w-[1700px] px-4 pb-12 pt-6 sm:px-6 lg:px-8">
+    <!-- Channel Header & Filter Tabs -->
+    <section class="mb-6 rounded-2xl border border-gray-700/90 bg-[#121212]/88 p-5 sm:p-6 lg:p-7">
+        <h1 class="text-3xl font-bold text-white sm:text-4xl" style="font-family: 'Oswald', sans-serif;">
+            ${escapeHtml(config.pageTitle)}
+        </h1>
+        <p class="mt-3 max-w-3xl text-sm leading-relaxed text-gray-300 sm:text-base">
+            ${escapeHtml(config.pageSubtitle)}
+        </p>
+
+        <div class="mt-5 -mx-1 overflow-x-auto pb-1">
+            <div class="flex min-w-max gap-2 px-1">
+                <button type="button" class="rounded-full border border-[#00E676]/60 bg-[#00E676]/15 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#00E676]">
+                    All
+                </button>
+                <button type="button" class="rounded-full border border-gray-600/90 bg-gray-800/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-300 transition hover:border-[#00E676]/60 hover:text-[#00E676]">
+                    Hardware Reviews
+                </button>
+                <button type="button" class="rounded-full border border-gray-600/90 bg-gray-800/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-300 transition hover:border-[#00E676]/60 hover:text-[#00E676]">
+                    VMAN &amp; Brands
+                </button>
+                <button type="button" class="rounded-full border border-gray-600/90 bg-gray-800/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-300 transition hover:border-[#00E676]/60 hover:text-[#00E676]">
+                    Maintenance
+                </button>
+                <button type="button" class="rounded-full border border-gray-600/90 bg-gray-800/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-300 transition hover:border-[#00E676]/60 hover:text-[#00E676]">
+                    Tech Specs
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section class="grid gap-6 lg:grid-cols-12">
+        <div class="space-y-6 lg:col-span-9">
+            <!-- Hardware Spotlight -->
+            <article class="overflow-hidden rounded-2xl border border-gray-700/80 bg-gray-900/88 transition duration-300 hover:border-[#FF6D00]/75 hover:shadow-[0_0_24px_rgba(255,109,0,0.2)]">
+                <div class="grid gap-0 lg:grid-cols-12">
+                    <figure id="ggx-generators-featured-media" class="relative aspect-video bg-gradient-to-br from-gray-800 to-[#1b1f29] lg:col-span-7">
+                        <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(0,230,118,0.2),transparent_45%),radial-gradient(circle_at_80%_65%,rgba(255,109,0,0.2),transparent_42%)]"></div>
+                        <div class="absolute inset-0 flex items-center justify-center text-sm uppercase tracking-widest text-gray-400">
+                            Loading featured hardware cover...
+                        </div>
+                    </figure>
+                    <div id="ggx-generators-featured-content" class="flex flex-col justify-between p-5 sm:p-6 lg:col-span-5 lg:p-8">
+                        <div class="ggx-empty">Loading hardware spotlight...</div>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Equipment News Feed -->
+            <section aria-label="Equipment news feed">
+                <h2 class="text-xl font-semibold text-white sm:text-2xl">Equipment News Feed</h2>
+                <div id="ggx-generators-article-grid" class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div class="ggx-empty col-span-full">Loading equipment articles...</div>
+                </div>
+            </section>
+
+            <!-- Pagination / Load More -->
+            <section class="pt-2 text-center">
+                <button type="button" class="inline-flex items-center justify-center rounded-xl border border-[#00E676]/65 px-6 py-3 text-sm font-semibold text-[#00E676] transition duration-300 hover:bg-[#00E676] hover:text-[#05210f] hover:shadow-[0_0_22px_rgba(0,230,118,0.26)]">
+                    Load More Articles
+                </button>
+            </section>
+        </div>
+
+        <!-- Trending Tech Specs Sidebar (Desktop) -->
+        <aside class="hidden lg:block lg:col-span-3">
+            <div class="sticky top-24 rounded-2xl border border-gray-700/90 bg-gray-900/92 p-5">
+                <h3 class="text-lg font-semibold text-white">Top Rated Engines</h3>
+                <ul id="ggx-generators-top-engines" class="mt-4 space-y-3">
+                    <li class="ggx-empty">Loading top rated engines...</li>
+                </ul>
+            </div>
+        </aside>
+    </section>
+</main>`;
+}
+
+function renderBtcMiningTemplate(config) {
+    return `
+<main id="btc-mining-news" class="mx-auto w-full max-w-[1700px] px-4 pb-12 pt-6 sm:px-6 lg:px-8">
+    <!-- Channel Header + Live Mining Metrics Ticker -->
+    <section class="mb-6 rounded-2xl border border-gray-700/90 bg-[#121212]/88 p-5 sm:p-6 lg:p-7">
+        <h1 class="text-3xl font-bold text-white sm:text-4xl" style="font-family: 'Oswald', sans-serif;">
+            ${escapeHtml(config.pageTitle)}
+        </h1>
+        <p class="mt-3 max-w-3xl text-sm leading-relaxed text-gray-300 sm:text-base">
+            ${escapeHtml(config.pageSubtitle)}
+        </p>
+
+        <div class="mt-5 overflow-hidden rounded-xl border border-gray-700/90 bg-[#1A1A1A]/95 py-2">
+            <div class="flex min-w-max items-center animate-marquee">
+                <div class="flex items-center gap-8 whitespace-nowrap px-4 text-xs uppercase tracking-wider text-gray-300">
+                    <span id="ggx-btc-ticker-price">BTC Price: --</span>
+                    <span id="ggx-btc-ticker-hashrate">Global Hashrate: --</span>
+                    <span id="ggx-btc-ticker-difficulty">Network Difficulty: --</span>
+                    <span id="ggx-btc-ticker-adjustment">Next Adjustment: --</span>
+                </div>
+                <div class="flex items-center gap-8 whitespace-nowrap px-4 text-xs uppercase tracking-wider text-gray-300" aria-hidden="true">
+                    <span id="ggx-btc-ticker-price-dup">BTC Price: --</span>
+                    <span id="ggx-btc-ticker-hashrate-dup">Global Hashrate: --</span>
+                    <span id="ggx-btc-ticker-difficulty-dup">Network Difficulty: --</span>
+                    <span id="ggx-btc-ticker-adjustment-dup">Next Adjustment: --</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Operations Hero + Aside Snapshot -->
+    <section class="mb-6 grid gap-4 lg:grid-cols-12">
+        <article class="overflow-hidden rounded-2xl border border-gray-700/90 bg-[#1A1A1A]/95 transition duration-300 hover:border-[#F7931A]/70 hover:shadow-[0_0_22px_rgba(247,147,26,0.2)] lg:col-span-8">
+            <figure id="ggx-btc-featured-media" class="relative aspect-video bg-gradient-to-br from-gray-800 to-[#1e2430]">
+                <div class="absolute inset-0 bg-[radial-gradient(circle_at_15%_18%,rgba(0,230,118,0.2),transparent_45%),radial-gradient(circle_at_82%_70%,rgba(247,147,26,0.22),transparent_44%)]"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-sm uppercase tracking-widest text-gray-400">
+                    Loading featured mining cover...
+                </div>
+            </figure>
+            <div id="ggx-btc-featured-content" class="p-5 sm:p-6">
+                <div class="ggx-empty">Loading featured mining article...</div>
+            </div>
+        </article>
+
+        <aside class="rounded-2xl border border-gray-700/90 bg-[#1A1A1A]/95 p-5 lg:col-span-4">
+            <h3 class="text-lg font-semibold text-white">Operations Snapshot</h3>
+            <ul class="mt-4 space-y-3">
+                <li class="rounded-lg border border-gray-700/80 bg-gray-800/70 p-3">
+                    <p class="text-xs uppercase tracking-wider text-gray-400">Fleet Uptime</p>
+                    <p class="mt-1 text-base font-semibold text-[#00E676]">98.4% across 14 sites</p>
+                </li>
+                <li class="rounded-lg border border-gray-700/80 bg-gray-800/70 p-3">
+                    <p class="text-xs uppercase tracking-wider text-gray-400">Power Cost Band</p>
+                    <p class="mt-1 text-base font-semibold text-[#F7931A]">$0.039 - $0.052 / kWh</p>
+                </li>
+                <li class="rounded-lg border border-gray-700/80 bg-gray-800/70 p-3">
+                    <p class="text-xs uppercase tracking-wider text-gray-400">Regional Compliance</p>
+                    <p class="mt-1 text-base font-semibold text-purple-300">2 pending permit updates in BC</p>
+                </li>
+            </ul>
+        </aside>
+    </section>
+
+    <!-- Mining News & Analysis Feed -->
+    <section aria-label="Mining news and analysis feed">
+        <h2 class="text-xl font-semibold text-white sm:text-2xl">Mining News &amp; Analysis</h2>
+        <div id="ggx-btc-article-grid" class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div class="ggx-empty col-span-full">Loading mining articles...</div>
+        </div>
+    </section>
+
+    <!-- Newsletter / Alert Signup -->
+    <section class="mt-8 rounded-2xl border border-gray-700/90 bg-gray-800/70 p-6 sm:p-8">
+        <h2 class="text-2xl font-semibold text-white sm:text-3xl" style="font-family: 'Oswald', sans-serif;">
+            Get the Weekly Mining Difficulty &amp; Gas Price Digest
+        </h2>
+        <p class="mt-2 text-sm text-gray-300 sm:text-base">
+            Receive curated updates on hashrate trends, gas market shifts, and operational benchmarks for mining operators.
+        </p>
+        <form class="mt-5 flex flex-col gap-3 sm:flex-row" action="#" method="post">
+            <label for="ggx-btc-newsletter-email" class="sr-only">Email address</label>
+            <input
+                id="ggx-btc-newsletter-email"
+                type="email"
+                name="email"
+                required
+                placeholder="you@company.com"
+                class="w-full rounded-xl border border-gray-600 bg-[#121212] px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:border-[#00E676] focus:outline-none"
+            />
+            <button type="submit" class="rounded-xl bg-[#00E676] px-6 py-3 text-sm font-semibold text-[#03200f] transition duration-300 hover:brightness-105 hover:shadow-[0_0_20px_rgba(0,230,118,0.3)]">
+                Subscribe
+            </button>
+        </form>
+    </section>
+</main>`;
+}
+
 function renderDataTemplate(config) {
     return `
 <section class="ggx-channel-shell">
@@ -555,7 +866,13 @@ export function mountChannelMain(container, channelKey) {
     if (!container) return;
     const config = getChannelConfig(channelKey);
 
-    if (config.layout === 'data') {
+    if (config.layout === 'gas-energy') {
+        container.innerHTML = renderGasEnergyTemplate(config);
+    } else if (config.layout === 'generators') {
+        container.innerHTML = renderGeneratorsTemplate(config);
+    } else if (config.layout === 'btc-mining') {
+        container.innerHTML = renderBtcMiningTemplate(config);
+    } else if (config.layout === 'data') {
         container.innerHTML = renderDataTemplate(config);
     } else if (config.layout === 'events') {
         container.innerHTML = renderEventsTemplate(config);
@@ -600,14 +917,19 @@ export function createChannelApp(channelKey) {
             if (config.layout !== 'data') this.loadLiveData();
             else this.hideLiveDataStrip();
 
-            const loadTasks =
-                config.layout === 'data'
-                    ? [this.loadCanadaDashboardData()]
-                    : [this.loadArticles(), this.loadHomepageMetrics(), this.loadEquipmentData(), this.loadSavedNews()];
+            let loadTasks = [];
+            if (config.layout === 'data') {
+                loadTasks = [this.loadCanadaDashboardData()];
+            } else {
+                loadTasks = [this.loadArticles(), this.loadHomepageMetrics(), this.loadEquipmentData(), this.loadSavedNews()];
+            }
             await Promise.allSettled(loadTasks);
 
             if (config.layout === 'data') this.renderDataLayout();
             else if (config.layout === 'events') this.renderEventsLayout();
+            else if (config.layout === 'gas-energy') this.renderGasEnergyLayout();
+            else if (config.layout === 'generators') this.renderGeneratorsLayout();
+            else if (config.layout === 'btc-mining') this.renderBtcMiningLayout();
             else this.renderEditorialLayout();
 
             this.bindScroll();
@@ -889,6 +1211,273 @@ export function createChannelApp(channelKey) {
             this.renderEditorialHero();
             this.renderEditorialFeed();
             this.renderEditorialAside();
+        },
+
+        renderGasEnergyLayout() {
+            const featuredMedia = document.getElementById('ggx-gas-featured-media');
+            const featuredContent = document.getElementById('ggx-gas-featured-content');
+            const grid = document.getElementById('ggx-gas-article-grid');
+            if (!featuredMedia || !featuredContent || !grid) return;
+
+            const rows = collectArticlesWithCover(this.state.filteredArticles, this.state.allArticles, 8);
+            if (!rows.length) {
+                featuredContent.innerHTML = '<div class="ggx-empty">No featured article with cover image.</div>';
+                grid.innerHTML = '<div class="ggx-empty col-span-full">No article cards with cover image.</div>';
+                return;
+            }
+
+            const featured = rows[0];
+            const featuredUrl = getArticleUrl(featured);
+            const featuredTag = articleTag(featured, 'Featured');
+            const featuredSummary = cleanSummary(featured.subheading) || config.pageSubtitle;
+            const featuredDateValue = featured.time || new Date();
+
+            featuredMedia.innerHTML = `
+                <img src="${escapeHtml(getImageUrl(featured))}" alt="${escapeHtml(featured.main_title || '')}" class="absolute inset-0 h-full w-full object-cover opacity-85" loading="lazy" onerror="this.remove()">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"></div>
+            `;
+
+            featuredContent.innerHTML = `
+                <div>
+                    <span class="inline-flex items-center rounded-full border border-[#00E676]/50 bg-[#00E676]/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#00E676]">
+                        ${escapeHtml(featuredTag)}
+                    </span>
+                    <h2 class="mt-4 text-2xl font-semibold leading-tight text-white sm:text-3xl">
+                        <a ${buildLinkAttrs(featuredUrl)} class="transition-colors hover:text-[#7DFFBA]">${escapeHtml(featured.main_title || 'Untitled')}</a>
+                    </h2>
+                    <p class="mt-4 text-sm leading-relaxed text-gray-300 sm:text-base">${escapeHtml(featuredSummary)}</p>
+                </div>
+                <footer class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs uppercase tracking-wider text-gray-400">
+                    <span>By ${escapeHtml(featured.publisher || 'GasGx Editorial Desk')}</span>
+                    <time datetime="${escapeHtml(toIsoDateTime(featuredDateValue))}">${escapeHtml(formatDate(featuredDateValue))}</time>
+                </footer>
+            `;
+
+            const feedRows = rows.slice(1, 7);
+            if (!feedRows.length) {
+                grid.innerHTML = '<div class="ggx-empty col-span-full">No additional article cards with cover image.</div>';
+                return;
+            }
+
+            grid.innerHTML = feedRows
+                .map((article) => {
+                    const tag = articleTag(article, 'News');
+                    const tone = toneClasses(resolveTagTone(tag));
+                    const url = getArticleUrl(article);
+                    const summary = cleanSummary(article.subheading) || 'No summary available.';
+
+                    return `
+                        <article class="group overflow-hidden rounded-xl border border-white/10 bg-gray-800/60 transition duration-300 hover:-translate-y-1 ${tone.cardHover}">
+                            <a ${buildLinkAttrs(url)} class="relative block aspect-video bg-gradient-to-br from-gray-700 to-[#1e2431]">
+                                <img src="${escapeHtml(getImageUrl(article))}" alt="${escapeHtml(article.main_title || '')}" class="h-full w-full object-cover opacity-85 transition duration-300 group-hover:opacity-100" loading="lazy" onerror="this.remove()">
+                            </a>
+                            <div class="p-4">
+                                <span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${tone.badge}">${escapeHtml(tag)}</span>
+                                <h2 class="mt-3 text-lg font-semibold leading-snug text-white">${escapeHtml(article.main_title || 'Untitled')}</h2>
+                                <p class="mt-2 text-sm leading-relaxed text-gray-300" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(summary)}</p>
+                            </div>
+                            <footer class="flex items-center justify-between border-t border-white/10 px-4 py-3 text-xs text-gray-400">
+                                <time datetime="${escapeHtml(toIsoDateTime(article.time))}">${escapeHtml(formatDate(article.time))}</time>
+                                <a ${buildLinkAttrs(url)} class="font-semibold text-[#00E676] transition-colors hover:text-[#7DFFBA]">Read article -&gt;</a>
+                            </footer>
+                        </article>
+                    `;
+                })
+                .join('');
+        },
+
+        renderGeneratorsLayout() {
+            const featuredMedia = document.getElementById('ggx-generators-featured-media');
+            const featuredContent = document.getElementById('ggx-generators-featured-content');
+            const grid = document.getElementById('ggx-generators-article-grid');
+            const topEngines = document.getElementById('ggx-generators-top-engines');
+            if (!featuredMedia || !featuredContent || !grid || !topEngines) return;
+
+            const rows = collectArticlesWithCover(this.state.filteredArticles, this.state.allArticles, 8);
+            if (!rows.length) {
+                featuredContent.innerHTML = '<div class="ggx-empty">No hardware spotlight with cover image.</div>';
+                grid.innerHTML = '<div class="ggx-empty col-span-full">No equipment cards with cover image.</div>';
+            } else {
+                const featured = rows[0];
+                const featuredUrl = getArticleUrl(featured);
+                const featuredSummary = cleanSummary(featured.subheading) || 'No summary available.';
+                const featuredDateValue = featured.time || new Date();
+
+                featuredMedia.innerHTML = `
+                    <img src="${escapeHtml(getImageUrl(featured))}" alt="${escapeHtml(featured.main_title || '')}" class="absolute inset-0 h-full w-full object-cover opacity-85" loading="lazy" onerror="this.remove()">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent"></div>
+                `;
+
+                featuredContent.innerHTML = `
+                    <div>
+                        <span class="inline-flex rounded-full border border-[#FF6D00]/60 bg-[#FF6D00]/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#FF9D58]">
+                            In-Depth Review
+                        </span>
+                        <h2 class="mt-4 text-2xl font-semibold leading-tight text-white sm:text-3xl">
+                            <a ${buildLinkAttrs(featuredUrl)} class="transition-colors hover:text-[#FFB575]">${escapeHtml(featured.main_title || 'Untitled')}</a>
+                        </h2>
+                        <p class="mt-4 text-sm leading-relaxed text-gray-300 sm:text-base">${escapeHtml(featuredSummary)}</p>
+                    </div>
+                    <footer class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs uppercase tracking-wider text-gray-400">
+                        <span>By ${escapeHtml(featured.publisher || 'GasGx Hardware Lab')}</span>
+                        <time datetime="${escapeHtml(toIsoDateTime(featuredDateValue))}">${escapeHtml(formatDate(featuredDateValue))}</time>
+                    </footer>
+                `;
+
+                const feedRows = rows.slice(1, 7);
+                if (!feedRows.length) {
+                    grid.innerHTML = '<div class="ggx-empty col-span-full">No equipment cards with cover image.</div>';
+                } else {
+                    grid.innerHTML = feedRows
+                        .map((article) => {
+                            const tag = articleTag(article, 'News');
+                            const toneName = resolveTagTone(tag);
+                            const tone = toneClasses(toneName);
+                            const toneHover =
+                                toneName === 'orange'
+                                    ? 'hover:border-l-[#FF6D00] hover:border-[#FF6D00]/45'
+                                    : toneName === 'purple'
+                                      ? 'hover:border-l-purple-300 hover:border-purple-300/45'
+                                      : 'hover:border-l-[#00E676] hover:border-[#00E676]/45';
+                            const url = getArticleUrl(article);
+                            const summary = cleanSummary(article.subheading) || 'No summary available.';
+
+                            return `
+                                <article class="group overflow-hidden rounded-xl border border-gray-700/90 border-l-2 border-l-transparent bg-gray-800/70 transition duration-300 hover:-translate-y-1 ${toneHover}">
+                                    <a ${buildLinkAttrs(url)} class="relative block aspect-video bg-gradient-to-br from-gray-700 to-[#1f2430]">
+                                        <img src="${escapeHtml(getImageUrl(article))}" alt="${escapeHtml(article.main_title || '')}" class="h-full w-full object-cover opacity-85 transition duration-300 group-hover:opacity-100" loading="lazy" onerror="this.remove()">
+                                    </a>
+                                    <div class="p-4">
+                                        <span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${tone.badge}">${escapeHtml(tag)}</span>
+                                        <h2 class="mt-3 text-lg font-semibold leading-snug text-white">${escapeHtml(article.main_title || 'Untitled')}</h2>
+                                        <p class="mt-2 text-sm leading-relaxed text-gray-300" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(summary)}</p>
+                                    </div>
+                                    <footer class="flex items-center justify-between border-t border-gray-700/85 px-4 py-3 text-xs text-gray-400">
+                                        <span>${escapeHtml(String(estimateReadMinutes(article)))} min read</span>
+                                        <a ${buildLinkAttrs(url)} class="font-semibold text-[#00E676] transition-colors hover:text-[#7DFFBA]">Read More -&gt;</a>
+                                    </footer>
+                                </article>
+                            `;
+                        })
+                        .join('');
+                }
+            }
+
+            const ranked = Array.isArray(this.state.equipmentData) ? this.state.equipmentData.slice(0, 4) : [];
+            if (!ranked.length) {
+                topEngines.innerHTML = '<li class="ggx-empty">No equipment records available.</li>';
+                return;
+            }
+
+            topEngines.innerHTML = ranked
+                .map((item) => {
+                    const model = item.model || 'Unknown Model';
+                    const maker = item.manufacturer || 'Unknown Manufacturer';
+                    const efficiency = item.efficiency ?? '--';
+                    const output = item.power_output_kw ?? '--';
+                    return `
+                        <li class="rounded-lg border border-gray-700/90 bg-gray-800/70 p-3">
+                            <span class="text-sm font-semibold text-white">${escapeHtml(model)}</span>
+                            <p class="mt-1 text-xs text-gray-400">${escapeHtml(maker)} | Thermal Efficiency: ${escapeHtml(String(efficiency))}% | Output: ${escapeHtml(String(output))} kW</p>
+                        </li>
+                    `;
+                })
+                .join('');
+        },
+
+        renderBtcMiningLayout() {
+            const setTicker = (id, label, metric, valueClass = 'text-[#F7931A]') => {
+                const node = document.getElementById(id);
+                if (!node) return;
+                const value = metric ? `${metric.value || '--'}${metric.unit ? ` ${metric.unit}` : ''}` : '--';
+                const trendClass = metric?.trend === 'up' ? 'text-[#00E676]' : metric?.trend === 'down' ? 'text-red-400' : 'text-gray-400';
+                const change = metric?.change_24h ? `<span class="${trendClass}">${escapeHtml(metric.change_24h)}</span>` : '';
+                node.innerHTML = `${escapeHtml(label)}: <strong class="${valueClass}">${escapeHtml(value)}</strong>${change ? ` ${change}` : ''}`;
+            };
+
+            const metrics = this.state.homepageMetrics || [];
+            const btcMetric = findMetricByKeywords(metrics, ['btc', 'bitcoin']);
+            const hashrateMetric = findMetricByKeywords(metrics, ['hashrate']);
+            const difficultyMetric = findMetricByKeywords(metrics, ['difficulty']);
+            const adjustmentMetric = findMetricByKeywords(metrics, ['adjustment', 'next adjustment', 'block time']);
+
+            setTicker('ggx-btc-ticker-price', 'BTC Price', btcMetric, 'text-[#F7931A]');
+            setTicker('ggx-btc-ticker-hashrate', 'Global Hashrate', hashrateMetric, 'text-[#F7931A]');
+            setTicker('ggx-btc-ticker-difficulty', 'Network Difficulty', difficultyMetric, 'text-[#F7931A]');
+            setTicker('ggx-btc-ticker-adjustment', 'Next Adjustment', adjustmentMetric, 'text-[#00E676]');
+            setTicker('ggx-btc-ticker-price-dup', 'BTC Price', btcMetric, 'text-[#F7931A]');
+            setTicker('ggx-btc-ticker-hashrate-dup', 'Global Hashrate', hashrateMetric, 'text-[#F7931A]');
+            setTicker('ggx-btc-ticker-difficulty-dup', 'Network Difficulty', difficultyMetric, 'text-[#F7931A]');
+            setTicker('ggx-btc-ticker-adjustment-dup', 'Next Adjustment', adjustmentMetric, 'text-[#00E676]');
+
+            const featuredMedia = document.getElementById('ggx-btc-featured-media');
+            const featuredContent = document.getElementById('ggx-btc-featured-content');
+            const grid = document.getElementById('ggx-btc-article-grid');
+            if (!featuredMedia || !featuredContent || !grid) return;
+
+            const rows = collectArticlesWithCover(this.state.filteredArticles, this.state.allArticles, 8);
+            if (!rows.length) {
+                featuredContent.innerHTML = '<div class="ggx-empty">No featured mining article with cover image.</div>';
+                grid.innerHTML = '<div class="ggx-empty col-span-full">No mining cards with cover image.</div>';
+                return;
+            }
+
+            const featured = rows[0];
+            const featuredUrl = getArticleUrl(featured);
+            const featuredSummary = cleanSummary(featured.subheading) || config.pageSubtitle;
+            const featuredDateValue = featured.time || new Date();
+
+            featuredMedia.innerHTML = `
+                <img src="${escapeHtml(getImageUrl(featured))}" alt="${escapeHtml(featured.main_title || '')}" class="absolute inset-0 h-full w-full object-cover opacity-85" loading="lazy" onerror="this.remove()">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"></div>
+            `;
+
+            featuredContent.innerHTML = `
+                <span class="inline-flex rounded-full border border-[#F7931A]/65 bg-[#F7931A]/18 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#FFC37D]">
+                    Featured
+                </span>
+                <h2 class="mt-4 text-2xl font-semibold leading-tight text-white sm:text-3xl">
+                    <a ${buildLinkAttrs(featuredUrl)} class="transition-colors hover:text-[#FFC37D]">${escapeHtml(featured.main_title || 'Untitled')}</a>
+                </h2>
+                <p class="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">${escapeHtml(featuredSummary)}</p>
+                <footer class="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs uppercase tracking-wider text-gray-400">
+                    <span>${escapeHtml(String(estimateReadMinutes(featured)))} min read</span>
+                    <span>By ${escapeHtml(featured.publisher || 'GasGx Mining Desk')}</span>
+                    <time datetime="${escapeHtml(toIsoDateTime(featuredDateValue))}">${escapeHtml(formatDate(featuredDateValue))}</time>
+                </footer>
+            `;
+
+            const feedRows = rows.slice(1, 7);
+            if (!feedRows.length) {
+                grid.innerHTML = '<div class="ggx-empty col-span-full">No mining cards with cover image.</div>';
+                return;
+            }
+
+            grid.innerHTML = feedRows
+                .map((article) => {
+                    const tag = articleTag(article, 'Farm Ops');
+                    const tone = toneClasses(resolveTagTone(tag));
+                    const url = getArticleUrl(article);
+                    const summary = cleanSummary(article.subheading) || 'No summary available.';
+
+                    return `
+                        <article class="group overflow-hidden rounded-xl border border-gray-700/90 bg-[#1A1A1A]/95 transition duration-300 hover:-translate-y-1 ${tone.cardHover}">
+                            <a ${buildLinkAttrs(url)} class="relative block aspect-video bg-gradient-to-br from-gray-700 to-[#1f2430]">
+                                <img src="${escapeHtml(getImageUrl(article))}" alt="${escapeHtml(article.main_title || '')}" class="h-full w-full object-cover opacity-85 transition duration-300 group-hover:opacity-100" loading="lazy" onerror="this.remove()">
+                            </a>
+                            <div class="p-4">
+                                <span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${tone.badge}">${escapeHtml(tag)}</span>
+                                <h2 class="mt-3 text-lg font-semibold leading-snug text-white">${escapeHtml(article.main_title || 'Untitled')}</h2>
+                                <p class="mt-2 text-sm leading-relaxed text-gray-300" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(summary)}</p>
+                            </div>
+                            <footer class="flex items-center justify-between border-t border-gray-700/85 px-4 py-3 text-xs text-gray-400">
+                                <span>${escapeHtml(article.publisher || 'GasGx Desk')} · <time datetime="${escapeHtml(toIsoDateTime(article.time))}">${escapeHtml(formatDate(article.time))}</time></span>
+                                <a ${buildLinkAttrs(url)} class="font-semibold text-[#00E676] transition-colors hover:text-[#7DFFBA]">Read Article</a>
+                            </footer>
+                        </article>
+                    `;
+                })
+                .join('');
         },
 
         renderEditorialHero() {
