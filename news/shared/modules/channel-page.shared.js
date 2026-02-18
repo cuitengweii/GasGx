@@ -84,6 +84,7 @@ const DATA_REGION_CONFIGS = [
         chartKeywords: ['oklahoma', 'scooop', 'stack'],
     },
 ];
+const DATA_UPDATING_TEXT = 'Data is being updated. More coming soon.';
 
 const GASGX_UI_ICONS = {
     dashboard:
@@ -294,6 +295,13 @@ function textMatchesRegion(text, keywords = []) {
         if (!token) return false;
         return source.includes(token);
     });
+}
+
+function hasRegionStructuredData(regionView) {
+    if (!regionView || typeof regionView !== 'object') return false;
+    const pointCount = Array.isArray(regionView.pointRows) ? regionView.pointRows.length : 0;
+    const tableCount = Array.isArray(regionView.tableRows) ? regionView.tableRows.length : 0;
+    return pointCount + tableCount > 0;
 }
 
 function isGasGxHost(url) {
@@ -1452,7 +1460,11 @@ export function createChannelApp(channelKey) {
             const pointCount = Array.isArray(active.pointRows) ? active.pointRows.length : 0;
             const tableCount = Array.isArray(active.tableRows) ? active.tableRows.length : 0;
             const noteCount = Array.isArray(active.notes) ? active.notes.length : 0;
-            subtitle.textContent = `${active.label}: structured points ${pointCount}, tables ${tableCount}, matched notes ${noteCount}.`;
+            if (!hasRegionStructuredData(active)) {
+                subtitle.textContent = `${active.label}: ${DATA_UPDATING_TEXT}`;
+            } else {
+                subtitle.textContent = `${active.label}: structured points ${pointCount}, tables ${tableCount}, matched notes ${noteCount}.`;
+            }
         },
 
         loadMore() {
@@ -1942,7 +1954,7 @@ export function createChannelApp(channelKey) {
                     ? activeRegion.metrics.slice(0, 8)
                     : this.state.homepageMetrics.slice(0, 8);
             if (metrics.length === 0) {
-                container.innerHTML = '<div class="ggx-empty">No homepage metrics in table.</div>';
+                container.innerHTML = `<div class="ggx-empty">${escapeHtml(DATA_UPDATING_TEXT)}</div>`;
                 return;
             }
 
@@ -1989,7 +2001,7 @@ export function createChannelApp(channelKey) {
                     : this.state.equipmentData;
             const rows = regionRows.slice(0, 12);
             if (rows.length === 0) {
-                container.innerHTML = '<div class="ggx-empty">No equipment_data records.</div>';
+                container.innerHTML = `<div class="ggx-empty">${escapeHtml(DATA_UPDATING_TEXT)}</div>`;
                 return;
             }
 
@@ -2038,7 +2050,7 @@ export function createChannelApp(channelKey) {
                       : this.state.allArticles;
             const rows = notes.slice(0, 8);
             if (!rows.length) {
-                container.innerHTML = `<div class="ggx-empty">No data notes matched ${escapeHtml(activeRegion?.label || 'this region')}.</div>`;
+                container.innerHTML = `<div class="ggx-empty">${escapeHtml(DATA_UPDATING_TEXT)}</div>`;
                 return;
             }
 
@@ -2213,6 +2225,14 @@ export function createChannelApp(channelKey) {
             });
         },
 
+        renderCanadaChartPlaceholders(message = 'No chart data.') {
+            Object.values(CANADA_CHART_SPECS).forEach((spec) => {
+                const container = document.getElementById(spec.containerId);
+                if (!container) return;
+                container.innerHTML = `<div class="ggx-empty">${escapeHtml(message)}</div>`;
+            });
+        },
+
         parseMaybeArray(value) {
             if (Array.isArray(value)) return value;
             if (typeof value !== 'string') return [];
@@ -2230,13 +2250,13 @@ export function createChannelApp(channelKey) {
             return '';
         },
 
-        renderCanadaStaticTables(tableRows = null) {
+        renderCanadaStaticTables(tableRows = null, emptyMessage = 'No parsed Canada static tables in this run.') {
             const wrap = document.getElementById('ggx-canada-static-tables');
             if (!wrap) return;
 
             const sourceRows = Array.isArray(tableRows) ? tableRows : this.state.canadaTableRows;
             if (!sourceRows.length) {
-                wrap.innerHTML = '<div class="ggx-empty">No parsed Canada static tables in this run.</div>';
+                wrap.innerHTML = `<div class="ggx-empty">${escapeHtml(emptyMessage)}</div>`;
                 return;
             }
 
@@ -2305,20 +2325,24 @@ export function createChannelApp(channelKey) {
             const activeRegion = this.getActiveDataRegionView();
             const pointRows = Array.isArray(activeRegion?.pointRows) ? activeRegion.pointRows : this.state.canadaPointRows;
             const tableRows = Array.isArray(activeRegion?.tableRows) ? activeRegion.tableRows : this.state.canadaTableRows;
+            const noStructuredData = !pointRows.length && !tableRows.length;
+            const emptyRegionMessage = hasRegionStructuredData(activeRegion) ? 'No structured table data in this run.' : DATA_UPDATING_TEXT;
 
             this.renderCanadaRunSummary(activeRegion);
-            if (!pointRows.length && !tableRows.length) {
-                this.setCanadaStatus('loading', `No structured chart/table data yet for ${activeRegion?.label || 'selected region'}.`);
+            if (noStructuredData) {
+                this.setCanadaStatus('loading', DATA_UPDATING_TEXT);
             } else {
                 this.setCanadaStatus(
                     this.state.canadaStatus.type,
                     `${this.state.canadaStatus.message} Scope ${activeRegion?.shortLabel || 'GLOBAL'}: ${pointRows.length} points / ${tableRows.length} tables.`
                 );
             }
-            this.renderCanadaStaticTables(tableRows);
-            this.drawCanadaCharts(pointRows);
+            this.renderCanadaStaticTables(tableRows, emptyRegionMessage);
 
-            if (!pointRows.length) return;
+            if (!pointRows.length) {
+                this.renderCanadaChartPlaceholders(DATA_UPDATING_TEXT);
+                return;
+            }
 
             await ensureGoogleChartsLoaded();
             this.drawCanadaCharts(pointRows);
