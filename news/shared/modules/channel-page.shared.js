@@ -40,6 +40,51 @@ const CANADA_CHART_SPECS = {
     },
 };
 
+const DATA_REGION_CONFIGS = [
+    {
+        key: 'ca-ab',
+        label: 'Canada · Alberta (AB)',
+        shortLabel: 'CA-AB',
+        articleKeywords: ['alberta', 'aeco', 'calgary', 'edmonton', 'henry hub gas'],
+        chartKeywords: ['alberta', 'aeco', 'intra_alberta', 'retailer_rates'],
+    },
+    {
+        key: 'ca-bc',
+        label: 'Canada · British Columbia (BC)',
+        shortLabel: 'CA-BC',
+        articleKeywords: ['british columbia', 'vancouver', 'fort st. john', 'montney basin'],
+        chartKeywords: ['british columbia', 'bc gas', 'bc utility'],
+    },
+    {
+        key: 'us-tx',
+        label: 'United States · Texas (TX)',
+        shortLabel: 'US-TX',
+        articleKeywords: ['texas', 'permian', 'midland', 'eagle ford'],
+        chartKeywords: ['texas', 'permian'],
+    },
+    {
+        key: 'us-la',
+        label: 'United States · Louisiana (LA)',
+        shortLabel: 'US-LA',
+        articleKeywords: ['louisiana', 'haynesville', 'lake charles'],
+        chartKeywords: ['louisiana', 'haynesville'],
+    },
+    {
+        key: 'us-pa',
+        label: 'United States · Pennsylvania (PA)',
+        shortLabel: 'US-PA',
+        articleKeywords: ['pennsylvania', 'marcellus', 'appalachia'],
+        chartKeywords: ['pennsylvania', 'marcellus'],
+    },
+    {
+        key: 'us-ok',
+        label: 'United States · Oklahoma (OK)',
+        shortLabel: 'US-OK',
+        articleKeywords: ['oklahoma', 'scooop', 'stack play', 'ankha'],
+        chartKeywords: ['oklahoma', 'scooop', 'stack'],
+    },
+];
+
 const GASGX_UI_ICONS = {
     dashboard:
         '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 9.5h10M7 13h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
@@ -240,6 +285,15 @@ function toLower(value) {
 function containsAny(text, keywords = []) {
     const source = toLower(text);
     return keywords.some((keyword) => source.includes(toLower(keyword)));
+}
+
+function textMatchesRegion(text, keywords = []) {
+    const source = toLower(text);
+    return (keywords || []).some((keyword) => {
+        const token = toLower(keyword);
+        if (!token) return false;
+        return source.includes(token);
+    });
 }
 
 function isGasGxHost(url) {
@@ -829,6 +883,15 @@ function renderDataTemplate(config) {
 
         <section class="ggx-channel-card p-4 mt-4">
             <div class="ggx-section-head">
+                <h2><i class="fa-solid fa-globe"></i> Regional Data Views</h2>
+                <span class="ggx-chip active">Scope Selector</span>
+            </div>
+            <div id="ggx-data-region-tabs" class="ggx-chip-row"></div>
+            <p id="ggx-data-region-subtitle" class="ggx-mini-caption mt-3">Loading regional coverage...</p>
+        </section>
+
+        <section class="ggx-channel-card p-4 mt-4">
+            <div class="ggx-section-head">
                 <h2>${renderGasGxUiIcon('dashboard')}<span>Canada Gas Dashboard</span></h2>
                 <span class="ggx-chip active">Integrated View</span>
             </div>
@@ -996,6 +1059,8 @@ export function createChannelApp(channelKey) {
             canadaRun: null,
             canadaPointRows: [],
             canadaTableRows: [],
+            dataRegionViews: [],
+            activeDataRegion: 'ca-ab',
             canadaStatus: {
                 type: 'loading',
                 message: 'Fetching Canada dashboard data...',
@@ -1021,6 +1086,7 @@ export function createChannelApp(channelKey) {
                 loadTasks = [this.loadArticles(), this.loadHomepageMetrics(), this.loadEquipmentData(), this.loadSavedNews()];
             }
             await Promise.allSettled(loadTasks);
+            if (config.layout === 'data') this.buildDataRegionViews();
 
             if (config.layout === 'data') this.renderDataLayout();
             else if (config.layout === 'events') this.renderEventsLayout();
@@ -1296,6 +1362,97 @@ export function createChannelApp(channelKey) {
                 pointRows: Array.isArray(pointsRes.data) ? pointsRes.data : [],
                 tableRows: Array.isArray(tablesRes.data) ? tablesRes.data : [],
             };
+        },
+
+        getActiveDataRegionView() {
+            if (!Array.isArray(this.state.dataRegionViews) || this.state.dataRegionViews.length === 0) return null;
+            return this.state.dataRegionViews.find((region) => region.key === this.state.activeDataRegion) || this.state.dataRegionViews[0];
+        },
+
+        buildDataRegionViews() {
+            const articleRows = dedupeArticles(Array.isArray(this.state.allArticles) ? this.state.allArticles : []);
+            const metricRows = Array.isArray(this.state.homepageMetrics) ? this.state.homepageMetrics : [];
+            const equipmentRows = Array.isArray(this.state.equipmentData) ? this.state.equipmentData : [];
+            const pointRows = Array.isArray(this.state.canadaPointRows) ? this.state.canadaPointRows : [];
+            const tableRows = Array.isArray(this.state.canadaTableRows) ? this.state.canadaTableRows : [];
+
+            this.state.dataRegionViews = DATA_REGION_CONFIGS.map((region) => {
+                const chartRows = pointRows.filter((row) => textMatchesRegion(`${row?.chart_id || ''} ${row?.chart_title || ''}`, region.chartKeywords));
+                const staticRows = tableRows.filter((row) => textMatchesRegion(`${row?.chart_id || ''} ${row?.chart_title || ''}`, region.chartKeywords));
+
+                const notes = articleRows.filter((article) => {
+                    const text = [article.main_title, article.subheading, article.topics, article.publisher, article.tag, article.type].join(' ');
+                    return textMatchesRegion(text, region.articleKeywords);
+                });
+
+                const metrics = metricRows.filter((metric) => {
+                    const text = [metric.id, metric.label, metric.secondary_text, metric.change_24h].join(' ');
+                    return textMatchesRegion(text, region.articleKeywords);
+                });
+
+                const equipment = equipmentRows.filter((row) => {
+                    const text = [row.manufacturer, row.model, row.fuel_type, row.notes].join(' ');
+                    return textMatchesRegion(text, region.articleKeywords);
+                });
+
+                const resolvedPointRows = region.key === 'ca-ab' ? (chartRows.length ? chartRows : pointRows) : chartRows;
+                const resolvedTableRows = region.key === 'ca-ab' ? (staticRows.length ? staticRows : tableRows) : staticRows;
+
+                return {
+                    ...region,
+                    pointRows: resolvedPointRows,
+                    tableRows: resolvedTableRows,
+                    notes,
+                    metrics,
+                    equipment,
+                };
+            });
+
+            if (!this.state.dataRegionViews.some((region) => region.key === this.state.activeDataRegion)) {
+                this.state.activeDataRegion = this.state.dataRegionViews[0]?.key || 'ca-ab';
+            }
+        },
+
+        switchDataRegion(regionKey) {
+            if (config.layout !== 'data') return;
+            if (!regionKey || this.state.activeDataRegion === regionKey) return;
+            if (!this.state.dataRegionViews.some((region) => region.key === regionKey)) return;
+
+            this.state.activeDataRegion = regionKey;
+            this.renderDataLayout();
+        },
+
+        renderDataRegionTabs() {
+            const tabs = document.getElementById('ggx-data-region-tabs');
+            const subtitle = document.getElementById('ggx-data-region-subtitle');
+            if (!tabs || !subtitle) return;
+
+            const regions = Array.isArray(this.state.dataRegionViews) ? this.state.dataRegionViews : [];
+            if (!regions.length) {
+                tabs.innerHTML = '<span class="ggx-chip">No region configs</span>';
+                subtitle.textContent = 'No regional mapping available.';
+                return;
+            }
+
+            tabs.innerHTML = regions
+                .map((region) => {
+                    const isActive = region.key === this.state.activeDataRegion;
+                    const activeClass = isActive ? ' ggx-data-region-tab-active' : '';
+                    const pointCount = Array.isArray(region.pointRows) ? region.pointRows.length : 0;
+                    return `<button type="button" class="ggx-chip ggx-data-region-tab${activeClass}" onclick="window.GGXChannelApp && window.GGXChannelApp.switchDataRegion('${escapeHtml(region.key)}')">${escapeHtml(region.shortLabel)} <span class="text-[10px] opacity-80">(${pointCount})</span></button>`;
+                })
+                .join('');
+
+            const active = this.getActiveDataRegionView();
+            if (!active) {
+                subtitle.textContent = 'No active regional view.';
+                return;
+            }
+
+            const pointCount = Array.isArray(active.pointRows) ? active.pointRows.length : 0;
+            const tableCount = Array.isArray(active.tableRows) ? active.tableRows.length : 0;
+            const noteCount = Array.isArray(active.notes) ? active.notes.length : 0;
+            subtitle.textContent = `${active.label}: structured points ${pointCount}, tables ${tableCount}, matched notes ${noteCount}.`;
         },
 
         loadMore() {
@@ -1762,6 +1919,10 @@ export function createChannelApp(channelKey) {
         },
 
         renderDataLayout() {
+            if (!Array.isArray(this.state.dataRegionViews) || this.state.dataRegionViews.length === 0) {
+                this.buildDataRegionViews();
+            }
+            this.renderDataRegionTabs();
             this.renderDataMetrics();
             this.renderEquipmentTable();
             this.renderDataNotes();
@@ -1775,7 +1936,11 @@ export function createChannelApp(channelKey) {
             const container = document.getElementById('ggx-metric-grid');
             if (!container) return;
 
-            const metrics = this.state.homepageMetrics.slice(0, 8);
+            const activeRegion = this.getActiveDataRegionView();
+            const metrics =
+                activeRegion && Array.isArray(activeRegion.metrics) && activeRegion.metrics.length
+                    ? activeRegion.metrics.slice(0, 8)
+                    : this.state.homepageMetrics.slice(0, 8);
             if (metrics.length === 0) {
                 container.innerHTML = '<div class="ggx-empty">No homepage metrics in table.</div>';
                 return;
@@ -1817,7 +1982,12 @@ export function createChannelApp(channelKey) {
             const container = document.getElementById('ggx-equipment-table');
             if (!container) return;
 
-            const rows = this.state.equipmentData.slice(0, 12);
+            const activeRegion = this.getActiveDataRegionView();
+            const regionRows =
+                activeRegion && Array.isArray(activeRegion.equipment) && activeRegion.equipment.length
+                    ? activeRegion.equipment
+                    : this.state.equipmentData;
+            const rows = regionRows.slice(0, 12);
             if (rows.length === 0) {
                 container.innerHTML = '<div class="ggx-empty">No equipment_data records.</div>';
                 return;
@@ -1859,10 +2029,16 @@ export function createChannelApp(channelKey) {
             const container = document.getElementById('ggx-data-notes');
             if (!container) return;
 
-            const notes = this.state.filteredArticles.length ? this.state.filteredArticles : this.state.allArticles;
+            const activeRegion = this.getActiveDataRegionView();
+            const notes =
+                activeRegion && Array.isArray(activeRegion.notes)
+                    ? activeRegion.notes
+                    : this.state.filteredArticles.length
+                      ? this.state.filteredArticles
+                      : this.state.allArticles;
             const rows = notes.slice(0, 8);
             if (!rows.length) {
-                container.innerHTML = '<div class="ggx-empty">No data-related article rows.</div>';
+                container.innerHTML = `<div class="ggx-empty">No data notes matched ${escapeHtml(activeRegion?.label || 'this region')}.</div>`;
                 return;
             }
 
@@ -1898,7 +2074,7 @@ export function createChannelApp(channelKey) {
             container.innerHTML = `<span class="${color} font-semibold">${escapeHtml(normalizedType.toUpperCase())}</span> ${escapeHtml(message || '--')}`;
         },
 
-        renderCanadaRunSummary() {
+        renderCanadaRunSummary(regionView = null) {
             const runLocal = document.getElementById('ggx-canada-run-local');
             const runUtc = document.getElementById('ggx-canada-run-utc');
             const runId = document.getElementById('ggx-canada-run-id');
@@ -1914,7 +2090,7 @@ export function createChannelApp(channelKey) {
 
             runLocal.textContent = `${formatDateTimeByTimezone(run.run_at_utc, CANADA_LOCAL_TIMEZONE)} (${CANADA_LOCAL_TIMEZONE})`;
             runUtc.textContent = formatUtcDateTime(run.run_at_utc);
-            runId.textContent = `run_id: ${run.run_id || '--'}`;
+            runId.textContent = `${regionView?.shortLabel || 'GLOBAL'} · run_id: ${run.run_id || '--'}`;
         },
 
         toCanadaChartMatrix(rows, seriesOrder) {
@@ -2029,9 +2205,10 @@ export function createChannelApp(channelKey) {
             chart.draw(table, options);
         },
 
-        drawCanadaCharts() {
+        drawCanadaCharts(pointRows = null) {
+            const sourceRows = Array.isArray(pointRows) ? pointRows : this.state.canadaPointRows;
             Object.entries(CANADA_CHART_SPECS).forEach(([chartId, spec]) => {
-                const rows = this.state.canadaPointRows.filter((row) => row.chart_id === chartId);
+                const rows = sourceRows.filter((row) => row.chart_id === chartId);
                 this.drawCanadaComboChart(spec, rows);
             });
         },
@@ -2053,17 +2230,18 @@ export function createChannelApp(channelKey) {
             return '';
         },
 
-        renderCanadaStaticTables() {
+        renderCanadaStaticTables(tableRows = null) {
             const wrap = document.getElementById('ggx-canada-static-tables');
             if (!wrap) return;
 
-            if (!this.state.canadaTableRows.length) {
+            const sourceRows = Array.isArray(tableRows) ? tableRows : this.state.canadaTableRows;
+            if (!sourceRows.length) {
                 wrap.innerHTML = '<div class="ggx-empty">No parsed Canada static tables in this run.</div>';
                 return;
             }
 
             const preferredOrder = ['intra_alberta_cost_image', 'current_utility_delivery_costs_image'];
-            const sorted = [...this.state.canadaTableRows].sort((a, b) => {
+            const sorted = [...sourceRows].sort((a, b) => {
                 const ai = preferredOrder.indexOf(a.chart_id);
                 const bi = preferredOrder.indexOf(b.chart_id);
                 if (ai === -1 && bi === -1) return String(a.chart_title || '').localeCompare(String(b.chart_title || ''));
@@ -2124,21 +2302,37 @@ export function createChannelApp(channelKey) {
         },
 
         async renderCanadaDashboard() {
-            this.renderCanadaRunSummary();
-            this.setCanadaStatus(this.state.canadaStatus.type, this.state.canadaStatus.message);
-            this.renderCanadaStaticTables();
+            const activeRegion = this.getActiveDataRegionView();
+            const pointRows = Array.isArray(activeRegion?.pointRows) ? activeRegion.pointRows : this.state.canadaPointRows;
+            const tableRows = Array.isArray(activeRegion?.tableRows) ? activeRegion.tableRows : this.state.canadaTableRows;
 
-            if (!this.state.canadaPointRows.length) return;
+            this.renderCanadaRunSummary(activeRegion);
+            if (!pointRows.length && !tableRows.length) {
+                this.setCanadaStatus('loading', `No structured chart/table data yet for ${activeRegion?.label || 'selected region'}.`);
+            } else {
+                this.setCanadaStatus(
+                    this.state.canadaStatus.type,
+                    `${this.state.canadaStatus.message} Scope ${activeRegion?.shortLabel || 'GLOBAL'}: ${pointRows.length} points / ${tableRows.length} tables.`
+                );
+            }
+            this.renderCanadaStaticTables(tableRows);
+            this.drawCanadaCharts(pointRows);
+
+            if (!pointRows.length) return;
 
             await ensureGoogleChartsLoaded();
-            this.drawCanadaCharts();
+            this.drawCanadaCharts(pointRows);
 
             if (!this.state.canadaResizeBound) {
                 this.state.canadaResizeBound = true;
                 let resizeTimer = null;
                 window.addEventListener('resize', () => {
                     clearTimeout(resizeTimer);
-                    resizeTimer = setTimeout(() => this.drawCanadaCharts(), 180);
+                    resizeTimer = setTimeout(() => {
+                        const active = this.getActiveDataRegionView();
+                        const scopedRows = Array.isArray(active?.pointRows) ? active.pointRows : this.state.canadaPointRows;
+                        this.drawCanadaCharts(scopedRows);
+                    }, 180);
                 });
             }
         },
