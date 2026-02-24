@@ -328,6 +328,12 @@ function formatDateTime(value) {
     });
 }
 
+function buildTopicTagUrl(tagText) {
+    const text = String(tagText || '').trim();
+    if (!text) return '/news/topic/';
+    return `/news/topic/?tag=${encodeURIComponent(text)}`;
+}
+
 function formatUtcDateTime(value) {
     if (!value) return '--';
     const date = value instanceof Date ? value : new Date(value);
@@ -609,7 +615,10 @@ function filterArticlesByChannel(articles, channelKey) {
 
 function renderEditorialTemplate(config) {
     const chips = (config.chips || [])
-        .map((chip, index) => `<button class="ggx-chip${index === 0 ? ' active' : ''}">${escapeHtml(chip)}</button>`)
+        .map(
+            (chip, index) =>
+                `<a href="${buildTopicTagUrl(chip)}" class="ggx-chip${index === 0 ? ' active' : ''}">${escapeHtml(chip)}</a>`,
+        )
         .join('');
 
     return `
@@ -716,21 +725,21 @@ function renderGeneratorsTemplate(config) {
 
         <div class="mt-5 -mx-1 overflow-x-auto pb-1">
             <div class="flex min-w-max gap-2 px-1">
-                <button type="button" class="rounded-full border border-[#00E676]/60 bg-[#00E676]/15 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#00E676]">
+                <a href="/news/generators/" class="rounded-full border border-[#00E676]/60 bg-[#00E676]/15 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#00E676]">
                     All
-                </button>
-                <button type="button" class="rounded-full border border-gray-600/90 bg-gray-800/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-300 transition hover:border-[#00E676]/60 hover:text-[#00E676]">
+                </a>
+                <a href="${buildTopicTagUrl('Hardware Reviews')}" class="rounded-full border border-gray-600/90 bg-gray-800/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-300 transition hover:border-[#00E676]/60 hover:text-[#00E676]">
                     Hardware Reviews
-                </button>
-                <button type="button" class="rounded-full border border-gray-600/90 bg-gray-800/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-300 transition hover:border-[#00E676]/60 hover:text-[#00E676]">
+                </a>
+                <a href="${buildTopicTagUrl('VMAN & Brands')}" class="rounded-full border border-gray-600/90 bg-gray-800/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-300 transition hover:border-[#00E676]/60 hover:text-[#00E676]">
                     VMAN &amp; Brands
-                </button>
-                <button type="button" class="rounded-full border border-gray-600/90 bg-gray-800/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-300 transition hover:border-[#00E676]/60 hover:text-[#00E676]">
+                </a>
+                <a href="${buildTopicTagUrl('Maintenance')}" class="rounded-full border border-gray-600/90 bg-gray-800/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-300 transition hover:border-[#00E676]/60 hover:text-[#00E676]">
                     Maintenance
-                </button>
-                <button type="button" class="rounded-full border border-gray-600/90 bg-gray-800/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-300 transition hover:border-[#00E676]/60 hover:text-[#00E676]">
+                </a>
+                <a href="${buildTopicTagUrl('Tech Specs')}" class="rounded-full border border-gray-600/90 bg-gray-800/70 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-300 transition hover:border-[#00E676]/60 hover:text-[#00E676]">
                     Tech Specs
-                </button>
+                </a>
             </div>
         </div>
     </section>
@@ -1009,9 +1018,9 @@ function renderEventsTemplate(config) {
         <div class="ggx-section-head mt-4">
             <h2><i class="fa-solid ${escapeHtml(config.icon)}"></i> ${escapeHtml(config.feedTitle)}</h2>
             <div class="ggx-chip-row">
-                <span class="ggx-chip active">Articles</span>
-                <span class="ggx-chip">Saved Sources</span>
-                <span class="ggx-chip">Chronological</span>
+                <a href="/news/events/" class="ggx-chip active">Articles</a>
+                <a href="${buildTopicTagUrl('Saved Sources')}" class="ggx-chip">Saved Sources</a>
+                <a href="${buildTopicTagUrl('Chronological')}" class="ggx-chip">Chronological</a>
             </div>
         </div>
 
@@ -1880,7 +1889,10 @@ export function createChannelApp(channelKey) {
 
             const tagsHtml = topTags.length
                 ? topTags
-                      .map(([tag, count]) => `<li class="ggx-signal-item"><a href="#">${escapeHtml(tag.toUpperCase())} · ${escapeHtml(String(count))} hits</a></li>`)
+                      .map(
+                          ([tag, count]) =>
+                              `<li class="ggx-signal-item"><a href="${buildTopicTagUrl(tag)}">${escapeHtml(tag.toUpperCase())} · ${escapeHtml(String(count))} hits</a></li>`,
+                      )
                       .join('')
                 : '<li class="ggx-signal-item"><a href="#">No tag distribution available.</a></li>';
 
@@ -2470,7 +2482,11 @@ export function createChannelApp(channelKey) {
                         <h3 class="ggx-event-title">${escapeHtml(item.title || 'Untitled')}</h3>
                         <p class="ggx-event-summary ggx-line-clamp-3">${escapeHtml(item.summary || 'No summary provided.')}</p>
                         <div class="ggx-event-actions">
-                            <span class="text-xs text-gray-500 uppercase tracking-wide">${escapeHtml(item.source || '--')} · ${escapeHtml(item.type || '--')}</span>
+                            <span class="text-xs text-gray-500 uppercase tracking-wide">
+                                <a href="${buildTopicTagUrl(item.source || 'source')}" class="hover:text-white transition-colors">${escapeHtml(item.source || '--')}</a>
+                                ·
+                                <a href="${buildTopicTagUrl(item.type || 'events')}" class="hover:text-white transition-colors">${escapeHtml(item.type || '--')}</a>
+                            </span>
                             <a ${buildLinkAttrs(item.url || '#')} class="ggx-event-link">Open Link</a>
                         </div>
                     </article>
