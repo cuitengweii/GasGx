@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - GasGx</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',
+                            card: '#202020',
+                            green: '#5DD62C',
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',
+                            subtext: '#94a3b8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 20px rgba(93, 214, 44, 0.6)',
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 10px rgba(93, 214, 44, 0.4)' },
+                            '50%': { boxShadow: '0 0 20px rgba(93, 214, 44, 0.8)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        /* Card Frosted Effect */
+        .gas-card {
+            background-color: rgba(32, 32, 32, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Mega Menu Animation */
+        .mega-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: #151515;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .mega-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        /* Dropdown Menu Animation */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            min-width: 220px;
+            background-color: #151515;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0 0 8px 8px;
+            padding: 0.5rem 0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+
+        .group:hover .dropdown-menu {
+            display: block;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-item-link {
+            position: relative;
+            padding: 1.5rem 0.5rem;
+            color: #94a3b8;
+            transition: color 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-item-link:hover { color: #5DD62C; }
+
+        .nav-item-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #5DD62C;
+            transition: width 0.3s;
+        }
+        .nav-item-link:hover::after { width: 100%; }
+
+        /* Footer Link Hover */
+        .footer-link {
+            color: #94a3b8;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .footer-link:hover {
+            color: #5DD62C;
+        }
+
+        /* Mobile Menu Styles */
+        #mobile-menu-container {
+            transition: transform 0.3s ease-in-out;
+        }
+        .mobile-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        /* Footer Accordion (Mobile) */
+        .footer-accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        /* Floating Share Button Animation */
+        @keyframes floatPulse {
+            0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); }
+        }
+        .float-btn {
+            animation: floatPulse 2s infinite;
+        }
+
+        /* Login Modal Animation */
+        @keyframes modalPop {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .modal-animate {
+            animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-28 pb-12 px-4 w-full">
+        <div class="max-w-4xl mx-auto">
+
+            <div class="mb-8 text-center">
+                <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">GasGx Privacy Policy</h1>
+                <p class="text-gray-400">Effective Date: January 16, 2026</p>
+            </div>
+
+            <div class="gas-card p-6 md:p-12 rounded-2xl shadow-xl text-gray-300 leading-relaxed">
+
+                <div class="mb-8">
+                    <h2 class="text-xl md:text-2xl font-bold text-gas-green mb-4 border-l-4 border-gas-green pl-3">1. Overview</h2>
+                    <p class="mb-4">gasgx (hereinafter referred to as "we") develops and operates this application. We understand the importance of personal information and are committed to complying with applicable laws and regulations (including GDPR, CCPA, etc.) to protect your privacy.</p>
+                    <p class="mb-4">This Privacy Policy explains how we collect, use, disclose, and protect your information when you use our services, especially those involving Google API Services.</p>
+                </div>
+
+                <div class="mb-8">
+                    <h2 class="text-xl md:text-2xl font-bold text-gas-green mb-4 border-l-4 border-gas-green pl-3">2. Information We Collect</h2>
+                    <p class="mb-4">We collect specific information necessary to provide our services, including:</p>
+                    <ul class="list-disc list-inside space-y-2 pl-2 md:pl-4 mb-4 text-gray-300">
+                        <li><strong class="text-white">Account Information:</strong> Your name, email address, and profile picture (obtained via login).</li>
+                        <li><strong class="text-white">Google User Data:</strong> Data accessed via Google APIs with your explicit authorization (details below).</li>
+                        <li><strong class="text-white">Usage Data:</strong> Log files, IP addresses, browser type, and interaction data.</li>
+                    </ul>
+                </div>
+
+                <div class="mb-8 bg-[#1a1a1a] border border-gas-green/20 rounded-xl p-6 md:p-8">
+                    <h2 class="text-xl md:text-2xl font-bold text-gas-green mb-4 border-l-4 border-gas-green pl-3">3. Use and Disclosure of Google User Data (Important)</h2>
+                    <p class="mb-6">If our application requests access to your Google data, we strictly adhere to the following principles:</p>
+
+                    <h3 class="text-lg font-bold text-white mt-6 mb-3">3.1 Scope of Data Access</h3>
+                    <p class="mb-3">We request only the minimum permissions necessary to run the application's core functions. Specific requested scopes include:</p>
+                    <ul class="list-disc list-inside space-y-2 pl-2 md:pl-4 mb-6">
+                        <li><strong class="text-white">Basic Account Info (userinfo.email, userinfo.profile):</strong> Used to authenticate your identity and display your profile within the app.</li>
+                        <li><strong class="text-white">Google Drive Files (drive.readonly):</strong> Accesses only the specific files or documents you explicitly select to import or process.</li>
+                        <li><strong class="text-white">Gmail Content (gmail.readonly):</strong> Used to read content of emails you specify for analysis or summarization.</li>
+                        <li><strong class="text-white">Send Emails on your behalf (gmail.send):</strong> Executed only when you explicitly click a send button and confirm the content (e.g., sending replies or drafts).</li>
+                    </ul>
+
+                    <h3 class="text-lg font-bold text-white mt-6 mb-3">3.2 Purpose of Data Use</h3>
+                    <p class="mb-3">We access Google user data solely for the following purposes:</p>
+                    <ul class="list-disc list-inside space-y-2 pl-2 md:pl-4 mb-6">
+                        <li><strong class="text-white">Authentication:</strong> To allow you to securely log in and manage your account.</li>
+                        <li><strong class="text-white">Document & Email Processing:</strong> To read content to provide you with intelligent summaries, format conversion, data extraction, or automated reply suggestions.</li>
+                        <li><strong class="text-white">Service Execution:</strong> To process files or send emails based on your direct instructions.</li>
+                    </ul>
+                    <p class="mb-6 bg-red-900/10 border-l-2 border-red-500 p-3 italic text-gray-300">We do <strong class="text-red-400">not</strong> use your Google user data for advertising purposes, nor do we sell it to third parties. We do not have humans read your emails or files; all processing is done by automated procedures.</p>
+
+                    <h3 class="text-lg font-bold text-white mt-6 mb-3">3.3 Limited Use Policy Compliance</h3>
+                    <p class="mb-0">gasgx's use and transfer to any other app of information received from Google APIs will adhere to <a href="https://developers.google.com/terms/api-services-user-data-policy#additional_requirements_for_specific_api_scopes" target="_blank" class="text-gas-green hover:underline">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+                </div>
+
+                <div class="mb-8">
+                    <h2 class="text-xl md:text-2xl font-bold text-gas-green mb-4 border-l-4 border-gas-green pl-3">4. Data Sharing and Third Parties</h2>
+                    <p class="mb-4">We do not share your personal information with third parties unless we have your consent or are required by law, except for:</p>
+                    <ul class="list-disc list-inside space-y-2 pl-2 md:pl-4 mb-4">
+                        <li><strong class="text-white">Service Providers:</strong> We may use third-party services (e.g., Cloud providers like AWS/Google Cloud) to assist in operations. These parties process data only according to our instructions.</li>
+                        <li><strong class="text-white">AI Model Processing:</strong> To provide intelligent analysis, summarization, or writing assistance, your non-personally identifiable data (such as document text segments) may be processed by third-party AI model providers (e.g., OpenAI/Claude). <strong class="text-white">We have strict agreements prohibiting them from using your data to train or improve their general AI models.</strong> Your data is used for single-instance processing and is not retained thereafter.</li>
+                    </ul>
+                </div>
+
+                <div class="mb-8">
+                    <h2 class="text-xl md:text-2xl font-bold text-gas-green mb-4 border-l-4 border-gas-green pl-3">5. Data Storage and Retention</h2>
+                    <p class="mb-4">Your data is stored on encrypted, secure servers. We retain your personal information only for as long as necessary to provide our services. For files or email content accessed temporarily via API, we do not permanently retain original copies on our servers after processing is complete.</p>
+                    <p class="mb-4">When you delete your account or revoke authorization, we will delete or anonymize your data in accordance with applicable laws.</p>
+                </div>
+
+                <div class="mb-8">
+                    <h2 class="text-xl md:text-2xl font-bold text-gas-green mb-4 border-l-4 border-gas-green pl-3">6. Your Rights</h2>
+                    <p class="mb-4">You have the following rights:</p>
+                    <ul class="list-disc list-inside space-y-2 pl-2 md:pl-4 mb-4">
+                        <li>Access, correct, or delete your personal information.</li>
+                        <li>Revoke authorization for our app via the Google Security Settings page (<a href="https://myaccount.google.com/permissions" target="_blank" class="text-gas-green hover:underline">https://myaccount.google.com/permissions</a>).</li>
+                    </ul>
+                </div>
+
+                <div class="mb-0">
+                    <h2 class="text-xl md:text-2xl font-bold text-gas-green mb-4 border-l-4 border-gas-green pl-3">7. Contact Us</h2>
+                    <p class="mb-4">If you have any questions about this Privacy Policy or your data security, please contact us:</p>
+                    <p class="mb-2"><strong class="text-white">Email:</strong> <a href="mailto:privacy@gasgx.com" class="text-gas-green hover:underline">privacy@gasgx.com</a></p>
+
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <button onclick="window.app.captureAndShare()" class="float-btn fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group" title="Share Snapshot">
+        <i class="fa-solid fa-camera text-xl"></i>
+        <span class="absolute right-14 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-white/10">
+            Share Page
+        </span>
+    </button>
+
+    <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-95 opacity-0" id="shareModalContent">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-check text-2xl text-gas-green"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3>
+                <p class="text-sm text-gray-400">Full page captured successfully.</p>
+            </div>
+            <button onclick="window.app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUEXdeSB7Ue0gkwcXN3j76ymyCbngxufY",
+            authDomain: "gasgxmining.firebaseapp.com",
+            projectId: "gasgxmining",
+            storageBucket: "gasgxmining.firebasestorage.app",
+            messagingSenderId: "465579060005",
+            appId: "1:465579060005:web:ee20cb21ed58020c4a88cc",
+            measurementId: "G-ZHNSQ29181"
+        };
+
+        // Initialize Firebase
+        const fbApp = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(fbApp);
+        const auth = getAuth(fbApp);
+        const provider = new GoogleAuthProvider();
+
+        // UI References
+        const els = {
+            loginBtn: document.getElementById('auth-login-btn'),
+            userProfile: document.getElementById('auth-user-profile'),
+            userAvatar: document.getElementById('auth-user-avatar'),
+            dropdownUsername: document.getElementById('dropdown-username'),
+
+            mobLoginBtn: document.getElementById('mob-auth-login-btn'),
+            mobUserProfile: document.getElementById('mob-auth-user-profile'),
+            mobUserAvatar: document.getElementById('mob-auth-user-avatar'),
+            mobUsername: document.getElementById('mob-auth-username')
+        };
+
+        // --- Global Auth Functions (Exposed to Window for HTML onclick) ---
+        window.AuthApp = {
+            signIn: async () => {
+                try {
+                    await signInWithPopup(auth, provider);
+                } catch (error) {
+                    console.error("Login failed:", error);
+                    alert("Login failed. Please try again.");
+                }
+            },
+            signOut: async () => {
+                try {
+                    await signOut(auth);
+                } catch (error) {
+                    console.error("Logout failed:", error);
+                }
+            }
+        };
+
+        // --- Auth State Observer ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in
+                console.log("User logged in:", user.displayName);
+
+                // Update Desktop UI
+                if(els.loginBtn) {
+                    els.loginBtn.classList.add('hidden');
+                    els.loginBtn.classList.remove('flex');
+                }
+                if(els.userProfile) {
+                    els.userProfile.classList.remove('hidden');
+                    els.userProfile.classList.add('flex');
+                }
+                if(els.userAvatar) els.userAvatar.src = user.photoURL || 'https://via.placeholder.com/32';
+                if(els.dropdownUsername) els.dropdownUsername.innerText = user.displayName || 'User';
+
+                // Update Mobile UI
+                if(els.mobLoginBtn) els.mobLoginBtn.classList.add('hidden');
+                if(els.mobUserProfile) {
+                    els.mobUserProfile.classList.remove('hidden');
+                    els.mobUserProfile.classList.add('flex');
+                }
+                if(els.mobUserAvatar) els.mobUserAvatar.src = user.photoURL || 'https://via.placeholder.com/32';
+                if(els.mobUsername) els.mobUsername.innerText = user.displayName || 'User';
+} else {
+                // User is signed out
+                console.log("User logged out");
+
+                // Update Desktop UI
+                if(els.loginBtn) {
+                    els.loginBtn.classList.remove('hidden');
+                    els.loginBtn.classList.add('flex');
+                }
+                if(els.userProfile) {
+                    els.userProfile.classList.add('hidden');
+                    els.userProfile.classList.remove('flex');
+                }
+                if(els.userAvatar) els.userAvatar.src = '';
+
+                // Update Mobile UI
+                if(els.mobLoginBtn) els.mobLoginBtn.classList.remove('hidden');
+                if(els.mobUserProfile) {
+                    els.mobUserProfile.classList.add('hidden');
+                    els.mobUserProfile.classList.remove('flex');
+                }
+                if(els.mobUserAvatar) els.mobUserAvatar.src = '';
+
+            }
+        });
+    </script>
+
+    <script>
+        const AppData = {
+            navigation: [
+                { title: "首页", path: "/index.html", type: "link", icon: "fa-solid fa-house" },
+                {
+                    title: "解决方案",
+                    path: "/solutions",
+                    type: "menu",
+                    children: [
+                        { title: "油气井/伴生气发电", path: "/solutions/oilfield" },
+                        { title: "工业园区与分布式能源", path: "/solutions/industrial" },
+                        { title: "数据中心 / 挖矿电力", path: "/solutions/mining" },
+                        { title: "热电联供 CHP", path: "/solutions/chp" }
+                    ]
+                },
+                {
+                    title: "机型库",
+                    path: "/products",
+                    type: "mega",
+                    sections: [
+                        {
+                            header: "按功率分类",
+                            items: [
+                                { title: "小于 500 kW", path: "/products/power-range/0-500kw" },
+                                { title: "500 – 1,000 kW", path: "/products/power-range/500-1000kw" },
+                                { title: "1 MW 以上", path: "/products/power-range/1mw-plus" }
+                            ]
+                        },
+                        {
+                            header: "按冷却方式",
+                            items: [
+                                { title: "风冷", path: "/products/cooling/air" },
+                                { title: "液冷", path: "/products/cooling/liquid" }
+                            ]
+                        },
+                        {
+                            header: "按气源类型",
+                            items: [
+                                { title: "天然气", path: "/products/gas/natural" },
+                                { title: "伴生气", path: "/products/gas/associated" },
+                                { title: "低甲烷值气", path: "/products/gas/low-methane" }
+                            ]
+                        },
+                        {
+                            header: "按部署形式",
+                            items: [
+                                { title: "集装箱机组", path: "/products/deployment/container" },
+                                { title: "一体化机组 AIS", path: "/products/deployment/ais" },
+                                { title: "滑撬式机组", path: "/products/deployment/skid" }
+                            ]
+                        },
+                        {
+                            header: "按品牌",
+                            items: [
+                                { title: "全部品牌", path: "/products/brands" },
+                                { title: "中国生产", path: "/products/brands/china" },
+                                { title: "海外生产", path: "/products/brands/overseas" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "排行榜",
+                    path: "/rankings",
+                    type: "mega",
+                    gridCols: "grid-cols-6",
+                    sections: [
+                        {
+                            header: "性能榜",
+                            items: [
+                                { title: "综合性能 TOP 榜", path: "/rankings/performance" },
+                                { title: "高效率榜", path: "/rankings/efficiency" },
+                                { title: "天然气内燃机发电效率排行榜", path: "/rankings/engine-efficiency" },
+                                { title: "天然气内燃机热效率排行榜", path: "/rankings/thermal-efficiency" },
+                                { title: "天然气内燃机耗气量排行榜", path: "/rankings/gas-consumption" }
+                            ]
+                        },
+                        {
+                            header: "经济性榜",
+                            items: [
+                                { title: "最佳 ROI 榜", path: "/rankings/roi" },
+                                { title: "最低发电成本 LCOE 榜", path: "/rankings/lcoe" },
+                                { title: "天然气内燃机折旧排行榜", path: "/rankings/depreciation" },
+                                { title: "天然气内燃机投资回报率排行榜", path: "/rankings/engine-roi" }
+                            ]
+                        },
+                        {
+                            header: "可靠性榜",
+                            items: [
+                                { title: "高可靠机组榜", path: "/rankings/reliability" },
+                                { title: "最长 MTBF 榜", path: "/rankings/mtbf" },
+                                { title: "天然气内燃机保养时间排行榜", path: "/rankings/maintenance-interval" },
+                                { title: "天然气内燃机备件保障排行榜", path: "/rankings/spare-parts" }
+                            ]
+                        },
+                        {
+                            header: "品质与环保榜",
+                            items: [
+                                { title: "天然气内燃机排放排行榜", path: "/rankings/emissions" },
+                                { title: "天然气内燃机噪音排行榜", path: "/rankings/noise" }
+                            ]
+                        },
+                        {
+                            header: "系统能力榜",
+                            items: [
+                                { title: "天然气内燃机发电机排行榜", path: "/rankings/generator" },
+                                { title: "天然气内燃机控制系统排行榜", path: "/rankings/control-system" }
+                            ]
+                        },
+                        {
+                            header: "区域榜",
+                            items: [
+                                { title: "美国市场榜", path: "/rankings/usa" },
+                                { title: "加拿大市场榜", path: "/rankings/canada" },
+                                { title: "中东市场榜", path: "/rankings/middle-east" },
+                                { title: "俄罗斯市场榜", path: "/rankings/russia" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "应用场景",
+                    path: "/use-cases",
+                    type: "menu",
+                    children: [
+                        { title: "油气井 / 伴生气", path: "/use-cases/oilfield" },
+                        { title: "工业与园区能源", path: "/use-cases/industrial" },
+                        { title: "挖矿 / 数据中心", path: "/use-cases/mining" },
+                        { title: "CHP 热电联供", path: "/use-cases/chp" }
+                    ]
+                },
+                {
+                    title: "工具箱",
+                    path: "/tools",
+                    type: "mega",
+                    gridCols: "grid-cols-5",
+                    sections: [
+                        {
+                            header: "经济测算工具",
+                            items: [
+                                { title: "LCOE 成本计算器", path: "/tools/lcoe-calculator" },
+                                { title: "ROI 回报估算器", path: "/tools/roi" },
+                                { title: "燃气发电挖矿收益计算器", path: "/tools/mining-power-calc" },
+                                { title: "蒙特卡洛模拟盈利分析", path: "/tools/monte-carlo-profit" },
+                                { title: "天然气发电耗气成本分析", path: "/tools/gas-cost-analysis" }
+                            ]
+                        },
+                        {
+                            header: "工程与技术工具",
+                            items: [
+                                { title: "气质适配工具", path: "/tools/gas-fit" },
+                                { title: "排放估算工具", path: "/tools/emission" },
+                                { title: "气体分析计算器", path: "/tools/gas-analyzer" },
+                                { title: "能电转换计算器", path: "/tools/energy-conversion" },
+                                { title: "天然气主要成分热值表", path: "/tools/gas-composition-heat" }
+                            ]
+                        },
+                        {
+                            header: "项目与选型工具",
+                            items: [
+                                { title: "站点匹配向导", path: "/tools/site-fit" },
+                                { title: "气源所在地分析", path: "/tools/gas-location-analysis" },
+                                { title: "燃气发动机选型与运营经济性", path: "/tools/engine-selection" },
+                                { title: "天然气发电机机油消耗率", path: "/tools/oil-consumption" },
+                                { title: "车机 VS 工业机 10MW 对比分析", path: "/tools/vehicle-vs-industrial-10mw" },
+                                { title: "多机型对比 3 年运营数据", path: "/tools/3y-compare" }
+                            ]
+                        },
+                        {
+                            header: "矿工专区（托管与算力分析）",
+                            items: [
+                                { title: "挖矿收益计算器", path: "/tools/mining-income-calculator" },
+                                { title: "矿机盈利能力计算器", path: "/tools/miner-profitability" },
+                                { title: "矿机选购速查", path: "/tools/miner-buying-guide" }
+                            ]
+                        },
+                        {
+                            header: "全球支持与合规",
+                            items: [
+                                { title: "加拿大 AECO 天然气价格预测", path: "/tools/aeco-price-forecast" },
+                                { title: "全球物流运输推荐", path: "/tools/global-logistics" },
+                                { title: "全球合规政策", path: "/tools/global-compliance" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "资料中心",
+                    path: "/resources",
+                    type: "mega",
+                    gridCols: "grid-cols-4",
+                    sections: [
+                        {
+                            header: "文档",
+                            items: [
+                                { title: "白皮书", path: "/resources/whitepapers" },
+                                { title: "行业报告", path: "/resources/reports" }
+                            ]
+                        },
+                        {
+                            header: "案例",
+                            items: [
+                                { title: "全部案例", path: "/resources/case-studies" },
+                                { title: "按区域查看", path: "/resources/case-studies/regions" },
+                                { title: "按场景查看", path: "/resources/case-studies/scenarios" }
+                            ]
+                        },
+                        {
+                            header: "技术库",
+                            items: [
+                                { title: "技术参数表", path: "/resources/datasheets" },
+                                { title: "认证与合规文件", path: "/resources/certifications" }
+                            ]
+                        },
+                        {
+                            header: "媒体与支持",
+                            items: [
+                                { title: "视频与教程", path: "/resources/videos" },
+                                { title: "常见问答 FAQ", path: "/resources/faq" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "服务支持",
+                    path: "/support",
+                    type: "menu",
+                    children: [
+                        { title: "服务网络", path: "/support/network" },
+                        { title: "技术支持", path: "/support/tech" },
+                        { title: "售后与保养", path: "/support/service" }
+                    ]
+                },
+                {
+                    title: "关于我们",
+                    path: "/about",
+                    type: "menu",
+                    children: [
+                        { title: "公司介绍", path: "/about/company" },
+                        { title: "联系我们", path: "/about/contact" }
+                    ]
+                }
+            ],
+
+            i18n: {
+                zh: {
+                    tagline: "天然气发电挖矿助手",
+                    footerTagline: "让天然气发电挖矿更简单",
+                    auth_login: "登录",
+                    auth_logout: "退出登录", privacy_policy: "隐私权政策",
+                },
+                en: {
+                    tagline: "Natural Gas Power Mining Assistant",
+                    footerTagline: "Making natural gas power mining easier",
+                    auth_login: "Login",
+                    auth_logout: "Logout", privacy_policy: "Privacy Policy",
+                    "首页": "Home",
+                    "解决方案": "Solutions",
+                    "机型库": "Products",
+                    "排行榜": "Rankings",
+                    "应用场景": "Use Cases",
+                    "工具箱": "Tools",
+                    "资料中心": "Resources",
+                    "服务支持": "Support",
+                    "关于我们": "About Us",
+                    "联系我们": "Contact Us",
+                    "油气井/伴生气发电": "Oil & Gas Power",
+                    "工业园区与分布式能源": "Industrial Power",
+                    "数据中心 / 挖矿电力": "Data Center / Mining",
+                    "热电联供 CHP": "CHP Cogeneration",
+                    "按功率分类": "By Power",
+                    "按冷却方式": "By Cooling",
+                    "按气源类型": "By Gas Type",
+                    "按部署形式": "By Deployment",
+                    "按品牌": "By Brand",
+                    "小于 500 kW": "< 500 kW",
+                    "500 – 1,000 kW": "500 – 1,000 kW",
+                    "1 MW 以上": "1 MW+",
+                    "风冷": "Air Cooled",
+                    "液冷": "Liquid Cooled",
+                    "天然气": "Natural Gas",
+                    "伴生气": "Associated Gas",
+                    "低甲烷值气": "Low Methane Gas",
+                    "集装箱机组": "Containerized",
+                    "一体化机组 AIS": "Integrated (AIS)",
+                    "滑撬式机组": "Skid Mounted",
+                    "全部品牌": "All Brands",
+                    "中国生产": "Made in China",
+                    "海外生产": "Overseas Brands",
+                    "性能榜": "Performance",
+                    "经济性榜": "Economics",
+                    "可靠性榜": "Reliability",
+                    "品质与环保榜": "Quality & Eco",
+                    "系统能力榜": "System Cap.",
+                    "区域榜": "Regions",
+                    "综合性能 TOP 榜": "Top Performance",
+                    "高效率榜": "High Efficiency",
+                    "天然气内燃机发电效率排行榜": "Elec. Efficiency Rank",
+                    "天然气内燃机热效率排行榜": "Thermal Efficiency Rank",
+                    "天然气内燃机耗气量排行榜": "Gas Consumption Rank",
+                    "最佳 ROI 榜": "Best ROI",
+                    "最低发电成本 LCOE 榜": "Lowest LCOE",
+                    "天然气内燃机折旧排行榜": "Depreciation Rank",
+                    "天然气内燃机投资回报率排行榜": "ROI Rank",
+                    "高可靠机组榜": "High Reliability",
+                    "最长 MTBF 榜": "Longest MTBF",
+                    "天然气内燃机保养时间排行榜": "Maintenance Interval Rank",
+                    "天然气内燃机备件保障排行榜": "Spare Parts Rank",
+                    "天然气内燃机排放排行榜": "Emission Rank",
+                    "天然气内燃机噪音排行榜": "Noise Rank",
+                    "天然气内燃机发电机排行榜": "Generator Rank",
+                    "天然气内燃机控制系统排行榜": "Control System Rank",
+                    "美国市场榜": "USA Market",
+                    "加拿大市场榜": "Canada Market",
+                    "中东市场榜": "Middle East Market",
+                    "俄罗斯市场榜": "Russia Market",
+                    "油气井 / 伴生气": "Oilfield / Associated Gas",
+                    "工业与园区能源": "Industrial & Park",
+                    "挖矿 / 数据中心": "Mining / Data Center",
+                    "CHP 热电联供": "CHP",
+                    "经济测算工具": "Economic Tools",
+                    "工程与技术工具": "Engineering Tools",
+                    "项目与选型工具": "Selection Tools",
+                    "矿工专区（托管与算力分析）": "Miners Zone",
+                    "全球支持与合规": "Global Support",
+                    "LCOE 成本计算器": "LCOE Calculator",
+                    "ROI 回报估算器": "ROI Estimator",
+                    "燃气发电挖矿收益计算器": "Gas Mining Revenue",
+                    "蒙特卡洛模拟盈利分析": "Monte Carlo Sim",
+                    "天然气发电耗气成本分析": "Gas Cost Analysis",
+                    "气质适配工具": "Gas Fit Tool",
+                    "排放估算工具": "Emission Estimator",
+                    "气体分析计算器": "Gas Analyzer",
+                    "能电转换计算器": "Energy Conversion",
+                    "天然气主要成分热值表": "Heat Value Table",
+                    "站点匹配向导": "Site Fit Wizard",
+                    "气源所在地分析": "Location Analysis",
+                    "燃气发动机选型与运营经济性": "Engine Selection & Econ",
+                    "天然气发电机机油消耗率": "Oil Consumption",
+                    "车机 VS 工业机 10MW 对比分析": "Vehicle vs Ind. (10MW)",
+                    "多机型对比 3 年运营数据": "3-Year Ops Data",
+                    "挖矿收益计算器": "Mining Revenue Calc",
+                    "矿机盈利能力计算器": "Miner Profitability",
+                    "矿机选购速查": "Miner Buyer Guide",
+                    "加拿大 AECO 天然气价格预测": "AECO Price Forecast",
+                    "全球物流运输推荐": "Global Logistics",
+                    "全球合规政策": "Global Compliance",
+                    "文档": "Documents",
+                    "案例": "Case Studies",
+                    "技术库": "Tech Library",
+                    "媒体与支持": "Media & Support",
+                    "白皮书": "Whitepapers",
+                    "行业报告": "Industry Reports",
+                    "全部案例": "All Cases",
+                    "按区域查看": "By Region",
+                    "按场景查看": "By Scenario",
+                    "技术参数表": "Datasheets",
+                    "认证与合规文件": "Certifications",
+                    "视频与教程": "Videos & Tutorials",
+                    "常见问答 FAQ": "FAQ",
+                    "服务网络": "Service Network",
+                    "技术支持": "Tech Support",
+                    "售后与保养": "After-sales",
+                    "公司介绍": "Company Profile"
+                },
+                ru: {
+                    tagline: "Помощник по газовому майнингу",
+                    footerTagline: "Майнинг на газе проще",
+                    auth_login: "Войти",
+                    auth_logout: "Выйти", privacy_policy: "Политика конфиденциальности",
+                    "首页": "Главная",
+                    "解决方案": "Решения",
+                    "机型库": "Продукты",
+                    "排行榜": "Рейтинги",
+                    "应用场景": "Кейсы",
+                    "工具箱": "Инструменты",
+                    "资料中心": "Ресурсы",
+                    "服务支持": "Поддержка",
+                    "关于我们": "О нас",
+                    "联系我们": "Контакты",
+                    "油气井/伴生气发电": "Нефтегаз",
+                    "工业园区与分布式能源": "Пром. энергия",
+                    "数据中心 / 挖矿电力": "Майнинг",
+                    "热电联供 CHP": "Когенерация",
+                    "按功率分类": "По мощности",
+                    "按冷却方式": "По охлаждению",
+                    "按气源类型": "По типу газа",
+                    "按部署形式": "По типу",
+                    "按品牌": "По бренду",
+                    "小于 500 kW": "< 500 кВт",
+                    "500 – 1,000 kW": "500 – 1,000 кВт",
+                    "1 MW 以上": "1 МВт+",
+                    "风冷": "Воздушное",
+                    "液冷": "Жидкостное",
+                    "天然气": "Природный газ",
+                    "伴生气": "Попутный газ",
+                    "低甲烷值气": "Низкий метан",
+                    "集装箱机组": "Контейнерные",
+                    "一体化机组 AIS": "Интегрированные",
+                    "滑撬式机组": "На раме",
+                    "全部品牌": "Все бренды",
+                    "中国生产": "Китай",
+                    "海外生产": "Зарубежные",
+                    "性能榜": "Производ.",
+                    "经济性榜": "Экономика",
+                    "可靠性榜": "Надежность",
+                    "品质与环保榜": "Качество",
+                    "系统能力榜": "Системы",
+                    "区域榜": "Регионы",
+                    "综合性能 TOP 榜": "Топ прозвод.",
+                    "高效率榜": "Выс. эффективность",
+                    "天然气内燃机发电效率排行榜": "Эл. КПД",
+                    "天然气内燃机热效率排行榜": "Тепл. КПД",
+                    "天然气内燃机耗气量排行榜": "Расход газа",
+                    "最佳 ROI 榜": "Лучший ROI",
+                    "最低发电成本 LCOE 榜": "Мин. LCOE",
+                    "天然气内燃机折旧排行榜": "Амортизация",
+                    "天然气内燃机投资回报率排行榜": "Рейтинг ROI",
+                    "高可靠机组榜": "Надежность",
+                    "最长 MTBF 榜": "Макс. MTBF",
+                    "天然气内燃机保养时间排行榜": "Интервал ТО",
+                    "天然气内燃机备件保障排行榜": "Запчасти",
+                    "天然气内燃机排放排行榜": "Выбросы",
+                    "天然气内燃机噪音排行榜": "Шум",
+                    "天然气内燃机发电机排行榜": "Генераторы",
+                    "天然气内燃机控制系统排行榜": "Системы упр.",
+                    "美国市场榜": "Рынок США",
+                    "加拿大市场榜": "Рынок Канады",
+                    "中东市场榜": "Ближний Восток",
+                    "俄罗斯市场榜": "Рынок РФ",
+                    "油气井 / 伴生气": "Нефтегаз",
+                    "工业与园区能源": "Пром. зоны",
+                    "挖矿 / 数据中心": "Майнинг ЦОД",
+                    "CHP 热电联供": "ТЭЦ",
+                    "经济测算工具": "Экономика",
+                    "工程与技术工具": "Инжиниринг",
+                    "项目与选型工具": "Подбор",
+                    "矿工专区（托管与算力分析）": "Майнерам",
+                    "全球支持与合规": "Поддержка",
+                    "LCOE 成本计算器": "LCOE Кальк.",
+                    "ROI 回报估算器": "ROI Оценка",
+                    "燃气发电挖矿收益计算器": "Доход майнинга",
+                    "蒙特卡洛模拟盈利分析": "Монте-Карло",
+                    "天然气发电耗气成本分析": "Затраты на газ",
+                    "气质适配工具": "Анализ газа",
+                    "排放估算工具": "Выбросы",
+                    "气体分析计算器": "Газовый анализ",
+                    "能电转换计算器": "Конвертер",
+                    "天然气主要成分热值表": "Таблица тепла",
+                    "站点匹配向导": "Подбор площадки",
+                    "气源所在地分析": "Локация",
+                    "燃气发动机选型与运营经济性": "Выбор двигателя",
+                    "天然气发电机机油消耗率": "Расход масла",
+                    "车机 VS 工业机 10MW 对比分析": "Авто vs Пром",
+                    "多机型对比 3 年运营数据": "Данные за 3 года",
+                    "挖矿收益计算器": "Доходность",
+                    "矿机盈利能力计算器": "Рентабельность",
+                    "矿机选购速查": "Выбор майнера",
+                    "加拿大 AECO 天然气价格预测": "Прогноз AECO",
+                    "全球物流运输推荐": "Логистика",
+                    "全球合规政策": "Комплаенс",
+                    "文档": "Документы",
+                    "案例": "Кейсы",
+                    "技术库": "Тех. база",
+                    "媒体与支持": "Медиа",
+                    "白皮书": "Whitepapers",
+                    "行业报告": "Отчеты",
+                    "全部案例": "Все кейсы",
+                    "按区域查看": "По регионам",
+                    "按场景查看": "По сценариям",
+                    "技术参数表": "Спецификации",
+                    "认证与合规文件": "Сертификаты",
+                    "视频与教程": "Видео",
+                    "常见问答 FAQ": "FAQ",
+                    "服务网络": "Сервис",
+                    "技术支持": "Техподдержка",
+                    "售后与保养": "Обслуживание",
+                    "公司介绍": "О компании"
+                }
+            }
+        };
+
+        // [CRITICAL FIX] Bind app to window immediately to resolve race conditions
+        window.app = {
+            currentLang: 'en', // Default to English
+            isMobileMenuOpen: false,
+
+            // Login Reminder Vars
+init() {
+                this.updateStaticText();
+
+                // Back to Top Scroll Logic
+                window.onscroll = () => {
+                    const btn = document.getElementById('backToTopBtn');
+                    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+                        btn.classList.remove('translate-y-20', 'opacity-0');
+                    } else {
+                        btn.classList.add('translate-y-20', 'opacity-0');
+                    }
+                };
+            },
+
+            // --- Login Reminder Logic ---
+
+            // --- End Reminder Logic ---
+
+            setLanguage(lang) {
+                this.currentLang = lang;
+
+                ['zh', 'en', 'ru'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`);
+                    const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+
+                    const activeClass = "text-black bg-gas-green shadow-glow font-bold";
+                    const inactiveClass = "text-gas-subtext hover:text-white hover:bg-white/5 font-medium";
+                    const mobActiveClass = "text-black bg-gas-green font-bold";
+                    const mobInactiveClass = "text-gray-400 font-medium";
+
+                    if (btn) btn.className = `px-2 py-1 rounded-full text-[10px] transition-all w-8 text-center ${l === lang ? activeClass : inactiveClass}`;
+                    if (mobBtn) mobBtn.className = `px-4 py-2 rounded-full text-xs transition-all ${l === lang ? mobActiveClass : mobInactiveClass}`;
+                });
+
+                this.updateStaticText();
+            },
+
+            t(key) {
+                const dict = AppData.i18n[this.currentLang];
+                return (dict && dict[key]) ? dict[key] : key;
+            },
+
+            // Footer Toggle Function (Mobile)
+
+            captureAndShare() {
+                // Scroll to top
+                window.scrollTo(0, 0);
+
+                // Add Watermark Layer
+                const watermark = document.createElement('div');
+                watermark.id = 'temp-watermark';
+                Object.assign(watermark.style, {
+                    position: 'absolute', top: 0, left: 0, width: '100%', height: document.body.scrollHeight + 'px',
+                    zIndex: 9999, pointerEvents: 'none', display: 'flex', flexWrap: 'wrap',
+                    alignContent: 'space-around', justifyContent: 'space-around', overflow: 'hidden', opacity: '0.15'
+                });
+
+                const textHtml = `<div style="text-align:center; transform: rotate(-30deg); margin: 100px;">
+                                    <div style="font-size: 24px; font-weight: bold; color: #5DD62C;">www.gasgx.com</div>
+                                    <div style="font-size: 16px; color: #fff;">Natural Gas Power Mining Assistant</div>
+                                  </div>`;
+
+                // Repeat watermark
+                const count = Math.ceil(document.body.scrollHeight / 400) * 3;
+                watermark.innerHTML = textHtml.repeat(count);
+                document.body.appendChild(watermark);
+
+                // Capture
+                setTimeout(() => {
+                    html2canvas(document.body, {
+                        backgroundColor: '#0F0F0F',
+                        scrollY: 0,
+                        useCORS: true,
+                        scale: 2
+                    }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = 'GasGx-Page-Capture.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        document.body.removeChild(watermark);
+
+                        // Show Success Modal
+                        const modal = document.getElementById('shareModal');
+                        modal.classList.remove('hidden');
+                        setTimeout(() => modal.querySelector('div').classList.remove('scale-95', 'opacity-0'), 10);
+                    }).catch(err => {
+                        console.error(err);
+                        if(document.getElementById('temp-watermark')) document.body.removeChild(watermark);
+                        alert('Capture failed.');
+                    });
+                }, 500);
+            },
+
+            closeModal() {
+                const modal = document.getElementById('shareModal');
+                const content = modal.querySelector('div');
+                content.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            },
+
+            updateStaticText() {
+                const taglineEl = document.getElementById('header-tagline');
+                const footerTaglineEl = document.querySelector('[data-i18n="footerTagline"]');
+
+                if(taglineEl) taglineEl.innerText = this.t('tagline');
+                if(footerTaglineEl) footerTaglineEl.innerText = this.t('footerTagline');
+
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (key !== 'tagline' && key !== 'footerTagline') {
+                        el.innerText = this.t(key);
+                    }
+                });
+            }
+        };
+
+        // Start
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => window.app.init());
+        } else {
+            window.app.init();
+        }
+    </script>
+
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>
+
+

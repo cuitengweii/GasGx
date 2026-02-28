@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+set -eu
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "$ROOT_DIR"
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "[sitemap] python3 not found; cannot generate sitemap." >&2
+  exit 1
+fi
+
+python3 scripts/generate_sitemap.py
+git add sitemap.html
+

@@ -47,6 +47,73 @@
     <link rel="stylesheet" href="./modules/styles/footer.module.css">
 </head>
 <body class="gxf-flash-page">
+    <style>
+        #gxf-startup-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+            background: #050505;
+            color: #cfcfcf;
+            font-family: Inter, sans-serif;
+            transition: opacity 220ms ease;
+        }
+        #gxf-startup-mask .gxf-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #gxf-startup-mask.gxf-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #gxf-startup-mask .gxf-spinner {
+            width: 34px;
+            height: 34px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-top-color: #5DD62C;
+            border-radius: 999px;
+            animation: gxf-spin 0.9s linear infinite;
+            margin-right: 12px;
+        }
+        @keyframes gxf-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        #gxf-startup-retry {
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #111111;
+            color: #ffffff;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        #gxf-startup-retry:hover {
+            border-color: #5DD62C;
+            color: #5DD62C;
+        }
+        #gxf-startup-mask.gxf-timeout #gxf-startup-retry {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+    <div id="gxf-startup-mask" role="status" aria-live="polite" aria-label="Loading flash news">
+        <div class="gxf-row">
+            <span class="gxf-spinner" aria-hidden="true"></span>
+            <span id="gxf-startup-text">Loading Flash News...</span>
+        </div>
+        <button id="gxf-startup-retry" type="button">Retry</button>
+    </div>
     <div id="gxf-header-slot"></div>
     <div id="gxf-main-slot" class="flex-grow w-full overflow-x-hidden"></div>
     <div id="gxf-footer-slot"></div>

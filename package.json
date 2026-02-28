@@ -1,0 +1,34 @@
+{
+  "name": "gasgx",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "npm run test:e2e",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "ftp:list": "sh scripts/ftp_deploy.sh list",
+    "ftp:upload": "sh scripts/ftp_deploy.sh upload",
+    "ftp:download": "sh scripts/ftp_deploy.sh download"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cuitengweii/GasGx.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/cuitengweii/GasGx/issues"
+  },
+  "homepage": "https://github.com/cuitengweii/GasGx#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "playwright": "^1.58.2"
+  }
+}
