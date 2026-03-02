@@ -1,4 +1,4 @@
-import { mountNewsMain, createNewsHomeApp } from './main.module.js?v=20260303fix1';
+import { mountNewsMain, createNewsHomeApp } from './main.module.js?v=20260303fix2';
 import { mountSharedHeader, mountSharedFooter } from '../shared/modules/layout.shared.js';
 
 const STARTUP_TIMEOUT_MS = 8000;

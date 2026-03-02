@@ -806,7 +806,7 @@ export function createNewsHomeApp() {
                     <div class="lg:col-span-2 lg:row-span-2 relative group rounded-xl overflow-hidden cursor-pointer ggx-tech-card border-0" onclick="window.location.href='${hero1Url}'">
                         <img src="${img1}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100">
                         <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent p-8 flex flex-col justify-end">
-                            <div class="flex items-center gap-2 mb-3"><span class="bg-gas-green text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-neon uppercase tracking-wide">${hero1.secondary_tag || hero1.tag}</span><span class="text-gray-300 text-xs">${new Date(hero1.time).toLocaleDateString()}</span></div>
+                            <div class="flex items-center mb-3"><span class="bg-gas-green text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-neon uppercase tracking-wide">${hero1.secondary_tag || hero1.tag}</span></div>
                             <h2 class="text-3xl md:text-4xl font-bold text-white leading-tight mb-2 font-header">${hero1.main_title}</h2>
                         </div>
                     </div>
