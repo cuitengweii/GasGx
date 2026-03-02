@@ -834,6 +834,57 @@ export function createNewsHomeApp() {
                 { id: 'metric_btc', label: 'BTC Price', value: '--', unit: 'USD', trend: 'flat', change_24h: 'Awaiting feed' },
             ];
 
+            const normalizeTrend = (value, fallback = '') => {
+                const v = String(value || fallback || '').toLowerCase();
+                if (v.includes('up') || v.includes('+') || v.includes('positive')) return 'up';
+                if (v.includes('down') || v.includes('-') || v.includes('negative')) return 'down';
+                return 'flat';
+            };
+
+            const mapLiveDataToPulse = (liveRows) => {
+                const rows = Array.isArray(liveRows) ? liveRows : [];
+                if (!rows.length) return [];
+
+                const wanted = [
+                    { key: 'hashrate', test: /(hash\s*rate|hashrate)/i },
+                    { key: 'difficulty', test: /(difficulty)/i },
+                    { key: 'gas', test: /(henry|natural\s*gas|gas)/i },
+                    { key: 'btc', test: /(btc|bitcoin)/i },
+                ];
+
+                const picked = [];
+                const used = new Set();
+                wanted.forEach((rule) => {
+                    const idx = rows.findIndex((row, i) => !used.has(i) && rule.test.test(String(row.label || '')));
+                    if (idx >= 0) {
+                        used.add(idx);
+                        const row = rows[idx];
+                        picked.push({
+                            id: `live_${rule.key}`,
+                            label: row.label || 'Metric',
+                            value: row.display_value ?? '--',
+                            unit: row.unit || '',
+                            trend: normalizeTrend(row.status, row.secondary_text),
+                            change_24h: row.secondary_text || '--',
+                        });
+                    }
+                });
+
+                rows.forEach((row, i) => {
+                    if (picked.length >= 4 || used.has(i)) return;
+                    picked.push({
+                        id: `live_extra_${i}`,
+                        label: row.label || 'Metric',
+                        value: row.display_value ?? '--',
+                        unit: row.unit || '',
+                        trend: normalizeTrend(row.status, row.secondary_text),
+                        change_24h: row.secondary_text || '--',
+                    });
+                });
+
+                return picked.slice(0, 4);
+            };
+
             const renderMetrics = (items) => {
                 const source = Array.isArray(items) ? items : [];
                 const dbMetrics = source.filter((item) => item && item.id !== 'spark_spread').slice(0, 4);
@@ -858,13 +909,24 @@ export function createNewsHomeApp() {
             };
 
             try {
-                const { data, error } = await _supabase.from('market_metrics').select('*');
-                if (error) {
-                    console.error('Market pulse query failed:', error);
+                const { data: liveData, error: liveErr } = await _supabase.from('homepage_scrolling_data').select('*').order('sort_order', { ascending: true });
+                if (!liveErr) {
+                    const mapped = mapLiveDataToPulse(liveData);
+                    if (mapped.length > 0) {
+                        renderMetrics(mapped);
+                        return;
+                    }
+                } else {
+                    console.error('Market pulse live source failed:', liveErr);
+                }
+
+                const { data: metricData, error: metricErr } = await _supabase.from('market_metrics').select('*');
+                if (metricErr) {
+                    console.error('Market pulse metric source failed:', metricErr);
                     renderMetrics(fallbackMetrics);
                     return;
                 }
-                renderMetrics(data);
+                renderMetrics(metricData);
             } catch (e) {
                 console.error(e);
                 renderMetrics(fallbackMetrics);
