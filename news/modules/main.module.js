@@ -764,6 +764,13 @@ export function createNewsHomeApp() {
             return articleId ? `https://www.gasgx.com/news/article/${articleId}` : '#';
         },
 
+        formatArticleDateTime(value) {
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '--';
+            const pad = (num) => String(num).padStart(2, '0');
+            return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        },
+
         async loadHero() {
             const container = document.getElementById('ggx-hero-grid-container');
             if (!container) return;
@@ -906,7 +913,7 @@ export function createNewsHomeApp() {
                                     <div class="ggx-latest-cover w-full md:w-60 overflow-hidden shrink-0 relative"><img src="${imgUrl}" loading="lazy" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='https://www.gasgx.com/news/advertisement/zhanwei.jpg'"></div>
                                     <div class="flex-1 p-5 ggx-card-body ggx-latest-card-body">
                                         <div>
-                                            <div class="flex items-center gap-2 mb-2"><span class="text-[10px] font-bold text-gas-green uppercase border border-gas-green/30 px-1.5 rounded">${tagDisplay}</span><span class="text-[10px] text-gray-500">${new Date(art.time).toLocaleDateString()}</span></div>
+                                            <div class="flex items-center gap-2 mb-2"><span class="text-[10px] font-bold text-gas-green uppercase border border-gas-green/30 px-1.5 rounded">${tagDisplay}</span><span class="text-[10px] text-gray-500">${this.formatArticleDateTime(art.time)}</span></div>
                                             <h3 class="text-lg font-bold text-white mb-2 leading-snug group-hover:text-gas-green transition-colors line-clamp-2">${art.main_title}</h3>
                                             <p class="text-gray-400 text-sm line-clamp-2">${art.subheading || ''}</p>
                                         </div>
@@ -922,7 +929,7 @@ export function createNewsHomeApp() {
                             <article class="ggx-tech-card rounded-lg p-5 group cursor-pointer" onclick="window.location.href='${articleUrl}'">
                                 <div class="ggx-card-body">
                                     <div><span class="text-gas-green text-[10px] font-bold uppercase mb-2 block tracking-wider">${tagDisplay}</span><h3 class="text-lg font-bold text-white mb-2 group-hover:text-gas-green transition-colors">${art.main_title}</h3><p class="text-gray-400 text-sm mb-4 line-clamp-3">${art.subheading || ''}</p></div>
-                                    <div class="text-[10px] text-gray-600 mt-auto pt-2 border-t border-white/5">${new Date(art.time).toLocaleDateString()}</div>
+                                    <div class="text-[10px] text-gray-600 mt-auto pt-2 border-t border-white/5">${this.formatArticleDateTime(art.time)}</div>
                                 </div>
                             </article>`;
                     })
