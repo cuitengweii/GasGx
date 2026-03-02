@@ -768,7 +768,7 @@ export function createNewsHomeApp() {
             const date = new Date(value);
             if (Number.isNaN(date.getTime())) return '--';
             const pad = (num) => String(num).padStart(2, '0');
-            return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+            return `${date.getUTCFullYear()}/${pad(date.getUTCMonth() + 1)}/${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())} UTC`;
         },
 
         async loadHero() {
@@ -827,19 +827,47 @@ export function createNewsHomeApp() {
             const container = document.getElementById('ggx-market-pulse-container');
             if (!container) return;
 
-            try {
-                const { data } = await _supabase.from('market_metrics').select('*');
-                if (data) {
-                    const filtered = data.filter((i) => i.id !== 'spark_spread').slice(0, 4);
-                    container.innerHTML = filtered
-                        .map((item) => {
-                            const trendClass = item.trend === 'up' ? 'text-gas-green' : item.trend === 'down' ? 'text-red-500' : 'text-blue-400';
-                            return `<div class="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 flex flex-col justify-between h-24 hover:border-gas-green/30 transition-all group"><div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider truncate">${item.label}</div><div><div class="text-xl font-mono font-bold text-white flex items-baseline gap-1">${item.value} <span class="text-[10px] text-gray-600 font-sans font-normal">${item.unit || ''}</span></div><div class="text-[10px] font-bold ${trendClass} mt-1 flex items-center gap-1">${item.trend === 'up' ? '<i class="fa-solid fa-caret-up"></i>' : item.trend === 'down' ? '<i class="fa-solid fa-caret-down"></i>' : ''} ${item.change_24h || '--'}</div></div></div>`;
-                        })
-                        .join('');
+            const fallbackMetrics = [
+                { id: 'metric_hashrate', label: 'Network Hashrate', value: '--', unit: 'EH/s', trend: 'flat', change_24h: 'Awaiting feed' },
+                { id: 'metric_difficulty', label: 'Difficulty', value: '--', unit: 'T', trend: 'flat', change_24h: 'Awaiting feed' },
+                { id: 'metric_gasprice', label: 'Natural Gas', value: '--', unit: '$/MMBtu', trend: 'flat', change_24h: 'Awaiting feed' },
+                { id: 'metric_btc', label: 'BTC Price', value: '--', unit: 'USD', trend: 'flat', change_24h: 'Awaiting feed' },
+            ];
+
+            const renderMetrics = (items) => {
+                const source = Array.isArray(items) ? items : [];
+                const dbMetrics = source.filter((item) => item && item.id !== 'spark_spread').slice(0, 4);
+                const merged = [...dbMetrics];
+                for (const fallback of fallbackMetrics) {
+                    if (merged.length >= 4) break;
+                    merged.push(fallback);
                 }
+
+                container.innerHTML = merged
+                    .map((item) => {
+                        const trend = String(item.trend || '').toLowerCase();
+                        const trendClass = trend === 'up' ? 'text-gas-green' : trend === 'down' ? 'text-red-500' : 'text-blue-400';
+                        const trendIcon = trend === 'up' ? '<i class="fa-solid fa-caret-up"></i>' : trend === 'down' ? '<i class="fa-solid fa-caret-down"></i>' : '';
+                        const label = item.label || 'Metric';
+                        const value = item.value ?? '--';
+                        const unit = item.unit || '';
+                        const change = item.change_24h || '--';
+                        return `<div class="bg-[#0A0A0A] border border-white/10 rounded-xl p-4 flex flex-col justify-between h-24 hover:border-gas-green/30 transition-all group"><div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider truncate">${label}</div><div><div class="text-xl font-mono font-bold text-white flex items-baseline gap-1">${value} <span class="text-[10px] text-gray-600 font-sans font-normal">${unit}</span></div><div class="text-[10px] font-bold ${trendClass} mt-1 flex items-center gap-1">${trendIcon} ${change}</div></div></div>`;
+                    })
+                    .join('');
+            };
+
+            try {
+                const { data, error } = await _supabase.from('market_metrics').select('*');
+                if (error) {
+                    console.error('Market pulse query failed:', error);
+                    renderMetrics(fallbackMetrics);
+                    return;
+                }
+                renderMetrics(data);
             } catch (e) {
                 console.error(e);
+                renderMetrics(fallbackMetrics);
             }
         },
 
