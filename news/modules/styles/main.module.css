@@ -49,11 +49,20 @@
     .ggx-main-module #ggx-news-feed-container > article.ggx-latest-card {
         flex-direction: row;
         align-items: stretch;
-        height: auto;
+        min-height: 11rem;
+        height: 11rem;
     }
 
     .ggx-main-module #ggx-news-feed-container > article.ggx-latest-card .ggx-latest-cover {
-        height: auto;
+        flex: 0 0 15rem;
+        width: 15rem;
+        min-height: 11rem;
+        height: 11rem;
+    }
+
+    .ggx-main-module #ggx-news-feed-container > article.ggx-latest-card .ggx-latest-card-body {
+        min-height: 0;
+        height: 100%;
     }
 }
 
