@@ -743,8 +743,8 @@ export function createNewsHomeApp() {
             const coverImage = (item.cover_image || '').toString().trim();
             if (coverImage) return { url: this.resolveArticleMediaUrl(articleId, coverImage, placeholder), isVideoCover: false };
 
-            const inlineVideoCover = this.getInlineVideoCoverUrl(item, articleId);
-            if (inlineVideoCover) return { url: inlineVideoCover, isVideoCover: true };
+            const inlineCoverMeta = this.getInlineCoverMeta(item, articleId);
+            if (inlineCoverMeta.url) return inlineCoverMeta;
 
             if (articleId) {
                 const key = String(articleId);
@@ -770,26 +770,29 @@ export function createNewsHomeApp() {
             return path.startsWith('/') ? path : `/${normalized}`;
         },
 
-        getInlineVideoCoverUrl(item, articleId) {
-            if (!item || typeof item !== 'object') return '';
+        getInlineCoverMeta(item, articleId) {
+            if (!item || typeof item !== 'object') return { url: '', isVideoCover: false };
 
-            const fields = [
+            const videoFields = [
                 'video_cover',
                 'video_cover_image',
                 'video_poster',
                 'video_thumbnail',
-                'thumbnail',
-                'thumb',
-                'poster',
             ];
-            for (const field of fields) {
+            for (const field of videoFields) {
                 const value = String(item[field] || '').trim();
-                if (value) return this.resolveArticleMediaUrl(articleId, value, '');
+                if (value) return { url: this.resolveArticleMediaUrl(articleId, value, ''), isVideoCover: true };
+            }
+
+            const genericFields = ['thumbnail', 'thumb', 'poster'];
+            for (const field of genericFields) {
+                const value = String(item[field] || '').trim();
+                if (value) return { url: this.resolveArticleMediaUrl(articleId, value, ''), isVideoCover: false };
             }
 
             const link = String(item.link || '').trim();
-            if (/\.(avif|webp|png|jpe?g|gif)(\?.*)?$/i.test(link)) return link;
-            return '';
+            if (/\.(avif|webp|png|jpe?g|gif)(\?.*)?$/i.test(link)) return { url: link, isVideoCover: false };
+            return { url: '', isVideoCover: false };
         },
 
         extractCoverFromArticleHtml(html, articleUrl) {
@@ -1192,8 +1195,8 @@ export function createNewsHomeApp() {
                                 <article class="ggx-tech-card ggx-latest-card rounded-lg p-0 flex flex-col md:flex-row group h-auto cursor-pointer mb-4" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openArticle('${articleUrl}')">
                                     <div class="ggx-latest-cover w-full md:w-60 overflow-hidden shrink-0 relative">
                                         <img src="${imgUrl}" data-article-id="${articleId}" data-video-cover="${isVideoCover ? '1' : '0'}" loading="lazy" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='https://www.gasgx.com/news/advertisement/zhanwei.jpg'">
-                                        <span data-video-badge-id="${articleId}" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 border border-white/35 text-white flex items-center justify-center pointer-events-none shadow-lg backdrop-blur-[1px] ${isVideoCover ? '' : 'hidden'}">
-                                            <i class="fa-solid fa-play text-sm ml-[2px]"></i>
+                                        <span data-video-badge-id="${articleId}" class="ggx-video-badge ${isVideoCover ? '' : 'hidden'}">
+                                            <i class="fa-solid fa-play text-base ml-[2px]"></i>
                                         </span>
                                     </div>
                                     <div class="flex-1 p-5 ggx-card-body ggx-latest-card-body">
