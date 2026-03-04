@@ -896,6 +896,41 @@ export function createNewsHomeApp() {
             return '';
         },
 
+        getFeedCategoryLabel(item) {
+            if (!item || typeof item !== 'object') return 'NEWS';
+
+            const normalize = (value) =>
+                String(value || '')
+                    .toLowerCase()
+                    .replace(/[_-]+/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+            const typeKey = normalize(item.type);
+            const typeMap = {
+                'gas energy': 'GAS ENERGY',
+                generators: 'GENERATORS',
+                mining: 'MINING',
+                insights: 'INSIGHTS',
+                data: 'DATA',
+                events: 'EVENTS',
+                flash: 'FLASH',
+            };
+            if (typeMap[typeKey]) return typeMap[typeKey];
+            if (typeKey) return typeKey.toUpperCase();
+
+            const tagKey = normalize(item.tag);
+            const tagMap = {
+                hardware: 'HARDWARE',
+                policy: 'POLICY',
+                finance: 'FINANCE',
+            };
+            if (tagMap[tagKey]) return tagMap[tagKey];
+            if (tagKey) return tagKey.toUpperCase();
+
+            return 'NEWS';
+        },
+
         formatArticleDateTime(value) {
             const date = new Date(value);
             if (Number.isNaN(date.getTime())) return '--';
@@ -1150,20 +1185,20 @@ export function createNewsHomeApp() {
                         const isVideoCover = imageMeta.isVideoCover;
                         const articleUrl = this.getArticleUrl(art);
                         const articleId = art.app_id || art.api_id || art.id || '';
-                        const tagDisplay = art.secondary_tag || art.tag || 'News';
+                        const categoryDisplay = this.getFeedCategoryLabel(art);
 
                         if (category === 'latest') {
                             return `
                                 <article class="ggx-tech-card ggx-latest-card rounded-lg p-0 flex flex-col md:flex-row group h-auto cursor-pointer mb-4" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openArticle('${articleUrl}')">
                                     <div class="ggx-latest-cover w-full md:w-60 overflow-hidden shrink-0 relative">
                                         <img src="${imgUrl}" data-article-id="${articleId}" data-video-cover="${isVideoCover ? '1' : '0'}" loading="lazy" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='https://www.gasgx.com/news/advertisement/zhanwei.jpg'">
-                                        <span data-video-badge-id="${articleId}" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/65 border border-white/30 text-white flex items-center justify-center pointer-events-none ${isVideoCover ? '' : 'hidden'}">
-                                            <i class="fa-solid fa-play text-[10px] ml-[1px]"></i>
+                                        <span data-video-badge-id="${articleId}" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 border border-white/35 text-white flex items-center justify-center pointer-events-none shadow-lg backdrop-blur-[1px] ${isVideoCover ? '' : 'hidden'}">
+                                            <i class="fa-solid fa-play text-sm ml-[2px]"></i>
                                         </span>
                                     </div>
                                     <div class="flex-1 p-5 ggx-card-body ggx-latest-card-body">
                                         <div>
-                                            <div class="flex items-center gap-2 mb-2"><span class="text-[10px] font-bold text-gas-green uppercase border border-gas-green/30 px-1.5 rounded">${tagDisplay}</span><span class="text-[10px] text-gray-500">${this.formatArticleDateTime(art.time)}</span></div>
+                                            <div class="flex items-center gap-2 mb-2"><span class="text-[10px] font-bold text-gas-green uppercase border border-gas-green/30 px-1.5 rounded">${categoryDisplay}</span><span class="text-[10px] text-gray-500">${this.formatArticleDateTime(art.time)}</span></div>
                                             <h3 class="text-lg font-bold text-white mb-2 leading-snug group-hover:text-gas-green transition-colors line-clamp-2">${art.main_title}</h3>
                                             <p class="text-gray-400 text-sm line-clamp-2">${art.subheading || ''}</p>
                                         </div>
@@ -1178,7 +1213,7 @@ export function createNewsHomeApp() {
                         return `
                             <article class="ggx-tech-card rounded-lg p-5 group cursor-pointer" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openArticle('${articleUrl}')">
                                 <div class="ggx-card-body">
-                                    <div><span class="text-gas-green text-[10px] font-bold uppercase mb-2 block tracking-wider">${tagDisplay}</span><h3 class="text-lg font-bold text-white mb-2 group-hover:text-gas-green transition-colors">${art.main_title}</h3><p class="text-gray-400 text-sm mb-4 line-clamp-3">${art.subheading || ''}</p></div>
+                                    <div><span class="text-gas-green text-[10px] font-bold uppercase mb-2 block tracking-wider">${categoryDisplay}</span><h3 class="text-lg font-bold text-white mb-2 group-hover:text-gas-green transition-colors">${art.main_title}</h3><p class="text-gray-400 text-sm mb-4 line-clamp-3">${art.subheading || ''}</p></div>
                                     <div class="text-[10px] text-gray-600 mt-auto pt-2 border-t border-white/5">${this.formatArticleDateTime(art.time)}</div>
                                 </div>
                             </article>`;
