@@ -7,6 +7,7 @@ const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
 const API_BASE = 'https://api.theblockbeats.news/v1/open-api/open-flash';
 const FLASH_PROXY_BASES = ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='];
 const FLASH_FETCH_TIMEOUT_MS = 15000;
+const FEED_PAGE_SIZE = 8;
 
 const SHARE_URL = 'https://www.gasgx.com/news/flash/';
 const DB_NAME = 'GasGxFlashDB';
@@ -202,6 +203,11 @@ export function createNewsHomeApp() {
             flashPollTimer: null,
             flashVisibilityHandler: null,
             lastFlashAutoFetchAt: 0,
+            articleCoverCache: {},
+            articleCoverLoading: {},
+            articleCoverIsVideo: {},
+            feedRenderedKeys: new Set(),
+            feedRequestToken: 0,
         },
 
         async init() {
@@ -726,16 +732,120 @@ export function createNewsHomeApp() {
         },
 
         getImageUrl(item) {
+            return this.getImageMeta(item).url;
+        },
+
+        getImageMeta(item) {
             const placeholder = 'https://www.gasgx.com/news/advertisement/zhanwei.jpg';
-            if (!item) return placeholder;
+            if (!item) return { url: placeholder, isVideoCover: false };
 
             const articleId = item.app_id || item.api_id || item.id;
             const coverImage = (item.cover_image || '').toString().trim();
-            if (!articleId || !coverImage) return placeholder;
+            if (coverImage) return { url: this.resolveArticleMediaUrl(articleId, coverImage, placeholder), isVideoCover: false };
 
-            if (/^https?:\/\//i.test(coverImage)) return coverImage;
-            const normalizedCover = coverImage.replace(/^\.?\/*(images\/)?/i, '');
-            return `https://www.gasgx.com/news/article/${articleId}/images/${normalizedCover}`;
+            const inlineVideoCover = this.getInlineVideoCoverUrl(item, articleId);
+            if (inlineVideoCover) return { url: inlineVideoCover, isVideoCover: true };
+
+            if (articleId) {
+                const key = String(articleId);
+                if (this.state.articleCoverCache[key]) {
+                    return {
+                        url: this.state.articleCoverCache[key],
+                        isVideoCover: !!this.state.articleCoverIsVideo[key],
+                    };
+                }
+                this.loadArticleCoverFromDetailPage(articleId);
+            }
+
+            return { url: placeholder, isVideoCover: false };
+        },
+
+        resolveArticleMediaUrl(articleId, mediaPath, fallback = '') {
+            const path = String(mediaPath || '').trim();
+            if (!path) return fallback;
+            if (/^https?:\/\//i.test(path)) return path;
+
+            const normalized = path.replace(/^\.?\/*(images\/)?/i, '');
+            if (articleId) return `https://www.gasgx.com/news/article/${articleId}/images/${normalized}`;
+            return path.startsWith('/') ? path : `/${normalized}`;
+        },
+
+        getInlineVideoCoverUrl(item, articleId) {
+            if (!item || typeof item !== 'object') return '';
+
+            const fields = [
+                'video_cover',
+                'video_cover_image',
+                'video_poster',
+                'video_thumbnail',
+                'thumbnail',
+                'thumb',
+                'poster',
+            ];
+            for (const field of fields) {
+                const value = String(item[field] || '').trim();
+                if (value) return this.resolveArticleMediaUrl(articleId, value, '');
+            }
+
+            const link = String(item.link || '').trim();
+            if (/\.(avif|webp|png|jpe?g|gif)(\?.*)?$/i.test(link)) return link;
+            return '';
+        },
+
+        extractCoverFromArticleHtml(html, articleUrl) {
+            if (!html) return { url: '', isVideoCover: false };
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                const videoPoster = doc.querySelector('video[poster]')?.getAttribute('poster');
+                if (videoPoster) return { url: new URL(videoPoster, articleUrl).href, isVideoCover: true };
+
+                const contentImage = doc.querySelector('.article-content img')?.getAttribute('src');
+                if (contentImage) return { url: new URL(contentImage, articleUrl).href, isVideoCover: false };
+            } catch (error) {
+                console.warn('Failed to extract article cover from detail page:', error);
+            }
+            return { url: '', isVideoCover: false };
+        },
+
+        async loadArticleCoverFromDetailPage(articleId) {
+            const key = String(articleId || '').trim();
+            if (!key) return;
+            if (this.state.articleCoverCache[key] || this.state.articleCoverLoading[key]) return;
+
+            this.state.articleCoverLoading[key] = true;
+            try {
+                const articleUrl = this.getArticleUrl({ app_id: key });
+                const response = await fetch(articleUrl, { cache: 'force-cache' });
+                if (!response.ok) return;
+
+                const html = await response.text();
+                const coverMeta = this.extractCoverFromArticleHtml(html, articleUrl);
+                if (!coverMeta.url) return;
+
+                this.state.articleCoverCache[key] = coverMeta.url;
+                this.state.articleCoverIsVideo[key] = !!coverMeta.isVideoCover;
+                this.updateArticleImages(key, coverMeta.url, !!coverMeta.isVideoCover);
+            } catch (error) {
+                console.warn(`Failed to load fallback cover for article ${key}:`, error);
+            } finally {
+                delete this.state.articleCoverLoading[key];
+            }
+        },
+
+        updateArticleImages(articleId, imageUrl, isVideoCover = false) {
+            if (!imageUrl) return;
+            const targetId = String(articleId);
+            document.querySelectorAll('img[data-article-id]').forEach((img) => {
+                if (img.dataset.articleId === targetId) {
+                    img.src = imageUrl;
+                    img.dataset.videoCover = isVideoCover ? '1' : '0';
+                }
+            });
+            document.querySelectorAll(`[data-video-badge-id="${targetId}"]`).forEach((badge) => {
+                badge.classList.toggle('hidden', !isVideoCover);
+            });
         },
 
         getAuthorAvatarUrl(item) {
@@ -762,6 +872,28 @@ export function createNewsHomeApp() {
             if (!item) return '#';
             const articleId = item.app_id || item.api_id || item.id;
             return articleId ? `https://www.gasgx.com/news/article/${articleId}` : '#';
+        },
+
+        openArticle(url) {
+            const href = String(url || '').trim();
+            if (!href || href === '#') return;
+            window.open(href, '_blank', 'noopener,noreferrer');
+        },
+
+        getArticleUniqueKey(item) {
+            if (!item || typeof item !== 'object') return '';
+
+            const apiId = item.api_id || item.app_id;
+            if (apiId) return `api:${apiId}`;
+
+            const link = String(item.link || '').trim();
+            if (link) return `link:${link}`;
+
+            const title = String(item.main_title || '').trim();
+            const time = String(item.time || '').trim();
+            if (title || time) return `fallback:${title}|${time}`;
+
+            return '';
         },
 
         formatArticleDateTime(value) {
@@ -798,25 +930,27 @@ export function createNewsHomeApp() {
                 const hero3 = articles.find((d) => d.homepage_mark === 3);
                 const img1 = this.getImageUrl(hero1);
                 const img2 = hero2 ? this.getImageUrl(hero2) : '';
+                const hero1Id = hero1?.app_id || hero1?.api_id || hero1?.id || '';
+                const hero2Id = hero2?.app_id || hero2?.api_id || hero2?.id || '';
                 const hero1Url = this.getArticleUrl(hero1);
                 const hero2Url = hero2 ? this.getArticleUrl(hero2) : '#';
                 const hero3Url = hero3 ? this.getArticleUrl(hero3) : '#';
 
                 container.innerHTML = `
-                    <div class="lg:col-span-2 lg:row-span-2 relative group rounded-xl overflow-hidden cursor-pointer ggx-tech-card border-0" onclick="window.location.href='${hero1Url}'">
-                        <img src="${img1}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100">
+                    <div class="lg:col-span-2 lg:row-span-2 relative group rounded-xl overflow-hidden cursor-pointer ggx-tech-card border-0" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openArticle('${hero1Url}')">
+                        <img src="${img1}" data-article-id="${hero1Id}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100" onerror="this.src='https://www.gasgx.com/news/advertisement/zhanwei.jpg'">
                         <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent p-8 flex flex-col justify-end">
                             <div class="flex items-center mb-3"><span class="bg-gas-green text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-neon uppercase tracking-wide">${hero1.secondary_tag || hero1.tag}</span></div>
                             <h2 class="text-3xl md:text-4xl font-bold text-white leading-tight mb-2 font-header">${hero1.main_title}</h2>
                         </div>
                     </div>
-                    ${hero2 ? `<div class="lg:col-span-1 lg:row-span-1 relative group rounded-xl overflow-hidden cursor-pointer ggx-tech-card border-0" onclick="window.location.href='${hero2Url}'"><img src="${img2}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"><div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent p-6 flex flex-col justify-end"><span class="text-gas-green text-[10px] font-bold uppercase mb-1">${hero2.secondary_tag || hero2.tag}</span><h3 class="text-lg font-bold text-white leading-snug">${hero2.main_title}</h3></div></div>` : '<div class="lg:col-span-1 lg:row-span-1 bg-[#111]"></div>'}
+                    ${hero2 ? `<div class="lg:col-span-1 lg:row-span-1 relative group rounded-xl overflow-hidden cursor-pointer ggx-tech-card border-0" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openArticle('${hero2Url}')"><img src="${img2}" data-article-id="${hero2Id}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.src='https://www.gasgx.com/news/advertisement/zhanwei.jpg'"><div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent p-6 flex flex-col justify-end"><span class="text-gas-green text-[10px] font-bold uppercase mb-1">${hero2.secondary_tag || hero2.tag}</span><h3 class="text-lg font-bold text-white leading-snug">${hero2.main_title}</h3></div></div>` : '<div class="lg:col-span-1 lg:row-span-1 bg-[#111]"></div>'}
                     <div class="lg:col-span-1 lg:row-span-1 bg-[#111] border border-white/5 rounded-xl p-6 flex flex-col justify-between group cursor-pointer relative overflow-hidden">
                         <div class="grid-bg absolute inset-0"></div>
                         <div class="relative z-10"><div class="flex justify-between items-start mb-4"><i class="fa-solid fa-chart-area text-2xl text-gas-green"></i><span class="text-[10px] text-gray-500 font-mono border border-gray-700 px-1 rounded">LIVE</span></div><h3 class="text-lg font-bold text-white mb-1">${sparkData.label}</h3><p class="text-xs text-gray-400">${sparkData.change_24h}</p></div>
                         <div class="text-3xl font-mono font-bold text-white group-hover:text-gas-green transition-colors relative z-10">${displayValue} <span class="text-xs text-gray-500 font-sans font-normal">${displayUnit}</span></div>
                     </div>
-                    ${hero3 ? `<div class="lg:col-span-2 lg:row-span-1 bg-[#121212] border border-white/5 rounded-xl p-6 flex items-center justify-between group cursor-pointer" onclick="window.location.href='${hero3Url}'"><div class="max-w-[70%]"><span class="text-orange-500 text-[10px] font-bold uppercase mb-2 block"><i class="fa-solid fa-fire mr-1"></i> ${hero3.secondary_tag || hero3.tag}</span><h3 class="text-xl font-bold text-white leading-snug group-hover:text-orange-400">${hero3.main_title}</h3></div><div class="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-500 group-hover:text-gas-green bg-[#1a1a1a]"><i class="fa-solid fa-arrow-right"></i></div></div>` : ''}
+                    ${hero3 ? `<div class="lg:col-span-2 lg:row-span-1 bg-[#121212] border border-white/5 rounded-xl p-6 flex items-center justify-between group cursor-pointer" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openArticle('${hero3Url}')"><div class="max-w-[70%]"><span class="text-orange-500 text-[10px] font-bold uppercase mb-2 block"><i class="fa-solid fa-fire mr-1"></i> ${hero3.secondary_tag || hero3.tag}</span><h3 class="text-xl font-bold text-white leading-snug group-hover:text-orange-400">${hero3.main_title}</h3></div><div class="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-500 group-hover:text-gas-green bg-[#1a1a1a]"><i class="fa-solid fa-arrow-right"></i></div></div>` : ''}
                 `;
             } catch (e) {
                 console.error(e);
@@ -963,10 +1097,12 @@ export function createNewsHomeApp() {
             const loadBtn = document.getElementById('ggx-load-more-btn');
             const spinner = document.getElementById('ggx-load-more-spinner');
             if (!container || !btnContainer || !loadBtn || !spinner) return;
+            const requestToken = ++this.state.feedRequestToken;
 
             if (isReset) {
                 this.state.currentCategory = category;
                 this.state.currentOffset = 0;
+                this.state.feedRenderedKeys = new Set();
                 container.innerHTML = '<div class="text-center text-gray-500 py-10"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Loading Articles...</div>';
                 container.className = category === 'latest' ? 'space-y-4 min-h-[300px]' : 'grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[300px]';
                 btnContainer.style.display = 'none';
@@ -976,31 +1112,55 @@ export function createNewsHomeApp() {
                 spinner.classList.remove('hidden');
             }
 
-            const limit = isReset ? 4 : 5;
+            const limit = FEED_PAGE_SIZE;
             const from = this.state.currentOffset;
             const to = from + limit - 1;
 
             try {
-                let query = _supabase.from('articles').select('*').order('time', { ascending: false }).range(from, to);
+                let query = _supabase
+                    .from('articles')
+                    .select('*')
+                    .order('time', { ascending: false, nullsFirst: false })
+                    .order('api_id', { ascending: false, nullsFirst: false })
+                    .order('id', { ascending: false })
+                    .range(from, to);
                 if (category !== 'latest') query = query.eq('tag', `${category.charAt(0).toUpperCase()}${category.slice(1)}`);
                 const { data } = await query;
+                if (requestToken !== this.state.feedRequestToken) return;
+                const incoming = Array.isArray(data) ? data : [];
 
-                if (isReset && (!data || data.length === 0)) {
+                if (isReset && incoming.length === 0) {
                     container.innerHTML = '<div class="text-center text-gray-500 py-8">No articles found in this section.</div>';
                     btnContainer.style.display = 'none';
                     return;
                 }
 
-                const html = data
+                const deduped = [];
+                incoming.forEach((art) => {
+                    const key = this.getArticleUniqueKey(art);
+                    if (key && this.state.feedRenderedKeys.has(key)) return;
+                    if (key) this.state.feedRenderedKeys.add(key);
+                    deduped.push(art);
+                });
+
+                const html = deduped
                     .map((art) => {
-                        const imgUrl = this.getImageUrl(art);
+                        const imageMeta = this.getImageMeta(art);
+                        const imgUrl = imageMeta.url;
+                        const isVideoCover = imageMeta.isVideoCover;
                         const articleUrl = this.getArticleUrl(art);
+                        const articleId = art.app_id || art.api_id || art.id || '';
                         const tagDisplay = art.secondary_tag || art.tag || 'News';
 
                         if (category === 'latest') {
                             return `
-                                <article class="ggx-tech-card ggx-latest-card rounded-lg p-0 flex flex-col md:flex-row group h-auto cursor-pointer mb-4" onclick="window.location.href='${articleUrl}'">
-                                    <div class="ggx-latest-cover w-full md:w-60 overflow-hidden shrink-0 relative"><img src="${imgUrl}" loading="lazy" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='https://www.gasgx.com/news/advertisement/zhanwei.jpg'"></div>
+                                <article class="ggx-tech-card ggx-latest-card rounded-lg p-0 flex flex-col md:flex-row group h-auto cursor-pointer mb-4" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openArticle('${articleUrl}')">
+                                    <div class="ggx-latest-cover w-full md:w-60 overflow-hidden shrink-0 relative">
+                                        <img src="${imgUrl}" data-article-id="${articleId}" data-video-cover="${isVideoCover ? '1' : '0'}" loading="lazy" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='https://www.gasgx.com/news/advertisement/zhanwei.jpg'">
+                                        <span data-video-badge-id="${articleId}" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/65 border border-white/30 text-white flex items-center justify-center pointer-events-none ${isVideoCover ? '' : 'hidden'}">
+                                            <i class="fa-solid fa-play text-[10px] ml-[1px]"></i>
+                                        </span>
+                                    </div>
                                     <div class="flex-1 p-5 ggx-card-body ggx-latest-card-body">
                                         <div>
                                             <div class="flex items-center gap-2 mb-2"><span class="text-[10px] font-bold text-gas-green uppercase border border-gas-green/30 px-1.5 rounded">${tagDisplay}</span><span class="text-[10px] text-gray-500">${this.formatArticleDateTime(art.time)}</span></div>
@@ -1016,7 +1176,7 @@ export function createNewsHomeApp() {
                         }
 
                         return `
-                            <article class="ggx-tech-card rounded-lg p-5 group cursor-pointer" onclick="window.location.href='${articleUrl}'">
+                            <article class="ggx-tech-card rounded-lg p-5 group cursor-pointer" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openArticle('${articleUrl}')">
                                 <div class="ggx-card-body">
                                     <div><span class="text-gas-green text-[10px] font-bold uppercase mb-2 block tracking-wider">${tagDisplay}</span><h3 class="text-lg font-bold text-white mb-2 group-hover:text-gas-green transition-colors">${art.main_title}</h3><p class="text-gray-400 text-sm mb-4 line-clamp-3">${art.subheading || ''}</p></div>
                                     <div class="text-[10px] text-gray-600 mt-auto pt-2 border-t border-white/5">${this.formatArticleDateTime(art.time)}</div>
@@ -1028,11 +1188,11 @@ export function createNewsHomeApp() {
                 if (isReset) container.innerHTML = html;
                 else container.insertAdjacentHTML('beforeend', html);
 
-                this.state.currentOffset += data.length;
+                this.state.currentOffset += incoming.length;
                 this.state.isLoading = false;
                 btnContainer.style.display = 'block';
                 spinner.classList.add('hidden');
-                if (data.length < limit) loadBtn.style.display = 'none';
+                if (incoming.length < limit) loadBtn.style.display = 'none';
                 else {
                     loadBtn.style.display = 'inline-block';
                     loadBtn.classList.remove('hidden');
