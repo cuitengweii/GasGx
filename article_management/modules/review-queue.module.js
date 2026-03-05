@@ -48,7 +48,7 @@ export function buildArticlePayloadFromQueue(item) {
 }
 
 export async function approveAndPublishQueueItem(queueItem, articlePayload, userId) {
-    if (!queueItem || !queueItem.id) throw new Error('Invalid queue row.');
+    if (!queueItem || !queueItem.id) throw new Error('无效的队列数据。');
 
     const article = await createArticle({
         ...buildArticlePayloadFromQueue(queueItem),
@@ -74,7 +74,7 @@ export async function approveAndPublishQueueItem(queueItem, articlePayload, user
 
 export async function rejectQueueItem(queueId, reviewNote, userId) {
     const note = clean(reviewNote);
-    if (!note) throw new Error('Rejection note is required.');
+    if (!note) throw new Error('拒绝原因不能为空。');
 
     const { error } = await client
         .from('scrape_queue')

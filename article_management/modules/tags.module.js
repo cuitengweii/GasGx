@@ -25,8 +25,8 @@ export async function upsertTagOption({ section, option_id, label_en, label_zh =
     const normalizedOptionId = normalizeText(option_id);
     const normalizedLabel = normalizeText(label_en);
 
-    if (!TAG_SECTIONS.includes(normalizedSection)) throw new Error('Invalid section.');
-    if (!normalizedOptionId || !normalizedLabel) throw new Error('Option id and label are required.');
+    if (!TAG_SECTIONS.includes(normalizedSection)) throw new Error('分组无效。');
+    if (!normalizedOptionId || !normalizedLabel) throw new Error('选项ID和英文名不能为空。');
 
     const payload = {
         section: normalizedSection,

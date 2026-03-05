@@ -1,7 +1,17 @@
-import { mountNewsMain, createNewsHomeApp } from './main.module.js?v=20260305ams01';
-import { mountSharedHeader, mountSharedFooter } from '../shared/modules/layout.shared.js';
-
 const STARTUP_TIMEOUT_MS = 8000;
+const MAIN_MODULE_CANDIDATES = [
+    './main.module.js?v=20260305fix07',
+    './main.module.js?v=20260305ams01',
+    './main.module.js',
+    '/news/modules/main.module.js?v=20260305fix07',
+    '/news/modules/main.module.js',
+];
+const LAYOUT_MODULE_CANDIDATES = [
+    '../shared/modules/layout.shared.js?v=20260305fix07',
+    '../shared/modules/layout.shared.js',
+    '/news/shared/modules/layout.shared.js?v=20260305fix07',
+    '/news/shared/modules/layout.shared.js',
+];
 
 function ensureStartupMask() {
     if (document.getElementById('ggx-startup-mask')) return;
@@ -56,14 +66,58 @@ function hideStartupMask() {
     setTimeout(() => mask.remove(), 260);
 }
 
-function mountPageModules() {
-    mountSharedHeader(document.getElementById('ggx-header-slot'), {
+function renderBootstrapError(error) {
+    const mainSlot = document.getElementById('ggx-main-slot');
+    const message = String(error?.message || error || 'Unknown bootstrap error');
+    if (mainSlot) {
+        mainSlot.innerHTML = `
+            <div style="max-width:980px;margin:48px auto;padding:18px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:#0f0f0f;color:#ddd;font-family:Inter,sans-serif;">
+                <div style="font-weight:700;color:#ff7f7f;margin-bottom:8px;">News bootstrap failed</div>
+                <div style="font-size:13px;line-height:1.5;word-break:break-word;">${message.replace(/</g, '&lt;')}</div>
+                <div style="margin-top:12px;font-size:12px;color:#999;">Please hard refresh (Ctrl+Shift+R).</div>
+            </div>
+        `;
+    }
+}
+
+async function importFirstAvailable(candidates = []) {
+    let lastError = null;
+    for (const spec of candidates) {
+        try {
+            return await import(spec);
+        } catch (error) {
+            lastError = error;
+        }
+    }
+    throw lastError || new Error('No module candidates provided');
+}
+
+async function resolveModules() {
+    const [mainMod, layoutMod] = await Promise.all([importFirstAvailable(MAIN_MODULE_CANDIDATES), importFirstAvailable(LAYOUT_MODULE_CANDIDATES)]);
+
+    if (typeof mainMod?.mountNewsMain !== 'function' || typeof mainMod?.createNewsHomeApp !== 'function') {
+        throw new Error('main.module exports are invalid');
+    }
+    if (typeof layoutMod?.mountSharedHeader !== 'function' || typeof layoutMod?.mountSharedFooter !== 'function') {
+        throw new Error('layout.shared exports are invalid');
+    }
+
+    return {
+        mountNewsMain: mainMod.mountNewsMain,
+        createNewsHomeApp: mainMod.createNewsHomeApp,
+        mountSharedHeader: layoutMod.mountSharedHeader,
+        mountSharedFooter: layoutMod.mountSharedFooter,
+    };
+}
+
+function mountPageModules(api) {
+    api.mountSharedHeader(document.getElementById('ggx-header-slot'), {
         page: 'news-home',
         idPrefix: 'ggx',
         appGlobal: 'GGXNewsHomeApp',
     });
-    mountNewsMain(document.getElementById('ggx-main-slot'));
-    mountSharedFooter(document.getElementById('ggx-footer-slot'), {
+    api.mountNewsMain(document.getElementById('ggx-main-slot'));
+    api.mountSharedFooter(document.getElementById('ggx-footer-slot'), {
         variant: 'full',
     });
 }
@@ -73,12 +127,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     bindStartupRetry();
     const startupTimeout = setTimeout(showStartupTimeoutState, STARTUP_TIMEOUT_MS);
     try {
-        mountPageModules();
+        const api = await resolveModules();
+        mountPageModules(api);
 
-        const app = createNewsHomeApp();
+        const app = api.createNewsHomeApp();
         window.GGXNewsHomeApp = app;
-
         await app.init();
+    } catch (error) {
+        console.error('[news bootstrap]', error);
+        renderBootstrapError(error);
     } finally {
         clearTimeout(startupTimeout);
         hideStartupMask();

@@ -117,6 +117,11 @@ function buildUpsertPayload(input = {}, userId = null) {
     return payload;
 }
 
+function hasLegacyUpdatedColumnsError(error) {
+    const text = String(error?.message || '').toLowerCase();
+    return text.includes('updated_at') || text.includes('updated_by');
+}
+
 export async function createArticle(input, userId) {
     const payload = buildUpsertPayload(input, userId);
     payload.deleted_at = null;
@@ -130,6 +135,25 @@ export async function createArticle(input, userId) {
 export async function updateArticle(articleId, input, userId) {
     const payload = buildUpsertPayload(input, userId);
     const { data, error } = await client.from(ARTICLE_TABLE).update(payload).eq('id', articleId).select('*').single();
+    if (error) throw error;
+    return normalizeArticleRow(data);
+}
+
+export async function updateArticleStatus(articleId, status, userId) {
+    const nextStatus = normalizeStatus(status, 'draft');
+    const nowIso = new Date().toISOString();
+    const payload = {
+        status: nextStatus,
+        updated_at: nowIso,
+        updated_by: userId || null,
+    };
+
+    let { data, error } = await client.from(ARTICLE_TABLE).update(payload).eq('id', articleId).select('*').single();
+    if (error && hasLegacyUpdatedColumnsError(error)) {
+        const legacyRes = await client.from(ARTICLE_TABLE).update({ status: nextStatus }).eq('id', articleId).select('*').single();
+        data = legacyRes.data;
+        error = legacyRes.error;
+    }
     if (error) throw error;
     return normalizeArticleRow(data);
 }

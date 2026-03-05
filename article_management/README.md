@@ -15,7 +15,7 @@ GasGx article admin console (static frontend + Supabase).
 2. Article CRUD with soft delete recycle bin.
 3. Markdown editor with live preview.
 4. Tag management on `feeder_form_options`.
-5. Featured ranking publish (`featured_rank`, configurable N).
+5. Homepage hero slots publish (`homepage_mark` 1/2/3) + featured list publish (`featured_rank`, configurable N).
 6. Review queue workflow from `scrape_queue` to `articles`.
 
 ## One-Time SQL Setup
@@ -34,6 +34,18 @@ Create an auth user in Supabase:
 - Display name: `cuitengwei`
 
 The frontend allowlist is in `modules/supabase.client.js` (`ADMIN_EMAILS`).
+
+## Troubleshooting
+
+If login shows `Email not confirmed`:
+
+1. Go to Supabase Dashboard -> `Authentication` -> `Users`.
+2. Find `cuitengwei@gasgx.com`.
+3. Open user detail and set the email as confirmed (`email_confirmed_at` should be non-null), then retry login.
+
+Alternative:
+
+1. In `Authentication` -> `Providers` -> `Email`, disable email confirmation for this internal admin environment.
 
 ## Security Notes
 

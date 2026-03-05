@@ -11,6 +11,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
+    "test:smoke:web": "node scripts/smoke_check_frontend.mjs",
     "ftp:list": "sh scripts/ftp_deploy.sh list",
     "ftp:upload": "sh scripts/ftp_deploy.sh upload",
     "ftp:download": "sh scripts/ftp_deploy.sh download"

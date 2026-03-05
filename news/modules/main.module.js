@@ -8,7 +8,9 @@ const API_BASE = 'https://api.theblockbeats.news/v1/open-api/open-flash';
 const FLASH_PROXY_BASES = ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='];
 const FLASH_FETCH_TIMEOUT_MS = 15000;
 const FEED_PAGE_SIZE = 15;
-const FEATURED_LIMIT = 10;
+const HOMEPAGE_MARK_LIMIT = 3;
+const FEATURED_LIMIT_DEFAULT = 10;
+const FEATURED_LIMIT_MAX = 30;
 
 const SHARE_URL = 'https://www.gasgx.com/news/flash/';
 const DB_NAME = 'GasGxFlashDB';
@@ -244,6 +246,7 @@ export function createNewsHomeApp() {
             articleCoverIsVideo: {},
             feedRenderedKeys: new Set(),
             feedRequestToken: 0,
+            adFeaturedLimit: FEATURED_LIMIT_DEFAULT,
         },
 
         async init() {
@@ -1069,12 +1072,80 @@ export function createNewsHomeApp() {
             return text.includes('status') || text.includes('deleted_at');
         },
 
-        async fetchHomeFeaturedArticles() {
+        isDisplayableArticle(row) {
+            if (!row || typeof row !== 'object') return false;
+            const rawStatus = String(row.status ?? '').trim().toLowerCase();
+            const hasStatus = rawStatus.length > 0;
+            const statusOk = hasStatus ? rawStatus === 'published' : true;
+            const deletedAt = row.deleted_at;
+            const deletedOk = deletedAt === null || deletedAt === undefined || String(deletedAt).trim() === '';
+            return statusOk && deletedOk;
+        },
+
+        async fetchHeroArticles() {
+            const baseHeroQuery = this.buildPublishedArticlesQuery(
+                _supabase
+                    .from('articles')
+                    .select('*')
+                    .not('homepage_mark', 'is', null)
+                    .gte('homepage_mark', 1)
+                    .lte('homepage_mark', HOMEPAGE_MARK_LIMIT)
+                    .order('homepage_mark', { ascending: true })
+            );
+            const { data: heroRows, error: heroErr } = await baseHeroQuery;
+            if (heroErr) console.error('Hero query failed:', heroErr);
+
+            let heroes = Array.isArray(heroRows) ? heroRows : [];
+            if (heroErr && this.isPublishedFilterUnsupported(heroErr)) {
+                const { data: legacyHeroes } = await _supabase
+                    .from('articles')
+                    .select('*')
+                    .not('homepage_mark', 'is', null)
+                    .gte('homepage_mark', 1)
+                    .lte('homepage_mark', HOMEPAGE_MARK_LIMIT)
+                    .order('homepage_mark', { ascending: true });
+                heroes = Array.isArray(legacyHeroes) ? legacyHeroes : [];
+            }
+            heroes = heroes
+                .filter((row) => this.isDisplayableArticle(row))
+                .sort((a, b) => Number(a.homepage_mark || 0) - Number(b.homepage_mark || 0));
+
+            if (heroes.length >= HOMEPAGE_MARK_LIMIT) return heroes.slice(0, HOMEPAGE_MARK_LIMIT);
+
+            const fallbackQuery = this.buildPublishedArticlesQuery(_supabase.from('articles').select('*').order('time', { ascending: false }).limit(12));
+            const { data: fallbackRows, error: fallbackErr } = await fallbackQuery;
+            let fallback = Array.isArray(fallbackRows) ? fallbackRows : [];
+            if (fallbackErr && this.isPublishedFilterUnsupported(fallbackErr)) {
+                const { data: legacyFallback } = await _supabase.from('articles').select('*').order('time', { ascending: false }).limit(12);
+                fallback = Array.isArray(legacyFallback) ? legacyFallback : [];
+            }
+            fallback = fallback.filter((row) => this.isDisplayableArticle(row));
+
+            const merged = [];
+            const seen = new Set();
+            heroes.forEach((row) => {
+                const key = this.getArticleUniqueKey(row);
+                if (!key || seen.has(key)) return;
+                seen.add(key);
+                merged.push(row);
+            });
+            fallback.forEach((row) => {
+                if (merged.length >= HOMEPAGE_MARK_LIMIT) return;
+                const key = this.getArticleUniqueKey(row);
+                if (!key || seen.has(key)) return;
+                seen.add(key);
+                merged.push(row);
+            });
+
+            return merged.slice(0, HOMEPAGE_MARK_LIMIT);
+        },
+
+        async fetchAdFeaturedArticles() {
             const featuredQuery = this.buildPublishedArticlesQuery(
-                _supabase.from('articles').select('*').not('featured_rank', 'is', null).lte('featured_rank', FEATURED_LIMIT).order('featured_rank', { ascending: true })
+                _supabase.from('articles').select('*').not('featured_rank', 'is', null).gte('featured_rank', 1).lte('featured_rank', FEATURED_LIMIT_MAX).order('featured_rank', { ascending: true })
             );
             const { data: featuredRows, error: featuredErr } = await featuredQuery;
-            if (featuredErr) console.error('Featured query failed:', featuredErr);
+            if (featuredErr) console.error('Ad featured query failed:', featuredErr);
 
             let featured = Array.isArray(featuredRows) ? featuredRows : [];
             if (featuredErr && this.isPublishedFilterUnsupported(featuredErr)) {
@@ -1082,47 +1153,57 @@ export function createNewsHomeApp() {
                     .from('articles')
                     .select('*')
                     .not('featured_rank', 'is', null)
-                    .lte('featured_rank', FEATURED_LIMIT)
+                    .gte('featured_rank', 1)
+                    .lte('featured_rank', FEATURED_LIMIT_MAX)
                     .order('featured_rank', { ascending: true });
                 featured = Array.isArray(legacyFeatured) ? legacyFeatured : [];
             }
-            if (featured.length >= FEATURED_LIMIT) return featured.slice(0, FEATURED_LIMIT);
 
-            const fallbackQuery = this.buildPublishedArticlesQuery(
-                _supabase.from('articles').select('*').order('time', { ascending: false }).limit(FEATURED_LIMIT * 3)
-            );
+            featured = featured
+                .filter((row) => this.isDisplayableArticle(row))
+                .sort((a, b) => Number(a.featured_rank || 0) - Number(b.featured_rank || 0));
+
+            const topFeaturedRank = featured
+                .map((row) => Number(row?.featured_rank))
+                .filter((rank) => Number.isFinite(rank) && rank >= 1)
+                .sort((a, b) => b - a)[0];
+            const targetLimit = Math.max(1, Math.min(FEATURED_LIMIT_MAX, Number.isFinite(topFeaturedRank) ? topFeaturedRank : FEATURED_LIMIT_DEFAULT));
+            this.state.adFeaturedLimit = targetLimit;
+            if (featured.length >= targetLimit) return featured.slice(0, targetLimit);
+
+            const fallbackQuery = this.buildPublishedArticlesQuery(_supabase.from('articles').select('*').order('time', { ascending: false }).limit(Math.max(targetLimit * 3, 9)));
             const { data: fallbackRows, error: fallbackErr } = await fallbackQuery;
             let fallback = Array.isArray(fallbackRows) ? fallbackRows : [];
             if (fallbackErr && this.isPublishedFilterUnsupported(fallbackErr)) {
-                const { data: legacyFallback } = await _supabase.from('articles').select('*').order('time', { ascending: false }).limit(FEATURED_LIMIT * 3);
+                const { data: legacyFallback } = await _supabase.from('articles').select('*').order('time', { ascending: false }).limit(Math.max(targetLimit * 3, 9));
                 fallback = Array.isArray(legacyFallback) ? legacyFallback : [];
             }
-            const unique = [];
-            const seen = new Set();
+            fallback = fallback.filter((row) => this.isDisplayableArticle(row));
 
+            const merged = [];
+            const seen = new Set();
             featured.forEach((row) => {
                 const key = this.getArticleUniqueKey(row);
                 if (!key || seen.has(key)) return;
                 seen.add(key);
-                unique.push(row);
+                merged.push(row);
             });
-
             fallback.forEach((row) => {
-                if (unique.length >= FEATURED_LIMIT) return;
+                if (merged.length >= targetLimit) return;
                 const key = this.getArticleUniqueKey(row);
                 if (!key || seen.has(key)) return;
                 seen.add(key);
-                unique.push(row);
+                merged.push(row);
             });
-
-            return unique.slice(0, FEATURED_LIMIT);
+            return merged.slice(0, targetLimit);
         },
 
         renderFeaturedGrid(items = []) {
             const container = document.getElementById('ggx-featured-grid-container');
             if (!container) return;
 
-            const rows = Array.isArray(items) ? items.slice(3, FEATURED_LIMIT) : [];
+            const limit = Math.max(1, Math.min(FEATURED_LIMIT_MAX, Number(this.state.adFeaturedLimit) || FEATURED_LIMIT_DEFAULT));
+            const rows = Array.isArray(items) ? items.slice(0, limit) : [];
             if (!rows.length) {
                 container.innerHTML = '<div class="text-xs text-gray-500 border border-white/10 rounded-xl p-4">No featured picks available.</div>';
                 return;
@@ -1133,7 +1214,7 @@ export function createNewsHomeApp() {
                     const articleId = item?.app_id || item?.api_id || item?.id || '';
                     const articleUrl = this.getArticleUrl(item);
                     const imageUrl = this.getImageUrl(item);
-                    const rank = index + 4;
+                    const rank = Number(item?.featured_rank) || index + 1;
                     return `
                         <article class="ggx-tech-card ggx-featured-card rounded-xl overflow-hidden cursor-pointer" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openArticle('${articleUrl}')">
                             <div class="relative h-40 overflow-hidden">
@@ -1155,8 +1236,12 @@ export function createNewsHomeApp() {
             if (!container) return;
 
             try {
-                const articles = await this.fetchHomeFeaturedArticles();
-                const { data: spark } = await _supabase.from('market_metrics').select('*').eq('id', 'spark_spread').single();
+                const [heroes, featuredAds, sparkRes] = await Promise.all([
+                    this.fetchHeroArticles(),
+                    this.fetchAdFeaturedArticles(),
+                    _supabase.from('market_metrics').select('*').eq('id', 'spark_spread').single(),
+                ]);
+                const spark = sparkRes?.data;
 
                 const sparkData = spark || {
                     label: 'Spark Spread',
@@ -1167,15 +1252,15 @@ export function createNewsHomeApp() {
                 const displayValue = sparkData.value.startsWith('$') ? sparkData.value : `$${sparkData.value}`;
                 const displayUnit = sparkData.unit.replace('$', '').trim();
 
-                if (!articles || articles.length === 0) {
+                if (!heroes || heroes.length === 0) {
                     container.innerHTML = '<div class="col-span-4 text-center">No hero content.</div>';
-                    this.renderFeaturedGrid([]);
+                    this.renderFeaturedGrid(featuredAds);
                     return;
                 }
 
-                const hero1 = articles.find((d) => Number(d.featured_rank) === 1 || Number(d.homepage_mark) === 1) || articles[0];
-                const hero2 = articles.find((d) => Number(d.featured_rank) === 2 || Number(d.homepage_mark) === 2) || articles[1];
-                const hero3 = articles.find((d) => Number(d.featured_rank) === 3 || Number(d.homepage_mark) === 3) || articles[2];
+                const hero1 = heroes[0];
+                const hero2 = heroes[1] || null;
+                const hero3 = heroes[2] || null;
                 const img1 = this.getImageUrl(hero1);
                 const img2 = hero2 ? this.getImageUrl(hero2) : '';
                 const hero1Id = hero1?.app_id || hero1?.api_id || hero1?.id || '';
@@ -1201,7 +1286,7 @@ export function createNewsHomeApp() {
                     ${hero3 ? `<div class="lg:col-span-2 lg:row-span-1 bg-[#121212] border border-white/5 rounded-xl p-6 flex items-center justify-between group cursor-pointer" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openArticle('${hero3Url}')"><div class="max-w-[70%]"><span class="text-orange-500 text-[10px] font-bold uppercase mb-2 block"><i class="fa-solid fa-fire mr-1"></i> ${hero3.secondary_tag || hero3.tag}</span><h3 class="text-xl font-bold text-white leading-snug group-hover:text-orange-400">${hero3.main_title}</h3></div><div class="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-500 group-hover:text-gas-green bg-[#1a1a1a]"><i class="fa-solid fa-arrow-right"></i></div></div>` : '<div class="lg:col-span-2 lg:row-span-1 bg-[#111] border border-white/5 rounded-xl"></div>'}
                 `;
 
-                this.renderFeaturedGrid(articles);
+                this.renderFeaturedGrid(featuredAds);
             } catch (e) {
                 console.error(e);
             }
@@ -1392,7 +1477,7 @@ export function createNewsHomeApp() {
                 }
                 if (error) throw error;
                 if (requestToken !== this.state.feedRequestToken) return;
-                const incoming = Array.isArray(data) ? data : [];
+                const incoming = (Array.isArray(data) ? data : []).filter((row) => this.isDisplayableArticle(row));
 
                 if (isReset && incoming.length === 0) {
                     container.innerHTML = '<div class="text-center text-gray-500 py-8">No articles found in this section.</div>';
