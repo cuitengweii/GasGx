@@ -15,6 +15,24 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
+.ggx-main-module .ggx-featured-card .ggx-featured-rank {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(93, 214, 44, 0.45);
+    background: rgba(5, 5, 5, 0.9);
+    color: #5dd62c;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+}
+
+.ggx-main-module .ggx-featured-card:hover img {
+    transform: scale(1.06);
+}
+
 .ggx-main-module .ggx-card-body {
     flex: 1;
     display: flex;
@@ -186,6 +204,18 @@
 }
 
 .ggx-main-module .ggx-modal-overlay.active .ggx-poster-preview-card {
+    transform: scale(1);
+}
+
+.ggx-main-module .ggx-home-ad-card {
+    width: min(92vw, 760px);
+    max-height: 88vh;
+    overflow: hidden;
+    transform: scale(0.95);
+    transition: transform 0.25s ease;
+}
+
+.ggx-main-module .ggx-modal-overlay.active .ggx-home-ad-card {
     transform: scale(1);
 }
 

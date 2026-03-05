@@ -558,7 +558,24 @@ export function createChannelApp(channelKey) {
         async loadArticles() {
             try {
                 const maxRows = config.layout === 'events' ? 599 : 199;
-                const { data } = await _supabase.from('articles').select('*').order('time', { ascending: false }).range(0, maxRows);
+                let { data, error } = await _supabase
+                    .from('articles')
+                    .select('*')
+                    .eq('status', 'published')
+                    .is('deleted_at', null)
+                    .order('time', { ascending: false })
+                    .range(0, maxRows);
+
+                if (error) {
+                    const text = String(error.message || '').toLowerCase();
+                    if (text.includes('status') || text.includes('deleted_at')) {
+                        const legacyRes = await _supabase.from('articles').select('*').order('time', { ascending: false }).range(0, maxRows);
+                        data = legacyRes.data;
+                        error = legacyRes.error;
+                    }
+                }
+                if (error) throw error;
+
                 this.state.allArticles = Array.isArray(data) ? data : [];
                 this.state.filteredArticles = filterArticlesByChannel(this.state.allArticles, channelKey);
             } catch (error) {

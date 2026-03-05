@@ -7,13 +7,18 @@ const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
 const API_BASE = 'https://api.theblockbeats.news/v1/open-api/open-flash';
 const FLASH_PROXY_BASES = ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='];
 const FLASH_FETCH_TIMEOUT_MS = 15000;
-const FEED_PAGE_SIZE = 8;
+const FEED_PAGE_SIZE = 15;
+const FEATURED_LIMIT = 10;
 
 const SHARE_URL = 'https://www.gasgx.com/news/flash/';
 const DB_NAME = 'GasGxFlashDB';
 const DB_VERSION = 1;
 const FLASH_FETCH_LIMIT = 120;
+const FLASH_PAGE_SIZE = 10;
 const FLASH_POLL_INTERVAL_MS = 600000;
+const HOME_AD_URL = 'https://www.gasgx.com/';
+const HOME_AD_IMAGE = '/news/advertisement/gasgx.png';
+const HOME_AD_SEEN_KEY = 'ggx_news_home_popup_ad_seen_v1';
 
 const MAIN_TEMPLATE = `
 <section class="ggx-main-module">
@@ -38,12 +43,33 @@ const MAIN_TEMPLATE = `
         </div>
     </div>
 
+    <div id="ggx-home-ad-modal" class="ggx-modal-overlay" aria-hidden="true">
+        <div class="ggx-home-ad-card bg-[#0b0b0b] border border-white/15 rounded-2xl shadow-2xl overflow-hidden relative">
+            <button onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.closeHomeAdModal()" class="absolute top-3 right-3 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 text-gray-400 hover:text-white hover:bg-black/85 transition-all" aria-label="Close popup ad">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <a href="${HOME_AD_URL}" target="_blank" rel="noopener noreferrer" class="block group" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.closeHomeAdModal()">
+                <img src="${HOME_AD_IMAGE}" alt="GasGx Ad" loading="lazy" class="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105" onerror="this.src='/news/advertisement/zhanwei.jpg'">
+            </a>
+        </div>
+    </div>
+
     <main class="flex-grow w-full max-w-[1600px] mx-auto px-4 lg:px-6 py-8 pb-8">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8 h-auto lg:h-[520px]" id="ggx-hero-grid-container">
             <div class="lg:col-span-2 lg:row-span-2 bg-[#111] animate-pulse rounded-xl h-64 lg:h-auto border border-white/5 flex items-center justify-center text-gray-700 text-xs">Loading Hero...</div>
             <div class="lg:col-span-1 lg:row-span-1 bg-[#111] animate-pulse rounded-xl h-32 lg:h-auto border border-white/5"></div>
             <div class="lg:col-span-1 lg:row-span-1 bg-[#111] animate-pulse rounded-xl h-32 lg:h-auto border border-white/5"></div>
             <div class="lg:col-span-2 lg:row-span-1 bg-[#111] animate-pulse rounded-xl h-32 lg:h-auto border border-white/5"></div>
+        </div>
+
+        <div class="mb-10">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2 px-1">
+                <i class="fa-solid fa-ranking-star text-gas-green"></i>
+                <span>Featured Picks</span>
+            </h3>
+            <div id="ggx-featured-grid-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div class="bg-[#111] h-36 rounded-xl animate-pulse border border-white/5"></div>
+            </div>
         </div>
 
         <div class="mb-12">
@@ -85,16 +111,25 @@ const MAIN_TEMPLATE = `
                     </a>
                 </div>
 
-                <a href="https://www.gasgx.com/news/article/745/" target="_blank" rel="noopener noreferrer" class="ggx-tech-card ggx-sidebar-card ggx-sidebar-ad rounded-xl overflow-hidden relative group cursor-pointer block">
-                    <img src="/news/advertisement/gasgx.png" alt="GasGx Featured Ad" loading="lazy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onerror="this.src='/news/advertisement/zhanwei.jpg'">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent"></div>
-                    <div class="absolute left-4 right-4 bottom-4">
-                        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-white/90 uppercase tracking-wider bg-black/45 border border-white/10 rounded-full px-2 py-1">
+                <section class="ggx-tech-card rounded-xl p-4 lg:p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
                             <i class="fa-solid fa-bolt text-gas-green"></i>
-                            Sponsored
-                        </span>
+                            Flash 7x24
+                        </h3>
+                        <button onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.forceRefreshFlash()" class="w-7 h-7 rounded-full border border-white/10 text-gray-400 hover:text-gas-green hover:border-gas-green/40 transition-colors" title="Refresh flash">
+                            <i id="ggx-flash-sync-icon" class="fa-solid fa-rotate-right text-xs"></i>
+                        </button>
                     </div>
-                </a>
+                    <div id="ggx-flash-news-container" class="relative pl-6 space-y-4 min-h-[120px]">
+                        <div class="absolute left-[7px] top-2 bottom-0 w-[1px] bg-white/10"></div>
+                        <div class="text-gray-500 text-xs p-4">Loading flash news...</div>
+                    </div>
+                    <div id="ggx-flash-load-more-wrap" class="pt-3 mt-3 border-t border-white/10 text-center">
+                        <button id="ggx-flash-load-more-btn" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.loadMoreFlash()" class="px-4 py-2 rounded-full border border-white/10 text-[10px] font-bold text-white/90 hover:border-gas-green/50 hover:text-gas-green transition-all uppercase tracking-wide">Load More</button>
+                    </div>
+                </section>
+
             </div>
         </div>
     </main>
@@ -200,6 +235,7 @@ export function createNewsHomeApp() {
             currentUser: null,
             displayName: null,
             currentPosterData: { title: '', content: '', time: '' },
+            flashVisibleCount: FLASH_PAGE_SIZE,
             flashPollTimer: null,
             flashVisibilityHandler: null,
             lastFlashAutoFetchAt: 0,
@@ -242,6 +278,15 @@ export function createNewsHomeApp() {
                     if (e.target === posterModal) this.closePosterModal();
                 });
             }
+
+            const homeAdModal = document.getElementById('ggx-home-ad-modal');
+            if (homeAdModal) {
+                homeAdModal.addEventListener('click', (e) => {
+                    if (e.target === homeAdModal) this.closeHomeAdModal();
+                });
+            }
+
+            this.maybeShowHomeAdForNewUser();
 
             window.addEventListener('scroll', () => {
                 const btn = document.getElementById('ggx-back-to-top-btn');
@@ -334,6 +379,41 @@ export function createNewsHomeApp() {
                 setTimeout(() => toast.remove(), 300);
             }, 4000);
         },
+
+        hasSeenHomeAd() {
+            try {
+                return localStorage.getItem(HOME_AD_SEEN_KEY) === '1';
+            } catch {
+                return false;
+            }
+        },
+
+        markHomeAdSeen() {
+            try {
+                localStorage.setItem(HOME_AD_SEEN_KEY, '1');
+            } catch {
+                // ignore storage errors
+            }
+        },
+
+        maybeShowHomeAdForNewUser() {
+            if (this.hasSeenHomeAd()) return;
+            const modal = document.getElementById('ggx-home-ad-modal');
+            if (!modal) return;
+            this.markHomeAdSeen();
+            setTimeout(() => {
+                modal.classList.add('active');
+                modal.setAttribute('aria-hidden', 'false');
+            }, 400);
+        },
+
+        closeHomeAdModal() {
+            const modal = document.getElementById('ggx-home-ad-modal');
+            if (!modal) return;
+            modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+        },
+
         async loadFlashFromDB() {
             try {
                 const items = await DB.getAll('news');
@@ -528,10 +608,13 @@ export function createNewsHomeApp() {
         renderFlashSidebar() {
             const container = document.getElementById('ggx-flash-news-container');
             if (!container) return;
+            const loadMoreWrap = document.getElementById('ggx-flash-load-more-wrap');
+            const loadMoreBtn = document.getElementById('ggx-flash-load-more-btn');
 
-            const dataToShow = this.state.flashData.slice(0, 20);
+            const dataToShow = this.state.flashData.slice(0, this.state.flashVisibleCount);
             if (dataToShow.length === 0) {
                 container.innerHTML = '<div class="absolute left-[7px] top-2 bottom-0 w-[1px] bg-white/10"></div><div class="text-gray-500 text-xs p-4">No flash news.</div>';
+                if (loadMoreWrap) loadMoreWrap.style.display = 'none';
                 return;
             }
 
@@ -550,15 +633,15 @@ export function createNewsHomeApp() {
 
                         <div class="flex items-center justify-between border-t border-white/5 pt-2 opacity-80 group-hover:opacity-100 transition-opacity">
                             <div class="flex items-center gap-3">
-                                <button id="btn-expand-${item.id}" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.toggleExpand('${item.id}')" class="text-[10px] font-bold text-gas-green hover:text-white uppercase tracking-wider ${isLong ? '' : 'hidden'}">SHOW MORE</button>
-                                <button id="btn-trans-${item.id}" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.translateItem('${item.id}')" class="bg-[#222] hover:bg-[#333] text-gray-400 hover:text-white px-1.5 py-0.5 rounded transition-colors" title="Translate">
+                                <button type="button" id="btn-expand-${item.id}" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.toggleExpand('${item.id}')" class="relative z-10 text-[10px] font-bold text-gas-green hover:text-white uppercase tracking-wider ${isLong ? '' : 'hidden'}">SHOW MORE</button>
+                                <button type="button" id="btn-trans-${item.id}" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.translateItem('${item.id}')" class="relative z-10 bg-[#222] hover:bg-[#333] text-gray-400 hover:text-white px-1.5 py-0.5 rounded transition-colors" title="Translate">
                                     <i class="fa-solid fa-language text-xs"></i>
                                 </button>
                             </div>
                             <div class="flex items-center gap-3 text-gray-500">
-                                <button onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openPosterModal('${item.id}')" class="hover:text-gas-green transition-colors"><i class="fa-solid fa-camera text-xs"></i></button>
-                                <button onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.shareX('${item.id}')" class="hover:text-white transition-colors"><i class="fa-brands fa-x-twitter text-xs"></i></button>
-                                <button onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.shareLinkedIn('${item.id}')" class="hover:text-[#0077B5] transition-colors"><i class="fa-brands fa-linkedin text-xs"></i></button>
+                                <button type="button" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openPosterModal('${item.id}')" class="relative z-10 hover:text-gas-green transition-colors" title="Generate poster"><i class="fa-solid fa-camera text-xs"></i></button>
+                                <button type="button" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.shareX('${item.id}')" class="relative z-10 hover:text-white transition-colors" title="Share to X"><i class="fa-brands fa-x-twitter text-xs"></i></button>
+                                <button type="button" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.shareLinkedIn('${item.id}')" class="relative z-10 hover:text-[#0077B5] transition-colors" title="Share to LinkedIn"><i class="fa-brands fa-linkedin text-xs"></i></button>
                             </div>
                         </div>
                     </div>`;
@@ -566,6 +649,14 @@ export function createNewsHomeApp() {
                 .join('');
 
             container.innerHTML = `<div class="absolute left-[7px] top-2 bottom-0 w-[1px] bg-white/10"></div>${html}`;
+            const canLoadMore = this.state.flashData.length > dataToShow.length;
+            if (loadMoreWrap) loadMoreWrap.style.display = canLoadMore ? 'block' : 'none';
+            if (loadMoreBtn) loadMoreBtn.disabled = !canLoadMore;
+        },
+
+        loadMoreFlash() {
+            this.state.flashVisibleCount += FLASH_PAGE_SIZE;
+            this.renderFlashSidebar();
         },
 
         toggleExpand(id) {
@@ -657,6 +748,10 @@ export function createNewsHomeApp() {
 
             const modal = document.getElementById('ggx-poster-modal');
             if (modal) modal.classList.add('active');
+            const generatedContainer = document.getElementById('ggx-generated-poster-container');
+            if (generatedContainer) {
+                generatedContainer.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-gas-green text-2xl"></i>';
+            }
 
             const posterTime = document.getElementById('ggx-poster-time-text');
             const posterTitle = document.getElementById('ggx-poster-title');
@@ -671,19 +766,26 @@ export function createNewsHomeApp() {
             const qrContainer = document.getElementById('ggx-poster-qrcode');
             if (!qrContainer) return;
             qrContainer.innerHTML = '';
-            new QRCode(qrContainer, {
-                text: SHARE_URL,
-                width: 80,
-                height: 80,
-                colorDark: '#000000',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.M,
-            });
+            if (typeof QRCode === 'function') {
+                new QRCode(qrContainer, {
+                    text: SHARE_URL,
+                    width: 80,
+                    height: 80,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M,
+                });
+            } else {
+                qrContainer.innerHTML = '<span class="text-[10px] text-black font-bold">QR</span>';
+            }
 
             await new Promise((r) => setTimeout(r, 500));
 
             try {
-                const canvas = await html2canvas(document.getElementById('ggx-poster-capture-area'), {
+                if (typeof html2canvas !== 'function') throw new Error('html2canvas unavailable');
+                const captureEl = document.getElementById('ggx-poster-capture-area');
+                if (!captureEl) throw new Error('poster capture container missing');
+                const canvas = await html2canvas(captureEl, {
                     backgroundColor: null,
                     scale: 2,
                     logging: false,
@@ -693,13 +795,16 @@ export function createNewsHomeApp() {
                 const img = new Image();
                 img.src = this.state.generatedPosterUrl;
                 img.className = 'w-full h-auto block';
-                const generatedContainer = document.getElementById('ggx-generated-poster-container');
                 if (generatedContainer) {
                     generatedContainer.innerHTML = '';
                     generatedContainer.appendChild(img);
                 }
             } catch (e) {
                 console.error('Canvas error:', e);
+                if (generatedContainer) {
+                    generatedContainer.innerHTML = '<div class="text-center text-gray-400 text-sm p-8">Poster preview is temporarily unavailable.</div>';
+                }
+                this.showToast('Poster generation is currently unavailable.', 'info');
             }
         },
 
@@ -721,14 +826,27 @@ export function createNewsHomeApp() {
             window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
         },
 
-        shareLinkedIn(id) {
-            const title = document.getElementById(`title-${id}`)?.innerText || '';
-            const content = document.getElementById(`content-${id}`)?.innerText || '';
-            const text = `GasGx News Report\n\n"${title}"\n\n${content}\n\nLink: ${SHARE_URL}`;
-            navigator.clipboard.writeText(text).then(() => {
-                this.showToast('Text copied! Opening LinkedIn...', 'success');
-                setTimeout(() => window.open('https://www.linkedin.com/feed/', '_blank'), 1500);
-            });
+        async shareLinkedIn(id) {
+            const item = this.state.flashData.find((i) => i.id === id || String(i.id) === String(id));
+            const title = document.getElementById(`title-${id}`)?.innerText || item?.title || '';
+            const content = document.getElementById(`content-${id}`)?.innerText || item?.content || '';
+            const shareUrl = String(item?.link || '').trim() || SHARE_URL;
+            const text = `GasGx News Report\n\n"${title}"\n\n${content}\n\nLink: ${shareUrl}`;
+            const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                    this.showToast('Copied text. Opening LinkedIn share...', 'success');
+                } else {
+                    this.showToast('Opening LinkedIn share...', 'info');
+                }
+            } catch (e) {
+                console.warn('Clipboard unavailable:', e);
+                this.showToast('Opening LinkedIn share...', 'info');
+            }
+
+            window.open(linkedInShareUrl, '_blank', 'noopener,noreferrer');
         },
 
         getImageUrl(item) {
@@ -941,12 +1059,103 @@ export function createNewsHomeApp() {
             return `${date.getUTCFullYear()}/${pad(date.getUTCMonth() + 1)}/${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())} UTC`;
         },
 
+        buildPublishedArticlesQuery(baseQuery) {
+            if (!baseQuery || typeof baseQuery !== 'object') return baseQuery;
+            return baseQuery.eq('status', 'published').is('deleted_at', null);
+        },
+
+        isPublishedFilterUnsupported(error) {
+            const text = String(error?.message || '').toLowerCase();
+            return text.includes('status') || text.includes('deleted_at');
+        },
+
+        async fetchHomeFeaturedArticles() {
+            const featuredQuery = this.buildPublishedArticlesQuery(
+                _supabase.from('articles').select('*').not('featured_rank', 'is', null).lte('featured_rank', FEATURED_LIMIT).order('featured_rank', { ascending: true })
+            );
+            const { data: featuredRows, error: featuredErr } = await featuredQuery;
+            if (featuredErr) console.error('Featured query failed:', featuredErr);
+
+            let featured = Array.isArray(featuredRows) ? featuredRows : [];
+            if (featuredErr && this.isPublishedFilterUnsupported(featuredErr)) {
+                const { data: legacyFeatured } = await _supabase
+                    .from('articles')
+                    .select('*')
+                    .not('featured_rank', 'is', null)
+                    .lte('featured_rank', FEATURED_LIMIT)
+                    .order('featured_rank', { ascending: true });
+                featured = Array.isArray(legacyFeatured) ? legacyFeatured : [];
+            }
+            if (featured.length >= FEATURED_LIMIT) return featured.slice(0, FEATURED_LIMIT);
+
+            const fallbackQuery = this.buildPublishedArticlesQuery(
+                _supabase.from('articles').select('*').order('time', { ascending: false }).limit(FEATURED_LIMIT * 3)
+            );
+            const { data: fallbackRows, error: fallbackErr } = await fallbackQuery;
+            let fallback = Array.isArray(fallbackRows) ? fallbackRows : [];
+            if (fallbackErr && this.isPublishedFilterUnsupported(fallbackErr)) {
+                const { data: legacyFallback } = await _supabase.from('articles').select('*').order('time', { ascending: false }).limit(FEATURED_LIMIT * 3);
+                fallback = Array.isArray(legacyFallback) ? legacyFallback : [];
+            }
+            const unique = [];
+            const seen = new Set();
+
+            featured.forEach((row) => {
+                const key = this.getArticleUniqueKey(row);
+                if (!key || seen.has(key)) return;
+                seen.add(key);
+                unique.push(row);
+            });
+
+            fallback.forEach((row) => {
+                if (unique.length >= FEATURED_LIMIT) return;
+                const key = this.getArticleUniqueKey(row);
+                if (!key || seen.has(key)) return;
+                seen.add(key);
+                unique.push(row);
+            });
+
+            return unique.slice(0, FEATURED_LIMIT);
+        },
+
+        renderFeaturedGrid(items = []) {
+            const container = document.getElementById('ggx-featured-grid-container');
+            if (!container) return;
+
+            const rows = Array.isArray(items) ? items.slice(3, FEATURED_LIMIT) : [];
+            if (!rows.length) {
+                container.innerHTML = '<div class="text-xs text-gray-500 border border-white/10 rounded-xl p-4">No featured picks available.</div>';
+                return;
+            }
+
+            container.innerHTML = rows
+                .map((item, index) => {
+                    const articleId = item?.app_id || item?.api_id || item?.id || '';
+                    const articleUrl = this.getArticleUrl(item);
+                    const imageUrl = this.getImageUrl(item);
+                    const rank = index + 4;
+                    return `
+                        <article class="ggx-tech-card ggx-featured-card rounded-xl overflow-hidden cursor-pointer" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openArticle('${articleUrl}')">
+                            <div class="relative h-40 overflow-hidden">
+                                <img src="${imageUrl}" data-article-id="${articleId}" loading="lazy" class="w-full h-full object-cover transition-transform duration-700 hover:scale-105" onerror="this.src='https://www.gasgx.com/news/advertisement/zhanwei.jpg'">
+                                <span class="ggx-featured-rank">#${rank}</span>
+                            </div>
+                            <div class="p-4">
+                                <div class="text-[10px] font-bold text-gas-green uppercase tracking-wide mb-2">${item.secondary_tag || item.tag || 'Featured'}</div>
+                                <h4 class="text-sm font-bold text-white leading-snug line-clamp-2">${item.main_title || 'Untitled'}</h4>
+                            </div>
+                        </article>
+                    `;
+                })
+                .join('');
+        },
+
         async loadHero() {
             const container = document.getElementById('ggx-hero-grid-container');
             if (!container) return;
 
             try {
-                const { data: articles } = await _supabase.from('articles').select('*').in('homepage_mark', [1, 2, 3]).order('time', { ascending: false });
+                const articles = await this.fetchHomeFeaturedArticles();
                 const { data: spark } = await _supabase.from('market_metrics').select('*').eq('id', 'spark_spread').single();
 
                 const sparkData = spark || {
@@ -960,12 +1169,13 @@ export function createNewsHomeApp() {
 
                 if (!articles || articles.length === 0) {
                     container.innerHTML = '<div class="col-span-4 text-center">No hero content.</div>';
+                    this.renderFeaturedGrid([]);
                     return;
                 }
 
-                const hero1 = articles.find((d) => d.homepage_mark === 1) || articles[0];
-                const hero2 = articles.find((d) => d.homepage_mark === 2);
-                const hero3 = articles.find((d) => d.homepage_mark === 3);
+                const hero1 = articles.find((d) => Number(d.featured_rank) === 1 || Number(d.homepage_mark) === 1) || articles[0];
+                const hero2 = articles.find((d) => Number(d.featured_rank) === 2 || Number(d.homepage_mark) === 2) || articles[1];
+                const hero3 = articles.find((d) => Number(d.featured_rank) === 3 || Number(d.homepage_mark) === 3) || articles[2];
                 const img1 = this.getImageUrl(hero1);
                 const img2 = hero2 ? this.getImageUrl(hero2) : '';
                 const hero1Id = hero1?.app_id || hero1?.api_id || hero1?.id || '';
@@ -988,8 +1198,10 @@ export function createNewsHomeApp() {
                         <div class="relative z-10"><div class="flex justify-between items-start mb-4"><i class="fa-solid fa-chart-area text-2xl text-gas-green"></i><span class="text-[10px] text-gray-500 font-mono border border-gray-700 px-1 rounded">LIVE</span></div><h3 class="text-lg font-bold text-white mb-1">${sparkData.label}</h3><p class="text-xs text-gray-400">${sparkData.change_24h}</p></div>
                         <div class="text-3xl font-mono font-bold text-white group-hover:text-gas-green transition-colors relative z-10">${displayValue} <span class="text-xs text-gray-500 font-sans font-normal">${displayUnit}</span></div>
                     </div>
-                    ${hero3 ? `<div class="lg:col-span-2 lg:row-span-1 bg-[#121212] border border-white/5 rounded-xl p-6 flex items-center justify-between group cursor-pointer" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openArticle('${hero3Url}')"><div class="max-w-[70%]"><span class="text-orange-500 text-[10px] font-bold uppercase mb-2 block"><i class="fa-solid fa-fire mr-1"></i> ${hero3.secondary_tag || hero3.tag}</span><h3 class="text-xl font-bold text-white leading-snug group-hover:text-orange-400">${hero3.main_title}</h3></div><div class="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-500 group-hover:text-gas-green bg-[#1a1a1a]"><i class="fa-solid fa-arrow-right"></i></div></div>` : ''}
+                    ${hero3 ? `<div class="lg:col-span-2 lg:row-span-1 bg-[#121212] border border-white/5 rounded-xl p-6 flex items-center justify-between group cursor-pointer" onclick="window.GGXNewsHomeApp && window.GGXNewsHomeApp.openArticle('${hero3Url}')"><div class="max-w-[70%]"><span class="text-orange-500 text-[10px] font-bold uppercase mb-2 block"><i class="fa-solid fa-fire mr-1"></i> ${hero3.secondary_tag || hero3.tag}</span><h3 class="text-xl font-bold text-white leading-snug group-hover:text-orange-400">${hero3.main_title}</h3></div><div class="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-500 group-hover:text-gas-green bg-[#1a1a1a]"><i class="fa-solid fa-arrow-right"></i></div></div>` : '<div class="lg:col-span-2 lg:row-span-1 bg-[#111] border border-white/5 rounded-xl"></div>'}
                 `;
+
+                this.renderFeaturedGrid(articles);
             } catch (e) {
                 console.error(e);
             }
@@ -1162,8 +1374,23 @@ export function createNewsHomeApp() {
                     .order('api_id', { ascending: false, nullsFirst: false })
                     .order('id', { ascending: false })
                     .range(from, to);
+                query = this.buildPublishedArticlesQuery(query);
                 if (category !== 'latest') query = query.eq('tag', `${category.charAt(0).toUpperCase()}${category.slice(1)}`);
-                const { data } = await query;
+                let { data, error } = await query;
+                if (error && this.isPublishedFilterUnsupported(error)) {
+                    let legacyQuery = _supabase
+                        .from('articles')
+                        .select('*')
+                        .order('time', { ascending: false, nullsFirst: false })
+                        .order('api_id', { ascending: false, nullsFirst: false })
+                        .order('id', { ascending: false })
+                        .range(from, to);
+                    if (category !== 'latest') legacyQuery = legacyQuery.eq('tag', `${category.charAt(0).toUpperCase()}${category.slice(1)}`);
+                    const legacyRes = await legacyQuery;
+                    data = legacyRes.data;
+                    error = legacyRes.error;
+                }
+                if (error) throw error;
                 if (requestToken !== this.state.feedRequestToken) return;
                 const incoming = Array.isArray(data) ? data : [];
 

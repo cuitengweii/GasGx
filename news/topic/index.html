@@ -663,12 +663,27 @@
                     return;
                 }
                 try {
-                    const { data, error } = await _supabase
+                    let { data, error } = await _supabase
                         .from('articles')
                         .select('main_title,link,publisher,time,topics,api_id,cover_image,author_avatar')
+                        .eq('status', 'published')
+                        .is('deleted_at', null)
                         .ilike('topics', `%${search}%`)
                         .order('time', { ascending: false })
                         .range(offset, offset + PAGE_SIZE - 1);
+                    if (error) {
+                        const text = String(error.message || '').toLowerCase();
+                        if (text.includes('status') || text.includes('deleted_at')) {
+                            const legacyRes = await _supabase
+                                .from('articles')
+                                .select('main_title,link,publisher,time,topics,api_id,cover_image,author_avatar')
+                                .ilike('topics', `%${search}%`)
+                                .order('time', { ascending: false })
+                                .range(offset, offset + PAGE_SIZE - 1);
+                            data = legacyRes.data;
+                            error = legacyRes.error;
+                        }
+                    }
                     if (error) throw error;
                     if (!data || data.length === 0) {
                         if (offset === 0) renderEmpty('No articles yet for this topic.');
