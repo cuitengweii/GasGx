@@ -414,6 +414,10 @@ textarea {
     gap: 8px;
 }
 
+.ams-queue-toolbar {
+    grid-template-columns: 260px 160px minmax(120px, 1fr);
+}
+
 .ams-table-wrap {
     border: 1px solid #222;
     border-radius: 12px;
@@ -481,10 +485,26 @@ textarea {
 }
 
 .ams-pill.pending,
+.ams-pill.queued,
+.ams-pill.scraping,
+.ams-pill.processing,
+.ams-pill.fetched,
 .ams-pill.approved,
 .ams-pill.published_queue {
     color: #66d2ff;
     border-color: rgba(102, 210, 255, 0.4);
+}
+
+.ams-pill.completed,
+.ams-pill.success {
+    border-color: rgba(93, 214, 44, 0.5);
+    color: var(--ams-green);
+}
+
+.ams-pill.failed,
+.ams-pill.error {
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #ef4444;
 }
 
 .ams-row-actions {
@@ -590,8 +610,68 @@ textarea {
     min-width: 58px;
 }
 
+.ams-col-actions .ams-row-actions .ams-queue-status-select {
+    min-width: 110px;
+}
+
 .ams-col-actions .ams-row-actions-stacked .ams-btn {
     min-width: 84px;
+}
+
+.ams-queue-table {
+    min-width: 1220px;
+}
+
+.ams-queue-table td {
+    vertical-align: middle;
+}
+
+.ams-queue-table tbody tr:hover {
+    background: rgba(93, 214, 44, 0.04);
+}
+
+.ams-queue-source {
+    max-width: 460px;
+    min-width: 340px;
+}
+
+.ams-queue-source strong {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.35;
+}
+
+.ams-queue-source .ams-footnote {
+    margin-top: 6px;
+    line-height: 1.4;
+    color: #818181;
+    word-break: break-all;
+}
+
+.ams-queue-actions {
+    align-items: stretch;
+    width: 214px;
+}
+
+.ams-queue-inline {
+    width: 100%;
+    display: grid;
+    gap: 6px;
+}
+
+.ams-queue-inline-status {
+    grid-template-columns: 1fr 88px;
+}
+
+.ams-queue-inline-shortcuts {
+    grid-template-columns: 1fr 1fr;
+}
+
+.ams-queue-actions .ams-btn,
+.ams-queue-actions .ams-select {
+    width: 100%;
 }
 
 .ams-editor-meta-grid {
@@ -796,6 +876,10 @@ textarea {
     .ams-toolbar {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+
+    .ams-queue-toolbar {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 960px) {
@@ -813,6 +897,10 @@ textarea {
     }
 
     .ams-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .ams-queue-toolbar {
         grid-template-columns: 1fr;
     }
 

@@ -5,6 +5,11 @@ function clean(value) {
     return String(value || '').trim();
 }
 
+function normalizeStatus(value, fallback = 'pending') {
+    const next = clean(value).toLowerCase();
+    return next || fallback;
+}
+
 export async function fetchReviewQueue({ status = 'pending', page = 1, pageSize = 20 } = {}) {
     const from = Math.max(0, (page - 1) * pageSize);
     const to = from + pageSize - 1;
@@ -16,7 +21,10 @@ export async function fetchReviewQueue({ status = 'pending', page = 1, pageSize 
         .order('id', { ascending: false })
         .range(from, to);
 
-    if (status !== 'all') query = query.eq('review_status', status);
+    if (status !== 'all') {
+        const token = normalizeStatus(status, '').replace(/,/g, '');
+        if (token) query = query.or(`review_status.eq.${token},status.eq.${token}`);
+    }
 
     const { data, error, count } = await query;
     if (error) throw error;
@@ -25,6 +33,22 @@ export async function fetchReviewQueue({ status = 'pending', page = 1, pageSize 
         rows: Array.isArray(data) ? data : [],
         count: Number.isFinite(count) ? count : 0,
     };
+}
+
+export async function fetchQueueStatuses(limit = 1200) {
+    const safeLimit = Math.max(50, Math.min(5000, Number(limit) || 1200));
+    const { data, error } = await client.from('scrape_queue').select('review_status,status').order('id', { ascending: false }).limit(safeLimit);
+    if (error) throw error;
+
+    const seed = ['pending', 'published', 'rejected'];
+    const set = new Set(seed);
+    (data || []).forEach((row) => {
+        const reviewStatus = normalizeStatus(row?.review_status, '');
+        const status = normalizeStatus(row?.status, '');
+        if (reviewStatus) set.add(reviewStatus);
+        if (status) set.add(status);
+    });
+    return Array.from(set);
 }
 
 export function buildArticlePayloadFromQueue(item) {
@@ -87,5 +111,22 @@ export async function rejectQueueItem(queueId, reviewNote, userId) {
         })
         .eq('id', queueId);
 
+    if (error) throw error;
+}
+
+export async function updateQueueStatus(queueId, nextStatus, userId, reviewNote = null) {
+    const status = normalizeStatus(nextStatus, '');
+    if (!status) throw new Error('状态不能为空。');
+
+    const payload = {
+        review_status: status,
+        status,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: userId || null,
+    };
+
+    if (typeof reviewNote === 'string') payload.review_note = clean(reviewNote);
+
+    const { error } = await client.from('scrape_queue').update(payload).eq('id', queueId);
     if (error) throw error;
 }

@@ -16,7 +16,14 @@ import {
 import { bindMarkdownPreview } from './editor.module.js';
 import { deleteTagOptionById, fetchTagOptions, TAG_SECTIONS, updateTagOptionById, upsertTagOption } from './tags.module.js';
 import * as featuredApi from './featured.module.js';
-import { approveAndPublishQueueItem, buildArticlePayloadFromQueue, fetchReviewQueue, rejectQueueItem } from './review-queue.module.js';
+import {
+    approveAndPublishQueueItem,
+    buildArticlePayloadFromQueue,
+    fetchQueueStatuses,
+    fetchReviewQueue,
+    rejectQueueItem,
+    updateQueueStatus,
+} from './review-queue.module.js';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js';
 
 const HOMEPAGE_MARK_LIMIT = Number.isFinite(Number(featuredApi.HOMEPAGE_MARK_LIMIT)) ? Number(featuredApi.HOMEPAGE_MARK_LIMIT) : 3;
@@ -98,7 +105,7 @@ const state = {
     recycle: { page: 1, pageSize: 20, search: '' },
     editor: { mode: 'create', id: null, payload: createEmptyArticlePayload() },
     featured: { limit: DEFAULT_FEATURED_LIMIT, ids: [], heroIds: [], poolScrollTop: 0 },
-    queue: { page: 1, pageSize: 20, status: 'pending' },
+    queue: { page: 1, pageSize: 20, status: 'all' },
     cache: { articles: null },
     previewUnbind: null,
 };
@@ -234,9 +241,53 @@ function pill(value) {
         archived: '已归档',
         pending: '待审核',
         rejected: '已拒绝',
+        queued: '已入队',
+        scraping: '采集中',
+        processing: '处理中',
+        fetched: '已采集',
+        completed: '已完成',
+        failed: '失败',
+        success: '成功',
+        error: '错误',
         all: '全部',
     };
     return `<span class="ams-pill ${esc(key)}">${esc(labels[key] || value || '--')}</span>`;
+}
+
+function queueStatusKey(value, fallback = 'pending') {
+    const key = String(value || '').trim().toLowerCase();
+    return key || fallback;
+}
+
+function queueStatusLabel(value) {
+    const key = queueStatusKey(value, '');
+    const labels = {
+        pending: '待审核',
+        rejected: '已拒绝',
+        published: '已发布',
+        queued: '已入队',
+        scraping: '采集中',
+        processing: '处理中',
+        fetched: '已采集',
+        completed: '已完成',
+        failed: '失败',
+        success: '成功',
+        error: '错误',
+    };
+    return labels[key] || String(value || '--');
+}
+
+function sortQueueStatuses(values = []) {
+    const preferredOrder = ['pending', 'queued', 'processing', 'scraping', 'fetched', 'published', 'rejected', 'failed', 'success', 'error', 'completed'];
+    const unique = Array.from(new Set((values || []).map((item) => queueStatusKey(item, '')).filter(Boolean)));
+    return unique.sort((a, b) => {
+        const ai = preferredOrder.indexOf(a);
+        const bi = preferredOrder.indexOf(b);
+        if (ai === -1 && bi === -1) return a.localeCompare(b);
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi;
+    });
 }
 
 function clearPreviewBinding() {
@@ -314,7 +365,7 @@ function renderShell() {
                     ${navButton('editor', '新建文章', 'fa-pen-to-square')}
                     ${navButton('recycle', '回收站', 'fa-trash-can-arrow-up')}
                     ${navButton('featured', '首页推荐位', 'fa-ranking-star')}
-                    ${navButton('queue', '审核队列', 'fa-list-check')}
+                    ${navButton('queue', '采集队列', 'fa-list-check')}
                     ${navButton('tags', '标签管理', 'fa-tags')}
                 </nav>
             </aside>
@@ -355,7 +406,7 @@ function renderShell() {
     });
 }
 async function renderDashboard() {
-    setPageHeader('总览', '查看文章、推荐位和审核队列的整体状态。');
+    setPageHeader('总览', '查看文章、推荐位和采集队列的整体状态。');
 
     const [active, recycled, heroSlots, featured, queue, sampleRows] = await Promise.all([
         fetchArticles({ page: 1, pageSize: 1 }),
@@ -373,7 +424,7 @@ async function renderDashboard() {
             <article class="ams-card"><h3>回收站</h3><div class="ams-kpi">${recycled.count}</div><div class="ams-kpi-sub">已软删除文章数</div></article>
             <article class="ams-card"><h3>首页大位</h3><div class="ams-kpi">${heroSlots.length}/${HOMEPAGE_MARK_LIMIT}</div><div class="ams-kpi-sub">homepage_mark 1/2/3 已配置数量</div></article>
             <article class="ams-card"><h3>广告推荐位</h3><div class="ams-kpi">${featured.length}/${state.featured.limit}</div><div class="ams-kpi-sub">featured_rank 已配置数量</div></article>
-            <article class="ams-card"><h3>待审核队列</h3><div class="ams-kpi">${queue.count}</div><div class="ams-kpi-sub">scrape_queue 待处理数量</div></article>
+            <article class="ams-card"><h3>待处理采集</h3><div class="ams-kpi">${queue.count}</div><div class="ams-kpi-sub">scrape_queue pending 数量</div></article>
         </div>
         <section class="ams-card ams-category-card">
             <h3>分类分布（最近 200 条已发布文章）</h3>
@@ -1068,25 +1119,76 @@ async function renderFeatured() {
 }
 
 async function renderQueue() {
-    setPageHeader('审核队列', '审核 scrape_queue 并发布为正式文章。');
-    const result = await fetchReviewQueue(state.queue);
+    setPageHeader('采集队列', '查看 scrape_queue 的采集状态，并支持手动更改状态。');
+    const [result, discoveredStatuses] = await Promise.all([fetchReviewQueue(state.queue), fetchQueueStatuses()]);
+    const statusSet = new Set(
+        (discoveredStatuses || [])
+            .map((item) => queueStatusKey(item, ''))
+            .filter(Boolean)
+    );
+    (result.rows || []).forEach((item) => {
+        statusSet.add(queueStatusKey(item.review_status || item.status, 'pending'));
+    });
+
+    const selectedStatus = queueStatusKey(state.queue.status, 'all');
+    if (selectedStatus !== 'all') statusSet.add(selectedStatus);
+    const statusValues = sortQueueStatuses(Array.from(statusSet));
+    const filterOptions = [
+        `<option value="all" ${selectedStatus === 'all' ? 'selected' : ''}>全部状态</option>`,
+        ...statusValues.map((status) => `<option value="${esc(status)}" ${selectedStatus === status ? 'selected' : ''}>${esc(queueStatusLabel(status))}</option>`),
+    ].join('');
 
     setContent(`
-        <div class="ams-toolbar" style="grid-template-columns:240px 180px 1fr;">
-            <div class="ams-field"><label>状态</label><select id="qr-status" class="ams-select"><option value="pending" ${state.queue.status === 'pending' ? 'selected' : ''}>待审核</option><option value="published" ${state.queue.status === 'published' ? 'selected' : ''}>已发布</option><option value="rejected" ${state.queue.status === 'rejected' ? 'selected' : ''}>已拒绝</option><option value="all" ${state.queue.status === 'all' ? 'selected' : ''}>全部</option></select></div>
+        <div class="ams-toolbar ams-queue-toolbar">
+            <div class="ams-field"><label>状态</label><select id="qr-status" class="ams-select">${filterOptions}</select></div>
             <div class="ams-field"><label>页码</label><input id="qr-page" class="ams-input" type="number" min="1" value="${state.queue.page}"></div>
             <div class="ams-toolbar-actions"><button id="qr-apply" class="ams-btn ams-btn-primary" type="button">刷新</button></div>
         </div>
-        <div class="ams-table-wrap"><table class="ams-table"><thead><tr><th>ID</th><th>来源</th><th>分类</th><th>发布方</th><th>标签</th><th class="ams-col-status">状态</th><th class="ams-col-time">创建时间</th><th class="ams-col-actions">操作</th></tr></thead><tbody>${result.rows.length ? result.rows.map((item) => `<tr><td><code>${item.id}</code></td><td><strong>${esc(item.title || item.main_title || '未命名')}</strong><div class="ams-footnote">${esc(item.link || '')}</div></td><td>${esc(item.category || '--')}</td><td>${esc(item.publisher || '--')}</td><td>${esc(item.tag_choice || item.tag || '--')} / ${esc(item.secondary_tag || '--')}</td><td class="ams-col-status">${pill(item.review_status || item.status || 'pending')}</td><td class="ams-col-time">${fmtDate(item.created_at)}</td><td class="ams-col-actions"><div class="ams-row-actions ams-row-actions-stacked"><button class="ams-btn ams-btn-primary" data-queue-action="approve" data-id="${item.id}">通过并发布</button><button class="ams-btn ams-btn-danger" data-queue-action="reject" data-id="${item.id}">拒绝</button></div></td></tr>`).join('') : '<tr><td colspan="8"><div class="ams-empty">暂无队列数据。</div></td></tr>'}</tbody></table></div>
+        <div class="ams-table-wrap"><table class="ams-table ams-queue-table"><thead><tr><th>ID</th><th>来源</th><th>分类</th><th>发布方</th><th>标签</th><th class="ams-col-status">状态</th><th class="ams-col-time">创建时间</th><th class="ams-col-actions">操作</th></tr></thead><tbody>${result.rows.length ? result.rows.map((item) => {
+        const currentStatus = queueStatusKey(item.review_status || item.status, 'pending');
+        const rowStatusValues = sortQueueStatuses([...statusValues, currentStatus]);
+        const publishDisabled = currentStatus === 'published' ? 'disabled' : '';
+        const rejectDisabled = currentStatus === 'rejected' ? 'disabled' : '';
+        return `<tr><td><code>${item.id}</code></td><td class="ams-queue-source"><strong>${esc(item.title || item.main_title || '未命名')}</strong><div class="ams-footnote">${esc(item.link || '')}</div></td><td>${esc(item.category || '--')}</td><td>${esc(item.publisher || '--')}</td><td>${esc(item.tag_choice || item.tag || '--')} / ${esc(item.secondary_tag || '--')}</td><td class="ams-col-status">${pill(currentStatus)}</td><td class="ams-col-time">${fmtDate(item.created_at)}</td><td class="ams-col-actions"><div class="ams-row-actions ams-row-actions-stacked ams-queue-actions"><div class="ams-queue-inline ams-queue-inline-status"><select class="ams-select ams-queue-status-select" data-queue-status-select="1" data-id="${item.id}">${rowStatusValues.map((status) => `<option value="${esc(status)}" ${status === currentStatus ? 'selected' : ''}>${esc(queueStatusLabel(status))}</option>`).join('')}</select><button class="ams-btn ams-btn-muted" data-queue-action="set-status" data-id="${item.id}">更新状态</button></div><div class="ams-queue-inline ams-queue-inline-shortcuts"><button class="ams-btn ams-btn-primary" data-queue-action="approve" data-id="${item.id}" ${publishDisabled}>通过并发布</button><button class="ams-btn ams-btn-danger" data-queue-action="reject" data-id="${item.id}" ${rejectDisabled}>拒绝</button></div></div></td></tr>`;
+    }).join('') : '<tr><td colspan="8"><div class="ams-empty">暂无队列数据。</div></td></tr>'}</tbody></table></div>
     `);
 
     document.getElementById('qr-apply')?.addEventListener('click', () => {
-        state.queue.status = document.getElementById('qr-status')?.value || 'pending';
+        state.queue.status = document.getElementById('qr-status')?.value || 'all';
         state.queue.page = Math.max(1, Number(document.getElementById('qr-page')?.value || 1));
         void renderPage();
     });
 
     const mapById = new Map(result.rows.map((row) => [row.id, row]));
+    document.querySelectorAll('[data-queue-action="set-status"]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const id = Number(button.dataset.id);
+            const selectNode = document.querySelector(`[data-queue-status-select][data-id="${id}"]`);
+            const nextStatus = queueStatusKey(selectNode?.value, '');
+            if (!nextStatus) {
+                showToast('请选择状态。', true);
+                return;
+            }
+
+            let note = null;
+            if (nextStatus === 'rejected') {
+                const input = window.prompt('拒绝备注（可选）：', '');
+                if (input === null) return;
+                note = input;
+            }
+
+            await withButtonBusy(button, '更新中...', async () => {
+                try {
+                    await updateQueueStatus(id, nextStatus, state.user?.id || null, note);
+                    showToast(`队列 #${id} 状态已更新为 ${queueStatusLabel(nextStatus)}。`);
+                    void renderPage();
+                } catch (error) {
+                    showToast(error.message || '状态更新失败。', true);
+                }
+            });
+        });
+    });
+
     document.querySelectorAll('[data-queue-action="approve"]').forEach((button) => {
         button.addEventListener('click', async () => {
             const id = Number(button.dataset.id);
