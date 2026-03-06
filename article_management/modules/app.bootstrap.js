@@ -5,6 +5,7 @@ import {
     createEmptyArticlePayload,
     fetchArticleById,
     fetchArticles,
+    fetchDistinctCategories,
     fetchDistinctTags,
     hardDeleteArticle,
     restoreArticle,
@@ -93,11 +94,12 @@ const state = {
     session: null,
     user: null,
     page: 'dashboard',
-    articles: { page: 1, pageSize: 20, search: '', status: 'all', tag: 'all' },
+    articles: { page: 1, pageSize: 20, search: '', status: 'all', tag: 'all', category: 'all' },
     recycle: { page: 1, pageSize: 20, search: '' },
     editor: { mode: 'create', id: null, payload: createEmptyArticlePayload() },
     featured: { limit: DEFAULT_FEATURED_LIMIT, ids: [], heroIds: [], poolScrollTop: 0 },
     queue: { page: 1, pageSize: 20, status: 'pending' },
+    cache: { articles: null },
     previewUnbind: null,
 };
 
@@ -163,6 +165,21 @@ function fmtDate(value) {
     const d = new Date(value || '');
     if (Number.isNaN(d.getTime())) return '--';
     return `${d.toISOString().slice(0, 19).replace('T', ' ')} UTC`;
+}
+
+function articleCacheKey(filters = {}) {
+    return JSON.stringify({
+        page: Math.max(1, Number(filters.page) || 1),
+        pageSize: Math.max(1, Number(filters.pageSize) || 20),
+        search: String(filters.search || '').trim(),
+        status: String(filters.status || 'all').trim(),
+        tag: String(filters.tag || 'all').trim(),
+        category: String(filters.category || 'all').trim(),
+    });
+}
+
+function invalidateArticlesCache() {
+    state.cache.articles = null;
 }
 
 function resolveArticlePageId(payload, editorId) {
@@ -368,12 +385,13 @@ async function renderDashboard() {
     `);
 }
 
-function articleToolbar(filters, tags = [], recycleMode = false) {
+function articleToolbar(filters, tags = [], categories = [], recycleMode = false) {
     return `
         <div class="ams-toolbar">
             <div class="ams-field"><label>搜索</label><input id="am-search" class="ams-input" value="${esc(filters.search || '')}" placeholder="标题 / 发布方 / 链接"></div>
             ${recycleMode ? '' : `<div class="ams-field"><label>状态</label><select id="am-status" class="ams-select"><option value="all" ${filters.status === 'all' ? 'selected' : ''}>全部</option><option value="draft" ${filters.status === 'draft' ? 'selected' : ''}>草稿</option><option value="published" ${filters.status === 'published' ? 'selected' : ''}>已发布</option><option value="archived" ${filters.status === 'archived' ? 'selected' : ''}>已归档</option></select></div>`}
             ${recycleMode ? '' : `<div class="ams-field"><label>标签</label><select id="am-tag" class="ams-select"><option value="all">全部</option>${tags.map((t) => `<option value="${esc(t)}" ${filters.tag === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></div>`}
+            ${recycleMode ? '' : `<div class="ams-field"><label>分类</label><select id="am-category" class="ams-select"><option value="all">全部</option>${categories.map((item) => `<option value="${esc(item)}" ${filters.category === item ? 'selected' : ''}>${esc(item)}</option>`).join('')}</select></div>`}
             <div class="ams-field"><label>页码</label><input id="am-page" class="ams-input" type="number" min="1" value="${filters.page}"></div>
             <div class="ams-toolbar-actions"><button class="ams-btn ams-btn-primary" id="am-apply" type="button">查询</button>${recycleMode ? '' : '<button class="ams-btn ams-btn-muted" id="am-new" type="button">新建</button>'}</div>
         </div>
@@ -424,10 +442,21 @@ function articleRows(rows, recycleMode = false) {
 
 async function renderArticles() {
     setPageHeader('文章管理', '新建、编辑、查询、软删除文章。');
-    const [tags, result] = await Promise.all([fetchDistinctTags(), fetchArticles(state.articles)]);
+    const query = { ...state.articles };
+    const cacheKey = articleCacheKey(query);
+    let tags = [];
+    let categories = [];
+    let result = { rows: [], count: 0 };
+
+    if (state.cache.articles?.key === cacheKey) {
+        ({ tags, categories, result } = state.cache.articles);
+    } else {
+        [tags, categories, result] = await Promise.all([fetchDistinctTags(), fetchDistinctCategories(), fetchArticles(query)]);
+        state.cache.articles = { key: cacheKey, tags, categories, result };
+    }
 
     setContent(`
-        ${articleToolbar(state.articles, tags, false)}
+        ${articleToolbar(state.articles, tags, categories, false)}
         <div class="ams-table-wrap"><table class="ams-table"><thead><tr><th>ID</th><th>标题</th><th>发布方</th><th>主标签</th><th>二级标签</th><th class="ams-col-status">状态</th><th class="ams-col-featured">推荐位</th><th class="ams-col-time">时间</th><th class="ams-col-actions">操作</th></tr></thead><tbody>${articleRows(result.rows, false)}</tbody></table></div>
         <div class="ams-footnote">总数：${result.count}（仅统计未删除文章）。</div>
     `);
@@ -436,7 +465,9 @@ async function renderArticles() {
         state.articles.search = document.getElementById('am-search')?.value || '';
         state.articles.status = document.getElementById('am-status')?.value || 'all';
         state.articles.tag = document.getElementById('am-tag')?.value || 'all';
+        state.articles.category = document.getElementById('am-category')?.value || 'all';
         state.articles.page = Math.max(1, Number(document.getElementById('am-page')?.value || 1));
+        invalidateArticlesCache();
         void renderPage();
     });
 
@@ -470,6 +501,7 @@ async function renderArticles() {
                 try {
                     await softDeleteArticle(id, state.user?.id || null);
                     showToast('已移入回收站。');
+                    invalidateArticlesCache();
                     void renderPage();
                 } catch (error) {
                     showToast(error.message || '删除失败。', true);
@@ -486,6 +518,7 @@ async function renderArticles() {
                 try {
                     await updateArticleStatus(id, 'archived', state.user?.id || null);
                     showToast('文章已下架。');
+                    invalidateArticlesCache();
                     void renderPage();
                 } catch (error) {
                     showToast(error.message || '下架失败。', true);
@@ -505,7 +538,7 @@ async function renderRecycleBin() {
     });
 
     setContent(`
-        ${articleToolbar(state.recycle, [], true)}
+        ${articleToolbar(state.recycle, [], [], true)}
         <div class="ams-table-wrap"><table class="ams-table"><thead><tr><th>ID</th><th>标题</th><th>发布方</th><th>主标签</th><th>二级标签</th><th class="ams-col-status">状态</th><th class="ams-col-featured">推荐位</th><th class="ams-col-time">时间</th><th class="ams-col-actions">操作</th></tr></thead><tbody>${articleRows(result.rows, true)}</tbody></table></div>
         <div class="ams-footnote">注意：永久删除后不可恢复。</div>
     `);
@@ -522,6 +555,7 @@ async function renderRecycleBin() {
                 try {
                     await restoreArticle(Number(btn.dataset.id), state.user?.id || null);
                     showToast('文章已恢复。');
+                    invalidateArticlesCache();
                     void renderPage();
                 } catch (error) {
                     showToast(error.message || '恢复失败。', true);
@@ -538,6 +572,7 @@ async function renderRecycleBin() {
                 try {
                     await hardDeleteArticle(id);
                     showToast('已永久删除。');
+                    invalidateArticlesCache();
                     void renderPage();
                 } catch (error) {
                     showToast(error.message || '永久删除失败。', true);
@@ -678,6 +713,7 @@ async function renderEditor() {
                     state.editor = { mode: 'edit', id: created.id, payload: { ...created } };
                     showToast('文章已创建。');
                 }
+                invalidateArticlesCache();
                 state.page = 'articles';
                 void renderPage();
             } catch (error) {
@@ -1066,6 +1102,7 @@ async function renderQueue() {
                 try {
                     await approveAndPublishQueueItem(row, { ...seed, main_title: title, subheading, status: 'published' }, state.user?.id || null);
                     showToast(`队列 #${id} 已发布。`);
+                    invalidateArticlesCache();
                     void renderPage();
                 } catch (error) {
                     showToast(error.message || '发布失败。', true);

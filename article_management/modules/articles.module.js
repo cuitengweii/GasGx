@@ -59,6 +59,7 @@ export async function fetchArticles({
     search = '',
     status = 'all',
     tag = 'all',
+    category = 'all',
     includeDeleted = false,
     featuredOnly = false,
 } = {}) {
@@ -77,6 +78,7 @@ export async function fetchArticles({
 
     if (status !== 'all') query = query.eq('status', normalizeStatus(status, 'published'));
     if (tag !== 'all') query = query.eq('tag', tag);
+    if (category !== 'all') query = query.eq('type', normalizeText(category));
     if (featuredOnly) query = query.not('featured_rank', 'is', null);
 
     const cleanSearch = normalizeText(search);
@@ -187,6 +189,16 @@ export async function fetchDistinctTags() {
         new Set((data || []).map((item) => normalizeText(item.tag)).filter(Boolean))
     );
     return tags;
+}
+
+export async function fetchDistinctCategories() {
+    const { data, error } = await client.from(ARTICLE_TABLE).select('type').is('deleted_at', null).order('type', { ascending: true });
+    if (error) throw error;
+
+    const categories = Array.from(
+        new Set((data || []).map((item) => normalizeText(item.type)).filter(Boolean))
+    );
+    return categories;
 }
 
 export async function fetchArticleById(articleId) {
