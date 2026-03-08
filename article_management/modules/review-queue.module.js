@@ -10,6 +10,12 @@ function normalizeStatus(value, fallback = 'pending') {
     return next || fallback;
 }
 
+const FINAL_QUEUE_STATUSES = new Set(['published', 'done', 'completed', 'success', 'rejected']);
+
+function isFinalQueueStatus(value) {
+    return FINAL_QUEUE_STATUSES.has(normalizeStatus(value, ''));
+}
+
 export async function fetchReviewQueue({ status = 'pending', page = 1, pageSize = 20 } = {}) {
     const from = Math.max(0, (page - 1) * pageSize);
     const to = from + pageSize - 1;
@@ -18,12 +24,11 @@ export async function fetchReviewQueue({ status = 'pending', page = 1, pageSize 
     let query = client
         .from('scrape_queue')
         .select('*', { count: 'exact' })
-        .order('api_id', { ascending: false, nullsFirst: false })
         .order('id', { ascending: false })
         .range(from, to);
 
     if (normalizedStatus === 'all') {
-        query = query.or('status.is.null,status.neq.published');
+        query = query.or('status.is.null,status.not.in.(published,done,completed,success,rejected)');
     } else {
         const token = normalizedStatus.replace(/,/g, '');
         if (token) query = query.or(`status.eq.${token},and(status.is.null,review_status.eq.${token})`);
@@ -40,16 +45,15 @@ export async function fetchReviewQueue({ status = 'pending', page = 1, pageSize 
 
 export async function fetchQueueStatuses(limit = 1200) {
     const safeLimit = Math.max(50, Math.min(5000, Number(limit) || 1200));
-    const { data, error } = await client.from('scrape_queue').select('review_status,status').order('api_id', { ascending: false, nullsFirst: false }).order('id', { ascending: false }).limit(safeLimit);
+    const { data, error } = await client.from('scrape_queue').select('review_status,status').order('id', { ascending: false }).limit(safeLimit);
     if (error) throw error;
 
-    const seed = ['pending', 'processing', 'done', 'error', 'failed', 'rejected'];
+    const seed = ['pending', 'processing', 'queued', 'scraping', 'fetched', 'error', 'failed'];
     const set = new Set(seed);
     (data || []).forEach((row) => {
         const status = normalizeStatus(row?.status, '');
-        if (status) set.add(status);
+        if (status && !isFinalQueueStatus(status)) set.add(status);
     });
-    set.delete('published');
     return Array.from(set);
 }
 

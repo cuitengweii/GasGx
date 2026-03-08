@@ -24,7 +24,7 @@ import {
     fetchReviewQueue,
     rejectQueueItem,
     updateQueueStatus,
-} from './review-queue.module.js?v=20260308ams24';
+} from './review-queue.module.js?v=20260308ams26';
 import { fetchFooterSocialSettings, updateFooterSocialGroupVisible, upsertFooterContactSettings, upsertFooterSocialItem } from './site-settings.module.js';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js';
 
@@ -400,6 +400,10 @@ function resolveQueueRowStatus(row, fallback = 'pending') {
 function queueStatusPill(value) {
     const key = queueStatusKey(value, '');
     return `<span class="ams-pill ${esc(key)}">${esc(queueStatusLabel(key || value || '--'))}</span>`;
+}
+
+function isFinalQueueStatus(value) {
+    return ['published', 'done', 'completed', 'success', 'rejected'].includes(queueStatusKey(value, ''));
 }
 
 function sortQueueStatuses(values = []) {
@@ -2357,7 +2361,8 @@ async function renderQueue(forceRefresh = false) {
         statusSet.add(resolveQueueRowStatus(item, 'pending'));
     });
 
-    const selectedStatus = queueStatusKey(state.queue.status, 'all') === 'published' ? 'all' : queueStatusKey(state.queue.status, 'all');
+    const normalizedSelectedStatus = queueStatusKey(state.queue.status, 'all');
+    const selectedStatus = normalizedSelectedStatus !== 'all' && isFinalQueueStatus(normalizedSelectedStatus) ? 'all' : normalizedSelectedStatus;
     if (selectedStatus !== 'all') statusSet.add(selectedStatus);
     const statusValues = sortQueueStatuses(Array.from(statusSet));
     const totalPages = calcTotalPages(result.count, state.queue.pageSize);

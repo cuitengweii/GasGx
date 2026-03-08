@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data - GasGx Mining News</title>
+    <title>GasGx Canada Dashboard</title>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,14 +22,6 @@
                         sans: ['Inter', 'sans-serif'],
                         mono: ['JetBrains Mono', 'monospace'],
                         header: ['Oswald', 'sans-serif']
-                    },
-                    boxShadow: { neon: '0 0 15px rgba(93, 214, 44, 0.3)' },
-                    animation: { marquee: 'marquee 70s linear infinite' },
-                    keyframes: {
-                        marquee: {
-                            '0%': { transform: 'translateX(0%)' },
-                            '100%': { transform: 'translateX(-50%)' }
-                        }
                     }
                 }
             }
@@ -38,12 +30,88 @@
 
     <link rel="stylesheet" href="../shared/modules/styles/layout.shared.css">
     <link rel="stylesheet" href="../shared/modules/styles/channel-page.shared.css">
+    <link rel="stylesheet" href="./modules/canada-dashboard.css?v=20260308canada2">
 </head>
-<body class="ggx-channel-page">
-    <div id="ggx-header-slot"></div>
-    <div id="ggx-main-slot" class="flex-grow"></div>
-    <div id="ggx-footer-slot"></div>
+<body class="ggx-channel-page ggx-canada-dashboard-page">
+    <section class="ggx-channel-shell">
+        <main class="ggx-channel-main">
+            <section class="ggx-channel-card ggx-mini-card" id="ggx-data-headline">
+                <h3 class="text-xl font-bold text-white">Data Terminal</h3>
+                <p class="ggx-mini-caption">GasGx Canada dashboard with Alberta gas comparison, AECO charts and parsed static tables.</p>
+            </section>
 
-    <script type="module" src="./modules/channel.bootstrap.js?v=20260308footer2"></script>
+            <section class="ggx-channel-card p-4 mt-4">
+                <div class="ggx-section-head">
+                    <h2><span class="ggx-ui-icon" id="ggx-icon-dashboard"></span><span>Canada Gas Dashboard</span></h2>
+                    <span class="ggx-chip active">Integrated View</span>
+                </div>
+                <p class="ggx-mini-caption">Sourced from `canada_scrape_runs`, `canada_chart_points` and `canada_chart_tables` only.</p>
+
+                <div class="ggx-canada-run-grid mt-3">
+                    <article class="ggx-canada-run-card">
+                        <div class="ggx-canada-run-label">Latest Successful Run</div>
+                        <div id="ggx-canada-run-local" class="ggx-canada-run-value">--</div>
+                        <div id="ggx-canada-run-utc" class="ggx-canada-run-meta">--</div>
+                        <div id="ggx-canada-run-id" class="ggx-canada-run-meta">run_id: --</div>
+                    </article>
+                    <article id="ggx-canada-status" class="ggx-canada-status-box">
+                        <span class="text-yellow-300 font-semibold">LOADING</span> Fetching Canada dashboard data...
+                    </article>
+                </div>
+            </section>
+
+            <section class="ggx-canada-chart-grid mt-4">
+                <article class="ggx-channel-card p-4">
+                    <div class="ggx-section-head">
+                        <h2><span class="ggx-ui-icon" id="ggx-icon-chartBars"></span><span>Gas Alberta vs Regulated</span></h2>
+                    </div>
+                    <div id="ggx-chart-gas-alberta-vs-regulated" class="ggx-canada-chart"></div>
+                </article>
+                <article class="ggx-channel-card p-4">
+                    <div class="ggx-section-head">
+                        <h2><span class="ggx-ui-icon" id="ggx-icon-rates"></span><span>Retailer Rates</span></h2>
+                    </div>
+                    <div id="ggx-chart-retailer-rates" class="ggx-canada-chart"></div>
+                </article>
+                <article class="ggx-channel-card p-4">
+                    <div class="ggx-section-head">
+                        <h2><span class="ggx-ui-icon" id="ggx-icon-currentMonth"></span><span>AECO Current Month</span></h2>
+                    </div>
+                    <div id="ggx-chart-aeco-ng-current" class="ggx-canada-chart"></div>
+                </article>
+                <article class="ggx-channel-card p-4">
+                    <div class="ggx-section-head">
+                        <h2><span class="ggx-ui-icon" id="ggx-icon-priorMonth"></span><span>AECO Prior Month</span></h2>
+                    </div>
+                    <div id="ggx-chart-aeco-ng-prior" class="ggx-canada-chart"></div>
+                </article>
+            </section>
+
+            <section class="mt-4">
+                <article class="ggx-channel-card p-4">
+                    <div class="ggx-section-head">
+                        <h2><span class="ggx-ui-icon" id="ggx-icon-futures"></span><span>AECO C Futures Pricing</span></h2>
+                    </div>
+                    <div id="ggx-chart-aeco-c-futures" class="ggx-canada-chart"></div>
+                </article>
+            </section>
+
+            <section class="mt-4">
+                <article class="ggx-channel-card p-4">
+                    <div class="ggx-section-head">
+                        <h2><span class="ggx-ui-icon" id="ggx-icon-table"></span><span>Canada Static Tables (Parsed)</span></h2>
+                    </div>
+                    <div id="ggx-canada-static-tables" class="ggx-canada-static-grid"></div>
+                </article>
+            </section>
+        </main>
+
+        <button id="ggx-to-top" class="ggx-to-top" aria-label="Back to top">
+            <i class="fa-solid fa-arrow-up"></i>
+        </button>
+    </section>
+
+    <script type="module" src="./modules/canada-dashboard.page.js?v=20260308canada2"></script>
+    <script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js?v=20260308canada2"></script>
 </body>
 </html>
