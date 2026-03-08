@@ -1,4 +1,96 @@
 export const DEFAULT_COVER = '/news/advertisement/zhanwei.jpg';
+const ARTICLE_DETAIL_PROXY_BASES = ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='];
+const ARTICLE_DETAIL_FETCH_TIMEOUT_MS = 12000;
+
+export function getArticleDetailPath(articleId) {
+    const id = String(articleId || '').trim();
+    return id ? `/news/article/${id}` : '';
+}
+
+export function getArticleDetailUrl(articleId, origin = '') {
+    const path = getArticleDetailPath(articleId);
+    if (!path) return '';
+
+    const originValue = String(origin || '').trim().replace(/\/$/, '');
+    if (originValue) return `${originValue}${path}`;
+    return `https://www.gasgx.com${path}`;
+}
+
+export function getArticleDetailFetchCandidates(articleId) {
+    const id = String(articleId || '').trim();
+    if (!id) return [];
+
+    const candidates = [];
+    const seen = new Set();
+    const pushCandidate = (value) => {
+        const url = String(value || '').trim();
+        if (!url || seen.has(url)) return;
+        seen.add(url);
+        candidates.push(url);
+    };
+
+    const canonicalUrl = getArticleDetailUrl(id);
+    const hasWindow = typeof window !== 'undefined';
+    let isGasGxOrigin = false;
+
+    if (hasWindow) {
+        try {
+            const hostname = String(window.location?.hostname || '').trim();
+            isGasGxOrigin = /(^|\.)gasgx\.com$/i.test(hostname);
+            if (isGasGxOrigin) {
+                pushCandidate(getArticleDetailUrl(id, window.location.origin));
+                pushCandidate(canonicalUrl);
+            }
+        } catch {
+            // Ignore URL parsing issues and fall back to proxy-only fetch.
+        }
+    }
+
+    if (!hasWindow && candidates.length === 0) pushCandidate(canonicalUrl);
+    ARTICLE_DETAIL_PROXY_BASES.forEach((proxyBase) => {
+        pushCandidate(`${proxyBase}${encodeURIComponent(canonicalUrl)}`);
+    });
+
+    return candidates;
+}
+
+export async function fetchArticleDetailHtml(articleId, options = {}) {
+    const id = String(articleId || '').trim();
+    if (!id) throw new Error('Article id is required');
+
+    const timeoutMs = Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : ARTICLE_DETAIL_FETCH_TIMEOUT_MS;
+    const candidates = getArticleDetailFetchCandidates(id);
+    let lastError = null;
+
+    for (const candidateUrl of candidates) {
+        let timeoutId = null;
+        try {
+            const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            if (controller) timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+            const response = await fetch(candidateUrl, {
+                cache: 'force-cache',
+                credentials: 'omit',
+                signal: controller?.signal,
+            });
+            if (timeoutId) clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            return {
+                html: await response.text(),
+                articleUrl: getArticleDetailUrl(id),
+                fetchedUrl: candidateUrl,
+            };
+        } catch (error) {
+            lastError = error;
+        } finally {
+            if (timeoutId) clearTimeout(timeoutId);
+        }
+    }
+
+    throw lastError || new Error(`Unable to fetch article detail for ${id}`);
+}
 
 export function resolveArticleMediaUrl(articleId, mediaPath, fallback = '') {
     const path = String(mediaPath || '').trim();

@@ -4,11 +4,12 @@ import { HEADER_NAVIGATION } from '../shared/config/navigation.config.js';
 import {
     DEFAULT_COVER as SHARED_DEFAULT_COVER,
     extractCoverFromArticleHtml as extractSharedCoverFromArticleHtml,
+    fetchArticleDetailHtml as fetchSharedArticleDetailHtml,
     getArticleMediaMeta as getSharedArticleMediaMeta,
     getInlineCoverMeta as getSharedInlineCoverMeta,
     isVideoMediaPath,
     resolveArticleMediaUrl as resolveSharedArticleMediaUrl,
-} from '../shared/modules/media.shared.js?v=20260308cover1';
+} from '../shared/modules/media.shared.js?v=20260308video2';
 
 const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
@@ -912,6 +913,10 @@ export function createNewsHomeApp() {
             return extractSharedCoverFromArticleHtml(html, articleUrl);
         },
 
+        async fetchArticleDetailHtml(articleId) {
+            return fetchSharedArticleDetailHtml(articleId);
+        },
+
         async loadArticleCoverFromDetailPage(articleId) {
             const key = String(articleId || '').trim();
             if (!key) return;
@@ -923,11 +928,7 @@ export function createNewsHomeApp() {
 
             this.state.articleCoverLoading[key] = true;
             try {
-                const articleUrl = this.getArticleUrl({ app_id: key });
-                const response = await fetch(articleUrl, { cache: 'force-cache' });
-                if (!response.ok) return;
-
-                const html = await response.text();
+                const { html, articleUrl } = await this.fetchArticleDetailHtml(key);
                 const coverMeta = this.extractCoverFromArticleHtml(html, articleUrl);
                 if (!coverMeta.url && !coverMeta.isVideoCover) return;
 

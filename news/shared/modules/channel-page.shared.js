@@ -4,6 +4,7 @@ import { HEADER_NAVIGATION } from '../config/navigation.config.js';
 import {
     DEFAULT_COVER,
     extractCoverFromArticleHtml as extractSharedCoverFromArticleHtml,
+    fetchArticleDetailHtml as fetchSharedArticleDetailHtml,
     getArticleMediaMeta,
     isVideoMediaPath,
 } from './media.shared.js';
@@ -900,6 +901,10 @@ export function createChannelApp(channelKey) {
             return extractSharedCoverFromArticleHtml(html, articleUrl);
         },
 
+        async fetchArticleDetailHtml(articleId) {
+            return fetchSharedArticleDetailHtml(articleId);
+        },
+
         updateArticleMediaNodes(articleId, mediaUrl, isVideoCover = false) {
             const targetId = String(articleId || '').trim();
             if (!targetId) return;
@@ -941,11 +946,7 @@ export function createChannelApp(channelKey) {
 
             this.state.articleCoverLoading[articleId] = true;
             try {
-                const articleUrl = getArticleUrl({ api_id: articleId, id: articleId });
-                const response = await fetch(articleUrl, { cache: 'force-cache' });
-                if (!response.ok) return;
-
-                const html = await response.text();
+                const { html, articleUrl } = await this.fetchArticleDetailHtml(articleId);
                 const coverMeta = this.extractCoverFromArticleHtml(html, articleUrl);
                 if (!coverMeta.url && !coverMeta.isVideoCover) return;
 

@@ -13,17 +13,20 @@ function normalizeStatus(value, fallback = 'pending') {
 export async function fetchReviewQueue({ status = 'pending', page = 1, pageSize = 20 } = {}) {
     const from = Math.max(0, (page - 1) * pageSize);
     const to = from + pageSize - 1;
+    const normalizedStatus = normalizeStatus(status, 'all');
 
     let query = client
         .from('scrape_queue')
         .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false, nullsFirst: false })
+        .order('api_id', { ascending: false, nullsFirst: false })
         .order('id', { ascending: false })
         .range(from, to);
 
-    if (status !== 'all') {
-        const token = normalizeStatus(status, '').replace(/,/g, '');
-        if (token) query = query.or(`review_status.eq.${token},status.eq.${token}`);
+    if (normalizedStatus === 'all') {
+        query = query.or('status.is.null,status.neq.published');
+    } else {
+        const token = normalizedStatus.replace(/,/g, '');
+        if (token) query = query.or(`status.eq.${token},and(status.is.null,review_status.eq.${token})`);
     }
 
     const { data, error, count } = await query;
@@ -37,17 +40,16 @@ export async function fetchReviewQueue({ status = 'pending', page = 1, pageSize 
 
 export async function fetchQueueStatuses(limit = 1200) {
     const safeLimit = Math.max(50, Math.min(5000, Number(limit) || 1200));
-    const { data, error } = await client.from('scrape_queue').select('review_status,status').order('id', { ascending: false }).limit(safeLimit);
+    const { data, error } = await client.from('scrape_queue').select('review_status,status').order('api_id', { ascending: false, nullsFirst: false }).order('id', { ascending: false }).limit(safeLimit);
     if (error) throw error;
 
-    const seed = ['pending', 'published', 'rejected'];
+    const seed = ['pending', 'processing', 'done', 'error', 'failed', 'rejected'];
     const set = new Set(seed);
     (data || []).forEach((row) => {
-        const reviewStatus = normalizeStatus(row?.review_status, '');
         const status = normalizeStatus(row?.status, '');
-        if (reviewStatus) set.add(reviewStatus);
         if (status) set.add(status);
     });
+    set.delete('published');
     return Array.from(set);
 }
 

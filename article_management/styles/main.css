@@ -789,7 +789,7 @@ textarea {
 
 .ams-queue-actions {
     align-items: stretch;
-    width: 214px;
+    width: 120px;
 }
 
 .ams-queue-inline {
@@ -800,10 +800,6 @@ textarea {
 
 .ams-queue-inline-status {
     grid-template-columns: 1fr;
-}
-
-.ams-queue-inline-shortcuts {
-    grid-template-columns: 1fr 1fr;
 }
 
 .ams-queue-actions .ams-btn,

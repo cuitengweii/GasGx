@@ -24,7 +24,7 @@ import {
     fetchReviewQueue,
     rejectQueueItem,
     updateQueueStatus,
-} from './review-queue.module.js';
+} from './review-queue.module.js?v=20260308ams24';
 import { fetchFooterSocialSettings, updateFooterSocialGroupVisible, upsertFooterContactSettings, upsertFooterSocialItem } from './site-settings.module.js';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js';
 
@@ -354,7 +354,7 @@ function pill(value) {
         archived: '已下架',
         scraping: '采集中',
         failed: '采集失败',
-        pending: '待采集',
+        pending: '待处理',
         rejected: '已拒绝',
         queued: '已入队',
         scraping: '采集中',
@@ -377,7 +377,8 @@ function queueStatusKey(value, fallback = 'pending') {
 function queueStatusLabel(value) {
     const key = queueStatusKey(value, '');
     const labels = {
-        pending: '待采集',
+        pending: '待处理',
+        done: '已完成',
         rejected: '已拒绝',
         published: '已发布',
         queued: '已入队',
@@ -392,8 +393,17 @@ function queueStatusLabel(value) {
     return labels[key] || String(value || '--');
 }
 
+function resolveQueueRowStatus(row, fallback = 'pending') {
+    return queueStatusKey(row?.status || row?.review_status, fallback);
+}
+
+function queueStatusPill(value) {
+    const key = queueStatusKey(value, '');
+    return `<span class="ams-pill ${esc(key)}">${esc(queueStatusLabel(key || value || '--'))}</span>`;
+}
+
 function sortQueueStatuses(values = []) {
-    const preferredOrder = ['pending', 'queued', 'processing', 'scraping', 'fetched', 'published', 'rejected', 'failed', 'success', 'error', 'completed'];
+    const preferredOrder = ['pending', 'processing', 'done', 'queued', 'scraping', 'fetched', 'rejected', 'failed', 'error', 'success', 'completed'];
     const unique = Array.from(new Set((values || []).map((item) => queueStatusKey(item, '')).filter(Boolean)));
     return unique.sort((a, b) => {
         const ai = preferredOrder.indexOf(a);
@@ -891,7 +901,7 @@ async function renderDashboard(forceRefresh = false) {
                 <button class="ams-quick-link" type="button" data-dashboard-nav="queue">
                     <i class="fa-solid fa-list-check"></i>
                     <strong>处理采集队列</strong>
-                    <span>优先清理待采集内容</span>
+                    <span>优先处理待处理内容</span>
                 </button>
                 <button class="ams-quick-link" type="button" data-dashboard-nav="featured">
                     <i class="fa-solid fa-ranking-star"></i>
@@ -911,7 +921,7 @@ async function renderDashboard(forceRefresh = false) {
             { label: '已发布抽样', value: `${sampleRows.rows.length} 篇` },
             { label: '首页推荐位', value: `${heroSlots.length}/${HOMEPAGE_MARK_LIMIT}` },
             { label: '广告位', value: `${featured.length}/${state.featured.limit}` },
-            { label: '待采集', value: `${queue.count} 条` },
+            { label: '待处理', value: `${queue.count} 条` },
         ])}
         <section class="ams-card ams-category-card">
             <h3>分类分布（最近 200 条已发布文章）</h3>
@@ -2344,10 +2354,10 @@ async function renderQueue(forceRefresh = false) {
             .filter(Boolean)
     );
     (result.rows || []).forEach((item) => {
-        statusSet.add(queueStatusKey(item.review_status || item.status, 'pending'));
+        statusSet.add(resolveQueueRowStatus(item, 'pending'));
     });
 
-    const selectedStatus = queueStatusKey(state.queue.status, 'all');
+    const selectedStatus = queueStatusKey(state.queue.status, 'all') === 'published' ? 'all' : queueStatusKey(state.queue.status, 'all');
     if (selectedStatus !== 'all') statusSet.add(selectedStatus);
     const statusValues = sortQueueStatuses(Array.from(statusSet));
     const totalPages = calcTotalPages(result.count, state.queue.pageSize);
@@ -2372,11 +2382,9 @@ async function renderQueue(forceRefresh = false) {
             { label: '筛选状态', value: selectedStatus === 'all' ? '全部' : queueStatusLabel(selectedStatus) },
         ])}
         <div class="ams-table-wrap"><table class="ams-table ams-queue-table"><thead><tr><th>ID</th><th>来源</th><th>分类</th><th>发布方</th><th>标签</th><th class="ams-col-status">状态</th><th class="ams-col-time">创建时间</th><th class="ams-col-actions">操作</th></tr></thead><tbody>${result.rows.length ? result.rows.map((item) => {
-        const currentStatus = queueStatusKey(item.review_status || item.status, 'pending');
+        const currentStatus = resolveQueueRowStatus(item, 'pending');
         const rowStatusValues = sortQueueStatuses([...statusValues, currentStatus]);
-        const publishDisabled = currentStatus === 'published' ? 'disabled' : '';
-        const rejectDisabled = currentStatus === 'rejected' ? 'disabled' : '';
-        return `<tr data-queue-row="${item.id}"><td><code>${item.id}</code></td><td class="ams-queue-source"><strong>${esc(item.title || item.main_title || '未命名')}</strong><div class="ams-footnote">${esc(item.link || '')}</div></td><td>${esc(item.category || '--')}</td><td>${esc(item.publisher || '--')}</td><td>${esc(item.tag_choice || item.tag || '--')} / ${esc(item.secondary_tag || '--')}</td><td class="ams-col-status" data-queue-status-pill="${item.id}">${pill(currentStatus)}</td><td class="ams-col-time">${fmtDate(item.created_at)}</td><td class="ams-col-actions"><div class="ams-row-actions ams-row-actions-stacked ams-queue-actions"><div class="ams-queue-inline ams-queue-inline-status"><select class="ams-select ams-queue-status-select" data-queue-status-select="1" data-id="${item.id}">${rowStatusValues.map((status) => `<option value="${esc(status)}" ${status === currentStatus ? 'selected' : ''}>${esc(queueStatusLabel(status))}</option>`).join('')}</select></div><div class="ams-queue-inline ams-queue-inline-shortcuts"><button class="ams-btn ams-btn-primary" data-queue-action="approve" data-id="${item.id}" ${publishDisabled}>通过并发布</button><button class="ams-btn ams-btn-danger" data-queue-action="reject" data-id="${item.id}" ${rejectDisabled}>拒绝</button></div></div></td></tr>`;
+        return `<tr data-queue-row="${item.id}"><td><code>${item.id}</code></td><td class="ams-queue-source"><strong>${esc(item.title || item.main_title || '未命名')}</strong><div class="ams-footnote">${esc(item.link || '')}</div></td><td>${esc(item.category || '--')}</td><td>${esc(item.publisher || '--')}</td><td>${esc(item.tag_choice || item.tag || '--')} / ${esc(item.secondary_tag || '--')}</td><td class="ams-col-status" data-queue-status-pill="${item.id}">${queueStatusPill(currentStatus)}</td><td class="ams-col-time">${fmtDate(item.created_at)}</td><td class="ams-col-actions"><div class="ams-row-actions ams-row-actions-stacked ams-queue-actions"><div class="ams-queue-inline ams-queue-inline-status"><select class="ams-select ams-queue-status-select" data-queue-status-select="1" data-id="${item.id}">${rowStatusValues.map((status) => `<option value="${esc(status)}" ${status === currentStatus ? 'selected' : ''}>${esc(queueStatusLabel(status))}</option>`).join('')}</select></div></div></td></tr>`;
     }).join('') : '<tr><td colspan="8"><div class="ams-empty">暂无队列数据。</div></td></tr>'}</tbody></table></div>
     `);
 
@@ -2418,7 +2426,7 @@ async function renderQueue(forceRefresh = false) {
                     await updateQueueStatus(id, nextStatus, state.user?.id || null, note);
                     invalidateQueueCache();
                     const statusPillNode = document.querySelector(`[data-queue-status-pill="${id}"]`);
-                    if (statusPillNode) statusPillNode.innerHTML = pill(nextStatus);
+                    if (statusPillNode) statusPillNode.innerHTML = queueStatusPill(nextStatus);
                     selectNode.dataset.prevValue = nextStatus;
                     const row = mapById.get(id);
                     if (row) {
@@ -2433,49 +2441,6 @@ async function renderQueue(forceRefresh = false) {
             } finally {
                 if (selectNode.isConnected) selectNode.disabled = previousDisabled;
             }
-        });
-    });
-
-    document.querySelectorAll('[data-queue-action="approve"]').forEach((button) => {
-        button.addEventListener('click', async () => {
-            const id = Number(button.dataset.id);
-            const row = mapById.get(id);
-            if (!row) return;
-
-            const seed = buildArticlePayloadFromQueue(row) || createEmptyArticlePayload();
-            const title = window.prompt('文章标题：', seed.main_title || '');
-            if (title === null) return;
-            const subheading = window.prompt('副标题：', seed.subheading || '');
-            if (subheading === null) return;
-            await withButtonBusy(button, '发布中...', async () => {
-                try {
-                    await approveAndPublishQueueItem(row, { ...seed, main_title: title, subheading, status: 'published' }, state.user?.id || null);
-                    showToast(`队列 #${id} 已发布。`);
-                    invalidateArticlesCache();
-                    invalidateQueueCache();
-                    void renderPage();
-                } catch (error) {
-                    showToast(error.message || '发布失败。', true);
-                }
-            });
-        });
-    });
-
-    document.querySelectorAll('[data-queue-action="reject"]').forEach((button) => {
-        button.addEventListener('click', async () => {
-            const id = Number(button.dataset.id);
-            const note = window.prompt('拒绝原因（必填）：', '内容质量不足，暂不发布');
-            if (note === null) return;
-            await withButtonBusy(button, '处理中...', async () => {
-                try {
-                    await rejectQueueItem(id, note, state.user?.id || null);
-                    invalidateQueueCache();
-                    showToast(`队列 #${id} 已拒绝。`);
-                    void renderPage();
-                } catch (error) {
-                    showToast(error.message || '拒绝失败。', true);
-                }
-            });
         });
     });
 }
