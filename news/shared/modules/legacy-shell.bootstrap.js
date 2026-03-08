@@ -1,4 +1,4 @@
-import { mountSharedHeader, mountSharedFooter, renderSharedAuthState } from './layout.shared.js';
+import { mountSharedHeader, mountSharedFooter, renderSharedAuthState } from './layout.shared.js?v=20260308footer2';
 import { HEADER_NAVIGATION } from '../config/navigation.config.js';
 
 const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';

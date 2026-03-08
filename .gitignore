@@ -1,5 +1,6 @@
 # Environment variables (contains secrets)
 .env
+.env.ftp.local.ps1
 .env.local
 .env.*.local
 

@@ -7,8 +7,10 @@ const MAIN_MODULE_CANDIDATES = [
     '/news/modules/main.module.js',
 ];
 const LAYOUT_MODULE_CANDIDATES = [
+    '../shared/modules/layout.shared.js?v=20260308footer2',
     '../shared/modules/layout.shared.js?v=20260305fix07',
     '../shared/modules/layout.shared.js',
+    '/news/shared/modules/layout.shared.js?v=20260308footer2',
     '/news/shared/modules/layout.shared.js?v=20260305fix07',
     '/news/shared/modules/layout.shared.js',
 ];

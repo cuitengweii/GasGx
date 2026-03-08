@@ -357,8 +357,8 @@ function fetchFooterSocialSettings() {
         'section': `in.(${FOOTER_SOCIAL_SECTION},${FOOTER_SOCIAL_META_SECTION},${FOOTER_CONTACT_SECTION})`,
         order: 'sort_order.asc,id.asc',
     });
-
     footerSocialSettingsPromise = fetch(`${SUPABASE_URL}/rest/v1/${FOOTER_SOCIAL_SETTINGS_TABLE}?${query.toString()}`, {
+        cache: 'no-store',
         headers: {
             apikey: SUPABASE_KEY,
             Authorization: `Bearer ${SUPABASE_KEY}`,

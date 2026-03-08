@@ -8,6 +8,8 @@
   },
   "scripts": {
     "test": "npm run test:e2e",
+    "up": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ftp_upload_changed.ps1",
+    "up:dry": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ftp_upload_changed.ps1 -DryRun",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",

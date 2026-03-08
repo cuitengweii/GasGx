@@ -1,4 +1,4 @@
-import { mountSharedHeader, mountSharedFooter } from '../../shared/modules/layout.shared.js';
+import { mountSharedHeader, mountSharedFooter } from '../../shared/modules/layout.shared.js?v=20260308footer2';
 import { mountChannelMain, createChannelApp } from '../../shared/modules/channel-page.shared.js';
 
 const STARTUP_TIMEOUT_MS = 8000;

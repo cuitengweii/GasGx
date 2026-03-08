@@ -1,5 +1,5 @@
 import { mountFlashMain, createFlashApp } from './main.module.js';
-import { mountSharedHeader, mountSharedFooter } from '../../shared/modules/layout.shared.js';
+import { mountSharedHeader, mountSharedFooter } from '../../shared/modules/layout.shared.js?v=20260308footer2';
 
 const STARTUP_TIMEOUT_MS = 8000;
 
