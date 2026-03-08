@@ -144,8 +144,8 @@ const MAIN_TEMPLATE = `
         </div>
     </main>
 
-    <button id="ggx-back-to-top-btn" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="fixed right-6 bottom-24 w-10 h-10 bg-[#111] border border-gas-green text-gas-green rounded-full flex items-center justify-center z-40 hover:scale-110 transition-all duration-300 shadow-neon group opacity-0 pointer-events-none" aria-label="Back to Top">
-        <i class="fa-solid fa-arrow-up group-hover:-translate-y-0.5 transition-transform"></i>
+    <button id="ggx-back-to-top-btn" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="fixed right-[1.1rem] bottom-[5.5rem] w-10 h-10 bg-[#07090c]/90 border border-gas-green/60 text-gas-green rounded-full flex items-center justify-center z-[45] shadow-neon opacity-0 pointer-events-none transition-all duration-300 hover:-translate-y-0.5" aria-label="Back to Top">
+        <i class="fa-solid fa-arrow-up"></i>
     </button>
 
     <div id="ggx-poster-capture-area" class="ggx-poster-bg" style="position: absolute; top: -9999px; left: -9999px; width: 450px; padding: 0; display: flex; flex-direction: column; text-align: left; overflow: hidden;">
@@ -299,11 +299,18 @@ export function createNewsHomeApp() {
 
             this.maybeShowHomeAdForNewUser();
 
-            window.addEventListener('scroll', () => {
+            const syncBackToTopButton = () => {
                 const btn = document.getElementById('ggx-back-to-top-btn');
-                if (btn) btn.classList.toggle('opacity-0', window.scrollY <= 300);
-                if (btn) btn.classList.toggle('pointer-events-none', window.scrollY <= 300);
-            });
+                if (!btn) return;
+                if (window.scrollY > 260) {
+                    btn.classList.remove('opacity-0', 'pointer-events-none');
+                } else {
+                    btn.classList.add('opacity-0', 'pointer-events-none');
+                }
+            };
+
+            window.addEventListener('scroll', syncBackToTopButton, { passive: true });
+            syncBackToTopButton();
         },
 
         async initAuth() {

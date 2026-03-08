@@ -1,9 +1,11 @@
 const STARTUP_TIMEOUT_MS = 8000;
 const MAIN_MODULE_CANDIDATES = [
+    './main.module.js?v=20260308totop1',
     './main.module.js?v=20260308cover1',
     './main.module.js?v=20260305fix07',
     './main.module.js?v=20260305ams01',
     './main.module.js',
+    '/news/modules/main.module.js?v=20260308totop1',
     '/news/modules/main.module.js?v=20260308cover1',
     '/news/modules/main.module.js?v=20260305fix07',
     '/news/modules/main.module.js',
