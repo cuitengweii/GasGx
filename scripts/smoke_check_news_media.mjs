@@ -55,6 +55,24 @@ function querySelector(html, selector) {
         .filter(Boolean);
 
     for (const current of selectors) {
+        if (current === '.article-content video') {
+            const articleContentIndex = String(html || '').search(/class=(["'])[^"']*article-content[^"']*\1/i);
+            if (articleContentIndex >= 0) {
+                const scopedHtml = String(html || '').slice(articleContentIndex);
+                const video = findTag(scopedHtml, 'video');
+                if (video) return video;
+            }
+        }
+
+        if (current === '.article-content img') {
+            const articleContentIndex = String(html || '').search(/class=(["'])[^"']*article-content[^"']*\1/i);
+            if (articleContentIndex >= 0) {
+                const scopedHtml = String(html || '').slice(articleContentIndex);
+                const image = findTag(scopedHtml, 'img');
+                if (image) return image;
+            }
+        }
+
         if (current === 'video') {
             const video = findTag(html, 'video');
             if (video) return video;
@@ -138,6 +156,10 @@ async function verifySharedMediaBehavior() {
         '<div class="article-content"><video poster="https://media.licdn.com/dms/image/v2/poster.jpg"><source src="https://dms.licdn.com/video.mp4" type="video/mp4"></video></div>',
         'https://www.gasgx.com/news/article/2282'
     ));
+    const avatarBeforeContent = normalize(media.extractCoverFromArticleHtml(
+        '<article><header><img src="images/author-avatar.png" alt="Author avatar"></header><div class="article-content"><img src="images/real-cover.jpg" alt="Real cover"></div></article>',
+        'https://www.gasgx.com/news/article/2284'
+    ));
     const inlinePoster = normalize(media.getInlineCoverMeta({ video_poster: 'images/poster.jpg' }, 2282));
     const inlineVideoLink = normalize(media.getInlineCoverMeta({ link: 'https://cdn.example.com/demo.mp4' }, 2282));
     const coverImage = normalize(media.getArticleMediaMeta({ api_id: 2284, cover_image: 'images/sample-cover.jpg' }));
@@ -155,6 +177,10 @@ async function verifySharedMediaBehavior() {
     assert.deepEqual(posterVideo, {
         url: 'https://media.licdn.com/dms/image/v2/poster.jpg',
         isVideoCover: true,
+    });
+    assert.deepEqual(avatarBeforeContent, {
+        url: 'https://www.gasgx.com/news/article/2284/images/real-cover.jpg',
+        isVideoCover: false,
     });
     assert.deepEqual(inlinePoster, {
         url: 'https://www.gasgx.com/news/article/2282/images/poster.jpg',

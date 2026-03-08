@@ -8,7 +8,7 @@ import {
     getInlineCoverMeta as getSharedInlineCoverMeta,
     isVideoMediaPath,
     resolveArticleMediaUrl as resolveSharedArticleMediaUrl,
-} from '../shared/modules/media.shared.js';
+} from '../shared/modules/media.shared.js?v=20260308cover1';
 
 const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';

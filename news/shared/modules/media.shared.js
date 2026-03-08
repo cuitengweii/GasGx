@@ -76,14 +76,14 @@ export function extractCoverFromArticleHtml(html, articleUrl) {
         const doc = parser.parseFromString(html, 'text/html');
         const assetBaseUrl = buildArticleAssetBaseUrl(articleUrl);
 
-        const videoElement = doc.querySelector('video');
+        const videoElement = doc.querySelector('.article-content video') || doc.querySelector('video');
         const videoPoster = videoElement?.getAttribute('poster');
         if (videoPoster) return { url: new URL(videoPoster, assetBaseUrl).href, isVideoCover: true };
 
         const videoSrc = videoElement?.getAttribute('src') || videoElement?.querySelector('source')?.getAttribute('src');
         if (videoSrc) return { url: new URL(videoSrc, assetBaseUrl).href, isVideoCover: true };
 
-        const contentImage = doc.querySelector('.article-content img, article img')?.getAttribute('src');
+        const contentImage = doc.querySelector('.article-content img')?.getAttribute('src');
         if (contentImage) return { url: new URL(contentImage, assetBaseUrl).href, isVideoCover: false };
     } catch (error) {
         console.warn('Failed to extract article cover from detail page:', error);
