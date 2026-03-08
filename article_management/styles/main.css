@@ -799,7 +799,7 @@ textarea {
 }
 
 .ams-queue-inline-status {
-    grid-template-columns: 1fr 88px;
+    grid-template-columns: 1fr;
 }
 
 .ams-queue-inline-shortcuts {

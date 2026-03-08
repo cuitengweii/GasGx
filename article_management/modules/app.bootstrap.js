@@ -131,7 +131,16 @@ const state = {
     featured: { limit: DEFAULT_FEATURED_LIMIT, ids: [], heroIds: [], poolScrollTop: 0 },
     siteSettings: { footerSocial: null },
     queue: { page: 1, pageSize: 20, status: 'all' },
-    cache: { articles: null },
+    cache: {
+        articles: null,
+        dashboard: null,
+        recycle: null,
+        featured: null,
+        siteSettings: null,
+        queue: null,
+        tagOptions: null,
+        tags: null,
+    },
     selectedArticleIds: new Set(),
     previewUnbind: null,
 };
@@ -213,6 +222,27 @@ function articleCacheKey(filters = {}) {
 
 function invalidateArticlesCache() {
     state.cache.articles = null;
+    state.cache.dashboard = null;
+    state.cache.recycle = null;
+    state.cache.featured = null;
+}
+
+function invalidateQueueCache() {
+    state.cache.queue = null;
+    state.cache.dashboard = null;
+}
+
+function invalidateTagOptionsCache() {
+    state.cache.tagOptions = null;
+    state.cache.tags = null;
+    state.cache.articles = null;
+}
+
+async function getCachedTagOptions(forceRefresh = false) {
+    if (!forceRefresh && Array.isArray(state.cache.tagOptions)) return state.cache.tagOptions;
+    const rows = await fetchTagOptions();
+    state.cache.tagOptions = rows;
+    return rows;
 }
 
 function clearArticleSelection() {
@@ -272,6 +302,10 @@ function resolveArticlePageId(payload, editorId) {
     return payload?.app_id || payload?.api_id || editorId || '';
 }
 
+function resolveArticleDisplayId(row) {
+    return row?.app_id || row?.api_id || row?.id || '';
+}
+
 function resolveArticlePageUrl(payload, editorId) {
     const articleId = resolveArticlePageId(payload, editorId);
     if (!articleId) return '';
@@ -320,7 +354,7 @@ function pill(value) {
         archived: '已下架',
         scraping: '采集中',
         failed: '采集失败',
-        pending: '待审核',
+        pending: '待采集',
         rejected: '已拒绝',
         queued: '已入队',
         scraping: '采集中',
@@ -343,7 +377,7 @@ function queueStatusKey(value, fallback = 'pending') {
 function queueStatusLabel(value) {
     const key = queueStatusKey(value, '');
     const labels = {
-        pending: '待审核',
+        pending: '待采集',
         rejected: '已拒绝',
         published: '已发布',
         queued: '已入队',
@@ -819,17 +853,26 @@ function renderShell() {
         });
     });
 }
-async function renderDashboard() {
+async function renderDashboard(forceRefresh = false) {
     setPageHeader('总览', '查看文章、推荐位和采集队列的整体状态。');
 
-    const [active, recycled, heroSlots, featured, queue, sampleRows] = await Promise.all([
-        fetchArticles({ page: 1, pageSize: 1 }),
-        fetchArticles({ page: 1, pageSize: 1, includeDeleted: true }),
-        fetchHeroSelection(),
-        fetchFeaturedSelection(state.featured.limit),
-        fetchReviewQueue({ page: 1, pageSize: 1, status: 'pending' }),
-        fetchArticles({ page: 1, pageSize: 200, status: 'published' }),
-    ]);
+    const dashboardCacheKey = JSON.stringify({ featuredLimit: state.featured.limit });
+    let dashboardData = !forceRefresh && state.cache.dashboard?.key === dashboardCacheKey ? state.cache.dashboard.data : null;
+
+    if (!dashboardData) {
+        const [active, recycled, heroSlots, featured, queue, sampleRows] = await Promise.all([
+            fetchArticles({ page: 1, pageSize: 1 }),
+            fetchArticles({ page: 1, pageSize: 1, includeDeleted: true }),
+            fetchHeroSelection(),
+            fetchFeaturedSelection(state.featured.limit),
+            fetchReviewQueue({ page: 1, pageSize: 1, status: 'pending' }),
+            fetchArticles({ page: 1, pageSize: 200, status: 'published' }),
+        ]);
+        dashboardData = { active, recycled, heroSlots, featured, queue, sampleRows };
+        state.cache.dashboard = { key: dashboardCacheKey, data: dashboardData };
+    }
+
+    const { active, recycled, heroSlots, featured, queue, sampleRows } = dashboardData;
     const categoryStats = summarizeCategoryStats(sampleRows.rows, 10);
 
     setContent(`
@@ -848,7 +891,7 @@ async function renderDashboard() {
                 <button class="ams-quick-link" type="button" data-dashboard-nav="queue">
                     <i class="fa-solid fa-list-check"></i>
                     <strong>处理采集队列</strong>
-                    <span>优先清理待审核内容</span>
+                    <span>优先清理待采集内容</span>
                 </button>
                 <button class="ams-quick-link" type="button" data-dashboard-nav="featured">
                     <i class="fa-solid fa-ranking-star"></i>
@@ -868,7 +911,7 @@ async function renderDashboard() {
             { label: '已发布抽样', value: `${sampleRows.rows.length} 篇` },
             { label: '首页推荐位', value: `${heroSlots.length}/${HOMEPAGE_MARK_LIMIT}` },
             { label: '广告位', value: `${featured.length}/${state.featured.limit}` },
-            { label: '待审核', value: `${queue.count} 条` },
+            { label: '待采集', value: `${queue.count} 条` },
         ])}
         <section class="ams-card ams-category-card">
             <h3>分类分布（最近 200 条已发布文章）</h3>
@@ -933,6 +976,7 @@ function articleRows(rows, recycleMode = false) {
     return rows
         .map((row) => {
             const previewUrl = resolveArticlePageUrl(row, row.id);
+            const displayId = resolveArticleDisplayId(row);
             const previewAction = previewUrl
                 ? `<a class="ams-btn ams-btn-muted" href="${esc(previewUrl)}" target="_blank" rel="noopener noreferrer">预览</a>`
                 : '';
@@ -944,10 +988,10 @@ function articleRows(rows, recycleMode = false) {
                 ${
                     recycleMode
                         ? '--'
-                        : `<input class="ams-check" type="checkbox" data-article-select="1" data-id="${row.id}" ${checked} aria-label="选择文章 ${row.id}">`
+                        : `<input class="ams-check" type="checkbox" data-article-select="1" data-id="${row.id}" ${checked} aria-label="选择文章 ${esc(displayId)}">`
                 }
             </td>
-            <td><code>${row.id}</code></td>
+            <td><code>${esc(displayId)}</code></td>
             <td>
                 <div class="ams-article-cell">
                     ${renderArticleMediaThumb(row)}
@@ -991,7 +1035,7 @@ function articleRows(rows, recycleMode = false) {
 
 async function renderArticles() {
     setPageHeader('文章管理', '新建、编辑、筛选、批量改类型与下架文章。');
-    const optionRows = await fetchTagOptions();
+    const optionRows = await getCachedTagOptions();
     const allowedTags = new Set(
         optionRows
             .filter((item) => item && item.section === 'tag' && item.is_active !== false)
@@ -1286,7 +1330,7 @@ async function renderArticles() {
     });
 }
 
-async function renderRecycleBin() {
+async function renderRecycleBin(forceRefresh = false) {
     setPageHeader('回收站', '恢复文章或执行永久删除。');
     let query = {
         page: state.recycle.page,
@@ -1297,13 +1341,19 @@ async function renderRecycleBin() {
     let result = { rows: [], count: 0 };
     let totalPages = 1;
 
-    const loadRecycleData = async () => {
-        result = await fetchArticles(query);
+    const loadRecycleData = async (nextForceRefresh = false) => {
+        const cacheKey = JSON.stringify(query);
+        if (!nextForceRefresh && state.cache.recycle?.key === cacheKey) {
+            result = state.cache.recycle.result;
+        } else {
+            result = await fetchArticles(query);
+            state.cache.recycle = { key: cacheKey, result };
+        }
         totalPages = calcTotalPages(result.count, query.pageSize);
         if (query.page > totalPages) {
             query.page = totalPages;
             state.recycle.page = totalPages;
-            return loadRecycleData();
+            return loadRecycleData(true);
         }
     };
 
@@ -1331,8 +1381,8 @@ async function renderRecycleBin() {
         bindRecycleBody();
     };
 
-    const reloadRecycleBody = async () => {
-        await loadRecycleData();
+    const reloadRecycleBody = async (nextForceRefresh = false) => {
+        await loadRecycleData(nextForceRefresh);
         refreshRecycleBody();
     };
 
@@ -1344,7 +1394,7 @@ async function renderRecycleBin() {
                         await restoreArticle(Number(btn.dataset.id), state.user?.id || null);
                         showToast('文章已恢复。');
                         invalidateArticlesCache();
-                        await reloadRecycleBody();
+                        await reloadRecycleBody(true);
                     } catch (error) {
                         showToast(error.message || '恢复失败。', true);
                     }
@@ -1361,7 +1411,7 @@ async function renderRecycleBin() {
                         await hardDeleteArticle(id);
                         showToast('已永久删除。');
                         invalidateArticlesCache();
-                        await reloadRecycleBody();
+                        await reloadRecycleBody(true);
                     } catch (error) {
                         showToast(error.message || '永久删除失败。', true);
                     }
@@ -1375,7 +1425,7 @@ async function renderRecycleBin() {
                 if (nextPage === query.page) return;
                 query.page = nextPage;
                 state.recycle.page = nextPage;
-                await reloadRecycleBody();
+                await reloadRecycleBody(false);
             });
         });
 
@@ -1387,12 +1437,12 @@ async function renderRecycleBin() {
                 query.page = 1;
                 state.recycle.pageSize = nextPageSize;
                 state.recycle.page = 1;
-                await reloadRecycleBody();
+                await reloadRecycleBody(false);
             });
         });
     };
 
-    await loadRecycleData();
+    await loadRecycleData(forceRefresh);
     refreshRecycleBody();
 
     document.getElementById('am-apply')?.addEventListener('click', async () => {
@@ -1400,7 +1450,8 @@ async function renderRecycleBin() {
         query.page = 1;
         state.recycle.search = query.search;
         state.recycle.page = 1;
-        await reloadRecycleBody();
+        state.cache.recycle = null;
+        await reloadRecycleBody(true);
     });
 }
 function optionsFor(values, selected) {
@@ -1413,7 +1464,7 @@ async function renderEditor() {
     const mode = state.editor.mode === 'edit' ? `编辑文章 #${state.editor.id}` : '新建文章';
     setPageHeader(mode, '支持草稿保护、快捷插入、实时预览与发布检查。');
 
-    const optionRows = await fetchTagOptions();
+    const optionRows = await getCachedTagOptions();
     const optionMap = TAG_SECTIONS.reduce((acc, section) => ({ ...acc, [section]: [] }), {});
     optionRows.forEach((item) => {
         if (!item || item.is_active === false || !optionMap[item.section]) return;
@@ -1781,9 +1832,10 @@ async function renderEditor() {
     });
 }
 
-async function renderTags() {
+async function renderTags(forceRefresh = false) {
     setPageHeader('标签管理', '管理 feeder_form_options（分类/发布方/标签等下拉选项）。');
-    const rows = await fetchTagOptions();
+    const rows = await getCachedTagOptions(forceRefresh);
+    state.cache.tags = rows;
     const grouped = TAG_SECTIONS.reduce((acc, section) => ({ ...acc, [section]: [] }), {});
     const sectionLabels = {
         category: '分类',
@@ -1831,6 +1883,7 @@ async function renderTags() {
                     sort_order: Number(document.getElementById('tg-sort-order')?.value || 100),
                     is_active: true,
                 });
+                invalidateTagOptionsCache();
                 showToast('选项已保存。');
                 void renderPage();
             } catch (error) {
@@ -1846,6 +1899,7 @@ async function renderTags() {
                     const id = Number(button.dataset.id);
                     const active = button.dataset.active === '1';
                     await updateTagOptionById(id, { is_active: !active });
+                    invalidateTagOptionsCache();
                     showToast('选项状态已更新。');
                     void renderPage();
                 } catch (error) {
@@ -1864,6 +1918,7 @@ async function renderTags() {
             await withButtonBusy(button, '处理中...', async () => {
                 try {
                     await updateTagOptionById(id, { label_en: next });
+                    invalidateTagOptionsCache();
                     showToast('选项已改名。');
                     void renderPage();
                 } catch (error) {
@@ -1880,6 +1935,7 @@ async function renderTags() {
             await withButtonBusy(button, '删除中...', async () => {
                 try {
                     await deleteTagOptionById(id);
+                    invalidateTagOptionsCache();
                     showToast('选项已删除。');
                     void renderPage();
                 } catch (error) {
@@ -1889,10 +1945,17 @@ async function renderTags() {
         });
     });
 }
-async function renderFeatured() {
+async function renderFeatured(forceRefresh = false) {
     setPageHeader('首页推荐位管理', '首页大位与广告位完全独立：分别调整、分别保存。');
 
-    const [poolRows, heroRows, featuredRows] = await Promise.all([fetchFeaturedPool(120), fetchHeroSelection(), fetchFeaturedSelection(state.featured.limit)]);
+    const featuredCacheKey = JSON.stringify({ limit: state.featured.limit });
+    let featuredData = !forceRefresh && state.cache.featured?.key === featuredCacheKey ? state.cache.featured.data : null;
+    if (!featuredData) {
+        const [poolRows, heroRows, featuredRows] = await Promise.all([fetchFeaturedPool(120), fetchHeroSelection(), fetchFeaturedSelection(state.featured.limit)]);
+        featuredData = { poolRows, heroRows, featuredRows };
+        state.cache.featured = { key: featuredCacheKey, data: featuredData };
+    }
+    const { poolRows, heroRows, featuredRows } = featuredData;
     if (!state.featured.heroIds.length) state.featured.heroIds = heroRows.map((row) => row.id).slice(0, HOMEPAGE_MARK_LIMIT);
     if (!state.featured.ids.length) state.featured.ids = featuredRows.map((row) => row.id);
 
@@ -2137,10 +2200,11 @@ function renderFooterSocialRow(item) {
     `;
 }
 
-async function renderSiteSettings() {
+async function renderSiteSettings(forceRefresh = false) {
     setPageHeader('站点设置', '统一管理 footer 联系方式和社交按钮。');
-    const settings = await fetchFooterSocialSettings();
+    const settings = !forceRefresh && state.cache.siteSettings ? state.cache.siteSettings : await fetchFooterSocialSettings();
     state.siteSettings.footerSocial = settings;
+    state.cache.siteSettings = settings;
 
     setContent(`
         <section class="ams-card" style="margin-bottom:12px">
@@ -2205,6 +2269,8 @@ async function renderSiteSettings() {
         await withButtonBusy(event.currentTarget, '保存中...', async () => {
             try {
                 await upsertFooterContactSettings({ label, href });
+                settings.contact = { ...(settings.contact || {}), label, href };
+                state.cache.siteSettings = settings;
                 showToast('Footer 联系方式已更新。');
             } catch (error) {
                 showToast(error.message || '保存联系方式失败。', true);
@@ -2218,6 +2284,8 @@ async function renderSiteSettings() {
         await withButtonBusy(event.currentTarget, '保存中...', async () => {
             try {
                 await updateFooterSocialGroupVisible(nextVisible);
+                settings.groupVisible = nextVisible;
+                state.cache.siteSettings = settings;
                 showToast(`社交按钮总开关已${nextVisible ? '开启' : '关闭'}。`);
             } catch (error) {
                 showToast(error.message || '保存社交按钮总开关失败。', true);
@@ -2242,6 +2310,11 @@ async function renderSiteSettings() {
                         enabled,
                         sortOrder: item?.sortOrder || 100,
                     });
+                    if (item) {
+                        item.enabled = enabled;
+                        item.href = href;
+                    }
+                    state.cache.siteSettings = settings;
                     showToast(`${item?.label || id} 已更新。`);
                 } catch (error) {
                     showToast(error.message || '保存社交按钮失败。', true);
@@ -2251,9 +2324,20 @@ async function renderSiteSettings() {
     });
 }
 
-async function renderQueue() {
+async function renderQueue(forceRefresh = false) {
     setPageHeader('采集队列', '查看 scrape_queue 的采集状态，并支持手动更改状态。');
-    const [result, discoveredStatuses] = await Promise.all([fetchReviewQueue(state.queue), fetchQueueStatuses()]);
+    const queueCacheKey = JSON.stringify({
+        page: state.queue.page,
+        pageSize: state.queue.pageSize,
+        status: state.queue.status,
+    });
+    let queueData = !forceRefresh && state.cache.queue?.key === queueCacheKey ? state.cache.queue.data : null;
+    if (!queueData) {
+        const [result, discoveredStatuses] = await Promise.all([fetchReviewQueue(state.queue), fetchQueueStatuses()]);
+        queueData = { result, discoveredStatuses };
+        state.cache.queue = { key: queueCacheKey, data: queueData };
+    }
+    const { result, discoveredStatuses } = queueData;
     const statusSet = new Set(
         (discoveredStatuses || [])
             .map((item) => queueStatusKey(item, ''))
@@ -2292,7 +2376,7 @@ async function renderQueue() {
         const rowStatusValues = sortQueueStatuses([...statusValues, currentStatus]);
         const publishDisabled = currentStatus === 'published' ? 'disabled' : '';
         const rejectDisabled = currentStatus === 'rejected' ? 'disabled' : '';
-        return `<tr><td><code>${item.id}</code></td><td class="ams-queue-source"><strong>${esc(item.title || item.main_title || '未命名')}</strong><div class="ams-footnote">${esc(item.link || '')}</div></td><td>${esc(item.category || '--')}</td><td>${esc(item.publisher || '--')}</td><td>${esc(item.tag_choice || item.tag || '--')} / ${esc(item.secondary_tag || '--')}</td><td class="ams-col-status">${pill(currentStatus)}</td><td class="ams-col-time">${fmtDate(item.created_at)}</td><td class="ams-col-actions"><div class="ams-row-actions ams-row-actions-stacked ams-queue-actions"><div class="ams-queue-inline ams-queue-inline-status"><select class="ams-select ams-queue-status-select" data-queue-status-select="1" data-id="${item.id}">${rowStatusValues.map((status) => `<option value="${esc(status)}" ${status === currentStatus ? 'selected' : ''}>${esc(queueStatusLabel(status))}</option>`).join('')}</select><button class="ams-btn ams-btn-muted" data-queue-action="set-status" data-id="${item.id}">更新状态</button></div><div class="ams-queue-inline ams-queue-inline-shortcuts"><button class="ams-btn ams-btn-primary" data-queue-action="approve" data-id="${item.id}" ${publishDisabled}>通过并发布</button><button class="ams-btn ams-btn-danger" data-queue-action="reject" data-id="${item.id}" ${rejectDisabled}>拒绝</button></div></div></td></tr>`;
+        return `<tr data-queue-row="${item.id}"><td><code>${item.id}</code></td><td class="ams-queue-source"><strong>${esc(item.title || item.main_title || '未命名')}</strong><div class="ams-footnote">${esc(item.link || '')}</div></td><td>${esc(item.category || '--')}</td><td>${esc(item.publisher || '--')}</td><td>${esc(item.tag_choice || item.tag || '--')} / ${esc(item.secondary_tag || '--')}</td><td class="ams-col-status" data-queue-status-pill="${item.id}">${pill(currentStatus)}</td><td class="ams-col-time">${fmtDate(item.created_at)}</td><td class="ams-col-actions"><div class="ams-row-actions ams-row-actions-stacked ams-queue-actions"><div class="ams-queue-inline ams-queue-inline-status"><select class="ams-select ams-queue-status-select" data-queue-status-select="1" data-id="${item.id}">${rowStatusValues.map((status) => `<option value="${esc(status)}" ${status === currentStatus ? 'selected' : ''}>${esc(queueStatusLabel(status))}</option>`).join('')}</select></div><div class="ams-queue-inline ams-queue-inline-shortcuts"><button class="ams-btn ams-btn-primary" data-queue-action="approve" data-id="${item.id}" ${publishDisabled}>通过并发布</button><button class="ams-btn ams-btn-danger" data-queue-action="reject" data-id="${item.id}" ${rejectDisabled}>拒绝</button></div></div></td></tr>`;
     }).join('') : '<tr><td colspan="8"><div class="ams-empty">暂无队列数据。</div></td></tr>'}</tbody></table></div>
     `);
 
@@ -2300,36 +2384,55 @@ async function renderQueue() {
         state.queue.status = document.getElementById('qr-status')?.value || 'all';
         state.queue.pageSize = Math.max(1, Number(document.getElementById('qr-page-size')?.value || 20));
         state.queue.page = Math.max(1, Number(document.getElementById('qr-page')?.value || 1));
+        invalidateQueueCache();
         void renderPage();
     });
 
     const mapById = new Map(result.rows.map((row) => [row.id, row]));
-    document.querySelectorAll('[data-queue-action="set-status"]').forEach((button) => {
-        button.addEventListener('click', async () => {
-            const id = Number(button.dataset.id);
-            const selectNode = document.querySelector(`[data-queue-status-select][data-id="${id}"]`);
+    document.querySelectorAll('[data-queue-status-select="1"]').forEach((selectNode) => {
+        selectNode.dataset.prevValue = selectNode.value || '';
+        selectNode.addEventListener('change', async () => {
+            const id = Number(selectNode.dataset.id);
             const nextStatus = queueStatusKey(selectNode?.value, '');
             if (!nextStatus) {
                 showToast('请选择状态。', true);
                 return;
             }
+            const previousStatus = queueStatusKey(selectNode.dataset.prevValue || '', '');
+            if (nextStatus === previousStatus) return;
 
             let note = null;
             if (nextStatus === 'rejected') {
                 const input = window.prompt('拒绝备注（可选）：', '');
-                if (input === null) return;
+                if (input === null) {
+                    selectNode.value = previousStatus || selectNode.dataset.prevValue || '';
+                    return;
+                }
                 note = input;
             }
 
-            await withButtonBusy(button, '更新中...', async () => {
+            const previousDisabled = selectNode.disabled;
+            selectNode.disabled = true;
+            try {
                 try {
                     await updateQueueStatus(id, nextStatus, state.user?.id || null, note);
+                    invalidateQueueCache();
+                    const statusPillNode = document.querySelector(`[data-queue-status-pill="${id}"]`);
+                    if (statusPillNode) statusPillNode.innerHTML = pill(nextStatus);
+                    selectNode.dataset.prevValue = nextStatus;
+                    const row = mapById.get(id);
+                    if (row) {
+                        row.review_status = nextStatus;
+                        row.status = nextStatus;
+                    }
                     showToast(`队列 #${id} 状态已更新为 ${queueStatusLabel(nextStatus)}。`);
-                    void renderPage();
                 } catch (error) {
+                    selectNode.value = previousStatus || '';
                     showToast(error.message || '状态更新失败。', true);
                 }
-            });
+            } finally {
+                if (selectNode.isConnected) selectNode.disabled = previousDisabled;
+            }
         });
     });
 
@@ -2349,6 +2452,7 @@ async function renderQueue() {
                     await approveAndPublishQueueItem(row, { ...seed, main_title: title, subheading, status: 'published' }, state.user?.id || null);
                     showToast(`队列 #${id} 已发布。`);
                     invalidateArticlesCache();
+                    invalidateQueueCache();
                     void renderPage();
                 } catch (error) {
                     showToast(error.message || '发布失败。', true);
@@ -2365,6 +2469,7 @@ async function renderQueue() {
             await withButtonBusy(button, '处理中...', async () => {
                 try {
                     await rejectQueueItem(id, note, state.user?.id || null);
+                    invalidateQueueCache();
                     showToast(`队列 #${id} 已拒绝。`);
                     void renderPage();
                 } catch (error) {
