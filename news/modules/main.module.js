@@ -1,6 +1,14 @@
 
 import { renderSharedAuthState } from '../shared/modules/layout.shared.js';
 import { HEADER_NAVIGATION } from '../shared/config/navigation.config.js';
+import {
+    DEFAULT_COVER as SHARED_DEFAULT_COVER,
+    extractCoverFromArticleHtml as extractSharedCoverFromArticleHtml,
+    getArticleMediaMeta as getSharedArticleMediaMeta,
+    getInlineCoverMeta as getSharedInlineCoverMeta,
+    isVideoMediaPath,
+    resolveArticleMediaUrl as resolveSharedArticleMediaUrl,
+} from '../shared/modules/media.shared.js';
 
 const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
@@ -105,10 +113,10 @@ const MAIN_TEMPLATE = `
 
             <div class="lg:col-span-4 pl-0 lg:pl-6 space-y-6 flex flex-col self-start h-fit">
                 <div class="grid grid-cols-2 gap-3">
-                    <a href="#" class="ggx-tech-card ggx-sidebar-card rounded-lg p-4 flex flex-col items-center justify-center gap-2 group hover:bg-[#151515]">
+                    <a href="https://www.gasgx.com/tools/miner-buying-guide/" target="_blank" rel="noopener noreferrer" class="ggx-tech-card ggx-sidebar-card rounded-lg p-4 flex flex-col items-center justify-center gap-2 group hover:bg-[#151515]">
                         <i class="fa-solid fa-server text-xl text-gray-500 group-hover:text-gas-green transition-colors"></i><span class="text-xs font-bold text-white">Miners</span>
                     </a>
-                    <a href="#" class="ggx-tech-card ggx-sidebar-card rounded-lg p-4 flex flex-col items-center justify-center gap-2 group hover:bg-[#151515]">
+                    <a href="https://www.gasgx.com/products/gas/" target="_blank" rel="noopener noreferrer" class="ggx-tech-card ggx-sidebar-card rounded-lg p-4 flex flex-col items-center justify-center gap-2 group hover:bg-[#151515]">
                         <i class="fa-solid fa-fan text-xl text-gray-500 group-hover:text-gas-green transition-colors"></i><span class="text-xs font-bold text-white">Generators</span>
                     </a>
                 </div>
@@ -857,86 +865,54 @@ export function createNewsHomeApp() {
         },
 
         getImageMeta(item) {
-            const placeholder = 'https://www.gasgx.com/news/advertisement/zhanwei.jpg';
+            const placeholder = SHARED_DEFAULT_COVER;
             if (!item) return { url: placeholder, isVideoCover: false };
 
             const articleId = item.app_id || item.api_id || item.id;
-            const coverImage = (item.cover_image || '').toString().trim();
-            if (coverImage) return { url: this.resolveArticleMediaUrl(articleId, coverImage, placeholder), isVideoCover: false };
+            const key = articleId ? String(articleId) : '';
+            const baseMediaMeta = getSharedArticleMediaMeta(item, placeholder);
+            const inlineCoverMeta = getSharedInlineCoverMeta(item, articleId);
+            const renderSafeBaseUrl = baseMediaMeta.url && !isVideoMediaPath(baseMediaMeta.url) ? baseMediaMeta.url : '';
+            const renderSafeInlineUrl = inlineCoverMeta.url && !isVideoMediaPath(inlineCoverMeta.url) ? inlineCoverMeta.url : '';
+            const fallbackUrl = renderSafeBaseUrl || renderSafeInlineUrl || placeholder;
 
-            const inlineCoverMeta = this.getInlineCoverMeta(item, articleId);
-            if (inlineCoverMeta.url) return inlineCoverMeta;
-
-            if (articleId) {
-                const key = String(articleId);
-                if (this.state.articleCoverCache[key]) {
+            if (key) {
+                if (this.state.articleCoverCache[key] || typeof this.state.articleCoverIsVideo[key] !== 'undefined') {
+                    const cachedUrl = this.state.articleCoverCache[key] || '';
                     return {
-                        url: this.state.articleCoverCache[key],
-                        isVideoCover: !!this.state.articleCoverIsVideo[key],
+                        url: cachedUrl && !isVideoMediaPath(cachedUrl) ? cachedUrl : fallbackUrl,
+                        isVideoCover: !!this.state.articleCoverIsVideo[key] || !!inlineCoverMeta.isVideoCover,
                     };
                 }
                 this.loadArticleCoverFromDetailPage(articleId);
             }
 
-            return { url: placeholder, isVideoCover: false };
+            if (baseMediaMeta.url) return { url: fallbackUrl, isVideoCover: !!baseMediaMeta.isVideoCover };
+            if (inlineCoverMeta.url) return { url: fallbackUrl, isVideoCover: !!inlineCoverMeta.isVideoCover };
+
+            return { url: fallbackUrl, isVideoCover: false };
         },
 
         resolveArticleMediaUrl(articleId, mediaPath, fallback = '') {
-            const path = String(mediaPath || '').trim();
-            if (!path) return fallback;
-            if (/^https?:\/\//i.test(path)) return path;
-
-            const normalized = path.replace(/^\.?\/*(images\/)?/i, '');
-            if (articleId) return `https://www.gasgx.com/news/article/${articleId}/images/${normalized}`;
-            return path.startsWith('/') ? path : `/${normalized}`;
+            return resolveSharedArticleMediaUrl(articleId, mediaPath, fallback);
         },
 
         getInlineCoverMeta(item, articleId) {
-            if (!item || typeof item !== 'object') return { url: '', isVideoCover: false };
-
-            const videoFields = [
-                'video_cover',
-                'video_cover_image',
-                'video_poster',
-                'video_thumbnail',
-            ];
-            for (const field of videoFields) {
-                const value = String(item[field] || '').trim();
-                if (value) return { url: this.resolveArticleMediaUrl(articleId, value, ''), isVideoCover: true };
-            }
-
-            const genericFields = ['thumbnail', 'thumb', 'poster'];
-            for (const field of genericFields) {
-                const value = String(item[field] || '').trim();
-                if (value) return { url: this.resolveArticleMediaUrl(articleId, value, ''), isVideoCover: false };
-            }
-
-            const link = String(item.link || '').trim();
-            if (/\.(avif|webp|png|jpe?g|gif)(\?.*)?$/i.test(link)) return { url: link, isVideoCover: false };
-            return { url: '', isVideoCover: false };
+            return getSharedInlineCoverMeta(item, articleId);
         },
 
         extractCoverFromArticleHtml(html, articleUrl) {
-            if (!html) return { url: '', isVideoCover: false };
-            try {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-
-                const videoPoster = doc.querySelector('video[poster]')?.getAttribute('poster');
-                if (videoPoster) return { url: new URL(videoPoster, articleUrl).href, isVideoCover: true };
-
-                const contentImage = doc.querySelector('.article-content img')?.getAttribute('src');
-                if (contentImage) return { url: new URL(contentImage, articleUrl).href, isVideoCover: false };
-            } catch (error) {
-                console.warn('Failed to extract article cover from detail page:', error);
-            }
-            return { url: '', isVideoCover: false };
+            return extractSharedCoverFromArticleHtml(html, articleUrl);
         },
 
         async loadArticleCoverFromDetailPage(articleId) {
             const key = String(articleId || '').trim();
             if (!key) return;
-            if (this.state.articleCoverCache[key] || this.state.articleCoverLoading[key]) return;
+            if ((this.state.articleCoverCache[key] || typeof this.state.articleCoverIsVideo[key] !== 'undefined') && !this.state.articleCoverLoading[key]) {
+                this.updateArticleImages(key, this.state.articleCoverCache[key] || '', !!this.state.articleCoverIsVideo[key]);
+                return;
+            }
+            if (this.state.articleCoverLoading[key]) return;
 
             this.state.articleCoverLoading[key] = true;
             try {
@@ -946,11 +922,11 @@ export function createNewsHomeApp() {
 
                 const html = await response.text();
                 const coverMeta = this.extractCoverFromArticleHtml(html, articleUrl);
-                if (!coverMeta.url) return;
+                if (!coverMeta.url && !coverMeta.isVideoCover) return;
 
-                this.state.articleCoverCache[key] = coverMeta.url;
+                this.state.articleCoverCache[key] = coverMeta.url || '';
                 this.state.articleCoverIsVideo[key] = !!coverMeta.isVideoCover;
-                this.updateArticleImages(key, coverMeta.url, !!coverMeta.isVideoCover);
+                this.updateArticleImages(key, coverMeta.url || '', !!coverMeta.isVideoCover);
             } catch (error) {
                 console.warn(`Failed to load fallback cover for article ${key}:`, error);
             } finally {
@@ -959,16 +935,31 @@ export function createNewsHomeApp() {
         },
 
         updateArticleImages(articleId, imageUrl, isVideoCover = false) {
-            if (!imageUrl) return;
             const targetId = String(articleId);
             document.querySelectorAll('img[data-article-id]').forEach((img) => {
                 if (img.dataset.articleId === targetId) {
-                    img.src = imageUrl;
+                    if (imageUrl && !isVideoMediaPath(imageUrl)) img.src = imageUrl;
                     img.dataset.videoCover = isVideoCover ? '1' : '0';
                 }
             });
             document.querySelectorAll(`[data-video-badge-id="${targetId}"]`).forEach((badge) => {
                 badge.classList.toggle('hidden', !isVideoCover);
+            });
+        },
+
+        hydrateRenderedArticleMedia(rows) {
+            if (!Array.isArray(rows) || rows.length === 0) return;
+
+            rows.forEach((art) => {
+                const articleId = art?.app_id || art?.api_id || art?.id;
+                if (!articleId) return;
+                const key = String(articleId);
+
+                if (this.state.articleCoverCache[key] || typeof this.state.articleCoverIsVideo[key] !== 'undefined') {
+                    this.updateArticleImages(key, this.state.articleCoverCache[key] || '', !!this.state.articleCoverIsVideo[key]);
+                }
+
+                this.loadArticleCoverFromDetailPage(articleId);
             });
         },
 
@@ -1537,6 +1528,7 @@ export function createNewsHomeApp() {
 
                 if (isReset) container.innerHTML = html;
                 else container.insertAdjacentHTML('beforeend', html);
+                this.hydrateRenderedArticleMedia(deduped);
 
                 this.state.currentOffset += incoming.length;
                 this.state.isLoading = false;

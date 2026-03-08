@@ -194,6 +194,12 @@ function normalizeLegacyBodyLayout(pathname) {
     }
 }
 
+function detectFooterVariant(pathname) {
+    const path = pathname.toLowerCase();
+    if (path === '/news/flash/account.html') return 'minimal';
+    return 'full';
+}
+
 function mountLegacyShell() {
     const pathname = window.location.pathname;
     const page = detectPage(pathname);
@@ -201,6 +207,7 @@ function mountLegacyShell() {
     const activePath = pathname;
     const idPrefix = page === 'flash' ? 'gxf' : 'ggx';
     const appGlobal = page === 'flash' ? 'GGXFlashApp' : 'GGXNewsHomeApp';
+    const footerVariant = detectFooterVariant(pathname);
 
     ensureSharedStylesheet();
     normalizeLegacyBodyLayout(pathname);
@@ -210,7 +217,7 @@ function mountLegacyShell() {
     const footerSlot = ensureSlot('gsh-footer-slot', 'end');
 
     mountSharedHeader(headerSlot, { page, idPrefix, appGlobal });
-    mountSharedFooter(footerSlot, { variant: 'full' });
+    mountSharedFooter(footerSlot, { variant: footerVariant });
     ensureMobileToggleBridge(page, appGlobal, idPrefix);
     initAuthBridge({ page, idPrefix, activeTitle, activePath });
 }

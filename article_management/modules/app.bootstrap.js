@@ -1,19 +1,20 @@
 ﻿
 import { getCurrentSession, getDisplayName, isAdminUser, onAuthStateChange, signInWithPassword, signOut } from './auth.module.js';
 import {
+    ARTICLE_TYPE_OPTIONS,
+    batchUpdateArticleStatus,
+    batchUpdateArticleType,
     createArticle,
     createEmptyArticlePayload,
     fetchArticleById,
     fetchArticles,
-    fetchDistinctCategories,
-    fetchDistinctTags,
     hardDeleteArticle,
     restoreArticle,
-    softDeleteArticle,
     updateArticle,
+    updateArticleType,
     updateArticleStatus,
 } from './articles.module.js';
-import { bindMarkdownPreview } from './editor.module.js';
+import { markdownToHtml } from './editor.module.js';
 import { deleteTagOptionById, fetchTagOptions, TAG_SECTIONS, updateTagOptionById, upsertTagOption } from './tags.module.js';
 import * as featuredApi from './featured.module.js';
 import {
@@ -24,6 +25,7 @@ import {
     rejectQueueItem,
     updateQueueStatus,
 } from './review-queue.module.js';
+import { fetchFooterSocialSettings, updateFooterSocialGroupVisible, upsertFooterContactSettings, upsertFooterSocialItem } from './site-settings.module.js';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js';
 
 const HOMEPAGE_MARK_LIMIT = Number.isFinite(Number(featuredApi.HOMEPAGE_MARK_LIMIT)) ? Number(featuredApi.HOMEPAGE_MARK_LIMIT) : 3;
@@ -96,6 +98,28 @@ const publishHeroMarks =
 
 const root = document.getElementById('ams-root');
 const toastNode = document.getElementById('ams-toast');
+const PAGE_SIZE_OPTIONS = [20, 50, 100];
+const EDITOR_DRAFT_STORAGE_KEY = 'gasgx:ams:editor-draft:v1';
+const ARTICLE_TYPE_MAP = new Map(ARTICLE_TYPE_OPTIONS.map((item) => [item.value, item.label]));
+const ARTICLE_STATUS_FILTER_OPTIONS = [
+    { value: 'all', label: '全部' },
+    { value: 'published', label: '已发布' },
+    { value: 'archived', label: '已下架' },
+    { value: 'scraping', label: '采集中' },
+    { value: 'failed', label: '采集失败' },
+];
+
+function createEditorState(mode = 'create', id = null, payload = null, extra = {}) {
+    return {
+        mode,
+        id: id ?? null,
+        payload: { ...createEmptyArticlePayload(), ...(payload || {}) },
+        dirty: false,
+        draftRestored: false,
+        restoredAt: null,
+        ...extra,
+    };
+}
 
 const state = {
     session: null,
@@ -103,10 +127,12 @@ const state = {
     page: 'dashboard',
     articles: { page: 1, pageSize: 20, search: '', status: 'all', tag: 'all', category: 'all' },
     recycle: { page: 1, pageSize: 20, search: '' },
-    editor: { mode: 'create', id: null, payload: createEmptyArticlePayload() },
+    editor: createEditorState(),
     featured: { limit: DEFAULT_FEATURED_LIMIT, ids: [], heroIds: [], poolScrollTop: 0 },
+    siteSettings: { footerSocial: null },
     queue: { page: 1, pageSize: 20, status: 'all' },
     cache: { articles: null },
+    selectedArticleIds: new Set(),
     previewUnbind: null,
 };
 
@@ -189,6 +215,59 @@ function invalidateArticlesCache() {
     state.cache.articles = null;
 }
 
+function clearArticleSelection() {
+    state.selectedArticleIds.clear();
+}
+
+function pruneArticleSelection(validIds = []) {
+    const validSet = new Set((validIds || []).map((item) => String(item)));
+    Array.from(state.selectedArticleIds).forEach((id) => {
+        if (!validSet.has(String(id))) state.selectedArticleIds.delete(String(id));
+    });
+}
+
+function getSelectedArticleIds() {
+    return Array.from(state.selectedArticleIds)
+        .map((item) => Number(item))
+        .filter((item) => Number.isFinite(item));
+}
+
+function normalizeArticleTypeValue(value) {
+    const next = String(value || '').trim().toLowerCase();
+    return next || '';
+}
+
+function articleTypeLabel(value) {
+    const key = normalizeArticleTypeValue(value);
+    return ARTICLE_TYPE_MAP.get(key) || (key ? key : '未设置');
+}
+
+function articleTypeOptionsMarkup(selected = '', includeEmpty = true) {
+    const current = normalizeArticleTypeValue(selected);
+    const options = includeEmpty ? [{ value: '', label: '未设置' }, ...ARTICLE_TYPE_OPTIONS] : [...ARTICLE_TYPE_OPTIONS];
+    if (current && !options.some((item) => item.value === current)) options.push({ value: current, label: current });
+    return options
+        .map((item) => `<option value="${esc(item.value)}" ${item.value === current ? 'selected' : ''}>${esc(item.label)}</option>`)
+        .join('');
+}
+
+function buildFilterTagOptions(optionRows = [], selected = 'all') {
+    const activeTags = (optionRows || [])
+        .filter((item) => item && item.section === 'tag' && item.is_active !== false)
+        .map((item) => String(item.option_id || item.label_en || '').trim())
+        .filter(Boolean);
+    const unique = Array.from(new Set(activeTags));
+    return [{ value: 'all', label: '全部' }, ...unique.map((value) => ({ value, label: value }))].map(
+        (item) => `<option value="${esc(item.value)}" ${selected === item.value ? 'selected' : ''}>${esc(item.label)}</option>`
+    ).join('');
+}
+
+function buildFilterCategoryOptions(selected = 'all') {
+    return [{ value: 'all', label: '全部' }, ...ARTICLE_TYPE_OPTIONS]
+        .map((item) => `<option value="${esc(item.value)}" ${selected === item.value ? 'selected' : ''}>${esc(item.label)}</option>`)
+        .join('');
+}
+
 function resolveArticlePageId(payload, editorId) {
     return payload?.app_id || payload?.api_id || editorId || '';
 }
@@ -238,7 +317,9 @@ function pill(value) {
     const labels = {
         draft: '草稿',
         published: '已发布',
-        archived: '已归档',
+        archived: '已下架',
+        scraping: '采集中',
+        failed: '采集失败',
         pending: '待审核',
         rejected: '已拒绝',
         queued: '已入队',
@@ -307,6 +388,337 @@ function summarizeCategoryStats(rows, limit = 10) {
         .map(([name, count]) => ({ name, count }));
 }
 
+function safeSessionStorage(method, ...args) {
+    try {
+        return window.sessionStorage?.[method]?.(...args);
+    } catch (_error) {
+        return null;
+    }
+}
+
+function isMeaningfulEditorPayload(payload = {}) {
+    const keys = ['main_title', 'subheading', 'content_markdown', 'content_html', 'tag', 'secondary_tag', 'type', 'publisher', 'cover_image', 'author_avatar', 'topics', 'link'];
+    return keys.some((key) => String(payload?.[key] || '').trim());
+}
+
+function readStoredEditorDraft() {
+    const raw = safeSessionStorage('getItem', EDITOR_DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+    try {
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return null;
+        return parsed;
+    } catch (_error) {
+        return null;
+    }
+}
+
+function clearStoredEditorDraft() {
+    safeSessionStorage('removeItem', EDITOR_DRAFT_STORAGE_KEY);
+}
+
+function ensureEditorHtmlPayload(payload = {}) {
+    const nextPayload = { ...createEmptyArticlePayload(), ...(payload || {}) };
+    const currentHtml = String(nextPayload.content_html || '').trim();
+    if (currentHtml) return nextPayload;
+
+    const markdown = String(nextPayload.content_markdown || '').trim();
+    if (!markdown) return nextPayload;
+
+    return {
+        ...nextPayload,
+        content_html: markdownToHtml(markdown),
+    };
+}
+
+function persistEditorDraft(editorState) {
+    const nextState = editorState || state.editor;
+    const payload = ensureEditorHtmlPayload(nextState?.payload || {});
+    if (!isMeaningfulEditorPayload(payload)) {
+        clearStoredEditorDraft();
+        return;
+    }
+    safeSessionStorage(
+        'setItem',
+        EDITOR_DRAFT_STORAGE_KEY,
+        JSON.stringify({
+            mode: nextState?.mode || 'create',
+            id: nextState?.id || null,
+            payload,
+            savedAt: Date.now(),
+        })
+    );
+}
+
+function hydrateEditorPayload(mode, id, payload) {
+    const fallbackPayload = ensureEditorHtmlPayload(payload || {});
+    const draft = readStoredEditorDraft();
+    if (!draft?.payload) return { payload: fallbackPayload, draftRestored: false, restoredAt: null };
+
+    const sameMode = draft.mode === mode;
+    const sameRecord = mode !== 'edit' || String(draft.id ?? '') === String(id ?? '');
+    if (!sameMode || !sameRecord) return { payload: fallbackPayload, draftRestored: false, restoredAt: null };
+
+    const shouldRestore = mode === 'edit' || !isMeaningfulEditorPayload(fallbackPayload);
+    const restoredPayload = ensureEditorHtmlPayload(draft.payload || {});
+    return {
+        payload: shouldRestore ? restoredPayload : fallbackPayload,
+        draftRestored: shouldRestore,
+        restoredAt: shouldRestore ? draft.savedAt || null : null,
+    };
+}
+
+function hasUnsavedEditorChanges() {
+    return state.page === 'editor' && Boolean(state.editor?.dirty);
+}
+
+function confirmDiscardEditorChanges() {
+    if (!hasUnsavedEditorChanges()) return true;
+    return window.confirm('当前文章有未保存的内容，确认离开编辑页吗？');
+}
+
+function prepareEditorState(mode = 'create', id = null, payload = null) {
+    const hydrated = hydrateEditorPayload(mode, id, payload);
+    return createEditorState(mode, id, hydrated.payload, {
+        draftRestored: hydrated.draftRestored,
+        restoredAt: hydrated.restoredAt,
+    });
+}
+
+function countPlainWords(text) {
+    const source = String(text || '');
+    const latin = source.match(/[A-Za-z0-9_]+/g) || [];
+    const cjk = source.match(/[\u3400-\u9fff]/g) || [];
+    return latin.length + cjk.length;
+}
+
+function markdownToPlainText(markdown) {
+    return String(markdown || '')
+        .replace(/```[\s\S]*?```/g, ' ')
+        .replace(/!\[[^\]]*]\([^)]+\)/g, ' ')
+        .replace(/\[([^\]]+)]\(([^)]+)\)/g, '$1 $2')
+        .replace(/[#>*`~_-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function htmlToPlainText(html) {
+    return String(html || '')
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function detectHtmlHeadings(html) {
+    return Array.from(String(html || '').matchAll(/<h([1-3])[^>]*>([\s\S]*?)<\/h\1>/gi))
+        .map((match) => htmlToPlainText(match[2]))
+        .filter(Boolean)
+        .slice(0, 8);
+}
+
+function resolveEditorPreviewHtml(payload = {}) {
+    const htmlSource = String(payload.content_html || '').trim();
+    if (htmlSource) return htmlSource;
+    return markdownToHtml(String(payload.content_markdown || ''));
+}
+
+function splitTopics(value) {
+    return String(value || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
+function buildEditorMetrics(payload = {}) {
+    const markdown = String(payload.content_markdown || '');
+    const htmlSource = String(payload.content_html || '');
+    const plainText = htmlSource.trim() ? htmlToPlainText(htmlSource) : markdownToPlainText(markdown);
+    const compactChars = plainText.replace(/\s+/g, '').length;
+    const words = countPlainWords(plainText);
+    const readingBasis = words || compactChars;
+    const readMinutes = readingBasis ? Math.max(1, Math.ceil(readingBasis / 280)) : 0;
+    const headings = htmlSource.trim()
+        ? detectHtmlHeadings(htmlSource)
+        : markdown
+              .split(/\r?\n/)
+              .map((line) => String(line || '').trim())
+              .filter((line) => /^#{1,3}\s+/.test(line))
+              .map((line) => line.replace(/^#{1,3}\s+/, '').trim())
+              .filter(Boolean)
+              .slice(0, 8);
+
+    return {
+        words,
+        chars: compactChars,
+        readMinutes,
+        headings,
+        topics: splitTopics(payload.topics),
+        mode: htmlSource.trim() ? 'html' : 'markdown',
+    };
+}
+
+function buildEditorChecklist(payload = {}, metrics = buildEditorMetrics(payload)) {
+    return [
+        { name: '标题', label: '标题已填写', ready: Boolean(String(payload.main_title || '').trim()), required: true },
+        { name: '分类', label: '分类已选择', ready: Boolean(String(payload.type || '').trim()), required: false },
+        { name: '发布方', label: '发布方已选择', ready: Boolean(String(payload.publisher || '').trim()), required: false },
+        { name: '主标签', label: '主标签已选择', ready: Boolean(String(payload.tag || '').trim()), required: false },
+        { name: '封面图', label: '封面图已配置', ready: Boolean(String(payload.cover_image || '').trim()), required: false },
+        { name: '正文', label: '正文达到 80 字', ready: metrics.chars >= 80, required: true },
+        { name: '原文链接', label: '原文链接已填写', ready: Boolean(String(payload.link || '').trim()), required: false },
+    ];
+}
+
+function pageSizeOptions(selected = 20) {
+    return PAGE_SIZE_OPTIONS.map((value) => `<option value="${value}" ${Number(selected) === value ? 'selected' : ''}>${value} / 页</option>`).join('');
+}
+
+function pageJumpOptions(totalPages = 1, limit = 10) {
+    const count = Math.max(1, Math.min(Number(totalPages) || 1, limit));
+    return Array.from({ length: count }, (_, index) => `<option value="${index + 1}"></option>`).join('');
+}
+
+function calcTotalPages(totalCount = 0, pageSize = 20) {
+    return Math.max(1, Math.ceil((Number(totalCount) || 0) / Math.max(1, Number(pageSize) || 20)));
+}
+
+function buildPaginationWindow(currentPage = 1, totalPages = 1, width = 7) {
+    const current = Math.max(1, Math.min(Number(currentPage) || 1, Number(totalPages) || 1));
+    const total = Math.max(1, Number(totalPages) || 1);
+    const safeWidth = Math.max(3, Number(width) || 7);
+    const half = Math.floor(safeWidth / 2);
+    let start = Math.max(1, current - half);
+    let end = Math.min(total, start + safeWidth - 1);
+    start = Math.max(1, end - safeWidth + 1);
+    const pages = [];
+    for (let page = start; page <= end; page += 1) pages.push(page);
+    return pages;
+}
+
+function renderPagination(idPrefix, currentPage = 1, totalPages = 1) {
+    const current = Math.max(1, Math.min(Number(currentPage) || 1, Number(totalPages) || 1));
+    const total = Math.max(1, Number(totalPages) || 1);
+    const pages = buildPaginationWindow(current, total, 7);
+
+    return `
+        <div class="ams-pagination" data-pagination="${esc(idPrefix)}">
+            <div class="ams-pagination-meta">
+                <label class="ams-pagination-label" for="${esc(idPrefix)}-page-size">每页数量</label>
+                <select class="ams-select ams-pagination-select" id="${esc(idPrefix)}-page-size" data-page-size-change="${esc(idPrefix)}">
+                    ${pageSizeOptions(idPrefix === 'recycle' ? state.recycle.pageSize : state.articles.pageSize)}
+                </select>
+            </div>
+            <button class="ams-btn ams-btn-muted" type="button" data-page-jump="${esc(idPrefix)}" data-page="${current - 1}" ${current <= 1 ? 'disabled' : ''}>上一页</button>
+            <div class="ams-pagination-pages">
+                ${pages
+                    .map(
+                        (page) =>
+                            `<button class="ams-btn ${page === current ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" data-page-jump="${esc(
+                                idPrefix
+                            )}" data-page="${page}">${page}</button>`
+                    )
+                    .join('')}
+            </div>
+            <button class="ams-btn ams-btn-muted" type="button" data-page-jump="${esc(idPrefix)}" data-page="${current + 1}" ${current >= total ? 'disabled' : ''}>下一页</button>
+        </div>
+    `;
+}
+
+function renderSummaryChips(items = []) {
+    return `<div class="ams-summary-row">${items
+        .filter((item) => item && item.value !== '' && item.value !== null && item.value !== undefined)
+        .map((item) => `<span class="ams-summary-chip"><strong>${esc(item.label)}</strong><span>${esc(String(item.value))}</span></span>`)
+        .join('')}</div>`;
+}
+
+function renderEditorMetricCard(label, value, help = '') {
+    return `<article class="ams-editor-metric"><span>${esc(label)}</span><strong>${esc(String(value))}</strong>${help ? `<small>${esc(help)}</small>` : ''}</article>`;
+}
+
+function renderEditorChecklist(items = []) {
+    return `<div class="ams-editor-checklist">${items
+        .map(
+            (item) => `
+                <div class="ams-editor-check ${item.ready ? 'is-ready' : 'is-pending'}">
+                    <i class="fa-solid ${item.ready ? 'fa-circle-check' : 'fa-circle'}"></i>
+                    <span>${esc(item.label)}</span>
+                    ${item.required ? '<em>必需</em>' : '<em>建议</em>'}
+                </div>
+            `
+        )
+        .join('')}</div>`;
+}
+
+function renderEditorOutline(headings = []) {
+    if (!headings.length) return '<div class="ams-empty">还没有识别到标题结构，建议至少添加一个二级标题。</div>';
+    return `<div class="ams-editor-outline-list">${headings
+        .map((heading, index) => `<div class="ams-editor-outline-item"><span>${index + 1}</span><strong>${esc(heading)}</strong></div>`)
+        .join('')}</div>`;
+}
+
+function renderTopicChips(topics = []) {
+    if (!topics.length) return '<div class="ams-empty">用英文逗号分隔多个话题，便于内容聚合。</div>';
+    return `<div class="ams-chip-row">${topics.map((topic) => `<span class="ams-mini-chip">${esc(topic)}</span>`).join('')}</div>`;
+}
+
+function openExternalUrl(url, emptyMessage) {
+    const target = String(url || '').trim();
+    if (!target) {
+        if (emptyMessage) showToast(emptyMessage, true);
+        return false;
+    }
+    window.open(target, '_blank', 'noopener,noreferrer');
+    return true;
+}
+
+async function copyText(text, fallbackInput, successMessage, failureMessage) {
+    const target = String(text || '').trim();
+    if (!target) {
+        if (failureMessage) showToast(failureMessage, true);
+        return false;
+    }
+    try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            await navigator.clipboard.writeText(target);
+        } else if (fallbackInput) {
+            fallbackInput.focus();
+            fallbackInput.select();
+            document.execCommand('copy');
+        }
+        if (successMessage) showToast(successMessage);
+        return true;
+    } catch (_error) {
+        if (failureMessage) showToast(failureMessage, true);
+        return false;
+    }
+}
+
+function insertMarkdownSnippet(textarea, before, after = '', placeholder = '') {
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? textarea.value.length;
+    const selected = textarea.value.slice(start, end);
+    const insertValue = `${before}${selected || placeholder}${after}`;
+    textarea.setRangeText(insertValue, start, end, 'select');
+    const nextStart = start + before.length;
+    const nextEnd = nextStart + (selected || placeholder).length;
+    textarea.focus();
+    textarea.setSelectionRange(nextStart, nextEnd);
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+window.addEventListener('beforeunload', (event) => {
+    if (!hasUnsavedEditorChanges()) return;
+    event.preventDefault();
+    event.returnValue = '';
+});
+
 function renderLogin() {
     root.innerHTML = `
         <section class="ams-auth-shell">
@@ -365,6 +777,7 @@ function renderShell() {
                     ${navButton('editor', '新建文章', 'fa-pen-to-square')}
                     ${navButton('recycle', '回收站', 'fa-trash-can-arrow-up')}
                     ${navButton('featured', '首页推荐位', 'fa-ranking-star')}
+                    ${navButton('site-settings', '站点设置', 'fa-share-nodes')}
                     ${navButton('queue', '采集队列', 'fa-list-check')}
                     ${navButton('tags', '标签管理', 'fa-tags')}
                 </nav>
@@ -397,9 +810,10 @@ function renderShell() {
 
     document.querySelectorAll('.ams-nav-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
+            if (!confirmDiscardEditorChanges()) return;
             state.page = btn.dataset.page || 'dashboard';
             if (state.page === 'editor' && state.editor.mode !== 'edit') {
-                state.editor = { mode: 'create', id: null, payload: createEmptyArticlePayload() };
+                state.editor = prepareEditorState('create');
             }
             void renderPage();
         });
@@ -419,6 +833,30 @@ async function renderDashboard() {
     const categoryStats = summarizeCategoryStats(sampleRows.rows, 10);
 
     setContent(`
+        <section class="ams-card ams-hero-card">
+            <div class="ams-hero-copy">
+                <p class="ams-eyebrow">Publishing Control Room</p>
+                <h2>把发文、推荐位和采集审核放在一条连续工作流里。</h2>
+                <p class="ams-hero-text">当前后台已按发布优先级聚合核心入口。常用操作可以直接从这里进入，不需要先翻列表再找对应页面。</p>
+            </div>
+            <div class="ams-quick-actions">
+                <button class="ams-quick-link" type="button" data-dashboard-nav="editor">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <strong>新建文章</strong>
+                    <span>直接进入发布工作区</span>
+                </button>
+                <button class="ams-quick-link" type="button" data-dashboard-nav="queue">
+                    <i class="fa-solid fa-list-check"></i>
+                    <strong>处理采集队列</strong>
+                    <span>优先清理待审核内容</span>
+                </button>
+                <button class="ams-quick-link" type="button" data-dashboard-nav="featured">
+                    <i class="fa-solid fa-ranking-star"></i>
+                    <strong>调整首页推荐位</strong>
+                    <span>同步管理 hero 与 featured</span>
+                </button>
+            </div>
+        </section>
         <div class="ams-grid">
             <article class="ams-card"><h3>在线文章</h3><div class="ams-kpi">${active.count}</div><div class="ams-kpi-sub">未进入回收站的文章数</div></article>
             <article class="ams-card"><h3>回收站</h3><div class="ams-kpi">${recycled.count}</div><div class="ams-kpi-sub">已软删除文章数</div></article>
@@ -426,6 +864,12 @@ async function renderDashboard() {
             <article class="ams-card"><h3>广告推荐位</h3><div class="ams-kpi">${featured.length}/${state.featured.limit}</div><div class="ams-kpi-sub">featured_rank 已配置数量</div></article>
             <article class="ams-card"><h3>待处理采集</h3><div class="ams-kpi">${queue.count}</div><div class="ams-kpi-sub">scrape_queue pending 数量</div></article>
         </div>
+        ${renderSummaryChips([
+            { label: '已发布抽样', value: `${sampleRows.rows.length} 篇` },
+            { label: '首页推荐位', value: `${heroSlots.length}/${HOMEPAGE_MARK_LIMIT}` },
+            { label: '广告位', value: `${featured.length}/${state.featured.limit}` },
+            { label: '待审核', value: `${queue.count} 条` },
+        ])}
         <section class="ams-card ams-category-card">
             <h3>分类分布（最近 200 条已发布文章）</h3>
             <div class="ams-category-grid">
@@ -434,32 +878,75 @@ async function renderDashboard() {
         </section>
         <div class="ams-footnote">点击左侧菜单可进入对应功能页。</div>
     `);
+
+    document.querySelectorAll('[data-dashboard-nav]').forEach((button) => {
+        button.addEventListener('click', () => {
+            if (!confirmDiscardEditorChanges()) return;
+            const nextPage = button.dataset.dashboardNav || 'dashboard';
+            state.page = nextPage;
+            if (nextPage === 'editor') state.editor = prepareEditorState('create');
+            void renderPage();
+        });
+    });
 }
 
-function articleToolbar(filters, tags = [], categories = [], recycleMode = false) {
+function articleToolbar(filters, tagOptionsHtml = '', categoryOptionsHtml = '', recycleMode = false, selectedCount = 0) {
     return `
-        <div class="ams-toolbar">
-            <div class="ams-field"><label>搜索</label><input id="am-search" class="ams-input" value="${esc(filters.search || '')}" placeholder="标题 / 发布方 / 链接"></div>
-            ${recycleMode ? '' : `<div class="ams-field"><label>状态</label><select id="am-status" class="ams-select"><option value="all" ${filters.status === 'all' ? 'selected' : ''}>全部</option><option value="draft" ${filters.status === 'draft' ? 'selected' : ''}>草稿</option><option value="published" ${filters.status === 'published' ? 'selected' : ''}>已发布</option><option value="archived" ${filters.status === 'archived' ? 'selected' : ''}>已归档</option></select></div>`}
-            ${recycleMode ? '' : `<div class="ams-field"><label>标签</label><select id="am-tag" class="ams-select"><option value="all">全部</option>${tags.map((t) => `<option value="${esc(t)}" ${filters.tag === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></div>`}
-            ${recycleMode ? '' : `<div class="ams-field"><label>分类</label><select id="am-category" class="ams-select"><option value="all">全部</option>${categories.map((item) => `<option value="${esc(item)}" ${filters.category === item ? 'selected' : ''}>${esc(item)}</option>`).join('')}</select></div>`}
-            <div class="ams-field"><label>页码</label><input id="am-page" class="ams-input" type="number" min="1" value="${filters.page}"></div>
-            <div class="ams-toolbar-actions"><button class="ams-btn ams-btn-primary" id="am-apply" type="button">查询</button>${recycleMode ? '' : '<button class="ams-btn ams-btn-muted" id="am-new" type="button">新建</button>'}</div>
+        <div class="ams-toolbar-card">
+        <div class="ams-toolbar ams-article-toolbar">
+            <div class="ams-field ams-toolbar-search-field">
+                <label>搜索</label>
+                <div class="ams-search-box">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <input id="am-search" class="ams-input" value="${esc(filters.search || '')}" placeholder="按标题、发布方、链接搜索">
+                </div>
+            </div>
+            ${recycleMode ? '' : `<div class="ams-field"><label>状态</label><select id="am-status" class="ams-select">${ARTICLE_STATUS_FILTER_OPTIONS.map((item) => `<option value="${esc(item.value)}" ${filters.status === item.value ? 'selected' : ''}>${esc(item.label)}</option>`).join('')}</select></div>`}
+            ${recycleMode ? '' : `<div class="ams-field"><label>标签</label><select id="am-tag" class="ams-select">${tagOptionsHtml}</select></div>`}
+            ${recycleMode ? '' : `<div class="ams-field"><label>分类</label><select id="am-category" class="ams-select">${categoryOptionsHtml}</select></div>`}
+            <div class="ams-toolbar-actions ams-article-toolbar-actions"><button class="ams-btn ams-btn-primary" id="am-apply" type="button">查询</button>${recycleMode ? '' : '<button class="ams-btn ams-btn-muted" id="am-new" type="button">新建</button>'}</div>
+        </div>
+        ${
+            recycleMode
+                ? ''
+                : `<div class="ams-bulk-toolbar">
+                    <div class="ams-bulk-meta">已选 <strong id="am-selected-count">${selectedCount}</strong> 篇文章</div>
+                    <div class="ams-bulk-actions">
+                        <button class="ams-btn ams-btn-muted" id="am-select-visible" type="button">本页全选</button>
+                        <button class="ams-btn ams-btn-muted" id="am-clear-selection" type="button" ${selectedCount ? '' : 'disabled'}>清空选择</button>
+                        <select id="am-bulk-type" class="ams-select">
+                            <option value="">批量修改类型</option>
+                            ${articleTypeOptionsMarkup('', false)}
+                        </select>
+                        <button class="ams-btn ams-btn-muted" id="am-bulk-apply-type" type="button" ${selectedCount ? '' : 'disabled'}>应用类型</button>
+                        <button class="ams-btn ams-btn-warning" id="am-bulk-offline" type="button" ${selectedCount ? '' : 'disabled'}>批量下架</button>
+                    </div>
+                </div>`
+        }
         </div>
     `;
 }
 
 function articleRows(rows, recycleMode = false) {
-    if (!rows.length) return '<tr><td colspan="9"><div class="ams-empty">暂无数据。</div></td></tr>';
+    const emptyColspan = 11;
+    if (!rows.length) return `<tr><td colspan="${emptyColspan}"><div class="ams-empty">暂无数据。</div></td></tr>`;
     return rows
         .map((row) => {
             const previewUrl = resolveArticlePageUrl(row, row.id);
             const previewAction = previewUrl
                 ? `<a class="ams-btn ams-btn-muted" href="${esc(previewUrl)}" target="_blank" rel="noopener noreferrer">预览</a>`
                 : '';
+            const checked = state.selectedArticleIds.has(String(row.id)) ? 'checked' : '';
 
             return `
         <tr>
+            <td class="ams-col-check">
+                ${
+                    recycleMode
+                        ? '--'
+                        : `<input class="ams-check" type="checkbox" data-article-select="1" data-id="${row.id}" ${checked} aria-label="选择文章 ${row.id}">`
+                }
+            </td>
             <td><code>${row.id}</code></td>
             <td>
                 <div class="ams-article-cell">
@@ -471,6 +958,13 @@ function articleRows(rows, recycleMode = false) {
                 </div>
             </td>
             <td>${esc(row.publisher || '--')}</td>
+            <td class="ams-col-type">
+                ${
+                    recycleMode
+                        ? esc(articleTypeLabel(row.type))
+                        : `<select class="ams-select ams-inline-select" data-action="set-type" data-id="${row.id}" data-current-type="${esc(normalizeArticleTypeValue(row.type))}">${articleTypeOptionsMarkup(row.type, true)}</select>`
+                }
+            </td>
             <td>${esc(row.tag || '--')}</td>
             <td>${esc(row.secondary_tag || '--')}</td>
             <td class="ams-col-status">${pill(row.status || '--')}</td>
@@ -481,7 +975,11 @@ function articleRows(rows, recycleMode = false) {
                     ${
                         recycleMode
                             ? `${previewAction}<button class="ams-btn ams-btn-muted" data-action="restore" data-id="${row.id}">恢复</button><button class="ams-btn ams-btn-danger" data-action="purge" data-id="${row.id}">永久删除</button>`
-                            : `${previewAction}<button class="ams-btn ams-btn-muted" data-action="edit" data-id="${row.id}">编辑</button><button class="ams-btn ams-btn-warning" data-action="offline" data-id="${row.id}" ${row.status === 'archived' ? 'disabled' : ''}>${row.status === 'archived' ? '已下架' : '下架'}</button><button class="ams-btn ams-btn-danger" data-action="soft-delete" data-id="${row.id}">删除</button>`
+                            : `${previewAction}<button class="ams-btn ams-btn-muted" data-action="edit" data-id="${row.id}">编辑</button>${
+                                  row.status === 'archived'
+                                      ? `<button class="ams-btn ams-btn-primary" data-action="online" data-id="${row.id}">上架</button>`
+                                      : `<button class="ams-btn ams-btn-warning" data-action="offline" data-id="${row.id}">下架</button>`
+                              }`
                     }
                 </div>
             </td>
@@ -492,144 +990,417 @@ function articleRows(rows, recycleMode = false) {
 }
 
 async function renderArticles() {
-    setPageHeader('文章管理', '新建、编辑、查询、软删除文章。');
-    const query = { ...state.articles };
-    const cacheKey = articleCacheKey(query);
-    let tags = [];
-    let categories = [];
+    setPageHeader('文章管理', '新建、编辑、筛选、批量改类型与下架文章。');
+    const optionRows = await fetchTagOptions();
+    const allowedTags = new Set(
+        optionRows
+            .filter((item) => item && item.section === 'tag' && item.is_active !== false)
+            .map((item) => String(item.option_id || item.label_en || '').trim())
+            .filter(Boolean)
+    );
+    const allowedCategories = new Set(ARTICLE_TYPE_OPTIONS.map((item) => item.value));
+    let query = {
+        ...state.articles,
+        tag: state.articles.tag !== 'all' && !allowedTags.has(state.articles.tag) ? 'all' : state.articles.tag,
+        category: state.articles.category !== 'all' && !allowedCategories.has(state.articles.category) ? 'all' : state.articles.category,
+    };
+    state.articles.tag = query.tag;
+    state.articles.category = query.category;
+    let tagOptionsHtml = '';
+    let categoryOptionsHtml = '';
     let result = { rows: [], count: 0 };
+    let resolvedTotalPages = 1;
 
-    if (state.cache.articles?.key === cacheKey) {
-        ({ tags, categories, result } = state.cache.articles);
-    } else {
-        [tags, categories, result] = await Promise.all([fetchDistinctTags(), fetchDistinctCategories(), fetchArticles(query)]);
-        state.cache.articles = { key: cacheKey, tags, categories, result };
-    }
+    tagOptionsHtml = buildFilterTagOptions(optionRows, query.tag);
+    categoryOptionsHtml = buildFilterCategoryOptions(query.category);
+
+    const buildArticlesBody = () => {
+        pruneArticleSelection(result.rows.map((row) => row.id));
+        const selectedCount = getSelectedArticleIds().length;
+        const allRowsSelected = result.rows.length > 0 && result.rows.every((row) => state.selectedArticleIds.has(String(row.id)));
+
+        return `
+        ${renderSummaryChips([
+            { label: '文章总数', value: `${result.count} 篇` },
+            { label: '当前页', value: `${query.page} / ${resolvedTotalPages}` },
+            { label: '每页数量', value: `${query.pageSize}` },
+            { label: '筛选状态', value: ARTICLE_STATUS_FILTER_OPTIONS.find((item) => item.value === query.status)?.label || query.status },
+            { label: '关键词', value: query.search ? query.search : '未设置' },
+            { label: '已选文章', value: `${selectedCount} 篇` },
+        ])}
+        <div class="ams-table-wrap"><table class="ams-table"><thead><tr><th class="ams-col-check"><input class="ams-check" type="checkbox" id="am-select-all" ${allRowsSelected ? 'checked' : ''} aria-label="全选当前页"></th><th>ID</th><th>标题</th><th>发布方</th><th class="ams-col-type">文章类型</th><th>主标签</th><th>二级标签</th><th class="ams-col-status">状态</th><th class="ams-col-featured">推荐位</th><th class="ams-col-time">时间</th><th class="ams-col-actions">操作</th></tr></thead><tbody>${articleRows(result.rows, false)}</tbody></table></div>
+        ${renderPagination('articles', query.page, resolvedTotalPages)}
+        <div class="ams-footnote">总数：${result.count}（仅统计未删除文章），当前第 ${query.page} / ${resolvedTotalPages} 页。</div>
+    `;
+    };
+
+    const syncArticleBulkToolbar = () => {
+        const selectedCount = getSelectedArticleIds().length;
+        const selectedCountNode = document.getElementById('am-selected-count');
+        if (selectedCountNode) selectedCountNode.textContent = String(selectedCount);
+
+        const clearBtn = document.getElementById('am-clear-selection');
+        const bulkTypeBtn = document.getElementById('am-bulk-apply-type');
+        const bulkOfflineBtn = document.getElementById('am-bulk-offline');
+        if (clearBtn) clearBtn.disabled = !selectedCount;
+        if (bulkTypeBtn) bulkTypeBtn.disabled = !selectedCount;
+        if (bulkOfflineBtn) bulkOfflineBtn.disabled = !selectedCount;
+    };
+
+    const loadArticlesData = async (forceRefresh = false) => {
+        query = {
+            ...query,
+            tag: query.tag !== 'all' && !allowedTags.has(query.tag) ? 'all' : query.tag,
+            category: query.category !== 'all' && !allowedCategories.has(query.category) ? 'all' : query.category,
+        };
+        state.articles = { ...state.articles, ...query };
+
+        const cacheKey = articleCacheKey(query);
+        if (!forceRefresh && state.cache.articles?.key === cacheKey) {
+            ({ result } = state.cache.articles);
+        } else {
+            result = await fetchArticles(query);
+            state.cache.articles = { key: cacheKey, tagOptionsHtml, categoryOptionsHtml, result };
+        }
+
+        resolvedTotalPages = calcTotalPages(result.count, query.pageSize);
+        if (query.page > resolvedTotalPages) {
+            query.page = resolvedTotalPages;
+            state.articles.page = resolvedTotalPages;
+            invalidateArticlesCache();
+            return loadArticlesData(true);
+        }
+        pruneArticleSelection(result.rows.map((row) => row.id));
+    };
 
     setContent(`
-        ${articleToolbar(state.articles, tags, categories, false)}
-        <div class="ams-table-wrap"><table class="ams-table"><thead><tr><th>ID</th><th>标题</th><th>发布方</th><th>主标签</th><th>二级标签</th><th class="ams-col-status">状态</th><th class="ams-col-featured">推荐位</th><th class="ams-col-time">时间</th><th class="ams-col-actions">操作</th></tr></thead><tbody>${articleRows(result.rows, false)}</tbody></table></div>
-        <div class="ams-footnote">总数：${result.count}（仅统计未删除文章）。</div>
+        ${articleToolbar({ ...state.articles, totalPages: resolvedTotalPages }, tagOptionsHtml, categoryOptionsHtml, false, getSelectedArticleIds().length)}
+        <div id="am-articles-body"></div>
     `);
 
-    document.getElementById('am-apply')?.addEventListener('click', () => {
-        state.articles.search = document.getElementById('am-search')?.value || '';
-        state.articles.status = document.getElementById('am-status')?.value || 'all';
-        state.articles.tag = document.getElementById('am-tag')?.value || 'all';
-        state.articles.category = document.getElementById('am-category')?.value || 'all';
-        state.articles.page = Math.max(1, Number(document.getElementById('am-page')?.value || 1));
+    const bodyNode = document.getElementById('am-articles-body');
+
+    const refreshArticlesBody = () => {
+        if (bodyNode) bodyNode.innerHTML = buildArticlesBody();
+        syncArticleBulkToolbar();
+        bindArticlesBody();
+    };
+
+    const reloadArticlesBody = async (forceRefresh = true) => {
+        await loadArticlesData(forceRefresh);
+        refreshArticlesBody();
+    };
+
+    const bindArticlesBody = () => {
+        document.getElementById('am-select-all')?.addEventListener('change', (event) => {
+            const checked = Boolean(event.currentTarget?.checked);
+            result.rows.forEach((row) => {
+                if (checked) state.selectedArticleIds.add(String(row.id));
+                else state.selectedArticleIds.delete(String(row.id));
+            });
+            refreshArticlesBody();
+        });
+
+        document.querySelectorAll('[data-article-select="1"]').forEach((input) => {
+            input.addEventListener('change', (event) => {
+                const id = String(event.currentTarget?.dataset.id || '');
+                if (!id) return;
+                if (event.currentTarget.checked) state.selectedArticleIds.add(id);
+                else state.selectedArticleIds.delete(id);
+                refreshArticlesBody();
+            });
+        });
+
+        document.querySelectorAll('[data-action="edit"]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                await withButtonBusy(btn, '加载中...', async () => {
+                    try {
+                        const id = Number(btn.dataset.id);
+                        const row = await fetchArticleById(id);
+                        if (!confirmDiscardEditorChanges()) return;
+                        state.editor = prepareEditorState('edit', id, row);
+                        state.page = 'editor';
+                        void renderPage();
+                    } catch (error) {
+                        showToast(error.message || '加载文章失败。', true);
+                    }
+                });
+            });
+        });
+
+        document.querySelectorAll('[data-action="offline"]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const id = Number(btn.dataset.id);
+                if (!window.confirm(`确认下架文章 ${id} 吗？下架后将不在 /news 前台展示。`)) return;
+                await withButtonBusy(btn, '下架中...', async () => {
+                    try {
+                        await updateArticleStatus(id, 'archived', state.user?.id || null);
+                        showToast('文章已下架。');
+                        invalidateArticlesCache();
+                        await reloadArticlesBody(true);
+                    } catch (error) {
+                        showToast(error.message || '下架失败。', true);
+                    }
+                });
+            });
+        });
+
+        document.querySelectorAll('[data-action="online"]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const id = Number(btn.dataset.id);
+                if (!window.confirm(`确认上架文章 ${id} 吗？上架后将重新在 /news 前台展示。`)) return;
+                await withButtonBusy(btn, '上架中...', async () => {
+                    try {
+                        await updateArticleStatus(id, 'published', state.user?.id || null);
+                        showToast('文章已上架。');
+                        invalidateArticlesCache();
+                        await reloadArticlesBody(true);
+                    } catch (error) {
+                        showToast(error.message || '上架失败。', true);
+                    }
+                });
+            });
+        });
+
+        document.querySelectorAll('[data-action="set-type"]').forEach((selectNode) => {
+            selectNode.addEventListener('change', async () => {
+                const id = Number(selectNode.dataset.id);
+                const previousValue = selectNode.dataset.currentType || '';
+                const nextType = normalizeArticleTypeValue(selectNode.value || '');
+                selectNode.disabled = true;
+                try {
+                    await updateArticleType(id, nextType, state.user?.id || null);
+                    showToast(`文章 ${id} 类型已更新为 ${articleTypeLabel(nextType)}。`);
+                    selectNode.dataset.currentType = nextType;
+                    invalidateArticlesCache();
+                    await reloadArticlesBody(true);
+                } catch (error) {
+                    selectNode.value = previousValue;
+                    showToast(error.message || '修改文章类型失败。', true);
+                } finally {
+                    if (selectNode.isConnected) selectNode.disabled = false;
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-page-jump="articles"]').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const nextPage = Math.max(1, Math.min(resolvedTotalPages, Number(button.dataset.page) || 1));
+                if (nextPage === query.page) return;
+                query.page = nextPage;
+                state.articles.page = nextPage;
+                invalidateArticlesCache();
+                await reloadArticlesBody(false);
+            });
+        });
+
+        document.querySelectorAll('[data-page-size-change="articles"]').forEach((selectNode) => {
+            selectNode.addEventListener('change', async () => {
+                const nextPageSize = Math.max(1, Number(selectNode.value || query.pageSize || 20));
+                if (nextPageSize === query.pageSize) return;
+                query.pageSize = nextPageSize;
+                query.page = 1;
+                state.articles.pageSize = nextPageSize;
+                state.articles.page = 1;
+                clearArticleSelection();
+                invalidateArticlesCache();
+                await reloadArticlesBody(false);
+            });
+        });
+    };
+
+    await loadArticlesData(false);
+    refreshArticlesBody();
+
+    document.getElementById('am-apply')?.addEventListener('click', async () => {
+        query.search = document.getElementById('am-search')?.value || '';
+        query.status = document.getElementById('am-status')?.value || 'all';
+        query.tag = document.getElementById('am-tag')?.value || 'all';
+        query.category = document.getElementById('am-category')?.value || 'all';
+        query.page = 1;
+        state.articles = { ...state.articles, ...query, page: 1 };
+        clearArticleSelection();
         invalidateArticlesCache();
-        void renderPage();
+        await reloadArticlesBody(false);
     });
 
     document.getElementById('am-new')?.addEventListener('click', () => {
+        if (!confirmDiscardEditorChanges()) return;
         state.page = 'editor';
-        state.editor = { mode: 'create', id: null, payload: createEmptyArticlePayload() };
+        state.editor = prepareEditorState('create');
         void renderPage();
     });
 
-    document.querySelectorAll('[data-action="edit"]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-            await withButtonBusy(btn, '加载中...', async () => {
-                try {
-                    const id = Number(btn.dataset.id);
-                    const row = await fetchArticleById(id);
-                    state.editor = { mode: 'edit', id, payload: { ...createEmptyArticlePayload(), ...row } };
-                    state.page = 'editor';
-                    void renderPage();
-                } catch (error) {
-                    showToast(error.message || '加载文章失败。', true);
-                }
-            });
+    document.getElementById('am-select-visible')?.addEventListener('click', () => {
+        result.rows.forEach((row) => state.selectedArticleIds.add(String(row.id)));
+        refreshArticlesBody();
+    });
+
+    document.getElementById('am-clear-selection')?.addEventListener('click', () => {
+        clearArticleSelection();
+        refreshArticlesBody();
+    });
+
+    document.getElementById('am-bulk-apply-type')?.addEventListener('click', async (event) => {
+        const nextType = normalizeArticleTypeValue(document.getElementById('am-bulk-type')?.value || '');
+        const ids = getSelectedArticleIds();
+        if (!nextType) {
+            showToast('请先选择目标文章类型。', true);
+            return;
+        }
+        if (!ids.length) {
+            showToast('请先选择至少一篇文章。', true);
+            return;
+        }
+        await withButtonBusy(event.currentTarget, '更新中...', async () => {
+            try {
+                await batchUpdateArticleType(ids, nextType, state.user?.id || null);
+                showToast(`已把 ${ids.length} 篇文章更新为 ${articleTypeLabel(nextType)}。`);
+                clearArticleSelection();
+                invalidateArticlesCache();
+                await reloadArticlesBody(true);
+            } catch (error) {
+                showToast(error.message || '批量修改文章类型失败。', true);
+            }
         });
     });
 
-    document.querySelectorAll('[data-action="soft-delete"]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-            const id = Number(btn.dataset.id);
-            if (!window.confirm(`确认把文章 ${id} 移入回收站吗？`)) return;
-            await withButtonBusy(btn, '处理中...', async () => {
-                try {
-                    await softDeleteArticle(id, state.user?.id || null);
-                    showToast('已移入回收站。');
-                    invalidateArticlesCache();
-                    void renderPage();
-                } catch (error) {
-                    showToast(error.message || '删除失败。', true);
-                }
-            });
-        });
-    });
-
-    document.querySelectorAll('[data-action="offline"]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-            const id = Number(btn.dataset.id);
-            if (!window.confirm(`确认下架文章 ${id} 吗？下架后将不在 /news 前台展示。`)) return;
-            await withButtonBusy(btn, '下架中...', async () => {
-                try {
-                    await updateArticleStatus(id, 'archived', state.user?.id || null);
-                    showToast('文章已下架。');
-                    invalidateArticlesCache();
-                    void renderPage();
-                } catch (error) {
-                    showToast(error.message || '下架失败。', true);
-                }
-            });
+    document.getElementById('am-bulk-offline')?.addEventListener('click', async (event) => {
+        const ids = getSelectedArticleIds();
+        if (!ids.length) {
+            showToast('请先选择至少一篇文章。', true);
+            return;
+        }
+        if (!window.confirm(`确认下架所选 ${ids.length} 篇文章吗？`)) return;
+        await withButtonBusy(event.currentTarget, '下架中...', async () => {
+            try {
+                await batchUpdateArticleStatus(ids, 'archived', state.user?.id || null);
+                showToast(`已下架 ${ids.length} 篇文章。`);
+                clearArticleSelection();
+                invalidateArticlesCache();
+                await reloadArticlesBody(true);
+            } catch (error) {
+                showToast(error.message || '批量下架失败。', true);
+            }
         });
     });
 }
 
 async function renderRecycleBin() {
     setPageHeader('回收站', '恢复文章或执行永久删除。');
-    const result = await fetchArticles({
+    let query = {
         page: state.recycle.page,
         pageSize: state.recycle.pageSize,
         includeDeleted: true,
         search: state.recycle.search,
-    });
+    };
+    let result = { rows: [], count: 0 };
+    let totalPages = 1;
+
+    const loadRecycleData = async () => {
+        result = await fetchArticles(query);
+        totalPages = calcTotalPages(result.count, query.pageSize);
+        if (query.page > totalPages) {
+            query.page = totalPages;
+            state.recycle.page = totalPages;
+            return loadRecycleData();
+        }
+    };
+
+    const buildRecycleBody = () => `
+        ${renderSummaryChips([
+            { label: '回收站总数', value: `${result.count} 篇` },
+            { label: '当前页', value: `${query.page} / ${totalPages}` },
+            { label: '每页数量', value: `${query.pageSize}` },
+            { label: '关键词', value: query.search ? query.search : '未设置' },
+        ])}
+        <div class="ams-table-wrap"><table class="ams-table"><thead><tr><th class="ams-col-check">选择</th><th>ID</th><th>标题</th><th>发布方</th><th class="ams-col-type">文章类型</th><th>主标签</th><th>二级标签</th><th class="ams-col-status">状态</th><th class="ams-col-featured">推荐位</th><th class="ams-col-time">时间</th><th class="ams-col-actions">操作</th></tr></thead><tbody>${articleRows(result.rows, true)}</tbody></table></div>
+        ${renderPagination('recycle', query.page, totalPages)}
+        <div class="ams-footnote">注意：永久删除后不可恢复。当前第 ${query.page} / ${totalPages} 页。</div>
+    `;
 
     setContent(`
-        ${articleToolbar(state.recycle, [], [], true)}
-        <div class="ams-table-wrap"><table class="ams-table"><thead><tr><th>ID</th><th>标题</th><th>发布方</th><th>主标签</th><th>二级标签</th><th class="ams-col-status">状态</th><th class="ams-col-featured">推荐位</th><th class="ams-col-time">时间</th><th class="ams-col-actions">操作</th></tr></thead><tbody>${articleRows(result.rows, true)}</tbody></table></div>
-        <div class="ams-footnote">注意：永久删除后不可恢复。</div>
+        ${articleToolbar({ ...state.recycle, totalPages }, [], [], true)}
+        <div id="am-recycle-body"></div>
     `);
 
-    document.getElementById('am-apply')?.addEventListener('click', () => {
-        state.recycle.search = document.getElementById('am-search')?.value || '';
-        state.recycle.page = Math.max(1, Number(document.getElementById('am-page')?.value || 1));
-        void renderPage();
-    });
+    const bodyNode = document.getElementById('am-recycle-body');
 
-    document.querySelectorAll('[data-action="restore"]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-            await withButtonBusy(btn, '恢复中...', async () => {
-                try {
-                    await restoreArticle(Number(btn.dataset.id), state.user?.id || null);
-                    showToast('文章已恢复。');
-                    invalidateArticlesCache();
-                    void renderPage();
-                } catch (error) {
-                    showToast(error.message || '恢复失败。', true);
-                }
+    const refreshRecycleBody = () => {
+        if (bodyNode) bodyNode.innerHTML = buildRecycleBody();
+        bindRecycleBody();
+    };
+
+    const reloadRecycleBody = async () => {
+        await loadRecycleData();
+        refreshRecycleBody();
+    };
+
+    const bindRecycleBody = () => {
+        document.querySelectorAll('[data-action="restore"]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                await withButtonBusy(btn, '恢复中...', async () => {
+                    try {
+                        await restoreArticle(Number(btn.dataset.id), state.user?.id || null);
+                        showToast('文章已恢复。');
+                        invalidateArticlesCache();
+                        await reloadRecycleBody();
+                    } catch (error) {
+                        showToast(error.message || '恢复失败。', true);
+                    }
+                });
             });
         });
-    });
 
-    document.querySelectorAll('[data-action="purge"]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-            const id = Number(btn.dataset.id);
-            if (!window.confirm(`确认永久删除文章 ${id} 吗？`)) return;
-            await withButtonBusy(btn, '删除中...', async () => {
-                try {
-                    await hardDeleteArticle(id);
-                    showToast('已永久删除。');
-                    invalidateArticlesCache();
-                    void renderPage();
-                } catch (error) {
-                    showToast(error.message || '永久删除失败。', true);
-                }
+        document.querySelectorAll('[data-action="purge"]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const id = Number(btn.dataset.id);
+                if (!window.confirm(`确认永久删除文章 ${id} 吗？`)) return;
+                await withButtonBusy(btn, '删除中...', async () => {
+                    try {
+                        await hardDeleteArticle(id);
+                        showToast('已永久删除。');
+                        invalidateArticlesCache();
+                        await reloadRecycleBody();
+                    } catch (error) {
+                        showToast(error.message || '永久删除失败。', true);
+                    }
+                });
             });
         });
+
+        document.querySelectorAll('[data-page-jump="recycle"]').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const nextPage = Math.max(1, Math.min(totalPages, Number(button.dataset.page) || 1));
+                if (nextPage === query.page) return;
+                query.page = nextPage;
+                state.recycle.page = nextPage;
+                await reloadRecycleBody();
+            });
+        });
+
+        document.querySelectorAll('[data-page-size-change="recycle"]').forEach((selectNode) => {
+            selectNode.addEventListener('change', async () => {
+                const nextPageSize = Math.max(1, Number(selectNode.value || query.pageSize || 20));
+                if (nextPageSize === query.pageSize) return;
+                query.pageSize = nextPageSize;
+                query.page = 1;
+                state.recycle.pageSize = nextPageSize;
+                state.recycle.page = 1;
+                await reloadRecycleBody();
+            });
+        });
+    };
+
+    await loadRecycleData();
+    refreshRecycleBody();
+
+    document.getElementById('am-apply')?.addEventListener('click', async () => {
+        query.search = document.getElementById('am-search')?.value || '';
+        query.page = 1;
+        state.recycle.search = query.search;
+        state.recycle.page = 1;
+        await reloadRecycleBody();
     });
 }
 function optionsFor(values, selected) {
@@ -640,7 +1411,7 @@ function optionsFor(values, selected) {
 
 async function renderEditor() {
     const mode = state.editor.mode === 'edit' ? `编辑文章 #${state.editor.id}` : '新建文章';
-    setPageHeader(mode, '支持 Markdown 编辑、实时预览与发布。');
+    setPageHeader(mode, '支持草稿保护、快捷插入、实时预览与发布检查。');
 
     const optionRows = await fetchTagOptions();
     const optionMap = TAG_SECTIONS.reduce((acc, section) => ({ ...acc, [section]: [] }), {});
@@ -649,58 +1420,166 @@ async function renderEditor() {
         optionMap[item.section].push(item.option_id || item.label_en);
     });
 
-    const payload = { ...createEmptyArticlePayload(), ...(state.editor.payload || {}) };
+    const payload = ensureEditorHtmlPayload(state.editor.payload || {});
+    state.editor.payload = { ...payload };
+    const metrics = buildEditorMetrics(payload);
+    const checklist = buildEditorChecklist(payload, metrics);
+    const readyCount = checklist.filter((item) => item.ready).length;
     const currentPageUrl = resolveArticlePageUrl(payload, state.editor.id);
-    const hasCurrentPageUrl = Boolean(currentPageUrl);
+    const restoredLabel = state.editor.restoredAt ? fmtDate(new Date(state.editor.restoredAt).toISOString()) : '';
+    const heroMessage = state.editor.draftRestored
+        ? `已恢复本地草稿${restoredLabel ? ` · ${restoredLabel}` : ''}，保存后会自动清除缓存。`
+        : '本页会在当前浏览器会话内暂存草稿，并在离开前提醒未保存内容。';
 
     setContent(`
-        <form id="editor-form" class="ams-stack">
-            <div class="ams-split">
-                <div class="ams-stack">
-                    <div class="ams-editor-meta-grid">
-                        <div class="ams-field ams-field-span-2"><label>标题</label><input id="ed-main_title" class="ams-input" value="${esc(payload.main_title)}" required></div>
-                        <div class="ams-field ams-field-span-2"><label>副标题</label><textarea id="ed-subheading" class="ams-textarea">${esc(payload.subheading)}</textarea></div>
-                        <div class="ams-field"><label>发布方</label><select id="ed-publisher" class="ams-select"><option value="">请选择发布方</option>${optionsFor(optionMap.publisher, payload.publisher)}</select></div>
-                        <div class="ams-field"><label>分类</label><select id="ed-type" class="ams-select"><option value="">请选择分类</option>${optionsFor(optionMap.category, payload.type)}</select></div>
-                        <div class="ams-field"><label>主标签</label><select id="ed-tag" class="ams-select"><option value="">请选择主标签</option>${optionsFor(optionMap.tag, payload.tag)}</select></div>
-                        <div class="ams-field"><label>二级标签</label><select id="ed-secondary_tag" class="ams-select"><option value="">请选择二级标签</option>${optionsFor(optionMap.secondary_tag, payload.secondary_tag)}</select></div>
-                        <div class="ams-field"><label>状态</label><select id="ed-status" class="ams-select"><option value="draft" ${payload.status === 'draft' ? 'selected' : ''}>草稿</option><option value="published" ${payload.status === 'published' ? 'selected' : ''}>已发布</option><option value="archived" ${payload.status === 'archived' ? 'selected' : ''}>已归档</option></select></div>
-                        <div class="ams-field"><label>发布时间（ISO）</label><input id="ed-time" class="ams-input" value="${esc(payload.time || '')}"></div>
-                        <div class="ams-field ams-field-span-2"><label>原文链接</label><input id="ed-link" class="ams-input" value="${esc(payload.link)}" placeholder="https://..."></div>
-                        <div class="ams-field ams-field-span-2">
-                        <label>当前页面链接</label>
-                        <input id="ed-current-page-url" class="ams-input" value="${esc(currentPageUrl)}" placeholder="文章创建后才会生成链接" readonly>
-                        <div class="ams-inline-actions">
-                            <button type="button" class="ams-btn ams-btn-muted" id="ed-open-current-page" ${hasCurrentPageUrl ? '' : 'disabled'}>打开页面</button>
-                            <button type="button" class="ams-btn ams-btn-muted" id="ed-copy-current-page" ${hasCurrentPageUrl ? '' : 'disabled'}>复制链接</button>
-                        </div>
-                        </div>
-                        <div class="ams-field"><label>封面图链接</label><input id="ed-cover_image" class="ams-input" value="${esc(payload.cover_image)}"></div>
-                        <div class="ams-field"><label>作者头像链接</label><input id="ed-author_avatar" class="ams-input" value="${esc(payload.author_avatar)}"></div>
-                        <div class="ams-field ams-field-span-2"><label>话题（逗号分隔）</label><input id="ed-topics" class="ams-input" value="${esc(payload.topics)}"></div>
+        <form id="editor-form" class="ams-editor-page">
+            <section class="ams-card ams-editor-hero">
+                <div class="ams-hero-copy">
+                    <p class="ams-eyebrow">${state.editor.mode === 'edit' ? 'Edit Workspace' : 'Create Workspace'}</p>
+                    <h2 id="ed-title-mirror">${esc(payload.main_title || '未命名文章')}</h2>
+                    <p id="ed-hero-note" class="ams-hero-text">${esc(heroMessage)}</p>
+                    <div class="ams-chip-row">
+                        <span id="ed-save-state" class="ams-mini-chip ${state.editor.dirty ? 'is-warning' : 'is-ok'}">${state.editor.dirty ? '未保存变更' : '草稿保护已开启'}</span>
+                        <span class="ams-mini-chip">${state.editor.mode === 'edit' ? `文章 #${state.editor.id}` : '新文章'}</span>
+                        <span class="ams-mini-chip">${esc(payload.status || 'draft')}</span>
                     </div>
                 </div>
-                <div class="ams-stack">
-                    <div class="ams-field"><label>Markdown 正文</label><textarea id="ed-content_markdown" class="ams-textarea" style="min-height:320px" placeholder="# 标题\n\n正文内容...">${esc(payload.content_markdown || '')}</textarea></div>
-                    <div><label style="font-size:11px;color:#9f9f9f;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">实时预览</label><div id="ed-preview" class="ams-preview"></div></div>
+                <div id="ed-metrics" class="ams-editor-metrics-grid">
+                    ${renderEditorMetricCard('正文字符', metrics.chars || 0, '去空格统计')}
+                    ${renderEditorMetricCard('估算阅读', metrics.readMinutes ? `${metrics.readMinutes} 分钟` : '0 分钟', '按中英混排估算')}
+                    ${renderEditorMetricCard('结构标题', metrics.headings.length, '最多展示前 8 个')}
+                    ${renderEditorMetricCard('话题数量', metrics.topics.length, '用于前台聚合')}
                 </div>
+            </section>
+            <div class="ams-editor-layout">
+                <div class="ams-editor-main">
+                    <section class="ams-card">
+                        <div class="ams-section-head">
+                            <div>
+                                <h3>发布信息</h3>
+                                <p>标题、链接、分类和媒体资源集中维护。</p>
+                            </div>
+                            <div id="ed-status-pill">${pill(payload.status || 'draft')}</div>
+                        </div>
+                        <div class="ams-editor-meta-grid">
+                            <div class="ams-field ams-field-span-2"><label>标题</label><input id="ed-main_title" class="ams-input" value="${esc(payload.main_title)}" placeholder="输入文章主标题" required></div>
+                            <div class="ams-field ams-field-span-2"><label>副标题</label><textarea id="ed-subheading" class="ams-textarea" placeholder="用于列表摘要或导语">${esc(payload.subheading)}</textarea></div>
+                            <div class="ams-field"><label>发布方</label><select id="ed-publisher" class="ams-select"><option value="">请选择发布方</option>${optionsFor(optionMap.publisher, payload.publisher)}</select></div>
+                            <div class="ams-field"><label>分类</label><select id="ed-type" class="ams-select"><option value="">请选择分类</option>${articleTypeOptionsMarkup(payload.type, true)}</select></div>
+                            <div class="ams-field"><label>主标签</label><select id="ed-tag" class="ams-select"><option value="">请选择主标签</option>${optionsFor(optionMap.tag, payload.tag)}</select></div>
+                            <div class="ams-field"><label>二级标签</label><select id="ed-secondary_tag" class="ams-select"><option value="">请选择二级标签</option>${optionsFor(optionMap.secondary_tag, payload.secondary_tag)}</select></div>
+                            <div class="ams-field"><label>状态</label><select id="ed-status" class="ams-select"><option value="draft" ${payload.status === 'draft' ? 'selected' : ''}>草稿</option><option value="published" ${payload.status === 'published' ? 'selected' : ''}>已发布</option><option value="archived" ${payload.status === 'archived' ? 'selected' : ''}>已下架</option><option value="scraping" ${payload.status === 'scraping' ? 'selected' : ''}>采集中</option><option value="failed" ${payload.status === 'failed' ? 'selected' : ''}>采集失败</option></select></div>
+                            <div class="ams-field"><label>发布时间（ISO）</label><input id="ed-time" class="ams-input" value="${esc(payload.time || '')}" placeholder="2026-03-07T08:30:00.000Z"><div class="ams-inline-actions ams-inline-actions-compact"><button type="button" class="ams-btn ams-btn-muted" id="ed-set-now">设为当前时间</button><button type="button" class="ams-btn ams-btn-muted" id="ed-copy-time">复制时间</button></div><div id="ed-time-meta" class="ams-footnote">${esc(fmtDate(payload.time))}</div></div>
+                            <div class="ams-field ams-field-span-2"><label>原文链接</label><input id="ed-link" class="ams-input" value="${esc(payload.link)}" placeholder="https://..."><div class="ams-inline-actions"><button type="button" class="ams-btn ams-btn-muted" id="ed-open-source" ${payload.link ? '' : 'disabled'}>打开原文</button><button type="button" class="ams-btn ams-btn-muted" id="ed-copy-source" ${payload.link ? '' : 'disabled'}>复制原文链接</button></div></div>
+                            <div class="ams-field ams-field-span-2"><label>当前页面链接</label><input id="ed-current-page-url" class="ams-input" value="${esc(currentPageUrl)}" placeholder="文章创建后才会生成链接" readonly><div class="ams-inline-actions"><button type="button" class="ams-btn ams-btn-muted" id="ed-open-current-page" ${currentPageUrl ? '' : 'disabled'}>打开页面</button><button type="button" class="ams-btn ams-btn-muted" id="ed-copy-current-page" ${currentPageUrl ? '' : 'disabled'}>复制链接</button></div></div>
+                            <div class="ams-field"><label>封面图链接</label><input id="ed-cover_image" class="ams-input" value="${esc(payload.cover_image)}" placeholder="https://.../cover.jpg"></div>
+                            <div class="ams-field"><label>作者头像链接</label><input id="ed-author_avatar" class="ams-input" value="${esc(payload.author_avatar)}" placeholder="https://.../avatar.png"></div>
+                            <div class="ams-field ams-field-span-2"><label>话题（英文逗号分隔）</label><input id="ed-topics" class="ams-input" value="${esc(payload.topics)}" placeholder="AI, Methane, Generator"></div>
+                        </div>
+                    </section>
+                    <section class="ams-card">
+                        <div class="ams-section-head">
+                            <div>
+                                <h3>正文编辑</h3>
+                                <p>Markdown 与 HTML 源码同时维护。HTML 有值时，右侧预览优先显示 HTML。</p>
+                            </div>
+                            <span class="ams-footnote">Ctrl/Cmd + S 保存，Ctrl/Cmd + Enter 发布</span>
+                        </div>
+                        <div class="ams-markdown-tools">
+                            <button class="ams-btn ams-btn-muted" type="button" data-md-action="h2">H2</button>
+                            <button class="ams-btn ams-btn-muted" type="button" data-md-action="h3">H3</button>
+                            <button class="ams-btn ams-btn-muted" type="button" data-md-action="list">列表</button>
+                            <button class="ams-btn ams-btn-muted" type="button" data-md-action="quote">引用</button>
+                            <button class="ams-btn ams-btn-muted" type="button" data-md-action="link">链接</button>
+                            <button class="ams-btn ams-btn-muted" type="button" data-md-action="code">代码块</button>
+                            <button class="ams-btn ams-btn-muted" type="button" data-md-action="image">图片</button>
+                        </div>
+                        <div class="ams-editor-code-grid">
+                            <div class="ams-field">
+                                <label>Markdown 正文</label>
+                                <textarea id="ed-content_markdown" class="ams-textarea ams-editor-textarea" placeholder="# 标题\n\n正文内容...">${esc(payload.content_markdown || '')}</textarea>
+                            </div>
+                            <div class="ams-field">
+                                <label>HTML 源码</label>
+                                <textarea id="ed-content_html" class="ams-textarea ams-editor-textarea ams-code-textarea" placeholder="<section>\n  <h2>Title</h2>\n  <p>HTML content...</p>\n</section>" spellcheck="false">${esc(payload.content_html || '')}</textarea>
+                                <div class="ams-inline-actions">
+                                    <button type="button" class="ams-btn ams-btn-muted" id="ed-sync-html">由 Markdown 生成 HTML</button>
+                                    <button type="button" class="ams-btn ams-btn-muted" id="ed-copy-html">复制 HTML</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <aside class="ams-editor-side">
+                    <section class="ams-card ams-editor-sticky-card">
+                        <div class="ams-section-head">
+                            <div>
+                                <h3>发布检查</h3>
+                                <p>先看完整度，再决定直接发布还是继续补充。</p>
+                            </div>
+                            <span class="ams-rank">${readyCount}/${checklist.length}</span>
+                        </div>
+                        <div id="ed-checklist-panel">${renderEditorChecklist(checklist)}</div>
+                    </section>
+                    <section class="ams-card">
+                        <div class="ams-section-head">
+                            <div>
+                                <h3>封面预览</h3>
+                                <p>发布前确认图片、标题和发布方的组合效果。</p>
+                            </div>
+                        </div>
+                        <div id="ed-cover-panel"></div>
+                    </section>
+                    <section class="ams-card">
+                        <div class="ams-section-head">
+                            <div>
+                                <h3>实时预览</h3>
+                                <p>用于检查基础排版，不替代前台最终渲染。</p>
+                            </div>
+                        </div>
+                        <div id="ed-preview" class="ams-preview"></div>
+                    </section>
+                </aside>
             </div>
-            <div class="ams-row-actions ams-editor-submit-row">
-                <button type="submit" class="ams-btn ams-btn-primary">${state.editor.mode === 'edit' ? '保存修改' : '创建文章'}</button>
-                <button type="button" class="ams-btn ams-btn-muted" id="ed-save-draft">保存草稿</button>
-                <button type="button" class="ams-btn ams-btn-muted" id="ed-publish">立即发布</button>
-                <button type="button" class="ams-btn ams-btn-muted" id="ed-cancel">返回列表</button>
+            <div class="ams-editor-action-bar">
+                <div class="ams-editor-action-hint">建议先保存一次，再检查页面链接与封面图。</div>
+                <div class="ams-row-actions ams-editor-submit-row">
+                    <button type="submit" class="ams-btn ams-btn-primary">${state.editor.mode === 'edit' ? '保存修改' : '创建文章'}</button>
+                    <button type="button" class="ams-btn ams-btn-muted" id="ed-save-draft">保存草稿</button>
+                    <button type="button" class="ams-btn ams-btn-muted" id="ed-publish">立即发布</button>
+                    <button type="button" class="ams-btn ams-btn-muted" id="ed-cancel">返回列表</button>
+                </div>
             </div>
         </form>
     `);
 
+    const editorForm = document.getElementById('editor-form');
+    const titleInput = document.getElementById('ed-main_title');
+    const timeInput = document.getElementById('ed-time');
+    const contentInput = document.getElementById('ed-content_markdown');
+    const htmlInput = document.getElementById('ed-content_html');
+    const currentPageInput = document.getElementById('ed-current-page-url');
+    const openCurrentPageBtn = document.getElementById('ed-open-current-page');
+    const copyCurrentPageBtn = document.getElementById('ed-copy-current-page');
+    const openSourceBtn = document.getElementById('ed-open-source');
+    const copySourceBtn = document.getElementById('ed-copy-source');
+    const titleMirror = document.getElementById('ed-title-mirror');
+    const saveStateChip = document.getElementById('ed-save-state');
+    const statusPillNode = document.getElementById('ed-status-pill');
+    const metricsNode = document.getElementById('ed-metrics');
+    const checklistNode = document.getElementById('ed-checklist-panel');
+    const coverPanel = document.getElementById('ed-cover-panel');
+    const heroNoteNode = document.getElementById('ed-hero-note');
+    const timeMetaNode = document.getElementById('ed-time-meta');
+    const previewNode = document.getElementById('ed-preview');
+
     clearPreviewBinding();
-    state.previewUnbind = bindMarkdownPreview(document.getElementById('ed-content_markdown'), document.getElementById('ed-preview'));
 
     const readPayload = () => ({
         main_title: document.getElementById('ed-main_title')?.value || '',
         subheading: document.getElementById('ed-subheading')?.value || '',
         content_markdown: document.getElementById('ed-content_markdown')?.value || '',
+        content_html: document.getElementById('ed-content_html')?.value || '',
         tag: document.getElementById('ed-tag')?.value || '',
         secondary_tag: document.getElementById('ed-secondary_tag')?.value || '',
         type: document.getElementById('ed-type')?.value || '',
@@ -713,74 +1592,190 @@ async function renderEditor() {
         status: document.getElementById('ed-status')?.value || 'draft',
     });
 
-    const openCurrentPageBtn = document.getElementById('ed-open-current-page');
-    const copyCurrentPageBtn = document.getElementById('ed-copy-current-page');
-    const currentPageInput = document.getElementById('ed-current-page-url');
+    const renderCoverPanel = (nextPayload) => {
+        const media = getArticleMediaMeta(nextPayload);
+        const title = String(nextPayload.main_title || '').trim() || '未命名文章';
+        const publisher = String(nextPayload.publisher || '').trim() || '未设置发布方';
+        const topics = splitTopics(nextPayload.topics);
+        return `
+            <div class="ams-cover-preview">
+                <img src="${esc(media.url)}" alt="cover preview" loading="lazy" onerror="this.src='https://www.gasgx.com/news/advertisement/zhanwei.jpg'">
+                <div class="ams-cover-preview-body">
+                    <strong>${esc(title)}</strong>
+                    <span>${esc(publisher)}</span>
+                    <em>${topics.length ? `话题：${esc(topics.slice(0, 3).join(' / '))}` : '未设置话题'}</em>
+                </div>
+            </div>
+        `;
+    };
+
+    const refreshEditorPanels = (markDirty = false) => {
+        const nextPayload = readPayload();
+        state.editor.payload = { ...nextPayload };
+        if (markDirty) {
+            state.editor.dirty = true;
+            state.editor.draftRestored = false;
+            persistEditorDraft(state.editor);
+        }
+
+        const nextMetrics = buildEditorMetrics(nextPayload);
+        const nextChecklist = buildEditorChecklist(nextPayload, nextMetrics);
+        const nextCurrentPageUrl = resolveArticlePageUrl(nextPayload, state.editor.id);
+
+        if (titleMirror) titleMirror.textContent = nextPayload.main_title.trim() || '未命名文章';
+        if (saveStateChip) {
+            saveStateChip.textContent = state.editor.dirty ? '未保存变更' : '草稿已同步';
+            saveStateChip.classList.toggle('is-warning', state.editor.dirty);
+            saveStateChip.classList.toggle('is-ok', !state.editor.dirty);
+        }
+        if (heroNoteNode && !state.editor.dirty && !state.editor.draftRestored) {
+            heroNoteNode.textContent = '本页会在当前浏览器会话内暂存草稿，并在离开前提醒未保存内容。';
+        }
+        if (statusPillNode) statusPillNode.innerHTML = pill(nextPayload.status || 'draft');
+        if (metricsNode) {
+            metricsNode.innerHTML = `
+                ${renderEditorMetricCard('正文字符', nextMetrics.chars || 0, '去空格统计')}
+                ${renderEditorMetricCard('估算阅读', nextMetrics.readMinutes ? `${nextMetrics.readMinutes} 分钟` : '0 分钟', '按中英混排估算')}
+                ${renderEditorMetricCard('结构标题', nextMetrics.headings.length, '最多展示前 8 个')}
+                ${renderEditorMetricCard('话题数量', nextMetrics.topics.length, '用于前台聚合')}
+            `;
+        }
+        if (checklistNode) checklistNode.innerHTML = renderEditorChecklist(nextChecklist);
+        if (coverPanel) coverPanel.innerHTML = renderCoverPanel(nextPayload);
+        if (previewNode) previewNode.innerHTML = resolveEditorPreviewHtml(nextPayload) || '<p class="ams-empty">Nothing to preview.</p>';
+        if (timeMetaNode) timeMetaNode.textContent = fmtDate(nextPayload.time);
+        if (currentPageInput) currentPageInput.value = nextCurrentPageUrl;
+        if (openCurrentPageBtn) openCurrentPageBtn.disabled = !nextCurrentPageUrl;
+        if (copyCurrentPageBtn) copyCurrentPageBtn.disabled = !nextCurrentPageUrl;
+        if (openSourceBtn) openSourceBtn.disabled = !String(nextPayload.link || '').trim();
+        if (copySourceBtn) copySourceBtn.disabled = !String(nextPayload.link || '').trim();
+    };
+
+    refreshEditorPanels(false);
+
+    editorForm?.addEventListener('input', () => refreshEditorPanels(true));
+    editorForm?.addEventListener('change', () => refreshEditorPanels(true));
 
     openCurrentPageBtn?.addEventListener('click', () => {
-        const url = String(currentPageInput?.value || '').trim();
-        if (!url) {
-            showToast('当前页面链接尚未生成。', true);
-            return;
-        }
-        window.open(url, '_blank', 'noopener,noreferrer');
+        openExternalUrl(currentPageInput?.value || '', '当前页面链接尚未生成。');
     });
 
     copyCurrentPageBtn?.addEventListener('click', async () => {
-        const url = String(currentPageInput?.value || '').trim();
-        if (!url) {
-            showToast('当前页面链接尚未生成。', true);
-            return;
-        }
         await withButtonBusy(copyCurrentPageBtn, '复制中...', async () => {
-            try {
-                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-                    await navigator.clipboard.writeText(url);
-                } else {
-                    currentPageInput?.select();
-                    document.execCommand('copy');
-                }
-                showToast('当前页面链接已复制。');
-            } catch (_error) {
-                showToast('复制失败，请手动复制。', true);
-            }
+            await copyText(currentPageInput?.value || '', currentPageInput, '当前页面链接已复制。', '复制失败，请手动复制。');
+        });
+    });
+
+    openSourceBtn?.addEventListener('click', () => {
+        openExternalUrl(document.getElementById('ed-link')?.value || '', '请先填写原文链接。');
+    });
+
+    copySourceBtn?.addEventListener('click', async () => {
+        const linkInput = document.getElementById('ed-link');
+        await withButtonBusy(copySourceBtn, '复制中...', async () => {
+            await copyText(linkInput?.value || '', linkInput, '原文链接已复制。', '请先填写原文链接。');
+        });
+    });
+
+    document.getElementById('ed-set-now')?.addEventListener('click', () => {
+        if (!timeInput) return;
+        timeInput.value = new Date().toISOString();
+        timeInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    document.getElementById('ed-copy-time')?.addEventListener('click', async (event) => {
+        await withButtonBusy(event.currentTarget, '复制中...', async () => {
+            await copyText(timeInput?.value || '', timeInput, '发布时间已复制。', '请先填写发布时间。');
+        });
+    });
+
+    document.querySelectorAll('[data-md-action]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const action = button.dataset.mdAction;
+            if (action === 'h2') insertMarkdownSnippet(contentInput, '## ', '', '二级标题');
+            if (action === 'h3') insertMarkdownSnippet(contentInput, '### ', '', '三级标题');
+            if (action === 'list') insertMarkdownSnippet(contentInput, '- ', '\n- ', '条目');
+            if (action === 'quote') insertMarkdownSnippet(contentInput, '> ', '', '引用内容');
+            if (action === 'link') insertMarkdownSnippet(contentInput, '[', '](https://)', '链接标题');
+            if (action === 'code') insertMarkdownSnippet(contentInput, '```text\n', '\n```', '代码或配置');
+            if (action === 'image') insertMarkdownSnippet(contentInput, '![图片说明](', ')', 'https://example.com/image.jpg');
+        });
+    });
+
+    document.getElementById('ed-sync-html')?.addEventListener('click', () => {
+        if (!htmlInput) return;
+        htmlInput.value = markdownToHtml(contentInput?.value || '');
+        htmlInput.dispatchEvent(new Event('input', { bubbles: true }));
+        showToast('已由 Markdown 生成 HTML 源码。');
+    });
+
+    document.getElementById('ed-copy-html')?.addEventListener('click', async (event) => {
+        await withButtonBusy(event.currentTarget, '复制中...', async () => {
+            await copyText(htmlInput?.value || '', htmlInput, 'HTML 源码已复制。', '当前没有可复制的 HTML 源码。');
         });
     });
 
     const save = async (statusOverride = null, triggerBtn = null) => {
-        const payloadForSave = readPayload();
+        const payloadForSave = ensureEditorHtmlPayload(readPayload());
         if (statusOverride) payloadForSave.status = statusOverride;
         if (!payloadForSave.main_title.trim()) {
             showToast('标题不能为空。', true);
+            titleInput?.focus();
             return;
         }
+        const saveMetrics = buildEditorMetrics(payloadForSave);
+        const saveChecklist = buildEditorChecklist(payloadForSave, saveMetrics);
+        const missingRequired = saveChecklist.filter((item) => item.required && !item.ready).map((item) => item.name);
+        if (payloadForSave.status === 'published' && missingRequired.length) {
+            const confirmed = window.confirm(`当前仍缺少：${missingRequired.join('、')}。确认继续发布吗？`);
+            if (!confirmed) return;
+        }
+
         await withButtonBusy(triggerBtn, statusOverride === 'published' ? '发布中...' : '保存中...', async () => {
             try {
+                let savedRow = null;
                 if (state.editor.mode === 'edit' && state.editor.id) {
-                    await updateArticle(state.editor.id, payloadForSave, state.user?.id || null);
-                    showToast('文章已更新。');
+                    savedRow = await updateArticle(state.editor.id, payloadForSave, state.user?.id || null);
+                    showToast(payloadForSave.status === 'published' ? '文章已更新并发布。' : '文章已更新。');
                 } else {
-                    const created = await createArticle(payloadForSave, state.user?.id || null);
-                    state.editor = { mode: 'edit', id: created.id, payload: { ...created } };
-                    showToast('文章已创建。');
+                    savedRow = await createArticle(payloadForSave, state.user?.id || null);
+                    showToast(payloadForSave.status === 'published' ? '文章已创建并发布。' : '文章已创建。');
                 }
+                clearStoredEditorDraft();
+                state.editor = createEditorState('edit', savedRow?.id || state.editor.id, savedRow || payloadForSave);
                 invalidateArticlesCache();
-                state.page = 'articles';
-                void renderPage();
+                await renderPage();
             } catch (error) {
                 showToast(error.message || '保存失败。', true);
             }
         });
     };
 
-    document.getElementById('editor-form')?.addEventListener('submit', async (event) => {
+    editorForm?.addEventListener('submit', async (event) => {
         event.preventDefault();
         const submitBtn = event.submitter || event.currentTarget?.querySelector('button[type="submit"]');
         await save(null, submitBtn);
     });
+
+    editorForm?.addEventListener('keydown', async (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+            event.preventDefault();
+            const submitBtn = editorForm.querySelector('button[type="submit"]');
+            await save(null, submitBtn);
+            return;
+        }
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+            event.preventDefault();
+            await save('published', document.getElementById('ed-publish'));
+        }
+    });
+
     document.getElementById('ed-save-draft')?.addEventListener('click', async (event) => save('draft', event.currentTarget));
     document.getElementById('ed-publish')?.addEventListener('click', async (event) => save('published', event.currentTarget));
     document.getElementById('ed-cancel')?.addEventListener('click', () => {
+        if (!confirmDiscardEditorChanges()) return;
+        clearStoredEditorDraft();
+        state.editor = createEditorState();
         state.page = 'articles';
         void renderPage();
     });
@@ -1118,6 +2113,144 @@ async function renderFeatured() {
     });
 }
 
+function renderFooterSocialRow(item) {
+    const iconHtml = item.iconClass
+        ? `<i class="${esc(item.iconClass)}"></i>`
+        : `<span class="ams-social-text-badge">${esc(item.label)}</span>`;
+
+    return `
+        <div class="ams-social-row" data-social-row="${esc(item.id)}">
+            <div class="ams-social-meta">
+                <div class="ams-social-icon">${iconHtml}</div>
+                <div>
+                    <strong>${esc(item.label)}</strong>
+                    <div class="ams-footnote">${esc(item.id)}</div>
+                </div>
+            </div>
+            <label class="ams-social-toggle">
+                <input type="checkbox" data-social-enabled="${esc(item.id)}" ${item.enabled ? 'checked' : ''}>
+                <span>展示</span>
+            </label>
+            <input class="ams-input" data-social-href="${esc(item.id)}" value="${esc(item.href)}" placeholder="${esc(item.defaultHref)}">
+            <button class="ams-btn ams-btn-primary" type="button" data-social-save="${esc(item.id)}">保存</button>
+        </div>
+    `;
+}
+
+async function renderSiteSettings() {
+    setPageHeader('站点设置', '统一管理 footer 联系方式和社交按钮。');
+    const settings = await fetchFooterSocialSettings();
+    state.siteSettings.footerSocial = settings;
+
+    setContent(`
+        <section class="ams-card" style="margin-bottom:12px">
+            <div class="ams-section-head">
+                <div>
+                    <h3>Footer 联系方式</h3>
+                    <p>控制 footer 右侧 Contact Us 下方显示文本和跳转链接。</p>
+                </div>
+            </div>
+            <div class="ams-settings-stack">
+                <div class="ams-social-row">
+                    <div class="ams-social-meta">
+                        <div class="ams-social-icon"><i class="fa-brands fa-weixin"></i></div>
+                        <div>
+                            <strong>Contact Us</strong>
+                            <div class="ams-footnote">News footer 联系方式入口</div>
+                        </div>
+                    </div>
+                    <div class="ams-field" style="gap:4px">
+                        <label style="font-size:10px">显示文本</label>
+                        <input class="ams-input" id="am-footer-contact-label" value="${esc(settings.contact?.label || 'www_gasgx_com')}" placeholder="www_gasgx_com">
+                    </div>
+                    <div class="ams-field" style="gap:4px">
+                        <label style="font-size:10px">跳转链接</label>
+                        <input class="ams-input" id="am-footer-contact-href" value="${esc(settings.contact?.href || '/about/contact')}" placeholder="/about/contact">
+                    </div>
+                    <button class="ams-btn ams-btn-primary" type="button" id="am-footer-contact-save">保存联系方式</button>
+                </div>
+            </div>
+        </section>
+        <section class="ams-card">
+            <div class="ams-section-head">
+                <div>
+                    <h3>Footer 社交按钮</h3>
+                    <p>控制 News 页底部社交按钮是否展示，以及每个按钮跳转链接。</p>
+                </div>
+            </div>
+            <div class="ams-settings-stack">
+                <div class="ams-social-row ams-social-row-group">
+                    <div>
+                        <strong>社交按钮总开关</strong>
+                        <div class="ams-footnote">关闭后，footer 整组社交按钮隐藏。</div>
+                    </div>
+                    <label class="ams-social-toggle">
+                        <input type="checkbox" id="am-social-group-visible" ${settings.groupVisible ? 'checked' : ''}>
+                        <span>${settings.groupVisible ? '已开启' : '已关闭'}</span>
+                    </label>
+                    <div></div>
+                    <button class="ams-btn ams-btn-primary" type="button" id="am-social-group-save">保存总开关</button>
+                </div>
+                <div class="ams-settings-list">
+                    ${settings.items.map((item) => renderFooterSocialRow(item)).join('')}
+                </div>
+            </div>
+        </section>
+        <div class="ams-footnote">说明：留空社交链接时，前台仍会使用系统默认链接；关闭展示时，该按钮不会出现在 footer。</div>
+    `);
+
+    document.getElementById('am-footer-contact-save')?.addEventListener('click', async (event) => {
+        const label = document.getElementById('am-footer-contact-label')?.value || '';
+        const href = document.getElementById('am-footer-contact-href')?.value || '';
+        await withButtonBusy(event.currentTarget, '保存中...', async () => {
+            try {
+                await upsertFooterContactSettings({ label, href });
+                showToast('Footer 联系方式已更新。');
+            } catch (error) {
+                showToast(error.message || '保存联系方式失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('am-social-group-save')?.addEventListener('click', async (event) => {
+        const checkbox = document.getElementById('am-social-group-visible');
+        const nextVisible = Boolean(checkbox?.checked);
+        await withButtonBusy(event.currentTarget, '保存中...', async () => {
+            try {
+                await updateFooterSocialGroupVisible(nextVisible);
+                showToast(`社交按钮总开关已${nextVisible ? '开启' : '关闭'}。`);
+            } catch (error) {
+                showToast(error.message || '保存社交按钮总开关失败。', true);
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-social-save]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const id = String(button.dataset.socialSave || '').trim();
+            const enabledNode = document.querySelector(`[data-social-enabled="${id}"]`);
+            const hrefNode = document.querySelector(`[data-social-href="${id}"]`);
+            const enabled = Boolean(enabledNode?.checked);
+            const href = hrefNode?.value || '';
+            const item = settings.items.find((entry) => entry.id === id);
+
+            await withButtonBusy(button, '保存中...', async () => {
+                try {
+                    await upsertFooterSocialItem({
+                        id,
+                        href,
+                        enabled,
+                        sortOrder: item?.sortOrder || 100,
+                    });
+                    showToast(`${item?.label || id} 已更新。`);
+                } catch (error) {
+                    showToast(error.message || '保存社交按钮失败。', true);
+                }
+            });
+        });
+    });
+}
+
 async function renderQueue() {
     setPageHeader('采集队列', '查看 scrape_queue 的采集状态，并支持手动更改状态。');
     const [result, discoveredStatuses] = await Promise.all([fetchReviewQueue(state.queue), fetchQueueStatuses()]);
@@ -1133,17 +2266,27 @@ async function renderQueue() {
     const selectedStatus = queueStatusKey(state.queue.status, 'all');
     if (selectedStatus !== 'all') statusSet.add(selectedStatus);
     const statusValues = sortQueueStatuses(Array.from(statusSet));
+    const totalPages = calcTotalPages(result.count, state.queue.pageSize);
     const filterOptions = [
         `<option value="all" ${selectedStatus === 'all' ? 'selected' : ''}>全部状态</option>`,
         ...statusValues.map((status) => `<option value="${esc(status)}" ${selectedStatus === status ? 'selected' : ''}>${esc(queueStatusLabel(status))}</option>`),
     ].join('');
 
     setContent(`
+        <div class="ams-toolbar-card">
         <div class="ams-toolbar ams-queue-toolbar">
             <div class="ams-field"><label>状态</label><select id="qr-status" class="ams-select">${filterOptions}</select></div>
+            <div class="ams-field"><label>每页数量</label><select id="qr-page-size" class="ams-select">${pageSizeOptions(state.queue.pageSize || 20)}</select></div>
             <div class="ams-field"><label>页码</label><input id="qr-page" class="ams-input" type="number" min="1" value="${state.queue.page}"></div>
             <div class="ams-toolbar-actions"><button id="qr-apply" class="ams-btn ams-btn-primary" type="button">刷新</button></div>
         </div>
+        </div>
+        ${renderSummaryChips([
+            { label: '队列总数', value: `${result.count} 条` },
+            { label: '当前页', value: `${state.queue.page} / ${totalPages}` },
+            { label: '每页数量', value: `${state.queue.pageSize}` },
+            { label: '筛选状态', value: selectedStatus === 'all' ? '全部' : queueStatusLabel(selectedStatus) },
+        ])}
         <div class="ams-table-wrap"><table class="ams-table ams-queue-table"><thead><tr><th>ID</th><th>来源</th><th>分类</th><th>发布方</th><th>标签</th><th class="ams-col-status">状态</th><th class="ams-col-time">创建时间</th><th class="ams-col-actions">操作</th></tr></thead><tbody>${result.rows.length ? result.rows.map((item) => {
         const currentStatus = queueStatusKey(item.review_status || item.status, 'pending');
         const rowStatusValues = sortQueueStatuses([...statusValues, currentStatus]);
@@ -1155,6 +2298,7 @@ async function renderQueue() {
 
     document.getElementById('qr-apply')?.addEventListener('click', () => {
         state.queue.status = document.getElementById('qr-status')?.value || 'all';
+        state.queue.pageSize = Math.max(1, Number(document.getElementById('qr-page-size')?.value || 20));
         state.queue.page = Math.max(1, Number(document.getElementById('qr-page')?.value || 1));
         void renderPage();
     });
@@ -1246,6 +2390,7 @@ async function renderPage() {
         else if (state.page === 'editor') await renderEditor();
         else if (state.page === 'recycle') await renderRecycleBin();
         else if (state.page === 'featured') await renderFeatured();
+        else if (state.page === 'site-settings') await renderSiteSettings();
         else if (state.page === 'queue') await renderQueue();
         else if (state.page === 'tags') await renderTags();
         else setContent('<div class="ams-empty">未知页面。</div>');

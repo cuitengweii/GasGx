@@ -1,7 +1,16 @@
 ﻿import { client } from './supabase.client.js';
 
 const ARTICLE_TABLE = 'articles';
-const STATUS_VALUES = new Set(['draft', 'published', 'archived']);
+const STATUS_VALUES = new Set(['draft', 'published', 'archived', 'scraping', 'failed']);
+export const ARTICLE_TYPE_OPTIONS = [
+    { value: 'gas-energy', label: 'Gas Energy' },
+    { value: 'generators', label: 'Generators' },
+    { value: 'mining', label: 'Mining' },
+    { value: 'insights', label: 'Insights' },
+    { value: 'data', label: 'Data' },
+    { value: 'events', label: 'Events' },
+];
+const ARTICLE_TYPE_VALUES = new Set(ARTICLE_TYPE_OPTIONS.map((item) => item.value));
 
 function normalizeText(value) {
     return String(value || '').trim();
@@ -12,11 +21,18 @@ function normalizeStatus(value, fallback = 'draft') {
     return STATUS_VALUES.has(next) ? next : fallback;
 }
 
+function normalizeArticleType(value) {
+    const next = normalizeText(value).toLowerCase();
+    if (!next) return '';
+    return ARTICLE_TYPE_VALUES.has(next) ? next : next;
+}
+
 export function createEmptyArticlePayload() {
     return {
         main_title: '',
         subheading: '',
         content_markdown: '',
+        content_html: '',
         tag: '',
         secondary_tag: '',
         type: '',
@@ -45,7 +61,8 @@ export function normalizeArticleRow(row) {
         link: normalizeText(row.link),
         cover_image: normalizeText(row.cover_image),
         author_avatar: normalizeText(row.author_avatar),
-        content_markdown: normalizeText(row.content_markdown || row.article_content || row.content || ''),
+        content_markdown: normalizeText(row.content_markdown || ''),
+        content_html: normalizeText(row.content_html || row.article_content || row.content || ''),
         status: normalizeStatus(row.status, 'published'),
         deleted_at: row.deleted_at || null,
         featured_rank: Number.isFinite(row.featured_rank) ? row.featured_rank : null,
@@ -98,13 +115,17 @@ export async function fetchArticles({
 
 function buildUpsertPayload(input = {}, userId = null) {
     const nowIso = new Date().toISOString();
+    const contentMarkdown = normalizeText(input.content_markdown);
+    const contentHtml = normalizeText(input.content_html);
     const payload = {
         main_title: normalizeText(input.main_title),
         subheading: normalizeText(input.subheading),
-        content_markdown: normalizeText(input.content_markdown),
+        content_markdown: contentMarkdown,
+        content_html: contentHtml,
+        article_content: contentHtml,
         tag: normalizeText(input.tag),
         secondary_tag: normalizeText(input.secondary_tag),
-        type: normalizeText(input.type),
+        type: normalizeArticleType(input.type),
         publisher: normalizeText(input.publisher),
         cover_image: normalizeText(input.cover_image),
         author_avatar: normalizeText(input.author_avatar),
@@ -124,40 +145,113 @@ function hasLegacyUpdatedColumnsError(error) {
     return text.includes('updated_at') || text.includes('updated_by');
 }
 
+function stripUnsupportedColumns(payload, error) {
+    const text = String(error?.message || '').toLowerCase();
+    const nextPayload = { ...payload };
+    let changed = false;
+
+    if ((text.includes('updated_at') || text.includes('updated_by')) && ('updated_at' in nextPayload || 'updated_by' in nextPayload)) {
+        delete nextPayload.updated_at;
+        delete nextPayload.updated_by;
+        changed = true;
+    }
+    if (text.includes('content_html') && 'content_html' in nextPayload) {
+        delete nextPayload.content_html;
+        changed = true;
+    }
+    if (text.includes('article_content') && 'article_content' in nextPayload) {
+        delete nextPayload.article_content;
+        changed = true;
+    }
+
+    return changed ? nextPayload : null;
+}
+
+async function runArticleMutation(executor, payload) {
+    let currentPayload = { ...payload };
+
+    while (true) {
+        const result = await executor(currentPayload);
+        if (!result.error) return result;
+
+        const fallbackPayload = stripUnsupportedColumns(currentPayload, result.error);
+        if (!fallbackPayload) return result;
+        currentPayload = fallbackPayload;
+    }
+}
+
 export async function createArticle(input, userId) {
     const payload = buildUpsertPayload(input, userId);
     payload.deleted_at = null;
     payload.deleted_by = null;
 
-    const { data, error } = await client.from(ARTICLE_TABLE).insert([payload]).select('*').single();
+    const { data, error } = await runArticleMutation(
+        (nextPayload) => client.from(ARTICLE_TABLE).insert([nextPayload]).select('*').single(),
+        payload
+    );
     if (error) throw error;
     return normalizeArticleRow(data);
 }
 
 export async function updateArticle(articleId, input, userId) {
     const payload = buildUpsertPayload(input, userId);
-    const { data, error } = await client.from(ARTICLE_TABLE).update(payload).eq('id', articleId).select('*').single();
+    const { data, error } = await runArticleMutation(
+        (nextPayload) => client.from(ARTICLE_TABLE).update(nextPayload).eq('id', articleId).select('*').single(),
+        payload
+    );
+    if (error) throw error;
+    return normalizeArticleRow(data);
+}
+
+async function updateArticleFields(articleId, fields = {}, userId) {
+    const nowIso = new Date().toISOString();
+    const payload = {
+        ...fields,
+        updated_at: nowIso,
+        updated_by: userId || null,
+    };
+
+    const { data, error } = await runArticleMutation(
+        (nextPayload) => client.from(ARTICLE_TABLE).update(nextPayload).eq('id', articleId).select('*').single(),
+        payload
+    );
     if (error) throw error;
     return normalizeArticleRow(data);
 }
 
 export async function updateArticleStatus(articleId, status, userId) {
-    const nextStatus = normalizeStatus(status, 'draft');
+    return updateArticleFields(articleId, { status: normalizeStatus(status, 'draft') }, userId);
+}
+
+export async function updateArticleType(articleId, type, userId) {
+    return updateArticleFields(articleId, { type: normalizeArticleType(type) }, userId);
+}
+
+export async function batchUpdateArticleFields(articleIds = [], fields = {}, userId) {
+    const ids = Array.from(new Set((articleIds || []).map((item) => Number(item)).filter((item) => Number.isFinite(item))));
+    if (!ids.length) return [];
+
     const nowIso = new Date().toISOString();
     const payload = {
-        status: nextStatus,
+        ...fields,
         updated_at: nowIso,
         updated_by: userId || null,
     };
 
-    let { data, error } = await client.from(ARTICLE_TABLE).update(payload).eq('id', articleId).select('*').single();
-    if (error && hasLegacyUpdatedColumnsError(error)) {
-        const legacyRes = await client.from(ARTICLE_TABLE).update({ status: nextStatus }).eq('id', articleId).select('*').single();
-        data = legacyRes.data;
-        error = legacyRes.error;
-    }
+    const { data, error } = await runArticleMutation(
+        (nextPayload) => client.from(ARTICLE_TABLE).update(nextPayload).in('id', ids).select('*'),
+        payload
+    );
     if (error) throw error;
-    return normalizeArticleRow(data);
+    return (data || []).map(normalizeArticleRow).filter(Boolean);
+}
+
+export async function batchUpdateArticleStatus(articleIds = [], status, userId) {
+    return batchUpdateArticleFields(articleIds, { status: normalizeStatus(status, 'draft') }, userId);
+}
+
+export async function batchUpdateArticleType(articleIds = [], type, userId) {
+    return batchUpdateArticleFields(articleIds, { type: normalizeArticleType(type) }, userId);
 }
 
 export async function softDeleteArticle(articleId, userId) {

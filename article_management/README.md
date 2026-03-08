@@ -24,6 +24,7 @@ Run in Supabase SQL editor in order:
 
 1. `sql/001_ams_schema.sql`
 2. `sql/002_ams_rls.sql`
+3. `sql/003_feeder_form_options_footer_sections.sql`
 
 ## Admin Account
 

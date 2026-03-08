@@ -2,8 +2,26 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
-const ENTRY_HTML = ['news/index.html', 'article_management/index.html'];
-const ENTRY_MODULES = ['news/modules/news-home.bootstrap.js', 'article_management/modules/app.bootstrap.js'];
+const ENTRY_HTML = [
+    'news/index.html',
+    'news/gas-energy/index.html',
+    'news/generators/index.html',
+    'news/mining/index.html',
+    'news/insights/index.html',
+    'news/data/index.html',
+    'news/events/index.html',
+    'article_management/index.html',
+];
+const ENTRY_MODULES = [
+    'news/modules/news-home.bootstrap.js',
+    'news/gas-energy/modules/channel.bootstrap.js',
+    'news/generators/modules/channel.bootstrap.js',
+    'news/mining/modules/channel.bootstrap.js',
+    'news/insights/modules/channel.bootstrap.js',
+    'news/data/modules/channel.bootstrap.js',
+    'news/events/modules/channel.bootstrap.js',
+    'article_management/modules/app.bootstrap.js',
+];
 const JS_EXTS = ['.js', '.mjs', '.cjs'];
 
 let hasFailure = false;
