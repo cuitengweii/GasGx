@@ -5,15 +5,38 @@ function clean(value) {
     return String(value || '').trim();
 }
 
+const QUEUE_STATUS_ALIASES = {
+    scraping: 'processing',
+    completed: 'done',
+    success: 'done',
+};
+
 function normalizeStatus(value, fallback = 'pending') {
     const next = clean(value).toLowerCase();
-    return next || fallback;
+    if (!next) return fallback;
+    return QUEUE_STATUS_ALIASES[next] || next;
 }
 
-const FINAL_QUEUE_STATUSES = new Set(['published', 'done', 'completed', 'success', 'rejected']);
+const FINAL_QUEUE_STATUSES = new Set(['published', 'done', 'rejected']);
 
 function isFinalQueueStatus(value) {
     return FINAL_QUEUE_STATUSES.has(normalizeStatus(value, ''));
+}
+
+function resolveRowStatus(row, fallback = 'pending') {
+    const status = normalizeStatus(row?.status, '');
+    if (status) return status;
+    return normalizeStatus(row?.review_status, fallback);
+}
+
+function expandStatusFilter(status) {
+    const normalizedStatus = normalizeStatus(status, '');
+    if (!normalizedStatus) return [];
+    const rawValues = new Set([normalizedStatus]);
+    Object.entries(QUEUE_STATUS_ALIASES).forEach(([rawStatus, canonicalStatus]) => {
+        if (canonicalStatus === normalizedStatus) rawValues.add(rawStatus);
+    });
+    return Array.from(rawValues);
 }
 
 export async function fetchReviewQueue({ status = 'pending', page = 1, pageSize = 20 } = {}) {
@@ -30,15 +53,21 @@ export async function fetchReviewQueue({ status = 'pending', page = 1, pageSize 
     if (normalizedStatus === 'all') {
         query = query.or('status.is.null,status.not.in.(published,done,completed,success,rejected)');
     } else {
-        const token = normalizedStatus.replace(/,/g, '');
-        if (token) query = query.or(`status.eq.${token},and(status.is.null,review_status.eq.${token})`);
+        const rawStatuses = expandStatusFilter(normalizedStatus).map((item) => item.replace(/,/g, '')).filter(Boolean);
+        if (rawStatuses.length === 1) {
+            const [token] = rawStatuses;
+            query = query.or(`status.eq.${token},and(status.is.null,review_status.eq.${token})`);
+        } else if (rawStatuses.length > 1) {
+            const list = rawStatuses.join(',');
+            query = query.or(`status.in.(${list}),and(status.is.null,review_status.in.(${list}))`);
+        }
     }
 
     const { data, error, count } = await query;
     if (error) throw error;
 
     return {
-        rows: Array.isArray(data) ? data : [],
+        rows: Array.isArray(data) ? data.map((row) => ({ ...row, status: resolveRowStatus(row, 'pending') })) : [],
         count: Number.isFinite(count) ? count : 0,
     };
 }
@@ -48,10 +77,10 @@ export async function fetchQueueStatuses(limit = 1200) {
     const { data, error } = await client.from('scrape_queue').select('review_status,status').order('id', { ascending: false }).limit(safeLimit);
     if (error) throw error;
 
-    const seed = ['pending', 'processing', 'queued', 'scraping', 'fetched', 'error', 'failed'];
+    const seed = ['pending', 'processing', 'queued', 'fetched', 'error', 'failed'];
     const set = new Set(seed);
     (data || []).forEach((row) => {
-        const status = normalizeStatus(row?.status, '');
+        const status = resolveRowStatus(row, '');
         if (status && !isFinalQueueStatus(status)) set.add(status);
     });
     return Array.from(set);

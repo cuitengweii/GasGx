@@ -24,7 +24,7 @@ import {
     fetchReviewQueue,
     rejectQueueItem,
     updateQueueStatus,
-} from './review-queue.module.js?v=20260308ams26';
+} from './review-queue.module.js?v=20260311ams39';
 import { fetchFooterSocialSettings, updateFooterSocialGroupVisible, upsertFooterContactSettings, upsertFooterSocialItem } from './site-settings.module.js';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js';
 
@@ -371,7 +371,10 @@ function pill(value) {
 
 function queueStatusKey(value, fallback = 'pending') {
     const key = String(value || '').trim().toLowerCase();
-    return key || fallback;
+    if (!key) return fallback;
+    if (key === 'scraping') return 'processing';
+    if (key === 'completed' || key === 'success') return 'done';
+    return key;
 }
 
 function queueStatusLabel(value) {
@@ -382,19 +385,18 @@ function queueStatusLabel(value) {
         rejected: '已拒绝',
         published: '已发布',
         queued: '已入队',
-        scraping: '采集中',
         processing: '处理中',
         fetched: '已采集',
-        completed: '已完成',
         failed: '失败',
-        success: '成功',
         error: '错误',
     };
     return labels[key] || String(value || '--');
 }
 
 function resolveQueueRowStatus(row, fallback = 'pending') {
-    return queueStatusKey(row?.status || row?.review_status, fallback);
+    const status = queueStatusKey(row?.status, '');
+    if (status) return status;
+    return queueStatusKey(row?.review_status, fallback);
 }
 
 function queueStatusPill(value) {
@@ -403,11 +405,11 @@ function queueStatusPill(value) {
 }
 
 function isFinalQueueStatus(value) {
-    return ['published', 'done', 'completed', 'success', 'rejected'].includes(queueStatusKey(value, ''));
+    return ['published', 'done', 'rejected'].includes(queueStatusKey(value, ''));
 }
 
 function sortQueueStatuses(values = []) {
-    const preferredOrder = ['pending', 'processing', 'done', 'queued', 'scraping', 'fetched', 'rejected', 'failed', 'error', 'success', 'completed'];
+    const preferredOrder = ['pending', 'processing', 'queued', 'fetched', 'error', 'failed', 'done', 'rejected', 'published'];
     const unique = Array.from(new Set((values || []).map((item) => queueStatusKey(item, '')).filter(Boolean)));
     return unique.sort((a, b) => {
         const ai = preferredOrder.indexOf(a);
