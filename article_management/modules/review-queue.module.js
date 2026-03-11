@@ -25,8 +25,10 @@ function isFinalQueueStatus(value) {
 
 function resolveRowStatus(row, fallback = 'pending') {
     const status = normalizeStatus(row?.status, '');
-    if (status) return status;
-    return normalizeStatus(row?.review_status, fallback);
+    const reviewStatus = normalizeStatus(row?.review_status, '');
+
+    if (reviewStatus && (!status || status === 'pending' || isFinalQueueStatus(reviewStatus))) return reviewStatus;
+    return status || reviewStatus || fallback;
 }
 
 function expandStatusFilter(status) {
@@ -37,6 +39,62 @@ function expandStatusFilter(status) {
         if (canonicalStatus === normalizedStatus) rawValues.add(rawStatus);
     });
     return Array.from(rawValues);
+}
+
+function buildFieldFilter(column, rawStatuses = []) {
+    const tokens = Array.from(new Set((rawStatuses || []).map((item) => clean(item).replace(/,/g, '')).filter(Boolean)));
+    if (!tokens.length) return '';
+    if (tokens.length === 1) return `${column}.eq.${tokens[0]}`;
+    return `${column}.in.(${tokens.join(',')})`;
+}
+
+function buildEffectiveStatusFilter(status) {
+    const rawStatuses = expandStatusFilter(status);
+    const statusFilter = buildFieldFilter('status', rawStatuses);
+    const reviewFilter = buildFieldFilter('review_status', rawStatuses);
+
+    if (!statusFilter && !reviewFilter) return '';
+    if (normalizeStatus(status, '') === 'pending') {
+        return [
+            statusFilter ? `and(${statusFilter},review_status.is.null)` : '',
+            statusFilter && reviewFilter ? `and(${statusFilter},${reviewFilter})` : '',
+            reviewFilter ? `and(status.is.null,${reviewFilter})` : '',
+        ].filter(Boolean).join(',');
+    }
+
+    return [
+        statusFilter,
+        reviewFilter ? `and(status.eq.pending,${reviewFilter})` : '',
+        reviewFilter ? `and(status.is.null,${reviewFilter})` : '',
+    ].filter(Boolean).join(',');
+}
+
+function stripUnsupportedQueueColumns(payload, error) {
+    const text = String(error?.message || '').toLowerCase();
+    const nextPayload = { ...payload };
+    let changed = false;
+
+    ['review_status', 'review_note', 'reviewed_at', 'reviewed_by', 'article_id'].forEach((column) => {
+        if (text.includes(column) && column in nextPayload) {
+            delete nextPayload[column];
+            changed = true;
+        }
+    });
+
+    return changed ? nextPayload : null;
+}
+
+async function runQueueMutation(executor, payload) {
+    let currentPayload = { ...payload };
+
+    while (true) {
+        const result = await executor(currentPayload);
+        if (!result.error) return result;
+
+        const fallbackPayload = stripUnsupportedQueueColumns(currentPayload, result.error);
+        if (!fallbackPayload) return result;
+        currentPayload = fallbackPayload;
+    }
 }
 
 export async function fetchReviewQueue({ status = 'pending', page = 1, pageSize = 20 } = {}) {
@@ -53,14 +111,8 @@ export async function fetchReviewQueue({ status = 'pending', page = 1, pageSize 
     if (normalizedStatus === 'all') {
         query = query.or('status.is.null,status.not.in.(published,done,completed,success,rejected)');
     } else {
-        const rawStatuses = expandStatusFilter(normalizedStatus).map((item) => item.replace(/,/g, '')).filter(Boolean);
-        if (rawStatuses.length === 1) {
-            const [token] = rawStatuses;
-            query = query.or(`status.eq.${token},and(status.is.null,review_status.eq.${token})`);
-        } else if (rawStatuses.length > 1) {
-            const list = rawStatuses.join(',');
-            query = query.or(`status.in.(${list}),and(status.is.null,review_status.in.(${list}))`);
-        }
+        const filter = buildEffectiveStatusFilter(normalizedStatus);
+        if (filter) query = query.or(filter);
     }
 
     const { data, error, count } = await query;
@@ -116,16 +168,17 @@ export async function approveAndPublishQueueItem(queueItem, articlePayload, user
         link: clean(articlePayload?.link || queueItem.link || ''),
     }, userId);
 
-    const { error } = await client
-        .from('scrape_queue')
-        .update({
-            review_status: 'published',
-            article_id: article.id,
-            reviewed_at: new Date().toISOString(),
-            reviewed_by: userId || null,
-            status: 'published',
-        })
-        .eq('id', queueItem.id);
+    const payload = {
+        review_status: 'published',
+        article_id: article.id,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: userId || null,
+        status: 'published',
+    };
+    const { error } = await runQueueMutation(
+        (nextPayload) => client.from('scrape_queue').update(nextPayload).eq('id', queueItem.id),
+        payload
+    );
 
     if (error) throw error;
     return article;
@@ -135,16 +188,17 @@ export async function rejectQueueItem(queueId, reviewNote, userId) {
     const note = clean(reviewNote);
     if (!note) throw new Error('拒绝原因不能为空。');
 
-    const { error } = await client
-        .from('scrape_queue')
-        .update({
-            review_status: 'rejected',
-            review_note: note,
-            reviewed_at: new Date().toISOString(),
-            reviewed_by: userId || null,
-            status: 'rejected',
-        })
-        .eq('id', queueId);
+    const payload = {
+        review_status: 'rejected',
+        review_note: note,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: userId || null,
+        status: 'rejected',
+    };
+    const { error } = await runQueueMutation(
+        (nextPayload) => client.from('scrape_queue').update(nextPayload).eq('id', queueId),
+        payload
+    );
 
     if (error) throw error;
 }
@@ -162,6 +216,9 @@ export async function updateQueueStatus(queueId, nextStatus, userId, reviewNote 
 
     if (typeof reviewNote === 'string') payload.review_note = clean(reviewNote);
 
-    const { error } = await client.from('scrape_queue').update(payload).eq('id', queueId);
+    const { error } = await runQueueMutation(
+        (nextPayload) => client.from('scrape_queue').update(nextPayload).eq('id', queueId),
+        payload
+    );
     if (error) throw error;
 }

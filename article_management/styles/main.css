@@ -836,11 +836,9 @@ textarea {
     margin-top: 12px;
     padding-top: 12px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    display: grid;
+    gap: 10px 12px;
+    align-items: end;
 }
 
 .ams-bulk-meta {
@@ -854,14 +852,32 @@ textarea {
 }
 
 .ams-bulk-actions {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
     gap: 8px;
     align-items: center;
 }
 
 .ams-bulk-actions .ams-select {
     min-width: 170px;
+}
+
+.ams-bulk-toolbar-articles {
+    grid-template-columns: auto minmax(0, 1fr);
+}
+
+.ams-bulk-toolbar-articles .ams-bulk-actions {
+    grid-template-columns: repeat(2, auto) minmax(190px, 220px) auto auto;
+    justify-content: end;
+}
+
+.ams-bulk-toolbar-queue {
+    margin-bottom: 12px;
+    grid-template-columns: auto minmax(0, 1fr);
+}
+
+.ams-bulk-toolbar-queue .ams-bulk-actions {
+    grid-template-columns: repeat(2, auto) minmax(220px, 260px) auto;
+    justify-content: start;
 }
 
 .ams-pagination {
@@ -1495,6 +1511,13 @@ textarea {
     .ams-bulk-actions {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .ams-bulk-toolbar-articles,
+    .ams-bulk-toolbar-queue,
+    .ams-bulk-toolbar-articles .ams-bulk-actions,
+    .ams-bulk-toolbar-queue .ams-bulk-actions {
+        grid-template-columns: 1fr;
     }
 
     .ams-pagination {

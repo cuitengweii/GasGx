@@ -24,7 +24,7 @@ import {
     fetchReviewQueue,
     rejectQueueItem,
     updateQueueStatus,
-} from './review-queue.module.js?v=20260311ams39';
+} from './review-queue.module.js?v=20260311ams40';
 import { fetchFooterSocialSettings, updateFooterSocialGroupVisible, upsertFooterContactSettings, upsertFooterSocialItem } from './site-settings.module.js';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js';
 
@@ -142,6 +142,7 @@ const state = {
         tags: null,
     },
     selectedArticleIds: new Set(),
+    selectedQueueIds: new Set(),
     previewUnbind: null,
 };
 
@@ -258,6 +259,23 @@ function pruneArticleSelection(validIds = []) {
 
 function getSelectedArticleIds() {
     return Array.from(state.selectedArticleIds)
+        .map((item) => Number(item))
+        .filter((item) => Number.isFinite(item));
+}
+
+function clearQueueSelection() {
+    state.selectedQueueIds.clear();
+}
+
+function pruneQueueSelection(validIds = []) {
+    const validSet = new Set((validIds || []).map((item) => String(item)));
+    Array.from(state.selectedQueueIds).forEach((id) => {
+        if (!validSet.has(String(id))) state.selectedQueueIds.delete(String(id));
+    });
+}
+
+function getSelectedQueueIds() {
+    return Array.from(state.selectedQueueIds)
         .map((item) => Number(item))
         .filter((item) => Number.isFinite(item));
 }
@@ -395,8 +413,9 @@ function queueStatusLabel(value) {
 
 function resolveQueueRowStatus(row, fallback = 'pending') {
     const status = queueStatusKey(row?.status, '');
-    if (status) return status;
-    return queueStatusKey(row?.review_status, fallback);
+    const reviewStatus = queueStatusKey(row?.review_status, '');
+    if (reviewStatus && (!status || status === 'pending' || isFinalQueueStatus(reviewStatus))) return reviewStatus;
+    return status || reviewStatus || fallback;
 }
 
 function queueStatusPill(value) {
@@ -968,7 +987,7 @@ function articleToolbar(filters, tagOptionsHtml = '', categoryOptionsHtml = '', 
         ${
             recycleMode
                 ? ''
-                : `<div class="ams-bulk-toolbar">
+                : `<div class="ams-bulk-toolbar ams-bulk-toolbar-articles">
                     <div class="ams-bulk-meta">已选 <strong id="am-selected-count">${selectedCount}</strong> 篇文章</div>
                     <div class="ams-bulk-actions">
                         <button class="ams-btn ams-btn-muted" id="am-select-visible" type="button">本页全选</button>
@@ -2368,6 +2387,9 @@ async function renderQueue(forceRefresh = false) {
     if (selectedStatus !== 'all') statusSet.add(selectedStatus);
     const statusValues = sortQueueStatuses(Array.from(statusSet));
     const totalPages = calcTotalPages(result.count, state.queue.pageSize);
+    pruneQueueSelection(result.rows.map((row) => row.id));
+    const selectedCount = getSelectedQueueIds().length;
+    const allRowsSelected = result.rows.length > 0 && result.rows.every((row) => state.selectedQueueIds.has(String(row.id)));
     const filterOptions = [
         `<option value="all" ${selectedStatus === 'all' ? 'selected' : ''}>全部状态</option>`,
         ...statusValues.map((status) => `<option value="${esc(status)}" ${selectedStatus === status ? 'selected' : ''}>${esc(queueStatusLabel(status))}</option>`),
@@ -2388,22 +2410,122 @@ async function renderQueue(forceRefresh = false) {
             { label: '每页数量', value: `${state.queue.pageSize}` },
             { label: '筛选状态', value: selectedStatus === 'all' ? '全部' : queueStatusLabel(selectedStatus) },
         ])}
-        <div class="ams-table-wrap"><table class="ams-table ams-queue-table"><thead><tr><th>ID</th><th>来源</th><th>分类</th><th>发布方</th><th>标签</th><th class="ams-col-status">状态</th><th class="ams-col-time">创建时间</th><th class="ams-col-actions">操作</th></tr></thead><tbody>${result.rows.length ? result.rows.map((item) => {
+        <div class="ams-bulk-toolbar ams-bulk-toolbar-queue">
+            <div class="ams-bulk-meta">已选 <strong id="qr-selected-count">${selectedCount}</strong> 条队列</div>
+            <div class="ams-bulk-actions">
+                <button class="ams-btn ams-btn-muted" id="qr-select-visible" type="button">本页全选</button>
+                <button class="ams-btn ams-btn-muted" id="qr-clear-selection" type="button" ${selectedCount ? '' : 'disabled'}>清空选择</button>
+                <select id="qr-bulk-status" class="ams-select">
+                    <option value="">批量审核状态</option>
+                    ${statusValues.map((status) => `<option value="${esc(status)}">${esc(queueStatusLabel(status))}</option>`).join('')}
+                </select>
+                <button class="ams-btn ams-btn-primary" id="qr-bulk-apply" type="button" ${selectedCount ? '' : 'disabled'}>批量审核</button>
+            </div>
+        </div>
+        <div class="ams-table-wrap"><table class="ams-table ams-queue-table"><thead><tr><th class="ams-col-check"><input class="ams-check" type="checkbox" id="qr-select-all" ${allRowsSelected ? 'checked' : ''} aria-label="全选当前页队列"></th><th>ID</th><th>来源</th><th>分类</th><th>发布方</th><th>标签</th><th class="ams-col-status">状态</th><th class="ams-col-time">创建时间</th><th class="ams-col-actions">操作</th></tr></thead><tbody>${result.rows.length ? result.rows.map((item) => {
         const currentStatus = resolveQueueRowStatus(item, 'pending');
         const rowStatusValues = sortQueueStatuses([...statusValues, currentStatus]);
-        return `<tr data-queue-row="${item.id}"><td><code>${item.id}</code></td><td class="ams-queue-source"><strong>${esc(item.title || item.main_title || '未命名')}</strong><div class="ams-footnote">${esc(item.link || '')}</div></td><td>${esc(item.category || '--')}</td><td>${esc(item.publisher || '--')}</td><td>${esc(item.tag_choice || item.tag || '--')} / ${esc(item.secondary_tag || '--')}</td><td class="ams-col-status" data-queue-status-pill="${item.id}">${queueStatusPill(currentStatus)}</td><td class="ams-col-time">${fmtDate(item.created_at)}</td><td class="ams-col-actions"><div class="ams-row-actions ams-row-actions-stacked ams-queue-actions"><div class="ams-queue-inline ams-queue-inline-status"><select class="ams-select ams-queue-status-select" data-queue-status-select="1" data-id="${item.id}">${rowStatusValues.map((status) => `<option value="${esc(status)}" ${status === currentStatus ? 'selected' : ''}>${esc(queueStatusLabel(status))}</option>`).join('')}</select></div></div></td></tr>`;
-    }).join('') : '<tr><td colspan="8"><div class="ams-empty">暂无队列数据。</div></td></tr>'}</tbody></table></div>
+        const checked = state.selectedQueueIds.has(String(item.id)) ? 'checked' : '';
+        return `<tr data-queue-row="${item.id}"><td class="ams-col-check"><input class="ams-check" type="checkbox" data-queue-select="1" data-id="${item.id}" ${checked} aria-label="选择队列 ${item.id}"></td><td><code>${item.id}</code></td><td class="ams-queue-source"><strong>${esc(item.title || item.main_title || '未命名')}</strong><div class="ams-footnote">${esc(item.link || '')}</div></td><td>${esc(item.category || '--')}</td><td>${esc(item.publisher || '--')}</td><td>${esc(item.tag_choice || item.tag || '--')} / ${esc(item.secondary_tag || '--')}</td><td class="ams-col-status" data-queue-status-pill="${item.id}">${queueStatusPill(currentStatus)}</td><td class="ams-col-time">${fmtDate(item.created_at)}</td><td class="ams-col-actions"><div class="ams-row-actions ams-row-actions-stacked ams-queue-actions"><div class="ams-queue-inline ams-queue-inline-status"><select class="ams-select ams-queue-status-select" data-queue-status-select="1" data-id="${item.id}">${rowStatusValues.map((status) => `<option value="${esc(status)}" ${status === currentStatus ? 'selected' : ''}>${esc(queueStatusLabel(status))}</option>`).join('')}</select></div></div></td></tr>`;
+    }).join('') : '<tr><td colspan="9"><div class="ams-empty">暂无队列数据。</div></td></tr>'}</tbody></table></div>
     `);
 
     document.getElementById('qr-apply')?.addEventListener('click', () => {
         state.queue.status = document.getElementById('qr-status')?.value || 'all';
         state.queue.pageSize = Math.max(1, Number(document.getElementById('qr-page-size')?.value || 20));
         state.queue.page = Math.max(1, Number(document.getElementById('qr-page')?.value || 1));
+        clearQueueSelection();
         invalidateQueueCache();
         void renderPage();
     });
 
     const mapById = new Map(result.rows.map((row) => [row.id, row]));
+    const syncQueueBulkToolbar = () => {
+        const nextSelectedCount = getSelectedQueueIds().length;
+        const selectedCountNode = document.getElementById('qr-selected-count');
+        if (selectedCountNode) selectedCountNode.textContent = String(nextSelectedCount);
+
+        const selectAllNode = document.getElementById('qr-select-all');
+        if (selectAllNode) {
+            selectAllNode.checked = result.rows.length > 0 && result.rows.every((row) => state.selectedQueueIds.has(String(row.id)));
+        }
+
+        const clearNode = document.getElementById('qr-clear-selection');
+        const applyNode = document.getElementById('qr-bulk-apply');
+        if (clearNode) clearNode.disabled = !nextSelectedCount;
+        if (applyNode) applyNode.disabled = !nextSelectedCount;
+    };
+
+    document.getElementById('qr-select-all')?.addEventListener('change', (event) => {
+        const checked = Boolean(event.currentTarget?.checked);
+        result.rows.forEach((row) => {
+            if (checked) state.selectedQueueIds.add(String(row.id));
+            else state.selectedQueueIds.delete(String(row.id));
+        });
+        document.querySelectorAll('[data-queue-select="1"]').forEach((input) => {
+            input.checked = checked;
+        });
+        syncQueueBulkToolbar();
+    });
+
+    document.querySelectorAll('[data-queue-select="1"]').forEach((input) => {
+        input.addEventListener('change', (event) => {
+            const id = String(event.currentTarget?.dataset.id || '');
+            if (!id) return;
+            if (event.currentTarget.checked) state.selectedQueueIds.add(id);
+            else state.selectedQueueIds.delete(id);
+            syncQueueBulkToolbar();
+        });
+    });
+
+    document.getElementById('qr-select-visible')?.addEventListener('click', () => {
+        result.rows.forEach((row) => state.selectedQueueIds.add(String(row.id)));
+        document.querySelectorAll('[data-queue-select="1"]').forEach((input) => {
+            input.checked = true;
+        });
+        syncQueueBulkToolbar();
+    });
+
+    document.getElementById('qr-clear-selection')?.addEventListener('click', () => {
+        clearQueueSelection();
+        document.querySelectorAll('[data-queue-select="1"]').forEach((input) => {
+            input.checked = false;
+        });
+        syncQueueBulkToolbar();
+    });
+
+    document.getElementById('qr-bulk-apply')?.addEventListener('click', async (event) => {
+        const nextStatus = queueStatusKey(document.getElementById('qr-bulk-status')?.value || '', '');
+        const ids = getSelectedQueueIds();
+        if (!nextStatus) {
+            showToast('请先选择目标状态。', true);
+            return;
+        }
+        if (!ids.length) {
+            showToast('请先选择至少一条队列。', true);
+            return;
+        }
+
+        let note = null;
+        if (nextStatus === 'rejected') {
+            const input = window.prompt('拒绝备注（可选）：', '');
+            if (input === null) return;
+            note = input;
+        }
+
+        await withButtonBusy(event.currentTarget, '批量处理中...', async () => {
+            try {
+                await Promise.all(ids.map((id) => updateQueueStatus(id, nextStatus, state.user?.id || null, note)));
+                clearQueueSelection();
+                invalidateQueueCache();
+                showToast(`已把 ${ids.length} 条队列更新为 ${queueStatusLabel(nextStatus)}。`);
+                await renderQueue(true);
+            } catch (error) {
+                showToast(error.message || '批量更新队列状态失败。', true);
+            }
+        });
+    });
+
     document.querySelectorAll('[data-queue-status-select="1"]').forEach((selectNode) => {
         selectNode.dataset.prevValue = selectNode.value || '';
         selectNode.addEventListener('change', async () => {
@@ -2450,6 +2572,8 @@ async function renderQueue(forceRefresh = false) {
             }
         });
     });
+
+    syncQueueBulkToolbar();
 }
 
 async function renderPage() {
