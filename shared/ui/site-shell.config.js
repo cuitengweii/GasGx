@@ -853,23 +853,23 @@
                 "partners": [
                         {
                                 "id": "bitmain",
-                                "title": "BitMain"
+                                "title": "BITMAIN",
+                                "href": "https://www.bitmain.com/"
                         },
                         {
                                 "id": "bitlink",
-                                "title": "BitLink"
+                                "title": "BITLINK",
+                                "href": "https://www.bitlinkpower.com/"
                         },
                         {
                                 "id": "linkmine",
-                                "title": "LinkMine"
-                        },
-                        {
-                                "id": "minerpower",
-                                "title": "MinerPower"
+                                "title": "LINKMINE",
+                                "href": "https://linkmine.cc/"
                         },
                         {
                                 "id": "vman",
-                                "title": "Vman"
+                                "title": "VMAN",
+                                "href": "https://www.vman-engine.com/"
                         }
                 ],
                 "socialLinks": [

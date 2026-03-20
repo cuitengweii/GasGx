@@ -21,6 +21,7 @@
         en: {
             tagline: "Natural Gas Power Mining Assistant",
             footerTagline: "Making natural gas power mining easier",
+            strategicPartners: "Strategic Partners",
             authLogin: "Login",
             authLogout: "Logout",
             contactUs: "Contact Us",
@@ -144,11 +145,10 @@
                 i18nKey: "privacy_policy"
             },
             partners: [
-                { id: "bitmain", title: "BitMain" },
-                { id: "bitlink", title: "BitLink" },
-                { id: "linkmine", title: "LinkMine" },
-                { id: "minerpower", title: "MinerPower" },
-                { id: "vman", title: "Vman" }
+                { id: "bitmain", title: "BITMAIN", href: "https://www.bitmain.com/" },
+                { id: "bitlink", title: "BITLINK", href: "https://www.bitlinkpower.com/" },
+                { id: "linkmine", title: "LINKMINE", href: "https://linkmine.cc/" },
+                { id: "vman", title: "VMAN", href: "https://www.vman-engine.com/" }
             ],
             socialLinks: [
                 { id: "x", enabled: true, mode: "link", href: "https://x.com/", iconClass: "fa-brands fa-x-twitter", ariaLabel: "Open X" },
@@ -401,6 +401,7 @@
         }
 
         setSharedTextByKey("footer-tagline", text.footerTagline);
+        setSharedTextByKey("strategic-partners", text.strategicPartners || (lang === "zh" ? "战略合作伙伴" : "Strategic Partners"));
         setSharedTextByKey("auth-login", text.authLogin);
         setSharedTextByKey("auth-logout", text.authLogout);
         setSharedTextByKey("contact-us", text.contactUs);
@@ -417,6 +418,10 @@
         if (desktopLangZh && typeof text.languageChinese === "string") {
             desktopLangZh.textContent = text.languageChinese;
         }
+
+        document.querySelectorAll("#ggx-site-footer-slot .ggx-partner-label").forEach((el) => {
+            el.textContent = text.strategicPartners || (lang === "zh" ? "战略合作伙伴" : "Strategic Partners");
+        });
     }
 
     function getLabelValue(label, lang) {
