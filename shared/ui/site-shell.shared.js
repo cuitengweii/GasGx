@@ -1668,7 +1668,7 @@
             mountSlot("ggx-back-to-top-slot", BACK_TO_TOP_TEMPLATE);
         }
 
-        if (runtimeConfig.chatbotEnabled !== false) {
+        if (runtimeConfig.chatbotEnabled === true) {
             ensureSlot("ggx-chatbot-slot");
             mountSlot("ggx-chatbot-slot", CHATBOT_TEMPLATE);
         }
@@ -1676,7 +1676,9 @@
         ensureMainAuthBridge();
         bindActionDelegation();
         initBackToTop();
-        initChatbot();
+        if (runtimeConfig.chatbotEnabled === true) {
+            initChatbot();
+        }
         runAppIntegrationHooks();
         const initialLang = getCurrentLang();
         const app = window.app;
