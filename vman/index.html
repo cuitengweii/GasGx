@@ -33,6 +33,7 @@
             background: linear-gradient(180deg, #061727 0%, #000000 100%);
             background-attachment: fixed;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         h1, h2, h3, h4, h5, h6 { color: var(--text-heading); font-weight: 700; }
@@ -79,6 +80,7 @@
             border-collapse: separate;
             border-spacing: 0;
             width: 100%;
+            min-width: 920px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
             background-color: var(--bg-card);
@@ -108,8 +110,11 @@
         
         /* 移动端表格包裹容器滑动条隐藏 */
         .table-responsive-wrapper {
+            width: 100%;
+            max-width: 100%;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            overscroll-behavior-x: contain;
             border-radius: 8px;
         }
         .table-responsive-wrapper::-webkit-scrollbar { height: 6px; }
@@ -152,6 +157,37 @@
             background-color: var(--gas-green-bg);
         }
         .btn-outline:disabled { opacity: 0.7; cursor: not-allowed; }
+
+        .back-to-top {
+            position: fixed;
+            right: 16px;
+            bottom: 20px;
+            width: 46px;
+            height: 46px;
+            border-radius: 9999px;
+            border: 1px solid rgba(0, 230, 118, 0.5);
+            background: rgba(10, 14, 20, 0.92);
+            color: var(--gas-green-light);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+            opacity: 0;
+            transform: translateY(10px);
+            pointer-events: none;
+        }
+
+        .back-to-top.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .back-to-top:hover {
+            border-color: var(--gas-green-light);
+            background: rgba(22, 27, 34, 0.96);
+        }
         
         .gas-tag {
             background-color: var(--gas-green-bg);
@@ -196,6 +232,110 @@
             50% { text-shadow: 0 0 25px rgba(0,230,118,0.8); }
             100% { text-shadow: 0 0 10px rgba(0,230,118,0.2); }
         }
+
+        @media (max-width: 767px) {
+            #toolbar {
+                padding: 10px 12px;
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .toolbar-brand {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .toolbar-actions {
+                width: 100%;
+                min-width: 0;
+                justify-content: space-between;
+                gap: 8px;
+            }
+
+            .toolbar-lang button {
+                min-width: 40px;
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+
+            .toolbar-share-group {
+                margin-left: auto;
+            }
+
+            .toolbar-share-menu {
+                width: min(12rem, calc(100vw - 24px));
+            }
+
+            .back-to-top {
+                right: 12px;
+                bottom: 16px;
+                width: 42px;
+                height: 42px;
+            }
+
+            #doc-container {
+                margin-top: 88px;
+                padding: 12px;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            #export-area {
+                max-width: 100%;
+                overflow: hidden;
+            }
+
+            .doc-title-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .doc-send-btn {
+                width: 100%;
+                justify-content: center;
+                margin-top: 0;
+            }
+
+            .doc-meta-grid {
+                gap: 12px;
+            }
+
+            .doc-meta-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+                min-width: 0;
+            }
+
+            .doc-meta-item > span:first-child {
+                padding-right: 0;
+            }
+
+            .doc-meta-value {
+                width: 100%;
+                min-width: 0;
+            }
+
+            #live-rates-display {
+                white-space: normal;
+                word-break: break-word;
+                line-height: 1.5;
+            }
+
+            .industrial-table {
+                min-width: 760px;
+            }
+
+            .industrial-table th {
+                padding: 10px 12px;
+                font-size: 0.76rem;
+            }
+
+            .industrial-table td {
+                padding: 10px 12px;
+                font-size: 0.8rem;
+            }
+        }
     </style>
 </head>
 <body class="antialiased pb-10 md:pb-20">
@@ -209,24 +349,24 @@
 
     <!-- 顶部固定工具栏 (移动端自适应) -->
     <div id="toolbar" class="fixed top-0 left-0 right-0 z-50 px-3 md:px-8 py-3 md:py-4 flex justify-between items-center border-b backdrop-blur-md" style="background-color: rgba(10, 14, 20, 0.85); border-color: var(--border-color);">
-        <div class="flex items-center space-x-2 md:space-x-4">
+        <div class="toolbar-brand flex items-center space-x-2 md:space-x-4">
             <div class="text-[var(--gas-green-light)] text-xl md:text-3xl font-black tracking-tight flex whitespace-nowrap items-center flex-shrink-0">
                 <span>VMAN</span> <span class="text-[var(--gas-green-light)] font-bold ml-1 md:ml-2">RFQ SYS</span>
             </div>
         </div>
         
-        <div class="flex items-center space-x-2 md:space-x-4 text-xs md:text-sm">
-            <div class="flex bg-[#161B22] rounded p-1 border border-[#2C2F33]">
+        <div class="toolbar-actions flex items-center space-x-2 md:space-x-4 text-xs md:text-sm">
+            <div class="toolbar-lang flex bg-[#161B22] rounded p-1 border border-[#2C2F33]">
                 <button onclick="setLang('zh')" id="btn-zh" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all bg-[var(--gas-green-primary)] text-white font-semibold shadow-[0_0_8px_rgba(40,167,69,0.4)]">CN</button>
                 <button onclick="setLang('en')" id="btn-en" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all text-[var(--text-body)] hover:text-white">EN</button>
                 <button onclick="setLang('ru')" id="btn-ru" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all text-[var(--text-body)] hover:text-white">РУ</button>
             </div>
             
-            <div class="relative group">
-                <button id="btn-share" class="btn-glow px-3 py-1.5 md:px-6 md:py-2 flex items-center">
+            <div id="share-group" class="toolbar-share-group relative group">
+                <button id="btn-share" type="button" onclick="toggleShareMenu(event)" class="btn-glow px-3 py-1.5 md:px-6 md:py-2 flex items-center">
                     <i class="fa-solid fa-cloud-arrow-down" id="icon-share"></i> <span id="btn-text-share" class="hidden md:inline ml-2">分享/导出</span> <i class="fa-solid fa-angle-down ml-1 md:ml-2 text-xs" id="icon-share-down"></i>
                 </button>
-                <div class="absolute right-0 top-full pt-2 w-48 hidden group-hover:block z-50">
+                <div id="share-menu" class="toolbar-share-menu absolute right-0 top-full pt-2 w-48 hidden md:group-hover:block z-50">
                     <div class="bg-[#161B22] shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-[#2C2F33] rounded overflow-hidden">
                         <button onclick="exportImage()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-image mr-3 text-lg"></i><span id="btn-menu-img">生成长图</span></button>
                         <button onclick="exportPDF()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-file-pdf mr-3 text-lg"></i><span id="btn-menu-pdf">导出 PDF</span></button>
@@ -243,38 +383,38 @@
                 <div class="w-full xl:flex-1 xl:pr-8 overflow-hidden">
                     
                     <!-- 主标题及发送按钮移位到此处 -->
-                    <div class="flex items-start md:items-center justify-between gap-4 mb-4 md:mb-8 w-full">
+                    <div class="doc-title-row flex items-start md:items-center justify-between gap-4 mb-4 md:mb-8 w-full">
                         <h1 class="text-xl md:text-3xl font-bold tracking-wide text-[var(--gas-green-light)] leading-snug break-words flex-1 m-0" contenteditable="true" id="f-title">
                             VMAN Engineering 产品报价总览
                         </h1>
-                        <button onclick="sendEmail()" class="btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center flex-shrink-0 mt-1 md:mt-0" title="调用邮件应用">
+                        <button onclick="sendEmail()" class="doc-send-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center flex-shrink-0 mt-1 md:mt-0" title="调用邮件应用">
                             <i class="fa-solid fa-paper-plane mr-1.5 text-[var(--text-body)]"></i> <span id="btn-text-send" class="text-[var(--text-body)]">发送</span>
                         </button>
                     </div>
                     
                     <!-- 强制不换行 (whitespace-nowrap) + 隐藏滚动条横向适配 -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 md:gap-x-12 gap-y-4 md:gap-y-5 text-sm md:text-[15px]">
-                        <div class="flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                    <div class="doc-meta-grid grid grid-cols-1 md:grid-cols-2 gap-x-8 md:gap-x-12 gap-y-4 md:gap-y-5 text-sm md:text-[15px]">
+                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
                             <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-supplier">供应商：</span>
-                            <div class="flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span contenteditable="true" class="font-semibold text-white whitespace-nowrap outline-none w-full text-left block">VMAN Engineering</span>
                             </div>
                         </div>
-                        <div class="flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
                             <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-sender">发件人：</span>
-                            <div class="flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span contenteditable="true" id="val-sender" class="text-[var(--gas-green-light)] whitespace-nowrap outline-none w-full text-left block">allen@vman-engine.com</span>
                             </div>
                         </div>
-                        <div class="flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
                             <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-validity">有效期：</span>
-                            <div class="flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span contenteditable="true" id="val-validity" class="font-semibold text-white font-mono-num whitespace-nowrap outline-none w-full text-left block">72:00:00</span>
                             </div>
                         </div>
-                        <div class="flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
                             <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-receiver">收件人：</span>
-                            <div class="flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span contenteditable="true" id="val-receiver" class="text-[var(--gas-green-light)] empty-placeholder whitespace-nowrap outline-none w-full text-left block" data-placeholder="请填入客户邮箱号"></span>
                             </div>
                         </div>
@@ -314,6 +454,17 @@
             </div>
         </div>
     </div>
+
+    <button
+        id="back-to-top"
+        type="button"
+        class="back-to-top z-40"
+        aria-label="返回顶部"
+        title="返回顶部"
+        onclick="scrollToTop()"
+    >
+        <i class="fa-solid fa-arrow-up text-sm"></i>
+    </button>
 
 <script>
     // --- 国际化字典 ---
@@ -828,9 +979,61 @@
         setTimeout(() => overlay.classList.add('hidden'), 300);
     }
 
+    function updateBackToTop() {
+        const button = document.getElementById('back-to-top');
+        if(!button) return;
+
+        const shouldShow = window.scrollY > Math.max(320, window.innerHeight * 0.6);
+        button.classList.toggle('is-visible', shouldShow);
+    }
+
+    function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function isMobileViewport() {
+        return window.matchMedia('(max-width: 767px)').matches;
+    }
+
+    function closeShareMenu() {
+        const menu = document.getElementById('share-menu');
+        const arrow = document.getElementById('icon-share-down');
+        if(menu) menu.classList.add('hidden');
+        if(arrow) arrow.classList.remove('rotate-180');
+    }
+
+    function toggleShareMenu(event) {
+        if(!isMobileViewport()) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const menu = document.getElementById('share-menu');
+        const arrow = document.getElementById('icon-share-down');
+        if(!menu) return;
+
+        const willOpen = menu.classList.contains('hidden');
+        menu.classList.toggle('hidden');
+        if(arrow) arrow.classList.toggle('rotate-180', willOpen);
+    }
+
+    document.addEventListener('click', (event) => {
+        const shareGroup = document.getElementById('share-group');
+        if(!shareGroup || shareGroup.contains(event.target)) return;
+        closeShareMenu();
+    });
+
+    window.addEventListener('resize', () => {
+        if(!isMobileViewport()) closeShareMenu();
+    });
+
+    window.addEventListener('scroll', updateBackToTop, { passive: true });
+    window.addEventListener('load', updateBackToTop);
+
     async function exportPDF() {
         const btn = document.getElementById('btn-share');
         const originalHtml = btn.innerHTML;
+        closeShareMenu();
         btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin md:mr-2"></i> <span class="hidden md:inline">${dict[currentLang].loading}</span>`;
         btn.classList.add('opacity-75', 'cursor-not-allowed');
         btn.disabled = true;
@@ -860,6 +1063,7 @@
     async function exportImage() {
         const btn = document.getElementById('btn-share');
         const originalHtml = btn.innerHTML;
+        closeShareMenu();
         btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin md:mr-2" id="icon-share"></i> <span id="btn-text-share" class="hidden md:inline">${dict[currentLang].loading}</span> <i class="fa-solid fa-angle-down ml-2 text-xs" id="icon-share-down"></i>`;
         btn.classList.add('opacity-75', 'cursor-not-allowed');
         
