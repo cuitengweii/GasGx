@@ -787,6 +787,16 @@ textarea {
     word-break: break-all;
 }
 
+.ams-queue-link {
+    color: #9ecbff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.ams-queue-link:hover {
+    color: #d5e9ff;
+}
+
 .ams-queue-actions {
     align-items: stretch;
     width: 120px;
@@ -1161,6 +1171,56 @@ textarea {
         linear-gradient(145deg, rgba(14, 14, 14, 0.98), rgba(8, 8, 8, 0.95));
 }
 
+.ams-dashboard-intro {
+    margin-bottom: 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+    gap: 16px;
+    align-items: stretch;
+    background:
+        radial-gradient(circle at top right, rgba(93, 214, 44, 0.1), transparent 32%),
+        linear-gradient(145deg, rgba(14, 14, 14, 0.98), rgba(8, 8, 8, 0.96));
+}
+
+.ams-dashboard-intro-copy {
+    min-width: 0;
+}
+
+.ams-dashboard-intro-meta {
+    display: grid;
+    gap: 10px;
+}
+
+.ams-dashboard-highlight {
+    border: 1px solid rgba(93, 214, 44, 0.12);
+    border-radius: 12px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.02);
+    display: grid;
+    gap: 6px;
+    align-content: center;
+}
+
+.ams-dashboard-highlight span {
+    color: #8c8c8c;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.ams-dashboard-highlight strong {
+    color: #f2f2f2;
+    font-size: 15px;
+    line-height: 1.45;
+}
+
+.ams-dashboard-actions {
+    margin-bottom: 12px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
 .ams-hero-card {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
@@ -1197,14 +1257,32 @@ textarea {
     padding: 14px;
     text-align: left;
     display: grid;
-    gap: 8px;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
     cursor: pointer;
     transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.ams-quick-link-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(93, 214, 44, 0.08);
+    border: 1px solid rgba(93, 214, 44, 0.16);
 }
 
 .ams-quick-link i {
     color: var(--ams-green);
     font-size: 18px;
+}
+
+.ams-quick-link-body {
+    display: grid;
+    gap: 6px;
 }
 
 .ams-quick-link strong {
@@ -1221,6 +1299,23 @@ textarea {
     transform: translateY(-1px);
     border-color: rgba(93, 214, 44, 0.45);
     background: rgba(93, 214, 44, 0.07);
+}
+
+.ams-dashboard-overview {
+    margin-bottom: 12px;
+}
+
+.ams-dashboard-kpis {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.ams-kpi-card {
+    min-height: 132px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .ams-section-head {
@@ -1456,6 +1551,11 @@ textarea {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .ams-dashboard-actions,
+    .ams-dashboard-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .ams-toolbar {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -1470,6 +1570,7 @@ textarea {
 
     .ams-hero-card,
     .ams-editor-hero,
+    .ams-dashboard-intro,
     .ams-editor-layout {
         grid-template-columns: 1fr;
     }
@@ -1500,6 +1601,11 @@ textarea {
     }
 
     .ams-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .ams-dashboard-actions,
+    .ams-dashboard-kpis {
         grid-template-columns: 1fr;
     }
 
@@ -1534,6 +1640,10 @@ textarea {
 
     .ams-split {
         grid-template-columns: 1fr;
+    }
+
+    .ams-quick-link {
+        grid-template-columns: 36px minmax(0, 1fr);
     }
 
     .ams-editor-meta-grid {

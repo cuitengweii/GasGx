@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VMAN 工业智能报价系统 - GasGx Green Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* 引入 Google Fonts 作为基础英文字体 */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Roboto:wght@400;500;700;900&display=swap');
+        
+        :root {
+            /* 1. 核心品牌色彩 */
+            --bg-base: #0A0E14;           
+            --bg-card: #161B22;           
+            --gas-green-primary: #28A745;     
+            --gas-green-light: #00E676;       
+            --gas-green-bg: rgba(40, 167, 69, 0.1);  
+            --gas-green-bg-solid: #1E3A2B;    
+            --text-heading: #FFFFFF;      
+            --text-body: #B0B3B8;         
+            --text-muted: #7A7D82;        
+            --border-color: #2C2F33;      
+        }
+
+        body {
+            font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Heiti SC', sans-serif;
+            color: var(--text-body);
+            line-height: 1.6;
+            background: linear-gradient(180deg, #061727 0%, #000000 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4, h5, h6 { color: var(--text-heading); font-weight: 700; }
+
+        /* 等宽数字，防布局抖动 */
+        .font-mono-num {
+            font-family: 'SFMono-Regular', Consolas, 'Roboto Mono', monospace;
+            letter-spacing: 0.5px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        [contenteditable="true"] {
+            outline: none;
+            transition: all 0.2s ease;
+            border-bottom: 1px dashed transparent;
+        }
+        [contenteditable="true"]:hover {
+            border-bottom: 1px dashed var(--text-body);
+            background-color: rgba(255,255,255,0.03);
+            cursor: text;
+        }
+        [contenteditable="true"]:focus {
+            border-bottom: 1px solid var(--gas-green-light);
+            background-color: var(--gas-green-bg);
+            color: var(--text-heading);
+        }
+
+        .empty-placeholder:empty::before {
+            content: attr(data-placeholder);
+            color: #4B5563; 
+            pointer-events: none;
+            font-style: italic;
+        }
+
+        @media print {
+            #toolbar { display: none !important; }
+            body { background: var(--bg-base) !important; -webkit-print-color-adjust: exact; }
+            #doc-container { box-shadow: none !important; margin: 0 !important; border: none !important; padding: 0 !important; }
+            #export-area { width: 100% !important; padding: 0 !important; }
+        }
+
+        /* 表格样式 */
+        .industrial-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg-card);
+        }
+        .industrial-table th {
+            background-color: var(--bg-base);
+            color: var(--gas-green-light);
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+        }
+        .industrial-table th:last-child { border-right: none; }
+        .industrial-table td {
+            border-bottom: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            color: var(--text-heading);
+            transition: background-color 0.2s;
+        }
+        .industrial-table td:last-child { border-right: none; }
+        .industrial-table tr:last-child td { border-bottom: none; }
+        .industrial-table tr:nth-child(even) td { background-color: rgba(255,255,255,0.015); }
+        .industrial-table tr:hover td { background-color: var(--gas-green-bg); }
+        
+        /* 移动端表格包裹容器滑动条隐藏 */
+        .table-responsive-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 8px;
+        }
+        .table-responsive-wrapper::-webkit-scrollbar { height: 6px; }
+        .table-responsive-wrapper::-webkit-scrollbar-track { background: var(--bg-base); border-radius: 8px; }
+        .table-responsive-wrapper::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 8px; }
+        
+        /* 隐藏滚动条实用类 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 按钮与标签 */
+        .btn-glow {
+            background-color: var(--gas-green-primary);
+            color: #FFFFFF;
+            font-weight: 600;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
+            border: 1px solid transparent;
+        }
+        .btn-glow:hover {
+            background-color: var(--gas-green-light);
+            color: #000000;
+            box-shadow: 0 0 15px rgba(0, 230, 118, 0.5);
+            transform: translateY(-1px);
+        }
+        .btn-glow:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        .btn-outline {
+            background-color: transparent;
+            color: var(--text-body);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-weight: 400;
+            transition: all 0.2s ease;
+        }
+        .btn-outline:hover {
+            border-color: var(--gas-green-light);
+            color: var(--gas-green-light);
+            background-color: var(--gas-green-bg);
+        }
+        .btn-outline:disabled { opacity: 0.7; cursor: not-allowed; }
+        
+        .gas-tag {
+            background-color: var(--gas-green-bg);
+            color: var(--gas-green-light);
+            border: 1px solid var(--gas-green-primary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        /* 丝滑 CSS 硬件加速垂直滚动动画 */
+        .num-scroll-wrap {
+            display: inline-block;
+            height: 1.3em;
+            line-height: 1.3em;
+            overflow: hidden;
+            vertical-align: bottom;
+        }
+        .num-scroll-col {
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
+            transform: translateY(0);
+        }
+        .num-scroll-col span {
+            height: 1.3em;
+            line-height: 1.3em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 全屏加载遮罩动画 */
+        .pulse-shadow {
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0% { text-shadow: 0 0 10px rgba(0,230,118,0.2); }
+            50% { text-shadow: 0 0 25px rgba(0,230,118,0.8); }
+            100% { text-shadow: 0 0 10px rgba(0,230,118,0.2); }
+        }
+    </style>
+</head>
+<body class="antialiased pb-10 md:pb-20">
+
+    <!-- 沉浸式全局加载遮罩 (用于导出PDF和图片时防闪烁) -->
+    <div id="export-overlay" class="fixed inset-0 z-[99999] bg-[#0A0E14] flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <i class="fa-solid fa-cube fa-spin text-5xl text-[var(--gas-green-light)] mb-6 pulse-shadow"></i>
+        <div class="text-[var(--gas-green-light)] font-mono tracking-widest text-xl font-bold animate-pulse" id="export-loading-text">GENERATING DOCUMENT...</div>
+        <div class="text-[var(--text-muted)] text-sm mt-3" id="export-sub-text">正在进行高精度底层渲染，请稍候</div>
+    </div>
+
+    <!-- 顶部固定工具栏 (移动端自适应) -->
+    <div id="toolbar" class="fixed top-0 left-0 right-0 z-50 px-3 md:px-8 py-3 md:py-4 flex justify-between items-center border-b backdrop-blur-md" style="background-color: rgba(10, 14, 20, 0.85); border-color: var(--border-color);">
+        <div class="flex items-center space-x-2 md:space-x-4">
+            <div class="text-[var(--gas-green-light)] text-xl md:text-3xl font-black tracking-tight flex whitespace-nowrap items-center flex-shrink-0">
+                <span>VMAN</span> <span class="text-[var(--gas-green-light)] font-bold ml-1 md:ml-2">RFQ SYS</span>
+            </div>
+        </div>
+        
+        <div class="flex items-center space-x-2 md:space-x-4 text-xs md:text-sm">
+            <div class="flex bg-[#161B22] rounded p-1 border border-[#2C2F33]">
+                <button onclick="setLang('zh')" id="btn-zh" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all bg-[var(--gas-green-primary)] text-white font-semibold shadow-[0_0_8px_rgba(40,167,69,0.4)]">CN</button>
+                <button onclick="setLang('en')" id="btn-en" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all text-[var(--text-body)] hover:text-white">EN</button>
+                <button onclick="setLang('ru')" id="btn-ru" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all text-[var(--text-body)] hover:text-white">РУ</button>
+            </div>
+            
+            <div class="relative group">
+                <button id="btn-share" class="btn-glow px-3 py-1.5 md:px-6 md:py-2 flex items-center">
+                    <i class="fa-solid fa-cloud-arrow-down" id="icon-share"></i> <span id="btn-text-share" class="hidden md:inline ml-2">分享/导出</span> <i class="fa-solid fa-angle-down ml-1 md:ml-2 text-xs" id="icon-share-down"></i>
+                </button>
+                <div class="absolute right-0 top-full pt-2 w-48 hidden group-hover:block z-50">
+                    <div class="bg-[#161B22] shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-[#2C2F33] rounded overflow-hidden">
+                        <button onclick="exportImage()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-image mr-3 text-lg"></i><span id="btn-menu-img">生成长图</span></button>
+                        <button onclick="exportPDF()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-file-pdf mr-3 text-lg"></i><span id="btn-menu-pdf">导出 PDF</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文档主体容器 -->
+    <div id="doc-container" class="max-w-7xl mx-auto mt-20 md:mt-28 p-4 md:p-12 rounded-lg relative shadow-[0_20px_50px_rgba(0,0,0,0.7)]" style="background-color: var(--bg-card); border: 1px solid var(--border-color);">
+        <div id="export-area" style="background-color: var(--bg-card);">
+            <div class="border-b border-[var(--border-color)] pb-6 md:pb-8 mb-8 md:mb-10 flex flex-col xl:flex-row justify-between items-start gap-6">
+                <div class="w-full xl:flex-1 xl:pr-8 overflow-hidden">
+                    
+                    <!-- 主标题及发送按钮移位到此处 -->
+                    <div class="flex items-start md:items-center justify-between gap-4 mb-4 md:mb-8 w-full">
+                        <h1 class="text-xl md:text-3xl font-bold tracking-wide text-[var(--gas-green-light)] leading-snug break-words flex-1 m-0" contenteditable="true" id="f-title">
+                            VMAN Engineering 产品报价总览
+                        </h1>
+                        <button onclick="sendEmail()" class="btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center flex-shrink-0 mt-1 md:mt-0" title="调用邮件应用">
+                            <i class="fa-solid fa-paper-plane mr-1.5 text-[var(--text-body)]"></i> <span id="btn-text-send" class="text-[var(--text-body)]">发送</span>
+                        </button>
+                    </div>
+                    
+                    <!-- 强制不换行 (whitespace-nowrap) + 隐藏滚动条横向适配 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 md:gap-x-12 gap-y-4 md:gap-y-5 text-sm md:text-[15px]">
+                        <div class="flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-supplier">供应商：</span>
+                            <div class="flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                                <span contenteditable="true" class="font-semibold text-white whitespace-nowrap outline-none w-full text-left block">VMAN Engineering</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-sender">发件人：</span>
+                            <div class="flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                                <span contenteditable="true" id="val-sender" class="text-[var(--gas-green-light)] whitespace-nowrap outline-none w-full text-left block">allen@vman-engine.com</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-validity">有效期：</span>
+                            <div class="flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                                <span contenteditable="true" id="val-validity" class="font-semibold text-white font-mono-num whitespace-nowrap outline-none w-full text-left block">72:00:00</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-receiver">收件人：</span>
+                            <div class="flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                                <span contenteditable="true" id="val-receiver" class="text-[var(--gas-green-light)] empty-placeholder whitespace-nowrap outline-none w-full text-left block" data-placeholder="请填入客户邮箱号"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="w-full xl:w-auto text-left xl:text-right flex-shrink-0 flex flex-col items-start xl:items-end">
+                    <div class="bg-[var(--bg-base)] border border-[var(--border-color)] p-4 md:p-5 rounded shadow-inner w-full xl:min-w-[280px]">
+                        <div class="text-xs text-[var(--text-muted)] mb-2 uppercase tracking-widest flex items-center justify-start xl:justify-end gap-2" id="lbl-update">
+                            <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>
+                            SYS_TIME_SYNC
+                        </div>
+                        <div class="text-2xl md:text-3xl font-mono-num text-white tracking-widest" id="live-date">2026-03-20</div>
+                        <div class="text-xs md:text-sm font-mono-num text-[var(--text-body)] mt-1" id="live-clock">00:00:00</div>
+                    </div>
+                    
+                    <div class="mt-4 text-xs md:text-sm font-mono-num text-[var(--gas-green-light)] bg-[var(--gas-green-bg)] px-3 py-2 rounded border border-[var(--gas-green-primary)] break-all" id="live-rates-display">
+                        MARKET RATES (BASE: CNY)
+                    </div>
+                    
+                    <div class="mt-3 flex flex-wrap items-center justify-start xl:justify-end gap-2 w-full">
+                        <span class="text-[10px] md:text-[11px] text-[var(--gas-green-light)] font-mono-num flex items-center bg-[var(--gas-green-bg-solid)] px-2 py-1.5 rounded border border-[var(--gas-green-primary)] shadow-[0_0_8px_rgba(40,167,69,0.2)]" id="rate-status">
+                            <i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i> 全球实时汇率在线
+                        </span>
+                        <button onclick="fetchRates(true)" class="btn-outline bg-[var(--bg-card)] px-3 py-1.5 rounded text-[10px] md:text-[11px] font-bold flex items-center">
+                            <i class="fa-solid fa-rotate-right mr-1.5"></i> <span id="btn-text-refresh">刷新汇率</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 产品列表容器 -->
+            <div id="content-area"></div>
+            
+            <div id="footer-note" class="mt-12 md:mt-16 pt-6 md:pt-8 border-t border-[var(--border-color)] text-center text-xs md:text-sm text-[var(--text-muted)] leading-relaxed px-2" contenteditable="true">
+                <span class="text-[var(--gas-green-light)] font-bold">///</span> 本报价基于全球实时汇率智能生成。最终价格以双方签订的正式商业合同为准。 VMAN Engineering 保留最终解释权。
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- 国际化字典 ---
+    const dict = {
+        zh: {
+            title: `VMAN Engineering 产品报价总览`,
+            supplier: "供应商：",
+            sender: "发件人：",
+            receiver: "收件人：",
+            validity: "有效期：",
+            update: "SYS_TIME_SYNC",
+            part1_line1: "[ BLOCK 01 ]",
+            part1_line2: "燃气发电 + 矿机机位模块方案",
+            part2_line1: "[ BLOCK 02 ]",
+            part2_line2: "独立燃气发电集装箱系统",
+            included: "包含",
+            sysTotal: "系统预估总价 / EST. SYSTEM TOTAL",
+            headers: ["SEQ", "模块描述 (DESCRIPTION)", "规格 (BRAND)", "QTY", "RMB (¥)", "USD ($)", "EUR (€)", "CAD (C$)", "RUB (₽)"],
+            fetchSuccess: "全球实时汇率在线",
+            refresh: "刷新汇率",
+            emailPlaceholder: "请填入客户邮箱号",
+            footerText: "<span class=\"text-[var(--gas-green-light)] font-bold\">///</span> 本报价基于全球实时汇率智能生成。最终价格以双方签订的正式商业合同为准。 VMAN Engineering 保留最终解释权。",
+            btnSend: "发送",
+            btnShare: "分享/导出",
+            menuImg: "生成长图",
+            menuPdf: "导出 PDF",
+            loading: "处理中...",
+            overlayGen: "正在渲染高清文档..."
+        },
+        en: {
+            title: `VMAN Engineering Product Quotation Overview`,
+            supplier: "SUPPLIER:",
+            sender: "SENDER:",
+            receiver: "RECEIVER:",
+            validity: "VALIDITY:",
+            update: "SYS_TIME_SYNC",
+            part1_line1: "[ BLOCK 01 ]",
+            part1_line2: "GAS GENSET + MINER RACK MODULE",
+            part2_line1: "[ BLOCK 02 ]",
+            part2_line2: "INDEPENDENT GAS POWER SYSTEM",
+            included: "Included",
+            sysTotal: "EST. SYSTEM TOTAL PRICE",
+            headers: ["SEQ", "DESCRIPTION", "BRAND", "QTY", "RMB (¥)", "USD ($)", "EUR (€)", "CAD (C$)", "RUB (₽)"],
+            fetchSuccess: "GLOBAL LIVE RATES",
+            refresh: "REFRESH",
+            emailPlaceholder: "Enter customer email",
+            footerText: "<span class=\"text-[var(--gas-green-light)] font-bold\">///</span> This quotation is generated based on real-time exchange rates. Final prices are subject to the official commercial contract. VMAN Engineering reserves the right of final interpretation.",
+            btnSend: "Send",
+            btnShare: "Share/Export",
+            menuImg: "Export Image",
+            menuPdf: "Export PDF",
+            loading: "Loading...",
+            overlayGen: "GENERATING HD DOCUMENT..."
+        },
+        ru: {
+            title: `Обзор продукции и цен VMAN Engineering`,
+            supplier: "ПОСТАВЩИК:",
+            sender: "ОТПРАВИТЕЛЬ:",
+            receiver: "ПОЛУЧАТЕЛЬ:",
+            validity: "ДЕЙСТВИТЕЛЬНО:",
+            update: "СИНХРОНИЗАЦИЯ",
+            part1_line1: "[ БЛОК 01 ]",
+            part1_line2: "ГАЗОГЕНЕРАТОР + МОДУЛЬ МАЙНИНГ-СТОЕК",
+            part2_line1: "[ БЛОК 02 ]",
+            part2_line2: "ГАЗОВАЯ ЭЛЕКТРОСТАНЦИЯ",
+            included: "Вкл.",
+            sysTotal: "ОБЩАЯ СТОИМОСТЬ СИСТЕМЫ",
+            headers: ["№", "ОПИСАНИЕ", "БРЕНД", "КОЛ", "RMB (¥)", "USD ($)", "EUR (€)", "CAD (C$)", "RUB (₽)"],
+            fetchSuccess: "ГЛОБАЛЬНЫЕ КУРСЫ",
+            refresh: "ОБНОВИТЬ",
+            emailPlaceholder: "Введите email клиента",
+            footerText: "<span class=\"text-[var(--gas-green-light)] font-bold\">///</span> Данное предложение создано на основе курсов валют в реальном времени. Окончательные цены определяются официальным коммерческим контрактом. VMAN Engineering.",
+            btnSend: "Отправить",
+            btnShare: "Экспорт",
+            menuImg: "Экспорт Изображения",
+            menuPdf: "Экспорт PDF",
+            loading: "Загрузка...",
+            overlayGen: "СОЗДАНИЕ HD ДОКУМЕНТА..."
+        }
+    };
+
+    // --- 数据模型 ---
+    let appData = {
+        part1: {
+            desc: { zh: "HTM+ 500kW 燃气发电机组及矿机机位模块", en: "HTM+ 500kW Gas Genset & Miner Rack Module", ru: "HTM+ 500kW Газогенератор и Модуль майнинг-стоек" },
+            items1: [
+                { id:"01", brand:"HTM+", qty:"1", price:607200, n:{zh:"HTM+ 燃气发动机250kW*2 成套", en:"HTM+ Gas Engine 250kW*2 Set", ru:"HTM+ Газовый двигатель 250kW*2"} },
+                { id:"02", brand:"EvoTec", qty:"1", price:47026, n:{zh:"EvoTec发电机", en:"EvoTec Alternator", ru:"Генератор EvoTec"} },
+                { id:"03", brand:"Woodward", qty:"1", price:66000, n:{zh:"伍德沃德控制系统", en:"Woodward Control System", ru:"Система управления Woodward"} },
+                { id:"04", brand:"-", qty:"1", price:-1, n:{zh:"智能断路器", en:"Smart Breaker", ru:"Умный выключатель"} },
+                { id:"05", brand:"-", qty:"1", price:-1, n:{zh:"排气防爆阀+效应器", en:"Exhaust Explosion-proof Valve", ru:"Взрывозащищенный клапан"} },
+                { id:"06", brand:"Dungs", qty:"1", price:-1, n:{zh:"燃气供应阀组Dungs", en:"Gas Supply Valve Dungs", ru:"Газовый клапан Dungs"} },
+                { id:"07", brand:"-", qty:"1", price:-1, n:{zh:"缸套水加热器", en:"Jacket Water Heater", ru:"Подогреватель воды"} },
+                { id:"08", brand:"-", qty:"1", price:-1, n:{zh:"发电机水箱", en:"Alternator Water Tank", ru:"Бак для воды генератора"} },
+                { id:"09", brand:"-", qty:"1", price:-1, n:{zh:"发电机冷却撬", en:"Alternator Cooling Skid", ru:"Модуль охлаждения"} },
+                { id:"10", brand:"-", qty:"1", price:-1, n:{zh:"底座和辅助材料", en:"Mounting Frame & Materials", ru:"Основание и материалы"} },
+                { id:"11", brand:"-", qty:"1", price:361200, n:{zh:"液冷矿机机位模块", en:"Liquid Cooling Miner Module", ru:"Модуль жидкостного охлаждения"} },
+                { id:"12", brand:"-", qty:"1", price:127200, n:{zh:"40HQ集装箱特箱", en:"40HQ Special Container", ru:"Спецконтейнер 40HQ"} },
+                { id:"13", brand:"-", qty:"1", price:6000, n:{zh:"集成转运费", en:"Integration Transfer Fee", ru:"Транспортные расходы"} },
+                { id:"14", brand:"-", qty:"1", price:30000, n:{zh:"集成发电模块与机位模块安装费", en:"Installation & Testing Fee", ru:"Монтаж и пусконаладка"} }
+            ],
+            desc2: { zh: "DT30+ 550kW 燃气发电机组及矿机机位模块", en: "DT30+ 550kW Gas Genset & Miner Rack Module", ru: "DT30+ 550kW Газогенератор и Модуль майнинг-стоек" },
+            items2: [
+                { id:"01", brand:"Vman", qty:"1", price:418646, n:{zh:"DT30+ 燃气发动机550kW", en:"DT30+ Gas Engine 550kW", ru:"DT30+ Газовый двигатель 550kW"} },
+                { id:"02", brand:"Leroy-Somer", qty:"1", price:95026, n:{zh:"Leroy-Somer LSA49.3 M6发电机", en:"Leroy-Somer LSA49.3 Alternator", ru:"Генератор Leroy-Somer LSA49.3"} },
+                { id:"03", brand:"Leroy-Somer", qty:"1", price:3919, n:{zh:"AVR升级到D350", en:"AVR Upgrade to D350", ru:"Обновление AVR до D350"} },
+                { id:"04", brand:"-", qty:"1", price:133560, n:{zh:"控制系统", en:"Control System", ru:"Система управления"} },
+                { id:"05", brand:"ABB", qty:"1", price:16800, n:{zh:"ABB 智能断路器", en:"ABB Smart Breaker", ru:"Умный выключатель ABB"} },
+                { id:"06", brand:"-", qty:"1", price:936, n:{zh:"ATS 开关", en:"ATS Switch", ru:"Переключатель ATS"} },
+                { id:"07", brand:"-", qty:"1", price:12360, n:{zh:"排气防爆阀+效应器", en:"Exhaust Valve & Effector", ru:"Взрывозащищенный клапан"} },
+                { id:"08", brand:"Dungs", qty:"1", price:38390, n:{zh:"燃气供应阀组Dungs", en:"Gas Supply Valve Dungs", ru:"Газовый клапан Dungs"} },
+                { id:"09", brand:"-", qty:"1", price:5400, n:{zh:"缸套水加热器", en:"Jacket Water Heater", ru:"Подогреватель воды"} },
+                { id:"10", brand:"-", qty:"1", price:54000, n:{zh:"水箱", en:"Water Tank", ru:"Бак для воды"} },
+                { id:"11", brand:"-", qty:"1", price:37114, n:{zh:"冷却撬", en:"Cooling Skid", ru:"Охлаждающий модуль"} },
+                { id:"12", brand:"-", qty:"1", price:39510, n:{zh:"底座和辅助材料", en:"Mounting Frame & Materials", ru:"Основание и материалы"} },
+                { id:"13", brand:"-", qty:"1", price:361200, n:{zh:"液冷矿机机位模块", en:"Liquid Cooling Miner Module", ru:"Модуль жидкостного охлаждения"} },
+                { id:"14", brand:"-", qty:"1", price:151200, n:{zh:"40HQ集装箱特箱", en:"40HQ Special Container", ru:"Спецконтейнер 40HQ"} },
+                { id:"15", brand:"-", qty:"1", price:6000, n:{zh:"集成转运费", en:"Integration Transfer Fee", ru:"Транспортные расходы"} },
+                { id:"16", brand:"-", qty:"1", price:36000, n:{zh:"集成安装费", en:"Installation Fee", ru:"Монтаж"} }
+            ]
+        },
+        part2: {
+            desc: { zh: "P1200GF (额定电功率 1200kW | 400V/50HZ)", en: "P1200GF (1200kW | 400V/50HZ)", ru: "P1200GF (1200kW | 400V/50HZ)" },
+            items1: [
+                { id:"-", brand:"-", qty:"-", price:1476200, isHeader:true, n:{zh:"主配置模块", en:"Basic GenSet", ru:"Базовая комплектация"} },
+                { id:"I-1", brand:"Vman", qty:"1", price:-1, n:{zh:"VMAN DT58 燃气发动机", en:"VMAN DT58 Gas Engine", ru:"Газовый двигатель"} },
+                { id:"I-2", brand:"Vman", qty:"1", price:-1, n:{zh:"HEINZMANN 控制系统", en:"HEINZMANN control system", ru:"Система управления"} },
+                { id:"I-3", brand:"ABB", qty:"1", price:-1, n:{zh:"ABB 涡轮增压器", en:"ABB Turbocharger", ru:"Турбокомпрессор ABB"} },
+                { id:"I-4", brand:"Vman", qty:"1", price:-1, n:{zh:"底座", en:"Mounting frame", ru:"Монтажная рама"} },
+                { id:"I-5", brand:"VULKAN", qty:"1", price:-1, n:{zh:"弹性联轴器", en:"Elastic coupling", ru:"Упругая муфта"} },
+                { id:"I-6", brand:"Leroy-Somer", qty:"1", price:-1, n:{zh:"400V交流发电机 LSA50.2 L8", en:"400V Alternator LSA50.2 L8", ru:"Генератор 400V"} },
+                { id:"-", brand:"-", qty:"-", price:1131100, isHeader:true, n:{zh:"系统扩展包", en:"System Options", ru:"Опционально"} },
+                { id:"II-1", brand:"Galanz/Wilo/Siemens", qty:"1", price:224000, n:{zh:"冷却系统 (高低温水泵/阀门/水箱)", en:"Cooling system", ru:"Система охлаждения"} },
+                { id:"II-2", brand:"V-Corelink 1200", qty:"1", price:135000, n:{zh:"发电机组控制系统 (IG1000 + 15.6'屏)", en:"Genset control system", ru:"Система управления"} },
+                { id:"II-3a", brand:"Schneider", qty:"1", price:100000, n:{zh:"高压开关柜 (VCB)", en:"High Voltage Switch Cabinet", ru:"ВВ шкаф"} },
+                { id:"II-3b", brand:"ABB", qty:"1", price:0, n:{zh:"低压开关柜 (ACB)", en:"Low Voltage Switch Cabinet", ru:"НВ шкаф"} },
+                { id:"II-4a", brand:"Vman DN250", qty:"1", price:20000, n:{zh:"排气系统 - 消音器", en:"Exhaust System - Muffler", ru:"Глушитель"} },
+                { id:"II-4b", brand:"Vman", qty:"1", price:4800, n:{zh:"排气系统 - 防爆阀", en:"Exhaust explosion-proof valve", ru:"Взрывозащищенный клапан"} },
+                { id:"II-5a", brand:"Dungs", qty:"1", price:11300, n:{zh:"燃气供应阀组 - 过滤器", en:"Gas valve - Filter", ru:"Газовый клапан - Фильтр"} },
+                { id:"II-5b", brand:"Dungs", qty:"1", price:19000, n:{zh:"燃气供应阀组 - 电磁阀", en:"Gas valve - Solenoid valve", ru:"Газовый клапан - Электромагнитный клапан"} },
+                { id:"II-5c", brand:"Dungs", qty:"1", price:9000, n:{zh:"燃气供应阀组 - 调压阀", en:"Gas valve - Pressure regulator", ru:"Газовый клапан - Регулятор давления"} },
+                { id:"II-6", brand:"Vman", qty:"1", price:10000, n:{zh:"专用工具", en:"Special tools", ru:"Специальные инструменты"} },
+                { id:"II-7", brand:"Smartgen", qty:"1", price:34000, n:{zh:"电水预热器", en:"Electric Water Preheater", ru:"Электрический подогреватель"} },
+                { id:"II-8", brand:"Vman", qty:"1", price:7600, n:{zh:"蓄电池 (DC24V, 4*195Ah)", en:"Battery", ru:"Аккумуляторная батарея"} },
+                { id:"II-9a", brand:"Set", qty:"1", price:118500, n:{zh:"余热回收系统 - 热水锅炉", en:"Heat recovery - Hot water boiler", ru:"Система рекуперации - водогрейный котел"} },
+                { id:"II-9b", brand:"Set", qty:"1", price:127500, n:{zh:"余热回收系统 - 蒸汽锅炉", en:"Heat recovery - Steam boiler", ru:"Система рекуперации - паровой котел"} },
+                { id:"II-10", brand:"VULKAN", qty:"8", price:10400, n:{zh:"弹簧减震器 3200kg", en:"Spring shock absorber", ru:"Пружинный амортизатор"} },
+                { id:"II-11", brand:"Vman", qty:"1", price:300000, n:{zh:"集装箱 40HQ", en:"Container 40HQ", ru:"Контейнер 40HQ"} }
+            ],
+            desc2: { zh: "P2000GF (额定电功率 2000kW | 400V/50HZ)", en: "P2000GF (2000kW | 400V/50HZ)", ru: "P2000GF (2000kW | 400V/50HZ)" },
+            items2: [
+                { id:"-", brand:"-", qty:"-", price:3290000, isHeader:true, n:{zh:"主配置模块", en:"Basic GenSet", ru:"Базовая комплектация"} },
+                { id:"I-1", brand:"Vman", qty:"1", price:-1, n:{zh:"HND CHG622V20 燃气发动机", en:"HND CHG622V20 Gas Engine", ru:"Газовый двигатель"} },
+                { id:"I-2", brand:"Vman", qty:"1", price:-1, n:{zh:"Heinzmann 控制系统柜", en:"Heinzmann control system cabinet", ru:"Система управления"} },
+                { id:"I-3", brand:"ABB", qty:"1", price:-1, n:{zh:"ABB 涡轮增压器", en:"ABB turbocharger", ru:"Турбокомпрессор ABB"} },
+                { id:"I-4", brand:"HND", qty:"1", price:-1, n:{zh:"底座", en:"Mounting frame", ru:"Монтажная рама"} },
+                { id:"I-5", brand:"VULKAN", qty:"1", price:-1, n:{zh:"弹性联轴器", en:"Elastic coupling", ru:"Упругая муфта"} },
+                { id:"I-6", brand:"Leroy-Somer", qty:"1", price:-1, n:{zh:"400V交流发电机 LSA52.3 U16", en:"400V Alternator LSA52.3 U16", ru:"Генератор 400V"} },
+                { id:"-", brand:"-", qty:"-", price:1630115, isHeader:true, n:{zh:"系统扩展包", en:"System Options", ru:"Опционально"} },
+                { id:"II-1", brand:"Galanz/Wilo/Siemens", qty:"1", price:305000, n:{zh:"冷却系统 (高低温水泵/阀门/水箱)", en:"Cooling system", ru:"Система охлаждения"} },
+                { id:"II-2", brand:"V-Corelink2000", qty:"1", price:135000, n:{zh:"发电机组控制系统 (IG1000 + 15.6'屏)", en:"Genset control system", ru:"Система управления"} },
+                { id:"II-3a", brand:"Schneider", qty:"1", price:100000, n:{zh:"高压开关柜 (VCB)", en:"High Voltage Switch Cabinet", ru:"ВВ шкаф"} },
+                { id:"II-3b", brand:"ABB", qty:"1", price:55000, n:{zh:"低压开关柜 (ACB)", en:"Low Voltage Switch Cabinet", ru:"НВ шкаф"} },
+                { id:"II-4a", brand:"HND DN400", qty:"1", price:23000, n:{zh:"排气系统 - 消音器", en:"Exhaust System - Muffler", ru:"Глушитель"} },
+                { id:"II-4b", brand:"HND", qty:"1", price:4800, n:{zh:"排气系统 - 防爆阀", en:"Exhaust explosion-proof valve", ru:"Взрывозащищенный клапан"} },
+                { id:"II-5a", brand:"Dungs", qty:"1", price:13500, n:{zh:"燃气供应阀组 - 过滤器", en:"Gas valve - Filter", ru:"Газовый клапан - Фильтр"} },
+                { id:"II-5b", brand:"Dungs", qty:"1", price:27300, n:{zh:"燃气供应阀组 - 电磁阀", en:"Gas valve - Solenoid valve", ru:"Газовый клапан - Электромагнитный клапан"} },
+                { id:"II-5c", brand:"Dungs", qty:"1", price:15515, n:{zh:"燃气供应阀组 - 调压阀", en:"Gas valve - Pressure regulator", ru:"Газовый клапан - Регулятор давления"} },
+                { id:"II-6", brand:"HND", qty:"1", price:10000, n:{zh:"专用工具", en:"Special tools", ru:"Специальные инструменты"} },
+                { id:"II-7", brand:"Smartgen", qty:"1", price:34000, n:{zh:"电水预热器", en:"Electric Water Preheater", ru:"Электрический подогреватель"} },
+                { id:"II-8", brand:"HND", qty:"1", price:11400, n:{zh:"蓄电池 (DC24V, 6*195Ah)", en:"Battery", ru:"Аккумуляторная батарея"} },
+                { id:"II-9a", brand:"Set", qty:"1", price:225000, n:{zh:"余热回收系统 - 热水锅炉", en:"Heat recovery - Hot water boiler", ru:"Система рекуперации - водогрейный котел"} },
+                { id:"II-9b", brand:"Set", qty:"1", price:255000, n:{zh:"余热回收系统 - 蒸汽锅炉", en:"Heat recovery - Steam boiler", ru:"Система рекуперации - паровой котел"} },
+                { id:"II-10", brand:"VULKAN", qty:"12", price:15600, n:{zh:"弹簧减震器 3200kg", en:"Spring shock absorber", ru:"Пружинный амортизатор"} },
+                { id:"II-11", brand:"Vman", qty:"1", price:400000, n:{zh:"集装箱 13000X3500X3500mm", en:"Container", ru:"Контейнер"} }
+            ]
+        }
+    };
+
+    let currentLang = 'zh';
+    let rates = { USD: 0.1398, EUR: 0.1265, CAD: 0.1888, RUB: 12.866 };
+
+    let countdownTarget = Date.now() + 72 * 60 * 60 * 1000;
+
+    window.onload = () => {
+        fetchRates();
+        startClock();
+    };
+
+    async function fetchRates(isManual = false) {
+        const statusEl = document.getElementById('rate-status');
+        if (isManual) {
+            statusEl.innerHTML = `<i class="fa-solid fa-rotate fa-spin text-[var(--gas-green-light)] mr-1.5"></i>正在刷新...`;
+        }
+        
+        try {
+            const res = await fetch('https://open.er-api.com/v6/latest/CNY');
+            const data = await res.json();
+            if(data && data.rates) {
+                rates.USD = data.rates.USD;
+                rates.EUR = data.rates.EUR;
+                rates.CAD = data.rates.CAD;
+                rates.RUB = data.rates.RUB;
+                statusEl.innerHTML = `<i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i>${dict[currentLang].fetchSuccess}`;
+            }
+        } catch(e) {
+            statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-yellow-500 mr-1.5"></i>获取失败，使用基准数据`;
+        }
+        renderApp();
+        triggerSmoothScroll(); 
+    }
+
+    function setLang(lang) {
+        currentLang = lang;
+        ['zh','en','ru'].forEach(l => {
+            let btn = document.getElementById('btn-'+l);
+            if (l === lang) {
+                btn.className = "px-2 md:px-4 py-1 md:py-1.5 rounded transition-all bg-[var(--gas-green-primary)] text-white font-semibold shadow-[0_0_8px_rgba(40,167,69,0.4)]";
+            } else {
+                btn.className = "px-2 md:px-4 py-1 md:py-1.5 rounded transition-all text-[var(--text-body)] hover:text-white";
+            }
+        });
+        
+        document.getElementById('f-title').innerHTML = dict[lang].title;
+        document.getElementById('lbl-supplier').innerText = dict[lang].supplier;
+        document.getElementById('lbl-sender').innerText = dict[lang].sender;
+        document.getElementById('lbl-receiver').innerText = dict[lang].receiver;
+        document.getElementById('lbl-validity').innerText = dict[lang].validity;
+        document.getElementById('lbl-update').innerHTML = `<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span> ${dict[lang].update}`;
+        document.getElementById('rate-status').innerHTML = `<i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i> ${dict[lang].fetchSuccess}`;
+        
+        document.getElementById('val-receiver').setAttribute('data-placeholder', dict[lang].emailPlaceholder);
+        document.getElementById('footer-note').innerHTML = dict[lang].footerText;
+        document.getElementById('btn-text-send').innerText = dict[lang].btnSend;
+        document.getElementById('btn-text-share').innerText = dict[lang].btnShare;
+        document.getElementById('btn-menu-img').innerText = dict[lang].menuImg;
+        document.getElementById('btn-menu-pdf').innerText = dict[lang].menuPdf;
+        document.getElementById('btn-text-refresh').innerText = dict[lang].refresh;
+        document.getElementById('export-loading-text').innerText = dict[lang].overlayGen;
+        
+        renderApp();
+    }
+
+    function formatMoney(num) {
+        return num.toLocaleString('en-US', {maximumFractionDigits:0});
+    }
+
+    function triggerSmoothScroll() {
+        const moneyElements = document.querySelectorAll('.money-val');
+        moneyElements.forEach(el => {
+            if(document.activeElement === el) return;
+            
+            const finalVal = el.getAttribute('data-val');
+            if(!finalVal || finalVal === '-' || finalVal === dict[currentLang].included) return;
+
+            let html = '';
+            for(let char of finalVal) {
+                if(/[0-9]/.test(char)) {
+                    html += `<span class="num-scroll-wrap"><span class="num-scroll-col" data-target="${char}"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></span></span>`;
+                } else {
+                    html += `<span class="num-scroll-wrap"><span>${char}</span></span>`;
+                }
+            }
+            el.innerHTML = html;
+        });
+
+        document.body.offsetHeight;
+
+        moneyElements.forEach(el => {
+            const cols = el.querySelectorAll('.num-scroll-col');
+            cols.forEach(col => {
+                const target = parseInt(col.getAttribute('data-target'));
+                col.style.transform = `translateY(-${target * 10}%)`;
+            });
+        });
+
+        setTimeout(() => {
+            moneyElements.forEach(el => {
+                if(document.activeElement === el) return;
+                const finalVal = el.getAttribute('data-val');
+                if(finalVal) el.innerHTML = finalVal;
+            });
+        }, 500); 
+    }
+
+    function renderApp() {
+        const d = dict[currentLang];
+        let html = '';
+
+        const buildSection = (titleStr, descStr, itemsList, idx) => {
+            let totalRMB = itemsList.filter(i => !i.isHeader && i.price > 0).reduce((sum, i) => sum + i.price, 0);
+            
+            let secHtml = `
+            <div class="mb-10 md:mb-16">
+                ${idx === 1 ? `
+                <div class="mb-8 md:mb-12 flex flex-col items-center justify-center w-full gap-1 md:gap-3">
+                    <h2 class="text-2xl md:text-4xl font-black text-[var(--gas-green-light)] tracking-widest text-center uppercase" contenteditable="true">${d.part1_line1}</h2>
+                    <div class="flex items-center gap-2 md:gap-4 w-full">
+                        <div class="h-px bg-[var(--border-color)] flex-1 min-w-[20px]"></div>
+                        <h2 class="text-base md:text-2xl font-bold text-[var(--gas-green-light)] tracking-widest text-center flex-shrink" contenteditable="true" style="white-space: normal; word-break: break-word;">${d.part1_line2}</h2>
+                        <div class="h-px bg-[var(--border-color)] flex-1 min-w-[20px]"></div>
+                    </div>
+                </div>` : ''}
+                ${idx === 3 ? `
+                <div class="mt-16 md:mt-24 mb-8 md:mb-12 flex flex-col items-center justify-center w-full gap-1 md:gap-3">
+                    <h2 class="text-2xl md:text-4xl font-black text-[var(--gas-green-light)] tracking-widest text-center uppercase" contenteditable="true">${d.part2_line1}</h2>
+                    <div class="flex items-center gap-2 md:gap-4 w-full">
+                        <div class="h-px bg-[var(--border-color)] flex-1 min-w-[20px]"></div>
+                        <h2 class="text-base md:text-2xl font-bold text-[var(--gas-green-light)] tracking-widest text-center flex-shrink" contenteditable="true" style="white-space: normal; word-break: break-word;">${d.part2_line2}</h2>
+                        <div class="h-px bg-[var(--border-color)] flex-1 min-w-[20px]"></div>
+                    </div>
+                </div>` : ''}
+                
+                ${idx !== 2 ? `
+                <h3 class="text-base md:text-lg font-semibold text-[var(--gas-green-light)] mb-4 md:mb-5 flex items-center gap-2 md:gap-3" contenteditable="true">
+                    <span class="bg-[var(--gas-green-bg)] border border-[var(--gas-green-primary)] text-[var(--gas-green-light)] w-6 h-6 md:w-7 md:h-7 rounded flex items-center justify-center text-xs md:text-sm font-mono-num flex-shrink-0">${idx}</span>
+                    <span class="leading-tight">${descStr[currentLang] || descStr.zh}</span>
+                </h3>` : ''}
+                
+                <div class="bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between shadow-inner gap-4">
+                    <span class="font-bold text-white tracking-wider text-xs md:text-sm" contenteditable="true">${d.sysTotal}:</span>
+                    <div class="flex flex-wrap gap-x-4 md:gap-x-6 gap-y-2 text-sm md:text-[15px]">
+                        <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="¥${formatMoney(totalRMB)}">¥${formatMoney(totalRMB)}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="$${formatMoney(totalRMB * rates.USD)}">$${formatMoney(totalRMB * rates.USD)}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="€${formatMoney(totalRMB * rates.EUR)}">€${formatMoney(totalRMB * rates.EUR)}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">CAD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="C$${formatMoney(totalRMB * rates.CAD)}">C$${formatMoney(totalRMB * rates.CAD)}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="₽${formatMoney(totalRMB * rates.RUB)}">₽${formatMoney(totalRMB * rates.RUB)}</span></span>
+                    </div>
+                </div>
+
+                <div class="table-responsive-wrapper w-full">
+                    <table class="industrial-table text-left">
+                        <thead>
+                            <tr>
+                                ${d.headers.map((h, i) => `<th contenteditable="true" class="${i===0?'w-12 text-center whitespace-nowrap':'whitespace-nowrap'}">${h}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            itemsList.forEach((item, i) => {
+                const isH = item.isHeader;
+                const isInc = item.price === -1;
+                
+                const rawRmb = isInc ? d.included : `¥${formatMoney(item.price)}`;
+                const rawUsd = isInc ? "-" : `$${formatMoney(item.price * rates.USD)}`;
+                const rawEur = isInc ? "-" : `€${formatMoney(item.price * rates.EUR)}`;
+                const rawCad = isInc ? "-" : `C$${formatMoney(item.price * rates.CAD)}`;
+                const rawRub = isInc ? "-" : `₽${formatMoney(item.price * rates.RUB)}`;
+                
+                const htmlRmb = isInc ? `<span class="text-[var(--text-muted)] text-xs">${d.included}</span>` : formatMoney(item.price);
+                const htmlUsd = isInc ? `<span class="text-[#333333]">-</span>` : formatMoney(item.price * rates.USD);
+                const htmlEur = isInc ? `<span class="text-[#333333]">-</span>` : formatMoney(item.price * rates.EUR);
+                const htmlCad = isInc ? `<span class="text-[#333333]">-</span>` : formatMoney(item.price * rates.CAD);
+                const htmlRub = isInc ? `<span class="text-[#333333]">-</span>` : formatMoney(item.price * rates.RUB);
+
+                const onEditFn = `onblur="updatePrice('${idx}', '${item.id}', this.innerText)"`;
+                
+                const priceClass = item.price > 0 ? 'font-mono-num text-[var(--gas-green-light)] font-medium' : '';
+                const titleColor = isH ? 'text-[var(--gas-green-light)] font-semibold whitespace-nowrap' : 'text-white min-w-[200px]';
+                const baseColor = isH ? 'text-[var(--text-muted)] opacity-50' : 'text-[var(--text-body)]';
+                
+                const animClass = isInc ? '' : 'money-val';
+
+                secHtml += `
+                    <tr style="${isH ? 'background-color: var(--bg-base);' : ''}">
+                        <td contenteditable="true" class="${baseColor} text-center text-xs font-mono-num whitespace-nowrap">${item.id}</td>
+                        <td contenteditable="true" class="${titleColor}">${item.n[currentLang] || item.n.zh}</td>
+                        <td contenteditable="true" class="${baseColor} text-xs whitespace-nowrap">${item.brand}</td>
+                        <td contenteditable="true" class="${baseColor} text-center font-mono-num whitespace-nowrap">${item.qty}</td>
+                        <td contenteditable="${!isInc}" ${!isInc ? onEditFn : ''} class="${priceClass} ${animClass} whitespace-nowrap" data-val="${rawRmb}">${htmlRmb}</td>
+                        <td class="${priceClass} ${animClass} whitespace-nowrap" data-val="${rawUsd}">${htmlUsd}</td>
+                        <td class="${priceClass} ${animClass} whitespace-nowrap" data-val="${rawEur}">${htmlEur}</td>
+                        <td class="${priceClass} ${animClass} whitespace-nowrap" data-val="${rawCad}">${htmlCad}</td>
+                        <td class="${priceClass} ${animClass} whitespace-nowrap" data-val="${rawRub}">${htmlRub}</td>
+                    </tr>
+                `;
+            });
+
+            secHtml += `</tbody></table></div></div>`;
+            html += secHtml;
+        };
+
+        buildSection(d.part1, appData.part1.desc, appData.part1.items1, 1);
+        buildSection("", appData.part1.desc2, appData.part1.items2, 2);
+        buildSection(d.part2, appData.part2.desc, appData.part2.items1, 3);
+        buildSection("", appData.part2.desc2, appData.part2.items2, 4);
+
+        document.getElementById('content-area').innerHTML = html;
+        
+        document.getElementById('live-rates-display').innerHTML = `1 CNY <i class="fa-solid fa-arrow-right-arrow-left mx-1 text-white"></i> <span class="text-[var(--gas-green-light)]">${rates.USD.toFixed(4)} USD</span> | <span class="text-[var(--gas-green-light)]">${rates.EUR.toFixed(4)} EUR</span> | <span class="text-[var(--gas-green-light)]">${rates.CAD.toFixed(4)} CAD</span> | <span class="text-[var(--gas-green-light)]">${rates.RUB.toFixed(4)} RUB</span>`;
+    }
+
+    window.updatePrice = function(secIdx, itemId, newText) {
+        const cleanNum = parseFloat(newText.replace(/[^\d.-]/g, ''));
+        if(!isNaN(cleanNum)) {
+            let targetArray;
+            if(secIdx == 1) targetArray = appData.part1.items1;
+            if(secIdx == 2) targetArray = appData.part1.items2;
+            if(secIdx == 3) targetArray = appData.part2.items1;
+            if(secIdx == 4) targetArray = appData.part2.items2;
+            
+            const item = targetArray.find(i => i.id === itemId);
+            if(item && item.price !== cleanNum) {
+                item.price = cleanNum;
+                renderApp(); 
+                triggerSmoothScroll(); 
+            }
+        }
+    }
+
+    function startClock() {
+        setInterval(() => {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            
+            document.getElementById('live-clock').innerText = `${hh}:${mm}:${ss}`;
+            document.getElementById('live-date').innerText = `${y}-${m}-${d}`;
+            
+            const remaining = Math.max(0, countdownTarget - Date.now());
+            const hoursLeft = Math.floor(remaining / (1000 * 60 * 60));
+            const minutesLeft = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            const secondsLeft = Math.floor((remaining % (1000 * 60)) / 1000);
+            
+            const validityEl = document.getElementById('val-validity');
+            if(validityEl && document.activeElement !== validityEl) {
+                validityEl.innerText = `${String(hoursLeft).padStart(2, '0')}:${String(minutesLeft).padStart(2, '0')}:${String(secondsLeft).padStart(2, '0')}`;
+            }
+        }, 1000);
+    }
+
+    function getFileName(ext) {
+        const titleEl = document.getElementById('f-title');
+        const rawText = titleEl ? titleEl.innerText : 'Quotation';
+        const title = rawText.replace(/[\n\r]/g, '').trim().replace(/\s+/g, '_');
+        const now = new Date();
+        const timeStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+        return `${title}_${timeStr}.${ext}`;
+    }
+
+    // Capture exact size without using a clone by briefly applying absolute positioning
+    async function createDirectCapture() {
+        const element = document.getElementById('export-area');
+        
+        // Save original styles
+        const origStyles = {
+            position: element.style.position,
+            width: element.style.width,
+            padding: element.style.padding,
+            backgroundColor: element.style.backgroundColor,
+            zIndex: element.style.zIndex,
+            overflow: element.style.overflow
+        };
+        
+        // Force desktop dimensions while keeping it visible in the document flow
+        element.style.width = '1280px';
+        element.style.padding = '40px';
+        element.style.backgroundColor = '#161B22';
+        
+        const wrappers = element.querySelectorAll('.table-responsive-wrapper');
+        const origWrapperStyles = [];
+        wrappers.forEach(w => {
+            origWrapperStyles.push(w.style.overflowX);
+            w.style.overflowX = 'visible';
+        });
+        
+        // Allow the browser to repaint
+        await new Promise(r => setTimeout(r, 100));
+        
+        const exactHeight = element.scrollHeight; 
+        const exactWidth = element.offsetWidth;
+        
+        const canvas = await html2canvas(element, { 
+            scale: 2, 
+            useCORS: true, 
+            backgroundColor: '#161B22', 
+            windowWidth: exactWidth, 
+            width: exactWidth 
+        });
+        
+        // Restore original styles
+        element.style.position = origStyles.position;
+        element.style.width = origStyles.width;
+        element.style.padding = origStyles.padding;
+        element.style.backgroundColor = origStyles.backgroundColor;
+        element.style.zIndex = origStyles.zIndex;
+        element.style.overflow = origStyles.overflow;
+        
+        wrappers.forEach((w, i) => {
+            w.style.overflowX = origWrapperStyles[i];
+        });
+        
+        return { canvas, exactWidth, exactHeight };
+    }
+
+    function showOverlay() {
+        const overlay = document.getElementById('export-overlay');
+        overlay.classList.remove('hidden');
+        void overlay.offsetWidth;
+        overlay.classList.remove('opacity-0');
+        overlay.classList.add('opacity-100');
+    }
+
+    function hideOverlay() {
+        const overlay = document.getElementById('export-overlay');
+        overlay.classList.remove('opacity-100');
+        overlay.classList.add('opacity-0');
+        setTimeout(() => overlay.classList.add('hidden'), 300);
+    }
+
+    async function exportPDF() {
+        const btn = document.getElementById('btn-share');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin md:mr-2"></i> <span class="hidden md:inline">${dict[currentLang].loading}</span>`;
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+        btn.disabled = true;
+
+        showOverlay();
+        await new Promise(r => setTimeout(r, 400));
+
+        try {
+            const { canvas, exactWidth, exactHeight } = await createDirectCapture();
+
+            const opt = {
+                margin:       0,
+                filename:     getFileName('pdf'),
+                image:        { type: 'jpeg', quality: 1 },
+                jsPDF:        { unit: 'px', format: [exactWidth, exactHeight], orientation: 'portrait' } 
+            };
+            
+            await html2pdf().set(opt).from(canvas).save();
+        } finally {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove('opacity-75', 'cursor-not-allowed');
+            btn.disabled = false;
+            hideOverlay();
+        }
+    }
+
+    async function exportImage() {
+        const btn = document.getElementById('btn-share');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin md:mr-2" id="icon-share"></i> <span id="btn-text-share" class="hidden md:inline">${dict[currentLang].loading}</span> <i class="fa-solid fa-angle-down ml-2 text-xs" id="icon-share-down"></i>`;
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+        
+        showOverlay();
+        await new Promise(r => setTimeout(r, 400));
+        
+        try {
+            const { canvas } = await createDirectCapture();
+            const imgData = canvas.toDataURL('image/png');
+            
+            const link = document.createElement('a');
+            link.download = getFileName('png');
+            link.href = imgData;
+            link.click();
+
+            setTimeout(() => {
+                alert('✅ 高清工业长图已生成并下载！\n如果在微信或Telegram发送，直接粘贴即可。');
+            }, 500);
+        } finally {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove('opacity-75', 'cursor-not-allowed');
+            hideOverlay();
+        }
+    }
+
+    function sendEmail() {
+        const receiver = document.getElementById('val-receiver').innerText.trim();
+        if(!receiver) {
+            alert("⚠️ 寄送失败：请先填写客户邮箱地址。");
+            return;
+        }
+        const sender = document.getElementById('val-sender').innerText.trim();
+        const titleEl = document.getElementById('f-title');
+        const title = titleEl ? titleEl.innerText.replace(/[\n\r]/g, '').trim() : 'Quotation';
+        
+        const subject = encodeURIComponent(`[SYS_DATA] ${title} - VMAN Engineering`);
+        const body = encodeURIComponent(`Dear sir/madam,\n\nPlease find our latest technical quotation for the Gas Genset & Miner Rack Module project attached (or refer to the generated document).\n\nBest Regards,\n${sender}`);
+        
+        window.location.href = `mailto:${receiver}?subject=${subject}&body=${body}`;
+    }
+</script>
+</body>
+</html>

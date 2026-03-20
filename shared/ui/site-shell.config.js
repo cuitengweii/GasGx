@@ -850,6 +850,28 @@
                         "rel": "noopener noreferrer",
                         "i18nKey": "privacy_policy"
                 },
+                "partners": [
+                        {
+                                "id": "bitmain",
+                                "title": "BitMain"
+                        },
+                        {
+                                "id": "bitlink",
+                                "title": "BitLink"
+                        },
+                        {
+                                "id": "linkmine",
+                                "title": "LinkMine"
+                        },
+                        {
+                                "id": "minerpower",
+                                "title": "MinerPower"
+                        },
+                        {
+                                "id": "vman",
+                                "title": "Vman"
+                        }
+                ],
                 "socialLinks": [
                         {
                                 "id": "x",

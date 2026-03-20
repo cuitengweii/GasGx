@@ -143,6 +143,13 @@
                 rel: "noopener noreferrer",
                 i18nKey: "privacy_policy"
             },
+            partners: [
+                { id: "bitmain", title: "BitMain" },
+                { id: "bitlink", title: "BitLink" },
+                { id: "linkmine", title: "LinkMine" },
+                { id: "minerpower", title: "MinerPower" },
+                { id: "vman", title: "Vman" }
+            ],
             socialLinks: [
                 { id: "x", enabled: true, mode: "link", href: "https://x.com/", iconClass: "fa-brands fa-x-twitter", ariaLabel: "Open X" },
                 { id: "telegram", enabled: true, mode: "link", href: "https://t.me/", iconClass: "fa-brands fa-telegram", ariaLabel: "Open Telegram" },
@@ -267,9 +274,15 @@
         const defaultSocialLinks = Array.isArray(defaultFooter.socialLinks)
             ? defaultFooter.socialLinks
             : [];
+        const defaultPartners = Array.isArray(defaultFooter.partners)
+            ? defaultFooter.partners
+            : [];
         const sourceSocialLinks = Array.isArray(sourceFooter.socialLinks)
             ? sourceFooter.socialLinks
             : [];
+        const partners = Array.isArray(sourceFooter.partners) && sourceFooter.partners.length
+            ? sourceFooter.partners.filter((item) => item && typeof item === "object")
+            : defaultPartners.filter((item) => item && typeof item === "object");
         const rawSocialLinks = sourceSocialLinks.length ? sourceSocialLinks : defaultSocialLinks;
         const socialLinks = rawSocialLinks
             .filter((item) => item && typeof item === "object")
@@ -295,6 +308,7 @@
         return {
             contact: Object.assign({}, defaultFooter.contact, sourceFooter.contact || {}),
             privacyPolicy: Object.assign({}, defaultFooter.privacyPolicy, sourceFooter.privacyPolicy || {}),
+            partners: partners,
             socialLinks: socialLinks
         };
     }
@@ -962,13 +976,33 @@
         return `<a href="${escapeHtml(href)}" target="${target}" rel="${rel}" class="${commonClass}" aria-label="${ariaLabel}"${titleAttr}>${iconHtml}</a>`;
     }
 
+    function buildFooterPartnerEntry(item) {
+        if (!item || item.enabled === false || item.visible === false || item.hidden === true) return "";
+
+        const resolvedTitle = getLabelValue(item.title, getCurrentLang());
+        const title = typeof resolvedTitle === "string" && resolvedTitle.trim()
+            ? resolvedTitle.trim()
+            : "";
+        if (!title) return "";
+
+        const href = typeof item.href === "string" ? item.href.trim() : "";
+        const pillHtml = `<span class="ggx-partner-pill">${escapeHtml(title)}</span>`;
+        if (!href) {
+            return `<span class="ggx-partner-entry">${pillHtml}</span>`;
+        }
+
+        const target = escapeHtml(item.target || "_blank");
+        const rel = escapeHtml(item.rel || "noopener noreferrer");
+        return `<a href="${escapeHtml(href)}" target="${target}" rel="${rel}" class="ggx-partner-entry" aria-label="${escapeHtml(title)}">${pillHtml}</a>`;
+    }
+
     function buildFooterTemplate() {
         const footerConfig = getFooterConfig();
         const contactHtml = buildFooterContact(footerConfig.contact);
         const privacyHtml = buildFooterPrivacyLink(footerConfig.privacyPolicy);
-        const socialHtml = footerConfig.socialLinks.map(buildFooterSocialEntry).join("");
-        const socialContainer = socialHtml
-            ? `<div class="ggx-connect-inline"><div class="ggx-connect-grid">${socialHtml}</div></div>`
+        const partnerHtml = footerConfig.partners.map(buildFooterPartnerEntry).join("");
+        const partnerContainer = partnerHtml
+            ? `<div class="ggx-partner-block"><span class="ggx-partner-label">战略合作伙伴</span><div class="ggx-partner-grid">${partnerHtml}</div></div>`
             : "";
 
         return `
@@ -992,7 +1026,7 @@
                         <a href="/index.html" class="ggx-footer-logo" aria-label="GasGx Home">GasGx</a>
                         <p class="ggx-footer-meta-tag text-sm text-gray-400">Energy-compute infrastructure for mining operators.</p>
                     </div>
-                    ${socialContainer}
+                    ${partnerContainer}
                 </div>
                 <div class="ggx-footer-legal-row">
                     <div class="ggx-footer-legal flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-600">

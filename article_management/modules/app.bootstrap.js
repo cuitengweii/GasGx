@@ -909,39 +909,72 @@ async function renderDashboard(forceRefresh = false) {
 
     const { active, recycled, heroSlots, featured, queue, sampleRows } = dashboardData;
     const categoryStats = summarizeCategoryStats(sampleRows.rows, 10);
+    const dashboardKpis = [
+        { title: '在线文章', value: active.count, sub: '当前可在前台展示的文章数量' },
+        { title: '待处理采集', value: queue.count, sub: '采集队列中待处理记录' },
+        { title: '首页大位', value: `${heroSlots.length}/${HOMEPAGE_MARK_LIMIT}`, sub: 'homepage_mark 已配置数量' },
+        { title: '广告推荐位', value: `${featured.length}/${state.featured.limit}`, sub: 'featured_rank 已配置数量' },
+        { title: '回收站', value: recycled.count, sub: '已软删除文章数量' },
+    ];
 
     setContent(`
-        <section class="ams-card ams-hero-card">
-            <div class="ams-hero-copy">
-                <p class="ams-eyebrow">Publishing Control Room</p>
-                <h2>把发文、推荐位和采集审核放在一条连续工作流里。</h2>
-                <p class="ams-hero-text">当前后台已按发布优先级聚合核心入口。常用操作可以直接从这里进入，不需要先翻列表再找对应页面。</p>
+        <section class="ams-card ams-dashboard-intro">
+            <div class="ams-dashboard-intro-copy">
+                <p class="ams-eyebrow">Dashboard</p>
+                <h2>文章发布、推荐位调整和采集处理都从这里开始。</h2>
+                <p class="ams-hero-text">首页改成了更常规的后台概览结构：先看整体状态，再进入具体操作页，信息分区更直观，阅读顺序也更自然。</p>
             </div>
-            <div class="ams-quick-actions">
-                <button class="ams-quick-link" type="button" data-dashboard-nav="editor">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                    <strong>新建文章</strong>
-                    <span>直接进入发布工作区</span>
-                </button>
-                <button class="ams-quick-link" type="button" data-dashboard-nav="queue">
-                    <i class="fa-solid fa-list-check"></i>
-                    <strong>处理采集队列</strong>
-                    <span>优先处理待处理内容</span>
-                </button>
-                <button class="ams-quick-link" type="button" data-dashboard-nav="featured">
-                    <i class="fa-solid fa-ranking-star"></i>
-                    <strong>调整首页推荐位</strong>
-                    <span>同步管理 hero 与 featured</span>
-                </button>
+            <div class="ams-dashboard-intro-meta">
+                <div class="ams-dashboard-highlight">
+                    <span>今日重点</span>
+                    <strong>${queue.count ? `优先处理 ${queue.count} 条采集记录` : '当前没有待处理采集内容'}</strong>
+                </div>
+                <div class="ams-dashboard-highlight">
+                    <span>推荐位状态</span>
+                    <strong>首页 ${heroSlots.length}/${HOMEPAGE_MARK_LIMIT}，广告 ${featured.length}/${state.featured.limit}</strong>
+                </div>
             </div>
         </section>
-        <div class="ams-grid">
-            <article class="ams-card"><h3>在线文章</h3><div class="ams-kpi">${active.count}</div><div class="ams-kpi-sub">未进入回收站的文章数</div></article>
-            <article class="ams-card"><h3>回收站</h3><div class="ams-kpi">${recycled.count}</div><div class="ams-kpi-sub">已软删除文章数</div></article>
-            <article class="ams-card"><h3>首页大位</h3><div class="ams-kpi">${heroSlots.length}/${HOMEPAGE_MARK_LIMIT}</div><div class="ams-kpi-sub">homepage_mark 1/2/3 已配置数量</div></article>
-            <article class="ams-card"><h3>广告推荐位</h3><div class="ams-kpi">${featured.length}/${state.featured.limit}</div><div class="ams-kpi-sub">featured_rank 已配置数量</div></article>
-            <article class="ams-card"><h3>待处理采集</h3><div class="ams-kpi">${queue.count}</div><div class="ams-kpi-sub">scrape_queue pending 数量</div></article>
-        </div>
+        <section class="ams-dashboard-actions">
+            <button class="ams-quick-link" type="button" data-dashboard-nav="editor">
+                <div class="ams-quick-link-icon"><i class="fa-solid fa-pen-to-square"></i></div>
+                <div class="ams-quick-link-body">
+                    <strong>新建文章</strong>
+                    <span>直接进入发布工作区</span>
+                </div>
+            </button>
+            <button class="ams-quick-link" type="button" data-dashboard-nav="queue">
+                <div class="ams-quick-link-icon"><i class="fa-solid fa-list-check"></i></div>
+                <div class="ams-quick-link-body">
+                    <strong>处理采集队列</strong>
+                    <span>${queue.count ? `当前还有 ${queue.count} 条待处理记录` : '当前没有待处理采集内容'}</span>
+                </div>
+            </button>
+            <button class="ams-quick-link" type="button" data-dashboard-nav="featured">
+                <div class="ams-quick-link-icon"><i class="fa-solid fa-ranking-star"></i></div>
+                <div class="ams-quick-link-body">
+                    <strong>调整首页推荐位</strong>
+                    <span>同步管理 hero 与 featured</span>
+                </div>
+            </button>
+        </section>
+        <section class="ams-dashboard-overview">
+            <div class="ams-section-head">
+                <div>
+                    <h3>核心概览</h3>
+                    <p>优先看文章数量、采集状态和推荐位占用情况。</p>
+                </div>
+            </div>
+            <div class="ams-dashboard-kpis">
+                ${dashboardKpis.map((item) => `
+                    <article class="ams-card ams-kpi-card">
+                        <h3>${esc(item.title)}</h3>
+                        <div class="ams-kpi">${esc(item.value)}</div>
+                        <div class="ams-kpi-sub">${esc(item.sub)}</div>
+                    </article>
+                `).join('')}
+            </div>
+        </section>
         ${renderSummaryChips([
             { label: '已发布抽样', value: `${sampleRows.rows.length} 篇` },
             { label: '首页推荐位', value: `${heroSlots.length}/${HOMEPAGE_MARK_LIMIT}` },
@@ -949,7 +982,12 @@ async function renderDashboard(forceRefresh = false) {
             { label: '待处理', value: `${queue.count} 条` },
         ])}
         <section class="ams-card ams-category-card">
-            <h3>分类分布（最近 200 条已发布文章）</h3>
+            <div class="ams-section-head">
+                <div>
+                    <h3>分类分布</h3>
+                    <p>统计最近 200 条已发布文章，快速查看内容重心。</p>
+                </div>
+            </div>
             <div class="ams-category-grid">
                 ${categoryStats.length ? categoryStats.map((item) => `<div class="ams-category-item"><span>${esc(item.name)}</span><strong>${item.count}</strong></div>`).join('') : '<div class="ams-empty">暂无分类数据。</div>'}
             </div>
@@ -2426,7 +2464,11 @@ async function renderQueue(forceRefresh = false) {
         const currentStatus = resolveQueueRowStatus(item, 'pending');
         const rowStatusValues = sortQueueStatuses([...statusValues, currentStatus]);
         const checked = state.selectedQueueIds.has(String(item.id)) ? 'checked' : '';
-        return `<tr data-queue-row="${item.id}"><td class="ams-col-check"><input class="ams-check" type="checkbox" data-queue-select="1" data-id="${item.id}" ${checked} aria-label="选择队列 ${item.id}"></td><td><code>${item.id}</code></td><td class="ams-queue-source"><strong>${esc(item.title || item.main_title || '未命名')}</strong><div class="ams-footnote">${esc(item.link || '')}</div></td><td>${esc(item.category || '--')}</td><td>${esc(item.publisher || '--')}</td><td>${esc(item.tag_choice || item.tag || '--')} / ${esc(item.secondary_tag || '--')}</td><td class="ams-col-status" data-queue-status-pill="${item.id}">${queueStatusPill(currentStatus)}</td><td class="ams-col-time">${fmtDate(item.created_at)}</td><td class="ams-col-actions"><div class="ams-row-actions ams-row-actions-stacked ams-queue-actions"><div class="ams-queue-inline ams-queue-inline-status"><select class="ams-select ams-queue-status-select" data-queue-status-select="1" data-id="${item.id}">${rowStatusValues.map((status) => `<option value="${esc(status)}" ${status === currentStatus ? 'selected' : ''}>${esc(queueStatusLabel(status))}</option>`).join('')}</select></div></div></td></tr>`;
+        const sourceLink = String(item.link || '').trim();
+        const sourceMarkup = sourceLink
+            ? `<a class="ams-queue-link" href="${esc(sourceLink)}" target="_blank" rel="noopener noreferrer">${esc(sourceLink)}</a>`
+            : '<span class="ams-footnote">--</span>';
+        return `<tr data-queue-row="${item.id}"><td class="ams-col-check"><input class="ams-check" type="checkbox" data-queue-select="1" data-id="${item.id}" ${checked} aria-label="选择队列 ${item.id}"></td><td><code>${item.id}</code></td><td class="ams-queue-source"><strong>${esc(item.title || item.main_title || '未命名')}</strong><div class="ams-footnote">${sourceMarkup}</div></td><td>${esc(item.category || '--')}</td><td>${esc(item.publisher || '--')}</td><td>${esc(item.tag_choice || item.tag || '--')} / ${esc(item.secondary_tag || '--')}</td><td class="ams-col-status" data-queue-status-pill="${item.id}">${queueStatusPill(currentStatus)}</td><td class="ams-col-time">${fmtDate(item.created_at)}</td><td class="ams-col-actions"><div class="ams-row-actions ams-row-actions-stacked ams-queue-actions"><div class="ams-queue-inline ams-queue-inline-status"><select class="ams-select ams-queue-status-select" data-queue-status-select="1" data-id="${item.id}">${rowStatusValues.map((status) => `<option value="${esc(status)}" ${status === currentStatus ? 'selected' : ''}>${esc(queueStatusLabel(status))}</option>`).join('')}</select></div></div></td></tr>`;
     }).join('') : '<tr><td colspan="9"><div class="ams-empty">暂无队列数据。</div></td></tr>'}</tbody></table></div>
     `);
 
