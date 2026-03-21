@@ -1,4 +1,4 @@
-import { mountSharedHeader, mountSharedFooter, renderSharedAuthState } from './layout.shared.js?v=20260308footer2';
+import { mountSharedHeader, mountSharedFooter, renderSharedAuthState } from './layout.shared.js?v=20260321authux03';
 import { HEADER_NAVIGATION } from '../config/navigation.config.js';
 
 const DEFAULT_MAIN_AUTH = Object.freeze({

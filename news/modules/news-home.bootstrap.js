@@ -1,11 +1,13 @@
 const STARTUP_TIMEOUT_MS = 8000;
 const MAIN_MODULE_CANDIDATES = [
+    './main.module.js?v=20260321authux03',
     './main.module.js?v=20260308video2',
     './main.module.js?v=20260308totop1',
     './main.module.js?v=20260308cover1',
     './main.module.js?v=20260305fix07',
     './main.module.js?v=20260305ams01',
     './main.module.js',
+    '/news/modules/main.module.js?v=20260321authux03',
     '/news/modules/main.module.js?v=20260308video2',
     '/news/modules/main.module.js?v=20260308totop1',
     '/news/modules/main.module.js?v=20260308cover1',
@@ -13,9 +15,11 @@ const MAIN_MODULE_CANDIDATES = [
     '/news/modules/main.module.js',
 ];
 const LAYOUT_MODULE_CANDIDATES = [
+    '../shared/modules/layout.shared.js?v=20260321authux03',
     '../shared/modules/layout.shared.js?v=20260308footer2',
     '../shared/modules/layout.shared.js?v=20260305fix07',
     '../shared/modules/layout.shared.js',
+    '/news/shared/modules/layout.shared.js?v=20260321authux03',
     '/news/shared/modules/layout.shared.js?v=20260308footer2',
     '/news/shared/modules/layout.shared.js?v=20260305fix07',
     '/news/shared/modules/layout.shared.js',

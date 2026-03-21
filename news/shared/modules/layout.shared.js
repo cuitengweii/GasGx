@@ -2,6 +2,63 @@ function mobileToggleExpr(appGlobal) {
     return `window.${appGlobal} && window.${appGlobal}.toggleMobileMenu()`;
 }
 
+const AUTH_FALLBACK_AVATAR = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2232%22 fill=%22%23121812%22/%3E%3Cpath d=%22M32 33c7.18 0 13-5.82 13-13S39.18 7 32 7 19 12.82 19 20s5.82 13 13 13Zm0 4c-9.94 0-18 6.27-18 14v2h36v-2c0-7.73-8.06-14-18-14Z%22 fill=%22%235DD62C%22/%3E%3C/svg%3E';
+
+function resolveAuthAvatar(currentUser) {
+    if (!currentUser || typeof currentUser !== 'object') return AUTH_FALLBACK_AVATAR;
+    const meta = currentUser.user_metadata && typeof currentUser.user_metadata === 'object'
+        ? currentUser.user_metadata
+        : {};
+    const raw = meta.avatar_url || meta.picture;
+    return typeof raw === 'string' && raw.trim() ? raw.trim() : AUTH_FALLBACK_AVATAR;
+}
+
+function renderLoggedOutAuthLink(signInUrl) {
+    return `
+        <a href="${escapeHtml(signInUrl)}" class="flex items-center gap-2 text-xs font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-4 py-1.5 shadow-neon">
+            <i class="fa-brands fa-google"></i>
+            <span>Login</span>
+        </a>
+    `;
+}
+
+function renderLoggedInDesktopAuth({ accountUrl, safeName, avatarUrl }) {
+    const safeAccountUrl = escapeHtml(accountUrl);
+    const safeAvatarUrl = escapeHtml(avatarUrl);
+    return `
+        <div class="flex items-center gap-2 cursor-pointer group relative h-full">
+            <a href="${safeAccountUrl}" class="relative py-3" aria-label="Open account">
+                <img src="${safeAvatarUrl}" alt="${safeName}" class="w-9 h-9 rounded-full border-2 border-gas-green p-0.5 transition-transform group-hover:scale-105">
+                <div class="absolute bottom-3 right-0 w-2.5 h-2.5 bg-gas-green rounded-full border-2 border-[#151515]"></div>
+            </a>
+            <div class="absolute right-0 top-full pt-1 w-48 hidden group-hover:block z-[60]">
+                <div class="bg-[#151515] border border-white/10 rounded-xl shadow-2xl py-2 mt-1">
+                    <div class="px-4 py-2 border-b border-white/5 mb-1">
+                        <span class="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Account</span>
+                        <div class="text-xs text-white font-bold truncate mt-1">${safeName}</div>
+                    </div>
+                    <a href="${safeAccountUrl}" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors flex items-center">
+                        <i class="fa-solid fa-user mr-2"></i><span>Open account</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderMobileAuthLink({ isLogged, targetUrl, safeName }) {
+    const iconClass = isLogged ? 'fa-user' : 'fa-right-to-bracket';
+    const accentClass = isLogged
+        ? 'text-gas-green border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black'
+        : 'text-black bg-gas-green hover:bg-white border-transparent';
+    return `
+        <a href="${escapeHtml(targetUrl)}" class="flex items-center gap-2 text-[10px] font-bold px-3 py-1.5 rounded-full transition-all max-w-[140px] border ${accentClass}" aria-label="${isLogged ? 'Account' : 'Sign In'}">
+            <i class="fa-solid ${iconClass}"></i>
+            <span class="truncate">${safeName}</span>
+        </a>
+    `;
+}
+
 function renderNewsHomeHeader({ idPrefix, appGlobal }) {
     const onToggle = mobileToggleExpr(appGlobal);
     return `
@@ -1030,21 +1087,19 @@ function renderMobileNav(navigation, activeTitle, activePath, activeChildTitle) 
         .join('');
 }
 
-function renderNewsHomeAuthState({ idPrefix, isLogged, displayName, accountUrl, signInUrl }) {
+function renderNewsHomeAuthState({ idPrefix, currentUser, isLogged, displayName, accountUrl, signInUrl }) {
     const desktopAuthContainer = document.getElementById(`${idPrefix}-auth-btn-container`);
     const mobileTrigger = document.getElementById(`${idPrefix}-header-account-trigger`);
     const mobileTriggerText = document.getElementById(`${idPrefix}-mobile-trigger-text`);
 
     const safeName = escapeHtml(displayName);
-    const desktopTarget = escapeHtml(isLogged ? accountUrl : signInUrl);
     const mobileTarget = isLogged ? accountUrl : signInUrl;
+    const avatarUrl = resolveAuthAvatar(currentUser);
 
     if (desktopAuthContainer) {
-        desktopAuthContainer.innerHTML = `
-            <a href="${desktopTarget}" class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gas-green text-black hover:bg-white transition-all text-xs font-bold uppercase tracking-wider shadow-neon">
-                <i class="fa-solid fa-user"></i> <span class="max-w-[100px] truncate">${safeName}</span>
-            </a>
-        `;
+        desktopAuthContainer.innerHTML = isLogged
+            ? renderLoggedInDesktopAuth({ accountUrl, safeName, avatarUrl })
+            : renderLoggedOutAuthLink(signInUrl);
     }
 
     if (mobileTriggerText) {
@@ -1056,28 +1111,21 @@ function renderNewsHomeAuthState({ idPrefix, isLogged, displayName, accountUrl, 
     }
 }
 
-function renderFlashAuthState({ idPrefix, isLogged, displayName, accountUrl, signInUrl }) {
+function renderFlashAuthState({ idPrefix, currentUser, isLogged, displayName, accountUrl, signInUrl }) {
     const desktopAuthContainer = document.getElementById(`${idPrefix}-desktop-auth-container`);
     const mobileAuthTriggerWrapper = document.getElementById(`${idPrefix}-mobile-auth-trigger-wrapper`);
     const safeName = escapeHtml(displayName);
-    const targetUrl = escapeHtml(isLogged ? accountUrl : signInUrl);
-    const iconClass = isLogged ? 'fa-user' : 'fa-right-to-bracket';
+    const targetUrl = isLogged ? accountUrl : signInUrl;
+    const avatarUrl = resolveAuthAvatar(currentUser);
 
     if (desktopAuthContainer) {
-        desktopAuthContainer.innerHTML = `
-            <a href="${targetUrl}" class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gas-green text-black hover:bg-white transition-all text-xs font-bold uppercase tracking-wider shadow-neon cursor-pointer">
-                <i class="fa-solid ${iconClass}"></i> <span>${safeName}</span>
-            </a>
-        `;
+        desktopAuthContainer.innerHTML = isLogged
+            ? renderLoggedInDesktopAuth({ accountUrl, safeName, avatarUrl })
+            : renderLoggedOutAuthLink(signInUrl);
     }
 
     if (mobileAuthTriggerWrapper) {
-        mobileAuthTriggerWrapper.innerHTML = `
-            <a href="${targetUrl}" class="flex items-center gap-2 text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 px-3 py-1.5 rounded-full hover:bg-gas-green hover:text-black transition-all max-w-[140px]">
-                <i class="fa-solid ${iconClass}"></i>
-                <span class="truncate">${safeName}</span>
-            </a>
-        `;
+        mobileAuthTriggerWrapper.innerHTML = renderMobileAuthLink({ isLogged, targetUrl, safeName });
     }
 }
 
@@ -1108,9 +1156,9 @@ export function renderSharedAuthState(options = {}) {
     }
 
     if (page === 'flash') {
-        renderFlashAuthState({ idPrefix, isLogged, displayName, accountUrl, signInUrl });
+        renderFlashAuthState({ idPrefix, currentUser, isLogged, displayName, accountUrl, signInUrl });
     } else {
-        renderNewsHomeAuthState({ idPrefix, isLogged, displayName, accountUrl, signInUrl });
+        renderNewsHomeAuthState({ idPrefix, currentUser, isLogged, displayName, accountUrl, signInUrl });
     }
 }
 

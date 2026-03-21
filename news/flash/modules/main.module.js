@@ -1,5 +1,5 @@
 
-import { renderSharedAuthState } from '../../shared/modules/layout.shared.js?v=20260308footer2';
+import { renderSharedAuthState } from '../../shared/modules/layout.shared.js?v=20260321authux03';
 import { HEADER_NAVIGATION } from '../../shared/config/navigation.config.js';
 
 const DEFAULT_MAIN_AUTH = Object.freeze({
