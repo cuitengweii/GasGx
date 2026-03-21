@@ -462,6 +462,7 @@
                 <div class="min-w-0">
                     <h2 id="access-gate-title" class="text-2xl font-bold text-white mb-2">正在验证访问权限...</h2>
                     <p id="access-gate-message" class="text-sm text-[var(--text-body)] leading-6">正在检查分享链接和管理员登录状态，请稍候。</p>
+                    <div id="access-gate-help" class="hidden mt-4 text-sm text-[var(--text-body)] leading-6"></div>
                     <div id="access-gate-meta" class="mt-4 text-xs text-[var(--text-muted)] font-mono-num break-all"></div>
                 </div>
             </div>
@@ -739,6 +740,7 @@
             accessDeniedTitle: "链接不可用",
             accessDeniedMissing: "当前页面需要有效的分享链接，或使用后台管理员账号登录后打开。",
             accessDeniedExpired: "这个分享链接已经过期。管理员登录后仍可继续访问。",
+            accessExpiredHelp: "如需继续获取报价，请联系商务，或前往 <a href=\"https://www.gasgx.com\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-[var(--gas-green-light)] underline underline-offset-4\">www.gasgx.com</a> 联系官网客服。",
             accessDeniedInvalid: "分享链接参数无效或已损坏，请重新生成。",
             accessDeniedGeneric: "无法确认当前访问权限，请重新获取分享链接。",
             accessMetaAdmin: "访问模式：admin-session",
@@ -813,6 +815,7 @@
             accessDeniedTitle: "Link unavailable",
             accessDeniedMissing: "This page requires a valid share link, or a logged-in admin session from the site backend.",
             accessDeniedExpired: "This share link has expired. Admin users can still open the page.",
+            accessExpiredHelp: "To request an updated quotation, contact our business team or visit <a href=\"https://www.gasgx.com\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-[var(--gas-green-light)] underline underline-offset-4\">www.gasgx.com</a> to reach customer service.",
             accessDeniedInvalid: "The share parameter is invalid or corrupted. Generate a new one.",
             accessDeniedGeneric: "Unable to confirm access for this page. Request a new share link.",
             accessMetaAdmin: "Mode: admin-session",
@@ -887,6 +890,7 @@
             accessDeniedTitle: "Ссылка недоступна",
             accessDeniedMissing: "Для этой страницы нужна действующая ссылка или активная сессия администратора сайта.",
             accessDeniedExpired: "Срок действия ссылки истек. Администратор сайта все еще может открыть страницу.",
+            accessExpiredHelp: "Чтобы получить обновленное коммерческое предложение, свяжитесь с коммерческим отделом или перейдите на <a href=\"https://www.gasgx.com\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-[var(--gas-green-light)] underline underline-offset-4\">www.gasgx.com</a> и обратитесь в поддержку.",
             accessDeniedInvalid: "Параметр ссылки поврежден или недействителен. Создайте новую ссылку.",
             accessDeniedGeneric: "Не удалось подтвердить доступ к странице. Запросите новую ссылку.",
             accessMetaAdmin: "Режим: admin-session",
@@ -1226,16 +1230,21 @@
         validityEl.innerText = `${String(hoursLeft).padStart(2, '0')}:${String(minutesLeft).padStart(2, '0')}:${String(secondsLeft).padStart(2, '0')}`;
     }
 
-    function setAccessGateState({ icon, title, message, meta = '', showActions = false }) {
+    function setAccessGateState({ icon, title, message, meta = '', helpHtml = '', showActions = false }) {
         const iconEl = document.getElementById('access-gate-icon');
         const titleEl = document.getElementById('access-gate-title');
         const messageEl = document.getElementById('access-gate-message');
+        const helpEl = document.getElementById('access-gate-help');
         const metaEl = document.getElementById('access-gate-meta');
         const actionsEl = document.getElementById('access-gate-actions');
 
         if (iconEl) iconEl.className = icon;
         if (titleEl) titleEl.innerText = title;
         if (messageEl) messageEl.innerText = message;
+        if (helpEl) {
+            helpEl.innerHTML = helpHtml;
+            helpEl.classList.toggle('hidden', !helpHtml);
+        }
         if (metaEl) metaEl.innerText = meta;
         if (actionsEl) actionsEl.classList.toggle('hidden', !showActions);
     }
@@ -1358,6 +1367,7 @@
             title: dict[currentLang].accessDeniedTitle,
             message,
             meta: expiryMeta,
+            helpHtml: shareResult.reason === 'expired' ? dict[currentLang].accessExpiredHelp : '',
             showActions: true,
         });
         setAccessActionMode('retry');
