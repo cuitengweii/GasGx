@@ -1,19 +1,19 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VMAN 工业智能报价系统 - GasGx Green Style</title>
+    <title>VMAN 宸ヤ笟鏅鸿兘鎶ヤ环绯荤粺 - GasGx Green Style</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        /* 引入 Google Fonts 作为基础英文字体 */
+        /* 寮曞叆 Google Fonts 浣滀负鍩虹鑻辨枃瀛椾綋 */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Roboto:wght@400;500;700;900&display=swap');
         
         :root {
-            /* 1. 核心品牌色彩 */
+            /* 1. 鏍稿績鍝佺墝鑹插僵 */
             --bg-base: #0A0E14;           
             --bg-card: #161B22;           
             --gas-green-primary: #28A745;     
@@ -38,7 +38,7 @@
 
         h1, h2, h3, h4, h5, h6 { color: var(--text-heading); font-weight: 700; }
 
-        /* 等宽数字，防布局抖动 */
+        /* 绛夊鏁板瓧锛岄槻甯冨眬鎶栧姩 */
         .font-mono-num {
             font-family: 'SFMono-Regular', Consolas, 'Roboto Mono', monospace;
             letter-spacing: 0.5px;
@@ -75,7 +75,7 @@
             #export-area { width: 100% !important; padding: 0 !important; }
         }
 
-        /* 表格样式 */
+        /* 琛ㄦ牸鏍峰紡 */
         .industrial-table {
             border-collapse: separate;
             border-spacing: 0;
@@ -108,7 +108,7 @@
         .industrial-table tr:nth-child(even) td { background-color: rgba(255,255,255,0.015); }
         .industrial-table tr:hover td { background-color: var(--gas-green-bg); }
         
-        /* 移动端表格包裹容器滑动条隐藏 */
+        /* 绉诲姩绔〃鏍煎寘瑁瑰鍣ㄦ粦鍔ㄦ潯闅愯棌 */
         .table-responsive-wrapper {
             width: 100%;
             max-width: 100%;
@@ -121,11 +121,11 @@
         .table-responsive-wrapper::-webkit-scrollbar-track { background: var(--bg-base); border-radius: 8px; }
         .table-responsive-wrapper::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 8px; }
         
-        /* 隐藏滚动条实用类 */
+        /* 闅愯棌婊氬姩鏉″疄鐢ㄧ被 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* 按钮与标签 */
+        /* 鎸夐挳涓庢爣绛?*/
         .btn-glow {
             background-color: var(--gas-green-primary);
             color: #FFFFFF;
@@ -200,7 +200,7 @@
             white-space: nowrap;
         }
 
-        /* 丝滑 CSS 硬件加速垂直滚动动画 */
+        /* 涓濇粦 CSS 纭欢鍔犻€熷瀭鐩存粴鍔ㄥ姩鐢?*/
         .num-scroll-wrap {
             display: inline-block;
             height: 1.3em;
@@ -223,7 +223,7 @@
             justify-content: center;
         }
 
-        /* 全屏加载遮罩动画 */
+        /* 鍏ㄥ睆鍔犺浇閬僵鍔ㄧ敾 */
         .pulse-shadow {
             animation: pulse-glow 2s infinite;
         }
@@ -340,14 +340,14 @@
 </head>
 <body class="antialiased pb-10 md:pb-20">
 
-    <!-- 沉浸式全局加载遮罩 (用于导出PDF和图片时防闪烁) -->
+    <!-- 娌夋蹈寮忓叏灞€鍔犺浇閬僵 (鐢ㄤ簬瀵煎嚭PDF鍜屽浘鐗囨椂闃查棯鐑? -->
     <div id="export-overlay" class="fixed inset-0 z-[99999] bg-[#0A0E14] flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300">
         <i class="fa-solid fa-cube fa-spin text-5xl text-[var(--gas-green-light)] mb-6 pulse-shadow"></i>
         <div class="text-[var(--gas-green-light)] font-mono tracking-widest text-xl font-bold animate-pulse" id="export-loading-text">GENERATING DOCUMENT...</div>
-        <div class="text-[var(--text-muted)] text-sm mt-3" id="export-sub-text">正在进行高精度底层渲染，请稍候</div>
+        <div class="text-[var(--text-muted)] text-sm mt-3" id="export-sub-text">姝ｅ湪杩涜楂樼簿搴﹀簳灞傛覆鏌擄紝璇风◢鍊?/div>
     </div>
 
-    <!-- 顶部固定工具栏 (移动端自适应) -->
+    <!-- 椤堕儴鍥哄畾宸ュ叿鏍?(绉诲姩绔嚜閫傚簲) -->
     <div id="toolbar" class="fixed top-0 left-0 right-0 z-50 px-3 md:px-8 py-3 md:py-4 flex justify-between items-center border-b backdrop-blur-md" style="background-color: rgba(10, 14, 20, 0.85); border-color: var(--border-color);">
         <div class="toolbar-brand flex items-center space-x-2 md:space-x-4">
             <div class="text-[var(--gas-green-light)] text-xl md:text-3xl font-black tracking-tight flex whitespace-nowrap items-center flex-shrink-0">
@@ -359,63 +359,63 @@
             <div class="toolbar-lang flex bg-[#161B22] rounded p-1 border border-[#2C2F33]">
                 <button onclick="setLang('zh')" id="btn-zh" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all bg-[var(--gas-green-primary)] text-white font-semibold shadow-[0_0_8px_rgba(40,167,69,0.4)]">CN</button>
                 <button onclick="setLang('en')" id="btn-en" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all text-[var(--text-body)] hover:text-white">EN</button>
-                <button onclick="setLang('ru')" id="btn-ru" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all text-[var(--text-body)] hover:text-white">РУ</button>
+                <button onclick="setLang('ru')" id="btn-ru" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all text-[var(--text-body)] hover:text-white">袪校</button>
             </div>
             
             <div id="share-group" class="toolbar-share-group relative group">
                 <button id="btn-share" type="button" onclick="toggleShareMenu(event)" class="btn-glow px-3 py-1.5 md:px-6 md:py-2 flex items-center">
-                    <i class="fa-solid fa-cloud-arrow-down" id="icon-share"></i> <span id="btn-text-share" class="hidden md:inline ml-2">分享/导出</span> <i class="fa-solid fa-angle-down ml-1 md:ml-2 text-xs" id="icon-share-down"></i>
+                    <i class="fa-solid fa-cloud-arrow-down" id="icon-share"></i> <span id="btn-text-share" class="hidden md:inline ml-2">鍒嗕韩/瀵煎嚭</span> <i class="fa-solid fa-angle-down ml-1 md:ml-2 text-xs" id="icon-share-down"></i>
                 </button>
                 <div id="share-menu" class="toolbar-share-menu absolute right-0 top-full pt-2 w-48 hidden md:group-hover:block z-50">
                     <div class="bg-[#161B22] shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-[#2C2F33] rounded overflow-hidden">
-                        <button onclick="exportImage()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-image mr-3 text-lg"></i><span id="btn-menu-img">生成长图</span></button>
-                        <button onclick="exportPDF()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-file-pdf mr-3 text-lg"></i><span id="btn-menu-pdf">导出 PDF</span></button>
+                        <button onclick="exportImage()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-image mr-3 text-lg"></i><span id="btn-menu-img">鐢熸垚闀垮浘</span></button>
+                        <button onclick="exportPDF()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-file-pdf mr-3 text-lg"></i><span id="btn-menu-pdf">瀵煎嚭 PDF</span></button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 文档主体容器 -->
+    <!-- 鏂囨。涓讳綋瀹瑰櫒 -->
     <div id="doc-container" class="max-w-7xl mx-auto mt-20 md:mt-28 p-4 md:p-12 rounded-lg relative shadow-[0_20px_50px_rgba(0,0,0,0.7)]" style="background-color: var(--bg-card); border: 1px solid var(--border-color);">
         <div id="export-area" style="background-color: var(--bg-card);">
             <div class="border-b border-[var(--border-color)] pb-6 md:pb-8 mb-8 md:mb-10 flex flex-col xl:flex-row justify-between items-start gap-6">
                 <div class="w-full xl:flex-1 xl:pr-8 overflow-hidden">
                     
-                    <!-- 主标题及发送按钮移位到此处 -->
+                    <!-- 涓绘爣棰樺強鍙戦€佹寜閽Щ浣嶅埌姝ゅ -->
                     <div class="doc-title-row flex items-start md:items-center justify-between gap-4 mb-4 md:mb-8 w-full">
                         <h1 class="text-xl md:text-3xl font-bold tracking-wide text-[var(--gas-green-light)] leading-snug break-words flex-1 m-0" contenteditable="true" id="f-title">
-                            VMAN Engineering 产品报价总览
+                            VMAN Engineering 浜у搧鎶ヤ环鎬昏
                         </h1>
-                        <button onclick="sendEmail()" class="doc-send-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center flex-shrink-0 mt-1 md:mt-0" title="调用邮件应用">
-                            <i class="fa-solid fa-paper-plane mr-1.5 text-[var(--text-body)]"></i> <span id="btn-text-send" class="text-[var(--text-body)]">发送</span>
+                        <button onclick="sendEmail()" class="doc-send-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center flex-shrink-0 mt-1 md:mt-0" title="璋冪敤閭欢搴旂敤">
+                            <i class="fa-solid fa-paper-plane mr-1.5 text-[var(--text-body)]"></i> <span id="btn-text-send" class="text-[var(--text-body)]">鍙戦€?/span>
                         </button>
                     </div>
                     
-                    <!-- 强制不换行 (whitespace-nowrap) + 隐藏滚动条横向适配 -->
+                    <!-- 寮哄埗涓嶆崲琛?(whitespace-nowrap) + 闅愯棌婊氬姩鏉℃í鍚戦€傞厤 -->
                     <div class="doc-meta-grid grid grid-cols-1 md:grid-cols-2 gap-x-8 md:gap-x-12 gap-y-4 md:gap-y-5 text-sm md:text-[15px]">
                         <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-supplier">供应商：</span>
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-supplier">渚涘簲鍟嗭細</span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span contenteditable="true" class="font-semibold text-white whitespace-nowrap outline-none w-full text-left block">VMAN Engineering</span>
                             </div>
                         </div>
                         <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-sender">发件人：</span>
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-sender">鍙戜欢浜猴細</span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span contenteditable="true" id="val-sender" class="text-[var(--gas-green-light)] whitespace-nowrap outline-none w-full text-left block">allen@vman-engine.com</span>
                             </div>
                         </div>
                         <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-validity">有效期：</span>
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-validity">鏈夋晥鏈燂細</span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span contenteditable="true" id="val-validity" class="font-semibold text-white font-mono-num whitespace-nowrap outline-none w-full text-left block">72:00:00</span>
                             </div>
                         </div>
                         <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-receiver">收件人：</span>
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-receiver">鏀朵欢浜猴細</span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
-                                <span contenteditable="true" id="val-receiver" class="text-[var(--gas-green-light)] empty-placeholder whitespace-nowrap outline-none w-full text-left block" data-placeholder="请填入客户邮箱号"></span>
+                                <span contenteditable="true" id="val-receiver" class="text-[var(--gas-green-light)] empty-placeholder whitespace-nowrap outline-none w-full text-left block" data-placeholder="璇峰～鍏ュ鎴烽偖绠卞彿"></span>
                             </div>
                         </div>
                     </div>
@@ -437,20 +437,20 @@
                     
                     <div class="mt-3 flex flex-wrap items-center justify-start xl:justify-end gap-2 w-full">
                         <span class="text-[10px] md:text-[11px] text-[var(--gas-green-light)] font-mono-num flex items-center bg-[var(--gas-green-bg-solid)] px-2 py-1.5 rounded border border-[var(--gas-green-primary)] shadow-[0_0_8px_rgba(40,167,69,0.2)]" id="rate-status">
-                            <i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i> 全球实时汇率在线
+                            <i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i> 鍏ㄧ悆瀹炴椂姹囩巼鍦ㄧ嚎
                         </span>
                         <button onclick="fetchRates(true)" class="btn-outline bg-[var(--bg-card)] px-3 py-1.5 rounded text-[10px] md:text-[11px] font-bold flex items-center">
-                            <i class="fa-solid fa-rotate-right mr-1.5"></i> <span id="btn-text-refresh">刷新汇率</span>
+                            <i class="fa-solid fa-rotate-right mr-1.5"></i> <span id="btn-text-refresh">鍒锋柊姹囩巼</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- 产品列表容器 -->
+            <!-- 浜у搧鍒楄〃瀹瑰櫒 -->
             <div id="content-area"></div>
             
             <div id="footer-note" class="mt-12 md:mt-16 pt-6 md:pt-8 border-t border-[var(--border-color)] text-center text-xs md:text-sm text-[var(--text-muted)] leading-relaxed px-2" contenteditable="true">
-                <span class="text-[var(--gas-green-light)] font-bold">///</span> 本报价基于全球实时汇率智能生成。最终价格以双方签订的正式商业合同为准。 VMAN Engineering 保留最终解释权。
+                <span class="text-[var(--gas-green-light)] font-bold">///</span> 鏈姤浠峰熀浜庡叏鐞冨疄鏃舵眹鐜囨櫤鑳界敓鎴愩€傛渶缁堜环鏍间互鍙屾柟绛捐鐨勬寮忓晢涓氬悎鍚屼负鍑嗐€?VMAN Engineering 淇濈暀鏈€缁堣В閲婃潈銆?
             </div>
         </div>
     </div>
@@ -459,15 +459,15 @@
         id="back-to-top"
         type="button"
         class="back-to-top z-40"
-        aria-label="返回顶部"
-        title="返回顶部"
+        aria-label="杩斿洖椤堕儴"
+        title="杩斿洖椤堕儴"
         onclick="scrollToTop()"
     >
         <i class="fa-solid fa-arrow-up text-sm"></i>
     </button>
 
 <script>
-    // --- 国际化字典 ---
+    // --- 鍥介檯鍖栧瓧鍏?---
     const dict = {
         zh: {
             title: `VMAN Engineering 产品报价总览`,
@@ -492,7 +492,7 @@
             menuImg: "生成长图",
             menuPdf: "导出 PDF",
             loading: "处理中...",
-            overlayGen: "正在渲染高清文档..."
+            overlayGen: "正在生成高清文档..."
         },
         en: {
             title: `VMAN Engineering Product Quotation Overview`,
@@ -524,7 +524,7 @@
             supplier: "ПОСТАВЩИК:",
             sender: "ОТПРАВИТЕЛЬ:",
             receiver: "ПОЛУЧАТЕЛЬ:",
-            validity: "ДЕЙСТВИТЕЛЬНО:",
+            validity: "СРОК ДЕЙСТВИЯ:",
             update: "СИНХРОНИЗАЦИЯ",
             part1_line1: "[ БЛОК 01 ]",
             part1_line2: "ГАЗОГЕНЕРАТОР + МОДУЛЬ МАЙНИНГ-СТОЕК",
@@ -539,7 +539,7 @@
             footerText: "<span class=\"text-[var(--gas-green-light)] font-bold\">///</span> Данное предложение создано на основе курсов валют в реальном времени. Окончательные цены определяются официальным коммерческим контрактом. VMAN Engineering.",
             btnSend: "Отправить",
             btnShare: "Экспорт",
-            menuImg: "Экспорт Изображения",
+            menuImg: "Экспорт изображения",
             menuPdf: "Экспорт PDF",
             loading: "Загрузка...",
             overlayGen: "СОЗДАНИЕ HD ДОКУМЕНТА..."
@@ -549,97 +549,97 @@
     // --- 数据模型 ---
     let appData = {
         part1: {
-            desc: { zh: "HTM+ 500kW 燃气发电机组及矿机机位模块", en: "HTM+ 500kW Gas Genset & Miner Rack Module", ru: "HTM+ 500kW Газогенератор и Модуль майнинг-стоек" },
+            desc: { zh: "HTM+ 500kW Gas Genset & Miner Rack Module", en: "HTM+ 500kW Gas Genset & Miner Rack Module", ru: "HTM+ 500kW Gas Genset & Miner Rack Module" },
             items1: [
-                { id:"01", brand:"HTM+", qty:"1", price:607200, n:{zh:"HTM+ 燃气发动机250kW*2 成套", en:"HTM+ Gas Engine 250kW*2 Set", ru:"HTM+ Газовый двигатель 250kW*2"} },
-                { id:"02", brand:"EvoTec", qty:"1", price:47026, n:{zh:"EvoTec发电机", en:"EvoTec Alternator", ru:"Генератор EvoTec"} },
-                { id:"03", brand:"Woodward", qty:"1", price:66000, n:{zh:"伍德沃德控制系统", en:"Woodward Control System", ru:"Система управления Woodward"} },
-                { id:"04", brand:"-", qty:"1", price:-1, n:{zh:"智能断路器", en:"Smart Breaker", ru:"Умный выключатель"} },
-                { id:"05", brand:"-", qty:"1", price:-1, n:{zh:"排气防爆阀+效应器", en:"Exhaust Explosion-proof Valve", ru:"Взрывозащищенный клапан"} },
-                { id:"06", brand:"Dungs", qty:"1", price:-1, n:{zh:"燃气供应阀组Dungs", en:"Gas Supply Valve Dungs", ru:"Газовый клапан Dungs"} },
-                { id:"07", brand:"-", qty:"1", price:-1, n:{zh:"缸套水加热器", en:"Jacket Water Heater", ru:"Подогреватель воды"} },
-                { id:"08", brand:"-", qty:"1", price:-1, n:{zh:"发电机水箱", en:"Alternator Water Tank", ru:"Бак для воды генератора"} },
-                { id:"09", brand:"-", qty:"1", price:-1, n:{zh:"发电机冷却撬", en:"Alternator Cooling Skid", ru:"Модуль охлаждения"} },
-                { id:"10", brand:"-", qty:"1", price:-1, n:{zh:"底座和辅助材料", en:"Mounting Frame & Materials", ru:"Основание и материалы"} },
-                { id:"11", brand:"-", qty:"1", price:361200, n:{zh:"液冷矿机机位模块", en:"Liquid Cooling Miner Module", ru:"Модуль жидкостного охлаждения"} },
-                { id:"12", brand:"-", qty:"1", price:127200, n:{zh:"40HQ集装箱特箱", en:"40HQ Special Container", ru:"Спецконтейнер 40HQ"} },
-                { id:"13", brand:"-", qty:"1", price:6000, n:{zh:"集成转运费", en:"Integration Transfer Fee", ru:"Транспортные расходы"} },
-                { id:"14", brand:"-", qty:"1", price:30000, n:{zh:"集成发电模块与机位模块安装费", en:"Installation & Testing Fee", ru:"Монтаж и пусконаладка"} }
+                { id:"01", brand:"HTM+", qty:"1", price:607200, n:{ zh:"HTM+ Gas Engine 250kW*2 Set", en:"HTM+ Gas Engine 250kW*2 Set", ru:"HTM+ Gas Engine 250kW*2 Set" } },
+                { id:"02", brand:"EvoTec", qty:"1", price:47026, n:{ zh:"EvoTec Alternator", en:"EvoTec Alternator", ru:"EvoTec Alternator" } },
+                { id:"03", brand:"Woodward", qty:"1", price:66000, n:{ zh:"Woodward Control System", en:"Woodward Control System", ru:"Woodward Control System" } },
+                { id:"04", brand:"-", qty:"1", price:-1, n:{ zh:"Smart Breaker", en:"Smart Breaker", ru:"Smart Breaker" } },
+                { id:"05", brand:"-", qty:"1", price:-1, n:{ zh:"Exhaust Explosion-proof Valve", en:"Exhaust Explosion-proof Valve", ru:"Exhaust Explosion-proof Valve" } },
+                { id:"06", brand:"Dungs", qty:"1", price:-1, n:{ zh:"Gas Supply Valve Dungs", en:"Gas Supply Valve Dungs", ru:"Gas Supply Valve Dungs" } },
+                { id:"07", brand:"-", qty:"1", price:-1, n:{ zh:"Jacket Water Heater", en:"Jacket Water Heater", ru:"Jacket Water Heater" } },
+                { id:"08", brand:"-", qty:"1", price:-1, n:{ zh:"Alternator Water Tank", en:"Alternator Water Tank", ru:"Alternator Water Tank" } },
+                { id:"09", brand:"-", qty:"1", price:-1, n:{ zh:"Alternator Cooling Skid", en:"Alternator Cooling Skid", ru:"Alternator Cooling Skid" } },
+                { id:"10", brand:"-", qty:"1", price:-1, n:{ zh:"Mounting Frame & Materials", en:"Mounting Frame & Materials", ru:"Mounting Frame & Materials" } },
+                { id:"11", brand:"-", qty:"1", price:361200, n:{ zh:"Liquid Cooling Miner Module", en:"Liquid Cooling Miner Module", ru:"Liquid Cooling Miner Module" } },
+                { id:"12", brand:"-", qty:"1", price:127200, n:{ zh:"40HQ Special Container", en:"40HQ Special Container", ru:"40HQ Special Container" } },
+                { id:"13", brand:"-", qty:"1", price:6000, n:{ zh:"Integration Transfer Fee", en:"Integration Transfer Fee", ru:"Integration Transfer Fee" } },
+                { id:"14", brand:"-", qty:"1", price:30000, n:{ zh:"Installation & Testing Fee", en:"Installation & Testing Fee", ru:"Installation & Testing Fee" } }
             ],
-            desc2: { zh: "DT30+ 550kW 燃气发电机组及矿机机位模块", en: "DT30+ 550kW Gas Genset & Miner Rack Module", ru: "DT30+ 550kW Газогенератор и Модуль майнинг-стоек" },
+            desc2: { zh: "DT30+ 550kW Gas Genset & Miner Rack Module", en: "DT30+ 550kW Gas Genset & Miner Rack Module", ru: "DT30+ 550kW Gas Genset & Miner Rack Module" },
             items2: [
-                { id:"01", brand:"Vman", qty:"1", price:418646, n:{zh:"DT30+ 燃气发动机550kW", en:"DT30+ Gas Engine 550kW", ru:"DT30+ Газовый двигатель 550kW"} },
-                { id:"02", brand:"Leroy-Somer", qty:"1", price:95026, n:{zh:"Leroy-Somer LSA49.3 M6发电机", en:"Leroy-Somer LSA49.3 Alternator", ru:"Генератор Leroy-Somer LSA49.3"} },
-                { id:"03", brand:"Leroy-Somer", qty:"1", price:3919, n:{zh:"AVR升级到D350", en:"AVR Upgrade to D350", ru:"Обновление AVR до D350"} },
-                { id:"04", brand:"-", qty:"1", price:133560, n:{zh:"控制系统", en:"Control System", ru:"Система управления"} },
-                { id:"05", brand:"ABB", qty:"1", price:16800, n:{zh:"ABB 智能断路器", en:"ABB Smart Breaker", ru:"Умный выключатель ABB"} },
-                { id:"06", brand:"-", qty:"1", price:936, n:{zh:"ATS 开关", en:"ATS Switch", ru:"Переключатель ATS"} },
-                { id:"07", brand:"-", qty:"1", price:12360, n:{zh:"排气防爆阀+效应器", en:"Exhaust Valve & Effector", ru:"Взрывозащищенный клапан"} },
-                { id:"08", brand:"Dungs", qty:"1", price:38390, n:{zh:"燃气供应阀组Dungs", en:"Gas Supply Valve Dungs", ru:"Газовый клапан Dungs"} },
-                { id:"09", brand:"-", qty:"1", price:5400, n:{zh:"缸套水加热器", en:"Jacket Water Heater", ru:"Подогреватель воды"} },
-                { id:"10", brand:"-", qty:"1", price:54000, n:{zh:"水箱", en:"Water Tank", ru:"Бак для воды"} },
-                { id:"11", brand:"-", qty:"1", price:37114, n:{zh:"冷却撬", en:"Cooling Skid", ru:"Охлаждающий модуль"} },
-                { id:"12", brand:"-", qty:"1", price:39510, n:{zh:"底座和辅助材料", en:"Mounting Frame & Materials", ru:"Основание и материалы"} },
-                { id:"13", brand:"-", qty:"1", price:361200, n:{zh:"液冷矿机机位模块", en:"Liquid Cooling Miner Module", ru:"Модуль жидкостного охлаждения"} },
-                { id:"14", brand:"-", qty:"1", price:151200, n:{zh:"40HQ集装箱特箱", en:"40HQ Special Container", ru:"Спецконтейнер 40HQ"} },
-                { id:"15", brand:"-", qty:"1", price:6000, n:{zh:"集成转运费", en:"Integration Transfer Fee", ru:"Транспортные расходы"} },
-                { id:"16", brand:"-", qty:"1", price:36000, n:{zh:"集成安装费", en:"Installation Fee", ru:"Монтаж"} }
+                { id:"01", brand:"Vman", qty:"1", price:418646, n:{ zh:"DT30+ Gas Engine 550kW", en:"DT30+ Gas Engine 550kW", ru:"DT30+ Gas Engine 550kW" } },
+                { id:"02", brand:"Leroy-Somer", qty:"1", price:95026, n:{ zh:"Leroy-Somer LSA49.3 Alternator", en:"Leroy-Somer LSA49.3 Alternator", ru:"Leroy-Somer LSA49.3 Alternator" } },
+                { id:"03", brand:"Leroy-Somer", qty:"1", price:3919, n:{ zh:"AVR Upgrade to D350", en:"AVR Upgrade to D350", ru:"AVR Upgrade to D350" } },
+                { id:"04", brand:"-", qty:"1", price:133560, n:{ zh:"Control System", en:"Control System", ru:"Control System" } },
+                { id:"05", brand:"ABB", qty:"1", price:16800, n:{ zh:"ABB Smart Breaker", en:"ABB Smart Breaker", ru:"ABB Smart Breaker" } },
+                { id:"06", brand:"-", qty:"1", price:936, n:{ zh:"ATS Switch", en:"ATS Switch", ru:"ATS Switch" } },
+                { id:"07", brand:"-", qty:"1", price:12360, n:{ zh:"Exhaust Valve & Effector", en:"Exhaust Valve & Effector", ru:"Exhaust Valve & Effector" } },
+                { id:"08", brand:"Dungs", qty:"1", price:38390, n:{ zh:"Gas Supply Valve Dungs", en:"Gas Supply Valve Dungs", ru:"Gas Supply Valve Dungs" } },
+                { id:"09", brand:"-", qty:"1", price:5400, n:{ zh:"Jacket Water Heater", en:"Jacket Water Heater", ru:"Jacket Water Heater" } },
+                { id:"10", brand:"-", qty:"1", price:54000, n:{ zh:"Water Tank", en:"Water Tank", ru:"Water Tank" } },
+                { id:"11", brand:"-", qty:"1", price:37114, n:{ zh:"Cooling Skid", en:"Cooling Skid", ru:"Cooling Skid" } },
+                { id:"12", brand:"-", qty:"1", price:39510, n:{ zh:"Mounting Frame & Materials", en:"Mounting Frame & Materials", ru:"Mounting Frame & Materials" } },
+                { id:"13", brand:"-", qty:"1", price:361200, n:{ zh:"Liquid Cooling Miner Module", en:"Liquid Cooling Miner Module", ru:"Liquid Cooling Miner Module" } },
+                { id:"14", brand:"-", qty:"1", price:151200, n:{ zh:"40HQ Special Container", en:"40HQ Special Container", ru:"40HQ Special Container" } },
+                { id:"15", brand:"-", qty:"1", price:6000, n:{ zh:"Integration Transfer Fee", en:"Integration Transfer Fee", ru:"Integration Transfer Fee" } },
+                { id:"16", brand:"-", qty:"1", price:36000, n:{ zh:"Installation Fee", en:"Installation Fee", ru:"Installation Fee" } }
             ]
         },
         part2: {
-            desc: { zh: "P1200GF (额定电功率 1200kW | 400V/50HZ)", en: "P1200GF (1200kW | 400V/50HZ)", ru: "P1200GF (1200kW | 400V/50HZ)" },
+            desc: { zh: "P1200GF (1200kW | 400V/50HZ)", en: "P1200GF (1200kW | 400V/50HZ)", ru: "P1200GF (1200kW | 400V/50HZ)" },
             items1: [
-                { id:"-", brand:"-", qty:"-", price:1476200, isHeader:true, n:{zh:"主配置模块", en:"Basic GenSet", ru:"Базовая комплектация"} },
-                { id:"I-1", brand:"Vman", qty:"1", price:-1, n:{zh:"VMAN DT58 燃气发动机", en:"VMAN DT58 Gas Engine", ru:"Газовый двигатель"} },
-                { id:"I-2", brand:"Vman", qty:"1", price:-1, n:{zh:"HEINZMANN 控制系统", en:"HEINZMANN control system", ru:"Система управления"} },
-                { id:"I-3", brand:"ABB", qty:"1", price:-1, n:{zh:"ABB 涡轮增压器", en:"ABB Turbocharger", ru:"Турбокомпрессор ABB"} },
-                { id:"I-4", brand:"Vman", qty:"1", price:-1, n:{zh:"底座", en:"Mounting frame", ru:"Монтажная рама"} },
-                { id:"I-5", brand:"VULKAN", qty:"1", price:-1, n:{zh:"弹性联轴器", en:"Elastic coupling", ru:"Упругая муфта"} },
-                { id:"I-6", brand:"Leroy-Somer", qty:"1", price:-1, n:{zh:"400V交流发电机 LSA50.2 L8", en:"400V Alternator LSA50.2 L8", ru:"Генератор 400V"} },
-                { id:"-", brand:"-", qty:"-", price:1131100, isHeader:true, n:{zh:"系统扩展包", en:"System Options", ru:"Опционально"} },
-                { id:"II-1", brand:"Galanz/Wilo/Siemens", qty:"1", price:224000, n:{zh:"冷却系统 (高低温水泵/阀门/水箱)", en:"Cooling system", ru:"Система охлаждения"} },
-                { id:"II-2", brand:"V-Corelink 1200", qty:"1", price:135000, n:{zh:"发电机组控制系统 (IG1000 + 15.6'屏)", en:"Genset control system", ru:"Система управления"} },
-                { id:"II-3a", brand:"Schneider", qty:"1", price:100000, n:{zh:"高压开关柜 (VCB)", en:"High Voltage Switch Cabinet", ru:"ВВ шкаф"} },
-                { id:"II-3b", brand:"ABB", qty:"1", price:0, n:{zh:"低压开关柜 (ACB)", en:"Low Voltage Switch Cabinet", ru:"НВ шкаф"} },
-                { id:"II-4a", brand:"Vman DN250", qty:"1", price:20000, n:{zh:"排气系统 - 消音器", en:"Exhaust System - Muffler", ru:"Глушитель"} },
-                { id:"II-4b", brand:"Vman", qty:"1", price:4800, n:{zh:"排气系统 - 防爆阀", en:"Exhaust explosion-proof valve", ru:"Взрывозащищенный клапан"} },
-                { id:"II-5a", brand:"Dungs", qty:"1", price:11300, n:{zh:"燃气供应阀组 - 过滤器", en:"Gas valve - Filter", ru:"Газовый клапан - Фильтр"} },
-                { id:"II-5b", brand:"Dungs", qty:"1", price:19000, n:{zh:"燃气供应阀组 - 电磁阀", en:"Gas valve - Solenoid valve", ru:"Газовый клапан - Электромагнитный клапан"} },
-                { id:"II-5c", brand:"Dungs", qty:"1", price:9000, n:{zh:"燃气供应阀组 - 调压阀", en:"Gas valve - Pressure regulator", ru:"Газовый клапан - Регулятор давления"} },
-                { id:"II-6", brand:"Vman", qty:"1", price:10000, n:{zh:"专用工具", en:"Special tools", ru:"Специальные инструменты"} },
-                { id:"II-7", brand:"Smartgen", qty:"1", price:34000, n:{zh:"电水预热器", en:"Electric Water Preheater", ru:"Электрический подогреватель"} },
-                { id:"II-8", brand:"Vman", qty:"1", price:7600, n:{zh:"蓄电池 (DC24V, 4*195Ah)", en:"Battery", ru:"Аккумуляторная батарея"} },
-                { id:"II-9a", brand:"Set", qty:"1", price:118500, n:{zh:"余热回收系统 - 热水锅炉", en:"Heat recovery - Hot water boiler", ru:"Система рекуперации - водогрейный котел"} },
-                { id:"II-9b", brand:"Set", qty:"1", price:127500, n:{zh:"余热回收系统 - 蒸汽锅炉", en:"Heat recovery - Steam boiler", ru:"Система рекуперации - паровой котел"} },
-                { id:"II-10", brand:"VULKAN", qty:"8", price:10400, n:{zh:"弹簧减震器 3200kg", en:"Spring shock absorber", ru:"Пружинный амортизатор"} },
-                { id:"II-11", brand:"Vman", qty:"1", price:300000, n:{zh:"集装箱 40HQ", en:"Container 40HQ", ru:"Контейнер 40HQ"} }
+                { id:"-", brand:"-", qty:"-", price:1476200, isHeader:true, n:{ zh:"Basic GenSet", en:"Basic GenSet", ru:"Basic GenSet" } },
+                { id:"I-1", brand:"Vman", qty:"1", price:-1, n:{ zh:"VMAN DT58 Gas Engine", en:"VMAN DT58 Gas Engine", ru:"VMAN DT58 Gas Engine" } },
+                { id:"I-2", brand:"Vman", qty:"1", price:-1, n:{ zh:"HEINZMANN control system", en:"HEINZMANN control system", ru:"HEINZMANN control system" } },
+                { id:"I-3", brand:"ABB", qty:"1", price:-1, n:{ zh:"ABB Turbocharger", en:"ABB Turbocharger", ru:"ABB Turbocharger" } },
+                { id:"I-4", brand:"Vman", qty:"1", price:-1, n:{ zh:"Mounting frame", en:"Mounting frame", ru:"Mounting frame" } },
+                { id:"I-5", brand:"VULKAN", qty:"1", price:-1, n:{ zh:"Elastic coupling", en:"Elastic coupling", ru:"Elastic coupling" } },
+                { id:"I-6", brand:"Leroy-Somer", qty:"1", price:-1, n:{ zh:"400V Alternator LSA50.2 L8", en:"400V Alternator LSA50.2 L8", ru:"400V Alternator LSA50.2 L8" } },
+                { id:"-", brand:"-", qty:"-", price:1131100, isHeader:true, n:{ zh:"System Options", en:"System Options", ru:"System Options" } },
+                { id:"II-1", brand:"Galanz/Wilo/Siemens", qty:"1", price:224000, n:{ zh:"Cooling system", en:"Cooling system", ru:"Cooling system" } },
+                { id:"II-2", brand:"V-Corelink 1200", qty:"1", price:135000, n:{ zh:"Genset control system", en:"Genset control system", ru:"Genset control system" } },
+                { id:"II-3a", brand:"Schneider", qty:"1", price:100000, n:{ zh:"High Voltage Switch Cabinet", en:"High Voltage Switch Cabinet", ru:"High Voltage Switch Cabinet" } },
+                { id:"II-3b", brand:"ABB", qty:"1", price:0, n:{ zh:"Low Voltage Switch Cabinet", en:"Low Voltage Switch Cabinet", ru:"Low Voltage Switch Cabinet" } },
+                { id:"II-4a", brand:"Vman DN250", qty:"1", price:20000, n:{ zh:"Exhaust System - Muffler", en:"Exhaust System - Muffler", ru:"Exhaust System - Muffler" } },
+                { id:"II-4b", brand:"Vman", qty:"1", price:4800, n:{ zh:"Exhaust explosion-proof valve", en:"Exhaust explosion-proof valve", ru:"Exhaust explosion-proof valve" } },
+                { id:"II-5a", brand:"Dungs", qty:"1", price:11300, n:{ zh:"Gas valve - Filter", en:"Gas valve - Filter", ru:"Gas valve - Filter" } },
+                { id:"II-5b", brand:"Dungs", qty:"1", price:19000, n:{ zh:"Gas valve - Solenoid valve", en:"Gas valve - Solenoid valve", ru:"Gas valve - Solenoid valve" } },
+                { id:"II-5c", brand:"Dungs", qty:"1", price:9000, n:{ zh:"Gas valve - Pressure regulator", en:"Gas valve - Pressure regulator", ru:"Gas valve - Pressure regulator" } },
+                { id:"II-6", brand:"Vman", qty:"1", price:10000, n:{ zh:"Special tools", en:"Special tools", ru:"Special tools" } },
+                { id:"II-7", brand:"Smartgen", qty:"1", price:34000, n:{ zh:"Electric Water Preheater", en:"Electric Water Preheater", ru:"Electric Water Preheater" } },
+                { id:"II-8", brand:"Vman", qty:"1", price:7600, n:{ zh:"Battery (DC24V, 4*195Ah)", en:"Battery (DC24V, 4*195Ah)", ru:"Battery (DC24V, 4*195Ah)" } },
+                { id:"II-9a", brand:"Set", qty:"1", price:118500, n:{ zh:"Heat recovery - Hot water boiler", en:"Heat recovery - Hot water boiler", ru:"Heat recovery - Hot water boiler" } },
+                { id:"II-9b", brand:"Set", qty:"1", price:127500, n:{ zh:"Heat recovery - Steam boiler", en:"Heat recovery - Steam boiler", ru:"Heat recovery - Steam boiler" } },
+                { id:"II-10", brand:"VULKAN", qty:"8", price:10400, n:{ zh:"Spring shock absorber 3200kg", en:"Spring shock absorber 3200kg", ru:"Spring shock absorber 3200kg" } },
+                { id:"II-11", brand:"Vman", qty:"1", price:300000, n:{ zh:"Container 40HQ", en:"Container 40HQ", ru:"Container 40HQ" } }
             ],
-            desc2: { zh: "P2000GF (额定电功率 2000kW | 400V/50HZ)", en: "P2000GF (2000kW | 400V/50HZ)", ru: "P2000GF (2000kW | 400V/50HZ)" },
+            desc2: { zh: "P2000GF (2000kW | 400V/50HZ)", en: "P2000GF (2000kW | 400V/50HZ)", ru: "P2000GF (2000kW | 400V/50HZ)" },
             items2: [
-                { id:"-", brand:"-", qty:"-", price:3290000, isHeader:true, n:{zh:"主配置模块", en:"Basic GenSet", ru:"Базовая комплектация"} },
-                { id:"I-1", brand:"Vman", qty:"1", price:-1, n:{zh:"HND CHG622V20 燃气发动机", en:"HND CHG622V20 Gas Engine", ru:"Газовый двигатель"} },
-                { id:"I-2", brand:"Vman", qty:"1", price:-1, n:{zh:"Heinzmann 控制系统柜", en:"Heinzmann control system cabinet", ru:"Система управления"} },
-                { id:"I-3", brand:"ABB", qty:"1", price:-1, n:{zh:"ABB 涡轮增压器", en:"ABB turbocharger", ru:"Турбокомпрессор ABB"} },
-                { id:"I-4", brand:"HND", qty:"1", price:-1, n:{zh:"底座", en:"Mounting frame", ru:"Монтажная рама"} },
-                { id:"I-5", brand:"VULKAN", qty:"1", price:-1, n:{zh:"弹性联轴器", en:"Elastic coupling", ru:"Упругая муфта"} },
-                { id:"I-6", brand:"Leroy-Somer", qty:"1", price:-1, n:{zh:"400V交流发电机 LSA52.3 U16", en:"400V Alternator LSA52.3 U16", ru:"Генератор 400V"} },
-                { id:"-", brand:"-", qty:"-", price:1630115, isHeader:true, n:{zh:"系统扩展包", en:"System Options", ru:"Опционально"} },
-                { id:"II-1", brand:"Galanz/Wilo/Siemens", qty:"1", price:305000, n:{zh:"冷却系统 (高低温水泵/阀门/水箱)", en:"Cooling system", ru:"Система охлаждения"} },
-                { id:"II-2", brand:"V-Corelink2000", qty:"1", price:135000, n:{zh:"发电机组控制系统 (IG1000 + 15.6'屏)", en:"Genset control system", ru:"Система управления"} },
-                { id:"II-3a", brand:"Schneider", qty:"1", price:100000, n:{zh:"高压开关柜 (VCB)", en:"High Voltage Switch Cabinet", ru:"ВВ шкаф"} },
-                { id:"II-3b", brand:"ABB", qty:"1", price:55000, n:{zh:"低压开关柜 (ACB)", en:"Low Voltage Switch Cabinet", ru:"НВ шкаф"} },
-                { id:"II-4a", brand:"HND DN400", qty:"1", price:23000, n:{zh:"排气系统 - 消音器", en:"Exhaust System - Muffler", ru:"Глушитель"} },
-                { id:"II-4b", brand:"HND", qty:"1", price:4800, n:{zh:"排气系统 - 防爆阀", en:"Exhaust explosion-proof valve", ru:"Взрывозащищенный клапан"} },
-                { id:"II-5a", brand:"Dungs", qty:"1", price:13500, n:{zh:"燃气供应阀组 - 过滤器", en:"Gas valve - Filter", ru:"Газовый клапан - Фильтр"} },
-                { id:"II-5b", brand:"Dungs", qty:"1", price:27300, n:{zh:"燃气供应阀组 - 电磁阀", en:"Gas valve - Solenoid valve", ru:"Газовый клапан - Электромагнитный клапан"} },
-                { id:"II-5c", brand:"Dungs", qty:"1", price:15515, n:{zh:"燃气供应阀组 - 调压阀", en:"Gas valve - Pressure regulator", ru:"Газовый клапан - Регулятор давления"} },
-                { id:"II-6", brand:"HND", qty:"1", price:10000, n:{zh:"专用工具", en:"Special tools", ru:"Специальные инструменты"} },
-                { id:"II-7", brand:"Smartgen", qty:"1", price:34000, n:{zh:"电水预热器", en:"Electric Water Preheater", ru:"Электрический подогреватель"} },
-                { id:"II-8", brand:"HND", qty:"1", price:11400, n:{zh:"蓄电池 (DC24V, 6*195Ah)", en:"Battery", ru:"Аккумуляторная батарея"} },
-                { id:"II-9a", brand:"Set", qty:"1", price:225000, n:{zh:"余热回收系统 - 热水锅炉", en:"Heat recovery - Hot water boiler", ru:"Система рекуперации - водогрейный котел"} },
-                { id:"II-9b", brand:"Set", qty:"1", price:255000, n:{zh:"余热回收系统 - 蒸汽锅炉", en:"Heat recovery - Steam boiler", ru:"Система рекуперации - паровой котел"} },
-                { id:"II-10", brand:"VULKAN", qty:"12", price:15600, n:{zh:"弹簧减震器 3200kg", en:"Spring shock absorber", ru:"Пружинный амортизатор"} },
-                { id:"II-11", brand:"Vman", qty:"1", price:400000, n:{zh:"集装箱 13000X3500X3500mm", en:"Container", ru:"Контейнер"} }
+                { id:"-", brand:"-", qty:"-", price:3290000, isHeader:true, n:{ zh:"Basic GenSet", en:"Basic GenSet", ru:"Basic GenSet" } },
+                { id:"I-1", brand:"Vman", qty:"1", price:-1, n:{ zh:"HND CHG622V20 Gas Engine", en:"HND CHG622V20 Gas Engine", ru:"HND CHG622V20 Gas Engine" } },
+                { id:"I-2", brand:"Vman", qty:"1", price:-1, n:{ zh:"Heinzmann control system cabinet", en:"Heinzmann control system cabinet", ru:"Heinzmann control system cabinet" } },
+                { id:"I-3", brand:"ABB", qty:"1", price:-1, n:{ zh:"ABB turbocharger", en:"ABB turbocharger", ru:"ABB turbocharger" } },
+                { id:"I-4", brand:"HND", qty:"1", price:-1, n:{ zh:"Mounting frame", en:"Mounting frame", ru:"Mounting frame" } },
+                { id:"I-5", brand:"VULKAN", qty:"1", price:-1, n:{ zh:"Elastic coupling", en:"Elastic coupling", ru:"Elastic coupling" } },
+                { id:"I-6", brand:"Leroy-Somer", qty:"1", price:-1, n:{ zh:"400V Alternator LSA52.3 U16", en:"400V Alternator LSA52.3 U16", ru:"400V Alternator LSA52.3 U16" } },
+                { id:"-", brand:"-", qty:"-", price:1630115, isHeader:true, n:{ zh:"System Options", en:"System Options", ru:"System Options" } },
+                { id:"II-1", brand:"Galanz/Wilo/Siemens", qty:"1", price:305000, n:{ zh:"Cooling system", en:"Cooling system", ru:"Cooling system" } },
+                { id:"II-2", brand:"V-Corelink2000", qty:"1", price:135000, n:{ zh:"Genset control system", en:"Genset control system", ru:"Genset control system" } },
+                { id:"II-3a", brand:"Schneider", qty:"1", price:100000, n:{ zh:"High Voltage Switch Cabinet", en:"High Voltage Switch Cabinet", ru:"High Voltage Switch Cabinet" } },
+                { id:"II-3b", brand:"ABB", qty:"1", price:55000, n:{ zh:"Low Voltage Switch Cabinet", en:"Low Voltage Switch Cabinet", ru:"Low Voltage Switch Cabinet" } },
+                { id:"II-4a", brand:"HND DN400", qty:"1", price:23000, n:{ zh:"Exhaust System - Muffler", en:"Exhaust System - Muffler", ru:"Exhaust System - Muffler" } },
+                { id:"II-4b", brand:"HND", qty:"1", price:4800, n:{ zh:"Exhaust explosion-proof valve", en:"Exhaust explosion-proof valve", ru:"Exhaust explosion-proof valve" } },
+                { id:"II-5a", brand:"Dungs", qty:"1", price:13500, n:{ zh:"Gas valve - Filter", en:"Gas valve - Filter", ru:"Gas valve - Filter" } },
+                { id:"II-5b", brand:"Dungs", qty:"1", price:27300, n:{ zh:"Gas valve - Solenoid valve", en:"Gas valve - Solenoid valve", ru:"Gas valve - Solenoid valve" } },
+                { id:"II-5c", brand:"Dungs", qty:"1", price:15515, n:{ zh:"Gas valve - Pressure regulator", en:"Gas valve - Pressure regulator", ru:"Gas valve - Pressure regulator" } },
+                { id:"II-6", brand:"HND", qty:"1", price:10000, n:{ zh:"Special tools", en:"Special tools", ru:"Special tools" } },
+                { id:"II-7", brand:"Smartgen", qty:"1", price:34000, n:{ zh:"Electric Water Preheater", en:"Electric Water Preheater", ru:"Electric Water Preheater" } },
+                { id:"II-8", brand:"HND", qty:"1", price:11400, n:{ zh:"Battery (DC24V, 6*195Ah)", en:"Battery (DC24V, 6*195Ah)", ru:"Battery (DC24V, 6*195Ah)" } },
+                { id:"II-9a", brand:"Set", qty:"1", price:225000, n:{ zh:"Heat recovery - Hot water boiler", en:"Heat recovery - Hot water boiler", ru:"Heat recovery - Hot water boiler" } },
+                { id:"II-9b", brand:"Set", qty:"1", price:255000, n:{ zh:"Heat recovery - Steam boiler", en:"Heat recovery - Steam boiler", ru:"Heat recovery - Steam boiler" } },
+                { id:"II-10", brand:"VULKAN", qty:"12", price:15600, n:{ zh:"Spring shock absorber 3200kg", en:"Spring shock absorber 3200kg", ru:"Spring shock absorber 3200kg" } },
+                { id:"II-11", brand:"Vman", qty:"1", price:400000, n:{ zh:"Container 13000X3500X3500mm", en:"Container 13000X3500X3500mm", ru:"Container 13000X3500X3500mm" } }
             ]
         }
     };
@@ -657,7 +657,7 @@
     async function fetchRates(isManual = false) {
         const statusEl = document.getElementById('rate-status');
         if (isManual) {
-            statusEl.innerHTML = `<i class="fa-solid fa-rotate fa-spin text-[var(--gas-green-light)] mr-1.5"></i>正在刷新...`;
+            statusEl.innerHTML = `<i class="fa-solid fa-rotate fa-spin text-[var(--gas-green-light)] mr-1.5"></i>姝ｅ湪鍒锋柊...`;
         }
         
         try {
@@ -671,7 +671,7 @@
                 statusEl.innerHTML = `<i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i>${dict[currentLang].fetchSuccess}`;
             }
         } catch(e) {
-            statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-yellow-500 mr-1.5"></i>获取失败，使用基准数据`;
+            statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-yellow-500 mr-1.5"></i>汇率获取失败，使用基准数据`;
         }
         renderApp();
         triggerSmoothScroll(); 
@@ -762,16 +762,16 @@
                 <h3 class="text-base md:text-lg font-semibold text-[var(--gas-green-light)] mb-4 md:mb-5 flex items-center gap-2 md:gap-3" contenteditable="true">
                     <span class="bg-[var(--gas-green-bg)] border border-[var(--gas-green-primary)] text-[var(--gas-green-light)] w-6 h-6 md:w-7 md:h-7 rounded flex items-center justify-center text-xs md:text-sm font-mono-num flex-shrink-0">${idx}</span>
                     <span class="leading-tight">${descStr[currentLang] || descStr.zh}</span>
-                </h3>` : ''}
+                </h3>
                 
                 <div class="bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between shadow-inner gap-4">
                     <span class="font-bold text-white tracking-wider text-xs md:text-sm" contenteditable="true">${d.sysTotal}:</span>
                     <div class="flex flex-wrap gap-x-4 md:gap-x-6 gap-y-2 text-sm md:text-[15px]">
-                        <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="¥${formatMoney(totalRMB)}">¥${formatMoney(totalRMB)}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="楼${formatMoney(totalRMB)}">楼${formatMoney(totalRMB)}</span></span>
                         <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="$${formatMoney(totalRMB * rates.USD)}">$${formatMoney(totalRMB * rates.USD)}</span></span>
-                        <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="€${formatMoney(totalRMB * rates.EUR)}">€${formatMoney(totalRMB * rates.EUR)}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="鈧?{formatMoney(totalRMB * rates.EUR)}">鈧?{formatMoney(totalRMB * rates.EUR)}</span></span>
                         <span class="flex items-center gap-2"><span class="gas-tag">CAD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="C$${formatMoney(totalRMB * rates.CAD)}">C$${formatMoney(totalRMB * rates.CAD)}</span></span>
-                        <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="₽${formatMoney(totalRMB * rates.RUB)}">₽${formatMoney(totalRMB * rates.RUB)}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="鈧?{formatMoney(totalRMB * rates.RUB)}">鈧?{formatMoney(totalRMB * rates.RUB)}</span></span>
                     </div>
                 </div>
 
@@ -789,11 +789,11 @@
                 const isH = item.isHeader;
                 const isInc = item.price === -1;
                 
-                const rawRmb = isInc ? d.included : `¥${formatMoney(item.price)}`;
+                const rawRmb = isInc ? d.included : `楼${formatMoney(item.price)}`;
                 const rawUsd = isInc ? "-" : `$${formatMoney(item.price * rates.USD)}`;
-                const rawEur = isInc ? "-" : `€${formatMoney(item.price * rates.EUR)}`;
+                const rawEur = isInc ? "-" : `鈧?{formatMoney(item.price * rates.EUR)}`;
                 const rawCad = isInc ? "-" : `C$${formatMoney(item.price * rates.CAD)}`;
-                const rawRub = isInc ? "-" : `₽${formatMoney(item.price * rates.RUB)}`;
+                const rawRub = isInc ? "-" : `鈧?{formatMoney(item.price * rates.RUB)}`;
                 
                 const htmlRmb = isInc ? `<span class="text-[var(--text-muted)] text-xs">${d.included}</span>` : formatMoney(item.price);
                 const htmlUsd = isInc ? `<span class="text-[#333333]">-</span>` : formatMoney(item.price * rates.USD);
@@ -1058,7 +1058,7 @@
             link.click();
 
             setTimeout(() => {
-                alert('✅ 高清工业长图已生成并下载！\n如果在微信或Telegram发送，直接粘贴即可。');
+                alert('✅ 高清长图已生成并下载。\n如需发送到微信或 Telegram，可直接使用该图片。');
             }, 500);
         } finally {
             btn.innerHTML = originalHtml;
@@ -1070,7 +1070,7 @@
     function sendEmail() {
         const receiver = document.getElementById('val-receiver').innerText.trim();
         if(!receiver) {
-            alert("⚠️ 寄送失败：请先填写客户邮箱地址。");
+            alert("⚠️ 请先填写客户邮箱地址。");
             return;
         }
         const sender = document.getElementById('val-sender').innerText.trim();
@@ -1085,3 +1085,6 @@
 </script>
 </body>
 </html>
+
+
+
