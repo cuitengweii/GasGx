@@ -881,7 +881,13 @@ function renderLogin() {
         const submitButton = event.submitter || event.currentTarget?.querySelector('button[type="submit"]');
         await withButtonBusy(submitButton, '登录中...', async () => {
             try {
-                await signInWithPassword(email, password);
+                const result = await signInWithPassword(email, password);
+                state.session = { ...(result.session || {}) };
+                state.user = result.user || result.session?.user || null;
+                state.authView = 'login';
+                state.page = 'dashboard';
+                await refreshAdminAccess(true);
+                await renderPage();
                 showToast('登录成功。');
             } catch (error) {
                 showToast(error.message || '登录失败。', true);
