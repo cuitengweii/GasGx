@@ -1218,16 +1218,29 @@
         return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
     }
 
+    function formatValidityRemaining(remainingMs) {
+        const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+        const daysLeft = Math.floor(totalSeconds / 86400);
+        const hoursLeft = Math.floor((totalSeconds % 86400) / 3600);
+        const minutesLeft = Math.floor((totalSeconds % 3600) / 60);
+        const secondsLeft = totalSeconds % 60;
+
+        if (currentLang === 'en') {
+            return `${daysLeft}d ${String(hoursLeft).padStart(2, '0')}h ${String(minutesLeft).padStart(2, '0')}m ${String(secondsLeft).padStart(2, '0')}s`;
+        }
+        if (currentLang === 'ru') {
+            return `${daysLeft}д ${String(hoursLeft).padStart(2, '0')}ч ${String(minutesLeft).padStart(2, '0')}м ${String(secondsLeft).padStart(2, '0')}с`;
+        }
+        return `${daysLeft}天 ${String(hoursLeft).padStart(2, '0')}时 ${String(minutesLeft).padStart(2, '0')}分 ${String(secondsLeft).padStart(2, '0')}秒`;
+    }
+
     function updateValidityDisplay() {
         const validityEl = document.getElementById('val-validity');
         if (!validityEl) return;
 
         const target = Number.isFinite(quoteValidityTarget) ? quoteValidityTarget : (Date.now() + DAY_MS * 3);
         const remaining = Math.max(0, target - Date.now());
-        const hoursLeft = Math.floor(remaining / (1000 * 60 * 60));
-        const minutesLeft = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-        const secondsLeft = Math.floor((remaining % (1000 * 60)) / 1000);
-        validityEl.innerText = `${String(hoursLeft).padStart(2, '0')}:${String(minutesLeft).padStart(2, '0')}:${String(secondsLeft).padStart(2, '0')}`;
+        validityEl.innerText = formatValidityRemaining(remaining);
     }
 
     function setAccessGateState({ icon, title, message, meta = '', helpHtml = '', showActions = false }) {
