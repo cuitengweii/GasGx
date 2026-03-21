@@ -25,7 +25,7 @@ import {
     rejectQueueItem,
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
-import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260321site06';
+import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260321site07';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js';
 
 const HOMEPAGE_MARK_LIMIT = Number.isFinite(Number(featuredApi.HOMEPAGE_MARK_LIMIT)) ? Number(featuredApi.HOMEPAGE_MARK_LIMIT) : 3;
@@ -797,7 +797,7 @@ function renderLogin() {
                 <form id="ams-login-form" class="ams-form">
                     <div class="ams-field">
                         <label>邮箱</label>
-                        <input id="ams-login-email" class="ams-input" type="email" placeholder="cuitengwei@gasgx.com" required>
+                        <input id="ams-login-email" class="ams-input" type="email" placeholder="请输入管理员邮箱" required>
                     </div>
                     <div class="ams-field">
                         <label>密码</label>
