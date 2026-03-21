@@ -262,6 +262,7 @@ const NEWS_NAVIGATION_ITEM_SEED = Object.freeze({
     type: 'menu',
     icon: 'fa-solid fa-newspaper',
     children: [
+        { title: { zh: '首页', en: 'Home' }, path: '/news/' },
         { title: { zh: '快讯', en: 'Flash' }, path: '/news/flash' },
         { title: { zh: '天然气能源', en: 'Gas Energy' }, path: '/news/gas-energy' },
         { title: { zh: '发电机组', en: 'Generators' }, path: '/news/generators' },
@@ -283,6 +284,31 @@ function isNewsNavigationItemSeed(item) {
     return path === '/news' || path === '/news/index.html';
 }
 
+function isNewsNavigationHomeItemSeed(item) {
+    const path = normalizeNavigationPath(item?.path);
+    return path === '/news' || path === '/news/index.html';
+}
+
+function ensureNewsNavigationChildren(children, fallbackChildren = []) {
+    const working = Array.isArray(children) ? deepClone(children) : [];
+    const fallbackList = Array.isArray(fallbackChildren) ? deepClone(fallbackChildren) : [];
+    const fallbackHome = fallbackList.find((item) => isNewsNavigationHomeItemSeed(item));
+    const defaultHome = deepClone(fallbackHome || NEWS_NAVIGATION_ITEM_SEED.children[0]);
+    const existingIndex = working.findIndex((item) => isNewsNavigationHomeItemSeed(item));
+    const existing = existingIndex >= 0 ? working.splice(existingIndex, 1)[0] : null;
+    const mergedHome = {
+        ...defaultHome,
+        ...(existing || {}),
+        path: normalizeText(existing?.path || defaultHome.path || '/news/') || '/news/',
+        title: {
+            ...(defaultHome.title || {}),
+            ...(existing?.title || {}),
+        },
+    };
+    working.unshift(mergedHome);
+    return working;
+}
+
 function ensureNewsNavigationItems(sourceNavigation, fallbackNavigation = []) {
     const working = Array.isArray(sourceNavigation) ? deepClone(sourceNavigation) : [];
     const fallbackList = Array.isArray(fallbackNavigation) ? deepClone(fallbackNavigation) : [];
@@ -300,7 +326,10 @@ function ensureNewsNavigationItems(sourceNavigation, fallbackNavigation = []) {
             ...(defaultNews.title || {}),
             ...(existing?.title || {}),
         },
-        children: Array.isArray(existing?.children) && existing.children.length ? existing.children : deepClone(defaultNews.children || []),
+        children: ensureNewsNavigationChildren(
+            Array.isArray(existing?.children) && existing.children.length ? existing.children : deepClone(defaultNews.children || []),
+            deepClone(defaultNews.children || []),
+        ),
     };
 
     const insertIndex = working.length > 0 ? 1 : 0;

@@ -422,6 +422,7 @@
         type: "menu",
         icon: "fa-solid fa-newspaper",
         children: [
+            { title: { zh: "首页", en: "Home" }, path: "/news/" },
             { title: { zh: "快讯", en: "Flash" }, path: "/news/flash" },
             { title: { zh: "天然气能源", en: "Gas Energy" }, path: "/news/gas-energy" },
             { title: { zh: "发电机组", en: "Generators" }, path: "/news/generators" },
@@ -443,6 +444,26 @@
         return path === "/news" || path === "/news/index.html";
     }
 
+    function isNewsNavigationHomeItem(item) {
+        const path = normalizeSiteShellNavPath(item && item.path);
+        return path === "/news" || path === "/news/index.html";
+    }
+
+    function ensureNewsNavigationChildren(children, fallbackChildren) {
+        const working = Array.isArray(children) ? cloneSiteShellValue(children) : [];
+        const fallbackList = Array.isArray(fallbackChildren) ? cloneSiteShellValue(fallbackChildren) : [];
+        const fallbackHome = fallbackList.find((item) => isNewsNavigationHomeItem(item));
+        const defaultHome = cloneSiteShellValue(fallbackHome || DEFAULT_NEWS_NAVIGATION_ITEM.children[0]);
+        const existingIndex = working.findIndex((item) => isNewsNavigationHomeItem(item));
+        const existing = existingIndex >= 0 ? working.splice(existingIndex, 1)[0] : null;
+        const mergedHome = Object.assign({}, defaultHome, existing || {}, {
+            path: existing && existing.path ? existing.path : defaultHome.path,
+            title: Object.assign({}, defaultHome.title || {}, existing && existing.title || {})
+        });
+        working.unshift(mergedHome);
+        return working;
+    }
+
     function ensureNewsNavigation(navigation, fallbackNavigation) {
         const working = Array.isArray(navigation) ? cloneSiteShellValue(navigation) : [];
         const fallbackList = Array.isArray(fallbackNavigation) ? cloneSiteShellValue(fallbackNavigation) : [];
@@ -455,9 +476,12 @@
             path: existing && existing.path ? existing.path : defaultNews.path,
             icon: existing && existing.icon ? existing.icon : defaultNews.icon,
             title: Object.assign({}, defaultNews.title || {}, existing && existing.title || {}),
-            children: Array.isArray(existing && existing.children) && existing.children.length
-                ? cloneSiteShellValue(existing.children)
-                : cloneSiteShellValue(defaultNews.children || [])
+            children: ensureNewsNavigationChildren(
+                Array.isArray(existing && existing.children) && existing.children.length
+                    ? existing.children
+                    : defaultNews.children || [],
+                defaultNews.children || []
+            )
         });
         const insertIndex = working.length > 0 ? 1 : 0;
         working.splice(Math.min(insertIndex, working.length), 0, mergedNews);

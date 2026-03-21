@@ -25,6 +25,13 @@
                         "children": [
                                 {
                                         "title": {
+                                                "zh": "首页",
+                                                "en": "Home"
+                                        },
+                                        "path": "/news/"
+                                },
+                                {
+                                        "title": {
                                                 "zh": "快讯",
                                                 "en": "Flash"
                                         },
