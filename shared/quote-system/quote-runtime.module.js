@@ -2,11 +2,15 @@ import {
     DEFAULT_LANG,
     DEFAULT_RATES,
     DEFAULT_SHARE_SECRET,
+    MEDIA_LAYOUTS,
+    MEDIA_POSITIONS,
     SUPPORTED_LANGS,
     buildLegacyFallbackSnapshot,
     buildQuoteSnapshot,
     ensureLegacyQuotePagesLoaded,
+    normalizeMediaConfig,
     normalizeRates,
+    sortMediaItems,
 } from './quote-data.module.js';
 
 const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
@@ -84,6 +88,11 @@ const dict = {
         hours: '时',
         minutes: '分',
         seconds: '秒',
+        galleryTitle: '产品展示图片',
+        galleryPrev: '上一张',
+        galleryNext: '下一张',
+        galleryModeCarousel: '轮播图',
+        galleryModeStack: '纵向铺图',
         shareMetaMode: '访问模式：分享链接',
         shareMetaAdmin: '访问模式：管理员预览',
         shareMetaExpired: '链接到期：',
@@ -161,6 +170,11 @@ const dict = {
         hours: 'h',
         minutes: 'm',
         seconds: 's',
+        galleryTitle: 'Product Gallery',
+        galleryPrev: 'Previous',
+        galleryNext: 'Next',
+        galleryModeCarousel: 'Carousel',
+        galleryModeStack: 'Gallery',
         shareMetaMode: 'Mode: share-link',
         shareMetaAdmin: 'Mode: admin-preview',
         shareMetaExpired: 'Expires at: ',
@@ -238,6 +252,11 @@ const dict = {
         hours: 'ч',
         minutes: 'м',
         seconds: 'с',
+        galleryTitle: 'Галерея продукта',
+        galleryPrev: 'Назад',
+        galleryNext: 'Далее',
+        galleryModeCarousel: 'Карусель',
+        galleryModeStack: 'Лента',
         shareMetaMode: 'Режим: share-link',
         shareMetaAdmin: 'Режим: admin-preview',
         shareMetaExpired: 'Истекает: ',
@@ -262,6 +281,7 @@ const state = {
     pendingSharedAccess: null,
     isMobileMenuOpen: false,
     clockTimer: null,
+    galleryIndex: 0,
 };
 
 function byId(id) {
@@ -486,6 +506,112 @@ function renderStaticText() {
     document.title = `${overviewTitle} - ${supplier}`;
 }
 
+function getProductMediaState(snapshot = state.snapshot) {
+    const config = normalizeMediaConfig(snapshot?.product?.media_config || {});
+    const items = sortMediaItems(snapshot?.product?.media_gallery || []);
+    if (!config.enabled || !items.length) return { enabled: false, config, items: [] };
+    return { enabled: true, config, items };
+}
+
+function renderProductMediaBlock(snapshot = state.snapshot) {
+    const mediaState = getProductMediaState(snapshot);
+    if (!mediaState.enabled) return '';
+
+    const { config, items } = mediaState;
+    if (state.galleryIndex >= items.length) state.galleryIndex = 0;
+    const currentIndex = Math.max(0, Math.min(state.galleryIndex, items.length - 1));
+    const modeLabel = config.layout === MEDIA_LAYOUTS.STACK ? t('galleryModeStack') : t('galleryModeCarousel');
+
+    if (config.layout === MEDIA_LAYOUTS.STACK) {
+        return `
+            <section class="quote-product-media quote-product-media-stack">
+                <div class="quote-product-media-head">
+                    <strong>${esc(t('galleryTitle'))}</strong>
+                    <span>${esc(modeLabel)}</span>
+                </div>
+                <div class="quote-media-stack-list">
+                    ${items
+                        .map(
+                            (item, index) => `
+                                <figure class="quote-media-figure">
+                                    <img src="${esc(item.public_url)}" alt="${esc(item.title || `${t('galleryTitle')} ${index + 1}`)}" loading="lazy">
+                                </figure>
+                            `,
+                        )
+                        .join('')}
+                </div>
+            </section>
+        `;
+    }
+
+    return `
+        <section class="quote-product-media quote-product-media-carousel">
+            <div class="quote-product-media-head">
+                <strong>${esc(t('galleryTitle'))}</strong>
+                <span>${esc(modeLabel)}</span>
+            </div>
+            <div class="quote-media-carousel-stage">
+                ${items
+                    .map(
+                        (item, index) => `
+                            <figure class="quote-media-slide ${index === currentIndex ? 'is-active' : ''}" data-gallery-slide="${index}">
+                                <img src="${esc(item.public_url)}" alt="${esc(item.title || `${t('galleryTitle')} ${index + 1}`)}" loading="lazy">
+                            </figure>
+                        `,
+                    )
+                    .join('')}
+                ${
+                    items.length > 1
+                        ? `
+                    <button type="button" class="quote-media-nav prev" data-gallery-nav="prev" aria-label="${esc(t('galleryPrev'))}">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button type="button" class="quote-media-nav next" data-gallery-nav="next" aria-label="${esc(t('galleryNext'))}">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                `
+                        : ''
+                }
+            </div>
+            ${
+                items.length > 1
+                    ? `
+                <div class="quote-media-dots">
+                    ${items
+                        .map(
+                            (_item, index) => `
+                                <button type="button" class="quote-media-dot ${index === currentIndex ? 'is-active' : ''}" data-gallery-dot="${index}" aria-label="${esc(`${t('galleryTitle')} ${index + 1}`)}"></button>
+                            `,
+                        )
+                        .join('')}
+                </div>
+            `
+                    : ''
+            }
+        </section>
+    `;
+}
+
+function bindProductMediaControls() {
+    const mediaState = getProductMediaState();
+    if (!mediaState.enabled || mediaState.config.layout !== MEDIA_LAYOUTS.CAROUSEL || mediaState.items.length <= 1) return;
+
+    document.querySelectorAll('[data-gallery-nav]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const direction = button.dataset.galleryNav === 'prev' ? -1 : 1;
+            state.galleryIndex = (state.galleryIndex + direction + mediaState.items.length) % mediaState.items.length;
+            renderContent();
+        });
+    });
+
+    document.querySelectorAll('[data-gallery-dot]').forEach((button) => {
+        button.addEventListener('click', () => {
+            state.galleryIndex = Number(button.dataset.galleryDot || 0) || 0;
+            renderContent();
+        });
+    });
+}
+
 function renderContent() {
     const snapshot = state.snapshot;
     const container = byId('content-area');
@@ -494,6 +620,10 @@ function renderContent() {
     const productTitle = pickDisplayText(snapshot.product.public_title, snapshot.product.product_code);
     const total = quoteTotal(snapshot);
     const rows = [];
+    const mediaState = getProductMediaState(snapshot);
+    const mediaBlock = renderProductMediaBlock(snapshot);
+    const mediaAbove = mediaState.enabled && mediaState.config.position === MEDIA_POSITIONS.ABOVE ? mediaBlock : '';
+    const mediaBelow = mediaState.enabled && mediaState.config.position !== MEDIA_POSITIONS.ABOVE ? mediaBlock : '';
 
     (snapshot.product.sections || []).forEach((section) => {
         const subtotal = sectionSubtotal(section);
@@ -536,6 +666,7 @@ function renderContent() {
                 <span class="bg-[var(--gas-green-bg)] border border-[var(--gas-green-primary)] text-[var(--gas-green-light)] w-6 h-6 md:w-7 md:h-7 rounded flex items-center justify-center text-xs md:text-sm font-mono-num flex-shrink-0">1</span>
                 <span class="leading-tight">${esc(productTitle)}</span>
             </h3>
+            ${mediaAbove}
 
             <div class="bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between shadow-inner gap-4">
                 <span class="font-bold text-white tracking-wider text-xs md:text-sm">${esc(t('systemTotal'))}:</span>
@@ -556,8 +687,10 @@ function renderContent() {
                     <tbody>${rows.join('')}</tbody>
                 </table>
             </div>
+            ${mediaBelow}
         </div>
     `;
+    bindProductMediaControls();
 }
 
 function renderAll() {
@@ -1100,6 +1233,7 @@ function deriveShareTarget() {
 
 function applySnapshot(snapshot) {
     state.snapshot = snapshot;
+    state.galleryIndex = 0;
     state.currentLang = normalizeLang(params.get('lang') || snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG);
     state.rates = normalizeRates(snapshot?.quote?.rates || snapshot?.product?.default_rates || DEFAULT_RATES);
     state.shareTarget = deriveShareTarget();

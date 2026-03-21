@@ -38,7 +38,7 @@ function buildStaticAdminRows() {
 
 function shouldFallbackToStatic(error) {
     const text = String(error?.message || '').toLowerCase();
-    return text.includes('relation') || text.includes('does not exist') || text.includes('permission denied') || text.includes('rls');
+    return text.includes('relation') || text.includes('does not exist') || text.includes('permission denied') || text.includes('rls') || text.includes('infinite recursion');
 }
 
 function getRecoveryRedirectUrl() {

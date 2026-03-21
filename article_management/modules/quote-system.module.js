@@ -5,29 +5,38 @@ import {
     DEFAULT_SHARE_SECRET,
     DEFAULT_THEME_DARK,
     DEFAULT_THEME_PRIMARY,
+    MEDIA_LAYOUTS,
+    MEDIA_POSITIONS,
     SECTION_KEYS,
     SUPPORTED_LANGS,
     buildQuoteSnapshot,
     convertLegacyPagesToSeedPayloads,
+    createMediaConfig,
     createPublicSlug,
     createQuoteItem,
+    createQuoteMediaItem,
     createSectionConfig,
     ensureLegacyQuotePagesLoaded,
     extractBrandSnapshot,
     extractProductSnapshot,
     normalizeLocalizedText,
+    normalizeMediaConfig,
     normalizeQuoteItem,
+    normalizeQuoteMediaItem,
     normalizeRates,
     normalizeSectionConfig,
     pickLocalized,
+    sortMediaItems,
     sortItems,
 } from '../../shared/quote-system/quote-data.module.js';
 
 const TABLE_BRANDS = 'quote_brands';
 const TABLE_PRODUCTS = 'quote_products';
 const TABLE_PRODUCT_ITEMS = 'quote_product_items';
+const TABLE_PRODUCT_MEDIA = 'quote_product_media';
 const TABLE_INSTANCES = 'quote_instances';
 const TABLE_INSTANCE_ITEMS = 'quote_instance_items';
+const STORAGE_BUCKET_PRODUCT_MEDIA = 'quote-product-media';
 
 const moduleState = {
     brands: [],
@@ -71,6 +80,61 @@ function text(value, fallback = '') {
     return String(value ?? fallback).trim();
 }
 
+function expandLocalizedFromChinese(value) {
+    const localized = normalizeLocalizedText(value);
+    const zh = text(localized.zh || localized.en || localized.ru);
+    return {
+        zh,
+        en: text(localized.en) || zh,
+        ru: text(localized.ru) || zh,
+    };
+}
+
+function expandSectionConfigLocalized(sections = createSectionConfig()) {
+    return normalizeSectionConfig(sections).map((section) => ({
+        ...section,
+        title: expandLocalizedFromChinese(section.title),
+    }));
+}
+
+function normalizeMediaGallery(items = []) {
+    return sortMediaItems(items).map((item, index) => ({
+        ...normalizeQuoteMediaItem(item),
+        sort_order: (index + 1) * 10,
+    }));
+}
+
+function expandMediaConfig(config = {}) {
+    return normalizeMediaConfig(config);
+}
+
+function buildStorageFileName(originalName = '') {
+    const source = text(originalName, 'image');
+    const extMatch = source.match(/\.[a-z0-9]+$/i);
+    const ext = extMatch ? extMatch[0].toLowerCase() : '.jpg';
+    const stem = source
+        .replace(/\.[^.]+$/, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9-_]+/gi, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || 'image';
+    return `${Date.now()}-${Math.random().toString(16).slice(2, 8)}-${stem}${ext}`;
+}
+
+function productMediaPath(product, fileName) {
+    const brandSlug = text(product?.brand_slug || product?.brandSlug || brandSlugById(product?.brand_id) || brandLabelById(product?.brand_id), 'brand')
+        .toLowerCase()
+        .replace(/[^a-z0-9-_]+/gi, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || 'brand';
+    const productSlug = text(product?.slug, 'product')
+        .toLowerCase()
+        .replace(/[^a-z0-9-_]+/gi, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || 'product';
+    return `${brandSlug}/${productSlug}/${fileName}`;
+}
+
 function createBrandDraft(seed = {}) {
     return {
         id: text(seed.id),
@@ -102,9 +166,11 @@ function createProductDraft(seed = {}) {
         validity_hours: Math.max(1, safeNumber(seed.validity_hours || seed.validityHours, 72)),
         default_rates: normalizeRates(seed.default_rates || seed.defaultRates || DEFAULT_RATES),
         section_config: normalizeSectionConfig(seed.section_config || seed.sectionConfig),
+        media_config: normalizeMediaConfig(seed.media_config || seed.mediaConfig),
         sort_order: safeNumber(seed.sort_order, 100),
         is_active: seed.is_active !== false,
         items: sortItems((seed.items || []).map((item) => normalizeQuoteItem(item, item?.section_key))),
+        media_gallery: sortMediaItems((seed.media_gallery || seed.mediaGallery || []).map((item) => normalizeQuoteMediaItem(item))),
     };
 }
 
@@ -195,6 +261,19 @@ function rowMove(items, localId, direction) {
     }));
 }
 
+function mediaMove(items, localId, direction) {
+    const next = normalizeMediaGallery(items);
+    const index = next.findIndex((item) => item.localId === localId);
+    if (index === -1) return next;
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= next.length) return next;
+    [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+    return next.map((item, itemIndex) => ({
+        ...item,
+        sort_order: (itemIndex + 1) * 10,
+    }));
+}
+
 async function fetchBrandRows() {
     const { data, error } = await client
         .from(TABLE_BRANDS)
@@ -208,12 +287,19 @@ async function fetchBrandRows() {
 async function fetchProductRows() {
     const { data, error } = await client
         .from(TABLE_PRODUCTS)
-        .select('id, brand_id, slug, product_code, public_title, default_lang, validity_hours, default_rates, section_config, sort_order, is_active, created_at, updated_at')
+        .select('id, brand_id, slug, product_code, public_title, default_lang, validity_hours, default_rates, section_config, media_config, sort_order, is_active, created_at, updated_at')
         .order('sort_order', { ascending: true })
         .order('slug', { ascending: true });
     if (error) throw error;
     moduleState.products = Array.isArray(data) ? data.map((row) => createProductDraft(row)) : [];
     return moduleState.products;
+}
+
+async function fetchProductMediaRows(productId) {
+    if (!productId) return [];
+    const { data, error } = await client.from(TABLE_PRODUCT_MEDIA).select('*').eq('product_id', productId).order('sort_order', { ascending: true });
+    if (error) throw error;
+    return Array.isArray(data) ? data.map((row) => normalizeQuoteMediaItem(row)) : [];
 }
 
 async function fetchProductEditor(productId) {
@@ -224,12 +310,16 @@ async function fetchProductEditor(productId) {
     }
     const { data, error } = await client.from(TABLE_PRODUCTS).select('*').eq('id', productId).single();
     if (error) throw error;
-    const itemsResult = await client.from(TABLE_PRODUCT_ITEMS).select('*').eq('product_id', productId).order('sort_order', { ascending: true });
+    const [itemsResult, mediaRows] = await Promise.all([
+        client.from(TABLE_PRODUCT_ITEMS).select('*').eq('product_id', productId).order('sort_order', { ascending: true }),
+        fetchProductMediaRows(productId),
+    ]);
     if (itemsResult.error) throw itemsResult.error;
     moduleState.productLoadedId = productId;
     moduleState.productEditor = createProductDraft({
         ...data,
         items: itemsResult.data || [],
+        media_gallery: mediaRows,
     });
     return moduleState.productEditor;
 }
@@ -277,7 +367,7 @@ async function persistItemRows(tableName, ownerColumn, ownerId, items = []) {
             qty_label: normalized.qty_label,
             price_rmb: normalized.price_rmb,
             is_included: normalized.is_included === true,
-            name_i18n: normalizeLocalizedText(normalized.name_i18n),
+            name_i18n: expandLocalizedFromChinese(normalized.name_i18n),
         };
     });
 
@@ -285,6 +375,117 @@ async function persistItemRows(tableName, ownerColumn, ownerId, items = []) {
     const insertResult = await client.from(tableName).insert(payload).select('*');
     if (insertResult.error) throw insertResult.error;
     return insertResult.data || [];
+}
+
+async function persistProductMediaRows(ownerId, items = []) {
+    const deleteResult = await client.from(TABLE_PRODUCT_MEDIA).delete().eq('product_id', ownerId);
+    if (deleteResult.error) throw deleteResult.error;
+
+    const payload = normalizeMediaGallery(items).map((item, index) => {
+        const normalized = normalizeQuoteMediaItem(item);
+        return {
+            product_id: ownerId,
+            title: normalized.title,
+            storage_path: normalized.storage_path,
+            public_url: normalized.public_url,
+            sort_order: (index + 1) * 10,
+            is_active: normalized.is_active !== false,
+        };
+    });
+
+    if (!payload.length) return [];
+    const insertResult = await client.from(TABLE_PRODUCT_MEDIA).insert(payload).select('*');
+    if (insertResult.error) throw insertResult.error;
+    return insertResult.data || [];
+}
+
+async function uploadProductMediaFiles(product, files = []) {
+    if (!product?.id) throw new Error('请先保存产品模板，再上传图片。');
+    if (!files.length) return normalizeMediaGallery(product.media_gallery);
+
+    const pending = Array.from(files)
+        .filter((file) => file && /^image\//i.test(file.type || ''))
+        .map(async (file) => {
+            const fileName = buildStorageFileName(file.name);
+            const storagePath = productMediaPath(product, fileName);
+            const uploadResult = await client.storage.from(STORAGE_BUCKET_PRODUCT_MEDIA).upload(storagePath, file, {
+                cacheControl: '3600',
+                upsert: false,
+            });
+            if (uploadResult.error) throw uploadResult.error;
+            const publicUrlResult = client.storage.from(STORAGE_BUCKET_PRODUCT_MEDIA).getPublicUrl(storagePath);
+            return createQuoteMediaItem({
+                title: file.name.replace(/\.[^.]+$/, ''),
+                storage_path: storagePath,
+                public_url: publicUrlResult?.data?.publicUrl || '',
+                sort_order: 100,
+            });
+        });
+
+    const uploadedItems = await Promise.all(pending);
+    const savedRows = await persistProductMediaRows(product.id, [...normalizeMediaGallery(product.media_gallery), ...uploadedItems]);
+    return normalizeMediaGallery(savedRows);
+}
+
+async function saveProductMediaCollection(productId, items = []) {
+    if (!productId) throw new Error('未找到产品模板。');
+    const savedRows = await persistProductMediaRows(productId, items);
+    return normalizeMediaGallery(savedRows);
+}
+
+async function deleteProductMediaItem(productId, gallery, mediaItem) {
+    if (!productId) throw new Error('未找到产品模板。');
+    const storagePath = text(mediaItem?.storage_path);
+    if (storagePath) {
+        const removeResult = await client.storage.from(STORAGE_BUCKET_PRODUCT_MEDIA).remove([storagePath]);
+        if (removeResult.error) throw removeResult.error;
+    }
+    const nextItems = normalizeMediaGallery(gallery).filter((item) => item.localId !== mediaItem.localId);
+    return saveProductMediaCollection(productId, nextItems);
+}
+
+async function replaceProductMediaFile(product, gallery, mediaItem, file) {
+    if (!product?.id) throw new Error('请先保存产品模板，再更换图片。');
+    if (!file || !/^image\//i.test(file.type || '')) throw new Error('请选择有效的图片文件。');
+    const fileName = buildStorageFileName(file.name);
+    const storagePath = productMediaPath(product, fileName);
+    const uploadResult = await client.storage.from(STORAGE_BUCKET_PRODUCT_MEDIA).upload(storagePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+    });
+    if (uploadResult.error) throw uploadResult.error;
+
+    const publicUrlResult = client.storage.from(STORAGE_BUCKET_PRODUCT_MEDIA).getPublicUrl(storagePath);
+    const nextGallery = normalizeMediaGallery(gallery).map((entry) => {
+        if (entry.localId !== mediaItem.localId) return entry;
+        return createQuoteMediaItem({
+            ...entry,
+            title: file.name.replace(/\.[^.]+$/, '') || entry.title,
+            storage_path: storagePath,
+            public_url: publicUrlResult?.data?.publicUrl || '',
+            sort_order: entry.sort_order,
+        });
+    });
+
+    const oldStoragePath = text(mediaItem?.storage_path);
+    if (oldStoragePath) {
+        const removeResult = await client.storage.from(STORAGE_BUCKET_PRODUCT_MEDIA).remove([oldStoragePath]);
+        if (removeResult.error) throw removeResult.error;
+    }
+    return saveProductMediaCollection(product.id, nextGallery);
+}
+
+function syncProductMediaToEditors(productId, mediaGallery) {
+    const nextGallery = normalizeMediaGallery(mediaGallery);
+    if (moduleState.productEditor?.id === productId) {
+        moduleState.productEditor.media_gallery = nextGallery;
+    }
+    if (moduleState.instanceEditor?.product_id === productId) {
+        moduleState.instanceEditor.product_snapshot = extractProductSnapshot({
+            ...moduleState.instanceEditor.product_snapshot,
+            media_gallery: nextGallery,
+        });
+    }
 }
 
 async function saveBrandDraft(user, draft) {
@@ -299,8 +500,8 @@ async function saveBrandDraft(user, draft) {
         supplier_name: payload.supplier_name || payload.display_name,
         sender_email: payload.sender_email,
         subject_name: payload.subject_name || payload.display_name,
-        overview_title: normalizeLocalizedText(payload.overview_title),
-        footer_note: normalizeLocalizedText(payload.footer_note),
+        overview_title: expandLocalizedFromChinese(payload.overview_title),
+        footer_note: expandLocalizedFromChinese(payload.footer_note),
         theme_primary: payload.theme_primary || DEFAULT_THEME_PRIMARY,
         theme_dark: payload.theme_dark || DEFAULT_THEME_DARK,
         share_signing_secret: payload.share_signing_secret || DEFAULT_SHARE_SECRET,
@@ -330,11 +531,12 @@ async function saveProductDraft(user, draft) {
         brand_id: payload.brand_id,
         slug: payload.slug,
         product_code: payload.product_code || payload.slug,
-        public_title: normalizeLocalizedText(payload.public_title),
+        public_title: expandLocalizedFromChinese(payload.public_title),
         default_lang: payload.default_lang,
         validity_hours: payload.validity_hours,
         default_rates: normalizeRates(payload.default_rates),
-        section_config: normalizeSectionConfig(payload.section_config),
+        section_config: expandSectionConfigLocalized(payload.section_config),
+        media_config: expandMediaConfig(payload.media_config),
         sort_order: payload.sort_order,
         is_active: payload.is_active !== false,
         updated_by: user?.id || null,
@@ -345,12 +547,16 @@ async function saveProductDraft(user, draft) {
     const { data, error } = await client.from(TABLE_PRODUCTS).upsert(savePayload, { onConflict: 'slug' }).select('*').single();
     if (error) throw error;
 
-    const savedItems = await persistItemRows(TABLE_PRODUCT_ITEMS, 'product_id', data.id, payload.items);
+    const [savedItems, savedMedia] = await Promise.all([
+        persistItemRows(TABLE_PRODUCT_ITEMS, 'product_id', data.id, payload.items),
+        persistProductMediaRows(data.id, payload.media_gallery),
+    ]);
     await fetchProductRows();
     moduleState.productLoadedId = data.id;
     moduleState.productEditor = createProductDraft({
         ...data,
         items: savedItems,
+        media_gallery: savedMedia,
     });
     return moduleState.productEditor;
 }
@@ -377,9 +583,19 @@ async function createInstanceFromProduct(user, productId) {
         default_lang: product.default_lang,
         validity_hours: product.validity_hours,
         draft_rates: product.default_rates,
-        brand_snapshot: extractBrandSnapshot(brand),
-        product_snapshot: extractProductSnapshot(product),
-        section_config: product.section_config,
+        brand_snapshot: extractBrandSnapshot({
+            ...brand,
+            overview_title: expandLocalizedFromChinese(brand.overview_title),
+            footer_note: expandLocalizedFromChinese(brand.footer_note),
+        }),
+        product_snapshot: extractProductSnapshot({
+            ...product,
+            public_title: expandLocalizedFromChinese(product.public_title),
+            section_config: expandSectionConfigLocalized(product.section_config),
+            media_config: expandMediaConfig(product.media_config),
+            media_gallery: normalizeMediaGallery(product.media_gallery),
+        }),
+        section_config: expandSectionConfigLocalized(product.section_config),
         items: product.items,
     });
 
@@ -435,15 +651,22 @@ async function saveInstanceDraft(user, draft) {
         validity_hours: payload.validity_hours,
         draft_rates: normalizeRates(payload.draft_rates),
         share_config: payload.share_config && typeof payload.share_config === 'object' ? payload.share_config : {},
-        brand_snapshot: extractBrandSnapshot(payload.brand_snapshot),
+        brand_snapshot: extractBrandSnapshot({
+            ...payload.brand_snapshot,
+            overview_title: expandLocalizedFromChinese(payload.brand_snapshot?.overview_title),
+            footer_note: expandLocalizedFromChinese(payload.brand_snapshot?.footer_note),
+        }),
         product_snapshot: extractProductSnapshot({
             ...payload.product_snapshot,
-            section_config: payload.section_config,
+            public_title: expandLocalizedFromChinese(payload.product_snapshot?.public_title),
+            section_config: expandSectionConfigLocalized(payload.section_config),
             default_rates: payload.draft_rates,
             default_lang: payload.default_lang,
             validity_hours: payload.validity_hours,
+            media_config: expandMediaConfig(payload.product_snapshot?.media_config),
+            media_gallery: normalizeMediaGallery(payload.product_snapshot?.media_gallery),
         }),
-        section_config: normalizeSectionConfig(payload.section_config),
+        section_config: expandSectionConfigLocalized(payload.section_config),
         updated_by: user?.id || null,
     };
     if (payload.id) savePayload.id = payload.id;
@@ -560,6 +783,11 @@ function brandLabelById(brandId) {
     return brand?.display_name || brand?.brand_name || '--';
 }
 
+function brandSlugById(brandId) {
+    const brand = moduleState.brands.find((item) => item.id === brandId);
+    return brand?.slug || '';
+}
+
 function productLabelById(productId) {
     const product = moduleState.products.find((item) => item.id === productId);
     return pickLocalized(product?.public_title, product?.default_lang || DEFAULT_LANG, '--');
@@ -574,7 +802,10 @@ function isQuoteSetupMissing(error) {
     return (
         message.includes('quote_brands') ||
         message.includes('quote_products') ||
+        message.includes('quote_product_media') ||
         message.includes('quote_instances') ||
+        message.includes('admin_users') ||
+        message.includes('infinite recursion') ||
         message.includes('relation') ||
         message.includes('does not exist')
     );
@@ -587,14 +818,14 @@ function renderQuoteSetupRequired(input, error) {
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">Quote System</p>
                 <h2>先执行 SQL 初始化，再进入品牌 / 产品 / 报价单管理。</h2>
-                <p class="ams-hero-text">报价系统 V1 依赖 5 张业务表和对应的 RLS 策略。当前后台检测到这些表还未在 Supabase 中就绪，所以先给出明确安装步骤，而不是让页面直接报错。</p>
+                <p class="ams-hero-text">报价系统当前依赖品牌、产品、产品图片库、报价单和明细等业务表，以及对应的 RLS / Storage 策略。当前后台检测到这些对象还未在 Supabase 中就绪，所以先给出明确安装步骤，而不是让页面直接报错。</p>
             </div>
             <div class="ams-quick-actions">
                 <div class="ams-quick-link ams-quick-link-static">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-database"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>执行 SQL 文件</strong>
-                        <span>请先在 Supabase SQL Editor 执行 <code>article_management/sql/006_quote_system.sql</code>。</span>
+                        <span>请先在 Supabase SQL Editor 执行最新的 <code>article_management/sql/006_quote_system.sql</code>；已有旧版库时，再补执行 <code>article_management/sql/008_quote_product_media.sql</code>。</span>
                     </div>
                 </div>
                 <div class="ams-quick-link ams-quick-link-static">
@@ -624,18 +855,28 @@ function localizedFieldGroup(idPrefix, label, value = {}) {
         <div class="ams-quote-field-card">
             <div class="ams-quote-field-card-head">
                 <strong>${esc(label)}</strong>
-                <span>ZH / EN / RU</span>
+                <span>默认中文录入</span>
             </div>
-            <div class="ams-site-field-grid ams-site-field-grid-wide">
-                ${SUPPORTED_LANGS.map(
-                    (lang) => `
-                        <div class="ams-field">
-                            <label>${lang.toUpperCase()}</label>
-                            <textarea class="ams-textarea ams-quote-textarea" data-i18n-prefix="${esc(idPrefix)}" data-lang="${esc(lang)}">${esc(localized[lang] || '')}</textarea>
-                        </div>
-                    `,
-                ).join('')}
+            <div class="ams-field">
+                <label>中文</label>
+                <textarea class="ams-textarea ams-quote-textarea" data-i18n-prefix="${esc(idPrefix)}" data-lang="zh">${esc(localized.zh || '')}</textarea>
+                <div class="ams-field-help">EN / RU 不填时会自动继承中文内容。</div>
             </div>
+            <details class="ams-locale-details">
+                <summary>可选：多语言覆盖</summary>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    ${['en', 'ru']
+                        .map(
+                            (lang) => `
+                                <div class="ams-field">
+                                    <label>${lang.toUpperCase()}</label>
+                                    <textarea class="ams-textarea ams-quote-textarea" data-i18n-prefix="${esc(idPrefix)}" data-lang="${esc(lang)}">${esc(localized[lang] || '')}</textarea>
+                                </div>
+                            `,
+                        )
+                        .join('')}
+                </div>
+            </details>
         </div>
     `;
 }
@@ -705,9 +946,8 @@ function itemTableMarkup(prefix, sectionKey, items = []) {
                         <th>数量</th>
                         <th>RMB</th>
                         <th>包含</th>
-                        <th>名称 ZH</th>
-                        <th>名称 EN</th>
-                        <th>名称 RU</th>
+                        <th>名称（中文）</th>
+                        <th>多语言（可选）</th>
                         <th class="ams-col-actions">操作</th>
                     </tr>
                 </thead>
@@ -725,8 +965,21 @@ function itemTableMarkup(prefix, sectionKey, items = []) {
                                     <td><input class="ams-input" type="number" step="0.01" min="0" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-field="price_rmb" value="${esc(row.price_rmb)}"></td>
                                     <td class="ams-col-check"><input class="ams-check" type="checkbox" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-field="is_included" ${row.is_included ? 'checked' : ''}></td>
                                     <td><textarea class="ams-textarea ams-quote-row-textarea" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-lang="zh">${esc(row.name_i18n?.zh || '')}</textarea></td>
-                                    <td><textarea class="ams-textarea ams-quote-row-textarea" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-lang="en">${esc(row.name_i18n?.en || '')}</textarea></td>
-                                    <td><textarea class="ams-textarea ams-quote-row-textarea" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-lang="ru">${esc(row.name_i18n?.ru || '')}</textarea></td>
+                                    <td class="ams-quote-locales-cell">
+                                        <details class="ams-locale-details ams-locale-details-compact">
+                                            <summary>EN / RU 可选</summary>
+                                            <div class="ams-quote-locale-stack">
+                                                <div class="ams-field">
+                                                    <label>EN</label>
+                                                    <textarea class="ams-textarea ams-quote-row-textarea" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-lang="en">${esc(row.name_i18n?.en || '')}</textarea>
+                                                </div>
+                                                <div class="ams-field">
+                                                    <label>RU</label>
+                                                    <textarea class="ams-textarea ams-quote-row-textarea" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-lang="ru">${esc(row.name_i18n?.ru || '')}</textarea>
+                                                </div>
+                                            </div>
+                                        </details>
+                                    </td>
                                     <td class="ams-col-actions">
                                         <div class="ams-row-actions">
                                             <button class="ams-btn ams-btn-muted" type="button" data-item-move="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-direction="-1">上移</button>
@@ -738,7 +991,7 @@ function itemTableMarkup(prefix, sectionKey, items = []) {
                             `,
                                   )
                                   .join('')
-                            : '<tr><td colspan="10"><div class="ams-empty">当前区块还没有明细。</div></td></tr>'
+                            : '<tr><td colspan="9"><div class="ams-empty">当前区块还没有明细。</div></td></tr>'
                     }
                 </tbody>
             </table>
@@ -746,6 +999,105 @@ function itemTableMarkup(prefix, sectionKey, items = []) {
         <div class="ams-inline-actions">
             <button class="ams-btn ams-btn-muted" type="button" data-item-add="${esc(prefix)}" data-section-key="${esc(sectionKey)}">新增一行</button>
         </div>
+    `;
+}
+
+function mediaLibraryMarkup(prefix, mediaConfig = createMediaConfig(), mediaGallery = [], options = {}) {
+    const config = normalizeMediaConfig(mediaConfig);
+    const gallery = normalizeMediaGallery(mediaGallery);
+    const editable = options.editable !== false;
+    const uploadLabel = options.uploadLabel || '上传图片';
+    const description =
+        options.description ||
+        (prefix === 'instance'
+            ? '这里维护的是当前产品的公共图片库。上传、替换、删除和排序后，当前报价单会同步最新图片快照。'
+            : '每个品牌 / 产品维护独立图片库。客户页可选择展示在产品上方或下方，并切换为轮播图或纵向铺图。');
+
+    return `
+        <section class="ams-quote-block">
+            <div class="ams-section-head">
+                <div>
+                    <h3>产品图片库</h3>
+                    <p>${esc(description)}</p>
+                </div>
+            </div>
+            <div class="ams-site-field-grid ams-site-field-grid-wide">
+                <div class="ams-field">
+                    <label class="ams-social-toggle">
+                        <input type="checkbox" data-media-config-prefix="${esc(prefix)}" data-media-config-field="enabled" ${config.enabled ? 'checked' : ''} ${editable ? '' : 'disabled'}>
+                        <span>在客户页显示产品图片</span>
+                    </label>
+                </div>
+                <div class="ams-field">
+                    <label>展示位置</label>
+                    <select class="ams-select" data-media-config-prefix="${esc(prefix)}" data-media-config-field="position" ${editable ? '' : 'disabled'}>
+                        <option value="${MEDIA_POSITIONS.ABOVE}" ${config.position === MEDIA_POSITIONS.ABOVE ? 'selected' : ''}>产品标题下方</option>
+                        <option value="${MEDIA_POSITIONS.BELOW}" ${config.position === MEDIA_POSITIONS.BELOW ? 'selected' : ''}>报价表格下方</option>
+                    </select>
+                </div>
+                <div class="ams-field">
+                    <label>展示样式</label>
+                    <select class="ams-select" data-media-config-prefix="${esc(prefix)}" data-media-config-field="layout" ${editable ? '' : 'disabled'}>
+                        <option value="${MEDIA_LAYOUTS.CAROUSEL}" ${config.layout === MEDIA_LAYOUTS.CAROUSEL ? 'selected' : ''}>轮播图</option>
+                        <option value="${MEDIA_LAYOUTS.STACK}" ${config.layout === MEDIA_LAYOUTS.STACK ? 'selected' : ''}>纵向铺图</option>
+                    </select>
+                </div>
+                ${
+                    editable
+                        ? `
+                    <div class="ams-field">
+                        <label>${esc(uploadLabel)}</label>
+                        <label class="ams-media-upload-trigger">
+                            <input class="ams-media-upload-input" type="file" accept="image/*" multiple data-media-upload="${esc(prefix)}">
+                            <span><i class="fa-solid fa-image"></i> 选择图片</span>
+                        </label>
+                    </div>
+                `
+                        : ''
+                }
+            </div>
+            <div class="ams-field-help">图片为空时客户页不会显示该图片区块；轮播图适合少量重点图，纵向铺图适合设备细节和安装示意。</div>
+            ${
+                gallery.length
+                    ? `
+                <div class="ams-media-grid">
+                    ${gallery
+                        .map(
+                            (item, index) => `
+                                <article class="ams-media-card">
+                                    <div class="ams-media-thumb-wrap">
+                                        <img class="ams-media-thumb" src="${esc(item.public_url)}" alt="${esc(item.title || `图片 ${index + 1}`)}" loading="lazy">
+                                        <span class="ams-media-order">${index + 1}</span>
+                                    </div>
+                                    <div class="ams-media-card-body">
+                                        <strong>${esc(item.title || `图片 ${index + 1}`)}</strong>
+                                        <span>${esc(item.public_url.split('/').pop() || 'image')}</span>
+                                        <div class="ams-row-actions ams-media-actions">
+                                            <a class="ams-btn ams-btn-muted" href="${esc(item.public_url)}" target="_blank" rel="noopener">查看</a>
+                                            ${
+                                                editable
+                                                    ? `
+                                                <label class="ams-btn ams-btn-muted ams-media-replace-trigger">
+                                                    更换
+                                                    <input class="ams-media-replace-input" type="file" accept="image/*" data-media-replace="${esc(prefix)}" data-media-id="${esc(item.localId)}">
+                                                </label>
+                                                <button class="ams-btn ams-btn-muted" type="button" data-media-move="${esc(prefix)}" data-media-id="${esc(item.localId)}" data-direction="-1" ${index === 0 ? 'disabled' : ''}>上移</button>
+                                                <button class="ams-btn ams-btn-muted" type="button" data-media-move="${esc(prefix)}" data-media-id="${esc(item.localId)}" data-direction="1" ${index === gallery.length - 1 ? 'disabled' : ''}>下移</button>
+                                                <button class="ams-btn ams-btn-danger" type="button" data-media-delete="${esc(prefix)}" data-media-id="${esc(item.localId)}">删除</button>
+                                            `
+                                                    : ''
+                                            }
+                                        </div>
+                                    </div>
+                                </article>
+                            `,
+                        )
+                        .join('')}
+                </div>
+            `
+                    : '<div class="ams-empty">当前产品还没有上传图片。</div>'
+            }
+        </section>
     `;
 }
 
@@ -982,6 +1334,38 @@ function bindProductEditor(input) {
         });
     });
 
+    content.querySelectorAll('[data-media-config-prefix="product"]').forEach((node) => {
+        const apply = () => {
+            const field = node.dataset.mediaConfigField;
+            if (!field) return;
+            const current = normalizeMediaConfig(moduleState.productEditor.media_config);
+            current[field] = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
+            moduleState.productEditor.media_config = normalizeMediaConfig(current);
+        };
+        node.addEventListener('input', apply);
+        node.addEventListener('change', apply);
+    });
+
+    content.querySelectorAll('[data-media-upload="product"]').forEach((node) => {
+        node.addEventListener('change', async () => {
+            const files = Array.from(node.files || []);
+            node.value = '';
+            if (!files.length) return;
+            try {
+                const productContext = {
+                    ...moduleState.productEditor,
+                    brand_slug: brandSlugById(moduleState.productEditor.brand_id),
+                };
+                const gallery = await uploadProductMediaFiles(productContext, files);
+                syncProductMediaToEditors(moduleState.productEditor.id, gallery);
+                input.showToast(`已上传 ${gallery.length} 张产品图片。`);
+                await renderQuoteProductsPage(input);
+            } catch (error) {
+                input.showToast(error.message || '上传产品图片失败。', true);
+            }
+        });
+    });
+
     content.querySelectorAll('[data-rate-prefix="product"]').forEach((node) => {
         node.addEventListener('input', () => {
             const code = node.dataset.rateCode;
@@ -1066,6 +1450,60 @@ function bindProductEditor(input) {
         });
     });
 
+    document.querySelectorAll('[data-media-move="product"]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                const mediaId = button.dataset.mediaId;
+                const direction = safeNumber(button.dataset.direction, 0);
+                const nextGallery = mediaMove(moduleState.productEditor.media_gallery, mediaId, direction);
+                const savedGallery = await saveProductMediaCollection(moduleState.productEditor.id, nextGallery);
+                syncProductMediaToEditors(moduleState.productEditor.id, savedGallery);
+                await renderQuoteProductsPage(input);
+            } catch (error) {
+                input.showToast(error.message || '调整图片顺序失败。', true);
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-media-delete="product"]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                const mediaId = button.dataset.mediaId;
+                const mediaItem = normalizeMediaGallery(moduleState.productEditor.media_gallery).find((item) => item.localId === mediaId);
+                if (!mediaItem) return;
+                const savedGallery = await deleteProductMediaItem(moduleState.productEditor.id, moduleState.productEditor.media_gallery, mediaItem);
+                syncProductMediaToEditors(moduleState.productEditor.id, savedGallery);
+                input.showToast('产品图片已删除。');
+                await renderQuoteProductsPage(input);
+            } catch (error) {
+                input.showToast(error.message || '删除产品图片失败。', true);
+            }
+        });
+    });
+
+    content.querySelectorAll('[data-media-replace="product"]').forEach((node) => {
+        node.addEventListener('change', async () => {
+            const files = Array.from(node.files || []);
+            node.value = '';
+            if (!files.length) return;
+            try {
+                const mediaId = node.dataset.mediaId;
+                const mediaItem = normalizeMediaGallery(moduleState.productEditor.media_gallery).find((item) => item.localId === mediaId);
+                if (!mediaItem) return;
+                const productContext = {
+                    ...moduleState.productEditor,
+                    brand_slug: brandSlugById(moduleState.productEditor.brand_id),
+                };
+                const savedGallery = await replaceProductMediaFile(productContext, moduleState.productEditor.media_gallery, mediaItem, files[0]);
+                syncProductMediaToEditors(moduleState.productEditor.id, savedGallery);
+                input.showToast('产品图片已更换。');
+                await renderQuoteProductsPage(input);
+            } catch (error) {
+                input.showToast(error.message || '更换产品图片失败。', true);
+            }
+        });
+    });
+
     document.getElementById('ams-quote-product-save')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
             try {
@@ -1111,7 +1549,7 @@ export async function renderQuoteProductsPage(input) {
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">Product Templates</p>
                 <h2>产品模板是报价单的默认来源。</h2>
-                <p class="ams-hero-text">品牌建好后，在这里维护标准产品、默认标题、多语言、主配置/选配区块和明细行。后续客户报价从模板派生，再做客户级修改。</p>
+                <p class="ams-hero-text">品牌建好后，在这里维护标准产品、默认标题、主配置/选配区块和明细行。默认只录中文，EN / RU 作为可选覆盖；生成客户报价时，未填写的语言会自动继承中文内容。</p>
             </div>
             <div class="ams-quick-actions">
                 <button class="ams-quick-link" type="button" id="ams-quote-product-new">
@@ -1166,6 +1604,9 @@ export async function renderQuoteProductsPage(input) {
                     <div class="ams-field"><label class="ams-social-toggle"><input type="checkbox" data-product-field="is_active" ${moduleState.productEditor.is_active ? 'checked' : ''}><span>启用模板</span></label></div>
                 </div>
                 ${localizedFieldGroup('product:public_title', '产品标题', moduleState.productEditor.public_title)}
+                ${mediaLibraryMarkup('product', moduleState.productEditor.media_config, moduleState.productEditor.media_gallery, {
+                    uploadLabel: '上传产品图片',
+                })}
                 <section class="ams-quote-block">
                     <div class="ams-section-head"><div><h3>区块配置</h3><p>固定分成主配置和选配两大类，可手动或自动计算小计。</p></div></div>
                     <div class="ams-quote-section-grid">${sectionConfigMarkup('product', moduleState.productEditor.section_config)}</div>
@@ -1274,6 +1715,45 @@ function bindInstanceEditor(input) {
         });
     });
 
+    content.querySelectorAll('[data-media-config-prefix="instance"]').forEach((node) => {
+        const apply = () => {
+            const field = node.dataset.mediaConfigField;
+            if (!field) return;
+            const current = normalizeMediaConfig(moduleState.instanceEditor.product_snapshot?.media_config);
+            current[field] = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
+            moduleState.instanceEditor.product_snapshot = extractProductSnapshot({
+                ...moduleState.instanceEditor.product_snapshot,
+                media_config: current,
+            });
+        };
+        node.addEventListener('input', apply);
+        node.addEventListener('change', apply);
+    });
+
+    content.querySelectorAll('[data-media-upload="instance"]').forEach((node) => {
+        node.addEventListener('change', async () => {
+            const files = Array.from(node.files || []);
+            node.value = '';
+            if (!files.length) return;
+            try {
+                const productContext = {
+                    ...(moduleState.products.find((item) => item.id === moduleState.instanceEditor.product_id) || {}),
+                    ...moduleState.instanceEditor.product_snapshot,
+                    id: moduleState.instanceEditor.product_id,
+                    brand_id: moduleState.instanceEditor.brand_id,
+                    brand_slug: brandSlugById(moduleState.instanceEditor.brand_id),
+                    media_gallery: moduleState.instanceEditor.product_snapshot?.media_gallery || [],
+                };
+                const savedGallery = await uploadProductMediaFiles(productContext, files);
+                syncProductMediaToEditors(moduleState.instanceEditor.product_id, savedGallery);
+                input.showToast('当前产品图片库已更新。');
+                await renderQuoteInstancesPage(input);
+            } catch (error) {
+                input.showToast(error.message || '上传产品图片失败。', true);
+            }
+        });
+    });
+
     content.querySelectorAll('[data-brand-snapshot-field]').forEach((node) => {
         node.addEventListener('input', () => {
             const field = node.dataset.brandSnapshotField;
@@ -1323,6 +1803,64 @@ function bindInstanceEditor(input) {
             const lang = node.dataset.itemLang;
             if (!itemId || !lang) return;
             moduleState.instanceEditor.items = updateItemLocalizedField(moduleState.instanceEditor.items, itemId, lang, node.value);
+        });
+    });
+
+    document.querySelectorAll('[data-media-move="instance"]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                const mediaId = button.dataset.mediaId;
+                const direction = safeNumber(button.dataset.direction, 0);
+                const nextGallery = mediaMove(moduleState.instanceEditor.product_snapshot?.media_gallery || [], mediaId, direction);
+                const savedGallery = await saveProductMediaCollection(moduleState.instanceEditor.product_id, nextGallery);
+                syncProductMediaToEditors(moduleState.instanceEditor.product_id, savedGallery);
+                await renderQuoteInstancesPage(input);
+            } catch (error) {
+                input.showToast(error.message || '调整图片顺序失败。', true);
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-media-delete="instance"]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                const mediaId = button.dataset.mediaId;
+                const mediaItem = normalizeMediaGallery(moduleState.instanceEditor.product_snapshot?.media_gallery || []).find((item) => item.localId === mediaId);
+                if (!mediaItem) return;
+                const savedGallery = await deleteProductMediaItem(moduleState.instanceEditor.product_id, moduleState.instanceEditor.product_snapshot?.media_gallery || [], mediaItem);
+                syncProductMediaToEditors(moduleState.instanceEditor.product_id, savedGallery);
+                input.showToast('产品图片已删除。');
+                await renderQuoteInstancesPage(input);
+            } catch (error) {
+                input.showToast(error.message || '删除产品图片失败。', true);
+            }
+        });
+    });
+
+    content.querySelectorAll('[data-media-replace="instance"]').forEach((node) => {
+        node.addEventListener('change', async () => {
+            const files = Array.from(node.files || []);
+            node.value = '';
+            if (!files.length) return;
+            try {
+                const mediaId = node.dataset.mediaId;
+                const mediaItem = normalizeMediaGallery(moduleState.instanceEditor.product_snapshot?.media_gallery || []).find((item) => item.localId === mediaId);
+                if (!mediaItem) return;
+                const productContext = {
+                    ...(moduleState.products.find((item) => item.id === moduleState.instanceEditor.product_id) || {}),
+                    ...moduleState.instanceEditor.product_snapshot,
+                    id: moduleState.instanceEditor.product_id,
+                    brand_id: moduleState.instanceEditor.brand_id,
+                    brand_slug: brandSlugById(moduleState.instanceEditor.brand_id),
+                    media_gallery: moduleState.instanceEditor.product_snapshot?.media_gallery || [],
+                };
+                const savedGallery = await replaceProductMediaFile(productContext, moduleState.instanceEditor.product_snapshot?.media_gallery || [], mediaItem, files[0]);
+                syncProductMediaToEditors(moduleState.instanceEditor.product_id, savedGallery);
+                input.showToast('产品图片已更换。');
+                await renderQuoteInstancesPage(input);
+            } catch (error) {
+                input.showToast(error.message || '更换产品图片失败。', true);
+            }
         });
     });
 
@@ -1420,21 +1958,22 @@ export async function renderQuoteInstancesPage(input) {
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">Quote Instances</p>
                 <h2>报价单实例才是最终业务对象。</h2>
-                <p class="ams-hero-text">实例从产品模板复制品牌快照、产品标题、主配置/选配和汇率。保存草稿不影响客户页，点击发布后才会更新客户看到的内容。</p>
+                <p class="ams-hero-text">实例从产品模板复制品牌快照、产品标题、主配置/选配和汇率。保存草稿不影响客户页，点击发布后才会更新客户看到的内容；默认按中文生成，多语言缺省项会自动继承中文。</p>
             </div>
             <div class="ams-quick-actions">
                 <div class="ams-quick-link ams-quick-link-static">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-file-circle-plus"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>从模板生成报价单</strong>
-                        <span>先选一个产品模板，系统会生成一份可编辑草稿。</span>
-                        <div class="ams-inline-actions">
-                            <select id="ams-quote-instance-product-select" class="ams-select">
+                        <span>先选一个产品模板，系统会按中文默认值生成一份可编辑草稿；EN / RU 未填写时会自动继承中文。</span>
+                        <div class="ams-inline-actions ams-quote-create-bar">
+                            <select id="ams-quote-instance-product-select" class="ams-select ams-quote-create-select">
                                 <option value="">请选择产品模板</option>
                                 ${moduleState.products.map((product) => `<option value="${esc(product.id)}">${esc(brandLabelById(product.brand_id))} / ${esc(pickLocalized(product.public_title, product.default_lang, product.slug))}</option>`).join('')}
                             </select>
                             <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-instance-create-from-product">生成草稿</button>
                         </div>
+                        <div class="ams-field-help ams-quote-create-hint">生成后可在草稿里单独补充客户信息、覆盖汇率、调整主配置和选配明细。</div>
                     </div>
                 </div>
             </div>
@@ -1505,6 +2044,10 @@ export async function renderQuoteInstancesPage(input) {
                         ${localizedFieldGroup('instance-product:public_title', '产品标题', moduleState.instanceEditor.product_snapshot.public_title)}
                         <div class="ams-quote-section-grid">${sectionConfigMarkup('instance', moduleState.instanceEditor.section_config)}</div>
                     </section>
+                    ${mediaLibraryMarkup('instance', moduleState.instanceEditor.product_snapshot.media_config, moduleState.instanceEditor.product_snapshot.media_gallery, {
+                        uploadLabel: '上传当前产品图片',
+                        description: '这里是当前报价单使用的产品图片入口。图片库按产品独立维护，上传、替换、删除和排序后，本报价草稿会同步最新图片快照；展示位置和样式可单独调整。',
+                    })}
                     <section class="ams-quote-block">
                         <div class="ams-section-head"><div><h3>汇率</h3><p>保存的是这份报价单自己的汇率快照，刷新汇率时会在客户页即时重算。</p></div></div>
                         ${ratesFieldset('instance', moduleState.instanceEditor.draft_rates)}

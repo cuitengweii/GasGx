@@ -109,6 +109,122 @@
         .table-responsive-wrapper::-webkit-scrollbar { height: 6px; }
         .table-responsive-wrapper::-webkit-scrollbar-track { background: var(--bg-base); border-radius: 8px; }
         .table-responsive-wrapper::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 8px; }
+
+        .quote-product-media {
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.02);
+            overflow: hidden;
+        }
+
+        .quote-product-media-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.2);
+        }
+
+        .quote-product-media-head strong {
+            color: var(--gas-green-light);
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .quote-product-media-head span {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .quote-media-carousel-stage {
+            position: relative;
+            aspect-ratio: 16 / 9;
+            background: #0b1016;
+        }
+
+        .quote-media-slide {
+            display: none;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+
+        .quote-media-slide.is-active {
+            display: block;
+        }
+
+        .quote-media-slide img,
+        .quote-media-figure img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .quote-media-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+            border: 1px solid rgba(93, 214, 44, 0.3);
+            background: rgba(10, 14, 20, 0.85);
+            color: var(--gas-green-light);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .quote-media-nav.prev { left: 14px; }
+        .quote-media-nav.next { right: 14px; }
+
+        .quote-media-nav:hover {
+            border-color: var(--gas-green-light);
+            background: rgba(22, 27, 34, 0.95);
+        }
+
+        .quote-media-dots {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px;
+        }
+
+        .quote-media-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            border: none;
+            background: rgba(255,255,255,0.18);
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .quote-media-dot.is-active {
+            background: var(--gas-green-light);
+            transform: scale(1.15);
+        }
+
+        .quote-media-stack-list {
+            display: grid;
+            gap: 14px;
+            padding: 14px;
+        }
+
+        .quote-media-figure {
+            margin: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background: #0b1016;
+        }
         
         /* 闅愯棌婊氬姩鏉″疄鐢ㄧ被 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -422,6 +538,20 @@
             .industrial-table td {
                 padding: 10px 12px;
                 font-size: 0.8rem;
+            }
+
+            .quote-product-media-head {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .quote-media-carousel-stage {
+                aspect-ratio: 4 / 3;
+            }
+
+            .quote-media-nav {
+                width: 38px;
+                height: 38px;
             }
 
             .access-gate-card,

@@ -23,6 +23,21 @@ begin
 end;
 $$;
 
+create or replace function public.is_active_admin_user()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select exists (
+        select 1
+        from public.admin_users
+        where lower(email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+          and is_active = true
+    );
+$$;
+
 drop trigger if exists trg_admin_users_updated_at on public.admin_users;
 create trigger trg_admin_users_updated_at
 before update on public.admin_users
@@ -36,64 +51,29 @@ create policy "admin_users_select"
 on public.admin_users
 for select
 to authenticated
-using (
-    exists (
-        select 1
-        from public.admin_users actor
-        where lower(actor.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
-          and actor.is_active = true
-    )
-);
+using (public.is_active_admin_user());
 
 drop policy if exists "admin_users_insert" on public.admin_users;
 create policy "admin_users_insert"
 on public.admin_users
 for insert
 to authenticated
-with check (
-    exists (
-        select 1
-        from public.admin_users actor
-        where lower(actor.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
-          and actor.is_active = true
-    )
-);
+with check (public.is_active_admin_user());
 
 drop policy if exists "admin_users_update" on public.admin_users;
 create policy "admin_users_update"
 on public.admin_users
 for update
 to authenticated
-using (
-    exists (
-        select 1
-        from public.admin_users actor
-        where lower(actor.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
-          and actor.is_active = true
-    )
-)
-with check (
-    exists (
-        select 1
-        from public.admin_users actor
-        where lower(actor.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
-          and actor.is_active = true
-    )
-);
+using (public.is_active_admin_user())
+with check (public.is_active_admin_user());
 
 drop policy if exists "admin_users_delete" on public.admin_users;
 create policy "admin_users_delete"
 on public.admin_users
 for delete
 to authenticated
-using (
-    exists (
-        select 1
-        from public.admin_users actor
-        where lower(actor.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
-          and actor.is_active = true
-    )
-);
+using (public.is_active_admin_user());
 
 insert into public.admin_users (email, full_name, role, is_active)
 values ('cuitengwei@gasgx.com', 'Cuitengwei', 'super_admin', true)

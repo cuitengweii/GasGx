@@ -13,6 +13,14 @@ export const SECTION_KEYS = Object.freeze({
     MAIN: 'main_config',
     OPTIONAL: 'optional_config',
 });
+export const MEDIA_LAYOUTS = Object.freeze({
+    CAROUSEL: 'carousel',
+    STACK: 'stack',
+});
+export const MEDIA_POSITIONS = Object.freeze({
+    ABOVE: 'above',
+    BELOW: 'below',
+});
 
 const DEFAULT_SECTION_TITLES = Object.freeze({
     [SECTION_KEYS.MAIN]: {
@@ -127,6 +135,53 @@ export function createQuoteItem(sectionKey = SECTION_KEYS.MAIN) {
     };
 }
 
+export function createMediaConfig(seed = {}) {
+    return {
+        enabled: seed?.enabled === true,
+        position: seed?.position === MEDIA_POSITIONS.ABOVE ? MEDIA_POSITIONS.ABOVE : MEDIA_POSITIONS.BELOW,
+        layout: seed?.layout === MEDIA_LAYOUTS.STACK ? MEDIA_LAYOUTS.STACK : MEDIA_LAYOUTS.CAROUSEL,
+    };
+}
+
+export function normalizeMediaConfig(value) {
+    return createMediaConfig(value || {});
+}
+
+export function createQuoteMediaItem(seed = {}) {
+    return {
+        localId: text(seed?.localId || seed?.id || (globalThis.crypto?.randomUUID?.() || `media-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`)),
+        title: text(seed?.title),
+        storage_path: text(seed?.storage_path || seed?.storagePath),
+        public_url: text(seed?.public_url || seed?.publicUrl || seed?.url),
+        sort_order: safeNumber(seed?.sort_order, 100),
+        is_active: seed?.is_active !== false,
+    };
+}
+
+export function normalizeQuoteMediaItem(value = {}) {
+    const base = createQuoteMediaItem(value);
+    return {
+        ...base,
+        localId: text(value?.localId || value?.id || base.localId),
+        title: text(value?.title || value?.name),
+        storage_path: text(value?.storage_path || value?.storagePath),
+        public_url: text(value?.public_url || value?.publicUrl || value?.url),
+        sort_order: safeNumber(value?.sort_order, base.sort_order),
+        is_active: value?.is_active !== false,
+    };
+}
+
+export function sortMediaItems(items = []) {
+    return [...(items || [])]
+        .map((item) => normalizeQuoteMediaItem(item))
+        .filter((item) => item.is_active !== false && text(item.public_url))
+        .sort((a, b) => {
+            const orderDiff = safeNumber(a?.sort_order, 100) - safeNumber(b?.sort_order, 100);
+            if (orderDiff !== 0) return orderDiff;
+            return text(a?.title || a?.public_url).localeCompare(text(b?.title || b?.public_url));
+        });
+}
+
 export function normalizeQuoteItem(value, fallbackSectionKey = SECTION_KEYS.MAIN) {
     const base = createQuoteItem(fallbackSectionKey);
     return {
@@ -197,6 +252,8 @@ export function extractProductSnapshot(value = {}) {
         validity_hours: Math.max(1, safeNumber(value.validity_hours || value.validityHours, 72)),
         default_rates: normalizeRates(value.default_rates || value.defaultRates || DEFAULT_RATES),
         section_config: normalizeSectionConfig(value.section_config || value.sectionConfig),
+        media_config: normalizeMediaConfig(value.media_config || value.mediaConfig),
+        media_gallery: sortMediaItems(value.media_gallery || value.mediaGallery || []),
     };
 }
 
