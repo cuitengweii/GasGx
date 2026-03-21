@@ -334,7 +334,7 @@ function renderSourceBanner(title, copy) {
     return `
         <section class="ams-card ams-site-hero">
             <div class="ams-site-hero-copy">
-                <p class="ams-eyebrow">SITE ADMIN 网站配置</p>
+                <p class="ams-eyebrow">主站配置后台</p>
                 <h2>${esc(title)}</h2>
                 <p class="ams-hero-text">${esc(copy)}</p>
             </div>
@@ -456,10 +456,10 @@ function renderGeneralPreview(config) {
                     </div>
                 </div>
                 <div class="ams-site-preview-pane">
-                    <strong>About 页面</strong>
+                    <strong>关于页面</strong>
                     <div class="ams-site-preview-list">
-                        <span class="ams-site-preview-row"><span>Company 页</span><em>${esc(aboutCompany.meta?.title?.en || aboutCompany.meta?.title?.zh || '--')}</em></span>
-                        <span class="ams-site-preview-row"><span>Contact 页</span><em>${esc(aboutContact.meta?.title?.en || aboutContact.meta?.title?.zh || '--')}</em></span>
+                        <span class="ams-site-preview-row"><span>公司介绍页</span><em>${esc(aboutCompany.meta?.title?.en || aboutCompany.meta?.title?.zh || '--')}</em></span>
+                        <span class="ams-site-preview-row"><span>联系页面</span><em>${esc(aboutContact.meta?.title?.en || aboutContact.meta?.title?.zh || '--')}</em></span>
                         <span class="ams-site-preview-row"><span>联系邮箱</span><em>${esc(aboutContact.contactEmail || '--')}</em></span>
                     </div>
                 </div>
@@ -481,7 +481,7 @@ function renderFieldPair(path, label, value = {}) {
             </div>
             <div class="ams-field">
                 <label>${esc(label)}（英）</label>
-                <input class="ams-input" data-site-config-path="${esc(`${path}.en`)}" value="${esc(value?.en || '')}" placeholder="Please enter English">
+                <input class="ams-input" data-site-config-path="${esc(`${path}.en`)}" value="${esc(value?.en || '')}" placeholder="请输入英文">
             </div>
         </div>
     `;
@@ -507,7 +507,7 @@ function renderLocalizedTextFields(field, sharedText = {}) {
             </div>
             <div class="ams-field">
                 <label>${esc(field.label)}（英）</label>
-                <input class="ams-input" data-site-config-path="${esc(`sharedText.en.${field.key}`)}" value="${esc(enText[field.key] || '')}" placeholder="Please enter English">
+                <input class="ams-input" data-site-config-path="${esc(`sharedText.en.${field.key}`)}" value="${esc(enText[field.key] || '')}" placeholder="请输入英文">
             </div>
         </div>
     `;
@@ -522,7 +522,7 @@ function renderLocalizedPathField(path, label, value = {}) {
             </div>
             <div class="ams-field">
                 <label>${esc(label)}（英）</label>
-                <input class="ams-input" data-site-config-path="${esc(`${path}.en`)}" value="${esc(value?.en || '')}" placeholder="Please enter English">
+                <input class="ams-input" data-site-config-path="${esc(`${path}.en`)}" value="${esc(value?.en || '')}" placeholder="请输入英文">
             </div>
         </div>
     `;
@@ -748,13 +748,13 @@ function renderSocialRow(item, index) {
             ${expanded ? `
                 <div class="ams-site-editor-panel">
                     <div class="ams-site-field-grid ams-site-field-grid-wide">
-                        <div class="ams-field"><label>ID</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.id`)}" value="${esc(item.id || '')}" placeholder="linkedin"></div>
+                        <div class="ams-field"><label>标识 ID</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.id`)}" value="${esc(item.id || '')}" placeholder="linkedin"></div>
                         <div class="ams-field"><label>模式</label><select class="ams-select" data-site-config-path="${esc(`${basePath}.mode`)}"><option value="link" ${item.mode === 'link' ? 'selected' : ''}>链接</option><option value="qr" ${item.mode === 'qr' ? 'selected' : ''}>二维码</option></select></div>
                         <div class="ams-field"><label>跳转地址</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.href`)}" value="${esc(item.href || '')}" placeholder="https://..."></div>
                         <div class="ams-field"><label>二维码类型</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.qrType`)}" value="${esc(item.qrType || '')}" placeholder="wechat"></div>
                         <div class="ams-field"><label>图标类名</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.iconClass`)}" value="${esc(item.iconClass || '')}" placeholder="fa-brands fa-linkedin"></div>
                         <div class="ams-field"><label>文字图标</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.text`)}" value="${esc(item.text || '')}" placeholder="XHS"></div>
-                        <div class="ams-field"><label>辅助说明</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.ariaLabel`)}" value="${esc(item.ariaLabel || '')}" placeholder="Open LinkedIn"></div>
+                        <div class="ams-field"><label>辅助说明</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.ariaLabel`)}" value="${esc(item.ariaLabel || '')}" placeholder="例如：打开 LinkedIn"></div>
                         <div class="ams-field"><label>打开目标</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.target`)}" value="${esc(item.target || '')}" placeholder="_blank"></div>
                         <div class="ams-field"><label>Rel 属性</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.rel`)}" value="${esc(item.rel || '')}" placeholder="noopener noreferrer"></div>
                         <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="${esc(`${basePath}.enabled`)}" data-site-input-type="boolean" ${item.enabled === false ? '' : 'checked'}><span>启用</span></label>
@@ -789,7 +789,7 @@ function renderPartnerRow(item, index) {
             ${expanded ? `
                 <div class="ams-site-editor-panel">
                     <div class="ams-site-field-grid ams-site-field-grid-wide">
-                        <div class="ams-field"><label>ID</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.id`)}" value="${esc(item.id || '')}" placeholder="bitmain"></div>
+                        <div class="ams-field"><label>标识 ID</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.id`)}" value="${esc(item.id || '')}" placeholder="bitmain"></div>
                         <div class="ams-field"><label>标题</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.title`)}" value="${esc(item.title || '')}" placeholder="BITMAIN"></div>
                         <div class="ams-field"><label>跳转地址</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.href`)}" value="${esc(item.href || '')}" placeholder="https://www.bitmain.com/"></div>
                         <div class="ams-field"><label>打开目标</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.target`)}" value="${esc(item.target || '')}" placeholder="_blank"></div>
@@ -806,7 +806,7 @@ function renderNavigationPage() {
     const config = getDraftConfig();
     const navigation = Array.isArray(config.navigation) ? config.navigation : [];
     return `
-        ${renderSourceBanner('主站导航管理', '按照主站真实的一级导航与二级导航结构管理 Header 和 Footer。字段改动会自动异步同步，不再依赖统一保存。')}
+        ${renderSourceBanner('主站导航管理', '按照主站真实的一级导航与二级导航结构管理页头和页脚。字段改动会自动异步同步，不再依赖统一保存。')}
         <section class="ams-site-layout">
             <div class="ams-site-main">
                 <article class="ams-card">
@@ -907,7 +907,7 @@ function renderGeneralPage() {
                                 ${HOME_PAGE_LOCALIZED_FIELDS.map((field) => renderDescriptorField(field, config)).join('')}
                             </div>
                         `)}
-                        ${renderFooterSection('site:about-company', 'About Company 页面', aboutCompany.meta?.title?.en || aboutCompany.meta?.title?.zh || 'About Company 页面文案', `
+                        ${renderFooterSection('site:about-company', '公司介绍页', aboutCompany.meta?.title?.en || aboutCompany.meta?.title?.zh || '公司介绍页文案', `
                             <div class="ams-site-field-grid ams-site-field-grid-wide">
                                 ${renderTextField('pages.aboutCompany.subscribe.recipientEmail', '订阅收件邮箱', aboutCompany.subscribe?.recipientEmail, 'contact@gasgx.com')}
                                 ${renderTextField('pages.aboutCompany.subscribe.subject', '订阅邮件主题', aboutCompany.subscribe?.subject, 'GasGx 2026 行业白皮书')}
@@ -918,7 +918,7 @@ function renderGeneralPage() {
                                 ${renderLocalizedPathField('pages.aboutCompany.subscribe.invalidEmail', '邮箱校验失败文案', aboutCompany.subscribe?.invalidEmail)}
                             </div>
                         `)}
-                        ${renderFooterSection('site:about-contact', 'About Contact 页面', aboutContact.meta?.title?.en || aboutContact.meta?.title?.zh || 'About Contact 页面文案', `
+                        ${renderFooterSection('site:about-contact', '联系页面', aboutContact.meta?.title?.en || aboutContact.meta?.title?.zh || '联系页面文案', `
                             <div class="ams-site-field-grid ams-site-field-grid-wide">
                                 ${renderTextField('pages.aboutContact.contactEmail', '联系邮箱', aboutContact.contactEmail, 'contact@gasgx.com')}
                             </div>
@@ -943,7 +943,7 @@ function renderGeneralPage() {
                                 ${renderTextField('site.mainAuth.returnUrlStorageKey', '返回地址缓存键', mainAuth.returnUrlStorageKey, 'gx_main_return_url')}
                                 ${renderTextField('site.mainAuth.storageKey', '认证缓存键', mainAuth.storageKey, 'gasgx-main-auth')}
                                 ${renderTextField('site.mainAuth.supabaseUrl', '认证 Supabase 地址', mainAuth.supabaseUrl, 'https://mkpcliytqudclkwtewru.supabase.co')}
-                                ${renderTextField('site.mainAuth.supabaseKey', '认证 Supabase Key', mainAuth.supabaseKey, 'sb_publishable_...')}
+                                ${renderTextField('site.mainAuth.supabaseKey', '认证 Supabase 密钥', mainAuth.supabaseKey, 'sb_publishable_...')}
                             </div>
                         `)}
                     </div>
@@ -964,14 +964,14 @@ function renderFooterPage() {
     const socialLinks = Array.isArray(footer.socialLinks) ? footer.socialLinks : [];
     const partners = Array.isArray(footer.partners) ? footer.partners : [];
     return `
-        ${renderSourceBanner('主站 Footer 管理', 'Footer 特殊区块单独管理，Footer 导航分组仍然复用 Header 导航树。字段变更会直接异步同步。')}
+        ${renderSourceBanner('主站页脚管理', '页脚特殊区块单独管理，页脚导航分组仍然复用页头导航树。字段变更会直接异步同步。')}
         <section class="ams-site-layout">
             <div class="ams-site-main">
                 <article class="ams-card">
                     <div class="ams-section-head">
                         <div>
                             <h3>页脚模块</h3>
-                            <p>这里集中管理 Contact、Privacy、Social 和 Partners，不和导航结构混在一起。</p>
+                            <p>这里集中管理联系入口、隐私政策、社交入口和合作伙伴，不和导航结构混在一起。</p>
                         </div>
                         <div class="ams-site-header-actions">
                             <button class="ams-btn ams-btn-muted" type="button" data-site-action="refresh-site-shell">刷新发布态</button>
@@ -982,7 +982,7 @@ function renderFooterPage() {
                     <div class="ams-site-tree">
                         ${renderFooterSection('footer:display', '显示控制', '控制整个页脚与社交区是否显示。', `
                             <div class="ams-site-inline-actions">
-                                <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="footer.visible" data-site-input-type="boolean" ${footer.visible === false ? '' : 'checked'}><span>显示 Footer</span></label>
+                                <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="footer.visible" data-site-input-type="boolean" ${footer.visible === false ? '' : 'checked'}><span>显示页脚</span></label>
                                 <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="footer.socialEnabled" data-site-input-type="boolean" ${footer.socialEnabled === false ? '' : 'checked'}><span>显示社交区</span></label>
                             </div>
                         `)}
@@ -1064,7 +1064,7 @@ async function persistDraft(deps, options = {}) {
             deps.setContent(deps.pageRenderer());
             bindEditor(deps);
         }
-        deps.showToast(`保存失败：${error.message || 'unknown error'}`, true);
+        deps.showToast(`保存失败：${error.message || '未知错误'}`, true);
         return false;
     }
 }
@@ -1099,8 +1099,17 @@ function expandAllNav() {
 }
 
 function collapseAllNav() {
-    Array.from(moduleState.expanded).forEach((key) => {
-        if (key.startsWith('nav:')) moduleState.expanded.delete(key);
+    const config = getDraftConfig();
+    const navList = Array.isArray(config.navigation) ? config.navigation : [];
+    navList.forEach((item, navIndex) => {
+        setExpanded(`nav:${navIndex}`, false);
+        setExpanded(`nav:${navIndex}:children`, false);
+        setExpanded(`nav:${navIndex}:sections`, false);
+        (item?.children || []).forEach((_, childIndex) => setExpanded(`nav:${navIndex}:child:${childIndex}`, false));
+        (item?.sections || []).forEach((section, sectionIndex) => {
+            setExpanded(`nav:${navIndex}:section:${sectionIndex}`, false);
+            (section?.items || []).forEach((_, itemIndex) => setExpanded(`nav:${navIndex}:section:${sectionIndex}:item:${itemIndex}`, false));
+        });
     });
 }
 
@@ -1109,9 +1118,7 @@ function expandAllGeneral() {
 }
 
 function collapseAllGeneral() {
-    Array.from(moduleState.expanded).forEach((key) => {
-        if (key.startsWith('site:')) moduleState.expanded.delete(key);
-    });
+    ['site:brand', 'site:shared-text', 'site:home', 'site:about-company', 'site:about-contact', 'site:features', 'site:auth'].forEach((key) => setExpanded(key, false));
 }
 
 function expandAllFooter() {
@@ -1122,9 +1129,10 @@ function expandAllFooter() {
 }
 
 function collapseAllFooter() {
-    Array.from(moduleState.expanded).forEach((key) => {
-        if (key.startsWith('footer:')) moduleState.expanded.delete(key);
-    });
+    ['footer:display', 'footer:contact', 'footer:privacy', 'footer:social', 'footer:partners'].forEach((key) => setExpanded(key, false));
+    const footer = getDraftConfig().footer || {};
+    (footer.socialLinks || []).forEach((_, index) => setExpanded(`footer:social:${index}`, false));
+    (footer.partners || []).forEach((_, index) => setExpanded(`footer:partner:${index}`, false));
 }
 
 function expandNewNode(arrayPath, index, template) {
@@ -1268,7 +1276,7 @@ async function handleAction(target, deps) {
     }
 
     if (action === 'refresh-site-shell') {
-        if (moduleState.dirty && !window.confirm('There are unsynced changes. Replace local draft with published config?')) return;
+        if (moduleState.dirty && !window.confirm('当前有未同步改动，是否用已发布配置覆盖本地草稿？')) return;
         moduleState.draft = null;
         moduleState.error = null;
         moduleState.dirty = false;
@@ -1363,7 +1371,7 @@ function createDeps(input, pageRenderer) {
 
 export async function renderSiteNavigationAdmin(input) {
     const deps = createDeps(input, renderNavigationPage);
-    deps.setPageHeader('主站导航', '按主站 Header / Footer 共用导航树管理一级与二级结构。');
+    deps.setPageHeader('主站导航', '按主站页头 / 页脚共用导航树管理一级与二级结构。');
     await ensureLoaded(false);
     deps.setContent(renderNavigationPage());
     bindEditor(deps);
@@ -1379,7 +1387,7 @@ export async function renderSiteGeneralAdmin(input) {
 
 export async function renderSiteFooterAdmin(input) {
     const deps = createDeps(input, renderFooterPage);
-    deps.setPageHeader('主站 Footer', '管理 Contact、Privacy、Social、Partners，改动异步即时同步。');
+    deps.setPageHeader('主站页脚', '管理联系入口、隐私政策、社交入口和合作伙伴，改动异步即时同步。');
     await ensureLoaded(false);
     deps.setContent(renderFooterPage());
     bindEditor(deps);

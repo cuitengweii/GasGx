@@ -277,7 +277,13 @@ textarea {
 }
 
 .ams-main {
-    padding: 20px;
+    padding: 20px 24px 28px;
+}
+
+.ams-main > .ams-header,
+.ams-main > .ams-content {
+    width: min(100%, 1460px);
+    margin-inline: auto;
 }
 
 .ams-header {
@@ -323,7 +329,7 @@ textarea {
     border-radius: 14px;
     background: rgba(8, 8, 8, 0.96);
     min-height: 72vh;
-    padding: 16px;
+    padding: 18px;
 }
 
 .ams-grid {
@@ -1810,8 +1816,10 @@ textarea {
 
 .ams-site-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.95fr);
-    gap: 14px;
+    grid-template-columns: minmax(0, 980px) minmax(320px, 360px);
+    justify-content: start;
+    align-items: start;
+    gap: 16px;
 }
 
 .ams-site-main,
@@ -1819,6 +1827,16 @@ textarea {
     display: flex;
     flex-direction: column;
     gap: 14px;
+}
+
+.ams-site-main {
+    min-width: 0;
+}
+
+.ams-site-sidebar {
+    position: sticky;
+    top: 20px;
+    align-self: start;
 }
 
 .ams-site-header-actions,
@@ -1856,7 +1874,7 @@ textarea {
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    padding: 14px 16px;
+    padding: 12px 14px;
 }
 
 .ams-site-tree-main {
@@ -1918,14 +1936,14 @@ textarea {
 }
 
 .ams-site-editor-panel {
-    padding: 0 16px 16px;
+    padding: 0 14px 14px;
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
 .ams-site-branch {
-    margin: 0 16px 16px;
+    margin: 0 14px 14px;
     border: 1px solid #202020;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.02);
@@ -2013,7 +2031,7 @@ textarea {
 }
 
 .ams-site-field-grid-wide {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .ams-site-visible-toggle {
@@ -2105,6 +2123,10 @@ textarea {
 @media (max-width: 1280px) {
     .ams-site-layout {
         grid-template-columns: 1fr;
+    }
+
+    .ams-site-sidebar {
+        position: static;
     }
 }
 
