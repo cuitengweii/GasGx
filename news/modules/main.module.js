@@ -1,5 +1,5 @@
 
-import { renderSharedAuthState } from '../shared/modules/layout.shared.js?v=20260321authux03';
+import { renderSharedAuthState } from '../shared/modules/layout.shared.js?v=20260321newsacct01';
 import { HEADER_NAVIGATION } from '../shared/config/navigation.config.js';
 import {
     DEFAULT_COVER as SHARED_DEFAULT_COVER,
@@ -362,8 +362,8 @@ export function createNewsHomeApp() {
                 navigation: HEADER_NAVIGATION,
                 currentUser: this.state.currentUser,
                 displayName: this.state.displayName,
-                accountUrl: '/news/flash/account.html',
-                signInUrl: '/news/flash/account.html',
+                accountUrl: '/news/account.html',
+                signInUrl: '/account/user.html',
                 activeTitle: 'HOME',
             });
         },

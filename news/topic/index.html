@@ -243,7 +243,7 @@
 
             <div class="flex items-center gap-4">
                 <div id="auth-btn-container" class="hidden lg:block ml-4"></div>
-                <a href="/news/flash/account.html" id="header-account-trigger" class="lg:hidden flex items-center gap-2 text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 px-3 py-1.5 rounded-full hover:bg-gas-green hover:text-black hover:shadow-neon transition-all duration-300 max-w-[140px]" aria-label="Account">
+                <a href="/account/user.html" id="header-account-trigger" class="lg:hidden flex items-center gap-2 text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 px-3 py-1.5 rounded-full hover:bg-gas-green hover:text-black hover:shadow-neon transition-all duration-300 max-w-[140px]" aria-label="Account">
                     <i class="fa-solid fa-user"></i>
                     <span id="mobile-trigger-text" class="truncate">SIGN IN</span>
                 </a>
@@ -486,16 +486,18 @@
                     displayName = this.state.displayName || this.state.currentUser.email.split('@')[0];
                 }
 
+                const accountTarget = isLogged ? "/news/account.html" : "/account/user.html";
+
                 if (btnContainer) {
                     btnContainer.innerHTML = `
-                        <a href="/news/flash/account.html" class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gas-green text-black hover:bg-white hover:shadow-neon hover:scale-105 transition-all duration-300 text-xs font-bold uppercase tracking-wider shadow-neon">
+                        <a href="${accountTarget}" class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gas-green text-black hover:bg-white hover:shadow-neon hover:scale-105 transition-all duration-300 text-xs font-bold uppercase tracking-wider shadow-neon">
                             <i class="fa-solid fa-user"></i> <span class="max-w-[100px] truncate">${displayName}</span>
                         </a>
                     `;
                 }
 
                 if (mobileTriggerText) mobileTriggerText.textContent = isLogged ? displayName : "SIGN IN";
-                if (mobileTrigger) mobileTrigger.href = "/news/flash/account.html";
+                if (mobileTrigger) mobileTrigger.href = accountTarget;
 
                 if (mobileNavLinks) {
                     mobileNavLinks.innerHTML = AppData.navigation.map(item => `

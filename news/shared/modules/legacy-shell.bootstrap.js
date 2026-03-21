@@ -1,4 +1,4 @@
-import { mountSharedHeader, mountSharedFooter, renderSharedAuthState } from './layout.shared.js?v=20260321authux03';
+import { mountSharedHeader, mountSharedFooter, renderSharedAuthState } from './layout.shared.js?v=20260321newsacct01';
 import { HEADER_NAVIGATION } from '../config/navigation.config.js';
 
 const DEFAULT_MAIN_AUTH = Object.freeze({
@@ -159,8 +159,8 @@ function applySharedNavState({ page, idPrefix, currentUser, displayName, activeT
         navigation: HEADER_NAVIGATION,
         currentUser,
         displayName,
-        accountUrl: '/news/flash/account.html',
-        signInUrl: '/news/flash/user.html',
+        accountUrl: '/news/account.html',
+        signInUrl: '/account/user.html',
         activeTitle,
         activePath,
     });
@@ -208,7 +208,7 @@ async function initAuthBridge({ page, idPrefix, activeTitle, activePath }) {
 
 function normalizeLegacyBodyLayout(pathname) {
     const path = pathname.toLowerCase();
-    if (path === '/news/flash/account.html' || path === '/news/flash/user.html') {
+    if (path === '/news/account.html' || path === '/news/flash/account.html' || path === '/news/flash/user.html') {
         document.body.classList.remove('h-screen', 'overflow-hidden');
         document.body.classList.add('min-h-screen');
     }
@@ -216,7 +216,7 @@ function normalizeLegacyBodyLayout(pathname) {
 
 function detectFooterVariant(pathname) {
     const path = pathname.toLowerCase();
-    if (path === '/news/flash/account.html') return 'minimal';
+    if (path === '/news/account.html' || path === '/news/flash/account.html') return 'minimal';
     return 'full';
 }
 

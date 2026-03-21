@@ -1,5 +1,5 @@
 
-import { renderSharedAuthState } from '../../shared/modules/layout.shared.js?v=20260321authux03';
+import { renderSharedAuthState } from '../../shared/modules/layout.shared.js?v=20260321newsacct01';
 import { HEADER_NAVIGATION } from '../../shared/config/navigation.config.js';
 
 const DEFAULT_MAIN_AUTH = Object.freeze({
@@ -7,8 +7,8 @@ const DEFAULT_MAIN_AUTH = Object.freeze({
     supabaseUrl: 'https://mkpcliytqudclkwtewru.supabase.co',
     supabaseKey: 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw',
 });
-const FLASH_ACCOUNT_URL = '/news/flash/account.html';
-const FLASH_SIGN_IN_URL = '/news/flash/user.html';
+const FLASH_ACCOUNT_URL = '/news/account.html';
+const FLASH_SIGN_IN_URL = '/account/user.html';
 const API_BASE = 'https://api.theblockbeats.news/v1/open-api/open-flash';
 const FLASH_PROXY_BASES = ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='];
 const FLASH_FETCH_TIMEOUT_MS = 15000;
@@ -334,7 +334,7 @@ export function createFlashApp() {
                 navigation: HEADER_NAVIGATION,
                 currentUser: this.state.user,
                 displayName: this.state.displayName,
-                accountUrl: '/news/flash/account.html',
+                accountUrl: FLASH_ACCOUNT_URL,
                 signInUrl: FLASH_SIGN_IN_URL,
                 activeTitle: 'FLASH',
             });
@@ -574,7 +574,7 @@ export function createFlashApp() {
         },
         async translateItem(id) {
             if (!this.state.user) {
-                window.location.href = '/news/flash/user.html';
+                window.location.href = FLASH_SIGN_IN_URL;
                 return;
             }
 

@@ -1,5 +1,5 @@
 ﻿
-import { renderSharedAuthState } from './layout.shared.js?v=20260321authux03';
+import { renderSharedAuthState } from './layout.shared.js?v=20260321newsacct01';
 import { HEADER_NAVIGATION } from '../config/navigation.config.js';
 import {
     DEFAULT_COVER,
@@ -738,8 +738,8 @@ export function createChannelApp(channelKey) {
                 navigation: HEADER_NAVIGATION,
                 currentUser: this.state.currentUser,
                 displayName: this.state.displayName,
-                accountUrl: '/news/flash/account.html',
-                signInUrl: '/news/flash/user.html',
+                accountUrl: '/news/account.html',
+                signInUrl: '/account/user.html',
                 activeTitle: config.navTitle,
                 activePath: window.location.pathname,
             });

@@ -122,7 +122,7 @@
         const GX_SUPABASE_KEY = HOME_SHELL_SITE_AUTH.supabaseKey || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
         const MAIN_AUTH_STORAGE_KEY = HOME_SHELL_SITE_AUTH.storageKey || 'gasgx-main-auth';
         const FLASH_SIGN_IN_URL = '/news/flash/user.html';
-        const DEFAULT_HOME_PATH = '/news/flash/account.html';
+        const DEFAULT_HOME_PATH = '/news/account.html';
         const RETURN_URL_STORAGE_KEY = `${HOME_SHELL_SITE_AUTH.returnUrlStorageKey || 'gx_main_return_url'}:flash`;
 
         let gxClient = window.supabase ? window.supabase.createClient(GX_SUPABASE_URL, GX_SUPABASE_KEY, {
@@ -162,7 +162,7 @@
             if (window.location.hash.includes('access_token') || new URLSearchParams(window.location.search).has('code')) return;
             const referrer = document.referrer;
             const currentOrigin = window.location.origin;
-            if (referrer && referrer.includes(currentOrigin) && !referrer.includes('/news/flash/user.html') && !referrer.includes('/news/flash/account.html')) {
+            if (referrer && referrer.includes(currentOrigin) && !referrer.includes('/news/flash/user.html') && !referrer.includes('/news/flash/account.html') && !referrer.includes('/news/account.html')) {
                 const refUrl = new URL(referrer);
                 sessionStorage.setItem(RETURN_URL_STORAGE_KEY, `${refUrl.pathname}${refUrl.search}${refUrl.hash}`);
             }
@@ -264,7 +264,7 @@
             }
         };
     </script>
-<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js?v=20260321authux03"></script>
+<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js?v=20260321newsacct01"></script>
 </body>
 </html>
 
