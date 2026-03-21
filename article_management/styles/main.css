@@ -1553,6 +1553,135 @@ textarea {
     border: 1px solid #242424;
 }
 
+.ams-quote-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.ams-quote-list-panel,
+.ams-quote-editor-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.ams-quote-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ams-quote-list-card {
+    width: 100%;
+    border: 1px solid #242424;
+    border-radius: 14px;
+    background: #101010;
+    padding: 14px;
+    color: #d8d8d8;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.ams-quote-list-card strong {
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.ams-quote-list-card span {
+    color: #8f8f8f;
+    font-size: 12px;
+}
+
+.ams-quote-list-card em {
+    color: var(--ams-green);
+    font-style: normal;
+    font-size: 11px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.ams-quote-list-card:hover,
+.ams-quote-list-card.is-active {
+    border-color: rgba(93, 214, 44, 0.4);
+    background: rgba(93, 214, 44, 0.06);
+    transform: translateY(-1px);
+}
+
+.ams-quote-inline-meta {
+    color: #7d7d7d;
+}
+
+.ams-quote-field-card,
+.ams-quote-block,
+.ams-quote-section-config {
+    border: 1px solid #232323;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 14px;
+}
+
+.ams-quote-field-card-head,
+.ams-quote-section-config-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.ams-quote-field-card-head strong,
+.ams-quote-section-config-head strong {
+    color: #fff;
+    font-size: 13px;
+}
+
+.ams-quote-field-card-head span,
+.ams-quote-section-config-head span {
+    color: #818181;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.ams-quote-textarea {
+    min-height: 88px;
+}
+
+.ams-quote-row-textarea {
+    min-height: 86px;
+    font-size: 12px;
+}
+
+.ams-quote-line-table td,
+.ams-quote-line-table th {
+    min-width: 110px;
+}
+
+.ams-quote-section-grid,
+.ams-quote-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.ams-quick-link-static {
+    cursor: default;
+}
+
+.ams-quick-link-static:hover {
+    transform: none;
+}
+
 .ams-editor-action-bar {
     position: sticky;
     bottom: 0;
@@ -1602,7 +1731,8 @@ textarea {
     .ams-hero-card,
     .ams-editor-hero,
     .ams-dashboard-intro,
-    .ams-editor-layout {
+    .ams-editor-layout,
+    .ams-quote-layout {
         grid-template-columns: 1fr;
     }
 
@@ -1719,6 +1849,11 @@ textarea {
         position: static;
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .ams-quote-section-grid,
+    .ams-quote-meta-grid {
+        grid-template-columns: 1fr;
     }
 
     .ams-editor-sticky-card {

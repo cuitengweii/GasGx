@@ -37,6 +37,7 @@ import {
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
 import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260321admin01';
+import { renderQuoteBrandsPage, renderQuoteInstancesPage, renderQuoteProductsPage } from './quote-system.module.js?v=20260321quote01';
 import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260321site08';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js?v=20260321admin01';
 
@@ -963,6 +964,11 @@ function renderShell() {
                     ${navGroup('System', [
                         navButton('admin-users', '人员管理', 'fa-users-gear'),
                         navButton('admin-security', '账号安全', 'fa-user-shield'),
+                    ])}
+                    ${navGroup('Quotes', [
+                        navButton('quote-brands', '品牌管理', 'fa-layer-group'),
+                        navButton('quote-products', '产品模板', 'fa-cubes'),
+                        navButton('quote-instances', '报价单管理', 'fa-file-invoice-dollar'),
                     ])}
                     ${navGroup('News', [
                         navButton('articles', '文章管理', 'fa-file-lines'),
@@ -2813,6 +2819,30 @@ async function renderPage() {
             rerender: () => renderPage(),
         });
         else if (state.page === 'admin-security') await renderAdminSecurityPage({
+            user: state.user,
+            setPageHeader,
+            setContent,
+            showToast,
+            withButtonBusy,
+            rerender: () => renderPage(),
+        });
+        else if (state.page === 'quote-brands') await renderQuoteBrandsPage({
+            user: state.user,
+            setPageHeader,
+            setContent,
+            showToast,
+            withButtonBusy,
+            rerender: () => renderPage(),
+        });
+        else if (state.page === 'quote-products') await renderQuoteProductsPage({
+            user: state.user,
+            setPageHeader,
+            setContent,
+            showToast,
+            withButtonBusy,
+            rerender: () => renderPage(),
+        });
+        else if (state.page === 'quote-instances') await renderQuoteInstancesPage({
             user: state.user,
             setPageHeader,
             setContent,

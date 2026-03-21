@@ -1,0 +1,1413 @@
+import {
+    DEFAULT_LANG,
+    DEFAULT_RATES,
+    DEFAULT_SHARE_SECRET,
+    SUPPORTED_LANGS,
+    buildLegacyFallbackSnapshot,
+    buildQuoteSnapshot,
+    ensureLegacyQuotePagesLoaded,
+    normalizeRates,
+} from './quote-data.module.js';
+
+const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
+const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+const ADMIN_EMAILS = ['cuitengwei@gasgx.com'];
+const RATE_API_URL = 'https://open.er-api.com/v6/latest/CNY';
+
+const dict = {
+    zh: {
+        supplier: '供应商：',
+        sender: '发件人：',
+        receiver: '收件人：',
+        validity: '报价有效期：',
+        update: 'SYS_TIME_SYNC',
+        included: '包含',
+        mainConfig: '主配置',
+        optionalConfig: '选配',
+        systemTotal: '系统预估总价 / EST. SYSTEM TOTAL',
+        headers: ['SEQ', '模块描述 (DESCRIPTION)', '规格 (BRAND)', 'QTY', 'RMB (¥)', 'USD ($)', 'EUR (€)', 'CAD (C$)', 'RUB (₽)'],
+        ratesOnline: '全球实时汇率在线',
+        ratesRefreshing: '正在刷新...',
+        ratesFallback: '汇率获取失败，使用本地快照',
+        refresh: '刷新汇率',
+        send: '发送',
+        share: '分享/导出',
+        shareLink: '创建分享链接',
+        exportImage: '生成长图',
+        exportPdf: '导出 PDF',
+        shareTitle: '创建分享链接',
+        shareDesc: '设置链接有效期和提取码后生成客户访问链接。管理员登录状态下始终可打开页面。',
+        shareExpiryLabel: '链接有效期',
+        shareExpiry1d: '1天后过期',
+        shareExpiry3d: '3天后过期',
+        shareExpiry7d: '7天后过期',
+        shareExpiryNever: '永不过期',
+        shareExpiryCustom: '自定义时间',
+        shareCustomLabel: '自定义到期时间',
+        shareCustomPicker: '选择时间',
+        shareAdminHint: '后台管理员登录状态不受分享时间限制。',
+        sharePasscodeLabel: '提取码',
+        sharePasscodePlaceholder: '自动生成',
+        shareLinkLabel: '分享链接',
+        shareLinkPlaceholder: '点击下方按钮生成分享链接',
+        shareGenerate: '生成并复制链接',
+        shareClose: '关闭',
+        sharePreviewDefault: '默认生成 3 天有效链接。',
+        sharePreviewAdmin: '管理员登录后仍可直接打开，不受外链过期限制。',
+        shareCopySuccess: '链接已复制到剪贴板',
+        shareCopyFallback: '已生成链接，请手动复制。',
+        shareAdminOnly: '只有后台管理员登录后才可以创建分享链接。',
+        shareCustomRequired: '请先选择一个有效的自定义到期时间。',
+        shareCustomExpired: '自定义到期时间必须晚于当前时间。',
+        shareUnavailable: '当前页面没有可分享的已发布报价。',
+        shareGenerateError: '分享链接生成失败，请稍后重试。',
+        accessBadge: '受控访问',
+        accessCheckingTitle: '正在验证访问权限...',
+        accessCheckingMessage: '正在检查分享链接和管理员会话，请稍候。',
+        accessInvalid: '分享链接无效或已损坏，请重新生成。',
+        accessExpired: '分享链接已过期，请联系管理员重新生成。',
+        accessPasscodeTitle: '请输入提取码',
+        accessPasscodeMessage: '当前分享链接已开启提取码保护，请输入 4 位提取码继续访问。',
+        accessPasscodeLabel: '请输入提取码',
+        accessPasscodeSubmit: '验证并打开',
+        accessPasscodeError: '提取码不正确，请重试。',
+        accessDeniedTitle: '无法访问预览页',
+        accessDeniedMessage: '草稿预览仅限后台管理员登录后查看。',
+        accessRefresh: '重新检测',
+        notFoundTitle: '未找到报价单',
+        notFoundMessage: '当前链接没有对应的已发布报价数据。',
+        loading: '处理中...',
+        exportLoading: '正在生成高清文档...',
+        exportSubText: '正在进行高清文档渲染，请稍候。',
+        receiverPlaceholder: '请输入客户邮箱',
+        days: '天',
+        hours: '时',
+        minutes: '分',
+        seconds: '秒',
+        shareMetaMode: '访问模式：分享链接',
+        shareMetaAdmin: '访问模式：管理员预览',
+        shareMetaExpired: '链接到期：',
+        shareMetaNever: '永不过期',
+        unknownBrand: '报价系统',
+        mailSubjectPrefix: '[SYS_DATA]',
+        noEmail: '请先维护客户邮箱。',
+    },
+    en: {
+        supplier: 'SUPPLIER:',
+        sender: 'SENDER:',
+        receiver: 'RECEIVER:',
+        validity: 'VALIDITY:',
+        update: 'SYS_TIME_SYNC',
+        included: 'Included',
+        mainConfig: 'Main Config',
+        optionalConfig: 'Optional Config',
+        systemTotal: 'EST. SYSTEM TOTAL',
+        headers: ['SEQ', 'DESCRIPTION', 'BRAND', 'QTY', 'RMB (¥)', 'USD ($)', 'EUR (€)', 'CAD (C$)', 'RUB (₽)'],
+        ratesOnline: 'GLOBAL LIVE RATES',
+        ratesRefreshing: 'Refreshing...',
+        ratesFallback: 'Rate fetch failed, using saved snapshot',
+        refresh: 'REFRESH',
+        send: 'Send',
+        share: 'Share/Export',
+        shareLink: 'Create Share Link',
+        exportImage: 'Export Image',
+        exportPdf: 'Export PDF',
+        shareTitle: 'Create Share Link',
+        shareDesc: 'Generate a customer link with expiry and passcode. Signed-in admins can always open this page.',
+        shareExpiryLabel: 'Link expiry',
+        shareExpiry1d: 'Expire in 1 day',
+        shareExpiry3d: 'Expire in 3 days',
+        shareExpiry7d: 'Expire in 7 days',
+        shareExpiryNever: 'Never expire',
+        shareExpiryCustom: 'Custom time',
+        shareCustomLabel: 'Custom expiration time',
+        shareCustomPicker: 'Pick time',
+        shareAdminHint: 'Admin sessions from the site backend always bypass link expiry.',
+        sharePasscodeLabel: 'Passcode',
+        sharePasscodePlaceholder: 'Generated automatically',
+        shareLinkLabel: 'Share link',
+        shareLinkPlaceholder: 'Generate a share link below',
+        shareGenerate: 'Generate & Copy Link',
+        shareClose: 'Close',
+        sharePreviewDefault: 'The default output is a 3-day share link.',
+        sharePreviewAdmin: 'Signed-in admins can still open the page after link expiry.',
+        shareCopySuccess: 'Link copied to clipboard',
+        shareCopyFallback: 'Link generated. Copy it manually.',
+        shareAdminOnly: 'Only signed-in site admins can create share links.',
+        shareCustomRequired: 'Choose a valid custom expiration time first.',
+        shareCustomExpired: 'The custom expiration time must be later than now.',
+        shareUnavailable: 'This page does not have a published quote target yet.',
+        shareGenerateError: 'Failed to generate the share link. Try again later.',
+        accessBadge: 'Protected Access',
+        accessCheckingTitle: 'Checking access...',
+        accessCheckingMessage: 'Verifying share token and admin session. Please wait.',
+        accessInvalid: 'The share link is invalid or corrupted. Generate a new one.',
+        accessExpired: 'This share link has expired.',
+        accessPasscodeTitle: 'Passcode required',
+        accessPasscodeMessage: 'This share link is protected by a passcode. Enter the 4-character code to continue.',
+        accessPasscodeLabel: 'Passcode',
+        accessPasscodeSubmit: 'Unlock',
+        accessPasscodeError: 'Incorrect passcode. Try again.',
+        accessDeniedTitle: 'Preview unavailable',
+        accessDeniedMessage: 'Draft previews are only available to signed-in admins.',
+        accessRefresh: 'Check Again',
+        notFoundTitle: 'Quote not found',
+        notFoundMessage: 'No published quote data is available for this link.',
+        loading: 'Loading...',
+        exportLoading: 'GENERATING DOCUMENT...',
+        exportSubText: 'Rendering a high-resolution document. Please wait.',
+        receiverPlaceholder: 'Enter customer email',
+        days: 'd',
+        hours: 'h',
+        minutes: 'm',
+        seconds: 's',
+        shareMetaMode: 'Mode: share-link',
+        shareMetaAdmin: 'Mode: admin-preview',
+        shareMetaExpired: 'Expires at: ',
+        shareMetaNever: 'Never expires',
+        unknownBrand: 'Quote System',
+        mailSubjectPrefix: '[SYS_DATA]',
+        noEmail: 'Set a customer email first.',
+    },
+    ru: {
+        supplier: 'ПОСТАВЩИК:',
+        sender: 'ОТПРАВИТЕЛЬ:',
+        receiver: 'ПОЛУЧАТЕЛЬ:',
+        validity: 'СРОК ДЕЙСТВИЯ:',
+        update: 'SYS_TIME_SYNC',
+        included: 'Вкл.',
+        mainConfig: 'Основная конфигурация',
+        optionalConfig: 'Опции',
+        systemTotal: 'ОЦЕНОЧНАЯ СТОИМОСТЬ СИСТЕМЫ',
+        headers: ['№', 'ОПИСАНИЕ', 'БРЕНД', 'КОЛ', 'RMB (¥)', 'USD ($)', 'EUR (€)', 'CAD (C$)', 'RUB (₽)'],
+        ratesOnline: 'ГЛОБАЛЬНЫЕ КУРСЫ ОНЛАЙН',
+        ratesRefreshing: 'Обновление...',
+        ratesFallback: 'Не удалось получить курс, используем сохраненный снимок',
+        refresh: 'ОБНОВИТЬ',
+        send: 'Отправить',
+        share: 'Поделиться/Экспорт',
+        shareLink: 'Создать ссылку',
+        exportImage: 'Экспорт изображения',
+        exportPdf: 'Экспорт PDF',
+        shareTitle: 'Создать ссылку',
+        shareDesc: 'Сформируйте клиентскую ссылку с ограничением по времени и кодом доступа. Администратор может открыть страницу в любой момент.',
+        shareExpiryLabel: 'Срок действия ссылки',
+        shareExpiry1d: 'Истекает через 1 день',
+        shareExpiry3d: 'Истекает через 3 дня',
+        shareExpiry7d: 'Истекает через 7 дней',
+        shareExpiryNever: 'Без срока',
+        shareExpiryCustom: 'Своя дата',
+        shareCustomLabel: 'Своя дата истечения',
+        shareCustomPicker: 'Выбрать',
+        shareAdminHint: 'Сессия администратора сайта не ограничивается сроком действия ссылки.',
+        sharePasscodeLabel: 'Код доступа',
+        sharePasscodePlaceholder: 'Генерируется автоматически',
+        shareLinkLabel: 'Ссылка',
+        shareLinkPlaceholder: 'Сначала создайте ссылку',
+        shareGenerate: 'Создать и скопировать',
+        shareClose: 'Закрыть',
+        sharePreviewDefault: 'По умолчанию создается ссылка на 3 дня.',
+        sharePreviewAdmin: 'Администратор может открыть страницу и после окончания срока.',
+        shareCopySuccess: 'Ссылка скопирована',
+        shareCopyFallback: 'Ссылка создана. Скопируйте ее вручную.',
+        shareAdminOnly: 'Создавать ссылки может только вошедший администратор сайта.',
+        shareCustomRequired: 'Сначала выберите корректное время истечения.',
+        shareCustomExpired: 'Время истечения должно быть позже текущего времени.',
+        shareUnavailable: 'Для этой страницы пока нет опубликованной ссылки.',
+        shareGenerateError: 'Не удалось создать ссылку. Повторите попытку позже.',
+        accessBadge: 'Защищенный доступ',
+        accessCheckingTitle: 'Проверка доступа...',
+        accessCheckingMessage: 'Проверяем ссылку и сессию администратора. Подождите.',
+        accessInvalid: 'Ссылка повреждена или недействительна.',
+        accessExpired: 'Срок действия ссылки истек.',
+        accessPasscodeTitle: 'Требуется код доступа',
+        accessPasscodeMessage: 'Для этой ссылки включен код доступа. Введите 4-символьный код, чтобы продолжить.',
+        accessPasscodeLabel: 'Код доступа',
+        accessPasscodeSubmit: 'Открыть',
+        accessPasscodeError: 'Неверный код доступа.',
+        accessDeniedTitle: 'Нет доступа к предпросмотру',
+        accessDeniedMessage: 'Черновой предпросмотр доступен только администратору.',
+        accessRefresh: 'Проверить снова',
+        notFoundTitle: 'Предложение не найдено',
+        notFoundMessage: 'Для этой ссылки нет опубликованных данных.',
+        loading: 'Загрузка...',
+        exportLoading: 'СОЗДАНИЕ ДОКУМЕНТА...',
+        exportSubText: 'Идет рендеринг документа высокого качества.',
+        receiverPlaceholder: 'Введите email клиента',
+        days: 'д',
+        hours: 'ч',
+        minutes: 'м',
+        seconds: 'с',
+        shareMetaMode: 'Режим: share-link',
+        shareMetaAdmin: 'Режим: admin-preview',
+        shareMetaExpired: 'Истекает: ',
+        shareMetaNever: 'Без срока',
+        unknownBrand: 'Quote System',
+        mailSubjectPrefix: '[SYS_DATA]',
+        noEmail: 'Сначала укажите email клиента.',
+    },
+};
+
+const params = new URLSearchParams(window.location.search);
+
+const state = {
+    snapshot: null,
+    currentLang: DEFAULT_LANG,
+    rates: { ...DEFAULT_RATES },
+    isAdmin: false,
+    adminUser: null,
+    route: null,
+    sharePayload: null,
+    shareTarget: null,
+    pendingSharedAccess: null,
+    isMobileMenuOpen: false,
+    clockTimer: null,
+};
+
+function byId(id) {
+    return document.getElementById(id);
+}
+
+function esc(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function text(value, fallback = '') {
+    return String(value ?? fallback).trim();
+}
+
+function isMobileViewport() {
+    return window.matchMedia('(max-width: 767px)').matches;
+}
+
+function t(key) {
+    return dict[state.currentLang]?.[key] || dict.en[key] || key;
+}
+
+function looksCorrupted(value) {
+    const sample = text(value);
+    if (!sample) return false;
+    if (sample.includes('�') || sample.includes('鈧')) return true;
+    return /(锛|鏈|褋|袘|袨|€|銆?)/.test(sample);
+}
+
+function pickDisplayText(value, fallback = '') {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const requested = text(value[state.currentLang]);
+        const english = text(value.en);
+        const chinese = text(value.zh);
+        const russian = text(value.ru);
+        const ordered = [requested, english, chinese, russian, text(fallback)];
+        return ordered.find((entry) => entry && !looksCorrupted(entry)) || ordered.find(Boolean) || text(fallback);
+    }
+    const raw = text(value, fallback);
+    return looksCorrupted(raw) ? text(fallback) || raw : raw;
+}
+
+function safeNumber(value, fallback = 0) {
+    const next = Number(value);
+    return Number.isFinite(next) ? next : fallback;
+}
+
+function formatMoney(value) {
+    return Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+}
+
+function formatCurrency(code, amount) {
+    if (code === 'RMB') return `¥${formatMoney(amount)}`;
+    if (code === 'USD') return `$${formatMoney(amount)}`;
+    if (code === 'EUR') return `€${formatMoney(amount)}`;
+    if (code === 'CAD') return `C$${formatMoney(amount)}`;
+    return `₽${formatMoney(amount)}`;
+}
+
+function getSectionLabel(section) {
+    const explicit = pickDisplayText(section?.title, '');
+    if (explicit) return explicit;
+    return section?.key === 'optional_config' ? t('optionalConfig') : t('mainConfig');
+}
+
+function sectionSubtotal(section) {
+    return safeNumber(section?.subtotal, 0);
+}
+
+function quoteTotal(snapshot) {
+    return (snapshot?.product?.sections || []).reduce((sum, section) => sum + sectionSubtotal(section), 0);
+}
+
+function hexToRgba(hex, alpha = 1) {
+    const source = text(hex).replace('#', '');
+    const normalized = source.length === 3
+        ? source
+              .split('')
+              .map((char) => `${char}${char}`)
+              .join('')
+        : source;
+    const parsed = Number.parseInt(normalized, 16);
+    if (!Number.isFinite(parsed)) return `rgba(93, 214, 44, ${alpha})`;
+    const r = (parsed >> 16) & 255;
+    const g = (parsed >> 8) & 255;
+    const b = parsed & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function applyTheme(brand = {}) {
+    const primary = text(brand.theme_primary, '#5DD62C') || '#5DD62C';
+    const dark = text(brand.theme_dark, '#337418') || '#337418';
+    document.documentElement.style.setProperty('--gas-green-primary', primary);
+    document.documentElement.style.setProperty('--gas-green-light', primary);
+    document.documentElement.style.setProperty('--gas-green-bg-solid', dark);
+    document.documentElement.style.setProperty('--gas-green-bg', hexToRgba(primary, 0.1));
+}
+
+function normalizeLang(value) {
+    return SUPPORTED_LANGS.includes(text(value)) ? text(value) : DEFAULT_LANG;
+}
+
+function bodyReadonly(readonly) {
+    document.body.classList.toggle('is-readonly', readonly);
+}
+
+function setStatusMessage(message, isError = false) {
+    const node = byId('share-copy-status');
+    if (!node) return;
+    node.textContent = text(message);
+    node.style.color = isError ? '#fca5a5' : 'var(--text-muted)';
+}
+
+function updateRateStatus(mode = 'online') {
+    const node = byId('rate-status');
+    if (!node) return;
+    if (mode === 'loading') {
+        node.innerHTML = `<i class="fa-solid fa-rotate fa-spin text-[var(--gas-green-light)] mr-1.5"></i>${esc(t('ratesRefreshing'))}`;
+        return;
+    }
+    if (mode === 'error') {
+        node.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-yellow-500 mr-1.5"></i>${esc(t('ratesFallback'))}`;
+        return;
+    }
+    node.innerHTML = `<i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i>${esc(t('ratesOnline'))}`;
+}
+
+function renderRateLine() {
+    const node = byId('live-rates-display');
+    if (!node) return;
+    node.innerHTML = `1 CNY <i class="fa-solid fa-arrow-right-arrow-left mx-1 text-white"></i> <span class="text-[var(--gas-green-light)]">${state.rates.USD.toFixed(4)} USD</span> | <span class="text-[var(--gas-green-light)]">${state.rates.EUR.toFixed(4)} EUR</span> | <span class="text-[var(--gas-green-light)]">${state.rates.CAD.toFixed(4)} CAD</span> | <span class="text-[var(--gas-green-light)]">${state.rates.RUB.toFixed(4)} RUB</span>`;
+}
+
+function renderToolbar() {
+    const brand = state.snapshot?.brand || {};
+    const brandLabel = text(brand.brand_name || brand.display_name, t('unknownBrand'));
+    const node = byId('toolbar-brand-name');
+    if (!node) return;
+    node.innerHTML = `<span>${esc(brandLabel)}</span> <span class="text-[var(--gas-green-light)] font-bold ml-1 md:ml-2">RFQ SYS</span>`;
+}
+
+function renderLangButtons() {
+    SUPPORTED_LANGS.forEach((lang) => {
+        const button = byId(`btn-${lang}`);
+        if (!button) return;
+        button.textContent = lang.toUpperCase();
+        if (lang === state.currentLang) {
+            button.className = 'px-2 md:px-4 py-1 md:py-1.5 rounded transition-all bg-[var(--gas-green-primary)] text-white font-semibold shadow-[0_0_8px_rgba(93,214,44,0.4)]';
+            return;
+        }
+        button.className = 'px-2 md:px-4 py-1 md:py-1.5 rounded transition-all text-[var(--text-body)] hover:text-white';
+    });
+}
+
+function renderStaticText() {
+    const snapshot = state.snapshot;
+    if (!snapshot) return;
+
+    renderLangButtons();
+    renderToolbar();
+
+    const overviewTitle = pickDisplayText(snapshot.brand.overview_title, pickDisplayText(snapshot.product.public_title, snapshot.product.product_code));
+    const supplier = text(snapshot.brand.supplier_name || snapshot.brand.display_name, t('unknownBrand'));
+    const sender = text(snapshot.brand.sender_email, '');
+    const receiver = text(snapshot.quote.receiver_email || snapshot.quote.receiver_name || snapshot.quote.customer_name, '');
+
+    byId('f-title').textContent = overviewTitle;
+    byId('lbl-supplier').textContent = t('supplier');
+    byId('lbl-sender').textContent = t('sender');
+    byId('lbl-receiver').textContent = t('receiver');
+    byId('lbl-validity').textContent = t('validity');
+    byId('lbl-update').innerHTML = `<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>${esc(t('update'))}`;
+    byId('val-supplier').textContent = supplier;
+    byId('val-sender').textContent = sender;
+    byId('val-receiver').textContent = receiver;
+    byId('val-receiver').setAttribute('data-placeholder', t('receiverPlaceholder'));
+    byId('footer-note').innerHTML = pickDisplayText(snapshot.brand.footer_note, '');
+    byId('btn-text-send').textContent = t('send');
+    byId('btn-text-share').textContent = t('share');
+    byId('btn-menu-share-link').textContent = t('shareLink');
+    byId('btn-menu-img').textContent = t('exportImage');
+    byId('btn-menu-pdf').textContent = t('exportPdf');
+    byId('btn-text-refresh').textContent = t('refresh');
+    byId('export-loading-text').textContent = t('exportLoading');
+    byId('export-sub-text').textContent = t('exportSubText');
+    byId('back-to-top').setAttribute('aria-label', state.currentLang === 'zh' ? '返回顶部' : state.currentLang === 'ru' ? 'Наверх' : 'Back to top');
+    byId('back-to-top').setAttribute('title', state.currentLang === 'zh' ? '返回顶部' : state.currentLang === 'ru' ? 'Наверх' : 'Back to top');
+    byId('share-modal-title').textContent = t('shareTitle');
+    byId('share-modal-desc').textContent = t('shareDesc');
+    byId('share-expiry-label').textContent = t('shareExpiryLabel');
+    byId('share-custom-expiry-label').textContent = t('shareCustomLabel');
+    byId('share-custom-expiry-picker-text').textContent = t('shareCustomPicker');
+    byId('share-admin-hint').textContent = t('shareAdminHint');
+    byId('share-passcode-label').textContent = t('sharePasscodeLabel');
+    byId('share-link-label').textContent = t('shareLinkLabel');
+    byId('btn-generate-share-text').textContent = t('shareGenerate');
+    byId('btn-share-close-text').textContent = t('shareClose');
+    byId('share-passcode-output').setAttribute('placeholder', t('sharePasscodePlaceholder'));
+    byId('share-link-output').setAttribute('placeholder', t('shareLinkPlaceholder'));
+    byId('access-gate-badge').textContent = t('accessBadge');
+    byId('access-passcode-label').textContent = t('accessPasscodeLabel');
+    byId('access-passcode-submit-text').textContent = t('accessPasscodeSubmit');
+    byId('access-gate-refresh-text').textContent = t('accessRefresh');
+
+    const expirySelect = byId('share-expiry-select');
+    if (expirySelect) {
+        expirySelect.innerHTML = `
+            <option value="3d">${esc(t('shareExpiry3d'))}</option>
+            <option value="1d">${esc(t('shareExpiry1d'))}</option>
+            <option value="7d">${esc(t('shareExpiry7d'))}</option>
+            <option value="never">${esc(t('shareExpiryNever'))}</option>
+            <option value="custom">${esc(t('shareExpiryCustom'))}</option>
+        `;
+        if (!expirySelect.value) expirySelect.value = '3d';
+    }
+
+    document.title = `${overviewTitle} - ${supplier}`;
+}
+
+function renderContent() {
+    const snapshot = state.snapshot;
+    const container = byId('content-area');
+    if (!snapshot || !container) return;
+
+    const productTitle = pickDisplayText(snapshot.product.public_title, snapshot.product.product_code);
+    const total = quoteTotal(snapshot);
+    const rows = [];
+
+    (snapshot.product.sections || []).forEach((section) => {
+        const subtotal = sectionSubtotal(section);
+        rows.push(`
+            <tr style="background-color: var(--bg-base);">
+                <td class="text-[var(--text-muted)] opacity-50 text-center text-xs font-mono-num whitespace-nowrap">-</td>
+                <td class="text-[var(--gas-green-light)] font-semibold whitespace-nowrap">${esc(getSectionLabel(section))}</td>
+                <td class="text-[var(--text-muted)] opacity-50 text-xs whitespace-nowrap">-</td>
+                <td class="text-[var(--text-muted)] opacity-50 text-center font-mono-num whitespace-nowrap">-</td>
+                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('RMB', subtotal))}</td>
+                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('USD', subtotal * state.rates.USD))}</td>
+                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('EUR', subtotal * state.rates.EUR))}</td>
+                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('CAD', subtotal * state.rates.CAD))}</td>
+                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('RUB', subtotal * state.rates.RUB))}</td>
+            </tr>
+        `);
+
+        (section.items || []).forEach((item) => {
+            const included = item.isIncluded === true;
+            const price = safeNumber(item.priceRmb, 0);
+            rows.push(`
+                <tr>
+                    <td class="text-[var(--text-body)] text-center text-xs font-mono-num whitespace-nowrap">${esc(item.lineCode || '--')}</td>
+                    <td class="text-white min-w-[200px]">${esc(pickDisplayText(item.nameI18n, item.lineCode || '--'))}</td>
+                    <td class="text-[var(--text-body)] text-xs whitespace-nowrap">${esc(item.brandLabel || '-')}</td>
+                    <td class="text-[var(--text-body)] text-center font-mono-num whitespace-nowrap">${esc(item.qtyLabel || '1')}</td>
+                    <td class="font-mono-num ${included ? 'text-[var(--text-muted)]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? esc(t('included')) : esc(formatCurrency('RMB', price))}</td>
+                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('USD', price * state.rates.USD))}</td>
+                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('EUR', price * state.rates.EUR))}</td>
+                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('CAD', price * state.rates.CAD))}</td>
+                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('RUB', price * state.rates.RUB))}</td>
+                </tr>
+            `);
+        });
+    });
+
+    container.innerHTML = `
+        <div class="mb-10 md:mb-16">
+            <h3 class="text-base md:text-lg font-semibold text-[var(--gas-green-light)] mb-4 md:mb-5 flex items-center gap-2 md:gap-3">
+                <span class="bg-[var(--gas-green-bg)] border border-[var(--gas-green-primary)] text-[var(--gas-green-light)] w-6 h-6 md:w-7 md:h-7 rounded flex items-center justify-center text-xs md:text-sm font-mono-num flex-shrink-0">1</span>
+                <span class="leading-tight">${esc(productTitle)}</span>
+            </h3>
+
+            <div class="bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between shadow-inner gap-4">
+                <span class="font-bold text-white tracking-wider text-xs md:text-sm">${esc(t('systemTotal'))}:</span>
+                <div class="flex flex-wrap gap-x-4 md:gap-x-6 gap-y-2 text-sm md:text-[15px]">
+                    <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RMB', total))}</span></span>
+                    <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('USD', total * state.rates.USD))}</span></span>
+                    <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('EUR', total * state.rates.EUR))}</span></span>
+                    <span class="flex items-center gap-2"><span class="gas-tag">CAD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('CAD', total * state.rates.CAD))}</span></span>
+                    <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RUB', total * state.rates.RUB))}</span></span>
+                </div>
+            </div>
+
+            <div class="table-responsive-wrapper w-full">
+                <table class="industrial-table text-left">
+                    <thead>
+                        <tr>${t('headers').map((header, index) => `<th class="${index === 0 ? 'w-12 text-center whitespace-nowrap' : 'whitespace-nowrap'}">${esc(header)}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>${rows.join('')}</tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function renderAll() {
+    if (!state.snapshot) return;
+    applyTheme(state.snapshot.brand);
+    renderStaticText();
+    renderContent();
+    renderRateLine();
+    updateRateStatus('online');
+    syncShareAvailability();
+}
+
+function baseQuoteTime() {
+    const published = Date.parse(state.snapshot?.quote?.publishedAt || '');
+    if (Number.isFinite(published)) return published;
+    const updated = Date.parse(state.snapshot?.quote?.updatedAt || '');
+    if (Number.isFinite(updated)) return updated;
+    return Date.now();
+}
+
+function formatValidity(remainingMs) {
+    const rest = Math.max(0, remainingMs);
+    const days = Math.floor(rest / (24 * 60 * 60 * 1000));
+    const hours = Math.floor((rest % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    const minutes = Math.floor((rest % (60 * 60 * 1000)) / (60 * 1000));
+    const seconds = Math.floor((rest % (60 * 1000)) / 1000);
+    return `${days}${t('days')} ${String(hours).padStart(2, '0')}${t('hours')} ${String(minutes).padStart(2, '0')}${t('minutes')} ${String(seconds).padStart(2, '0')}${t('seconds')}`;
+}
+
+function renderClock() {
+    const now = new Date();
+    const liveDate = byId('live-date');
+    const liveClock = byId('live-clock');
+    const validity = byId('val-validity');
+    if (liveDate) liveDate.textContent = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    if (liveClock) liveClock.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    if (validity && state.snapshot) {
+        const target = baseQuoteTime() + safeNumber(state.snapshot.quote.validityHours, 72) * 60 * 60 * 1000;
+        validity.textContent = formatValidity(target - Date.now());
+    }
+}
+
+function startClock() {
+    if (state.clockTimer) window.clearInterval(state.clockTimer);
+    renderClock();
+    state.clockTimer = window.setInterval(renderClock, 1000);
+}
+
+async function fetchRates(isManual = false) {
+    if (isManual) updateRateStatus('loading');
+    try {
+        const response = await fetch(RATE_API_URL, { cache: 'no-store' });
+        const data = await response.json();
+        if (data?.rates) {
+            state.rates = normalizeRates({
+                USD: data.rates.USD,
+                EUR: data.rates.EUR,
+                CAD: data.rates.CAD,
+                RUB: data.rates.RUB,
+            });
+        }
+        renderContent();
+        renderRateLine();
+        updateRateStatus('online');
+    } catch (_error) {
+        renderContent();
+        renderRateLine();
+        updateRateStatus('error');
+    }
+}
+
+function getFileName(ext) {
+    const title = text(byId('f-title')?.textContent, 'quotation')
+        .replace(/[\n\r]/g, '')
+        .trim()
+        .replace(/\s+/g, '_');
+    const now = new Date();
+    const suffix = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+    return `${title || 'quotation'}_${suffix}.${ext}`;
+}
+
+async function createDirectCapture() {
+    const element = byId('export-area');
+    if (!element) throw new Error('Export area missing');
+
+    const original = {
+        width: element.style.width,
+        padding: element.style.padding,
+        backgroundColor: element.style.backgroundColor,
+    };
+
+    element.style.width = '1280px';
+    element.style.padding = '40px';
+    element.style.backgroundColor = '#161B22';
+
+    const wrappers = [...element.querySelectorAll('.table-responsive-wrapper')];
+    const wrapperOverflow = wrappers.map((node) => node.style.overflowX);
+    wrappers.forEach((node) => {
+        node.style.overflowX = 'visible';
+    });
+
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+
+    const exactWidth = element.offsetWidth;
+    const exactHeight = element.scrollHeight;
+    const canvas = await window.html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#161B22',
+        width: exactWidth,
+        windowWidth: exactWidth,
+    });
+
+    element.style.width = original.width;
+    element.style.padding = original.padding;
+    element.style.backgroundColor = original.backgroundColor;
+    wrappers.forEach((node, index) => {
+        node.style.overflowX = wrapperOverflow[index];
+    });
+
+    return { canvas, exactWidth, exactHeight };
+}
+
+function showExportOverlay() {
+    const overlay = byId('export-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('hidden');
+    void overlay.offsetWidth;
+    overlay.classList.remove('opacity-0');
+    overlay.classList.add('opacity-100');
+}
+
+function hideExportOverlay() {
+    const overlay = byId('export-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('opacity-100');
+    overlay.classList.add('opacity-0');
+    window.setTimeout(() => overlay.classList.add('hidden'), 300);
+}
+
+async function exportImage() {
+    if (!window.html2canvas) return;
+    closeShareMenu();
+    showExportOverlay();
+    try {
+        const { canvas } = await createDirectCapture();
+        const link = document.createElement('a');
+        link.download = getFileName('png');
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    } finally {
+        hideExportOverlay();
+    }
+}
+
+async function exportPdf() {
+    if (!window.html2pdf || !window.html2canvas) return;
+    closeShareMenu();
+    showExportOverlay();
+    try {
+        const { canvas, exactWidth, exactHeight } = await createDirectCapture();
+        await window.html2pdf()
+            .set({
+                margin: 0,
+                filename: getFileName('pdf'),
+                image: { type: 'jpeg', quality: 1 },
+                jsPDF: { unit: 'px', format: [exactWidth, exactHeight], orientation: 'portrait' },
+            })
+            .from(canvas)
+            .save();
+    } finally {
+        hideExportOverlay();
+    }
+}
+
+function updateBackToTop() {
+    const button = byId('back-to-top');
+    if (!button) return;
+    const visible = window.scrollY > Math.max(320, window.innerHeight * 0.6);
+    button.classList.toggle('is-visible', visible);
+}
+
+function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function closeShareMenu() {
+    const menu = byId('share-menu');
+    const arrow = byId('icon-share-down');
+    state.isMobileMenuOpen = false;
+    if (menu) menu.classList.add('hidden');
+    if (arrow) arrow.classList.remove('rotate-180');
+}
+
+function toggleShareMenu(event) {
+    if (!isMobileViewport()) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const menu = byId('share-menu');
+    const arrow = byId('icon-share-down');
+    if (!menu) return;
+    state.isMobileMenuOpen = menu.classList.contains('hidden');
+    menu.classList.toggle('hidden');
+    if (arrow) arrow.classList.toggle('rotate-180', state.isMobileMenuOpen);
+}
+
+function syncShareAvailability() {
+    const shareLinkButton = byId('btn-menu-share-link-wrap');
+    const divider = byId('share-menu-divider');
+    if (!shareLinkButton) return;
+    const allow = state.isAdmin && Boolean(state.shareTarget);
+    shareLinkButton.classList.toggle('hidden', !allow);
+    if (divider) divider.classList.toggle('hidden', !allow);
+}
+
+function openShareModal() {
+    if (!state.isAdmin) {
+        setStatusMessage(t('shareAdminOnly'), true);
+        return;
+    }
+    if (!state.shareTarget) {
+        setStatusMessage(t('shareUnavailable'), true);
+        return;
+    }
+    closeShareMenu();
+    const modal = byId('share-modal');
+    if (!modal) return;
+    byId('share-expiry-select').value = '3d';
+    byId('share-custom-expiry').value = '';
+    byId('share-passcode-output').value = generatePasscode();
+    byId('share-link-output').value = '';
+    byId('share-copy-status').textContent = '';
+    syncShareExpiryUi();
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeShareModal() {
+    const modal = byId('share-modal');
+    if (!modal) return;
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+function generatePasscode() {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes = new Uint8Array(4);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (value) => alphabet[value % alphabet.length]).join('');
+}
+
+function syncShareExpiryUi() {
+    const mode = byId('share-expiry-select')?.value || '3d';
+    const customWrap = byId('share-custom-expiry-wrap');
+    const preview = byId('share-expiry-preview');
+    if (customWrap) customWrap.classList.toggle('hidden', mode !== 'custom');
+    if (!preview) return;
+    if (mode === 'custom') {
+        const value = byId('share-custom-expiry')?.value || '';
+        preview.textContent = value ? `${t('shareMetaExpired')}${value.replace('T', ' ')}` : t('shareCustomRequired');
+        return;
+    }
+    if (mode === 'never') {
+        preview.textContent = t('shareMetaNever');
+        return;
+    }
+    preview.textContent = t('sharePreviewDefault');
+}
+
+function getShareExpiry() {
+    const mode = byId('share-expiry-select')?.value || '3d';
+    const now = Date.now();
+    if (mode === '1d') return new Date(now + 24 * 60 * 60 * 1000).toISOString();
+    if (mode === '3d') return new Date(now + 3 * 24 * 60 * 60 * 1000).toISOString();
+    if (mode === '7d') return new Date(now + 7 * 24 * 60 * 60 * 1000).toISOString();
+    if (mode === 'never') return '';
+    const custom = byId('share-custom-expiry')?.value || '';
+    if (!custom) throw new Error(t('shareCustomRequired'));
+    const customMs = Date.parse(custom);
+    if (!Number.isFinite(customMs)) throw new Error(t('shareCustomRequired'));
+    if (customMs <= now) throw new Error(t('shareCustomExpired'));
+    return new Date(customMs).toISOString();
+}
+
+function getShareSecret() {
+    return text(state.snapshot?.brand?.share_signing_secret, DEFAULT_SHARE_SECRET) || DEFAULT_SHARE_SECRET;
+}
+
+async function copyText(value) {
+    const clean = text(value);
+    if (!clean) return false;
+    try {
+        await navigator.clipboard.writeText(clean);
+        return true;
+    } catch (_error) {
+        const input = document.createElement('textarea');
+        input.value = clean;
+        input.setAttribute('readonly', 'readonly');
+        input.style.position = 'absolute';
+        input.style.left = '-9999px';
+        document.body.appendChild(input);
+        input.select();
+        const copied = document.execCommand('copy');
+        document.body.removeChild(input);
+        return copied;
+    }
+}
+
+async function generateShareLink() {
+    if (!state.isAdmin) {
+        setStatusMessage(t('shareAdminOnly'), true);
+        return;
+    }
+    if (!state.shareTarget) {
+        setStatusMessage(t('shareUnavailable'), true);
+        return;
+    }
+
+    try {
+        const expiresAt = getShareExpiry();
+        const passcode = text(byId('share-passcode-output')?.value, generatePasscode()).toUpperCase();
+        byId('share-passcode-output').value = passcode;
+        const payload = {
+            createdAt: new Date().toISOString(),
+            expiresAt: expiresAt || '',
+            passcode,
+        };
+
+        if (state.shareTarget.type === 'quote') {
+            payload.quoteSlug = state.shareTarget.quoteSlug;
+        } else {
+            payload.brand = state.shareTarget.brand;
+            payload.productId = state.shareTarget.productId || '';
+        }
+
+        const token = await signPayload(payload, getShareSecret());
+        const url = `${window.location.origin}/quote/view.html?share=${encodeURIComponent(token)}`;
+        byId('share-link-output').value = url;
+        const copied = await copyText(url);
+        setStatusMessage(copied ? t('shareCopySuccess') : t('shareCopyFallback'), !copied);
+    } catch (error) {
+        setStatusMessage(error.message || t('shareGenerateError'), true);
+    }
+}
+
+function sendEmail() {
+    const receiver = text(state.snapshot?.quote?.receiverEmail || state.snapshot?.quote?.receiver_email || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name);
+    if (!receiver) {
+        window.alert(t('noEmail'));
+        return;
+    }
+    const sender = text(state.snapshot?.brand?.sender_email || state.snapshot?.brand?.senderEmail);
+    const brandName = text(state.snapshot?.brand?.subject_name || state.snapshot?.brand?.display_name || state.snapshot?.brand?.brand_name);
+    const title = text(byId('f-title')?.textContent, 'Quotation');
+    const subject = encodeURIComponent(`${t('mailSubjectPrefix')} ${title} - ${brandName}`);
+    const body = encodeURIComponent(`Dear sir/madam,\n\nPlease find the latest quotation document attached or review it from the shared quote page.\n\nBest Regards,\n${sender}`);
+    window.location.href = `mailto:${receiver}?subject=${subject}&body=${body}`;
+}
+
+function textToBytes(value) {
+    return new TextEncoder().encode(String(value ?? ''));
+}
+
+function bytesToBase64Url(bytes) {
+    const binary = Array.from(bytes, (value) => String.fromCharCode(value)).join('');
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function base64UrlToString(value) {
+    const normalized = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+    const padding = normalized.length % 4 === 0 ? '' : '='.repeat(4 - (normalized.length % 4));
+    return atob(`${normalized}${padding}`);
+}
+
+function parseUnsignedPayload(token) {
+    const payloadPart = String(token || '').split('.')[0];
+    if (!payloadPart) return null;
+    try {
+        return JSON.parse(base64UrlToString(payloadPart));
+    } catch (_error) {
+        return null;
+    }
+}
+
+async function signPayload(payload, secret) {
+    const clientSecret = String(secret || DEFAULT_SHARE_SECRET);
+    const payloadText = JSON.stringify(payload);
+    const key = await crypto.subtle.importKey('raw', textToBytes(clientSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const signature = await crypto.subtle.sign('HMAC', key, textToBytes(payloadText));
+    return `${bytesToBase64Url(textToBytes(payloadText))}.${bytesToBase64Url(new Uint8Array(signature))}`;
+}
+
+async function decodeSignedPayload(token, secret) {
+    const [payloadPart, signaturePart] = String(token || '').split('.');
+    if (!payloadPart || !signaturePart) return { valid: false, payload: null, signaturePart: '' };
+    const payloadText = base64UrlToString(payloadPart);
+    let payload = null;
+    try {
+        payload = JSON.parse(payloadText);
+    } catch (_error) {
+        return { valid: false, payload: null, signaturePart: '' };
+    }
+    const expectedToken = await signPayload(payload, secret);
+    return {
+        valid: expectedToken.split('.')[1] === signaturePart,
+        payload,
+        signaturePart,
+    };
+}
+
+function passcodeStorageKey(prefix, signaturePart) {
+    return `${prefix || 'quote-share-unlocked'}:${signaturePart || 'sig'}`;
+}
+
+function readUnlockedPasscode(prefix, signaturePart) {
+    try {
+        return window.localStorage.getItem(passcodeStorageKey(prefix, signaturePart)) || '';
+    } catch (_error) {
+        return '';
+    }
+}
+
+function persistUnlockedPasscode(prefix, signaturePart, value) {
+    try {
+        window.localStorage.setItem(passcodeStorageKey(prefix, signaturePart), value);
+    } catch (_error) {
+        return '';
+    }
+    return value;
+}
+
+function getClient() {
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') return null;
+    if (!getClient.instance) {
+        getClient.instance = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+            },
+        });
+    }
+    return getClient.instance;
+}
+
+async function resolveAdminSession() {
+    const supabase = getClient();
+    if (!supabase) return { allowed: false, user: null };
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
+    const user = session?.user || null;
+    const email = String(user?.email || '').trim().toLowerCase();
+    if (!email) return { allowed: false, user: null };
+    if (ADMIN_EMAILS.includes(email)) return { allowed: true, user };
+
+    const { data, error } = await supabase.from('admin_users').select('email,is_active').eq('email', email).maybeSingle();
+    if (error) return { allowed: false, user };
+    return { allowed: data?.is_active === true, user };
+}
+
+async function fetchPublishedQuoteBySlug(publicSlug) {
+    const supabase = getClient();
+    if (!supabase || !publicSlug) return null;
+    const { data, error } = await supabase
+        .from('quote_instances')
+        .select('public_slug,published_snapshot')
+        .eq('public_slug', publicSlug)
+        .eq('status', 'published')
+        .maybeSingle();
+    if (error) return null;
+    return data?.published_snapshot || null;
+}
+
+async function fetchPreviewQuote(instanceId) {
+    const supabase = getClient();
+    if (!supabase || !instanceId) return null;
+    const { data, error } = await supabase.from('quote_instances').select('*').eq('id', instanceId).maybeSingle();
+    if (error || !data) return null;
+    const itemsResult = await supabase.from('quote_instance_items').select('*').eq('instance_id', instanceId).order('sort_order', { ascending: true });
+    if (itemsResult.error) return null;
+    return buildQuoteSnapshot({
+        brand: data.brand_snapshot,
+        product: data.product_snapshot,
+        instance: data,
+        items: itemsResult.data || [],
+        mode: 'preview',
+    });
+}
+
+async function resolveSnapshotFromBrand(brandSlug, productId = '') {
+    const brandKey = text(brandSlug, 'vman') || 'vman';
+    const supabase = getClient();
+    if (supabase) {
+        const brandResult = await supabase.from('quote_brands').select('slug,default_quote_slug').eq('slug', brandKey).maybeSingle();
+        if (!brandResult.error && brandResult.data?.default_quote_slug) {
+            const published = await fetchPublishedQuoteBySlug(brandResult.data.default_quote_slug);
+            if (published) return published;
+        }
+    }
+    const legacyPages = await ensureLegacyQuotePagesLoaded('/shared/quote-system/quote-pages.js');
+    return buildLegacyFallbackSnapshot(legacyPages, brandKey, productId);
+}
+
+function resolveInitialRoute() {
+    const previewId = text(params.get('preview'));
+    if (previewId) return { type: 'preview', previewId };
+
+    const shareToken = text(params.get('share'));
+    if (shareToken) return { type: 'share', token: shareToken };
+
+    const quoteSlug = text(params.get('quote'));
+    if (quoteSlug) return { type: 'quote', quoteSlug };
+
+    const brand = text(params.get('brand') || params.get('company'), 'vman') || 'vman';
+    const productId = text(params.get('product'));
+    return { type: 'brand', brand, productId };
+}
+
+function deriveShareTarget() {
+    if (!state.snapshot) return null;
+    if (state.route?.type === 'quote') {
+        return { type: 'quote', quoteSlug: state.route.quoteSlug };
+    }
+    if (state.route?.type === 'brand') {
+        if (state.snapshot.mode !== 'legacy' && text(state.snapshot.quote?.publicSlug)) {
+            return { type: 'quote', quoteSlug: state.snapshot.quote.publicSlug };
+        }
+        return { type: 'brand', brand: state.route.brand, productId: state.route.productId || state.snapshot.product.slug };
+    }
+    if (state.route?.type === 'share' && state.sharePayload) {
+        if (state.sharePayload.quoteSlug) {
+            return { type: 'quote', quoteSlug: state.sharePayload.quoteSlug };
+        }
+        if (state.sharePayload.brand) {
+            return { type: 'brand', brand: state.sharePayload.brand, productId: state.sharePayload.productId || state.snapshot.product.slug };
+        }
+    }
+    return null;
+}
+
+function applySnapshot(snapshot) {
+    state.snapshot = snapshot;
+    state.currentLang = normalizeLang(params.get('lang') || snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG);
+    state.rates = normalizeRates(snapshot?.quote?.rates || snapshot?.product?.default_rates || DEFAULT_RATES);
+    state.shareTarget = deriveShareTarget();
+    bodyReadonly(!state.isAdmin);
+    renderAll();
+    startClock();
+    updateBackToTop();
+}
+
+function openAccessOverlay() {
+    const overlay = byId('access-gate-overlay');
+    if (overlay) overlay.classList.remove('hidden');
+}
+
+function closeAccessOverlay() {
+    const overlay = byId('access-gate-overlay');
+    if (overlay) overlay.classList.add('hidden');
+}
+
+function setAccessOverlay({
+    title,
+    message,
+    icon = 'fa-circle-info',
+    help = '',
+    meta = '',
+    showRefresh = true,
+    showPasscode = false,
+} = {}) {
+    openAccessOverlay();
+    const iconNode = byId('access-gate-icon');
+    if (iconNode) iconNode.className = `fa-solid ${icon}`;
+    byId('access-gate-title').textContent = text(title);
+    byId('access-gate-message').textContent = text(message);
+    const helpNode = byId('access-gate-help');
+    if (helpNode) {
+        helpNode.textContent = text(help);
+        helpNode.classList.toggle('hidden', !help);
+    }
+    byId('access-gate-meta').textContent = text(meta);
+    byId('access-gate-actions').classList.toggle('hidden', !showRefresh && !showPasscode);
+    byId('access-passcode-wrap').classList.toggle('hidden', !showPasscode);
+    byId('access-gate-refresh').classList.toggle('hidden', !showRefresh);
+    if (!showPasscode) {
+        byId('access-passcode-input').value = '';
+        byId('access-passcode-status').textContent = '';
+    }
+}
+
+async function resolveSharedSnapshot(token) {
+    const unsigned = parseUnsignedPayload(token);
+    if (!unsigned) return { status: 'invalid' };
+
+    let snapshot = null;
+    if (unsigned.quoteSlug) {
+        snapshot = await fetchPublishedQuoteBySlug(unsigned.quoteSlug);
+    } else if (unsigned.brand) {
+        snapshot = await resolveSnapshotFromBrand(unsigned.brand, unsigned.productId || '');
+    }
+    if (!snapshot) return { status: 'not-found' };
+
+    const verified = await decodeSignedPayload(token, text(snapshot.brand?.share_signing_secret, DEFAULT_SHARE_SECRET));
+    if (!verified.valid || !verified.payload) return { status: 'invalid' };
+
+    const payload = verified.payload;
+    const expiresAtMs = payload.expiresAt ? Date.parse(payload.expiresAt) : NaN;
+    if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now() && !state.isAdmin) {
+        return { status: 'expired', snapshot, payload, signaturePart: verified.signaturePart };
+    }
+
+    const passcode = text(payload.passcode).toUpperCase();
+    if (passcode && !state.isAdmin) {
+        const unlocked = text(readUnlockedPasscode(snapshot.brand?.share_unlock_prefix, verified.signaturePart)).toUpperCase();
+        if (unlocked !== passcode) {
+            return { status: 'passcode', snapshot, payload, signaturePart: verified.signaturePart };
+        }
+    }
+
+    return { status: 'allowed', snapshot, payload, signaturePart: verified.signaturePart };
+}
+
+async function handlePasscodeSubmit() {
+    const pending = state.pendingSharedAccess;
+    if (!pending) return;
+    const input = byId('access-passcode-input');
+    const statusNode = byId('access-passcode-status');
+    const candidate = text(input?.value).toUpperCase();
+    if (candidate === text(pending.payload?.passcode).toUpperCase()) {
+        persistUnlockedPasscode(pending.snapshot.brand?.share_unlock_prefix, pending.signaturePart, candidate);
+        state.sharePayload = pending.payload;
+        state.pendingSharedAccess = null;
+        closeAccessOverlay();
+        applySnapshot(pending.snapshot);
+        await fetchRates(false);
+        return;
+    }
+    if (statusNode) {
+        statusNode.textContent = t('accessPasscodeError');
+        statusNode.style.color = '#fca5a5';
+    }
+}
+
+async function resolveRouteSnapshot() {
+    if (state.route.type === 'preview') {
+        if (!state.isAdmin) {
+            setAccessOverlay({
+                title: t('accessDeniedTitle'),
+                message: t('accessDeniedMessage'),
+                icon: 'fa-lock',
+                showRefresh: true,
+            });
+            return false;
+        }
+        setAccessOverlay({
+            title: t('accessCheckingTitle'),
+            message: t('accessCheckingMessage'),
+            icon: 'fa-spinner fa-spin',
+            meta: t('shareMetaAdmin'),
+            showRefresh: false,
+        });
+        const snapshot = await fetchPreviewQuote(state.route.previewId);
+        if (!snapshot) {
+            setAccessOverlay({
+                title: t('notFoundTitle'),
+                message: t('notFoundMessage'),
+                icon: 'fa-circle-exclamation',
+                showRefresh: true,
+            });
+            return false;
+        }
+        closeAccessOverlay();
+        applySnapshot(snapshot);
+        await fetchRates(false);
+        return true;
+    }
+
+    if (state.route.type === 'share') {
+        setAccessOverlay({
+            title: t('accessCheckingTitle'),
+            message: t('accessCheckingMessage'),
+            icon: 'fa-spinner fa-spin',
+            showRefresh: false,
+        });
+        const result = await resolveSharedSnapshot(state.route.token);
+        if (result.status === 'allowed') {
+            state.sharePayload = result.payload;
+            closeAccessOverlay();
+            applySnapshot(result.snapshot);
+            await fetchRates(false);
+            return true;
+        }
+        if (result.status === 'passcode') {
+            state.pendingSharedAccess = result;
+            setAccessOverlay({
+                title: t('accessPasscodeTitle'),
+                message: t('accessPasscodeMessage'),
+                icon: 'fa-lock',
+                meta: result.payload?.expiresAt ? `${t('shareMetaMode')} | ${t('shareMetaExpired')}${new Date(result.payload.expiresAt).toLocaleString()}` : t('shareMetaMode'),
+                showRefresh: true,
+                showPasscode: true,
+            });
+            return false;
+        }
+        if (result.status === 'expired') {
+            setAccessOverlay({
+                title: t('accessDeniedTitle'),
+                message: t('accessExpired'),
+                icon: 'fa-clock',
+                meta: result.payload?.expiresAt ? `${t('shareMetaExpired')}${new Date(result.payload.expiresAt).toLocaleString()}` : '',
+                showRefresh: true,
+            });
+            return false;
+        }
+        if (result.status === 'not-found') {
+            setAccessOverlay({
+                title: t('notFoundTitle'),
+                message: t('notFoundMessage'),
+                icon: 'fa-circle-exclamation',
+                showRefresh: true,
+            });
+            return false;
+        }
+        setAccessOverlay({
+            title: t('accessDeniedTitle'),
+            message: t('accessInvalid'),
+            icon: 'fa-triangle-exclamation',
+            showRefresh: true,
+        });
+        return false;
+    }
+
+    if (state.route.type === 'quote') {
+        const snapshot = await fetchPublishedQuoteBySlug(state.route.quoteSlug);
+        if (!snapshot) {
+            setAccessOverlay({
+                title: t('notFoundTitle'),
+                message: t('notFoundMessage'),
+                icon: 'fa-circle-exclamation',
+                showRefresh: true,
+            });
+            return false;
+        }
+        closeAccessOverlay();
+        applySnapshot(snapshot);
+        await fetchRates(false);
+        return true;
+    }
+
+    const snapshot = await resolveSnapshotFromBrand(state.route.brand, state.route.productId);
+    if (!snapshot) {
+        setAccessOverlay({
+            title: t('notFoundTitle'),
+            message: t('notFoundMessage'),
+            icon: 'fa-circle-exclamation',
+            showRefresh: true,
+        });
+        return false;
+    }
+    closeAccessOverlay();
+    applySnapshot(snapshot);
+    await fetchRates(false);
+    return true;
+}
+
+function bindEvents() {
+    byId('btn-zh')?.addEventListener('click', () => {
+        state.currentLang = 'zh';
+        renderAll();
+        renderClock();
+        syncShareExpiryUi();
+    });
+    byId('btn-en')?.addEventListener('click', () => {
+        state.currentLang = 'en';
+        renderAll();
+        renderClock();
+        syncShareExpiryUi();
+    });
+    byId('btn-ru')?.addEventListener('click', () => {
+        state.currentLang = 'ru';
+        renderAll();
+        renderClock();
+        syncShareExpiryUi();
+    });
+
+    byId('btn-refresh-rates')?.addEventListener('click', () => {
+        void fetchRates(true);
+    });
+    byId('btn-send')?.addEventListener('click', sendEmail);
+    byId('btn-menu-img-wrap')?.addEventListener('click', () => {
+        void exportImage();
+    });
+    byId('btn-menu-pdf-wrap')?.addEventListener('click', () => {
+        void exportPdf();
+    });
+    byId('btn-menu-share-link-wrap')?.addEventListener('click', openShareModal);
+    byId('btn-share')?.addEventListener('click', toggleShareMenu);
+    byId('btn-share-modal-close')?.addEventListener('click', closeShareModal);
+    byId('btn-share-close')?.addEventListener('click', closeShareModal);
+    byId('share-expiry-select')?.addEventListener('change', syncShareExpiryUi);
+    byId('share-custom-expiry')?.addEventListener('input', syncShareExpiryUi);
+    byId('btn-share-custom-expiry-picker')?.addEventListener('click', () => {
+        const input = byId('share-custom-expiry');
+        if (!input) return;
+        if (typeof input.showPicker === 'function') {
+            input.showPicker();
+            return;
+        }
+        input.focus();
+    });
+    byId('btn-generate-share')?.addEventListener('click', () => {
+        void generateShareLink();
+    });
+    byId('back-to-top')?.addEventListener('click', scrollToTop);
+    byId('access-passcode-submit')?.addEventListener('click', () => {
+        void handlePasscodeSubmit();
+    });
+    byId('access-passcode-input')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            void handlePasscodeSubmit();
+        }
+    });
+    byId('access-gate-refresh')?.addEventListener('click', () => {
+        window.location.reload();
+    });
+
+    document.addEventListener('click', (event) => {
+        const shareGroup = byId('share-group');
+        if (!shareGroup || shareGroup.contains(event.target)) return;
+        closeShareMenu();
+    });
+
+    window.addEventListener('resize', () => {
+        if (!isMobileViewport()) closeShareMenu();
+    });
+    window.addEventListener('scroll', updateBackToTop, { passive: true });
+}
+
+async function init() {
+    bindEvents();
+    state.route = resolveInitialRoute();
+    const access = await resolveAdminSession();
+    state.isAdmin = access.allowed === true;
+    state.adminUser = access.user;
+    bodyReadonly(!state.isAdmin);
+    const resolved = await resolveRouteSnapshot();
+    if (resolved) {
+        closeAccessOverlay();
+    }
+}
+
+void init();

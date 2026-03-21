@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GasGx Quote Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../../shared/quote-system/quote-system.css">
+</head>
+<body class="antialiased pb-10 md:pb-20 access-resolved">
+  <div class="max-w-7xl mx-auto px-4 md:px-8 pt-8 md:pt-10">
+    <div id="studio-panel" class="mb-6 md:mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div>
+        <div class="text-[var(--gas-green-light)] text-sm font-mono-num tracking-[0.28em] uppercase mb-2">GasGx Quote Engine</div>
+        <h1 id="studio-title" class="text-2xl md:text-4xl font-black text-white"></h1>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <button id="refresh-rates" class="btn-outline bg-[var(--bg-card)] px-3 py-2 rounded text-xs md:text-sm font-bold flex items-center">
+          <i class="fa-solid fa-rotate-right mr-1.5"></i>
+          <span id="refresh-rates-text"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-6">
+      <aside id="studio-sidebar" class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-4 md:p-5 shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
+        <div class="space-y-4">
+          <div>
+            <label id="lbl-company" for="company-select" class="block text-xs uppercase tracking-[0.22em] text-[var(--text-muted)] mb-2"></label>
+            <select id="company-select" class="share-select"></select>
+          </div>
+          <div>
+            <label id="lbl-product" for="product-select" class="block text-xs uppercase tracking-[0.22em] text-[var(--text-muted)] mb-2"></label>
+            <select id="product-select" class="share-select"></select>
+          </div>
+          <div>
+            <label id="lbl-language" for="lang-select" class="block text-xs uppercase tracking-[0.22em] text-[var(--text-muted)] mb-2"></label>
+            <select id="lang-select" class="share-select"></select>
+          </div>
+          <div id="rate-status" class="text-[10px] md:text-[11px] text-[var(--gas-green-light)] font-mono-num flex items-center bg-[var(--gas-green-bg-solid)] px-2 py-1.5 rounded border border-[var(--gas-green-primary)] shadow-[0_0_8px_rgba(93,214,44,0.2)]"></div>
+        </div>
+      </aside>
+
+      <main id="studio-main" class="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-4 md:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
+        <div id="quote-preview"></div>
+      </main>
+    </div>
+  </div>
+
+  <script src="../../shared/quote-system/quote-pages.js"></script>
+  <script src="../../shared/quote-system/quote-studio.js"></script>
+</body>
+</html>

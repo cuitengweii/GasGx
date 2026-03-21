@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx Quote View</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="../shared/quote-system/quote-system.css">
+</head>
+<body class="antialiased pb-10 md:pb-20 access-resolved">
+    <div id="access-gate-overlay" class="access-gate-overlay hidden">
+        <div class="access-gate-card">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(93,214,44,0.35)] bg-[rgba(93,214,44,0.08)] text-[var(--gas-green-light)] text-xs font-mono-num tracking-[0.25em] uppercase mb-5">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span id="access-gate-badge">Share Protected</span>
+            </div>
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-[rgba(93,214,44,0.12)] border border-[rgba(93,214,44,0.28)] flex items-center justify-center text-[var(--gas-green-light)] text-xl flex-shrink-0">
+                    <i id="access-gate-icon" class="fa-solid fa-spinner fa-spin"></i>
+                </div>
+                <div class="min-w-0">
+                    <h2 id="access-gate-title" class="text-2xl font-bold text-white mb-2">正在验证访问权限...</h2>
+                    <p id="access-gate-message" class="text-sm text-[var(--text-body)] leading-6">正在检查分享链接和管理员登录状态，请稍候。</p>
+                    <div id="access-gate-help" class="hidden mt-4 text-sm text-[var(--text-body)] leading-6"></div>
+                    <div id="access-gate-meta" class="mt-4 text-xs text-[var(--text-muted)] font-mono-num break-all"></div>
+                </div>
+            </div>
+            <div id="access-gate-actions" class="hidden mt-6 flex flex-wrap gap-3">
+                <div id="access-passcode-wrap" class="hidden w-full space-y-3">
+                    <label for="access-passcode-input" id="access-passcode-label" class="block text-sm font-medium text-white">请输入提取码</label>
+                    <div class="share-inline-field">
+                        <input id="access-passcode-input" type="text" maxlength="4" autocomplete="one-time-code" class="share-input font-mono-num tracking-[0.3em] uppercase" placeholder="A1B2">
+                        <button type="button" id="access-passcode-submit" class="btn-glow px-4 py-2 inline-flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-lock-open"></i>
+                            <span id="access-passcode-submit-text">验证并打开</span>
+                        </button>
+                    </div>
+                    <div id="access-passcode-status" class="text-xs text-[var(--text-muted)] font-mono-num"></div>
+                </div>
+                <button type="button" id="access-gate-refresh" class="btn-outline px-4 py-2 inline-flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span id="access-gate-refresh-text">重新检测</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="export-overlay" class="fixed inset-0 z-[99999] bg-[#0A0E14] flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <i class="fa-solid fa-cube fa-spin text-5xl text-[var(--gas-green-light)] mb-6 pulse-shadow"></i>
+        <div class="text-[var(--gas-green-light)] font-mono tracking-widest text-xl font-bold animate-pulse" id="export-loading-text">GENERATING DOCUMENT...</div>
+        <div class="text-[var(--text-muted)] text-sm mt-3" id="export-sub-text">正在进行高清文档渲染，请稍候</div>
+    </div>
+
+    <div id="toolbar" class="fixed top-0 left-0 right-0 z-50 px-3 md:px-8 py-3 md:py-4 flex justify-between items-center border-b backdrop-blur-md" style="background-color: rgba(10, 14, 20, 0.85); border-color: var(--border-color);">
+        <div class="toolbar-brand flex items-center space-x-2 md:space-x-4">
+            <div id="toolbar-brand-name" class="text-[var(--gas-green-light)] text-xl md:text-3xl font-black tracking-tight flex whitespace-nowrap items-center flex-shrink-0">
+                <span>GASGX</span> <span class="text-[var(--gas-green-light)] font-bold ml-1 md:ml-2">RFQ SYS</span>
+            </div>
+        </div>
+
+        <div class="toolbar-actions flex items-center space-x-2 md:space-x-4 text-xs md:text-sm">
+            <div class="toolbar-lang flex bg-[#161B22] rounded p-1 border border-[#2C2F33]">
+                <button type="button" id="btn-zh" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">CN</button>
+                <button type="button" id="btn-en" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">EN</button>
+                <button type="button" id="btn-ru" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">РУ</button>
+            </div>
+
+            <div id="share-group" class="toolbar-share-group relative group">
+                <button id="btn-share" type="button" class="btn-glow px-3 py-1.5 md:px-6 md:py-2 flex items-center">
+                    <i class="fa-solid fa-share-nodes" id="icon-share"></i> <span id="btn-text-share" class="hidden md:inline ml-2">分享/导出</span> <i class="fa-solid fa-angle-down ml-1 md:ml-2 text-xs" id="icon-share-down"></i>
+                </button>
+                <div id="share-menu" class="toolbar-share-menu absolute right-0 top-full pt-2 w-48 hidden md:group-hover:block z-50">
+                    <div class="bg-[#161B22] shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-[#2C2F33] rounded overflow-hidden">
+                        <button id="btn-menu-share-link-wrap" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-link mr-3 text-lg"></i><span id="btn-menu-share-link">创建分享链接</span></button>
+                        <div id="share-menu-divider" class="h-px bg-[#2C2F33]"></div>
+                        <button id="btn-menu-img-wrap" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-image mr-3 text-lg"></i><span id="btn-menu-img">生成长图</span></button>
+                        <button id="btn-menu-pdf-wrap" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-file-pdf mr-3 text-lg"></i><span id="btn-menu-pdf">导出 PDF</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="doc-container" class="max-w-7xl mx-auto mt-20 md:mt-28 p-4 md:p-12 rounded-lg relative shadow-[0_20px_50px_rgba(0,0,0,0.7)]" style="background-color: var(--bg-card); border: 1px solid var(--border-color);">
+        <div id="export-area" style="background-color: var(--bg-card);">
+            <div class="border-b border-[var(--border-color)] pb-6 md:pb-8 mb-8 md:mb-10 flex flex-col xl:flex-row justify-between items-start gap-6">
+                <div class="w-full xl:flex-1 xl:pr-8 overflow-hidden">
+                    <div class="doc-title-row flex items-start md:items-center justify-between gap-4 mb-4 md:mb-8 w-full">
+                        <h1 class="text-xl md:text-3xl font-bold tracking-wide text-[var(--gas-green-light)] leading-snug break-words flex-1 m-0" id="f-title"></h1>
+                        <button id="btn-send" type="button" class="doc-send-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center flex-shrink-0 mt-1 md:mt-0" title="调用邮件应用">
+                            <i class="fa-solid fa-paper-plane mr-1.5 text-[var(--text-body)]"></i> <span id="btn-text-send" class="text-[var(--text-body)]">发送</span>
+                        </button>
+                    </div>
+
+                    <div class="doc-meta-grid grid grid-cols-1 md:grid-cols-2 gap-x-8 md:gap-x-12 gap-y-4 md:gap-y-5 text-sm md:text-[15px]">
+                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-supplier">供应商：</span>
+                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                                <span id="val-supplier" class="font-semibold text-white whitespace-nowrap outline-none w-full text-left block"></span>
+                            </div>
+                        </div>
+                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-sender">发件人：</span>
+                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                                <span id="val-sender" class="text-[var(--gas-green-light)] whitespace-nowrap outline-none w-full text-left block"></span>
+                            </div>
+                        </div>
+                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-validity">报价有效期：</span>
+                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                                <span id="val-validity" class="font-semibold text-white font-mono-num whitespace-nowrap outline-none w-full text-left block"></span>
+                            </div>
+                        </div>
+                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-receiver">收件人：</span>
+                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                                <span id="val-receiver" class="text-[var(--gas-green-light)] empty-placeholder whitespace-nowrap outline-none w-full text-left block" data-placeholder="请填入客户邮箱号"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full xl:w-auto text-left xl:text-right flex-shrink-0 flex flex-col items-start xl:items-end">
+                    <div class="bg-[var(--bg-base)] border border-[var(--border-color)] p-4 md:p-5 rounded shadow-inner w-full xl:min-w-[280px]">
+                        <div class="text-xs text-[var(--text-muted)] mb-2 uppercase tracking-widest flex items-center justify-start xl:justify-end gap-2" id="lbl-update">
+                            <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>
+                            SYS_TIME_SYNC
+                        </div>
+                        <div class="text-2xl md:text-3xl font-mono-num text-white tracking-widest" id="live-date">--</div>
+                        <div class="text-xs md:text-sm font-mono-num text-[var(--text-body)] mt-1" id="live-clock">--:--:--</div>
+                    </div>
+
+                    <div class="mt-4 text-xs md:text-sm font-mono-num text-[var(--gas-green-light)] bg-[var(--gas-green-bg)] px-3 py-2 rounded border border-[var(--gas-green-primary)] break-all" id="live-rates-display">
+                        MARKET RATES (BASE: CNY)
+                    </div>
+
+                    <div class="mt-3 flex flex-wrap items-center justify-start xl:justify-end gap-2 w-full">
+                        <span class="text-[10px] md:text-[11px] text-[var(--gas-green-light)] font-mono-num flex items-center bg-[var(--gas-green-bg-solid)] px-2 py-1.5 rounded border border-[var(--gas-green-primary)] shadow-[0_0_8px_rgba(93,214,44,0.2)]" id="rate-status">
+                            <i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i> 全球实时汇率在线
+                        </span>
+                        <button id="btn-refresh-rates" type="button" class="btn-outline bg-[var(--bg-card)] px-3 py-1.5 rounded text-[10px] md:text-[11px] font-bold flex items-center">
+                            <i class="fa-solid fa-rotate-right mr-1.5"></i> <span id="btn-text-refresh">刷新汇率</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-area"></div>
+
+            <div id="footer-note" class="mt-12 md:mt-16 pt-6 md:pt-8 border-t border-[var(--border-color)] text-center text-xs md:text-sm text-[var(--text-muted)] leading-relaxed px-2"></div>
+        </div>
+    </div>
+
+    <button id="back-to-top" type="button" class="back-to-top z-40" aria-label="返回顶部" title="返回顶部">
+        <i class="fa-solid fa-arrow-up text-sm"></i>
+    </button>
+
+    <div id="share-modal" class="share-modal-backdrop" aria-hidden="true">
+        <div class="share-modal-card p-5 md:p-6">
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <div class="text-[var(--gas-green-light)] text-xs uppercase tracking-[0.28em] font-mono-num mb-2" id="share-modal-kicker">WPS STYLE SHARE</div>
+                    <h3 id="share-modal-title" class="text-xl md:text-2xl font-bold text-white">创建分享链接</h3>
+                    <p id="share-modal-desc" class="text-sm text-[var(--text-body)] mt-2 leading-6">设置链接有效期后生成访问链接。管理员登录状态下始终可打开页面。</p>
+                </div>
+                <button type="button" id="btn-share-modal-close" class="btn-outline w-10 h-10 inline-flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label for="share-expiry-select" id="share-expiry-label" class="block text-sm font-medium text-white mb-2">链接有效期</label>
+                    <select id="share-expiry-select" class="share-select">
+                        <option value="3d">3天后过期</option>
+                        <option value="1d">1天后过期</option>
+                        <option value="7d">7天后过期</option>
+                        <option value="never">永不过期</option>
+                        <option value="custom">自定义时间</option>
+                    </select>
+                </div>
+                <div id="share-custom-expiry-wrap" class="hidden">
+                    <label for="share-custom-expiry" id="share-custom-expiry-label" class="block text-sm font-medium text-white mb-2">自定义到期时间</label>
+                    <div class="share-inline-field">
+                        <input id="share-custom-expiry" type="datetime-local" step="60" class="share-input">
+                        <button type="button" id="btn-share-custom-expiry-picker" class="btn-outline px-4 py-2.5 inline-flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-regular fa-calendar"></i>
+                            <span id="share-custom-expiry-picker-text">选择时间</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="share-helper-card">
+                    <div id="share-expiry-preview" class="text-sm text-white">默认生成 3 天有效链接。</div>
+                    <div id="share-admin-hint" class="text-xs text-[var(--text-body)] mt-2">后台管理员登录状态不受分享时间限制。</div>
+                </div>
+                <div>
+                    <label for="share-passcode-output" id="share-passcode-label" class="block text-sm font-medium text-white mb-2">提取码</label>
+                    <input id="share-passcode-output" type="text" class="share-input font-mono-num tracking-[0.3em] uppercase" readonly placeholder="自动生成">
+                </div>
+                <div>
+                    <label for="share-link-output" id="share-link-label" class="block text-sm font-medium text-white mb-2">分享链接</label>
+                    <input id="share-link-output" type="text" class="share-input" readonly placeholder="点击下方按钮生成分享链接">
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button id="btn-generate-share" type="button" class="btn-glow px-4 py-2.5 inline-flex items-center gap-2">
+                        <i class="fa-solid fa-copy"></i>
+                        <span id="btn-generate-share-text">生成并复制链接</span>
+                    </button>
+                    <button type="button" id="btn-share-close" class="btn-outline px-4 py-2.5 inline-flex items-center gap-2">
+                        <i class="fa-solid fa-xmark"></i>
+                        <span id="btn-share-close-text">关闭</span>
+                    </button>
+                </div>
+                <div id="share-copy-status" class="text-xs text-[var(--text-muted)] font-mono-num"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="../shared/quote-system/quote-runtime.module.js"></script>
+</body>
+</html>
