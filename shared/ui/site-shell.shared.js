@@ -70,17 +70,17 @@
                     <i class="fa-brands fa-google"></i>
                     <span data-ggx-text="auth-login">Login</span>
                 </button>
-                <div id="auth-user-profile" class="hidden items-center gap-2 cursor-pointer group relative h-full">
-                    <div class="relative py-3">
+                <div id="auth-user-profile" class="hidden items-center gap-2 group relative h-full">
+                    <a id="auth-account-link" href="/account/account.html" class="relative py-3" aria-label="Open account">
                         <img id="auth-user-avatar" src="" alt="User" class="w-9 h-9 rounded-full border-2 border-gas-green p-0.5 transition-transform group-hover:scale-105">
                         <div class="absolute bottom-3 right-0 w-2.5 h-2.5 bg-gas-green rounded-full border-2 border-[#151515]"></div>
-                    </div>
+                    </a>
                     <div class="absolute right-0 top-full pt-1 w-48 hidden group-hover:block z-[60]">
                         <div class="bg-[#151515] border border-white/10 rounded-xl shadow-2xl py-2 mt-1">
-                            <div class="px-4 py-2 border-b border-white/5 mb-1">
+                            <a id="dropdown-account-link" href="/account/account.html" class="block px-4 py-2 border-b border-white/5 mb-1 hover:bg-white/5 transition-colors">
                                 <span data-ggx-text="account" class="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Account</span>
                                 <div id="dropdown-username" class="text-xs text-white font-bold truncate mt-1">User</div>
-                            </div>
+                            </a>
                             <button data-ggx-action="auth-sign-out" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors flex items-center">
                                 <i class="fa-solid fa-right-from-bracket mr-2"></i> <span data-ggx-text="auth-logout">Logout</span>
                             </button>
@@ -122,13 +122,13 @@
             <span data-ggx-text="auth-login">Login</span>
         </button>
          <div id="mob-auth-user-profile" class="hidden flex items-center justify-between w-full max-w-xs px-2">
-            <div class="flex items-center gap-3">
+            <a id="mob-auth-account-link" href="/account/account.html" class="flex items-center gap-3 min-w-0">
                  <img id="mob-auth-user-avatar" src="" alt="User avatar" class="w-10 h-10 rounded-full border border-gas-green">
-                 <div class="flex flex-col">
+                 <div class="flex flex-col min-w-0">
                      <span data-ggx-text="welcome" class="text-xs text-gray-400">Welcome,</span>
-                     <span id="mob-auth-username" class="text-sm text-white font-bold">User</span>
+                     <span id="mob-auth-username" class="text-sm text-white font-bold truncate">User</span>
                  </div>
-            </div>
+            </a>
             <button data-ggx-action="auth-sign-out" class="text-xs text-red-400 hover:text-red-300 border border-red-900/50 bg-red-900/20 px-3 py-1.5 rounded">
                 <span data-ggx-text="auth-logout">Logout</span>
             </button>
@@ -1481,10 +1481,13 @@
         return {
             loginBtn: document.getElementById("auth-login-btn"),
             userProfile: document.getElementById("auth-user-profile"),
+            accountLink: document.getElementById("auth-account-link"),
             userAvatar: document.getElementById("auth-user-avatar"),
+            dropdownAccountLink: document.getElementById("dropdown-account-link"),
             dropdownUsername: document.getElementById("dropdown-username"),
             mobLoginBtn: document.getElementById("mob-auth-login-btn"),
             mobUserProfile: document.getElementById("mob-auth-user-profile"),
+            mobAccountLink: document.getElementById("mob-auth-account-link"),
             mobUserAvatar: document.getElementById("mob-auth-user-avatar"),
             mobUsername: document.getElementById("mob-auth-username")
         };
@@ -1522,6 +1525,8 @@
 
     function applyMainAuthState(user, displayName) {
         const els = getMainAuthElements();
+        const authConfig = authBridgeState.runtimeConfig || getMainAuthConfig();
+        const accountUrl = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
         if (user) {
             setAuthElementVisibility(els.loginBtn, false);
             setAuthElementVisibility(els.userProfile, true);
@@ -1529,7 +1534,10 @@
             setAuthElementVisibility(els.mobUserProfile, true);
 
             const avatar = resolveMainAuthAvatar(user);
+            if (els.accountLink) els.accountLink.href = accountUrl;
             if (els.userAvatar) els.userAvatar.src = avatar;
+            if (els.dropdownAccountLink) els.dropdownAccountLink.href = accountUrl;
+            if (els.mobAccountLink) els.mobAccountLink.href = accountUrl;
             if (els.mobUserAvatar) els.mobUserAvatar.src = avatar;
             if (els.dropdownUsername) els.dropdownUsername.textContent = displayName;
             if (els.mobUsername) els.mobUsername.textContent = displayName;
