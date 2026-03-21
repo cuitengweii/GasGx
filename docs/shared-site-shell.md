@@ -208,3 +208,36 @@
 - `solutions/`
 - `use-cases/`
 - `tools/`
+
+## 10. 2026-03-21 update
+
+The shared site shell no longer relies on the static config file as the only source of truth.
+
+Current runtime precedence:
+
+1. Supabase published config from `site_shell_configs`
+2. Static fallback from `/shared/ui/site-shell.config.js`
+3. Built-in defaults inside `shared/ui/site-shell.shared.js`
+
+The current admin entry for editing this config is:
+
+- `article_management/index.html`
+
+Relevant admin modules:
+
+- `article_management/modules/site-shell-admin.module.js`
+- `article_management/modules/site-shell.module.js`
+
+Current admin behavior:
+
+- Header navigation and Footer special blocks are edited in the Site module
+- field changes are saved asynchronously instead of using a single global save button
+- the editor currently uses a collapsible tree for:
+  - top-level navigation items
+  - second-level dropdown items
+  - mega sections and mega links
+
+News integration:
+
+- `news/shared/modules/layout.shared.js` now prefers the unified site shell config for footer rendering
+- legacy footer values from `feeder_form_options` are only used as fallback

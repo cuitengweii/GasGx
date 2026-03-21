@@ -1,7 +1,7 @@
 ﻿# GasGx 网站目录结构文档
 
-更新时间：2026-02-08
-根目录：`C:\Users\Administrator.DESKTOP-1OKFDHA\Desktop\GasGx`
+更新时间：2026-03-21
+根目录：`D:\code\GasGx`
 
 ## 1. 站点根目录（一级）
 
@@ -9,6 +9,7 @@
 - `.vscode/`：编辑器配置
 - `.well-known/`：站点验证文件
 - `about/`：关于页
+- `article_management/`：GasGx 网站管理后台
 - `ai/`：AI 相关页面
 - `image/`：图片资源目录（当前未统计到文件）
 - `news/`：新闻系统（含共享 header/footer）
@@ -91,9 +92,32 @@ news/
 - 新闻首页启动器：`news/modules/news-home.bootstrap.js`
 - Flash 启动器：`news/flash/modules/flash.bootstrap.js`
 
+2026-03-21 补充：
+
+- 主站共享壳渲染入口：`shared/ui/site-shell.shared.js`
+- 主站静态 fallback 配置：`shared/ui/site-shell.config.js`
+- 网站后台站点壳编辑模块：
+  - `article_management/modules/site-shell-admin.module.js`
+  - `article_management/modules/site-shell.module.js`
+- 发布态配置建表 SQL：
+  - `article_management/sql/004_site_shell_configs.sql`
+- 当前 Header / Footer 配置优先级：
+  1. Supabase `site_shell_configs`
+  2. `shared/ui/site-shell.config.js`
+  3. `shared/ui/site-shell.shared.js` 内置默认值
+
 ## 5. 页面接入说明（当前）
 
 - 模块化入口页：通过各自 `bootstrap` 调用共享 header/footer。
 - 老页面/副本页：通过 `legacy-shell.bootstrap.js` 自动挂载共享 header/footer。
 - 导航维护：统一改 `news/shared/config/navigation.config.js`。
+
+2026-03-21 后的新规则：
+
+- 主站共享壳的正式配置源已切换到 `site_shell_configs`
+- `/article_management/index.html` 已升级为网站管理后台入口，不再只是 News 内容后台
+- `Site` 模块当前负责：
+  - 主站导航
+  - 主站 Footer
+- `News` 模块继续保留文章、推荐位、采集队列等内容运营功能
 
