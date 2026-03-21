@@ -312,6 +312,16 @@
             padding: 12px 14px;
         }
 
+        .share-inline-field {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .share-inline-field .share-input {
+            flex: 1;
+        }
+
         @media (max-width: 767px) {
             #toolbar {
                 padding: 10px 12px;
@@ -419,6 +429,11 @@
             .share-modal-card {
                 border-radius: 16px;
             }
+
+            .share-inline-field {
+                flex-direction: column;
+                align-items: stretch;
+            }
         }
     </style>
 </head>
@@ -440,6 +455,17 @@
                 </div>
             </div>
             <div id="access-gate-actions" class="hidden mt-6 flex flex-wrap gap-3">
+                <div id="access-passcode-wrap" class="hidden w-full space-y-3">
+                    <label for="access-passcode-input" id="access-passcode-label" class="block text-sm font-medium text-white">请输入提取码</label>
+                    <div class="share-inline-field">
+                        <input id="access-passcode-input" type="text" maxlength="4" autocomplete="one-time-code" class="share-input font-mono-num tracking-[0.3em] uppercase" placeholder="A1B2">
+                        <button type="button" onclick="submitAccessPasscode()" class="btn-glow px-4 py-2 inline-flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-lock-open"></i>
+                            <span id="access-passcode-submit-text">验证并打开</span>
+                        </button>
+                    </div>
+                    <div id="access-passcode-status" class="text-xs text-[var(--text-muted)] font-mono-num"></div>
+                </div>
                 <button type="button" onclick="reloadAccessCheck()" class="btn-outline px-4 py-2 inline-flex items-center gap-2">
                     <i class="fa-solid fa-rotate-right"></i>
                     <span id="access-gate-refresh-text">重新检测</span>
@@ -601,11 +627,21 @@
                 </div>
                 <div id="share-custom-expiry-wrap" class="hidden">
                     <label for="share-custom-expiry" id="share-custom-expiry-label" class="block text-sm font-medium text-white mb-2">自定义到期时间</label>
-                    <input id="share-custom-expiry" type="datetime-local" class="share-input">
+                    <div class="share-inline-field">
+                        <input id="share-custom-expiry" type="datetime-local" step="60" class="share-input">
+                        <button type="button" onclick="openCustomExpiryPicker()" class="btn-outline px-4 py-2.5 inline-flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-regular fa-calendar"></i>
+                            <span id="share-custom-expiry-picker-text">选择时间</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="share-helper-card">
                     <div id="share-expiry-preview" class="text-sm text-white">默认生成 3 天有效链接。</div>
                     <div id="share-admin-hint" class="text-xs text-[var(--text-body)] mt-2">后台管理员登录状态不受分享时间限制。</div>
+                </div>
+                <div>
+                    <label for="share-passcode-output" id="share-passcode-label" class="block text-sm font-medium text-white mb-2">提取码</label>
+                    <input id="share-passcode-output" type="text" class="share-input font-mono-num tracking-[0.3em] uppercase" readonly placeholder="自动生成">
                 </div>
                 <div>
                     <label for="share-link-output" id="share-link-label" class="block text-sm font-medium text-white mb-2">分享链接</label>
@@ -661,19 +697,23 @@
             shareExpiryNever: "永不过期",
             shareExpiryCustom: "自定义时间",
             shareCustomLabel: "自定义到期时间",
+            shareCustomPicker: "选择时间",
             shareAdminHint: "后台管理员登录状态不受分享时间限制。",
+            sharePasscodeLabel: "提取码",
+            sharePasscodePlaceholder: "自动生成",
             shareLinkLabel: "分享链接",
             shareLinkPlaceholder: "点击下方按钮生成分享链接",
             shareGenerate: "生成并复制链接",
             shareClose: "关闭",
             sharePreviewDefault: "默认生成 3 天有效链接。",
             sharePreviewAdmin: "管理员登录后仍可直接打开，不受外链过期限制。",
-            shareCopySuccess: "链接已复制到剪贴板",
+            shareCopySuccess: "链接和提取码已复制到剪贴板",
             shareCopyFallback: "已生成链接，请手动复制。",
             shareAdminOnly: "只有后台管理员登录后才可以创建分享链接。",
             shareCustomRequired: "请先选择一个有效的自定义到期时间。",
             shareCustomExpired: "自定义到期时间必须晚于当前时间。",
             shareGenerateError: "分享链接生成失败，请稍后重试。",
+            sharePasscodeCopiedFormat: "分享链接：{link}\n提取码：{code}",
             validityAdmin: "ADMIN-ALWAYS",
             validityNever: "NEVER",
             accessCheckingTitle: "正在验证访问权限...",
@@ -681,6 +721,12 @@
             accessAllowedTitle: "访问已授权",
             accessAllowedAdmin: "已识别后台管理员登录状态，正在进入页面。",
             accessAllowedShare: "分享链接校验通过，正在进入页面。",
+            accessNeedCodeTitle: "请输入提取码",
+            accessNeedCodeMessage: "分享链接有效，请输入 4 位提取码后打开页面。",
+            accessCodeLabel: "提取码",
+            accessCodeSubmit: "验证并打开",
+            accessCodeHint: "提取码格式：2 位字母 + 2 位数字。",
+            accessCodeInvalid: "提取码不正确，请重新输入。",
             accessDeniedTitle: "链接不可用",
             accessDeniedMissing: "当前页面需要有效的分享链接，或使用后台管理员账号登录后打开。",
             accessDeniedExpired: "这个分享链接已经过期。管理员登录后仍可继续访问。",
@@ -727,19 +773,23 @@
             shareExpiryNever: "Never expire",
             shareExpiryCustom: "Custom time",
             shareCustomLabel: "Custom expiration time",
+            shareCustomPicker: "Pick time",
             shareAdminHint: "Admin sessions from the site backend always bypass link expiry.",
+            sharePasscodeLabel: "Passcode",
+            sharePasscodePlaceholder: "Auto-generated",
             shareLinkLabel: "Share link",
             shareLinkPlaceholder: "Generate a link below",
             shareGenerate: "Generate & Copy Link",
             shareClose: "Close",
             sharePreviewDefault: "Default output is a 3-day share link.",
             sharePreviewAdmin: "Logged-in admins can still open the page after link expiry.",
-            shareCopySuccess: "Link copied to clipboard",
+            shareCopySuccess: "Link and passcode copied to clipboard",
             shareCopyFallback: "Link generated. Copy it manually.",
             shareAdminOnly: "Only signed-in site admins can create new share links.",
             shareCustomRequired: "Choose a valid custom expiration time first.",
             shareCustomExpired: "The custom expiration time must be later than now.",
             shareGenerateError: "Failed to generate the share link. Try again later.",
+            sharePasscodeCopiedFormat: "Share link: {link}\nPasscode: {code}",
             validityAdmin: "ADMIN-ALWAYS",
             validityNever: "NEVER",
             accessCheckingTitle: "Checking access...",
@@ -747,6 +797,12 @@
             accessAllowedTitle: "Access granted",
             accessAllowedAdmin: "Admin session detected. Opening the page now.",
             accessAllowedShare: "Share link verified. Opening the page now.",
+            accessNeedCodeTitle: "Enter passcode",
+            accessNeedCodeMessage: "This share link is valid. Enter the 4-character passcode to open the page.",
+            accessCodeLabel: "Passcode",
+            accessCodeSubmit: "Verify & Open",
+            accessCodeHint: "Format: 2 letters + 2 digits.",
+            accessCodeInvalid: "Incorrect passcode. Try again.",
             accessDeniedTitle: "Link unavailable",
             accessDeniedMissing: "This page requires a valid share link, or a logged-in admin session from the site backend.",
             accessDeniedExpired: "This share link has expired. Admin users can still open the page.",
@@ -793,19 +849,23 @@
             shareExpiryNever: "Без срока",
             shareExpiryCustom: "Своя дата",
             shareCustomLabel: "Своя дата истечения",
+            shareCustomPicker: "Выбрать время",
             shareAdminHint: "Сессия администратора сайта не ограничивается сроком действия ссылки.",
+            sharePasscodeLabel: "Код доступа",
+            sharePasscodePlaceholder: "Автоматически",
             shareLinkLabel: "Ссылка",
             shareLinkPlaceholder: "Сначала создайте ссылку",
             shareGenerate: "Создать и скопировать",
             shareClose: "Закрыть",
             sharePreviewDefault: "По умолчанию создается ссылка на 3 дня.",
             sharePreviewAdmin: "Администратор может открыть страницу даже после истечения ссылки.",
-            shareCopySuccess: "Ссылка скопирована",
+            shareCopySuccess: "Ссылка и код скопированы",
             shareCopyFallback: "Ссылка создана. Скопируйте ее вручную.",
             shareAdminOnly: "Создавать новые ссылки может только вошедший администратор сайта.",
             shareCustomRequired: "Сначала выберите корректное время истечения.",
             shareCustomExpired: "Время истечения должно быть позже текущего времени.",
             shareGenerateError: "Не удалось создать ссылку. Повторите попытку позже.",
+            sharePasscodeCopiedFormat: "Ссылка: {link}\nКод доступа: {code}",
             validityAdmin: "ADMIN-ALWAYS",
             validityNever: "NEVER",
             accessCheckingTitle: "Проверка доступа...",
@@ -813,6 +873,12 @@
             accessAllowedTitle: "Доступ разрешен",
             accessAllowedAdmin: "Обнаружена сессия администратора. Открываем страницу.",
             accessAllowedShare: "Ссылка подтверждена. Открываем страницу.",
+            accessNeedCodeTitle: "Введите код доступа",
+            accessNeedCodeMessage: "Ссылка действительна. Введите 4-символьный код доступа, чтобы открыть страницу.",
+            accessCodeLabel: "Код доступа",
+            accessCodeSubmit: "Проверить и открыть",
+            accessCodeHint: "Формат: 2 буквы + 2 цифры.",
+            accessCodeInvalid: "Код доступа неверный. Попробуйте снова.",
             accessDeniedTitle: "Ссылка недоступна",
             accessDeniedMissing: "Для этой страницы нужна действующая ссылка или активная сессия администратора сайта.",
             accessDeniedExpired: "Срок действия ссылки истек. Администратор сайта все еще может открыть страницу.",
@@ -843,6 +909,7 @@
         isAdmin: false,
         sharePayload: null,
         supabaseClient: null,
+        currentShareToken: '',
     };
 
     // --- 数据模型 ---
@@ -1003,12 +1070,56 @@
         return bytesToBase64Url(new Uint8Array(signature));
     }
 
-    async function buildShareToken(expiresAt) {
+    async function digestText(value) {
+        const digest = await crypto.subtle.digest('SHA-256', encoder.encode(String(value || '')));
+        return bytesToBase64Url(new Uint8Array(digest));
+    }
+
+    function generateSharePasscode() {
+        const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        const digits = '0123456789';
+        const pool = [
+            letters[Math.floor(Math.random() * letters.length)],
+            letters[Math.floor(Math.random() * letters.length)],
+            digits[Math.floor(Math.random() * digits.length)],
+            digits[Math.floor(Math.random() * digits.length)],
+        ];
+
+        for (let index = pool.length - 1; index > 0; index -= 1) {
+            const swapIndex = Math.floor(Math.random() * (index + 1));
+            [pool[index], pool[swapIndex]] = [pool[swapIndex], pool[index]];
+        }
+
+        return pool.join('');
+    }
+
+    function getShareUnlockCacheKey(token) {
+        return `vman-share-unlocked:${token}`;
+    }
+
+    function isShareUnlocked(token) {
+        try {
+            return sessionStorage.getItem(getShareUnlockCacheKey(token)) === '1';
+        } catch (_error) {
+            return false;
+        }
+    }
+
+    function markShareUnlocked(token) {
+        try {
+            sessionStorage.setItem(getShareUnlockCacheKey(token), '1');
+        } catch (_error) {
+            // Ignore storage failures.
+        }
+    }
+
+    async function buildShareToken(expiresAt, passcodeHash) {
         const payload = {
             v: SHARE_TOKEN_VERSION,
             path: normalizePath(location.pathname),
             exp: Number.isFinite(expiresAt) ? expiresAt : null,
             iat: Date.now(),
+            ph: String(passcodeHash || ''),
         };
         const encodedPayload = bytesToBase64Url(encoder.encode(JSON.stringify(payload)));
         const signature = await signShareSegment(encodedPayload);
@@ -1083,6 +1194,17 @@
         }).format(date);
     }
 
+    function formatLocalDateTimeInput(value) {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        const hh = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+    }
+
     function updateValidityDisplay() {
         const validityEl = document.getElementById('val-validity');
         if (!validityEl) return;
@@ -1113,6 +1235,13 @@
         if (actionsEl) actionsEl.classList.toggle('hidden', !showActions);
     }
 
+    function setAccessActionMode(mode = 'retry') {
+        const wrap = document.getElementById('access-passcode-wrap');
+        const retryButton = document.querySelector('#access-gate-actions > button');
+        if (wrap) wrap.classList.toggle('hidden', mode !== 'passcode');
+        if (retryButton) retryButton.classList.toggle('hidden', mode === 'passcode');
+    }
+
     function syncShareMenuState() {
         const wrap = document.getElementById('btn-menu-share-link-wrap');
         const divider = document.getElementById('share-menu-divider');
@@ -1123,6 +1252,7 @@
     async function resolveAccess() {
         const params = new URLSearchParams(location.search);
         const shareToken = params.get(SHARE_QUERY_PARAM);
+        shareState.currentShareToken = String(shareToken || '');
         const [adminAllowed, shareResult] = await Promise.all([
             hasAdminSession(),
             verifyShareToken(shareToken),
@@ -1139,6 +1269,7 @@
                 message: dict[currentLang].accessAllowedAdmin,
                 meta: dict[currentLang].accessMetaAdmin,
             });
+            setAccessActionMode('none');
             return true;
         }
 
@@ -1147,16 +1278,41 @@
             shareState.accessMode = 'share';
             shareState.sharePayload = shareResult.payload;
             countdownTarget = shareResult.payload.exp == null ? null : Number(shareResult.payload.exp);
+            if (!String(shareResult.payload.ph || '').trim()) {
+                setAccessGateState({
+                    icon: 'fa-solid fa-circle-check text-[var(--gas-green-light)]',
+                    title: dict[currentLang].accessAllowedTitle,
+                    message: dict[currentLang].accessAllowedShare,
+                    meta: `${dict[currentLang].accessMetaShare} | ${countdownTarget == null ? dict[currentLang].accessMetaNever : `${dict[currentLang].accessMetaExpired}${formatDateTime(countdownTarget)}`}`,
+                });
+                setAccessActionMode('none');
+                return true;
+            }
+            if (isShareUnlocked(shareToken)) {
+                setAccessGateState({
+                    icon: 'fa-solid fa-circle-check text-[var(--gas-green-light)]',
+                    title: dict[currentLang].accessAllowedTitle,
+                    message: dict[currentLang].accessAllowedShare,
+                    meta: `${dict[currentLang].accessMetaShare} | ${countdownTarget == null ? dict[currentLang].accessMetaNever : `${dict[currentLang].accessMetaExpired}${formatDateTime(countdownTarget)}`}`,
+                });
+                setAccessActionMode('none');
+                return true;
+            }
+
             const expiryMeta = countdownTarget == null
                 ? dict[currentLang].accessMetaNever
                 : `${dict[currentLang].accessMetaExpired}${formatDateTime(countdownTarget)}`;
             setAccessGateState({
-                icon: 'fa-solid fa-circle-check text-[var(--gas-green-light)]',
-                title: dict[currentLang].accessAllowedTitle,
-                message: dict[currentLang].accessAllowedShare,
+                icon: 'fa-solid fa-key text-[var(--gas-green-light)]',
+                title: dict[currentLang].accessNeedCodeTitle,
+                message: dict[currentLang].accessNeedCodeMessage,
                 meta: `${dict[currentLang].accessMetaShare} | ${expiryMeta}`,
+                showActions: true,
             });
-            return true;
+            setAccessActionMode('passcode');
+            const status = document.getElementById('access-passcode-status');
+            if (status) status.innerText = dict[currentLang].accessCodeHint;
+            return false;
         }
 
         shareState.isAdmin = false;
@@ -1179,6 +1335,7 @@
             meta: expiryMeta,
             showActions: true,
         });
+        setAccessActionMode('retry');
         return false;
     }
 
@@ -1273,12 +1430,19 @@
         document.getElementById('share-modal-desc').innerText = dict[lang].shareDesc;
         document.getElementById('share-expiry-label').innerText = dict[lang].shareExpiryLabel;
         document.getElementById('share-custom-expiry-label').innerText = dict[lang].shareCustomLabel;
+        document.getElementById('share-custom-expiry-picker-text').innerText = dict[lang].shareCustomPicker;
         document.getElementById('share-admin-hint').innerText = dict[lang].shareAdminHint;
+        document.getElementById('share-passcode-label').innerText = dict[lang].sharePasscodeLabel;
+        document.getElementById('share-passcode-output').placeholder = dict[lang].sharePasscodePlaceholder;
         document.getElementById('share-link-label').innerText = dict[lang].shareLinkLabel;
         document.getElementById('share-link-output').placeholder = dict[lang].shareLinkPlaceholder;
         document.getElementById('btn-generate-share-text').innerText = dict[lang].shareGenerate;
         document.getElementById('btn-share-close-text').innerText = dict[lang].shareClose;
         document.getElementById('access-gate-refresh-text').innerText = dict[lang].accessRefresh;
+        document.getElementById('access-passcode-label').innerText = dict[lang].accessCodeLabel;
+        document.getElementById('access-passcode-submit-text').innerText = dict[lang].accessCodeSubmit;
+        document.getElementById('access-passcode-status').innerText = shareState.accessMode === 'share' ? dict[lang].accessCodeHint : '';
+        document.getElementById('access-passcode-input').placeholder = 'A1B2';
 
         const shareExpirySelect = document.getElementById('share-expiry-select');
         if (shareExpirySelect) {
@@ -1320,6 +1484,21 @@
         status.innerText = '';
     }
 
+    function openCustomExpiryPicker() {
+        const input = document.getElementById('share-custom-expiry');
+        if (!input) return;
+        try {
+            if (typeof input.showPicker === 'function') {
+                input.showPicker();
+                return;
+            }
+        } catch (_error) {
+            // Fallback below.
+        }
+        input.focus();
+        input.click();
+    }
+
     function openShareModal(event) {
         if (event) {
             event.preventDefault();
@@ -1332,7 +1511,9 @@
         }
 
         const modal = document.getElementById('share-modal');
+        const customInput = document.getElementById('share-custom-expiry');
         if (!modal) return;
+        if (customInput) customInput.min = formatLocalDateTimeInput(Date.now() + 60 * 1000);
         modal.classList.add('is-open');
         modal.setAttribute('aria-hidden', 'false');
         handleShareExpiryChange();
@@ -1371,11 +1552,18 @@
             await navigator.clipboard.writeText(value);
             return true;
         } catch (error) {
-            const output = document.getElementById('share-link-output');
-            if (!output) return false;
-            output.focus();
-            output.select();
-            return document.execCommand('copy');
+            const textarea = document.createElement('textarea');
+            textarea.value = value;
+            textarea.setAttribute('readonly', 'readonly');
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            textarea.style.pointerEvents = 'none';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const copied = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return copied;
         }
     }
 
@@ -1387,9 +1575,10 @@
 
         const button = document.getElementById('btn-generate-share');
         const output = document.getElementById('share-link-output');
+        const passcodeOutput = document.getElementById('share-passcode-output');
         const status = document.getElementById('share-copy-status');
         const preview = document.getElementById('share-expiry-preview');
-        if (!button || !output || !status || !preview) return;
+        if (!button || !output || !passcodeOutput || !status || !preview) return;
 
         const originalHtml = button.innerHTML;
         button.disabled = true;
@@ -1397,11 +1586,17 @@
 
         try {
             const expiresAt = getSelectedExpiryTimestamp();
-            const shareToken = await buildShareToken(expiresAt);
+            const passcode = generateSharePasscode();
+            const passcodeHash = await digestText(passcode);
+            const shareToken = await buildShareToken(expiresAt, passcodeHash);
             const shareUrl = new URL(window.location.href);
             shareUrl.searchParams.set(SHARE_QUERY_PARAM, shareToken);
             output.value = shareUrl.toString();
-            const copied = await copyText(output.value);
+            passcodeOutput.value = passcode;
+            const copyPayload = dict[currentLang].sharePasscodeCopiedFormat
+                .replace('{link}', output.value)
+                .replace('{code}', passcode);
+            const copied = await copyText(copyPayload);
             preview.innerText = expiresAt == null
                 ? `${dict[currentLang].shareExpiryNever} · ${dict[currentLang].sharePreviewAdmin}`
                 : `${dict[currentLang].accessMetaExpired}${formatDateTime(expiresAt)} · ${dict[currentLang].sharePreviewAdmin}`;
@@ -1415,6 +1610,32 @@
     }
 
     async function reloadAccessCheck() {
+        await initApp();
+    }
+
+    async function submitAccessPasscode() {
+        if (!shareState.sharePayload || !shareState.currentShareToken) return;
+
+        const input = document.getElementById('access-passcode-input');
+        const status = document.getElementById('access-passcode-status');
+        if (!input || !status) return;
+
+        const normalized = String(input.value || '').trim().toUpperCase();
+        if (!normalized) {
+            status.innerText = dict[currentLang].accessCodeHint;
+            input.focus();
+            return;
+        }
+
+        const nextHash = await digestText(normalized);
+        if (nextHash !== String(shareState.sharePayload.ph || '')) {
+            status.innerText = dict[currentLang].accessCodeInvalid;
+            input.select();
+            return;
+        }
+
+        markShareUnlocked(shareState.currentShareToken);
+        status.innerText = dict[currentLang].accessAllowedShare;
         await initApp();
     }
 
@@ -1717,6 +1938,13 @@
         if (event.key === 'Escape') {
             closeShareMenu();
             closeShareModal();
+        }
+    });
+
+    document.getElementById('access-passcode-input')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            submitAccessPasscode();
         }
     });
 
