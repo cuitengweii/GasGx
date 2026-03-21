@@ -440,10 +440,6 @@
                 </div>
             </div>
             <div id="access-gate-actions" class="hidden mt-6 flex flex-wrap gap-3">
-                <a href="/article_management/index.html" class="btn-glow px-4 py-2 inline-flex items-center gap-2">
-                    <i class="fa-solid fa-right-to-bracket"></i>
-                    <span id="access-gate-login-text">管理员登录</span>
-                </a>
                 <button type="button" onclick="reloadAccessCheck()" class="btn-outline px-4 py-2 inline-flex items-center gap-2">
                     <i class="fa-solid fa-rotate-right"></i>
                     <span id="access-gate-refresh-text">重新检测</span>
@@ -1282,7 +1278,6 @@
         document.getElementById('share-link-output').placeholder = dict[lang].shareLinkPlaceholder;
         document.getElementById('btn-generate-share-text').innerText = dict[lang].shareGenerate;
         document.getElementById('btn-share-close-text').innerText = dict[lang].shareClose;
-        document.getElementById('access-gate-login-text').innerText = dict[lang].accessLogin;
         document.getElementById('access-gate-refresh-text').innerText = dict[lang].accessRefresh;
 
         const shareExpirySelect = document.getElementById('share-expiry-select');
