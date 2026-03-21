@@ -10,7 +10,7 @@ import {
     normalizeSiteShellConfig,
     resetSiteShellConfigCache,
     savePublishedSiteShellConfig,
-} from './site-shell.module.js';
+} from './site-shell.module.js?v=20260321site04';
 
 const moduleState = {
     draft: null,
