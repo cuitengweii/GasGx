@@ -958,10 +958,10 @@ function renderShell() {
                     ${navGroup('Dashboard', [navButton('dashboard', '总览', 'fa-chart-line')])}
                     ${navGroup('Site', [
                         navButton('site-general', '主站配置', 'fa-sliders'),
-                        navButton('site-navigation', '主站导航', 'fa-compass'),
-                        navButton('site-footer', '主站页脚', 'fa-window-maximize'),
                     ])}
                     ${navGroup('System', [
+                        navButton('site-navigation', '主站导航', 'fa-compass'),
+                        navButton('site-footer', '主站页脚', 'fa-window-maximize'),
                         navButton('admin-users', '人员管理', 'fa-users-gear'),
                         navButton('admin-security', '账号安全', 'fa-user-shield'),
                     ])}
@@ -984,7 +984,7 @@ function renderShell() {
                 <header class="ams-header">
                     <div>
                         <h1 id="ams-page-title">GasGx 网站管理后台</h1>
-                        <p id="ams-page-sub">统一管理主站壳、News 内容与推荐位</p>
+                        <p id="ams-page-sub">统一管理主站配置、系统导航、News 内容与推荐位</p>
                     </div>
                     <div class="ams-user">
                         <span><i class="fa-solid fa-user"></i> <strong>${name}</strong></span>
@@ -1050,8 +1050,8 @@ async function renderDashboard(forceRefresh = false) {
         <section class="ams-card ams-dashboard-intro">
             <div class="ams-dashboard-intro-copy">
                 <p class="ams-eyebrow">Dashboard</p>
-                <h2>把主站壳、内容发布、推荐位和采集审核放进同一个后台。</h2>
-                <p class="ams-hero-text">第一阶段先接管 www.gasgx.com 的共享 Header / Footer，同时保留原有 News 内容运营功能。这里先看整体状态，再进入 Site 或 News 具体操作页。</p>
+                <h2>把主站配置、系统导航、内容发布、推荐位和采集审核放进同一个后台。</h2>
+                <p class="ams-hero-text">主站基础配置保留在 Site，导航与 Footer 统一收口到 System，同时继续保留原有 News 内容运营功能。这里先看整体状态，再进入具体操作页。</p>
             </div>
             <div class="ams-dashboard-intro-meta">
                 <div class="ams-dashboard-highlight">
@@ -1060,7 +1060,7 @@ async function renderDashboard(forceRefresh = false) {
                 </div>
                 <div class="ams-dashboard-highlight">
                     <span>站点壳状态</span>
-                    <strong>主站导航与 Footer 现已可在 Site 模块中统一管理</strong>
+                    <strong>主站导航与 Footer 现已收口到 System 模块统一管理</strong>
                 </div>
             </div>
         </section>
@@ -1068,14 +1068,14 @@ async function renderDashboard(forceRefresh = false) {
             <button class="ams-quick-link" type="button" data-dashboard-nav="site-navigation">
                 <div class="ams-quick-link-icon"><i class="fa-solid fa-compass"></i></div>
                 <div class="ams-quick-link-body">
-                    <strong>主站导航</strong>
-                    <span>调整 Header 与 Footer 导航树</span>
+                    <strong>系统导航管理</strong>
+                    <span>维护主站 Header 一级与二级导航</span>
                 </div>
             </button>
             <button class="ams-quick-link" type="button" data-dashboard-nav="site-footer">
                 <div class="ams-quick-link-icon"><i class="fa-solid fa-window-maximize"></i></div>
                 <div class="ams-quick-link-body">
-                    <strong>主站 Footer</strong>
+                    <strong>系统 Footer 管理</strong>
                     <span>管理 Contact、社交入口与合作伙伴</span>
                 </div>
             </button>

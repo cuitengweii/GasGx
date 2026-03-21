@@ -16,6 +16,66 @@
                 },
                 {
                         "title": {
+                                "zh": "新闻",
+                                "en": "News"
+                        },
+                        "path": "/news/",
+                        "type": "menu",
+                        "icon": "fa-solid fa-newspaper",
+                        "children": [
+                                {
+                                        "title": {
+                                                "zh": "快讯",
+                                                "en": "Flash"
+                                        },
+                                        "path": "/news/flash"
+                                },
+                                {
+                                        "title": {
+                                                "zh": "天然气能源",
+                                                "en": "Gas Energy"
+                                        },
+                                        "path": "/news/gas-energy"
+                                },
+                                {
+                                        "title": {
+                                                "zh": "发电机组",
+                                                "en": "Generators"
+                                        },
+                                        "path": "/news/generators"
+                                },
+                                {
+                                        "title": {
+                                                "zh": "挖矿",
+                                                "en": "Mining"
+                                        },
+                                        "path": "/news/mining"
+                                },
+                                {
+                                        "title": {
+                                                "zh": "洞察",
+                                                "en": "Insights"
+                                        },
+                                        "path": "/news/insights"
+                                },
+                                {
+                                        "title": {
+                                                "zh": "数据",
+                                                "en": "Data"
+                                        },
+                                        "path": "/news/data"
+                                },
+                                {
+                                        "title": {
+                                                "zh": "活动",
+                                                "en": "Events"
+                                        },
+                                        "path": "/news/events"
+                                }
+                        ]
+                },
+                {
+                        "title": {
                                 "zh": "解决方案",
                                 "en": "Solutions"
                         },

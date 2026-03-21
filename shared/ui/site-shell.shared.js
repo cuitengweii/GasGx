@@ -416,6 +416,54 @@
         return JSON.parse(JSON.stringify(value || null));
     }
 
+    const DEFAULT_NEWS_NAVIGATION_ITEM = {
+        title: { zh: "新闻", en: "News" },
+        path: "/news/",
+        type: "menu",
+        icon: "fa-solid fa-newspaper",
+        children: [
+            { title: { zh: "快讯", en: "Flash" }, path: "/news/flash" },
+            { title: { zh: "天然气能源", en: "Gas Energy" }, path: "/news/gas-energy" },
+            { title: { zh: "发电机组", en: "Generators" }, path: "/news/generators" },
+            { title: { zh: "挖矿", en: "Mining" }, path: "/news/mining" },
+            { title: { zh: "洞察", en: "Insights" }, path: "/news/insights" },
+            { title: { zh: "数据", en: "Data" }, path: "/news/data" },
+            { title: { zh: "活动", en: "Events" }, path: "/news/events" }
+        ]
+    };
+
+    function normalizeSiteShellNavPath(path) {
+        const raw = typeof path === "string" ? path.trim().toLowerCase() : "";
+        if (!raw) return "";
+        return raw.replace(/\/+$/, "") || "/";
+    }
+
+    function isNewsNavigationItem(item) {
+        const path = normalizeSiteShellNavPath(item && item.path);
+        return path === "/news" || path === "/news/index.html";
+    }
+
+    function ensureNewsNavigation(navigation, fallbackNavigation) {
+        const working = Array.isArray(navigation) ? cloneSiteShellValue(navigation) : [];
+        const fallbackList = Array.isArray(fallbackNavigation) ? cloneSiteShellValue(fallbackNavigation) : [];
+        const fallbackNews = fallbackList.find((item) => isNewsNavigationItem(item));
+        const defaultNews = cloneSiteShellValue(fallbackNews || DEFAULT_NEWS_NAVIGATION_ITEM);
+        const existingIndex = working.findIndex((item) => isNewsNavigationItem(item));
+        const existing = existingIndex >= 0 ? working.splice(existingIndex, 1)[0] : null;
+        const mergedNews = Object.assign({}, defaultNews, existing || {}, {
+            type: "menu",
+            path: existing && existing.path ? existing.path : defaultNews.path,
+            icon: existing && existing.icon ? existing.icon : defaultNews.icon,
+            title: Object.assign({}, defaultNews.title || {}, existing && existing.title || {}),
+            children: Array.isArray(existing && existing.children) && existing.children.length
+                ? cloneSiteShellValue(existing.children)
+                : cloneSiteShellValue(defaultNews.children || [])
+        });
+        const insertIndex = working.length > 0 ? 1 : 0;
+        working.splice(Math.min(insertIndex, working.length), 0, mergedNews);
+        return working;
+    }
+
     function isSiteShellVisible(item) {
         return !!item && item.visible !== false && item.hidden !== true;
     }
@@ -511,8 +559,12 @@
     function mergeSiteShellConfig(baseConfig, sourceConfig) {
         const base = baseConfig && typeof baseConfig === "object" ? cloneSiteShellValue(baseConfig) : {};
         const source = sourceConfig && typeof sourceConfig === "object" ? sourceConfig : {};
+        const navigation = ensureNewsNavigation(
+            Array.isArray(source.navigation) ? source.navigation : (Array.isArray(base.navigation) ? base.navigation : []),
+            Array.isArray(base.navigation) ? base.navigation : []
+        );
         return Object.assign({}, base, source, {
-            navigation: Array.isArray(source.navigation) ? cloneSiteShellValue(source.navigation) : (Array.isArray(base.navigation) ? cloneSiteShellValue(base.navigation) : []),
+            navigation: navigation,
             sharedText: mergeLocalizedBlock(base.sharedText, source.sharedText),
             pages: mergePagesConfig(base.pages, source.pages),
             site: mergeSiteConfig(base.site, source.site),

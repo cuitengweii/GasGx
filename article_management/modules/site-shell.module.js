@@ -256,6 +256,58 @@ export function createSiteShellNavItem(type = 'link', seed = {}) {
     return base;
 }
 
+const NEWS_NAVIGATION_ITEM_SEED = Object.freeze({
+    title: { zh: '新闻', en: 'News' },
+    path: '/news/',
+    type: 'menu',
+    icon: 'fa-solid fa-newspaper',
+    children: [
+        { title: { zh: '快讯', en: 'Flash' }, path: '/news/flash' },
+        { title: { zh: '天然气能源', en: 'Gas Energy' }, path: '/news/gas-energy' },
+        { title: { zh: '发电机组', en: 'Generators' }, path: '/news/generators' },
+        { title: { zh: '挖矿', en: 'Mining' }, path: '/news/mining' },
+        { title: { zh: '洞察', en: 'Insights' }, path: '/news/insights' },
+        { title: { zh: '数据', en: 'Data' }, path: '/news/data' },
+        { title: { zh: '活动', en: 'Events' }, path: '/news/events' },
+    ],
+});
+
+function normalizeNavigationPath(path) {
+    const value = normalizeText(path).toLowerCase();
+    if (!value) return '';
+    return value.replace(/\/+$/, '') || '/';
+}
+
+function isNewsNavigationItemSeed(item) {
+    const path = normalizeNavigationPath(item?.path);
+    return path === '/news' || path === '/news/index.html';
+}
+
+function ensureNewsNavigationItems(sourceNavigation, fallbackNavigation = []) {
+    const working = Array.isArray(sourceNavigation) ? deepClone(sourceNavigation) : [];
+    const fallbackList = Array.isArray(fallbackNavigation) ? deepClone(fallbackNavigation) : [];
+    const fallbackNews = fallbackList.find((item) => isNewsNavigationItemSeed(item));
+    const defaultNews = deepClone(fallbackNews || NEWS_NAVIGATION_ITEM_SEED);
+    const existingIndex = working.findIndex((item) => isNewsNavigationItemSeed(item));
+    const existing = existingIndex >= 0 ? working.splice(existingIndex, 1)[0] : null;
+    const mergedNews = {
+        ...defaultNews,
+        ...(existing || {}),
+        type: 'menu',
+        path: normalizeText(existing?.path || defaultNews.path || '/news/') || '/news/',
+        icon: normalizeText(existing?.icon || defaultNews.icon || 'fa-solid fa-newspaper'),
+        title: {
+            ...(defaultNews.title || {}),
+            ...(existing?.title || {}),
+        },
+        children: Array.isArray(existing?.children) && existing.children.length ? existing.children : deepClone(defaultNews.children || []),
+    };
+
+    const insertIndex = working.length > 0 ? 1 : 0;
+    working.splice(Math.min(insertIndex, working.length), 0, mergedNews);
+    return working;
+}
+
 export function createSiteShellSocialLink(seed = {}) {
     return {
         id: normalizeText(seed.id),
@@ -493,11 +545,14 @@ function normalizeFooterConfig(source, fallback) {
 export function normalizeSiteShellConfig(config, fallback = EMPTY_SITE_SHELL_CONFIG) {
     const safeSource = isPlainObject(config) ? config : {};
     const safeFallback = isPlainObject(fallback) ? fallback : EMPTY_SITE_SHELL_CONFIG;
+    const navigationSeeds = ensureNewsNavigationItems(
+        Array.isArray(safeSource.navigation) ? safeSource.navigation : Array.isArray(safeFallback.navigation) ? safeFallback.navigation : [],
+        Array.isArray(safeFallback.navigation) ? safeFallback.navigation : [],
+    );
     return {
         ...safeFallback,
         ...safeSource,
-        navigation: (Array.isArray(safeSource.navigation) ? safeSource.navigation : Array.isArray(safeFallback.navigation) ? safeFallback.navigation : [])
-            .map((item) => createSiteShellNavItem(item?.type, item)),
+        navigation: navigationSeeds.map((item) => createSiteShellNavItem(item?.type, item)),
         sharedText: normalizeSharedText(safeSource.sharedText, safeFallback.sharedText),
         pages: normalizePagesConfig(safeSource.pages, safeFallback.pages),
         site: normalizeSiteConfig(safeSource.site, safeFallback.site),
