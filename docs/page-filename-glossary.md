@@ -41,12 +41,14 @@
 | 文件路径 | URL 路径 | 类型 | 文件名翻译 | 说明 |
 |---|---|---|---|---|
 | news/data.html | /news/data.html | 正式 | 数据 | 新闻 下的 数据 页面。 |
-| news/flash/account.html | /news/flash/account.html | 正式 | 账户 | 新闻 > 快讯 下的 账户 页面。 |
+| news/account/account.html | /news/account/account.html | 正式 | 账户 | News 账户中心正式入口。 |
+| news/flash/account.html | /news/flash/account.html | 兼容跳转 | 账户 | 旧快讯账户路径，现跳转到 `/news/account/account.html`。 |
 | news/flash/index - 副本 (2).html | /news/flash/index - 副本 (2).html | 备份 | 副本 | 副本页面（副本），通常不作为正式入口。 |
 | news/flash/index - 副本.html | /news/flash/index - 副本.html | 备份 | 副本 | 副本页面（副本），通常不作为正式入口。 |
 | news/flash/index - 副本英文 (2).html | /news/flash/index - 副本英文 (2).html | 备份 | 副本（英文） | 副本页面（副本（英文）），通常不作为正式入口。 |
 | news/flash/index.html | /news/flash/ | 正式 | 快讯 首页 | 新闻 > 快讯 的频道首页。 |
-| news/flash/user.html | /news/flash/user.html | 正式 | 用户 | 新闻 > 快讯 下的 用户 页面。 |
+| news/account/user.html | /news/account/user.html | 正式 | 用户 | News 登录页正式入口。 |
+| news/flash/user.html | /news/flash/user.html | 兼容跳转 | 用户 | 旧快讯登录路径，现跳转到 `/news/account/user.html`。 |
 | news/index.html | /news/ | 正式 | 新闻 首页 | 新闻 的频道首页。 |
 | news/test/bitcoin_mining.html | /news/test/bitcoin_mining.html | 测试 | 比特币 挖矿 | 测试目录页面，用于功能/样式验证（比特币 挖矿）。 |
 | news/test/data.html | /news/test/data.html | 测试 | 数据 | 测试目录页面，用于功能/样式验证（数据）。 |

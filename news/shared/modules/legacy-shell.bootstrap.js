@@ -54,9 +54,9 @@ function getLegacyMainAuthConfig() {
     }
     return {
         storageKey: typeof source.storageKey === 'string' && source.storageKey.trim() ? source.storageKey.trim() : DEFAULT_MAIN_AUTH.storageKey,
-        signInUrl: '/account/user.html',
+        signInUrl: '/news/account/user.html',
         accountUrl: '/account/account.html',
-        signOutRedirectUrl: '/account/user.html',
+        signOutRedirectUrl: '/news/account/user.html',
         returnUrlStorageKey: 'gx_main_return_url',
         supabaseUrl: typeof source.supabaseUrl === 'string' && source.supabaseUrl.trim() ? source.supabaseUrl.trim() : DEFAULT_MAIN_AUTH.supabaseUrl,
         supabaseKey: typeof source.supabaseKey === 'string' && source.supabaseKey.trim() ? source.supabaseKey.trim() : DEFAULT_MAIN_AUTH.supabaseKey,
@@ -223,8 +223,8 @@ function applySharedNavState({ page, idPrefix, currentUser, displayName, activeT
         navigation: HEADER_NAVIGATION,
         currentUser,
         displayName,
-        accountUrl: '/news/account.html',
-        signInUrl: '/account/user.html',
+        accountUrl: '/news/account/account.html',
+        signInUrl: '/news/account/user.html',
         activeTitle,
         activePath,
     });
@@ -255,14 +255,14 @@ async function signOutLegacyAuth() {
         await helper.signOut({
             client: legacyAuthClient,
             runtimeConfig: authConfig,
-            redirectTo: '/account/user.html',
+            redirectTo: '/news/account/user.html',
             errorLabel: 'Legacy shell sign-out failed:'
         });
         return;
     }
 
     clearLegacyAuthStorage(authConfig);
-    window.location.replace('/account/user.html');
+    window.location.replace('/news/account/user.html');
 }
 
 async function initAuthBridge({ page, idPrefix, activeTitle, activePath }) {
@@ -305,7 +305,7 @@ async function initAuthBridge({ page, idPrefix, activeTitle, activePath }) {
 
 function normalizeLegacyBodyLayout(pathname) {
     const path = pathname.toLowerCase();
-    if (path === '/news/account.html' || path === '/news/flash/account.html' || path === '/news/flash/user.html') {
+    if (path === '/news/account.html' || path === '/news/account/account.html' || path === '/news/account/user.html' || path === '/news/flash/account.html' || path === '/news/flash/user.html') {
         document.body.classList.remove('h-screen', 'overflow-hidden');
         document.body.classList.add('min-h-screen');
     }
@@ -313,7 +313,7 @@ function normalizeLegacyBodyLayout(pathname) {
 
 function detectFooterVariant(pathname) {
     const path = pathname.toLowerCase();
-    if (path === '/news/account.html' || path === '/news/flash/account.html') return 'minimal';
+    if (path === '/news/account.html' || path === '/news/account/account.html' || path === '/news/flash/account.html') return 'minimal';
     return 'full';
 }
 

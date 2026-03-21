@@ -738,8 +738,8 @@ export function createChannelApp(channelKey) {
                 navigation: HEADER_NAVIGATION,
                 currentUser: this.state.currentUser,
                 displayName: this.state.displayName,
-                accountUrl: '/news/account.html',
-                signInUrl: '/account/user.html',
+                accountUrl: '/news/account/account.html',
+                signInUrl: '/news/account/user.html',
                 activeTitle: config.navTitle,
                 activePath: window.location.pathname,
             });
