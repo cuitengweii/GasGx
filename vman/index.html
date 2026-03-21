@@ -481,7 +481,7 @@
                 <div id="share-menu" class="toolbar-share-menu absolute right-0 top-full pt-2 w-48 hidden md:group-hover:block z-50">
                     <div class="bg-[#161B22] shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-[#2C2F33] rounded overflow-hidden">
                         <button id="btn-menu-share-link-wrap" onclick="openShareModal()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-link mr-3 text-lg"></i><span id="btn-menu-share-link">创建分享链接</span></button>
-                        <div class="h-px bg-[#2C2F33]"></div>
+                        <div id="share-menu-divider" class="h-px bg-[#2C2F33]"></div>
                         <button onclick="exportImage()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-image mr-3 text-lg"></i><span id="btn-menu-img">生成长图</span></button>
                         <button onclick="exportPDF()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-file-pdf mr-3 text-lg"></i><span id="btn-menu-pdf">导出 PDF</span></button>
                     </div>
@@ -833,6 +833,22 @@
         }
     };
 
+    const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
+    const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+    const ADMIN_EMAILS = ['cuitengwei@gasgx.com'];
+    const SHARE_QUERY_PARAM = 'share';
+    const SHARE_SIGNING_SECRET = 'GasGx::VMAN::ShareGate::20260321';
+    const SHARE_TOKEN_VERSION = 1;
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const shareState = {
+        accessMode: 'checking',
+        isAdmin: false,
+        sharePayload: null,
+        supabaseClient: null,
+    };
+
     // --- 数据模型 ---
     let appData = {
         part1: {
@@ -933,14 +949,273 @@
 
     let currentLang = 'zh';
     let rates = { USD: 0.1398, EUR: 0.1265, CAD: 0.1888, RUB: 12.866 };
+    let countdownTarget = null;
+    let clockTimer = null;
 
-    let countdownTarget = Date.now() + 72 * 60 * 60 * 1000;
+    function normalizeEmail(value) {
+        return String(value || '').trim().toLowerCase();
+    }
 
-    window.onload = () => {
+    function isAdminEmail(email) {
+        const normalized = normalizeEmail(email);
+        return ADMIN_EMAILS.some((item) => normalizeEmail(item) === normalized);
+    }
+
+    function getSupabaseClient() {
+        if (shareState.supabaseClient) return shareState.supabaseClient;
+        if (!window.supabase || typeof window.supabase.createClient !== 'function') return null;
+
+        shareState.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+            },
+        });
+        return shareState.supabaseClient;
+    }
+
+    function normalizePath(pathname) {
+        const raw = String(pathname || location.pathname || '/').trim();
+        if (!raw) return '/';
+        return raw.replace(/\/+$/, '') || '/';
+    }
+
+    function bytesToBase64Url(bytes) {
+        let binary = '';
+        bytes.forEach((value) => {
+            binary += String.fromCharCode(value);
+        });
+        return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    }
+
+    function base64UrlToBytes(value) {
+        const normalized = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+        const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+        const binary = atob(padded);
+        return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    }
+
+    async function signShareSegment(segment) {
+        const key = await crypto.subtle.importKey(
+            'raw',
+            encoder.encode(SHARE_SIGNING_SECRET),
+            { name: 'HMAC', hash: 'SHA-256' },
+            false,
+            ['sign']
+        );
+        const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(segment));
+        return bytesToBase64Url(new Uint8Array(signature));
+    }
+
+    async function buildShareToken(expiresAt) {
+        const payload = {
+            v: SHARE_TOKEN_VERSION,
+            path: normalizePath(location.pathname),
+            exp: Number.isFinite(expiresAt) ? expiresAt : null,
+            iat: Date.now(),
+        };
+        const encodedPayload = bytesToBase64Url(encoder.encode(JSON.stringify(payload)));
+        const signature = await signShareSegment(encodedPayload);
+        return `${encodedPayload}.${signature}`;
+    }
+
+    async function verifyShareToken(token) {
+        const raw = String(token || '').trim();
+        if (!raw) return { valid: false, reason: 'missing' };
+
+        const pieces = raw.split('.');
+        if (pieces.length !== 2) return { valid: false, reason: 'invalid' };
+
+        const [encodedPayload, providedSignature] = pieces;
+        try {
+            const expectedSignature = await signShareSegment(encodedPayload);
+            if (providedSignature !== expectedSignature) {
+                return { valid: false, reason: 'invalid' };
+            }
+
+            const payload = JSON.parse(decoder.decode(base64UrlToBytes(encodedPayload)));
+            if (Number(payload.v) !== SHARE_TOKEN_VERSION) {
+                return { valid: false, reason: 'invalid', payload };
+            }
+            if (normalizePath(payload.path) !== normalizePath(location.pathname)) {
+                return { valid: false, reason: 'invalid', payload };
+            }
+
+            const expiresAt = payload.exp == null ? null : Number(payload.exp);
+            if (expiresAt != null && (!Number.isFinite(expiresAt) || Date.now() > expiresAt)) {
+                return { valid: false, reason: 'expired', payload };
+            }
+
+            return { valid: true, reason: 'ok', payload };
+        } catch (error) {
+            console.warn('Failed to verify share token.', error);
+            return { valid: false, reason: 'invalid' };
+        }
+    }
+
+    async function hasAdminSession() {
+        try {
+            const client = getSupabaseClient();
+            if (!client) return false;
+            const {
+                data: { session },
+                error,
+            } = await client.auth.getSession();
+            if (error) throw error;
+            return Boolean(session?.user && isAdminEmail(session.user.email));
+        } catch (error) {
+            console.warn('Failed to read admin session.', error);
+            return false;
+        }
+    }
+
+    function getLocale() {
+        if (currentLang === 'ru') return 'ru-RU';
+        if (currentLang === 'en') return 'en-US';
+        return 'zh-CN';
+    }
+
+    function formatDateTime(value) {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '--';
+        return new Intl.DateTimeFormat(getLocale(), {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+        }).format(date);
+    }
+
+    function updateValidityDisplay() {
+        const validityEl = document.getElementById('val-validity');
+        if (!validityEl) return;
+
+        if (countdownTarget == null) {
+            validityEl.innerText = shareState.isAdmin ? dict[currentLang].validityAdmin : dict[currentLang].validityNever;
+            return;
+        }
+
+        const remaining = Math.max(0, countdownTarget - Date.now());
+        const hoursLeft = Math.floor(remaining / (1000 * 60 * 60));
+        const minutesLeft = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        const secondsLeft = Math.floor((remaining % (1000 * 60)) / 1000);
+        validityEl.innerText = `${String(hoursLeft).padStart(2, '0')}:${String(minutesLeft).padStart(2, '0')}:${String(secondsLeft).padStart(2, '0')}`;
+    }
+
+    function setAccessGateState({ icon, title, message, meta = '', showActions = false }) {
+        const iconEl = document.getElementById('access-gate-icon');
+        const titleEl = document.getElementById('access-gate-title');
+        const messageEl = document.getElementById('access-gate-message');
+        const metaEl = document.getElementById('access-gate-meta');
+        const actionsEl = document.getElementById('access-gate-actions');
+
+        if (iconEl) iconEl.className = icon;
+        if (titleEl) titleEl.innerText = title;
+        if (messageEl) messageEl.innerText = message;
+        if (metaEl) metaEl.innerText = meta;
+        if (actionsEl) actionsEl.classList.toggle('hidden', !showActions);
+    }
+
+    function syncShareMenuState() {
+        const wrap = document.getElementById('btn-menu-share-link-wrap');
+        const divider = document.getElementById('share-menu-divider');
+        if (wrap) wrap.classList.toggle('hidden', !shareState.isAdmin);
+        if (divider) divider.classList.toggle('hidden', !shareState.isAdmin);
+    }
+
+    async function resolveAccess() {
+        const params = new URLSearchParams(location.search);
+        const shareToken = params.get(SHARE_QUERY_PARAM);
+        const [adminAllowed, shareResult] = await Promise.all([
+            hasAdminSession(),
+            verifyShareToken(shareToken),
+        ]);
+
+        if (adminAllowed) {
+            shareState.isAdmin = true;
+            shareState.accessMode = 'admin';
+            shareState.sharePayload = shareResult.valid ? shareResult.payload : null;
+            countdownTarget = null;
+            setAccessGateState({
+                icon: 'fa-solid fa-circle-check text-[var(--gas-green-light)]',
+                title: dict[currentLang].accessAllowedTitle,
+                message: dict[currentLang].accessAllowedAdmin,
+                meta: dict[currentLang].accessMetaAdmin,
+            });
+            return true;
+        }
+
+        if (shareResult.valid) {
+            shareState.isAdmin = false;
+            shareState.accessMode = 'share';
+            shareState.sharePayload = shareResult.payload;
+            countdownTarget = shareResult.payload.exp == null ? null : Number(shareResult.payload.exp);
+            const expiryMeta = countdownTarget == null
+                ? dict[currentLang].accessMetaNever
+                : `${dict[currentLang].accessMetaExpired}${formatDateTime(countdownTarget)}`;
+            setAccessGateState({
+                icon: 'fa-solid fa-circle-check text-[var(--gas-green-light)]',
+                title: dict[currentLang].accessAllowedTitle,
+                message: dict[currentLang].accessAllowedShare,
+                meta: `${dict[currentLang].accessMetaShare} | ${expiryMeta}`,
+            });
+            return true;
+        }
+
+        shareState.isAdmin = false;
+        shareState.accessMode = 'denied';
+        shareState.sharePayload = shareResult.payload || null;
+        countdownTarget = null;
+
+        let message = dict[currentLang].accessDeniedGeneric;
+        if (shareResult.reason === 'missing') message = dict[currentLang].accessDeniedMissing;
+        if (shareResult.reason === 'expired') message = dict[currentLang].accessDeniedExpired;
+        if (shareResult.reason === 'invalid') message = dict[currentLang].accessDeniedInvalid;
+
+        const expiryMeta = shareResult.payload?.exp
+            ? `${dict[currentLang].accessMetaExpired}${formatDateTime(Number(shareResult.payload.exp))}`
+            : '';
+        setAccessGateState({
+            icon: 'fa-solid fa-triangle-exclamation text-yellow-400',
+            title: dict[currentLang].accessDeniedTitle,
+            message,
+            meta: expiryMeta,
+            showActions: true,
+        });
+        return false;
+    }
+
+    async function initApp() {
         setLang(currentLang);
+        handleShareExpiryChange();
+
+        setAccessGateState({
+            icon: 'fa-solid fa-spinner fa-spin text-[var(--gas-green-light)]',
+            title: dict[currentLang].accessCheckingTitle,
+            message: dict[currentLang].accessCheckingMessage,
+        });
+
+        const allowed = await resolveAccess();
+        syncShareMenuState();
+
+        if (!allowed) {
+            document.body.classList.remove('access-resolved');
+            return;
+        }
+
+        updateValidityDisplay();
         fetchRates();
         startClock();
-    };
+
+        setTimeout(() => {
+            document.body.classList.add('access-resolved');
+            const overlay = document.getElementById('access-gate-overlay');
+            if (overlay) overlay.style.display = 'none';
+        }, 220);
+    }
+
+    window.addEventListener('load', initApp);
 
     async function fetchRates(isManual = false) {
         const statusEl = document.getElementById('rate-status');
@@ -993,13 +1268,155 @@
         document.getElementById('footer-note').innerHTML = dict[lang].footerText;
         document.getElementById('btn-text-send').innerText = dict[lang].btnSend;
         document.getElementById('btn-text-share').innerText = dict[lang].btnShare;
+        document.getElementById('btn-menu-share-link').innerText = dict[lang].menuShareLink;
         document.getElementById('btn-menu-img').innerText = dict[lang].menuImg;
         document.getElementById('btn-menu-pdf').innerText = dict[lang].menuPdf;
         document.getElementById('btn-text-refresh').innerText = dict[lang].refresh;
         document.getElementById('export-loading-text').innerText = dict[lang].overlayGen;
+        document.getElementById('share-modal-title').innerText = dict[lang].shareTitle;
+        document.getElementById('share-modal-desc').innerText = dict[lang].shareDesc;
+        document.getElementById('share-expiry-label').innerText = dict[lang].shareExpiryLabel;
+        document.getElementById('share-custom-expiry-label').innerText = dict[lang].shareCustomLabel;
+        document.getElementById('share-admin-hint').innerText = dict[lang].shareAdminHint;
+        document.getElementById('share-link-label').innerText = dict[lang].shareLinkLabel;
+        document.getElementById('share-link-output').placeholder = dict[lang].shareLinkPlaceholder;
+        document.getElementById('btn-generate-share-text').innerText = dict[lang].shareGenerate;
+        document.getElementById('btn-share-close-text').innerText = dict[lang].shareClose;
+        document.getElementById('access-gate-login-text').innerText = dict[lang].accessLogin;
+        document.getElementById('access-gate-refresh-text').innerText = dict[lang].accessRefresh;
+
+        const shareExpirySelect = document.getElementById('share-expiry-select');
+        if (shareExpirySelect) {
+            shareExpirySelect.options[0].text = dict[lang].shareExpiry3d;
+            shareExpirySelect.options[1].text = dict[lang].shareExpiry1d;
+            shareExpirySelect.options[2].text = dict[lang].shareExpiry7d;
+            shareExpirySelect.options[3].text = dict[lang].shareExpiryNever;
+            shareExpirySelect.options[4].text = dict[lang].shareExpiryCustom;
+        }
         document.title = `${dict[lang].title} - GasGx Green Style`;
-        
+
+        handleShareExpiryChange();
+        updateValidityDisplay();
         renderApp();
+    }
+
+    function handleShareExpiryChange() {
+        const select = document.getElementById('share-expiry-select');
+        const customWrap = document.getElementById('share-custom-expiry-wrap');
+        const preview = document.getElementById('share-expiry-preview');
+        const status = document.getElementById('share-copy-status');
+        if (!select || !customWrap || !preview || !status) return;
+
+        const value = select.value;
+        customWrap.classList.toggle('hidden', value !== 'custom');
+
+        let previewText = dict[currentLang].sharePreviewDefault;
+        if (value === '1d') previewText = dict[currentLang].shareExpiry1d;
+        if (value === '3d') previewText = dict[currentLang].shareExpiry3d;
+        if (value === '7d') previewText = dict[currentLang].shareExpiry7d;
+        if (value === 'never') previewText = dict[currentLang].shareExpiryNever;
+        if (value === 'custom') {
+            const customInput = document.getElementById('share-custom-expiry');
+            const customValue = customInput?.value ? formatDateTime(customInput.value) : dict[currentLang].shareCustomLabel;
+            previewText = customValue;
+        }
+
+        preview.innerText = `${previewText} · ${dict[currentLang].sharePreviewAdmin}`;
+        status.innerText = '';
+    }
+
+    function openShareModal() {
+        closeShareMenu();
+        if (!shareState.isAdmin) {
+            alert(dict[currentLang].shareAdminOnly);
+            return;
+        }
+
+        const modal = document.getElementById('share-modal');
+        if (!modal) return;
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        handleShareExpiryChange();
+    }
+
+    function closeShareModal() {
+        const modal = document.getElementById('share-modal');
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function getSelectedExpiryTimestamp() {
+        const select = document.getElementById('share-expiry-select');
+        const customInput = document.getElementById('share-custom-expiry');
+        const mode = select?.value || '3d';
+        const now = Date.now();
+
+        if (mode === 'never') return null;
+        if (mode === '1d') return now + DAY_MS;
+        if (mode === '3d') return now + DAY_MS * 3;
+        if (mode === '7d') return now + DAY_MS * 7;
+
+        const customDate = new Date(customInput?.value || '');
+        if (Number.isNaN(customDate.getTime())) {
+            throw new Error(dict[currentLang].shareCustomRequired);
+        }
+        if (customDate.getTime() <= now) {
+            throw new Error(dict[currentLang].shareCustomExpired);
+        }
+        return customDate.getTime();
+    }
+
+    async function copyText(value) {
+        try {
+            await navigator.clipboard.writeText(value);
+            return true;
+        } catch (error) {
+            const output = document.getElementById('share-link-output');
+            if (!output) return false;
+            output.focus();
+            output.select();
+            return document.execCommand('copy');
+        }
+    }
+
+    async function generateShareLink() {
+        if (!shareState.isAdmin) {
+            alert(dict[currentLang].shareAdminOnly);
+            return;
+        }
+
+        const button = document.getElementById('btn-generate-share');
+        const output = document.getElementById('share-link-output');
+        const status = document.getElementById('share-copy-status');
+        const preview = document.getElementById('share-expiry-preview');
+        if (!button || !output || !status || !preview) return;
+
+        const originalHtml = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>${dict[currentLang].loading}</span>`;
+
+        try {
+            const expiresAt = getSelectedExpiryTimestamp();
+            const shareToken = await buildShareToken(expiresAt);
+            const shareUrl = new URL(window.location.href);
+            shareUrl.searchParams.set(SHARE_QUERY_PARAM, shareToken);
+            output.value = shareUrl.toString();
+            const copied = await copyText(output.value);
+            preview.innerText = expiresAt == null
+                ? `${dict[currentLang].shareExpiryNever} · ${dict[currentLang].sharePreviewAdmin}`
+                : `${dict[currentLang].accessMetaExpired}${formatDateTime(expiresAt)} · ${dict[currentLang].sharePreviewAdmin}`;
+            status.innerText = copied ? dict[currentLang].shareCopySuccess : dict[currentLang].shareCopyFallback;
+        } catch (error) {
+            status.innerText = error?.message || dict[currentLang].shareGenerateError;
+        } finally {
+            button.disabled = false;
+            button.innerHTML = originalHtml;
+        }
+    }
+
+    async function reloadAccessCheck() {
+        await initApp();
     }
 
     function formatMoney(num) {
@@ -1149,7 +1566,9 @@
     }
 
     function startClock() {
-        setInterval(() => {
+        if (clockTimer) clearInterval(clockTimer);
+
+        clockTimer = setInterval(() => {
             const now = new Date();
             const y = now.getFullYear();
             const m = String(now.getMonth() + 1).padStart(2, '0');
@@ -1160,16 +1579,7 @@
             
             document.getElementById('live-clock').innerText = `${hh}:${mm}:${ss}`;
             document.getElementById('live-date').innerText = `${y}-${m}-${d}`;
-            
-            const remaining = Math.max(0, countdownTarget - Date.now());
-            const hoursLeft = Math.floor(remaining / (1000 * 60 * 60));
-            const minutesLeft = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-            const secondsLeft = Math.floor((remaining % (1000 * 60)) / 1000);
-            
-            const validityEl = document.getElementById('val-validity');
-            if(validityEl && document.activeElement !== validityEl) {
-                validityEl.innerText = `${String(hoursLeft).padStart(2, '0')}:${String(minutesLeft).padStart(2, '0')}:${String(secondsLeft).padStart(2, '0')}`;
-            }
+            updateValidityDisplay();
         }, 1000);
     }
 
@@ -1296,9 +1706,26 @@
         closeShareMenu();
     });
 
+    document.addEventListener('click', (event) => {
+        const modal = document.getElementById('share-modal');
+        const card = modal?.querySelector('.share-modal-card');
+        if (!modal || !modal.classList.contains('is-open') || !card) return;
+        if (card.contains(event.target)) return;
+        closeShareModal();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeShareMenu();
+            closeShareModal();
+        }
+    });
+
     window.addEventListener('resize', () => {
         if(!isMobileViewport()) closeShareMenu();
     });
+
+    document.getElementById('share-custom-expiry')?.addEventListener('change', handleShareExpiryChange);
 
     window.addEventListener('scroll', updateBackToTop, { passive: true });
     window.addEventListener('load', updateBackToTop);
