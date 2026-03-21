@@ -365,21 +365,14 @@
     <div id="ggx-chatbot-slot"></div>
     <script src="/shared/ui/site-shell.config.js?v=20260321auth02"></script>
     <script src="/shared/ui/site-shell.shared.js?v=20260322logout01"></script>
+    <script src="/shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
     <script>
         const MAIN_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
-        const SUPABASE_URL = MAIN_AUTH.supabaseUrl || 'https://mkpcliytqudclkwtewru.supabase.co';
-        const SUPABASE_KEY = MAIN_AUTH.supabaseKey || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
-        const MAIN_AUTH_STORAGE_KEY = MAIN_AUTH.storageKey || 'gasgx-main-auth';
-        const SIGN_IN_URL = MAIN_AUTH.signInUrl || '/account/user.html';
+        const MAIN_AUTH_HELPER = window.GasGxMainAuthShared;
+        const MAIN_AUTH_CONFIG = MAIN_AUTH_HELPER.resolveConfig(MAIN_AUTH);
+        const SIGN_IN_URL = MAIN_AUTH_CONFIG.signInUrl;
         const BOOKMARKS_TABLE = 'main_bookmarks';
-        const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            auth: {
-                storageKey: MAIN_AUTH_STORAGE_KEY,
-                persistSession: true,
-                autoRefreshToken: true,
-                detectSessionInUrl: true
-            }
-        });
+        const client = MAIN_AUTH_HELPER.createClient(window.supabase, MAIN_AUTH_CONFIG);
 
         let currentUser = null;
         let currentSession = null;
@@ -485,13 +478,6 @@
             } catch (_error) {
                 return null;
             }
-        }
-
-        function clearAuthStorage() {
-            [MAIN_AUTH_STORAGE_KEY, `${MAIN_AUTH_STORAGE_KEY}-code-verifier`].forEach((key) => {
-                try { window.localStorage.removeItem(key); } catch (error) { console.warn('Local storage cleanup warning:', error); }
-                try { window.sessionStorage.removeItem(key); } catch (error) { console.warn('Session storage cleanup warning:', error); }
-            });
         }
 
         function applyViewModel(viewModel) {
@@ -734,14 +720,12 @@
 
         window.handleSignOut = async function() {
             document.getElementById('auth-loader').classList.remove('hidden');
-            try {
-                await client.auth.signOut({ scope: 'global' });
-            } catch (error) {
-                console.error('Account sign-out failed:', error);
-            } finally {
-                clearAuthStorage();
-                window.location.replace(SIGN_IN_URL);
-            }
+            await MAIN_AUTH_HELPER.signOut({
+                client,
+                runtimeConfig: MAIN_AUTH_CONFIG,
+                redirectTo: SIGN_IN_URL,
+                errorLabel: 'Account sign-out failed:'
+            });
         };
 
         window.refreshAccount = async function() {

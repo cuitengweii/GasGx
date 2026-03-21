@@ -6,18 +6,80 @@ const DEFAULT_MAIN_AUTH = Object.freeze({
     supabaseUrl: 'https://mkpcliytqudclkwtewru.supabase.co',
     supabaseKey: 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw',
 });
+const MAIN_AUTH_SHARED_SRC = '/shared/ui/main-auth.shared.js?v=20260322authshared01';
 const LEGACY_HIDDEN_STYLE_ID = 'gsh-legacy-hidden-style';
 const LEGACY_HIDDEN_CLASS = 'gsh-legacy-hidden';
 let legacyAuthClient = null;
 let legacyAuthConfig = null;
+let mainAuthHelperPromise = null;
+
+function loadMainAuthHelper() {
+    if (window.GasGxMainAuthShared) {
+        return Promise.resolve(window.GasGxMainAuthShared);
+    }
+    if (mainAuthHelperPromise) {
+        return mainAuthHelperPromise;
+    }
+
+    mainAuthHelperPromise = new Promise((resolve, reject) => {
+        const existingScript = Array.from(document.querySelectorAll('script')).find((script) => {
+            return String(script.src || '').includes('/shared/ui/main-auth.shared.js');
+        });
+
+        if (existingScript) {
+            existingScript.addEventListener('load', () => resolve(window.GasGxMainAuthShared), { once: true });
+            existingScript.addEventListener('error', () => reject(new Error('Failed to load main auth shared helper.')), { once: true });
+            if (window.GasGxMainAuthShared) {
+                resolve(window.GasGxMainAuthShared);
+            }
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = MAIN_AUTH_SHARED_SRC;
+        script.async = true;
+        script.onload = () => resolve(window.GasGxMainAuthShared);
+        script.onerror = () => reject(new Error('Failed to load main auth shared helper.'));
+        document.head.appendChild(script);
+    });
+
+    return mainAuthHelperPromise;
+}
 
 function getLegacyMainAuthConfig() {
     const source = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
+    const helper = window.GasGxMainAuthShared;
+    if (helper && typeof helper.resolveConfig === 'function') {
+        return helper.resolveConfig(source);
+    }
     return {
         storageKey: typeof source.storageKey === 'string' && source.storageKey.trim() ? source.storageKey.trim() : DEFAULT_MAIN_AUTH.storageKey,
+        signInUrl: '/account/user.html',
+        accountUrl: '/account/account.html',
+        signOutRedirectUrl: '/account/user.html',
+        returnUrlStorageKey: 'gx_main_return_url',
         supabaseUrl: typeof source.supabaseUrl === 'string' && source.supabaseUrl.trim() ? source.supabaseUrl.trim() : DEFAULT_MAIN_AUTH.supabaseUrl,
         supabaseKey: typeof source.supabaseKey === 'string' && source.supabaseKey.trim() ? source.supabaseKey.trim() : DEFAULT_MAIN_AUTH.supabaseKey,
+        providerRollout: { twitter: false, linkedin: false }
     };
+}
+
+function createLegacyClient(authConfig) {
+    const helper = window.GasGxMainAuthShared;
+    if (helper && typeof helper.createClient === 'function') {
+        return helper.createClient(window.supabase, authConfig);
+    }
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+        return null;
+    }
+    return window.supabase.createClient(authConfig.supabaseUrl, authConfig.supabaseKey, {
+        auth: {
+            storageKey: authConfig.storageKey,
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+        },
+    });
 }
 
 function ensureLegacyHiddenStyle() {
@@ -170,6 +232,11 @@ function applySharedNavState({ page, idPrefix, currentUser, displayName, activeT
 
 function clearLegacyAuthStorage(authConfig) {
     if (!authConfig) return;
+    const helper = window.GasGxMainAuthShared;
+    if (helper && typeof helper.clearStorage === 'function') {
+        helper.clearStorage(authConfig);
+        return;
+    }
     [authConfig.storageKey, `${authConfig.storageKey}-code-verifier`].forEach((key) => {
         try { window.localStorage.removeItem(key); } catch (error) { console.warn('Legacy auth localStorage cleanup warning:', error); }
         try { window.sessionStorage.removeItem(key); } catch (error) { console.warn('Legacy auth sessionStorage cleanup warning:', error); }
@@ -177,24 +244,21 @@ function clearLegacyAuthStorage(authConfig) {
 }
 
 async function signOutLegacyAuth() {
+    await loadMainAuthHelper().catch(() => null);
     const authConfig = legacyAuthConfig || getLegacyMainAuthConfig();
-    if (!legacyAuthClient && window.supabase && typeof window.supabase.createClient === 'function') {
-        legacyAuthClient = window.supabase.createClient(authConfig.supabaseUrl, authConfig.supabaseKey, {
-            auth: {
-                storageKey: authConfig.storageKey,
-                persistSession: true,
-                autoRefreshToken: true,
-                detectSessionInUrl: true,
-            },
-        });
+    if (!legacyAuthClient) {
+        legacyAuthClient = createLegacyClient(authConfig);
     }
 
-    if (legacyAuthClient) {
-        try {
-            await legacyAuthClient.auth.signOut({ scope: 'global' });
-        } catch (error) {
-            console.error('Legacy shell sign-out failed:', error);
-        }
+    const helper = window.GasGxMainAuthShared;
+    if (helper && typeof helper.signOut === 'function') {
+        await helper.signOut({
+            client: legacyAuthClient,
+            runtimeConfig: authConfig,
+            redirectTo: '/account/user.html',
+            errorLabel: 'Legacy shell sign-out failed:'
+        });
+        return;
     }
 
     clearLegacyAuthStorage(authConfig);
@@ -208,16 +272,11 @@ async function initAuthBridge({ page, idPrefix, activeTitle, activePath }) {
     applySharedNavState({ page, idPrefix, currentUser, displayName, activeTitle, activePath });
 
     if (!window.supabase || typeof window.supabase.createClient !== 'function') return;
+    await loadMainAuthHelper().catch(() => null);
 
     const authConfig = getLegacyMainAuthConfig();
-    const client = window.supabase.createClient(authConfig.supabaseUrl, authConfig.supabaseKey, {
-        auth: {
-            storageKey: authConfig.storageKey,
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: true,
-        },
-    });
+    const client = createLegacyClient(authConfig);
+    if (!client) return;
     legacyAuthClient = client;
     legacyAuthConfig = authConfig;
     window.GGXNewsAuthSignOut = signOutLegacyAuth;

@@ -165,19 +165,16 @@
     <div id="ggx-chatbot-slot"></div>
     <script src="/shared/ui/site-shell.config.js?v=20260321auth02"></script>
     <script src="/shared/ui/site-shell.shared.js?v=20260322logout01"></script>
+    <script src="/shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
     <script>
         const HOME_SHELL_SITE_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
-        const GX_SUPABASE_URL = HOME_SHELL_SITE_AUTH.supabaseUrl || 'https://mkpcliytqudclkwtewru.supabase.co';
-        const GX_SUPABASE_KEY = HOME_SHELL_SITE_AUTH.supabaseKey || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
-        const MAIN_AUTH_STORAGE_KEY = HOME_SHELL_SITE_AUTH.storageKey || 'gasgx-main-auth';
-        const SIGN_IN_URL = HOME_SHELL_SITE_AUTH.signInUrl || '/account/user.html';
-        const DEFAULT_HOME_PATH = HOME_SHELL_SITE_AUTH.accountUrl || '/account/account.html';
-        const RETURN_URL_STORAGE_KEY = HOME_SHELL_SITE_AUTH.returnUrlStorageKey || 'gx_main_return_url';
+        const MAIN_AUTH_HELPER = window.GasGxMainAuthShared;
+        const MAIN_AUTH_CONFIG = MAIN_AUTH_HELPER.resolveConfig(HOME_SHELL_SITE_AUTH);
+        const SIGN_IN_URL = MAIN_AUTH_CONFIG.signInUrl;
+        const DEFAULT_HOME_PATH = MAIN_AUTH_CONFIG.accountUrl;
         const DEFAULT_PROVIDER_FLAGS = { twitter: false, linkedin: false };
 
-        const gxClient = window.supabase ? window.supabase.createClient(GX_SUPABASE_URL, GX_SUPABASE_KEY, {
-            auth: { storageKey: MAIN_AUTH_STORAGE_KEY, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-        }) : null;
+        const gxClient = window.supabase ? MAIN_AUTH_HELPER.createClient(window.supabase, MAIN_AUTH_CONFIG) : null;
 
         let isSignUp = false;
 
@@ -231,23 +228,17 @@
         }
 
         function saveReturnUrl() {
-            if (isAuthCallbackUrl()) return;
-            const referrer = document.referrer;
-            if (referrer && referrer.startsWith(window.location.origin)) {
-                const refUrl = new URL(referrer);
-                if (!['/account/user.html', '/account/account.html'].includes(refUrl.pathname)) {
-                    sessionStorage.setItem(RETURN_URL_STORAGE_KEY, `${refUrl.pathname}${refUrl.search}${refUrl.hash}`);
-                }
-            }
+            MAIN_AUTH_HELPER.saveReturnUrl({
+                runtimeConfig: MAIN_AUTH_CONFIG,
+                excludePaths: [SIGN_IN_URL, DEFAULT_HOME_PATH]
+            });
         }
 
         function getTargetUrl() {
-            const savedUrl = sessionStorage.getItem(RETURN_URL_STORAGE_KEY);
-            if (savedUrl && savedUrl.startsWith('/')) {
-                sessionStorage.removeItem(RETURN_URL_STORAGE_KEY);
-                return savedUrl;
-            }
-            return DEFAULT_HOME_PATH;
+            return MAIN_AUTH_HELPER.consumeReturnUrl({
+                runtimeConfig: MAIN_AUTH_CONFIG,
+                fallbackPath: DEFAULT_HOME_PATH
+            });
         }
 
         function performRedirect() {
@@ -257,9 +248,7 @@
         }
 
         async function loadProviderFlags() {
-            const configuredFlags = HOME_SHELL_SITE_AUTH && typeof HOME_SHELL_SITE_AUTH.providerRollout === 'object'
-                ? HOME_SHELL_SITE_AUTH.providerRollout
-                : {};
+            const configuredFlags = MAIN_AUTH_CONFIG.providerRollout || {};
             return {
                 ...DEFAULT_PROVIDER_FLAGS,
                 twitter: configuredFlags.twitter === true,

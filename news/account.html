@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/shared/ui/site-shell.config.js?v=20260321authux03"></script>
+    <script src="/shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
 
     <script>
         tailwind.config = {
@@ -230,19 +231,11 @@
     <script>
         // --- CONFIG ---
         const HOME_SHELL_SITE_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
-        const SUPABASE_URL = HOME_SHELL_SITE_AUTH.supabaseUrl || 'https://mkpcliytqudclkwtewru.supabase.co';
-        const SUPABASE_KEY = HOME_SHELL_SITE_AUTH.supabaseKey || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
-        const MAIN_AUTH_STORAGE_KEY = HOME_SHELL_SITE_AUTH.storageKey || 'gasgx-main-auth';
-        const SIGN_IN_URL = '/account/user.html';
+        const MAIN_AUTH_HELPER = window.GasGxMainAuthShared;
+        const MAIN_AUTH_CONFIG = MAIN_AUTH_HELPER.resolveConfig(HOME_SHELL_SITE_AUTH, { signOutRedirectUrl: '/account/user.html' });
+        const SIGN_IN_URL = MAIN_AUTH_CONFIG.signInUrl;
         const BOOKMARKS_TABLE = 'bookmarks';
-        const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            auth: {
-                storageKey: MAIN_AUTH_STORAGE_KEY,
-                persistSession: true,
-                autoRefreshToken: true,
-                detectSessionInUrl: true
-            }
-        });
+        const client = MAIN_AUTH_HELPER.createClient(window.supabase, MAIN_AUTH_CONFIG);
         
         let currentUser = null; 
 
@@ -256,13 +249,6 @@
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3200);
-        }
-
-        function clearAuthStorage() {
-            [MAIN_AUTH_STORAGE_KEY, `${MAIN_AUTH_STORAGE_KEY}-code-verifier`].forEach((key) => {
-                try { window.localStorage.removeItem(key); } catch (error) { console.warn('Local storage cleanup warning:', error); }
-                try { window.sessionStorage.removeItem(key); } catch (error) { console.warn('Session storage cleanup warning:', error); }
-            });
         }
 
         // --- AUTH & LOAD ---
@@ -516,17 +502,15 @@
 
         window.handleSignOut = async function() {
             document.getElementById('auth-loader').classList.remove('hidden');
-            try {
-                await client.auth.signOut({ scope: 'global' });
-            } catch (error) {
-                console.error('News account sign-out failed:', error);
-            } finally {
-                clearAuthStorage();
-                window.location.replace(SIGN_IN_URL);
-            }
+            await MAIN_AUTH_HELPER.signOut({
+                client,
+                runtimeConfig: MAIN_AUTH_CONFIG,
+                redirectTo: SIGN_IN_URL,
+                errorLabel: 'News account sign-out failed:'
+            });
         }
     </script>
-<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js?v=20260322logout01"></script>
+<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js?v=20260322authshared01"></script>
 </body>
 </html>
 
