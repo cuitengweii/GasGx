@@ -83,6 +83,7 @@ function Should-SkipDefaultUpload {
         'requirements.txt'
     )
     $skipPrefixes = @(
+        'article_management/sql/',
         'docs/',
         'scripts/',
         'tests/'
