@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VMAN 宸ヤ笟鏅鸿兘鎶ヤ环绯荤粺 - GasGx Green Style</title>
+    <title>VMAN 工业智能报价系统 - GasGx Green Style</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -344,7 +344,7 @@
     <div id="export-overlay" class="fixed inset-0 z-[99999] bg-[#0A0E14] flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300">
         <i class="fa-solid fa-cube fa-spin text-5xl text-[var(--gas-green-light)] mb-6 pulse-shadow"></i>
         <div class="text-[var(--gas-green-light)] font-mono tracking-widest text-xl font-bold animate-pulse" id="export-loading-text">GENERATING DOCUMENT...</div>
-        <div class="text-[var(--text-muted)] text-sm mt-3" id="export-sub-text">姝ｅ湪杩涜楂樼簿搴﹀簳灞傛覆鏌擄紝璇风◢鍊?/div>
+        <div class="text-[var(--text-muted)] text-sm mt-3" id="export-sub-text">正在进行高清文档渲染，请稍候</div>
     </div>
 
     <!-- 椤堕儴鍥哄畾宸ュ叿鏍?(绉诲姩绔嚜閫傚簲) -->
@@ -359,17 +359,17 @@
             <div class="toolbar-lang flex bg-[#161B22] rounded p-1 border border-[#2C2F33]">
                 <button onclick="setLang('zh')" id="btn-zh" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all bg-[var(--gas-green-primary)] text-white font-semibold shadow-[0_0_8px_rgba(40,167,69,0.4)]">CN</button>
                 <button onclick="setLang('en')" id="btn-en" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all text-[var(--text-body)] hover:text-white">EN</button>
-                <button onclick="setLang('ru')" id="btn-ru" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all text-[var(--text-body)] hover:text-white">袪校</button>
+                <button onclick="setLang('ru')" id="btn-ru" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all text-[var(--text-body)] hover:text-white">РУ</button>
             </div>
             
             <div id="share-group" class="toolbar-share-group relative group">
                 <button id="btn-share" type="button" onclick="toggleShareMenu(event)" class="btn-glow px-3 py-1.5 md:px-6 md:py-2 flex items-center">
-                    <i class="fa-solid fa-cloud-arrow-down" id="icon-share"></i> <span id="btn-text-share" class="hidden md:inline ml-2">鍒嗕韩/瀵煎嚭</span> <i class="fa-solid fa-angle-down ml-1 md:ml-2 text-xs" id="icon-share-down"></i>
+                    <i class="fa-solid fa-cloud-arrow-down" id="icon-share"></i> <span id="btn-text-share" class="hidden md:inline ml-2">分享/导出</span> <i class="fa-solid fa-angle-down ml-1 md:ml-2 text-xs" id="icon-share-down"></i>
                 </button>
                 <div id="share-menu" class="toolbar-share-menu absolute right-0 top-full pt-2 w-48 hidden md:group-hover:block z-50">
                     <div class="bg-[#161B22] shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-[#2C2F33] rounded overflow-hidden">
-                        <button onclick="exportImage()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-image mr-3 text-lg"></i><span id="btn-menu-img">鐢熸垚闀垮浘</span></button>
-                        <button onclick="exportPDF()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-file-pdf mr-3 text-lg"></i><span id="btn-menu-pdf">瀵煎嚭 PDF</span></button>
+                        <button onclick="exportImage()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-image mr-3 text-lg"></i><span id="btn-menu-img">生成长图</span></button>
+                        <button onclick="exportPDF()" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-file-pdf mr-3 text-lg"></i><span id="btn-menu-pdf">导出 PDF</span></button>
                     </div>
                 </div>
             </div>
@@ -385,37 +385,37 @@
                     <!-- 涓绘爣棰樺強鍙戦€佹寜閽Щ浣嶅埌姝ゅ -->
                     <div class="doc-title-row flex items-start md:items-center justify-between gap-4 mb-4 md:mb-8 w-full">
                         <h1 class="text-xl md:text-3xl font-bold tracking-wide text-[var(--gas-green-light)] leading-snug break-words flex-1 m-0" contenteditable="true" id="f-title">
-                            VMAN Engineering 浜у搧鎶ヤ环鎬昏
+                            VMAN Engineering 产品报价总览
                         </h1>
-                        <button onclick="sendEmail()" class="doc-send-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center flex-shrink-0 mt-1 md:mt-0" title="璋冪敤閭欢搴旂敤">
-                            <i class="fa-solid fa-paper-plane mr-1.5 text-[var(--text-body)]"></i> <span id="btn-text-send" class="text-[var(--text-body)]">鍙戦€?/span>
+                        <button onclick="sendEmail()" class="doc-send-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center flex-shrink-0 mt-1 md:mt-0" title="调用邮件应用">
+                            <i class="fa-solid fa-paper-plane mr-1.5 text-[var(--text-body)]"></i> <span id="btn-text-send" class="text-[var(--text-body)]">发送</span>
                         </button>
                     </div>
                     
                     <!-- 寮哄埗涓嶆崲琛?(whitespace-nowrap) + 闅愯棌婊氬姩鏉℃í鍚戦€傞厤 -->
                     <div class="doc-meta-grid grid grid-cols-1 md:grid-cols-2 gap-x-8 md:gap-x-12 gap-y-4 md:gap-y-5 text-sm md:text-[15px]">
                         <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-supplier">渚涘簲鍟嗭細</span>
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-supplier">供应商：</span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span contenteditable="true" class="font-semibold text-white whitespace-nowrap outline-none w-full text-left block">VMAN Engineering</span>
                             </div>
                         </div>
                         <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-sender">鍙戜欢浜猴細</span>
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-sender">发件人：</span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span contenteditable="true" id="val-sender" class="text-[var(--gas-green-light)] whitespace-nowrap outline-none w-full text-left block">allen@vman-engine.com</span>
                             </div>
                         </div>
                         <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-validity">鏈夋晥鏈燂細</span>
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-validity">有效期：</span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span contenteditable="true" id="val-validity" class="font-semibold text-white font-mono-num whitespace-nowrap outline-none w-full text-left block">72:00:00</span>
                             </div>
                         </div>
                         <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-receiver">鏀朵欢浜猴細</span>
+                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-receiver">收件人：</span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
-                                <span contenteditable="true" id="val-receiver" class="text-[var(--gas-green-light)] empty-placeholder whitespace-nowrap outline-none w-full text-left block" data-placeholder="璇峰～鍏ュ鎴烽偖绠卞彿"></span>
+                                <span contenteditable="true" id="val-receiver" class="text-[var(--gas-green-light)] empty-placeholder whitespace-nowrap outline-none w-full text-left block" data-placeholder="请填入客户邮箱号"></span>
                             </div>
                         </div>
                     </div>
@@ -437,10 +437,10 @@
                     
                     <div class="mt-3 flex flex-wrap items-center justify-start xl:justify-end gap-2 w-full">
                         <span class="text-[10px] md:text-[11px] text-[var(--gas-green-light)] font-mono-num flex items-center bg-[var(--gas-green-bg-solid)] px-2 py-1.5 rounded border border-[var(--gas-green-primary)] shadow-[0_0_8px_rgba(40,167,69,0.2)]" id="rate-status">
-                            <i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i> 鍏ㄧ悆瀹炴椂姹囩巼鍦ㄧ嚎
+                            <i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i> 全球实时汇率在线
                         </span>
                         <button onclick="fetchRates(true)" class="btn-outline bg-[var(--bg-card)] px-3 py-1.5 rounded text-[10px] md:text-[11px] font-bold flex items-center">
-                            <i class="fa-solid fa-rotate-right mr-1.5"></i> <span id="btn-text-refresh">鍒锋柊姹囩巼</span>
+                            <i class="fa-solid fa-rotate-right mr-1.5"></i> <span id="btn-text-refresh">刷新汇率</span>
                         </button>
                     </div>
                 </div>
@@ -459,8 +459,8 @@
         id="back-to-top"
         type="button"
         class="back-to-top z-40"
-        aria-label="杩斿洖椤堕儴"
-        title="杩斿洖椤堕儴"
+        aria-label="返回顶部"
+        title="返回顶部"
         onclick="scrollToTop()"
     >
         <i class="fa-solid fa-arrow-up text-sm"></i>
@@ -650,6 +650,7 @@
     let countdownTarget = Date.now() + 72 * 60 * 60 * 1000;
 
     window.onload = () => {
+        setLang(currentLang);
         fetchRates();
         startClock();
     };
@@ -704,6 +705,7 @@
         document.getElementById('btn-menu-pdf').innerText = dict[lang].menuPdf;
         document.getElementById('btn-text-refresh').innerText = dict[lang].refresh;
         document.getElementById('export-loading-text').innerText = dict[lang].overlayGen;
+        document.title = `${dict[lang].title} - GasGx Green Style`;
         
         renderApp();
     }
@@ -767,11 +769,11 @@
                 <div class="bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between shadow-inner gap-4">
                     <span class="font-bold text-white tracking-wider text-xs md:text-sm" contenteditable="true">${d.sysTotal}:</span>
                     <div class="flex flex-wrap gap-x-4 md:gap-x-6 gap-y-2 text-sm md:text-[15px]">
-                        <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="楼${formatMoney(totalRMB)}">楼${formatMoney(totalRMB)}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="¥${formatMoney(totalRMB)}">¥${formatMoney(totalRMB)}</span></span>
                         <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="$${formatMoney(totalRMB * rates.USD)}">$${formatMoney(totalRMB * rates.USD)}</span></span>
-                        <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="鈧?{formatMoney(totalRMB * rates.EUR)}">鈧?{formatMoney(totalRMB * rates.EUR)}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="€${formatMoney(totalRMB * rates.EUR)}">€${formatMoney(totalRMB * rates.EUR)}</span></span>
                         <span class="flex items-center gap-2"><span class="gas-tag">CAD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="C$${formatMoney(totalRMB * rates.CAD)}">C$${formatMoney(totalRMB * rates.CAD)}</span></span>
-                        <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="鈧?{formatMoney(totalRMB * rates.RUB)}">鈧?{formatMoney(totalRMB * rates.RUB)}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold money-val" data-val="₽${formatMoney(totalRMB * rates.RUB)}">₽${formatMoney(totalRMB * rates.RUB)}</span></span>
                     </div>
                 </div>
 
@@ -789,11 +791,11 @@
                 const isH = item.isHeader;
                 const isInc = item.price === -1;
                 
-                const rawRmb = isInc ? d.included : `楼${formatMoney(item.price)}`;
+                const rawRmb = isInc ? d.included : `¥${formatMoney(item.price)}`;
                 const rawUsd = isInc ? "-" : `$${formatMoney(item.price * rates.USD)}`;
-                const rawEur = isInc ? "-" : `鈧?{formatMoney(item.price * rates.EUR)}`;
+                const rawEur = isInc ? "-" : `€${formatMoney(item.price * rates.EUR)}`;
                 const rawCad = isInc ? "-" : `C$${formatMoney(item.price * rates.CAD)}`;
-                const rawRub = isInc ? "-" : `鈧?{formatMoney(item.price * rates.RUB)}`;
+                const rawRub = isInc ? "-" : `₽${formatMoney(item.price * rates.RUB)}`;
                 
                 const htmlRmb = isInc ? `<span class="text-[var(--text-muted)] text-xs">${d.included}</span>` : formatMoney(item.price);
                 const htmlUsd = isInc ? `<span class="text-[#333333]">-</span>` : formatMoney(item.price * rates.USD);
