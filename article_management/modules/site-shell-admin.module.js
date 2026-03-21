@@ -10,7 +10,7 @@ import {
     normalizeSiteShellConfig,
     resetSiteShellConfigCache,
     savePublishedSiteShellConfig,
-} from './site-shell.module.js?v=20260321site04';
+} from './site-shell.module.js?v=20260321site05';
 
 const moduleState = {
     draft: null,
@@ -23,7 +23,7 @@ const moduleState = {
     lastSavedAt: '',
     expanded: new Set(),
     deps: null,
-    bound: false,
+    boundContent: null,
 };
 
 const SHARED_TEXT_FIELDS = [
@@ -1275,8 +1275,8 @@ function bindEditor(deps) {
     const content = document.getElementById('ams-content');
     if (!content) return;
     moduleState.deps = deps;
-    if (moduleState.bound) return;
-    moduleState.bound = true;
+    if (moduleState.boundContent === content) return;
+    moduleState.boundContent = content;
 
     content.addEventListener('input', (event) => {
         const runtimeDeps = moduleState.deps;
