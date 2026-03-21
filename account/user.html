@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/shared/ui/site-shell.config.js?v=20260321auth02"></script>
     <script src="/shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
@@ -49,14 +50,6 @@
                 linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             background-size: 30px 30px;
-        }
-        .header-glass {
-            background: rgba(5, 5, 5, 0.9);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-        .drawer-transition {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .field {
             width: 100%;
@@ -109,40 +102,7 @@
     </style>
 </head>
 <body class="flex min-h-screen flex-col overflow-x-hidden">
-
-    <header class="fixed top-0 z-50 h-16 w-full header-glass">
-        <div class="mx-auto flex h-full max-w-[1600px] items-center justify-between px-6">
-            <div class="flex h-full items-center gap-8">
-                <a href="/index.html" class="group flex items-center gap-1">
-                    <div class="flex flex-col justify-center -space-y-1">
-                        <span class="font-header text-2xl font-bold tracking-tighter text-white transition-colors group-hover:text-gas-green">GasGx</span>
-                        <span class="pl-0.5 text-[9px] font-bold uppercase leading-none tracking-[0.2em] text-gas-green">NATURAL GAS POWER</span>
-                    </div>
-                </a>
-                <nav class="ml-4 hidden h-full items-center gap-1 border-l border-white/5 pl-6 lg:flex">
-                    <a href="/index.html" class="rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide text-gray-400 transition-colors hover:text-white">Home</a>
-                    <a href="/news/" class="rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide text-gray-400 transition-colors hover:text-white">News</a>
-                </nav>
-            </div>
-            <button type="button" onclick="toggleGlobalMenu()" class="flex h-8 w-8 items-center justify-center text-xl text-white transition-colors hover:text-gas-green lg:hidden">
-                <i class="fa-solid fa-bars"></i>
-            </button>
-        </div>
-    </header>
-
-    <div id="global-menu-overlay" onclick="toggleGlobalMenu()" class="fixed inset-0 z-[65] hidden bg-black/60 backdrop-blur-sm lg:hidden"></div>
-    <div id="global-mobile-menu" class="drawer-transition fixed right-0 top-0 bottom-0 z-[70] flex w-64 translate-x-full flex-col border-l border-white/10 bg-[#0F0F0F]/95 px-6 pt-6 shadow-2xl backdrop-blur-xl lg:hidden">
-        <div class="mb-8 flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-widest text-gray-500">Menu</span>
-            <button type="button" onclick="toggleGlobalMenu()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-xmark text-xl"></i>
-            </button>
-        </div>
-        <div class="space-y-4">
-            <a href="/index.html" class="flex items-center gap-3 border-b border-white/5 py-2 text-sm font-bold text-gray-300 transition-colors hover:text-gas-green"><i class="fa-solid fa-house w-5 text-center"></i> Home</a>
-            <a href="/news/" class="flex items-center gap-3 border-b border-white/5 py-2 text-sm font-bold text-gray-300 transition-colors hover:text-gas-green"><i class="fa-solid fa-newspaper w-5 text-center"></i> News</a>
-        </div>
-    </div>
+    <div id="ggx-site-header-slot"></div>
 
     <main class="relative flex flex-1 flex-col items-center justify-center p-4 pt-20">
         <div id="toast-container" class="fixed right-5 top-20 z-[100] flex flex-col gap-2 pointer-events-none"></div>
@@ -204,7 +164,11 @@
             </div>
         </div>
     </main>
+    <div id="ggx-site-footer-slot"></div>
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
 
+    <script src="/shared/ui/site-shell.shared.js?v=20260322logout01"></script>
     <script>
         const HOME_SHELL_SITE_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
         const MAIN_AUTH_HELPER = window.GasGxMainAuthShared;
@@ -216,18 +180,6 @@
         const gxClient = window.supabase ? MAIN_AUTH_HELPER.createClient(window.supabase, MAIN_AUTH_CONFIG) : null;
 
         let isSignUp = false;
-
-        window.toggleGlobalMenu = function() {
-            const menu = document.getElementById('global-mobile-menu');
-            const overlay = document.getElementById('global-menu-overlay');
-            if (menu.classList.contains('translate-x-full')) {
-                menu.classList.remove('translate-x-full');
-                overlay.classList.remove('hidden');
-            } else {
-                menu.classList.add('translate-x-full');
-                overlay.classList.add('hidden');
-            }
-        };
 
         function getAuthRedirectUrl() {
             return new URL(SIGN_IN_URL, window.location.origin).toString();
