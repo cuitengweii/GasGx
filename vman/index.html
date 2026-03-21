@@ -238,6 +238,11 @@
             visibility: hidden;
         }
 
+        body.is-readonly #share-group,
+        body.is-readonly .doc-send-btn {
+            display: none !important;
+        }
+
         .access-gate-overlay {
             position: fixed;
             inset: 0;
@@ -320,6 +325,12 @@
 
         .share-inline-field .share-input {
             flex: 1;
+        }
+
+        #share-passcode-output::placeholder {
+            font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Heiti SC', sans-serif;
+            letter-spacing: normal;
+            text-transform: none;
         }
 
         @media (max-width: 767px) {
@@ -670,7 +681,7 @@
             supplier: "供应商：",
             sender: "发件人：",
             receiver: "收件人：",
-            validity: "有效期：",
+            validity: "报价有效期：",
             update: "SYS_TIME_SYNC",
             part1_line1: "[ BLOCK 01 ]",
             part1_line2: "燃气发电 + 矿机机位模块方案",
@@ -714,8 +725,6 @@
             shareCustomExpired: "自定义到期时间必须晚于当前时间。",
             shareGenerateError: "分享链接生成失败，请稍后重试。",
             sharePasscodeCopiedFormat: "分享链接：{link}\n提取码：{code}",
-            validityAdmin: "ADMIN-ALWAYS",
-            validityNever: "NEVER",
             accessCheckingTitle: "正在验证访问权限...",
             accessCheckingMessage: "正在检查分享链接和管理员登录状态，请稍候。",
             accessAllowedTitle: "访问已授权",
@@ -746,7 +755,7 @@
             supplier: "SUPPLIER:",
             sender: "SENDER:",
             receiver: "RECEIVER:",
-            validity: "VALIDITY:",
+            validity: "QUOTATION VALIDITY:",
             update: "SYS_TIME_SYNC",
             part1_line1: "[ BLOCK 01 ]",
             part1_line2: "GAS GENSET + MINER RACK MODULE",
@@ -790,8 +799,6 @@
             shareCustomExpired: "The custom expiration time must be later than now.",
             shareGenerateError: "Failed to generate the share link. Try again later.",
             sharePasscodeCopiedFormat: "Share link: {link}\nPasscode: {code}",
-            validityAdmin: "ADMIN-ALWAYS",
-            validityNever: "NEVER",
             accessCheckingTitle: "Checking access...",
             accessCheckingMessage: "Verifying share token and admin session. Please wait.",
             accessAllowedTitle: "Access granted",
@@ -822,7 +829,7 @@
             supplier: "ПОСТАВЩИК:",
             sender: "ОТПРАВИТЕЛЬ:",
             receiver: "ПОЛУЧАТЕЛЬ:",
-            validity: "СРОК ДЕЙСТВИЯ:",
+            validity: "СРОК ДЕЙСТВИЯ КП:",
             update: "СИНХРОНИЗАЦИЯ",
             part1_line1: "[ БЛОК 01 ]",
             part1_line2: "ГАЗОГЕНЕРАТОР + МОДУЛЬ МАЙНИНГ-СТОЕК",
@@ -866,8 +873,6 @@
             shareCustomExpired: "Время истечения должно быть позже текущего времени.",
             shareGenerateError: "Не удалось создать ссылку. Повторите попытку позже.",
             sharePasscodeCopiedFormat: "Ссылка: {link}\nКод доступа: {code}",
-            validityAdmin: "ADMIN-ALWAYS",
-            validityNever: "NEVER",
             accessCheckingTitle: "Проверка доступа...",
             accessCheckingMessage: "Проверяем ссылку и сессию администратора. Подождите.",
             accessAllowedTitle: "Доступ разрешен",
@@ -907,6 +912,7 @@
     const shareState = {
         accessMode: 'checking',
         isAdmin: false,
+        isReadOnly: false,
         sharePayload: null,
         supabaseClient: null,
         currentShareToken: '',
@@ -1013,6 +1019,7 @@
     let currentLang = 'zh';
     let rates = { USD: 0.1398, EUR: 0.1265, CAD: 0.1888, RUB: 12.866 };
     let countdownTarget = null;
+    let quoteValidityTarget = Date.now() + DAY_MS * 3;
     let clockTimer = null;
 
     function normalizeEmail(value) {
@@ -1114,11 +1121,13 @@
     }
 
     async function buildShareToken(expiresAt, passcodeHash) {
+        const issuedAt = Date.now();
         const payload = {
             v: SHARE_TOKEN_VERSION,
             path: normalizePath(location.pathname),
             exp: Number.isFinite(expiresAt) ? expiresAt : null,
-            iat: Date.now(),
+            iat: issuedAt,
+            qexp: issuedAt + DAY_MS * 3,
             ph: String(passcodeHash || ''),
         };
         const encodedPayload = bytesToBase64Url(encoder.encode(JSON.stringify(payload)));
@@ -1209,12 +1218,8 @@
         const validityEl = document.getElementById('val-validity');
         if (!validityEl) return;
 
-        if (countdownTarget == null) {
-            validityEl.innerText = shareState.isAdmin ? dict[currentLang].validityAdmin : dict[currentLang].validityNever;
-            return;
-        }
-
-        const remaining = Math.max(0, countdownTarget - Date.now());
+        const target = Number.isFinite(quoteValidityTarget) ? quoteValidityTarget : (Date.now() + DAY_MS * 3);
+        const remaining = Math.max(0, target - Date.now());
         const hoursLeft = Math.floor(remaining / (1000 * 60 * 60));
         const minutesLeft = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
         const secondsLeft = Math.floor((remaining % (1000 * 60)) / 1000);
@@ -1242,11 +1247,26 @@
         if (retryButton) retryButton.classList.toggle('hidden', mode === 'passcode');
     }
 
+    function applyReadOnlyState() {
+        const readOnly = !shareState.isAdmin;
+        shareState.isReadOnly = readOnly;
+        document.body.classList.toggle('is-readonly', readOnly);
+
+        document.querySelectorAll('[contenteditable]').forEach((element) => {
+            if (!element.dataset.editableDefault) {
+                element.dataset.editableDefault = element.getAttribute('contenteditable') === 'true' ? 'true' : 'false';
+            }
+            element.setAttribute('contenteditable', readOnly ? 'false' : element.dataset.editableDefault);
+        });
+    }
+
     function syncShareMenuState() {
         const wrap = document.getElementById('btn-menu-share-link-wrap');
         const divider = document.getElementById('share-menu-divider');
+        const shareGroup = document.getElementById('share-group');
         if (wrap) wrap.classList.toggle('hidden', !shareState.isAdmin);
         if (divider) divider.classList.toggle('hidden', !shareState.isAdmin);
+        if (shareGroup) shareGroup.classList.toggle('hidden', !shareState.isAdmin);
     }
 
     async function resolveAccess() {
@@ -1263,6 +1283,7 @@
             shareState.accessMode = 'admin';
             shareState.sharePayload = shareResult.valid ? shareResult.payload : null;
             countdownTarget = null;
+            quoteValidityTarget = Date.now() + DAY_MS * 3;
             setAccessGateState({
                 icon: 'fa-solid fa-circle-check text-[var(--gas-green-light)]',
                 title: dict[currentLang].accessAllowedTitle,
@@ -1278,6 +1299,9 @@
             shareState.accessMode = 'share';
             shareState.sharePayload = shareResult.payload;
             countdownTarget = shareResult.payload.exp == null ? null : Number(shareResult.payload.exp);
+            quoteValidityTarget = Number.isFinite(Number(shareResult.payload.qexp))
+                ? Number(shareResult.payload.qexp)
+                : (Number.isFinite(Number(shareResult.payload.iat)) ? Number(shareResult.payload.iat) + DAY_MS * 3 : Date.now() + DAY_MS * 3);
             if (!String(shareResult.payload.ph || '').trim()) {
                 setAccessGateState({
                     icon: 'fa-solid fa-circle-check text-[var(--gas-green-light)]',
@@ -1319,6 +1343,7 @@
         shareState.accessMode = 'denied';
         shareState.sharePayload = shareResult.payload || null;
         countdownTarget = null;
+        quoteValidityTarget = Date.now() + DAY_MS * 3;
 
         let message = dict[currentLang].accessDeniedGeneric;
         if (shareResult.reason === 'missing') message = dict[currentLang].accessDeniedMissing;
@@ -1351,6 +1376,7 @@
 
         const allowed = await resolveAccess();
         syncShareMenuState();
+        applyReadOnlyState();
 
         if (!allowed) {
             document.body.classList.remove('access-resolved');
@@ -1765,6 +1791,7 @@
         document.getElementById('content-area').innerHTML = html;
         
         document.getElementById('live-rates-display').innerHTML = `1 CNY <i class="fa-solid fa-arrow-right-arrow-left mx-1 text-white"></i> <span class="text-[var(--gas-green-light)]">${rates.USD.toFixed(4)} USD</span> | <span class="text-[var(--gas-green-light)]">${rates.EUR.toFixed(4)} EUR</span> | <span class="text-[var(--gas-green-light)]">${rates.CAD.toFixed(4)} CAD</span> | <span class="text-[var(--gas-green-light)]">${rates.RUB.toFixed(4)} RUB</span>`;
+        applyReadOnlyState();
     }
 
     window.updatePrice = function(secIdx, itemId, newText) {
