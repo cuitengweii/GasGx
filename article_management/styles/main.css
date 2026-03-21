@@ -82,6 +82,26 @@ textarea {
     gap: 12px;
 }
 
+.ams-auth-links {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.ams-btn.ams-btn-link {
+    border-color: transparent;
+    background: transparent;
+    color: var(--ams-green);
+    padding-inline: 0;
+}
+
+.ams-btn.ams-btn-link:hover {
+    border-color: transparent;
+    color: #fff;
+    background: transparent;
+}
+
 .ams-field {
     display: flex;
     flex-direction: column;
@@ -791,6 +811,11 @@ textarea {
     line-height: 1.4;
     color: #818181;
     word-break: break-all;
+}
+
+.ams-admin-users-table .ams-input,
+.ams-admin-users-table .ams-select {
+    min-width: 140px;
 }
 
 .ams-queue-link {

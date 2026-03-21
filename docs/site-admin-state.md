@@ -11,6 +11,9 @@
   - `主站配置`
   - `主站导航`
   - `主站 Footer`
+- `System` 模块已新增两个后台页：
+  - `人员管理`
+  - `账号安全`
 - `News` 模块原有功能仍保留：
   - 文章管理
   - 新建文章
@@ -85,11 +88,31 @@
   - 新增 / 删除 / 排序 / 类型切换：立即异步保存
 - 当前实现本质上是“每次操作都提交整份配置 JSON 到 `site_shell_configs`”
 
+### 5. 管理员账号与人员管理
+
+- 后台登录不再只依赖前端写死邮箱白名单，现已支持优先读取 Supabase 表 `admin_users`
+- 若 `admin_users` 尚未创建或当前环境仍未切换完成，后台仍会临时回退到 `ADMIN_EMAILS` 静态白名单，避免现有管理员被直接锁在门外
+- `人员管理` 页面已支持：
+  - 查看后台人员名单
+  - 添加后台人员 allowlist
+  - 选择是否同步创建 Supabase Auth 登录账号
+  - 修改姓名 / 角色 / 启用状态
+  - 向指定后台人员发送重置密码邮件
+- `账号安全` 页面已支持：
+  - 当前管理员直接修改密码
+  - 给当前账号重新发送重置密码邮件
+- 登录页已支持：
+  - `忘记密码`
+  - 通过 Supabase recovery link 进入重置密码表单
+
 ## 关键文件
 
 - `D:\code\GasGx\article_management\modules\app.bootstrap.js`
 - `D:\code\GasGx\article_management\modules\site-shell-admin.module.js`
+- `D:\code\GasGx\article_management\modules\auth.module.js`
+- `D:\code\GasGx\article_management\modules\admin-users.module.js`
 - `D:\code\GasGx\article_management\modules\site-shell.module.js`
+- `D:\code\GasGx\article_management\sql\005_admin_users.sql`
 - `D:\code\GasGx\article_management\sql\004_site_shell_configs.sql`
 - `D:\code\GasGx\shared\ui\site-shell.shared.js`
 - `D:\code\GasGx\news\shared\modules\layout.shared.js`
@@ -100,9 +123,11 @@
 - 导航编辑器当前使用 `Up / Down` 排序，还没有拖拽排序
 - 当前站点后台虽然已经收窄为更常规的双栏布局，但导航编辑器仍然是“树 + 内联表单”模式，尚未升级为“左侧树 + 右侧属性面板”
 - `site_shell_configs` 建表脚本已执行；后续新增字段无需再改单独 SQL，只需保持 JSON schema 与前台消费同步
+- `admin_users` 需要执行 `005_admin_users.sql` 后，人员管理与数据库 allowlist 才能进入正式态；未执行时仍只会回退到静态管理员邮箱
 
 ## Next Step
 
 1. 继续把 `Site` 模块从首页 / About 页面级配置扩展到更多栏目页、专题页和模块页配置
 2. 优先梳理哪些主站页面仍在各自 HTML / JS 中维护散落文案与 meta，再逐步收口到 `site_shell_configs`
 3. 将当前导航与页脚编辑器从“树 + 内联表单”继续升级为“左侧树 + 右侧属性面板”，减少纵向滚动与重复展开操作
+4. 将后台人员管理从 allowlist + 自助密码能力继续升级到更完整的邀请制或服务端 Admin API，减少前端侧账号开通约束

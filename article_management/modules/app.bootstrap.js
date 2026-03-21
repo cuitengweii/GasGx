@@ -1,5 +1,16 @@
 ﻿
-import { getCurrentSession, getDisplayName, isAdminUser, onAuthStateChange, signInWithPassword, signOut } from './auth.module.js';
+import {
+    clearPasswordRecoveryUrl,
+    getAdminUserAccess,
+    getCurrentSession,
+    getDisplayName,
+    isPasswordRecoveryMode,
+    onAuthStateChange,
+    sendPasswordResetEmail,
+    signInWithPassword,
+    signOut,
+    updateCurrentPassword,
+} from './auth.module.js?v=20260321admin01';
 import {
     ARTICLE_TYPE_OPTIONS,
     batchUpdateArticleStatus,
@@ -25,8 +36,9 @@ import {
     rejectQueueItem,
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
+import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260321admin01';
 import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260321site07';
-import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js';
+import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js?v=20260321admin01';
 
 const HOMEPAGE_MARK_LIMIT = Number.isFinite(Number(featuredApi.HOMEPAGE_MARK_LIMIT)) ? Number(featuredApi.HOMEPAGE_MARK_LIMIT) : 3;
 const fetchFeaturedPool = typeof featuredApi.fetchFeaturedPool === 'function' ? featuredApi.fetchFeaturedPool : async () => [];
@@ -124,7 +136,9 @@ function createEditorState(mode = 'create', id = null, payload = null, extra = {
 const state = {
     session: null,
     user: null,
+    adminAccess: null,
     page: 'dashboard',
+    authView: 'login',
     articles: { page: 1, pageSize: 20, search: '', status: 'all', tag: 'all', category: 'all' },
     recycle: { page: 1, pageSize: 20, search: '' },
     editor: createEditorState(),
@@ -789,26 +803,76 @@ window.addEventListener('beforeunload', (event) => {
 });
 
 function renderLogin() {
+    const authView = state.authView === 'forgot' || state.authView === 'reset' ? state.authView : 'login';
+    const isResetView = authView === 'reset';
+    const isForgotView = authView === 'forgot';
     root.innerHTML = `
         <section class="ams-auth-shell">
             <div class="ams-auth-card">
                 <h1 class="ams-logo">GasGx <span>AMS</span></h1>
-                <p class="ams-subtitle">文章管理后台 · 仅管理员可访问</p>
-                <form id="ams-login-form" class="ams-form">
-                    <div class="ams-field">
-                        <label>邮箱</label>
-                        <input id="ams-login-email" class="ams-input" type="email" placeholder="请输入管理员邮箱" required>
+                <p class="ams-subtitle">网站管理后台 · 仅允许后台人员登录</p>
+                ${
+                    isResetView
+                        ? `
+                    <form id="ams-reset-form" class="ams-form">
+                        <div class="ams-field">
+                            <label>新密码</label>
+                            <input id="ams-reset-password" class="ams-input" type="password" placeholder="至少 8 位" required>
+                        </div>
+                        <div class="ams-field">
+                            <label>确认新密码</label>
+                            <input id="ams-reset-password-confirm" class="ams-input" type="password" placeholder="再次输入新密码" required>
+                        </div>
+                        <button class="ams-btn ams-btn-primary" type="submit">保存新密码</button>
+                    </form>
+                    <div class="ams-auth-links">
+                        <button class="ams-btn ams-btn-muted" type="button" data-auth-view="login">返回登录</button>
                     </div>
-                    <div class="ams-field">
-                        <label>密码</label>
-                        <input id="ams-login-password" class="ams-input" type="password" placeholder="••••••••" required>
+                    <p class="ams-footnote">这是通过找回密码邮件进入的重置页。保存后会自动退出，请用新密码重新登录。</p>
+                `
+                        : isForgotView
+                          ? `
+                    <form id="ams-forgot-form" class="ams-form">
+                        <div class="ams-field">
+                            <label>邮箱</label>
+                            <input id="ams-forgot-email" class="ams-input" type="email" placeholder="请输入管理员邮箱" required>
+                        </div>
+                        <button class="ams-btn ams-btn-primary" type="submit">发送重置邮件</button>
+                    </form>
+                    <div class="ams-auth-links">
+                        <button class="ams-btn ams-btn-muted" type="button" data-auth-view="login">返回登录</button>
                     </div>
-                    <button class="ams-btn ams-btn-primary" type="submit">登录</button>
-                </form>
-                <p class="ams-footnote">使用 Supabase Auth 登录，密码不写死在前端。</p>
+                    <p class="ams-footnote">系统会把重置链接发到该邮箱。只有后台人员名单中的账号才允许登录后台。</p>
+                `
+                          : `
+                    <form id="ams-login-form" class="ams-form">
+                        <div class="ams-field">
+                            <label>邮箱</label>
+                            <input id="ams-login-email" class="ams-input" type="email" placeholder="请输入管理员邮箱" required>
+                        </div>
+                        <div class="ams-field">
+                            <label>密码</label>
+                            <input id="ams-login-password" class="ams-input" type="password" placeholder="••••••••" required>
+                        </div>
+                        <button class="ams-btn ams-btn-primary" type="submit">登录</button>
+                    </form>
+                    <div class="ams-auth-links">
+                        <button class="ams-btn ams-btn-link" type="button" data-auth-view="forgot">忘记密码</button>
+                    </div>
+                    <p class="ams-footnote">使用 Supabase Auth 登录，后台人员权限由 admin_users 名单控制。</p>
+                `
+                }
             </div>
         </section>
     `;
+
+    document.querySelectorAll('[data-auth-view]').forEach((button) => {
+        button.addEventListener('click', () => {
+            state.authView = button.dataset.authView || 'login';
+            if (state.authView === 'login') clearPasswordRecoveryUrl();
+            renderLogin();
+        });
+    });
 
     document.getElementById('ams-login-form')?.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -821,6 +885,40 @@ function renderLogin() {
                 showToast('登录成功。');
             } catch (error) {
                 showToast(error.message || '登录失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-forgot-form')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const email = document.getElementById('ams-forgot-email')?.value || '';
+        const submitButton = event.submitter || event.currentTarget?.querySelector('button[type="submit"]');
+        await withButtonBusy(submitButton, '发送中...', async () => {
+            try {
+                await sendPasswordResetEmail(email);
+                showToast('重置密码邮件已发送。');
+            } catch (error) {
+                showToast(error.message || '发送重置密码邮件失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-reset-form')?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const nextPassword = document.getElementById('ams-reset-password')?.value || '';
+        const confirmPassword = document.getElementById('ams-reset-password-confirm')?.value || '';
+        const submitButton = event.submitter || event.currentTarget?.querySelector('button[type="submit"]');
+        await withButtonBusy(submitButton, '保存中...', async () => {
+            try {
+                if (nextPassword !== confirmPassword) throw new Error('两次输入的新密码不一致。');
+                await updateCurrentPassword(nextPassword);
+                clearPasswordRecoveryUrl();
+                await signOut();
+                state.authView = 'login';
+                renderLogin();
+                showToast('密码已重置，请使用新密码重新登录。');
+            } catch (error) {
+                showToast(error.message || '重置密码失败。', true);
             }
         });
     });
@@ -841,7 +939,7 @@ function navGroup(label, items = []) {
 }
 
 function renderShell() {
-    const name = esc(getDisplayName(state.user));
+    const name = esc(getDisplayName(state.user, state.adminAccess?.row || null));
     root.innerHTML = `
         <div class="ams-app">
             <aside class="ams-sidebar">
@@ -854,7 +952,11 @@ function renderShell() {
                     ${navGroup('Site', [
                         navButton('site-general', '主站配置', 'fa-sliders'),
                         navButton('site-navigation', '主站导航', 'fa-compass'),
-                        navButton('site-footer', '主站 Footer', 'fa-window-maximize'),
+                        navButton('site-footer', '主站页脚', 'fa-window-maximize'),
+                    ])}
+                    ${navGroup('System', [
+                        navButton('admin-users', '人员管理', 'fa-users-gear'),
+                        navButton('admin-security', '账号安全', 'fa-user-shield'),
                     ])}
                     ${navGroup('News', [
                         navButton('articles', '文章管理', 'fa-file-lines'),
@@ -2647,8 +2749,18 @@ async function renderQueue(forceRefresh = false) {
     syncQueueBulkToolbar();
 }
 
+async function refreshAdminAccess(forceRefresh = false) {
+    if (!state.user) {
+        state.adminAccess = null;
+        return false;
+    }
+    state.adminAccess = await getAdminUserAccess(state.user, { forceRefresh });
+    return state.adminAccess?.allowed === true;
+}
+
 async function renderPage() {
-    if (!state.user || !isAdminUser(state.user)) {
+    if (!state.user || !(await refreshAdminAccess(false))) {
+        state.authView = isPasswordRecoveryMode() ? 'reset' : 'login';
         renderLogin();
         return;
     }
@@ -2686,6 +2798,22 @@ async function renderPage() {
             withButtonBusy,
             rerender: () => renderPage(),
         });
+        else if (state.page === 'admin-users') await renderAdminUsersPage({
+            user: state.user,
+            setPageHeader,
+            setContent,
+            showToast,
+            withButtonBusy,
+            rerender: () => renderPage(),
+        });
+        else if (state.page === 'admin-security') await renderAdminSecurityPage({
+            user: state.user,
+            setPageHeader,
+            setContent,
+            showToast,
+            withButtonBusy,
+            rerender: () => renderPage(),
+        });
         else if (state.page === 'articles') await renderArticles();
         else if (state.page === 'editor') await renderEditor();
         else if (state.page === 'recycle') await renderRecycleBin();
@@ -2705,20 +2833,36 @@ async function boot() {
         state.session = session;
         state.user = session?.user || null;
 
-        if (!state.user || !isAdminUser(state.user)) renderLogin();
-        else await renderPage();
+        if (isPasswordRecoveryMode()) {
+            state.authView = 'reset';
+            renderLogin();
+        } else if (!state.user || !(await refreshAdminAccess(true))) {
+            state.authView = 'login';
+            renderLogin();
+        } else {
+            state.authView = 'login';
+            await renderPage();
+        }
 
-        onAuthStateChange(async (nextSession) => {
+        onAuthStateChange(async (event, nextSession) => {
             state.session = nextSession;
             state.user = nextSession?.user || null;
-            if (!state.user || !isAdminUser(state.user)) {
+            if (event === 'PASSWORD_RECOVERY' || isPasswordRecoveryMode()) {
+                state.authView = 'reset';
                 renderLogin();
                 return;
             }
+            if (!state.user || !(await refreshAdminAccess(true))) {
+                state.authView = 'login';
+                renderLogin();
+                return;
+            }
+            state.authView = 'login';
             await renderPage();
         });
     } catch (error) {
         console.error(error);
+        state.authView = isPasswordRecoveryMode() ? 'reset' : 'login';
         renderLogin();
         showToast(error.message || '初始化失败。', true);
     }
