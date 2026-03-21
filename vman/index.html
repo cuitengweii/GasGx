@@ -754,31 +754,11 @@
         const d = dict[currentLang];
         let html = '';
 
-        const buildSection = (titleStr, descStr, itemsList, idx) => {
+        const buildSection = (descStr, itemsList, idx) => {
             let totalRMB = itemsList.filter(i => !i.isHeader && i.price > 0).reduce((sum, i) => sum + i.price, 0);
             
             let secHtml = `
             <div class="mb-10 md:mb-16">
-                ${idx === 1 ? `
-                <div class="mb-8 md:mb-12 flex flex-col items-center justify-center w-full gap-1 md:gap-3">
-                    <h2 class="text-2xl md:text-4xl font-black text-[var(--gas-green-light)] tracking-widest text-center uppercase" contenteditable="true">${d.part1_line1}</h2>
-                    <div class="flex items-center gap-2 md:gap-4 w-full">
-                        <div class="h-px bg-[var(--border-color)] flex-1 min-w-[20px]"></div>
-                        <h2 class="text-base md:text-2xl font-bold text-[var(--gas-green-light)] tracking-widest text-center flex-shrink" contenteditable="true" style="white-space: normal; word-break: break-word;">${d.part1_line2}</h2>
-                        <div class="h-px bg-[var(--border-color)] flex-1 min-w-[20px]"></div>
-                    </div>
-                </div>` : ''}
-                ${idx === 3 ? `
-                <div class="mt-16 md:mt-24 mb-8 md:mb-12 flex flex-col items-center justify-center w-full gap-1 md:gap-3">
-                    <h2 class="text-2xl md:text-4xl font-black text-[var(--gas-green-light)] tracking-widest text-center uppercase" contenteditable="true">${d.part2_line1}</h2>
-                    <div class="flex items-center gap-2 md:gap-4 w-full">
-                        <div class="h-px bg-[var(--border-color)] flex-1 min-w-[20px]"></div>
-                        <h2 class="text-base md:text-2xl font-bold text-[var(--gas-green-light)] tracking-widest text-center flex-shrink" contenteditable="true" style="white-space: normal; word-break: break-word;">${d.part2_line2}</h2>
-                        <div class="h-px bg-[var(--border-color)] flex-1 min-w-[20px]"></div>
-                    </div>
-                </div>` : ''}
-                
-                ${idx !== 2 ? `
                 <h3 class="text-base md:text-lg font-semibold text-[var(--gas-green-light)] mb-4 md:mb-5 flex items-center gap-2 md:gap-3" contenteditable="true">
                     <span class="bg-[var(--gas-green-bg)] border border-[var(--gas-green-primary)] text-[var(--gas-green-light)] w-6 h-6 md:w-7 md:h-7 rounded flex items-center justify-center text-xs md:text-sm font-mono-num flex-shrink-0">${idx}</span>
                     <span class="leading-tight">${descStr[currentLang] || descStr.zh}</span>
@@ -848,8 +828,8 @@
             html += secHtml;
         };
 
-        buildSection(d.part2, appData.part2.desc, appData.part2.items1, 3);
-        buildSection("", appData.part2.desc2, appData.part2.items2, 4);
+        buildSection(appData.part2.desc, appData.part2.items1, 1);
+        buildSection(appData.part2.desc2, appData.part2.items2, 2);
 
         document.getElementById('content-area').innerHTML = html;
         
