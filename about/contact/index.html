@@ -93,12 +93,12 @@
             </div>
 
             <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                <div class="gas-card gas-card-hover rounded-xl p-8 flex flex-col items-center text-center group cursor-pointer" onclick="window.location.href='mailto:contact@gasgx.com'">
+                <div id="contact-email-card" class="gas-card gas-card-hover rounded-xl p-8 flex flex-col items-center text-center group cursor-pointer" onclick="window.app.openMail()">
                     <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mb-6 text-gas-green border border-gas-green/20 group-hover:bg-gas-green group-hover:text-black transition-colors">
                         <i class="fa-solid fa-envelope text-2xl"></i>
                     </div>
                     <h3 class="text-xl font-bold text-white mb-2" data-i18n="contact_email">Email Us</h3>
-                    <p class="text-gas-green font-mono text-lg mb-4">contact@gasgx.com</p>
+                    <p id="contact-email-value" class="text-gas-green font-mono text-lg mb-4">contact@gasgx.com</p>
                     <span class="text-xs text-gas-subtext" data-i18n="email_desc">Click to send mail directly</span>
                 </div>
 
@@ -156,7 +156,7 @@
     </div>
 
     <script>
-        const I18N_DATA = {
+        const BASE_I18N_DATA = {
             'zh': {
                 'tagline': '天然气发电挖矿助手',
                 'nav_home': '首页',
@@ -213,6 +213,67 @@
             }
         };
 
+        const DEFAULT_ABOUT_CONTACT_CONFIG = {
+            meta: {
+                title: {
+                    zh: 'Contact GasGx | 联系我们',
+                    en: 'Contact GasGx | Get in Touch',
+                    ru: 'Contact GasGx | Связаться с нами'
+                }
+            },
+            texts: { zh: {}, en: {}, ru: {} },
+            contactEmail: 'contact@gasgx.com'
+        };
+
+        function cloneJson(value) {
+            return JSON.parse(JSON.stringify(value || null));
+        }
+
+        function normalizeLang(lang) {
+            const value = String(lang || '').toLowerCase();
+            if (value.startsWith('zh')) return 'zh';
+            if (value.startsWith('ru')) return 'ru';
+            return 'en';
+        }
+
+        function mergeLocalized(baseValue = {}, sourceValue = {}) {
+            return {
+                zh: sourceValue.zh || baseValue.zh || '',
+                en: sourceValue.en || baseValue.en || '',
+                ru: sourceValue.ru || baseValue.ru || ''
+            };
+        }
+
+        function getAboutContactConfig() {
+            const source = window.GASGX_SITE_SHELL_CONFIG?.pages?.aboutContact || {};
+            return {
+                meta: {
+                    title: mergeLocalized(DEFAULT_ABOUT_CONTACT_CONFIG.meta.title, source.meta?.title || {})
+                },
+                texts: {
+                    zh: { ...(DEFAULT_ABOUT_CONTACT_CONFIG.texts.zh || {}), ...(source.texts?.zh || {}) },
+                    en: { ...(DEFAULT_ABOUT_CONTACT_CONFIG.texts.en || {}), ...(source.texts?.en || {}) },
+                    ru: { ...(DEFAULT_ABOUT_CONTACT_CONFIG.texts.ru || {}), ...(source.texts?.ru || {}) }
+                },
+                contactEmail: source.contactEmail || DEFAULT_ABOUT_CONTACT_CONFIG.contactEmail
+            };
+        }
+
+        function getLocalizedValue(value, lang, fallback = '') {
+            if (typeof value === 'string') return value || fallback;
+            const safeLang = normalizeLang(lang);
+            return value?.[safeLang] || value?.en || value?.zh || value?.ru || fallback;
+        }
+
+        function buildAboutContactI18n(config) {
+            const base = cloneJson(BASE_I18N_DATA) || {};
+            ['zh', 'en', 'ru'].forEach((lang) => {
+                if (!base[lang] || typeof base[lang] !== 'object') base[lang] = {};
+                base[lang] = { ...base[lang], ...(config.texts?.[lang] || {}) };
+            });
+            return base;
+        }
+
         const QR_ASSETS = {
             'wechat': 'assets/qr_wechat.png',
             'telegram': 'assets/qr_telegram.png',
@@ -230,7 +291,11 @@
             setLanguage(lang) {
                 this.lang = lang;
                 localStorage.setItem('gas_lang', lang);
-                const dict = I18N_DATA[lang] || I18N_DATA['en'];
+                const config = getAboutContactConfig();
+                const i18n = buildAboutContactI18n(config);
+                const safeLang = normalizeLang(lang);
+                const dict = i18n[safeLang] || i18n.en;
+                document.title = getLocalizedValue(config.meta.title, safeLang, document.title);
 
                 // 修复：更安全地更新按钮状态
                 const langs = ['zh', 'en', 'ru'];
@@ -264,6 +329,14 @@
                         }
                     }
                 });
+
+                const contactEmailValue = document.getElementById('contact-email-value');
+                if (contactEmailValue) contactEmailValue.innerText = config.contactEmail || 'contact@gasgx.com';
+            },
+
+            openMail() {
+                const config = getAboutContactConfig();
+                window.location.href = `mailto:${config.contactEmail || 'contact@gasgx.com'}`;
             },
 
             showQR(platform, title) {
@@ -327,6 +400,11 @@
         } else {
             window.app.init();
         }
+        document.addEventListener('gasgx:site-shell-config-updated', () => {
+            if (window.app && typeof window.app.setLanguage === 'function') {
+                window.app.setLanguage(window.app.lang || 'en');
+            }
+        });
     </script>
 
     <div id="ggx-back-to-top-slot"></div>

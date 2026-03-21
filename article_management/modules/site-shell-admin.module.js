@@ -26,6 +26,80 @@ const moduleState = {
     bound: false,
 };
 
+const SHARED_TEXT_FIELDS = [
+    { key: 'tagline', label: 'Header Tagline' },
+    { key: 'footerTagline', label: 'Footer Tagline' },
+    { key: 'strategicPartners', label: 'Partners Label' },
+    { key: 'contactUs', label: 'Contact Label' },
+    { key: 'privacyPolicy', label: 'Privacy Label' },
+    { key: 'authLogin', label: 'Login Label' },
+    { key: 'authLogout', label: 'Logout Label' },
+    { key: 'account', label: 'Account Label' },
+    { key: 'welcome', label: 'Welcome Prefix' },
+    { key: 'languageEnglish', label: 'English Button' },
+    { key: 'languageChinese', label: 'Chinese Button' },
+];
+
+const HOME_PAGE_LOCALIZED_FIELDS = [
+    { path: 'pages.home.meta.title', label: 'HTML Title' },
+    { path: 'pages.home.meta.description', label: 'Meta Description' },
+    { path: 'pages.home.heroCard.label', label: 'Scope Label' },
+    { path: 'pages.home.heroCard.unit', label: 'Scope Unit' },
+    { path: 'pages.home.map.loadingText', label: 'Map Loading' },
+    { path: 'pages.home.map.rotateHint', label: 'Rotate Hint' },
+    { path: 'pages.home.ranking.title', label: 'Ranking Title' },
+    { path: 'pages.home.ranking.legendLegal', label: 'Legend Legal' },
+    { path: 'pages.home.ranking.legendRestricted', label: 'Legend Restricted' },
+    { path: 'pages.home.ranking.legendBanned', label: 'Legend Banned' },
+    { path: 'pages.home.capture.modalTitle', label: 'Capture Modal Title' },
+    { path: 'pages.home.capture.modalDescription', label: 'Capture Modal Description' },
+    { path: 'pages.home.capture.closeLabel', label: 'Capture Close Label' },
+    { path: 'pages.home.capture.qrSubtitle', label: 'QR Subtitle' },
+    { path: 'pages.home.capture.qrHint', label: 'QR Hint' },
+    { path: 'pages.home.capture.watermarkTagline', label: 'Watermark Tagline' },
+];
+
+const ABOUT_COMPANY_LOCALIZED_FIELDS = [
+    { path: 'pages.aboutCompany.meta.title', label: 'Page Title' },
+    { path: 'pages.aboutCompany.texts.zh.hero_badge', label: 'Hero Badge (ZH)', direct: true },
+    { path: 'pages.aboutCompany.texts.en.hero_badge', label: 'Hero Badge (EN)', direct: true },
+    { path: 'pages.aboutCompany.texts.ru.hero_badge', label: 'Hero Badge (RU)', direct: true },
+    { path: 'pages.aboutCompany.texts.zh.hero_title_1', label: 'Hero Title 1 (ZH)', direct: true },
+    { path: 'pages.aboutCompany.texts.en.hero_title_1', label: 'Hero Title 1 (EN)', direct: true },
+    { path: 'pages.aboutCompany.texts.ru.hero_title_1', label: 'Hero Title 1 (RU)', direct: true },
+    { path: 'pages.aboutCompany.texts.zh.hero_title_2', label: 'Hero Title 2 (ZH)', direct: true },
+    { path: 'pages.aboutCompany.texts.en.hero_title_2', label: 'Hero Title 2 (EN)', direct: true },
+    { path: 'pages.aboutCompany.texts.ru.hero_title_2', label: 'Hero Title 2 (RU)', direct: true },
+    { path: 'pages.aboutCompany.texts.zh.hero_desc', label: 'Hero Description (ZH)', direct: true },
+    { path: 'pages.aboutCompany.texts.en.hero_desc', label: 'Hero Description (EN)', direct: true },
+    { path: 'pages.aboutCompany.texts.ru.hero_desc', label: 'Hero Description (RU)', direct: true },
+    { path: 'pages.aboutCompany.texts.zh.cta_title', label: 'CTA Title (ZH)', direct: true },
+    { path: 'pages.aboutCompany.texts.en.cta_title', label: 'CTA Title (EN)', direct: true },
+    { path: 'pages.aboutCompany.texts.ru.cta_title', label: 'CTA Title (RU)', direct: true },
+    { path: 'pages.aboutCompany.texts.zh.cta_desc', label: 'CTA Description (ZH)', direct: true },
+    { path: 'pages.aboutCompany.texts.en.cta_desc', label: 'CTA Description (EN)', direct: true },
+    { path: 'pages.aboutCompany.texts.ru.cta_desc', label: 'CTA Description (RU)', direct: true },
+];
+
+const ABOUT_CONTACT_LOCALIZED_FIELDS = [
+    { path: 'pages.aboutContact.meta.title', label: 'Page Title' },
+    { path: 'pages.aboutContact.texts.zh.page_badge', label: 'Page Badge (ZH)', direct: true },
+    { path: 'pages.aboutContact.texts.en.page_badge', label: 'Page Badge (EN)', direct: true },
+    { path: 'pages.aboutContact.texts.ru.page_badge', label: 'Page Badge (RU)', direct: true },
+    { path: 'pages.aboutContact.texts.zh.page_title', label: 'Page Title Copy (ZH)', direct: true },
+    { path: 'pages.aboutContact.texts.en.page_title', label: 'Page Title Copy (EN)', direct: true },
+    { path: 'pages.aboutContact.texts.ru.page_title', label: 'Page Title Copy (RU)', direct: true },
+    { path: 'pages.aboutContact.texts.zh.page_desc', label: 'Page Description (ZH)', direct: true },
+    { path: 'pages.aboutContact.texts.en.page_desc', label: 'Page Description (EN)', direct: true },
+    { path: 'pages.aboutContact.texts.ru.page_desc', label: 'Page Description (RU)', direct: true },
+    { path: 'pages.aboutContact.texts.zh.social_hint', label: 'Social Hint (ZH)', direct: true },
+    { path: 'pages.aboutContact.texts.en.social_hint', label: 'Social Hint (EN)', direct: true },
+    { path: 'pages.aboutContact.texts.ru.social_hint', label: 'Social Hint (RU)', direct: true },
+    { path: 'pages.aboutContact.texts.zh.scan_hint', label: 'QR Hint (ZH)', direct: true },
+    { path: 'pages.aboutContact.texts.en.scan_hint', label: 'QR Hint (EN)', direct: true },
+    { path: 'pages.aboutContact.texts.ru.scan_hint', label: 'QR Hint (RU)', direct: true },
+];
+
 function esc(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -141,6 +215,11 @@ function isExpanded(key, fallback = false) {
 
 function expandDefaults(config) {
     const navList = Array.isArray(config.navigation) ? config.navigation : [];
+    setExpanded('site:brand', true);
+    setExpanded('site:shared-text', true);
+    setExpanded('site:home', true);
+    setExpanded('site:about-company', true);
+    setExpanded('site:about-contact', true);
     if (navList.length) {
         setExpanded('nav:0', true);
         if (navList[0]?.type === 'menu') setExpanded('nav:0:children', true);
@@ -306,6 +385,80 @@ function renderFooterPreview(config) {
     `;
 }
 
+function renderGeneralPreview(config) {
+    const site = config.site || {};
+    const aboutCompany = config.pages?.aboutCompany || {};
+    const aboutContact = config.pages?.aboutContact || {};
+    const brand = site.brand || {};
+    const features = site.features || {};
+    const mainAuth = site.mainAuth || {};
+    const sharedText = config.sharedText || {};
+    const home = config.pages?.home || {};
+    const zhText = sharedText.zh || {};
+    const enText = sharedText.en || {};
+
+    return `
+        <div class="ams-site-preview-block">
+            <div class="ams-section-head">
+                <div>
+                    <h3>Site Preview</h3>
+                    <p>Branding, shared copy and runtime switches used by the shared shell.</p>
+                </div>
+            </div>
+            <div class="ams-site-preview-stack">
+                <div class="ams-site-preview-pane">
+                    <strong>Brand</strong>
+                    <div class="ams-site-preview-list">
+                        <span class="ams-site-preview-row"><span>Name</span><em>${esc(brand.name || 'GasGx')}</em></span>
+                        <span class="ams-site-preview-row"><span>Home</span><em>${esc(brand.homeHref || '/index.html')}</em></span>
+                        <span class="ams-site-preview-row"><span>Footer Meta</span><em>${esc(brand.footerMeta || '--')}</em></span>
+                    </div>
+                </div>
+                <div class="ams-site-preview-pane">
+                    <strong>Runtime</strong>
+                    <div class="ams-site-preview-list">
+                        <span class="ams-site-preview-row"><span>Back To Top</span><em>${features.backToTopEnabled === false ? 'Off' : 'On'}</em></span>
+                        <span class="ams-site-preview-row"><span>Chatbot</span><em>${features.chatbotEnabled === true ? 'On' : 'Off'}</em></span>
+                        <span class="ams-site-preview-row"><span>Chat API</span><em>${esc(features.chatApiUrl || 'default')}</em></span>
+                    </div>
+                </div>
+                <div class="ams-site-preview-pane">
+                    <strong>Shared Copy</strong>
+                    <div class="ams-site-preview-list">
+                        <span class="ams-site-preview-row"><span>Tagline</span><em>${esc(enText.tagline || zhText.tagline || '--')}</em></span>
+                        <span class="ams-site-preview-row"><span>Footer</span><em>${esc(enText.footerTagline || zhText.footerTagline || '--')}</em></span>
+                        <span class="ams-site-preview-row"><span>Partners</span><em>${esc(enText.strategicPartners || zhText.strategicPartners || '--')}</em></span>
+                    </div>
+                </div>
+                <div class="ams-site-preview-pane">
+                    <strong>Home Page</strong>
+                    <div class="ams-site-preview-list">
+                        <span class="ams-site-preview-row"><span>Title</span><em>${esc(home.meta?.title?.en || home.meta?.title?.zh || '--')}</em></span>
+                        <span class="ams-site-preview-row"><span>Scope</span><em>${esc(home.heroCard?.value || '--')} ${esc(home.heroCard?.unit?.en || home.heroCard?.unit?.zh || '')}</em></span>
+                        <span class="ams-site-preview-row"><span>Ranking</span><em>${esc(home.ranking?.title?.en || home.ranking?.title?.zh || '--')}</em></span>
+                    </div>
+                </div>
+                <div class="ams-site-preview-pane">
+                    <strong>Main Auth</strong>
+                    <div class="ams-site-preview-list">
+                        <span class="ams-site-preview-row"><span>Sign In</span><em>${esc(mainAuth.signInUrl || '/account/user.html')}</em></span>
+                        <span class="ams-site-preview-row"><span>Account</span><em>${esc(mainAuth.accountUrl || '/account/account.html')}</em></span>
+                        <span class="ams-site-preview-row"><span>Return Key</span><em>${esc(mainAuth.returnUrlStorageKey || 'gx_main_return_url')}</em></span>
+                    </div>
+                </div>
+                <div class="ams-site-preview-pane">
+                    <strong>About Pages</strong>
+                    <div class="ams-site-preview-list">
+                        <span class="ams-site-preview-row"><span>Company</span><em>${esc(aboutCompany.meta?.title?.en || aboutCompany.meta?.title?.zh || '--')}</em></span>
+                        <span class="ams-site-preview-row"><span>Contact</span><em>${esc(aboutContact.meta?.title?.en || aboutContact.meta?.title?.zh || '--')}</em></span>
+                        <span class="ams-site-preview-row"><span>Contact Email</span><em>${esc(aboutContact.contactEmail || '--')}</em></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function renderToggleButton(action, path, expanded) {
     return `<button class="ams-site-tree-toggle" type="button" data-site-action="${esc(action)}" data-site-toggle-path="${esc(path)}" aria-expanded="${expanded ? 'true' : 'false'}"><i class="fa-solid ${expanded ? 'fa-chevron-down' : 'fa-chevron-right'}"></i></button>`;
 }
@@ -323,6 +476,59 @@ function renderFieldPair(path, label, value = {}) {
             </div>
         </div>
     `;
+}
+
+function renderTextField(path, label, value = '', placeholder = '') {
+    return `
+        <div class="ams-field">
+            <label>${esc(label)}</label>
+            <input class="ams-input" data-site-config-path="${esc(path)}" value="${esc(value || '')}" placeholder="${esc(placeholder)}">
+        </div>
+    `;
+}
+
+function renderLocalizedTextFields(field, sharedText = {}) {
+    const zhText = sharedText.zh || {};
+    const enText = sharedText.en || {};
+    return `
+        <div class="ams-site-field-grid">
+            <div class="ams-field">
+                <label>${esc(field.label)} (ZH)</label>
+                <input class="ams-input" data-site-config-path="${esc(`sharedText.zh.${field.key}`)}" value="${esc(zhText[field.key] || '')}" placeholder="中文">
+            </div>
+            <div class="ams-field">
+                <label>${esc(field.label)} (EN)</label>
+                <input class="ams-input" data-site-config-path="${esc(`sharedText.en.${field.key}`)}" value="${esc(enText[field.key] || '')}" placeholder="English">
+            </div>
+        </div>
+    `;
+}
+
+function renderLocalizedPathField(path, label, value = {}) {
+    return `
+        <div class="ams-site-field-grid">
+            <div class="ams-field">
+                <label>${esc(label)} (ZH)</label>
+                <input class="ams-input" data-site-config-path="${esc(`${path}.zh`)}" value="${esc(value?.zh || '')}" placeholder="中文">
+            </div>
+            <div class="ams-field">
+                <label>${esc(label)} (EN)</label>
+                <input class="ams-input" data-site-config-path="${esc(`${path}.en`)}" value="${esc(value?.en || '')}" placeholder="English">
+            </div>
+        </div>
+    `;
+}
+
+function renderDescriptorField(field, config) {
+    if (field.direct) {
+        return `
+            <div class="ams-field">
+                <label>${esc(field.label)}</label>
+                <input class="ams-input" data-site-config-path="${esc(field.path)}" value="${esc(getPathValue(config, field.path) || '')}" placeholder="">
+            </div>
+        `;
+    }
+    return renderLocalizedPathField(field.path, field.label, getPathValue(config, field.path));
 }
 
 function renderItemFields(basePath, item, options = {}) {
@@ -642,6 +848,107 @@ function renderFooterSection(key, title, copy, body) {
     `;
 }
 
+function renderGeneralPage() {
+    const config = getDraftConfig();
+    const site = config.site || {};
+    const home = config.pages?.home || {};
+    const aboutCompany = config.pages?.aboutCompany || {};
+    const aboutContact = config.pages?.aboutContact || {};
+    const brand = site.brand || {};
+    const features = site.features || {};
+    const mainAuth = site.mainAuth || {};
+    const sharedText = config.sharedText || {};
+
+    return `
+        ${renderSourceBanner('主站基础配置', '集中管理主站品牌信息、共享文案、运行开关和主站账号跳转。改动会直接异步同步到 site_shell_configs。')}
+        <section class="ams-site-layout">
+            <div class="ams-site-main">
+                <article class="ams-card">
+                    <div class="ams-section-head">
+                        <div>
+                            <h3>Site-Level Settings</h3>
+                            <p>These fields go beyond navigation and footer blocks, and are consumed by the shared shell immediately.</p>
+                        </div>
+                        <div class="ams-site-header-actions">
+                            <button class="ams-btn ams-btn-muted" type="button" data-site-action="refresh-site-shell">Refresh Published</button>
+                            <button class="ams-btn ams-btn-muted" type="button" data-site-action="expand-all-general">Expand All</button>
+                            <button class="ams-btn ams-btn-muted" type="button" data-site-action="collapse-all-general">Collapse All</button>
+                        </div>
+                    </div>
+                    <div class="ams-site-tree">
+                        ${renderFooterSection('site:brand', 'Brand & Legal', brand.name || 'GasGx', `
+                            <div class="ams-site-field-grid ams-site-field-grid-wide">
+                                ${renderTextField('site.brand.name', 'Brand Name', brand.name, 'GasGx')}
+                                ${renderTextField('site.brand.homeHref', 'Home Href', brand.homeHref, '/index.html')}
+                                ${renderTextField('site.brand.footerMeta', 'Footer Meta Copy', brand.footerMeta, 'Energy-compute infrastructure for mining operators.')}
+                                ${renderTextField('site.brand.copyright', 'Copyright Text', brand.copyright, '© 2026 GasGx. All rights reserved.')}
+                            </div>
+                        `)}
+                        ${renderFooterSection('site:shared-text', 'Shared Text', `${SHARED_TEXT_FIELDS.length} localized keys`, `
+                            <div class="ams-site-tree-children">
+                                ${SHARED_TEXT_FIELDS.map((field) => renderLocalizedTextFields(field, sharedText)).join('')}
+                            </div>
+                        `)}
+                        ${renderFooterSection('site:home', 'Homepage Panel', home.meta?.title?.en || home.meta?.title?.zh || 'Home page localized copy', `
+                            <div class="ams-site-field-grid ams-site-field-grid-wide">
+                                ${renderTextField('pages.home.heroCard.value', 'Scope Value', home.heroCard?.value, '25+')}
+                                ${renderTextField('pages.home.capture.downloadFileName', 'Capture File Name', home.capture?.downloadFileName, 'GasGx-Map-Capture.png')}
+                            </div>
+                            <div class="ams-site-tree-children">
+                                ${HOME_PAGE_LOCALIZED_FIELDS.map((field) => renderDescriptorField(field, config)).join('')}
+                            </div>
+                        `)}
+                        ${renderFooterSection('site:about-company', 'About Company Page', aboutCompany.meta?.title?.en || aboutCompany.meta?.title?.zh || 'About company page copy', `
+                            <div class="ams-site-field-grid ams-site-field-grid-wide">
+                                ${renderTextField('pages.aboutCompany.subscribe.recipientEmail', 'Subscribe Recipient', aboutCompany.subscribe?.recipientEmail, 'contact@gasgx.com')}
+                                ${renderTextField('pages.aboutCompany.subscribe.subject', 'Subscribe Subject', aboutCompany.subscribe?.subject, 'GasGx 2026 行业白皮书')}
+                            </div>
+                            <div class="ams-site-tree-children">
+                                ${ABOUT_COMPANY_LOCALIZED_FIELDS.map((field) => renderDescriptorField(field, config)).join('')}
+                                ${renderLocalizedPathField('pages.aboutCompany.subscribe.emailPlaceholder', 'Email Placeholder', aboutCompany.subscribe?.emailPlaceholder)}
+                                ${renderLocalizedPathField('pages.aboutCompany.subscribe.invalidEmail', 'Invalid Email Message', aboutCompany.subscribe?.invalidEmail)}
+                            </div>
+                        `)}
+                        ${renderFooterSection('site:about-contact', 'About Contact Page', aboutContact.meta?.title?.en || aboutContact.meta?.title?.zh || 'About contact page copy', `
+                            <div class="ams-site-field-grid ams-site-field-grid-wide">
+                                ${renderTextField('pages.aboutContact.contactEmail', 'Contact Email', aboutContact.contactEmail, 'contact@gasgx.com')}
+                            </div>
+                            <div class="ams-site-tree-children">
+                                ${ABOUT_CONTACT_LOCALIZED_FIELDS.map((field) => renderDescriptorField(field, config)).join('')}
+                            </div>
+                        `)}
+                        ${renderFooterSection('site:features', 'Runtime Features', features.chatbotEnabled === true ? 'Chatbot enabled' : 'Runtime feature flags', `
+                            <div class="ams-site-inline-actions">
+                                <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="site.features.backToTopEnabled" data-site-input-type="boolean" ${features.backToTopEnabled === false ? '' : 'checked'}><span>Back To Top</span></label>
+                                <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="site.features.chatbotEnabled" data-site-input-type="boolean" ${features.chatbotEnabled === true ? 'checked' : ''}><span>Chatbot</span></label>
+                            </div>
+                            <div class="ams-site-field-grid ams-site-field-grid-wide">
+                                ${renderTextField('site.features.chatApiUrl', 'Chat API URL', features.chatApiUrl, 'http://localhost:8000/chat')}
+                            </div>
+                        `)}
+                        ${renderFooterSection('site:auth', 'Main Auth Routing', mainAuth.signInUrl || '/account/user.html', `
+                            <div class="ams-site-field-grid ams-site-field-grid-wide">
+                                ${renderTextField('site.mainAuth.signInUrl', 'Sign In URL', mainAuth.signInUrl, '/account/user.html')}
+                                ${renderTextField('site.mainAuth.accountUrl', 'Account URL', mainAuth.accountUrl, '/account/account.html')}
+                                ${renderTextField('site.mainAuth.signOutRedirectUrl', 'Sign Out Redirect', mainAuth.signOutRedirectUrl, '/account/user.html')}
+                                ${renderTextField('site.mainAuth.returnUrlStorageKey', 'Return URL Storage Key', mainAuth.returnUrlStorageKey, 'gx_main_return_url')}
+                                ${renderTextField('site.mainAuth.storageKey', 'Auth Storage Key', mainAuth.storageKey, 'gasgx-main-auth')}
+                                ${renderTextField('site.mainAuth.supabaseUrl', 'Auth Supabase URL', mainAuth.supabaseUrl, 'https://mkpcliytqudclkwtewru.supabase.co')}
+                                ${renderTextField('site.mainAuth.supabaseKey', 'Auth Supabase Key', mainAuth.supabaseKey, 'sb_publishable_...')}
+                            </div>
+                        `)}
+                    </div>
+                </article>
+            </div>
+            <aside class="ams-site-sidebar">
+                <div id="ams-site-general-preview">${renderGeneralPreview(config)}</div>
+                <div id="ams-site-header-preview">${renderHeaderPreview(config)}</div>
+                <div id="ams-site-footer-preview">${renderFooterPreview(config)}</div>
+            </aside>
+        </section>
+    `;
+}
+
 function renderFooterPage() {
     const config = getDraftConfig();
     const footer = config.footer || {};
@@ -755,6 +1062,8 @@ async function persistDraft(deps, options = {}) {
 
 function refreshPreviewPanels() {
     const config = getDraftConfig();
+    const generalPreview = document.getElementById('ams-site-general-preview');
+    if (generalPreview) generalPreview.innerHTML = renderGeneralPreview(config);
     const headerPreview = document.getElementById('ams-site-header-preview');
     if (headerPreview) headerPreview.innerHTML = renderHeaderPreview(config);
     const footerPreview = document.getElementById('ams-site-footer-preview');
@@ -783,6 +1092,16 @@ function expandAllNav() {
 function collapseAllNav() {
     Array.from(moduleState.expanded).forEach((key) => {
         if (key.startsWith('nav:')) moduleState.expanded.delete(key);
+    });
+}
+
+function expandAllGeneral() {
+    ['site:brand', 'site:shared-text', 'site:home', 'site:about-company', 'site:about-contact', 'site:features', 'site:auth'].forEach((key) => setExpanded(key, true));
+}
+
+function collapseAllGeneral() {
+    Array.from(moduleState.expanded).forEach((key) => {
+        if (key.startsWith('site:')) moduleState.expanded.delete(key);
     });
 }
 
@@ -869,6 +1188,20 @@ async function handleAction(target, deps) {
 
     if (action === 'collapse-all-nav') {
         collapseAllNav();
+        deps.setContent(deps.pageRenderer());
+        bindEditor(deps);
+        return;
+    }
+
+    if (action === 'expand-all-general') {
+        expandAllGeneral();
+        deps.setContent(deps.pageRenderer());
+        bindEditor(deps);
+        return;
+    }
+
+    if (action === 'collapse-all-general') {
+        collapseAllGeneral();
         deps.setContent(deps.pageRenderer());
         bindEditor(deps);
         return;
@@ -1024,6 +1357,14 @@ export async function renderSiteNavigationAdmin(input) {
     deps.setPageHeader('主站导航', '按主站 Header / Footer 共用导航树管理一级与二级结构。');
     await ensureLoaded(false);
     deps.setContent(renderNavigationPage());
+    bindEditor(deps);
+}
+
+export async function renderSiteGeneralAdmin(input) {
+    const deps = createDeps(input, renderGeneralPage);
+    deps.setPageHeader('主站配置', '管理品牌信息、共享文案、运行开关与主站账号配置。');
+    await ensureLoaded(false);
+    deps.setContent(renderGeneralPage());
     bindEditor(deps);
 }
 

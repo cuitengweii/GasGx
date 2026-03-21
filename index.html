@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GasGx - Natural Gas Power Mining</title>
-    <meta name="description" content="GasGx provides a global view of natural gas-powered mining opportunities, policy status, and country rankings.">
+    <meta id="home-meta-description" name="description" content="GasGx provides a global view of natural gas-powered mining opportunities, policy status, and country rankings.">
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -284,7 +284,7 @@
                 <div class="absolute top-6 right-6 flex gap-3 pointer-events-none z-10">
                     <div class="bg-black/80 backdrop-blur-md border border-gas-green/30 rounded-lg px-3 py-1.5 text-right shadow-[0_0_15px_rgba(93,214,44,0.1)]">
                         <div class="text-[9px] text-gray-400 uppercase tracking-wider" data-i18n="analysis_scope">Analysis Scope</div>
-                        <div class="text-lg font-bold text-white font-mono">25+ <span class="text-[10px] text-gas-green" data-i18n="countries_label">Countries</span></div>
+                        <div class="text-lg font-bold text-white font-mono"><span id="analysis-scope-value">25+</span> <span class="text-[10px] text-gas-green" data-i18n="countries_label">Countries</span></div>
                     </div>
                 </div>
                 <div class="absolute bottom-20 left-4 text-[9px] text-gray-600 pointer-events-none xl:left-[20px] xl:bottom-4 z-10 transition-all duration-300" id="rotate-hint">
@@ -358,8 +358,8 @@
 
     <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-95 opacity-0" id="shareModalContent">
-            <div class="text-center mb-6"><div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-check text-2xl text-gas-green"></i></div><h3 class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3><p class="text-sm text-gray-400">Full page captured successfully.</p></div>
-            <button onclick="window.app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+            <div class="text-center mb-6"><div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-check text-2xl text-gas-green"></i></div><h3 id="capture-modal-title" class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3><p id="capture-modal-description" class="text-sm text-gray-400">Full page captured successfully.</p></div>
+            <button id="capture-modal-close" onclick="window.app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
         </div>
     </div>
     
@@ -375,14 +375,14 @@
                 </div>
             <h3 id="qrTitle" class="text-xl font-bold text-white tracking-wide">
                 </h3>
-            <p class="text-xs text-gray-500 mt-1">Scan to follow us</p>
+            <p id="qr-modal-subtitle" class="text-xs text-gray-500 mt-1">Scan to follow us</p>
         </div>
 
         <div class="w-48 h-48 bg-white p-2 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
             <img id="qrImageDisplay" src="" alt="QR Code" class="w-full h-full object-contain">
         </div>
 
-        <p class="text-[10px] text-gray-400 text-center max-w-[200px]">
+        <p id="qr-modal-hint" class="text-[10px] text-gray-400 text-center max-w-[200px]">
             Long press or screenshot to save the QR code.
         </p>
     </div>
@@ -394,12 +394,13 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         (() => {
-            const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
-            const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
-            const MAIN_AUTH_STORAGE_KEY = 'gasgx-main-auth';
-            const SIGN_IN_URL = '/account/user.html';
-            const SIGN_OUT_REDIRECT_URL = '/account/user.html';
-            const ACCOUNT_URL = '/account/account.html';
+            const HOME_SHELL_SITE_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
+            const SUPABASE_URL = HOME_SHELL_SITE_AUTH.supabaseUrl || 'https://mkpcliytqudclkwtewru.supabase.co';
+            const SUPABASE_KEY = HOME_SHELL_SITE_AUTH.supabaseKey || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+            const MAIN_AUTH_STORAGE_KEY = HOME_SHELL_SITE_AUTH.storageKey || 'gasgx-main-auth';
+            const SIGN_IN_URL = HOME_SHELL_SITE_AUTH.signInUrl || '/account/user.html';
+            const SIGN_OUT_REDIRECT_URL = HOME_SHELL_SITE_AUTH.signOutRedirectUrl || '/account/user.html';
+            const ACCOUNT_URL = HOME_SHELL_SITE_AUTH.accountUrl || '/account/account.html';
             const FALLBACK_AVATAR = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2232%22 fill=%22%23121812%22/%3E%3Cpath d=%22M32 33c7.18 0 13-5.82 13-13S39.18 7 32 7 19 12.82 19 20s5.82 13 13 13Zm0 4c-9.94 0-18 6.27-18 14v2h36v-2c0-7.73-8.06-14-18-14Z%22 fill=%22%235DD62C%22/%3E%3C/svg%3E';
 
             let supabaseClient = null;
@@ -567,10 +568,19 @@
 
             document.addEventListener('gasgx:shared-ui-ready', () => {
                 ensureNewsStyleMobileOverlay();
+                applyHomePageConfig(window.app?.currentLang || 'en');
                 if (currentUser) {
                     applyAuthState(currentUser, resolveDisplayName(currentUser));
                 } else {
                     applyAuthState(null, 'Sign In');
+                }
+            });
+
+            document.addEventListener('gasgx:site-shell-config-updated', () => {
+                if (window.app && typeof window.app.updateStaticText === 'function') {
+                    window.app.updateStaticText();
+                } else {
+                    applyHomePageConfig('en');
                 }
             });
         })();
@@ -606,14 +616,169 @@
             { cn: "资源丰富度", en: "Resource" }, { cn: "成本竞争力", en: "Cost" }, { cn: "挖矿政策", en: "Policy" }, { cn: "电力基建", en: "Grid" }, { cn: "政策稳定性", en: "Stability" }, { cn: "气候适应性", en: "Climate" }, { cn: "监管透明度", en: "Transp." }, { cn: "市场准入", en: "Entry" }, { cn: "运营成本", en: "OpEx" }, { cn: "投资安全", en: "Safety" }
         ];
 
+        const BASE_INDEX_I18N = window.GASGX_INDEX_I18N || {};
+
         // App runtime data (navigation comes from shared config only).
         const AppData = {
             navigation: Array.isArray(window.GASGX_SITE_SHELL_CONFIG?.navigation)
                 ? window.GASGX_SITE_SHELL_CONFIG.navigation
                 : [],
             statusColors: { 'legal': '#5DD62C', 'grey': '#9ca3af', 'illegal': '#ef4444' },
-            i18n: window.GASGX_INDEX_I18N || {}
+            i18n: JSON.parse(JSON.stringify(BASE_INDEX_I18N))
         };
+
+        const DEFAULT_HOME_PAGE_CONFIG = {
+            meta: {
+                title: { zh: 'GasGx - 天然气发电挖矿', en: 'GasGx - Natural Gas Power Mining' },
+                description: {
+                    zh: 'GasGx 提供全球天然气发电挖矿机会、政策状态与国家排名的总览。',
+                    en: 'GasGx provides a global view of natural gas-powered mining opportunities, policy status, and country rankings.'
+                }
+            },
+            heroCard: {
+                label: { zh: '分析范围', en: 'Analysis Scope' },
+                value: '25+',
+                unit: { zh: '国家', en: 'Countries' }
+            },
+            map: {
+                loadingText: { zh: '正在加载挖矿数据...', en: 'Loading Mining Data...' },
+                rotateHint: { zh: '拖拽旋转', en: 'Drag to Rotate' }
+            },
+            ranking: {
+                title: { zh: '总分排行', en: 'Total Score Ranking' },
+                legendLegal: { zh: '合法 / 高分', en: 'Legal / High Score' },
+                legendRestricted: { zh: '受限', en: 'Restricted' },
+                legendBanned: { zh: '禁止', en: 'Banned' }
+            },
+            capture: {
+                modalTitle: { zh: '截图已生成！', en: 'Snapshot Generated!' },
+                modalDescription: { zh: '整页截图已成功生成。', en: 'Full page captured successfully.' },
+                closeLabel: { zh: '关闭', en: 'Close' },
+                qrSubtitle: { zh: '扫码关注我们', en: 'Scan to follow us' },
+                qrHint: { zh: '长按或截图保存二维码。', en: 'Long press or screenshot to save the QR code.' },
+                watermarkTagline: { zh: '天然气发电挖矿助手', en: 'Natural Gas Power Mining Assistant' },
+                downloadFileName: 'GasGx-Map-Capture.png'
+            }
+        };
+
+        function cloneJson(value) {
+            return JSON.parse(JSON.stringify(value || null));
+        }
+
+        function mergeLocalizedValue(baseValue, sourceValue) {
+            const base = baseValue && typeof baseValue === 'object' ? baseValue : {};
+            const source = sourceValue && typeof sourceValue === 'object' ? sourceValue : {};
+            return {
+                zh: typeof source.zh === 'string' && source.zh.trim() ? source.zh.trim() : (typeof base.zh === 'string' ? base.zh : ''),
+                en: typeof source.en === 'string' && source.en.trim() ? source.en.trim() : (typeof base.en === 'string' ? base.en : '')
+            };
+        }
+
+        function mergeHomePageConfig(baseConfig, sourceConfig) {
+            const base = baseConfig && typeof baseConfig === 'object' ? cloneJson(baseConfig) : {};
+            const source = sourceConfig && typeof sourceConfig === 'object' ? sourceConfig : {};
+            return Object.assign({}, base, source, {
+                meta: Object.assign({}, base.meta || {}, source.meta || {}, {
+                    title: mergeLocalizedValue(base.meta && base.meta.title, source.meta && source.meta.title),
+                    description: mergeLocalizedValue(base.meta && base.meta.description, source.meta && source.meta.description)
+                }),
+                heroCard: Object.assign({}, base.heroCard || {}, source.heroCard || {}, {
+                    label: mergeLocalizedValue(base.heroCard && base.heroCard.label, source.heroCard && source.heroCard.label),
+                    unit: mergeLocalizedValue(base.heroCard && base.heroCard.unit, source.heroCard && source.heroCard.unit)
+                }),
+                map: Object.assign({}, base.map || {}, source.map || {}, {
+                    loadingText: mergeLocalizedValue(base.map && base.map.loadingText, source.map && source.map.loadingText),
+                    rotateHint: mergeLocalizedValue(base.map && base.map.rotateHint, source.map && source.map.rotateHint)
+                }),
+                ranking: Object.assign({}, base.ranking || {}, source.ranking || {}, {
+                    title: mergeLocalizedValue(base.ranking && base.ranking.title, source.ranking && source.ranking.title),
+                    legendLegal: mergeLocalizedValue(base.ranking && base.ranking.legendLegal, source.ranking && source.ranking.legendLegal),
+                    legendRestricted: mergeLocalizedValue(base.ranking && base.ranking.legendRestricted, source.ranking && source.ranking.legendRestricted),
+                    legendBanned: mergeLocalizedValue(base.ranking && base.ranking.legendBanned, source.ranking && source.ranking.legendBanned)
+                }),
+                capture: Object.assign({}, base.capture || {}, source.capture || {}, {
+                    modalTitle: mergeLocalizedValue(base.capture && base.capture.modalTitle, source.capture && source.capture.modalTitle),
+                    modalDescription: mergeLocalizedValue(base.capture && base.capture.modalDescription, source.capture && source.capture.modalDescription),
+                    closeLabel: mergeLocalizedValue(base.capture && base.capture.closeLabel, source.capture && source.capture.closeLabel),
+                    qrSubtitle: mergeLocalizedValue(base.capture && base.capture.qrSubtitle, source.capture && source.capture.qrSubtitle),
+                    qrHint: mergeLocalizedValue(base.capture && base.capture.qrHint, source.capture && source.capture.qrHint),
+                    watermarkTagline: mergeLocalizedValue(base.capture && base.capture.watermarkTagline, source.capture && source.capture.watermarkTagline)
+                })
+            });
+        }
+
+        function normalizeLang(lang) {
+            return String(lang || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+        }
+
+        function getLocalizedValue(value, langCandidate, fallback = '') {
+            if (typeof value === 'string') return value || fallback;
+            const lang = normalizeLang(langCandidate);
+            const source = value && typeof value === 'object' ? value : {};
+            return source[lang] || source.en || source.zh || fallback;
+        }
+
+        function getHomePageConfig() {
+            const config = window.GASGX_SITE_SHELL_CONFIG;
+            const source = config && config.pages && typeof config.pages.home === 'object'
+                ? config.pages.home
+                : {};
+            return mergeHomePageConfig(DEFAULT_HOME_PAGE_CONFIG, source);
+        }
+
+        function buildHomePageI18n(homeConfig) {
+            const result = cloneJson(BASE_INDEX_I18N) || { zh: {}, en: {} };
+            ['zh', 'en'].forEach((lang) => {
+                if (!result[lang] || typeof result[lang] !== 'object') result[lang] = {};
+                Object.assign(result[lang], {
+                    analysis_scope: getLocalizedValue(homeConfig.heroCard && homeConfig.heroCard.label, lang, result[lang].analysis_scope || ''),
+                    countries_label: getLocalizedValue(homeConfig.heroCard && homeConfig.heroCard.unit, lang, result[lang].countries_label || ''),
+                    drag_to_rotate: getLocalizedValue(homeConfig.map && homeConfig.map.rotateHint, lang, result[lang].drag_to_rotate || ''),
+                    top_producers: getLocalizedValue(homeConfig.ranking && homeConfig.ranking.title, lang, result[lang].top_producers || ''),
+                    legend_legal: getLocalizedValue(homeConfig.ranking && homeConfig.ranking.legendLegal, lang, result[lang].legend_legal || ''),
+                    legend_restricted: getLocalizedValue(homeConfig.ranking && homeConfig.ranking.legendRestricted, lang, result[lang].legend_restricted || ''),
+                    legend_banned: getLocalizedValue(homeConfig.ranking && homeConfig.ranking.legendBanned, lang, result[lang].legend_banned || '')
+                });
+            });
+            return result;
+        }
+
+        function applyHomePageConfig(langCandidate) {
+            const lang = normalizeLang(langCandidate || 'en');
+            const homeConfig = getHomePageConfig();
+            AppData.i18n = buildHomePageI18n(homeConfig);
+
+            document.title = getLocalizedValue(homeConfig.meta && homeConfig.meta.title, lang, document.title);
+            const metaDescription = document.getElementById('home-meta-description') || document.querySelector('meta[name="description"]');
+            if (metaDescription) {
+                metaDescription.setAttribute('content', getLocalizedValue(homeConfig.meta && homeConfig.meta.description, lang, metaDescription.getAttribute('content') || ''));
+            }
+
+            const scopeValue = document.getElementById('analysis-scope-value');
+            if (scopeValue && homeConfig.heroCard && typeof homeConfig.heroCard.value === 'string' && homeConfig.heroCard.value.trim()) {
+                scopeValue.innerText = homeConfig.heroCard.value.trim();
+            }
+
+            const loadingText = document.getElementById('map-loading-text');
+            if (loadingText) loadingText.innerText = getLocalizedValue(homeConfig.map && homeConfig.map.loadingText, lang, loadingText.innerText || '');
+
+            const captureTitle = document.getElementById('capture-modal-title');
+            if (captureTitle) captureTitle.innerText = getLocalizedValue(homeConfig.capture && homeConfig.capture.modalTitle, lang, captureTitle.innerText || '');
+
+            const captureDescription = document.getElementById('capture-modal-description');
+            if (captureDescription) captureDescription.innerText = getLocalizedValue(homeConfig.capture && homeConfig.capture.modalDescription, lang, captureDescription.innerText || '');
+
+            const captureClose = document.getElementById('capture-modal-close');
+            if (captureClose) captureClose.innerText = getLocalizedValue(homeConfig.capture && homeConfig.capture.closeLabel, lang, captureClose.innerText || '');
+
+            const qrSubtitle = document.getElementById('qr-modal-subtitle');
+            if (qrSubtitle) qrSubtitle.innerText = getLocalizedValue(homeConfig.capture && homeConfig.capture.qrSubtitle, lang, qrSubtitle.innerText || '');
+
+            const qrHint = document.getElementById('qr-modal-hint');
+            if (qrHint) qrHint.innerText = getLocalizedValue(homeConfig.capture && homeConfig.capture.qrHint, lang, qrHint.innerText || '');
+
+            return homeConfig;
+        }
 
         function ensureHtml2CanvasLoaded() {
             if (typeof window.html2canvas === 'function') return Promise.resolve(window.html2canvas);
@@ -706,16 +871,26 @@ window.app = {
             },
 
             // Rendering
-            updateStaticText() { const taglineEl = document.getElementById('header-tagline'); if(taglineEl) taglineEl.innerText = this.t('tagline'); document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if(key !== 'tagline') el.innerText = this.t(key); }); },
+            updateStaticText() {
+                applyHomePageConfig(this.currentLang);
+                const taglineEl = document.getElementById('header-tagline');
+                if(taglineEl) taglineEl.innerText = this.t('tagline');
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(key !== 'tagline') el.innerText = this.t(key);
+                });
+            },
             captureAndShare() {
+                const homeConfig = getHomePageConfig();
                 window.scrollTo(0, 0);
                 const watermark = document.createElement('div'); watermark.id = 'temp-watermark';
                 Object.assign(watermark.style, { position: 'absolute', top: 0, left: 0, width: '100%', height: document.body.scrollHeight + 'px', zIndex: 9999, pointerEvents: 'none', display: 'flex', flexWrap: 'wrap', alignContent: 'space-around', justifyContent: 'space-around', overflow: 'hidden', opacity: '0.15' });
-                const textHtml = `<div style="text-align:center; transform: rotate(-30deg); margin: 100px;"><div style="font-size: 24px; font-weight: bold; color: #5DD62C;">www.gasgx.com</div><div style="font-size: 16px; color: #fff;">Natural Gas Power Mining Assistant</div></div>`;
+                const watermarkTagline = getLocalizedValue(homeConfig.capture && homeConfig.capture.watermarkTagline, this.currentLang, 'Natural Gas Power Mining Assistant');
+                const textHtml = `<div style="text-align:center; transform: rotate(-30deg); margin: 100px;"><div style="font-size: 24px; font-weight: bold; color: #5DD62C;">www.gasgx.com</div><div style="font-size: 16px; color: #fff;">${watermarkTagline}</div></div>`;
                 watermark.innerHTML = textHtml.repeat(Math.ceil(document.body.scrollHeight / 400) * 3); document.body.appendChild(watermark);
                 ensureHtml2CanvasLoaded()
                     .then(() => window.html2canvas(document.body, { backgroundColor: '#0F0F0F', useCORS: true, scale: 2 }))
-                    .then(canvas => { const link = document.createElement('a'); link.download = 'GasGx-Map-Capture.png'; link.href = canvas.toDataURL(); link.click(); document.body.removeChild(watermark); document.getElementById('shareModal').classList.remove('hidden'); setTimeout(()=>document.getElementById('shareModalContent').classList.remove('scale-95', 'opacity-0'),10); })
+                    .then(canvas => { const link = document.createElement('a'); link.download = homeConfig.capture && homeConfig.capture.downloadFileName ? homeConfig.capture.downloadFileName : 'GasGx-Map-Capture.png'; link.href = canvas.toDataURL(); link.click(); document.body.removeChild(watermark); document.getElementById('shareModal').classList.remove('hidden'); setTimeout(()=>document.getElementById('shareModalContent').classList.remove('scale-95', 'opacity-0'),10); })
                     .catch(err => { console.error(err); if(document.getElementById('temp-watermark')) document.body.removeChild(watermark); });
             },
             closeModal() { const el = document.getElementById('shareModalContent'); el.classList.add('scale-95', 'opacity-0'); setTimeout(()=>document.getElementById('shareModal').classList.add('hidden'),300); },
@@ -894,7 +1069,7 @@ window.app = {
                 this.geoGenerator = d3.geoPath().projection(this.projection);
                 this.createStarfield();
                 try {
-                    if (loadingText) loadingText.innerText = 'Loading mining data...';
+                    if (loadingText) loadingText.innerText = getLocalizedValue(getHomePageConfig().map && getHomePageConfig().map.loadingText, this.currentLang, 'Loading mining data...');
                     const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
                     this.countries = topojson.feature(world, world.objects.countries).features;
                     if (loading) loading.style.display = 'none';

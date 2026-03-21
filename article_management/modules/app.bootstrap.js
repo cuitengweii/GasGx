@@ -25,7 +25,7 @@ import {
     rejectQueueItem,
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
-import { renderSiteFooterAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js';
+import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js';
 
 const HOMEPAGE_MARK_LIMIT = Number.isFinite(Number(featuredApi.HOMEPAGE_MARK_LIMIT)) ? Number(featuredApi.HOMEPAGE_MARK_LIMIT) : 3;
@@ -852,6 +852,7 @@ function renderShell() {
                 <nav class="ams-nav">
                     ${navGroup('Dashboard', [navButton('dashboard', '总览', 'fa-chart-line')])}
                     ${navGroup('Site', [
+                        navButton('site-general', '主站配置', 'fa-sliders'),
                         navButton('site-navigation', '主站导航', 'fa-compass'),
                         navButton('site-footer', '主站 Footer', 'fa-window-maximize'),
                     ])}
@@ -2653,7 +2654,7 @@ async function renderPage() {
     }
 
     if (state.page === 'site-settings') {
-        state.page = 'site-footer';
+        state.page = 'site-general';
     }
 
     clearPreviewBinding();
@@ -2661,6 +2662,14 @@ async function renderPage() {
 
     try {
         if (state.page === 'dashboard') await renderDashboard();
+        else if (state.page === 'site-general') await renderSiteGeneralAdmin({
+            user: state.user,
+            setPageHeader,
+            setContent,
+            showToast,
+            withButtonBusy,
+            rerender: () => renderPage(),
+        });
         else if (state.page === 'site-navigation') await renderSiteNavigationAdmin({
             user: state.user,
             setPageHeader,

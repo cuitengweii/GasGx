@@ -815,6 +815,7 @@
                 en: {
                         tagline: "Natural Gas Power Mining Assistant",
                         footerTagline: "Making natural gas power mining easier",
+                        strategicPartners: "Strategic Partners",
                         authLogin: "Login",
                         authLogout: "Logout",
                         contactUs: "Contact Us",
@@ -827,6 +828,7 @@
                 zh: {
                         tagline: "天然气发电挖矿助手",
                         footerTagline: "让天然气发电挖矿更简单",
+                        strategicPartners: "战略合作伙伴",
                         authLogin: "登录",
                         authLogout: "退出",
                         contactUs: "联系我们",
@@ -835,6 +837,149 @@
                         privacyPolicy: "隐私政策",
                         languageEnglish: "English",
                         languageChinese: "简体中文"
+                }
+        },
+        pages: {
+                home: {
+                        meta: {
+                                title: {
+                                        zh: "GasGx - 天然气发电挖矿",
+                                        en: "GasGx - Natural Gas Power Mining"
+                                },
+                                description: {
+                                        zh: "GasGx 提供全球天然气发电挖矿机会、政策状态与国家排名的总览。",
+                                        en: "GasGx provides a global view of natural gas-powered mining opportunities, policy status, and country rankings."
+                                }
+                        },
+                        heroCard: {
+                                label: {
+                                        zh: "分析范围",
+                                        en: "Analysis Scope"
+                                },
+                                value: "25+",
+                                unit: {
+                                        zh: "国家",
+                                        en: "Countries"
+                                }
+                        },
+                        map: {
+                                loadingText: {
+                                        zh: "正在加载挖矿数据...",
+                                        en: "Loading Mining Data..."
+                                },
+                                rotateHint: {
+                                        zh: "拖拽旋转",
+                                        en: "Drag to Rotate"
+                                }
+                        },
+                        ranking: {
+                                title: {
+                                        zh: "总分排行",
+                                        en: "Total Score Ranking"
+                                },
+                                legendLegal: {
+                                        zh: "合法 / 高分",
+                                        en: "Legal / High Score"
+                                },
+                                legendRestricted: {
+                                        zh: "受限",
+                                        en: "Restricted"
+                                },
+                                legendBanned: {
+                                        zh: "禁止",
+                                        en: "Banned"
+                                }
+                        },
+                        capture: {
+                                modalTitle: {
+                                        zh: "截图已生成！",
+                                        en: "Snapshot Generated!"
+                                },
+                                modalDescription: {
+                                        zh: "整页截图已成功生成。",
+                                        en: "Full page captured successfully."
+                                },
+                                closeLabel: {
+                                        zh: "关闭",
+                                        en: "Close"
+                                },
+                                qrSubtitle: {
+                                        zh: "扫码关注我们",
+                                        en: "Scan to follow us"
+                                },
+                                qrHint: {
+                                        zh: "长按或截图保存二维码。",
+                                        en: "Long press or screenshot to save the QR code."
+                                },
+                                watermarkTagline: {
+                                        zh: "天然气发电挖矿助手",
+                                        en: "Natural Gas Power Mining Assistant"
+                                },
+                                downloadFileName: "GasGx-Map-Capture.png"
+                        }
+                },
+                aboutCompany: {
+                        meta: {
+                                title: {
+                                        zh: "About GasGx | 天然气发电算力行业研究平台",
+                                        en: "About GasGx | Natural Gas Power Mining Research Platform"
+                                }
+                        },
+                        texts: {
+                                zh: {},
+                                en: {},
+                                ru: {}
+                        },
+                        subscribe: {
+                                emailPlaceholder: {
+                                        zh: "请输入您的邮箱",
+                                        en: "Enter your email",
+                                        ru: "Введите ваш email"
+                                },
+                                invalidEmail: {
+                                        zh: "请输入有效的邮箱地址",
+                                        en: "Please enter a valid email address",
+                                        ru: "Введите корректный email"
+                                },
+                                recipientEmail: "contact@gasgx.com",
+                                subject: "GasGx 2026 行业白皮书"
+                        }
+                },
+                aboutContact: {
+                        meta: {
+                                title: {
+                                        zh: "Contact GasGx | 联系我们",
+                                        en: "Contact GasGx | Get in Touch"
+                                }
+                        },
+                        texts: {
+                                zh: {},
+                                en: {},
+                                ru: {}
+                        },
+                        contactEmail: "contact@gasgx.com"
+                }
+        },
+        site: {
+                brand: {
+                        name: "GasGx",
+                        homeHref: "/index.html",
+                        footerMeta: "Energy-compute infrastructure for mining operators.",
+                        copyright: "© 2026 GasGx. All rights reserved."
+                },
+                features: {
+                        backToTopEnabled: true,
+                        chatbotEnabled: false,
+                        chatApiUrl: ""
+                },
+                mainAuth: {
+                        storageKey: "gasgx-main-auth",
+                        signInUrl: "/account/user.html",
+                        accountUrl: "/account/account.html",
+                        signOutRedirectUrl: "/account/user.html",
+                        returnUrlStorageKey: "gx_main_return_url",
+                        supabaseUrl: "https://mkpcliytqudclkwtewru.supabase.co",
+                        supabaseKey: "sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw"
                 }
         },
         footer: {

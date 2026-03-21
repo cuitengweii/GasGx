@@ -192,7 +192,7 @@
     <div id="ggx-site-footer-slot"></div>
 
     <script>
-        const I18N_DATA = {
+        const BASE_I18N_DATA = {
             'zh': {
                 'tagline': '天然气发电挖矿助手',
                 'nav_home': '首页',
@@ -288,6 +288,85 @@
             }
         };
 
+        const DEFAULT_ABOUT_COMPANY_CONFIG = {
+            meta: {
+                title: {
+                    zh: 'About GasGx | 天然气发电算力行业研究平台',
+                    en: 'About GasGx | Natural Gas Power Mining Research Platform',
+                    ru: 'About GasGx | Исследовательская платформа GasGx'
+                }
+            },
+            texts: { zh: {}, en: {}, ru: {} },
+            subscribe: {
+                emailPlaceholder: {
+                    zh: '请输入您的邮箱',
+                    en: 'Enter your email',
+                    ru: 'Введите ваш email'
+                },
+                invalidEmail: {
+                    zh: '请输入有效的邮箱地址',
+                    en: 'Please enter a valid email address',
+                    ru: 'Введите корректный email'
+                },
+                recipientEmail: 'contact@gasgx.com',
+                subject: 'GasGx 2026 行业白皮书'
+            }
+        };
+
+        function cloneJson(value) {
+            return JSON.parse(JSON.stringify(value || null));
+        }
+
+        function normalizeLang(lang) {
+            const value = String(lang || '').toLowerCase();
+            if (value.startsWith('zh')) return 'zh';
+            if (value.startsWith('ru')) return 'ru';
+            return 'en';
+        }
+
+        function mergeLocalized(baseValue = {}, sourceValue = {}) {
+            return {
+                zh: sourceValue.zh || baseValue.zh || '',
+                en: sourceValue.en || baseValue.en || '',
+                ru: sourceValue.ru || baseValue.ru || ''
+            };
+        }
+
+        function getAboutCompanyConfig() {
+            const source = window.GASGX_SITE_SHELL_CONFIG?.pages?.aboutCompany || {};
+            return {
+                meta: {
+                    title: mergeLocalized(DEFAULT_ABOUT_COMPANY_CONFIG.meta.title, source.meta?.title || {})
+                },
+                texts: {
+                    zh: { ...(DEFAULT_ABOUT_COMPANY_CONFIG.texts.zh || {}), ...(source.texts?.zh || {}) },
+                    en: { ...(DEFAULT_ABOUT_COMPANY_CONFIG.texts.en || {}), ...(source.texts?.en || {}) },
+                    ru: { ...(DEFAULT_ABOUT_COMPANY_CONFIG.texts.ru || {}), ...(source.texts?.ru || {}) }
+                },
+                subscribe: {
+                    emailPlaceholder: mergeLocalized(DEFAULT_ABOUT_COMPANY_CONFIG.subscribe.emailPlaceholder, source.subscribe?.emailPlaceholder || {}),
+                    invalidEmail: mergeLocalized(DEFAULT_ABOUT_COMPANY_CONFIG.subscribe.invalidEmail, source.subscribe?.invalidEmail || {}),
+                    recipientEmail: source.subscribe?.recipientEmail || DEFAULT_ABOUT_COMPANY_CONFIG.subscribe.recipientEmail,
+                    subject: source.subscribe?.subject || DEFAULT_ABOUT_COMPANY_CONFIG.subscribe.subject
+                }
+            };
+        }
+
+        function getLocalizedValue(value, lang, fallback = '') {
+            if (typeof value === 'string') return value || fallback;
+            const safeLang = normalizeLang(lang);
+            return value?.[safeLang] || value?.en || value?.zh || value?.ru || fallback;
+        }
+
+        function buildAboutCompanyI18n(config) {
+            const base = cloneJson(BASE_I18N_DATA) || {};
+            ['zh', 'en', 'ru'].forEach((lang) => {
+                if (!base[lang] || typeof base[lang] !== 'object') base[lang] = {};
+                base[lang] = { ...base[lang], ...(config.texts?.[lang] || {}) };
+            });
+            return base;
+        }
+
         window.app = {
             lang: localStorage.getItem('gas_lang') || 'en',
 
@@ -298,7 +377,11 @@
             setLanguage(lang) {
                 this.lang = lang;
                 localStorage.setItem('gas_lang', lang);
-                const dict = I18N_DATA[lang] || I18N_DATA['en'];
+                const config = getAboutCompanyConfig();
+                const i18n = buildAboutCompanyI18n(config);
+                const safeLang = normalizeLang(lang);
+                const dict = i18n[safeLang] || i18n.en;
+                document.title = getLocalizedValue(config.meta.title, safeLang, document.title);
 
                 // 更新按钮样式
                 ['zh','en','ru'].forEach(l => {
@@ -324,18 +407,18 @@
 
                 // 更新输入框 placeholder
                 const input = document.getElementById('sub-email');
-                if(input && lang === 'zh') input.placeholder = "请输入您的邮箱";
-                if(input && lang === 'en') input.placeholder = "Enter your email";
-                if(input && lang === 'ru') input.placeholder = "Введите ваш email";
+                if (input) input.placeholder = getLocalizedValue(config.subscribe.emailPlaceholder, safeLang, input.placeholder || '');
             },
 
             // 新增：订阅处理函数
             handleSubscribe() {
                 const emailInput = document.getElementById('sub-email');
                 const email = emailInput.value.trim();
+                const config = getAboutCompanyConfig();
+                const safeLang = normalizeLang(this.lang);
 
                 if (!email) {
-                    const msg = this.lang === 'zh' ? '请输入有效的邮箱地址' : 'Please enter a valid email address';
+                    const msg = getLocalizedValue(config.subscribe.invalidEmail, safeLang, 'Please enter a valid email address');
                     alert(msg);
                     emailInput.focus();
                     return;
@@ -344,8 +427,8 @@
                 // 构建 mailto 链接
                 // 主题：GasGx 2026 行业白皮书
                 // 正文：包含了用户输入的邮箱，方便发送者确认
-                const recipient = 'contact@gasgx.com';
-                const subject = encodeURIComponent('GasGx 2026 行业白皮书');
+                const recipient = config.subscribe.recipientEmail || 'contact@gasgx.com';
+                const subject = encodeURIComponent(config.subscribe.subject || 'GasGx 2026 行业白皮书');
                 const body = encodeURIComponent(`Hi GasGx Team,\n\nPlease send the 2026 Whitepaper to my email: ${email}\n\nThanks.`);
 
                 window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
@@ -353,6 +436,11 @@
         };
 
         document.addEventListener('DOMContentLoaded', () => window.app.init());
+        document.addEventListener('gasgx:site-shell-config-updated', () => {
+            if (window.app && typeof window.app.setLanguage === 'function') {
+                window.app.setLanguage(window.app.lang || 'en');
+            }
+        });
     </script>
 
     <div id="ggx-back-to-top-slot"></div>

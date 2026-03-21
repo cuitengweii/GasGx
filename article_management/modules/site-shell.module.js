@@ -10,6 +10,149 @@ const EMPTY_SITE_SHELL_CONFIG = Object.freeze({
         en: {},
         zh: {},
     },
+    pages: {
+        home: {
+            meta: {
+                title: {
+                    zh: 'GasGx - 天然气发电挖矿',
+                    en: 'GasGx - Natural Gas Power Mining',
+                },
+                description: {
+                    zh: 'GasGx 提供全球天然气发电挖矿机会、政策状态与国家排名的总览。',
+                    en: 'GasGx provides a global view of natural gas-powered mining opportunities, policy status, and country rankings.',
+                },
+            },
+            heroCard: {
+                label: {
+                    zh: '分析范围',
+                    en: 'Analysis Scope',
+                },
+                value: '25+',
+                unit: {
+                    zh: '国家',
+                    en: 'Countries',
+                },
+            },
+            map: {
+                loadingText: {
+                    zh: '正在加载挖矿数据...',
+                    en: 'Loading Mining Data...',
+                },
+                rotateHint: {
+                    zh: '拖拽旋转',
+                    en: 'Drag to Rotate',
+                },
+            },
+            ranking: {
+                title: {
+                    zh: '总分排行',
+                    en: 'Total Score Ranking',
+                },
+                legendLegal: {
+                    zh: '合法 / 高分',
+                    en: 'Legal / High Score',
+                },
+                legendRestricted: {
+                    zh: '受限',
+                    en: 'Restricted',
+                },
+                legendBanned: {
+                    zh: '禁止',
+                    en: 'Banned',
+                },
+            },
+            capture: {
+                modalTitle: {
+                    zh: '截图已生成！',
+                    en: 'Snapshot Generated!',
+                },
+                modalDescription: {
+                    zh: '整页截图已成功生成。',
+                    en: 'Full page captured successfully.',
+                },
+                closeLabel: {
+                    zh: '关闭',
+                    en: 'Close',
+                },
+                qrSubtitle: {
+                    zh: '扫码关注我们',
+                    en: 'Scan to follow us',
+                },
+                qrHint: {
+                    zh: '长按或截图保存二维码。',
+                    en: 'Long press or screenshot to save the QR code.',
+                },
+                watermarkTagline: {
+                    zh: '天然气发电挖矿助手',
+                    en: 'Natural Gas Power Mining Assistant',
+                },
+                downloadFileName: 'GasGx-Map-Capture.png',
+            },
+        },
+        aboutCompany: {
+            meta: {
+                title: {
+                    zh: 'About GasGx | 天然气发电算力行业研究平台',
+                    en: 'About GasGx | Natural Gas Power Mining Research Platform',
+                },
+            },
+            texts: {
+                zh: {},
+                en: {},
+                ru: {},
+            },
+            subscribe: {
+                emailPlaceholder: {
+                    zh: '请输入您的邮箱',
+                    en: 'Enter your email',
+                    ru: 'Введите ваш email',
+                },
+                invalidEmail: {
+                    zh: '请输入有效的邮箱地址',
+                    en: 'Please enter a valid email address',
+                    ru: 'Введите корректный email',
+                },
+                recipientEmail: 'contact@gasgx.com',
+                subject: 'GasGx 2026 行业白皮书',
+            },
+        },
+        aboutContact: {
+            meta: {
+                title: {
+                    zh: 'Contact GasGx | 联系我们',
+                    en: 'Contact GasGx | Get in Touch',
+                },
+            },
+            texts: {
+                zh: {},
+                en: {},
+                ru: {},
+            },
+            contactEmail: 'contact@gasgx.com',
+        },
+    },
+    site: {
+        brand: {
+            name: 'GasGx',
+            homeHref: '/index.html',
+            footerMeta: 'Energy-compute infrastructure for mining operators.',
+            copyright: '© 2026 GasGx. All rights reserved.',
+        },
+        features: {
+            backToTopEnabled: true,
+            chatbotEnabled: false,
+            chatApiUrl: '',
+        },
+        mainAuth: {
+            storageKey: 'gasgx-main-auth',
+            signInUrl: '/account/user.html',
+            accountUrl: '/account/account.html',
+            signOutRedirectUrl: '/account/user.html',
+            returnUrlStorageKey: 'gx_main_return_url',
+            supabaseUrl: 'https://mkpcliytqudclkwtewru.supabase.co',
+            supabaseKey: 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw',
+        },
+    },
     footer: {
         visible: true,
         socialEnabled: true,
@@ -29,6 +172,10 @@ function isPlainObject(value) {
 
 function normalizeText(value) {
     return String(value ?? '').trim();
+}
+
+function normalizeBoolean(value, fallback = true) {
+    return typeof value === 'boolean' ? value : fallback;
 }
 
 export function deepClone(value) {
@@ -142,6 +289,173 @@ function normalizeSharedText(source, fallback) {
     };
 }
 
+function normalizeHomePageConfig(source, fallback) {
+    const safeSource = isPlainObject(source) ? source : {};
+    const safeFallback = isPlainObject(fallback) ? fallback : {};
+    const safeMetaSource = isPlainObject(safeSource.meta) ? safeSource.meta : {};
+    const safeMetaFallback = isPlainObject(safeFallback.meta) ? safeFallback.meta : {};
+    const safeHeroSource = isPlainObject(safeSource.heroCard) ? safeSource.heroCard : {};
+    const safeHeroFallback = isPlainObject(safeFallback.heroCard) ? safeFallback.heroCard : {};
+    const safeMapSource = isPlainObject(safeSource.map) ? safeSource.map : {};
+    const safeMapFallback = isPlainObject(safeFallback.map) ? safeFallback.map : {};
+    const safeRankingSource = isPlainObject(safeSource.ranking) ? safeSource.ranking : {};
+    const safeRankingFallback = isPlainObject(safeFallback.ranking) ? safeFallback.ranking : {};
+    const safeCaptureSource = isPlainObject(safeSource.capture) ? safeSource.capture : {};
+    const safeCaptureFallback = isPlainObject(safeFallback.capture) ? safeFallback.capture : {};
+
+    return {
+        meta: {
+            title: toLocalizedLabel(safeMetaSource.title || safeMetaFallback.title || 'GasGx - Natural Gas Power Mining', 'GasGx - Natural Gas Power Mining'),
+            description: toLocalizedLabel(
+                safeMetaSource.description || safeMetaFallback.description || 'GasGx provides a global view of natural gas-powered mining opportunities, policy status, and country rankings.',
+                'GasGx provides a global view of natural gas-powered mining opportunities, policy status, and country rankings.',
+            ),
+        },
+        heroCard: {
+            label: toLocalizedLabel(safeHeroSource.label || safeHeroFallback.label || 'Analysis Scope', 'Analysis Scope'),
+            value: normalizeText(safeHeroSource.value || safeHeroFallback.value || '25+') || '25+',
+            unit: toLocalizedLabel(safeHeroSource.unit || safeHeroFallback.unit || 'Countries', 'Countries'),
+        },
+        map: {
+            loadingText: toLocalizedLabel(safeMapSource.loadingText || safeMapFallback.loadingText || 'Loading Mining Data...', 'Loading Mining Data...'),
+            rotateHint: toLocalizedLabel(safeMapSource.rotateHint || safeMapFallback.rotateHint || 'Drag to Rotate', 'Drag to Rotate'),
+        },
+        ranking: {
+            title: toLocalizedLabel(safeRankingSource.title || safeRankingFallback.title || 'Total Score Ranking', 'Total Score Ranking'),
+            legendLegal: toLocalizedLabel(safeRankingSource.legendLegal || safeRankingFallback.legendLegal || 'Legal / High Score', 'Legal / High Score'),
+            legendRestricted: toLocalizedLabel(safeRankingSource.legendRestricted || safeRankingFallback.legendRestricted || 'Restricted', 'Restricted'),
+            legendBanned: toLocalizedLabel(safeRankingSource.legendBanned || safeRankingFallback.legendBanned || 'Banned', 'Banned'),
+        },
+        capture: {
+            modalTitle: toLocalizedLabel(safeCaptureSource.modalTitle || safeCaptureFallback.modalTitle || 'Snapshot Generated!', 'Snapshot Generated!'),
+            modalDescription: toLocalizedLabel(
+                safeCaptureSource.modalDescription || safeCaptureFallback.modalDescription || 'Full page captured successfully.',
+                'Full page captured successfully.',
+            ),
+            closeLabel: toLocalizedLabel(safeCaptureSource.closeLabel || safeCaptureFallback.closeLabel || 'Close', 'Close'),
+            qrSubtitle: toLocalizedLabel(safeCaptureSource.qrSubtitle || safeCaptureFallback.qrSubtitle || 'Scan to follow us', 'Scan to follow us'),
+            qrHint: toLocalizedLabel(
+                safeCaptureSource.qrHint || safeCaptureFallback.qrHint || 'Long press or screenshot to save the QR code.',
+                'Long press or screenshot to save the QR code.',
+            ),
+            watermarkTagline: toLocalizedLabel(
+                safeCaptureSource.watermarkTagline || safeCaptureFallback.watermarkTagline || 'Natural Gas Power Mining Assistant',
+                'Natural Gas Power Mining Assistant',
+            ),
+            downloadFileName: normalizeText(safeCaptureSource.downloadFileName || safeCaptureFallback.downloadFileName || 'GasGx-Map-Capture.png') || 'GasGx-Map-Capture.png',
+        },
+    };
+}
+
+function normalizeTextDictionary(source, fallback) {
+    const safeSource = isPlainObject(source) ? source : {};
+    const safeFallback = isPlainObject(fallback) ? fallback : {};
+    return {
+        zh: { ...(safeFallback.zh || {}), ...(safeSource.zh || {}) },
+        en: { ...(safeFallback.en || {}), ...(safeSource.en || {}) },
+        ru: { ...(safeFallback.ru || {}) },
+        ...(isPlainObject(safeSource.ru) ? { ru: { ...(safeFallback.ru || {}), ...(safeSource.ru || {}) } } : {}),
+    };
+}
+
+function normalizeAboutCompanyConfig(source, fallback) {
+    const safeSource = isPlainObject(source) ? source : {};
+    const safeFallback = isPlainObject(fallback) ? fallback : {};
+    return {
+        meta: {
+            title: toLocalizedLabel(
+                safeSource.meta?.title || safeFallback.meta?.title || 'About GasGx | Natural Gas Power Mining Research Platform',
+                'About GasGx | Natural Gas Power Mining Research Platform',
+            ),
+        },
+        texts: normalizeTextDictionary(safeSource.texts, safeFallback.texts),
+        subscribe: {
+            emailPlaceholder: {
+                zh: normalizeText(safeSource.subscribe?.emailPlaceholder?.zh || safeFallback.subscribe?.emailPlaceholder?.zh || '请输入您的邮箱'),
+                en: normalizeText(safeSource.subscribe?.emailPlaceholder?.en || safeFallback.subscribe?.emailPlaceholder?.en || 'Enter your email'),
+                ru: normalizeText(safeSource.subscribe?.emailPlaceholder?.ru || safeFallback.subscribe?.emailPlaceholder?.ru || 'Введите ваш email'),
+            },
+            invalidEmail: {
+                zh: normalizeText(safeSource.subscribe?.invalidEmail?.zh || safeFallback.subscribe?.invalidEmail?.zh || '请输入有效的邮箱地址'),
+                en: normalizeText(safeSource.subscribe?.invalidEmail?.en || safeFallback.subscribe?.invalidEmail?.en || 'Please enter a valid email address'),
+                ru: normalizeText(safeSource.subscribe?.invalidEmail?.ru || safeFallback.subscribe?.invalidEmail?.ru || 'Введите корректный email'),
+            },
+            recipientEmail: normalizeText(safeSource.subscribe?.recipientEmail || safeFallback.subscribe?.recipientEmail || 'contact@gasgx.com') || 'contact@gasgx.com',
+            subject: normalizeText(safeSource.subscribe?.subject || safeFallback.subscribe?.subject || 'GasGx 2026 行业白皮书') || 'GasGx 2026 行业白皮书',
+        },
+    };
+}
+
+function normalizeAboutContactConfig(source, fallback) {
+    const safeSource = isPlainObject(source) ? source : {};
+    const safeFallback = isPlainObject(fallback) ? fallback : {};
+    return {
+        meta: {
+            title: toLocalizedLabel(
+                safeSource.meta?.title || safeFallback.meta?.title || 'Contact GasGx | Get in Touch',
+                'Contact GasGx | Get in Touch',
+            ),
+        },
+        texts: normalizeTextDictionary(safeSource.texts, safeFallback.texts),
+        contactEmail: normalizeText(safeSource.contactEmail || safeFallback.contactEmail || 'contact@gasgx.com') || 'contact@gasgx.com',
+    };
+}
+
+function normalizePagesConfig(source, fallback) {
+    const safeSource = isPlainObject(source) ? source : {};
+    const safeFallback = isPlainObject(fallback) ? fallback : {};
+    return {
+        home: normalizeHomePageConfig(safeSource.home, safeFallback.home),
+        aboutCompany: normalizeAboutCompanyConfig(safeSource.aboutCompany, safeFallback.aboutCompany),
+        aboutContact: normalizeAboutContactConfig(safeSource.aboutContact, safeFallback.aboutContact),
+    };
+}
+
+function normalizeSiteBrandConfig(source, fallback) {
+    const safeSource = isPlainObject(source) ? source : {};
+    const safeFallback = isPlainObject(fallback) ? fallback : {};
+    return {
+        name: normalizeText(safeSource.name || safeFallback.name || 'GasGx') || 'GasGx',
+        homeHref: normalizeText(safeSource.homeHref || safeFallback.homeHref || '/index.html') || '/index.html',
+        footerMeta: normalizeText(safeSource.footerMeta || safeFallback.footerMeta || 'Energy-compute infrastructure for mining operators.'),
+        copyright: normalizeText(safeSource.copyright || safeFallback.copyright || '© 2026 GasGx. All rights reserved.'),
+    };
+}
+
+function normalizeSiteFeatures(source, fallback) {
+    const safeSource = isPlainObject(source) ? source : {};
+    const safeFallback = isPlainObject(fallback) ? fallback : {};
+    return {
+        backToTopEnabled: normalizeBoolean(safeSource.backToTopEnabled, normalizeBoolean(safeFallback.backToTopEnabled, true)),
+        chatbotEnabled: normalizeBoolean(safeSource.chatbotEnabled, normalizeBoolean(safeFallback.chatbotEnabled, false)),
+        chatApiUrl: normalizeText(safeSource.chatApiUrl || safeFallback.chatApiUrl || ''),
+    };
+}
+
+function normalizeSiteMainAuth(source, fallback) {
+    const safeSource = isPlainObject(source) ? source : {};
+    const safeFallback = isPlainObject(fallback) ? fallback : {};
+    return {
+        storageKey: normalizeText(safeSource.storageKey || safeFallback.storageKey || 'gasgx-main-auth') || 'gasgx-main-auth',
+        signInUrl: normalizeText(safeSource.signInUrl || safeFallback.signInUrl || '/account/user.html') || '/account/user.html',
+        accountUrl: normalizeText(safeSource.accountUrl || safeFallback.accountUrl || '/account/account.html') || '/account/account.html',
+        signOutRedirectUrl: normalizeText(safeSource.signOutRedirectUrl || safeFallback.signOutRedirectUrl || '/account/user.html') || '/account/user.html',
+        returnUrlStorageKey: normalizeText(safeSource.returnUrlStorageKey || safeFallback.returnUrlStorageKey || 'gx_main_return_url') || 'gx_main_return_url',
+        supabaseUrl: normalizeText(safeSource.supabaseUrl || safeFallback.supabaseUrl || 'https://mkpcliytqudclkwtewru.supabase.co'),
+        supabaseKey: normalizeText(safeSource.supabaseKey || safeFallback.supabaseKey || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw'),
+    };
+}
+
+function normalizeSiteConfig(source, fallback) {
+    const safeSource = isPlainObject(source) ? source : {};
+    const safeFallback = isPlainObject(fallback) ? fallback : {};
+    return {
+        brand: normalizeSiteBrandConfig(safeSource.brand, safeFallback.brand),
+        features: normalizeSiteFeatures(safeSource.features, safeFallback.features),
+        mainAuth: normalizeSiteMainAuth(safeSource.mainAuth, safeFallback.mainAuth),
+    };
+}
+
 function normalizeFooterConfig(source, fallback) {
     const safeSource = isPlainObject(source) ? source : {};
     const safeFallback = isPlainObject(fallback) ? fallback : {};
@@ -175,6 +489,8 @@ export function normalizeSiteShellConfig(config, fallback = EMPTY_SITE_SHELL_CON
         navigation: (Array.isArray(safeSource.navigation) ? safeSource.navigation : Array.isArray(safeFallback.navigation) ? safeFallback.navigation : [])
             .map((item) => createSiteShellNavItem(item?.type, item)),
         sharedText: normalizeSharedText(safeSource.sharedText, safeFallback.sharedText),
+        pages: normalizePagesConfig(safeSource.pages, safeFallback.pages),
+        site: normalizeSiteConfig(safeSource.site, safeFallback.site),
         footer: normalizeFooterConfig(safeSource.footer, safeFallback.footer),
     };
 }

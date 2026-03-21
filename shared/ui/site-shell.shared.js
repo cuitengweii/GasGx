@@ -36,6 +36,7 @@
         zh: {
             tagline: "天然气发电挖矿助手",
             footerTagline: "让天然气发电挖矿更简单",
+            strategicPartners: "战略合作伙伴",
             authLogin: "登录",
             authLogout: "退出",
             contactUs: "联系我们",
@@ -51,8 +52,8 @@
 <header class="fixed top-0 w-full z-[300] gas-card h-16 transition-all duration-300">
     <div class="max-w-[1800px] mx-auto px-4 h-full flex justify-between items-center relative">
         <div class="flex flex-col justify-center gap-0.5 w-auto shrink-0 mr-2 xl:mr-4 leading-none">
-            <a href="/index.html" class="group">
-                <h1 class="text-xl md:text-2xl font-bold tracking-wider text-gas-green hover:text-white transition-colors cursor-pointer">GasGx</h1>
+            <a id="ggx-header-home-link" href="/index.html" class="group">
+                <h1 id="ggx-header-brand-text" class="text-xl md:text-2xl font-bold tracking-wider text-gas-green hover:text-white transition-colors cursor-pointer">GasGx</h1>
             </a>
             <span id="header-tagline" class="block text-gas-green text-[8px] sm:text-[9px] xl:text-[10px] font-bold tracking-wide leading-tight max-w-[240px] truncate">Natural Gas Power Mining Assistant</span>
         </div>
@@ -133,6 +134,149 @@
 </div>`;
 
     const DEFAULT_SITE_SHELL_CONFIG = {
+        pages: {
+            home: {
+                meta: {
+                    title: {
+                        zh: "GasGx - 天然气发电挖矿",
+                        en: "GasGx - Natural Gas Power Mining"
+                    },
+                    description: {
+                        zh: "GasGx 提供全球天然气发电挖矿机会、政策状态与国家排名的总览。",
+                        en: "GasGx provides a global view of natural gas-powered mining opportunities, policy status, and country rankings."
+                    }
+                },
+                heroCard: {
+                    label: {
+                        zh: "分析范围",
+                        en: "Analysis Scope"
+                    },
+                    value: "25+",
+                    unit: {
+                        zh: "国家",
+                        en: "Countries"
+                    }
+                },
+                map: {
+                    loadingText: {
+                        zh: "正在加载挖矿数据...",
+                        en: "Loading Mining Data..."
+                    },
+                    rotateHint: {
+                        zh: "拖拽旋转",
+                        en: "Drag to Rotate"
+                    }
+                },
+                ranking: {
+                    title: {
+                        zh: "总分排行",
+                        en: "Total Score Ranking"
+                    },
+                    legendLegal: {
+                        zh: "合法 / 高分",
+                        en: "Legal / High Score"
+                    },
+                    legendRestricted: {
+                        zh: "受限",
+                        en: "Restricted"
+                    },
+                    legendBanned: {
+                        zh: "禁止",
+                        en: "Banned"
+                    }
+                },
+                capture: {
+                    modalTitle: {
+                        zh: "截图已生成！",
+                        en: "Snapshot Generated!"
+                    },
+                    modalDescription: {
+                        zh: "整页截图已成功生成。",
+                        en: "Full page captured successfully."
+                    },
+                    closeLabel: {
+                        zh: "关闭",
+                        en: "Close"
+                    },
+                    qrSubtitle: {
+                        zh: "扫码关注我们",
+                        en: "Scan to follow us"
+                    },
+                    qrHint: {
+                        zh: "长按或截图保存二维码。",
+                        en: "Long press or screenshot to save the QR code."
+                    },
+                    watermarkTagline: {
+                        zh: "天然气发电挖矿助手",
+                        en: "Natural Gas Power Mining Assistant"
+                    },
+                    downloadFileName: "GasGx-Map-Capture.png"
+                }
+            },
+            aboutCompany: {
+                meta: {
+                    title: {
+                        zh: "About GasGx | 天然气发电算力行业研究平台",
+                        en: "About GasGx | Natural Gas Power Mining Research Platform"
+                    }
+                },
+                texts: {
+                    zh: {},
+                    en: {},
+                    ru: {}
+                },
+                subscribe: {
+                    emailPlaceholder: {
+                        zh: "请输入您的邮箱",
+                        en: "Enter your email",
+                        ru: "Введите ваш email"
+                    },
+                    invalidEmail: {
+                        zh: "请输入有效的邮箱地址",
+                        en: "Please enter a valid email address",
+                        ru: "Введите корректный email"
+                    },
+                    recipientEmail: "contact@gasgx.com",
+                    subject: "GasGx 2026 行业白皮书"
+                }
+            },
+            aboutContact: {
+                meta: {
+                    title: {
+                        zh: "Contact GasGx | 联系我们",
+                        en: "Contact GasGx | Get in Touch"
+                    }
+                },
+                texts: {
+                    zh: {},
+                    en: {},
+                    ru: {}
+                },
+                contactEmail: "contact@gasgx.com"
+            }
+        },
+        site: {
+            brand: {
+                name: "GasGx",
+                homeHref: "/index.html",
+                footerMeta: "Energy-compute infrastructure for mining operators.",
+                copyright: "© 2026 GasGx. All rights reserved."
+            },
+            features: {
+                backToTopEnabled: true,
+                chatbotEnabled: false,
+                chatApiUrl: ""
+            },
+            mainAuth: {
+                storageKey: MAIN_AUTH_DEFAULTS.storageKey,
+                signInUrl: MAIN_AUTH_DEFAULTS.signInUrl,
+                accountUrl: MAIN_AUTH_DEFAULTS.accountUrl,
+                signOutRedirectUrl: MAIN_AUTH_DEFAULTS.signOutRedirectUrl,
+                returnUrlStorageKey: MAIN_AUTH_DEFAULTS.returnUrlStorageKey,
+                supabaseUrl: MAIN_AUTH_DEFAULTS.supabaseUrl,
+                supabaseKey: MAIN_AUTH_DEFAULTS.supabaseKey
+            }
+        },
         footer: {
             contact: {
                 mode: "qr",
@@ -275,12 +419,98 @@
         return Array.isArray(items) ? items.filter(isSiteShellVisible) : [];
     }
 
+    function mergeLocalizedBlock(baseBlock, sourceBlock) {
+        const base = baseBlock && typeof baseBlock === "object" ? baseBlock : {};
+        const source = sourceBlock && typeof sourceBlock === "object" ? sourceBlock : {};
+        return Object.assign({}, base, source, {
+            en: Object.assign({}, base.en || {}, source.en || {}),
+            zh: Object.assign({}, base.zh || {}, source.zh || {})
+        });
+    }
+
+    function mergeSiteConfig(baseSite, sourceSite) {
+        const base = baseSite && typeof baseSite === "object" ? cloneSiteShellValue(baseSite) : {};
+        const source = sourceSite && typeof sourceSite === "object" ? sourceSite : {};
+        return Object.assign({}, base, source, {
+            brand: Object.assign({}, base.brand || {}, source.brand || {}),
+            features: Object.assign({}, base.features || {}, source.features || {}),
+            mainAuth: Object.assign({}, base.mainAuth || {}, source.mainAuth || {})
+        });
+    }
+
+    function mergeHomePageConfig(baseHome, sourceHome) {
+        const base = baseHome && typeof baseHome === "object" ? cloneSiteShellValue(baseHome) : {};
+        const source = sourceHome && typeof sourceHome === "object" ? sourceHome : {};
+        return Object.assign({}, base, source, {
+            meta: Object.assign({}, base.meta || {}, source.meta || {}, {
+                title: mergeLocalizedBlock(base.meta && base.meta.title, source.meta && source.meta.title),
+                description: mergeLocalizedBlock(base.meta && base.meta.description, source.meta && source.meta.description)
+            }),
+            heroCard: Object.assign({}, base.heroCard || {}, source.heroCard || {}, {
+                label: mergeLocalizedBlock(base.heroCard && base.heroCard.label, source.heroCard && source.heroCard.label),
+                unit: mergeLocalizedBlock(base.heroCard && base.heroCard.unit, source.heroCard && source.heroCard.unit)
+            }),
+            map: Object.assign({}, base.map || {}, source.map || {}, {
+                loadingText: mergeLocalizedBlock(base.map && base.map.loadingText, source.map && source.map.loadingText),
+                rotateHint: mergeLocalizedBlock(base.map && base.map.rotateHint, source.map && source.map.rotateHint)
+            }),
+            ranking: Object.assign({}, base.ranking || {}, source.ranking || {}, {
+                title: mergeLocalizedBlock(base.ranking && base.ranking.title, source.ranking && source.ranking.title),
+                legendLegal: mergeLocalizedBlock(base.ranking && base.ranking.legendLegal, source.ranking && source.ranking.legendLegal),
+                legendRestricted: mergeLocalizedBlock(base.ranking && base.ranking.legendRestricted, source.ranking && source.ranking.legendRestricted),
+                legendBanned: mergeLocalizedBlock(base.ranking && base.ranking.legendBanned, source.ranking && source.ranking.legendBanned)
+            }),
+            capture: Object.assign({}, base.capture || {}, source.capture || {}, {
+                modalTitle: mergeLocalizedBlock(base.capture && base.capture.modalTitle, source.capture && source.capture.modalTitle),
+                modalDescription: mergeLocalizedBlock(base.capture && base.capture.modalDescription, source.capture && source.capture.modalDescription),
+                closeLabel: mergeLocalizedBlock(base.capture && base.capture.closeLabel, source.capture && source.capture.closeLabel),
+                qrSubtitle: mergeLocalizedBlock(base.capture && base.capture.qrSubtitle, source.capture && source.capture.qrSubtitle),
+                qrHint: mergeLocalizedBlock(base.capture && base.capture.qrHint, source.capture && source.capture.qrHint),
+                watermarkTagline: mergeLocalizedBlock(base.capture && base.capture.watermarkTagline, source.capture && source.capture.watermarkTagline)
+            })
+        });
+    }
+
+    function mergePagesConfig(basePages, sourcePages) {
+        const base = basePages && typeof basePages === "object" ? cloneSiteShellValue(basePages) : {};
+        const source = sourcePages && typeof sourcePages === "object" ? sourcePages : {};
+        return Object.assign({}, base, source, {
+            home: mergeHomePageConfig(base.home, source.home),
+            aboutCompany: Object.assign({}, base.aboutCompany || {}, source.aboutCompany || {}, {
+                meta: Object.assign({}, base.aboutCompany && base.aboutCompany.meta, source.aboutCompany && source.aboutCompany.meta, {
+                    title: mergeLocalizedBlock(base.aboutCompany && base.aboutCompany.meta && base.aboutCompany.meta.title, source.aboutCompany && source.aboutCompany.meta && source.aboutCompany.meta.title)
+                }),
+                texts: {
+                    zh: Object.assign({}, base.aboutCompany && base.aboutCompany.texts && base.aboutCompany.texts.zh || {}, source.aboutCompany && source.aboutCompany.texts && source.aboutCompany.texts.zh || {}),
+                    en: Object.assign({}, base.aboutCompany && base.aboutCompany.texts && base.aboutCompany.texts.en || {}, source.aboutCompany && source.aboutCompany.texts && source.aboutCompany.texts.en || {}),
+                    ru: Object.assign({}, base.aboutCompany && base.aboutCompany.texts && base.aboutCompany.texts.ru || {}, source.aboutCompany && source.aboutCompany.texts && source.aboutCompany.texts.ru || {})
+                },
+                subscribe: Object.assign({}, base.aboutCompany && base.aboutCompany.subscribe || {}, source.aboutCompany && source.aboutCompany.subscribe || {}, {
+                    emailPlaceholder: mergeLocalizedBlock(base.aboutCompany && base.aboutCompany.subscribe && base.aboutCompany.subscribe.emailPlaceholder, source.aboutCompany && source.aboutCompany.subscribe && source.aboutCompany.subscribe.emailPlaceholder),
+                    invalidEmail: mergeLocalizedBlock(base.aboutCompany && base.aboutCompany.subscribe && base.aboutCompany.subscribe.invalidEmail, source.aboutCompany && source.aboutCompany.subscribe && source.aboutCompany.subscribe.invalidEmail)
+                })
+            }),
+            aboutContact: Object.assign({}, base.aboutContact || {}, source.aboutContact || {}, {
+                meta: Object.assign({}, base.aboutContact && base.aboutContact.meta, source.aboutContact && source.aboutContact.meta, {
+                    title: mergeLocalizedBlock(base.aboutContact && base.aboutContact.meta && base.aboutContact.meta.title, source.aboutContact && source.aboutContact.meta && source.aboutContact.meta.title)
+                }),
+                texts: {
+                    zh: Object.assign({}, base.aboutContact && base.aboutContact.texts && base.aboutContact.texts.zh || {}, source.aboutContact && source.aboutContact.texts && source.aboutContact.texts.zh || {}),
+                    en: Object.assign({}, base.aboutContact && base.aboutContact.texts && base.aboutContact.texts.en || {}, source.aboutContact && source.aboutContact.texts && source.aboutContact.texts.en || {}),
+                    ru: Object.assign({}, base.aboutContact && base.aboutContact.texts && base.aboutContact.texts.ru || {}, source.aboutContact && source.aboutContact.texts && source.aboutContact.texts.ru || {})
+                }
+            })
+        });
+    }
+
     function mergeSiteShellConfig(baseConfig, sourceConfig) {
         const base = baseConfig && typeof baseConfig === "object" ? cloneSiteShellValue(baseConfig) : {};
         const source = sourceConfig && typeof sourceConfig === "object" ? sourceConfig : {};
         return Object.assign({}, base, source, {
             navigation: Array.isArray(source.navigation) ? cloneSiteShellValue(source.navigation) : (Array.isArray(base.navigation) ? cloneSiteShellValue(base.navigation) : []),
-            sharedText: Object.assign({}, base.sharedText || {}, source.sharedText || {}),
+            sharedText: mergeLocalizedBlock(base.sharedText, source.sharedText),
+            pages: mergePagesConfig(base.pages, source.pages),
+            site: mergeSiteConfig(base.site, source.site),
             footer: Object.assign({}, base.footer || {}, source.footer || {})
         });
     }
@@ -296,6 +526,40 @@
             return mergeSiteShellConfig(DEFAULT_SITE_SHELL_CONFIG, config);
         }
         return DEFAULT_SITE_SHELL_CONFIG;
+    }
+
+    function getSiteBrandConfig() {
+        const siteShellConfig = getSiteShellConfig();
+        const siteConfig = siteShellConfig && typeof siteShellConfig.site === "object"
+            ? siteShellConfig.site
+            : {};
+        const brandConfig = siteConfig && typeof siteConfig.brand === "object"
+            ? siteConfig.brand
+            : {};
+        return Object.assign({}, DEFAULT_SITE_SHELL_CONFIG.site.brand, brandConfig);
+    }
+
+    function getSharedRuntimeConfig() {
+        const runtimeConfig = window.GASGX_SHARED_CONFIG || {};
+        const siteShellConfig = getSiteShellConfig();
+        const siteConfig = siteShellConfig && typeof siteShellConfig.site === "object"
+            ? siteShellConfig.site
+            : {};
+        const featureConfig = siteConfig && typeof siteConfig.features === "object"
+            ? siteConfig.features
+            : {};
+        const mainAuthConfig = siteConfig && typeof siteConfig.mainAuth === "object"
+            ? siteConfig.mainAuth
+            : {};
+
+        return Object.assign({}, runtimeConfig, {
+            backToTopEnabled: typeof featureConfig.backToTopEnabled === "boolean" ? featureConfig.backToTopEnabled : runtimeConfig.backToTopEnabled,
+            chatbotEnabled: typeof featureConfig.chatbotEnabled === "boolean" ? featureConfig.chatbotEnabled : runtimeConfig.chatbotEnabled,
+            chatApiUrl: typeof featureConfig.chatApiUrl === "string" && featureConfig.chatApiUrl.trim()
+                ? featureConfig.chatApiUrl.trim()
+                : runtimeConfig.chatApiUrl,
+            mainAuth: Object.assign({}, runtimeConfig.mainAuth || {}, mainAuthConfig)
+        });
     }
 
     function fetchPublishedSiteShellConfig() {
@@ -333,8 +597,43 @@
         return publishedSiteShellPromise;
     }
 
+    function syncSiteBrandUI() {
+        const brand = getSiteBrandConfig();
+        const headerLink = document.getElementById("ggx-header-home-link");
+        if (headerLink && typeof brand.homeHref === "string" && brand.homeHref.trim()) {
+            headerLink.setAttribute("href", brand.homeHref.trim());
+        }
+
+        const headerBrand = document.getElementById("ggx-header-brand-text");
+        if (headerBrand && typeof brand.name === "string" && brand.name.trim()) {
+            headerBrand.textContent = brand.name.trim();
+        }
+    }
+
+    function syncRuntimeFeatureSlots() {
+        const runtimeConfig = getSharedRuntimeConfig();
+
+        if (runtimeConfig.backToTopEnabled !== false) {
+            ensureSlot("ggx-back-to-top-slot");
+            mountSlot("ggx-back-to-top-slot", BACK_TO_TOP_TEMPLATE);
+            initBackToTop();
+        } else {
+            mountSlot("ggx-back-to-top-slot", "");
+        }
+
+        if (runtimeConfig.chatbotEnabled === true) {
+            ensureSlot("ggx-chatbot-slot");
+            mountSlot("ggx-chatbot-slot", CHATBOT_TEMPLATE);
+            initChatbot();
+        } else {
+            mountSlot("ggx-chatbot-slot", "");
+        }
+    }
+
     function refreshShellStructure() {
+        syncSiteBrandUI();
         mountSlot("ggx-site-footer-slot", buildFooterTemplate());
+        syncRuntimeFeatureSlots();
         refreshShellNavigation(true);
         syncLanguageUI(getCurrentLang());
     }
@@ -1094,6 +1393,7 @@
 
     function buildFooterTemplate() {
         const footerConfig = getFooterConfig();
+        const brandConfig = getSiteBrandConfig();
         if (footerConfig.visible === false) {
             return "";
         }
@@ -1109,7 +1409,7 @@
     <div class="max-w-[1800px] mx-auto px-6">
         <div class="flex flex-col md:flex-row justify-between items-start mb-8 pb-6 border-b border-white/5">
             <div class="mb-6 md:mb-0">
-                <div class="flex items-center gap-2 mb-2"><span class="text-2xl font-bold text-gas-green">GasGx</span></div>
+                <div class="flex items-center gap-2 mb-2"><a href="${escapeHtml(normalizePath(brandConfig.homeHref || "/index.html"))}" class="text-2xl font-bold text-gas-green hover:text-white transition-colors">${escapeHtml(brandConfig.name || "GasGx")}</a></div>
                 <p class="text-sm text-gray-400 font-medium" data-ggx-text="footer-tagline">Making natural gas power mining easier</p>
             </div>
             <div class="flex flex-col md:items-end space-y-2">
@@ -1122,14 +1422,14 @@
             <div class="ggx-footer-meta">
                 <div class="ggx-footer-top-row">
                     <div class="ggx-footer-brand-inline">
-                        <a href="/index.html" class="ggx-footer-logo" aria-label="GasGx Home">GasGx</a>
-                        <p class="ggx-footer-meta-tag text-sm text-gray-400">Energy-compute infrastructure for mining operators.</p>
+                        <a href="${escapeHtml(normalizePath(brandConfig.homeHref || "/index.html"))}" class="ggx-footer-logo" aria-label="${escapeHtml((brandConfig.name || "GasGx") + " Home")}">${escapeHtml(brandConfig.name || "GasGx")}</a>
+                        <p class="ggx-footer-meta-tag text-sm text-gray-400">${escapeHtml(brandConfig.footerMeta || "Energy-compute infrastructure for mining operators.")}</p>
                     </div>
                     ${partnerContainer}
                 </div>
                 <div class="ggx-footer-legal-row">
                     <div class="ggx-footer-legal flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-600">
-                        <span>&copy; 2026 GasGx. All rights reserved.</span><span class="text-gray-700">|</span>
+                        <span>${escapeHtml(brandConfig.copyright || "© 2026 GasGx. All rights reserved.")}</span><span class="text-gray-700">|</span>
                         ${privacyHtml}
                     </div>
                 </div>
@@ -1145,7 +1445,7 @@
     }
 
     function getMainAuthConfig() {
-        const runtimeConfig = window.GASGX_SHARED_CONFIG;
+        const runtimeConfig = getSharedRuntimeConfig();
         const sourceConfig = runtimeConfig && typeof runtimeConfig.mainAuth === "object"
             ? runtimeConfig.mainAuth
             : {};
@@ -1583,7 +1883,7 @@
             return;
         }
 
-        const runtimeConfig = window.GASGX_SHARED_CONFIG || {};
+        const runtimeConfig = getSharedRuntimeConfig();
         const chatApiUrl = typeof runtimeConfig.chatApiUrl === "string" && runtimeConfig.chatApiUrl.trim()
             ? runtimeConfig.chatApiUrl.trim()
             : DEFAULT_CHAT_API_URL;
@@ -1753,27 +2053,13 @@
             return;
         }
 
-        const runtimeConfig = window.GASGX_SHARED_CONFIG || {};
-
         mountSlot("ggx-site-header-slot", HEADER_TEMPLATE);
         mountSlot("ggx-site-footer-slot", buildFooterTemplate());
-
-        if (runtimeConfig.backToTopEnabled !== false) {
-            ensureSlot("ggx-back-to-top-slot");
-            mountSlot("ggx-back-to-top-slot", BACK_TO_TOP_TEMPLATE);
-        }
-
-        if (runtimeConfig.chatbotEnabled === true) {
-            ensureSlot("ggx-chatbot-slot");
-            mountSlot("ggx-chatbot-slot", CHATBOT_TEMPLATE);
-        }
+        syncSiteBrandUI();
+        syncRuntimeFeatureSlots();
 
         ensureMainAuthBridge();
         bindActionDelegation();
-        initBackToTop();
-        if (runtimeConfig.chatbotEnabled === true) {
-            initChatbot();
-        }
         runAppIntegrationHooks();
         const initialLang = getCurrentLang();
         const app = window.app;
