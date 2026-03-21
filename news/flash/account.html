@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/shared/ui/site-shell.config.js?v=20260321flashauth01"></script>
 
     <script>
         tailwind.config = {
@@ -45,6 +46,9 @@
         .tab-content { display: none; animation: fadeIn 0.3s ease-out; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .toast { background: rgba(20, 20, 20, 0.95); border: 1px solid #333; border-left: 3px solid #5DD62C; padding: 12px 18px; border-radius: 6px; opacity: 0; transform: translateY(-16px); transition: all 0.3s ease; font-size: 13px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.error { border-left-color: #ef4444; }
     </style>
 </head>
 <body class="flex flex-col h-screen w-full">
@@ -55,6 +59,7 @@
             <span class="text-gray-500 font-mono text-xs uppercase tracking-widest">Verifying Identity...</span>
         </div>
     </div>
+    <div id="toast-container" class="fixed top-20 right-5 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
     <header class="fixed top-0 w-full z-50 header-glass h-16">
         <div class="max-w-[1600px] mx-auto px-6 h-full flex justify-between items-center">
@@ -224,11 +229,34 @@
 
     <script>
         // --- CONFIG ---
-        const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
-        const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const HOME_SHELL_SITE_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
+        const SUPABASE_URL = HOME_SHELL_SITE_AUTH.supabaseUrl || 'https://mkpcliytqudclkwtewru.supabase.co';
+        const SUPABASE_KEY = HOME_SHELL_SITE_AUTH.supabaseKey || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+        const MAIN_AUTH_STORAGE_KEY = HOME_SHELL_SITE_AUTH.storageKey || 'gasgx-main-auth';
+        const SIGN_IN_URL = '/news/flash/user.html';
+        const BOOKMARKS_TABLE = 'bookmarks';
+        const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: {
+                storageKey: MAIN_AUTH_STORAGE_KEY,
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true
+            }
+        });
         
         let currentUser = null; 
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation text-red-500' : 'fa-circle-check text-gas-green'}"></i><span>${message}</span>`;
+            document.getElementById('toast-container').appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
 
         // --- AUTH & LOAD ---
         document.addEventListener('DOMContentLoaded', async () => {
@@ -238,13 +266,17 @@
                 const { data: { session }, error } = await client.auth.getSession();
                 
                 if (error || !session) {
-                    window.location.href = 'user.html';
+                    window.location.href = SIGN_IN_URL;
                     return;
                 }
 
                 currentUser = session.user;
+                client.auth.onAuthStateChange((_event, nextSession) => {
+                    if (!nextSession?.user) window.location.href = SIGN_IN_URL;
+                });
                 
-                let displayName = currentUser.email.split('@')[0];
+                const metadata = currentUser.user_metadata || {};
+                let displayName = metadata.full_name || metadata.name || currentUser.email.split('@')[0];
                 updateUI(currentUser, displayName); 
 
                 fetchProfile();
@@ -282,13 +314,21 @@
             const btn = document.getElementById('btn-save-profile');
             const newName = nameInput.value.trim();
 
-            if (!newName) return alert("Name cannot be empty");
+            if (!newName) return showToast("Name cannot be empty", "error");
 
             const originalText = btn.innerHTML;
             btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> SAVING...`;
             btn.disabled = true;
 
             try {
+                const { error: authError } = await client.auth.updateUser({
+                    data: {
+                        ...(currentUser.user_metadata || {}),
+                        full_name: newName
+                    }
+                });
+                if (authError) throw authError;
+
                 const { error } = await client
                     .from('profiles')
                     .upsert({ 
@@ -299,6 +339,7 @@
 
                 if (error) throw error;
 
+                currentUser = (await client.auth.getUser()).data.user || currentUser;
                 updateUI(currentUser, newName);
                 btn.innerHTML = `<i class="fa-solid fa-check"></i> SAVED`;
                 btn.classList.replace('bg-white', 'bg-gas-green');
@@ -312,7 +353,7 @@
                 }, 2000);
 
             } catch (e) {
-                alert("Error updating profile: " + e.message);
+                showToast(`Error updating profile: ${e.message}`, "error");
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
@@ -329,11 +370,10 @@
             loader.classList.remove('hidden');
 
             try {
-                // Fetch from 'bookmarks' table
                 const { data: items, error } = await client
-                    .from('bookmarks')
+                    .from(BOOKMARKS_TABLE)
                     .select('*')
-                    .eq('user_id', currentUser.id) // Ensure bookmarks table has user_id
+                    .eq('user_id', currentUser.id)
                     .order('created_at', { ascending: false });
 
                 loader.classList.add('hidden');
@@ -351,9 +391,12 @@
                         <div class="bg-[#0F0F0F] border border-white/10 rounded-xl p-5 hover:border-gas-green/50 hover:bg-[#151515] transition-all duration-300 group relative shadow-lg">
                             <div class="flex justify-between items-start mb-3">
                                 <span class="text-[9px] text-gas-green font-bold uppercase border border-gas-green/30 px-2 py-0.5 rounded bg-gas-green/5 group-hover:bg-gas-green group-hover:text-black transition-colors duration-300">FLASH NEWS</span>
-                                <span class="text-[10px] text-gray-500 font-mono group-hover:text-gray-300 transition-colors">
-                                    ${new Date(item.news_time || item.created_at).toLocaleDateString()}
-                                </span>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[10px] text-gray-500 font-mono group-hover:text-gray-300 transition-colors">
+                                        ${new Date(item.news_time || item.created_at).toLocaleDateString()}
+                                    </span>
+                                    <button type="button" onclick="removeSavedItem('${item.news_id || ''}')" class="relative z-20 text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-red-400 transition-colors">Remove</button>
+                                </div>
                             </div>
                             <h3 class="text-sm font-bold text-white mb-2 line-clamp-2 leading-relaxed group-hover:text-gas-green transition-colors duration-300">
                                 <a href="${item.link}" target="_blank" class="absolute inset-0 z-10"></a>
@@ -374,18 +417,34 @@
                 console.error("Load Saved Error:", e);
                 loader.classList.add('hidden');
                 emptyState.classList.remove('hidden');
+                showToast(e.message || 'Failed to load saved items', 'error');
             }
         }
 
         async function fetchSavedCount() {
-            // Count from 'bookmarks' table
             const { count } = await client
-                .from('bookmarks')
+                .from(BOOKMARKS_TABLE)
                 .select('*', { count: 'exact', head: true })
                 .eq('user_id', currentUser.id);
                 
             if(count !== null) document.getElementById('stat-saved-count').textContent = count;
         }
+
+        window.removeSavedItem = async function(newsId) {
+            if (!newsId) return;
+            try {
+                const { error } = await client
+                    .from(BOOKMARKS_TABLE)
+                    .delete()
+                    .eq('user_id', currentUser.id)
+                    .eq('news_id', String(newsId));
+                if (error) throw error;
+                showToast('Removed from Library');
+                await Promise.all([loadSavedLibrary(), fetchSavedCount()]);
+            } catch (e) {
+                showToast(e.message || 'Failed to remove bookmark', 'error');
+            }
+        };
 
         // --- UI UTILS ---
         function updateUI(user, name) {
@@ -450,10 +509,10 @@
 
         window.handleSignOut = async function() {
             await client.auth.signOut();
-            window.location.href = 'user.html';
+            window.location.href = SIGN_IN_URL;
         }
     </script>
-<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js"></script>
+<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js?v=20260321flashauth01"></script>
 </body>
 </html>
 

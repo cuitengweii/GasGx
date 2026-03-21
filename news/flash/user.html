@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/shared/ui/site-shell.config.js?v=20260321flashauth01"></script>
 
     <script>
         tailwind.config = {
@@ -116,11 +117,17 @@
     </main>
 
     <script>
-        const GX_SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
-        const GX_SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
-        const DEFAULT_HOME_PATH = '/news/flash/account.html'; 
+        const HOME_SHELL_SITE_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
+        const GX_SUPABASE_URL = HOME_SHELL_SITE_AUTH.supabaseUrl || 'https://mkpcliytqudclkwtewru.supabase.co';
+        const GX_SUPABASE_KEY = HOME_SHELL_SITE_AUTH.supabaseKey || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+        const MAIN_AUTH_STORAGE_KEY = HOME_SHELL_SITE_AUTH.storageKey || 'gasgx-main-auth';
+        const FLASH_SIGN_IN_URL = '/news/flash/user.html';
+        const DEFAULT_HOME_PATH = '/news/flash/account.html';
+        const RETURN_URL_STORAGE_KEY = `${HOME_SHELL_SITE_AUTH.returnUrlStorageKey || 'gx_main_return_url'}:flash`;
 
-        let gxClient = window.supabase ? window.supabase.createClient(GX_SUPABASE_URL, GX_SUPABASE_KEY) : null;
+        let gxClient = window.supabase ? window.supabase.createClient(GX_SUPABASE_URL, GX_SUPABASE_KEY, {
+            auth: { storageKey: MAIN_AUTH_STORAGE_KEY, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+        }) : null;
         let isSignUp = false;
 
         window.toggleGlobalMenu = function() {
@@ -135,24 +142,39 @@
             }
         }
 
+        function getAuthRedirectUrl() {
+            return new URL(FLASH_SIGN_IN_URL, window.location.origin).toString();
+        }
+
+        function setButtonBusy(button, busy) {
+            if (!button) return;
+            if (busy) {
+                if (!button.dataset.originalHtml) button.dataset.originalHtml = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+                return;
+            }
+            button.disabled = false;
+            if (button.dataset.originalHtml) button.innerHTML = button.dataset.originalHtml;
+        }
+
         function saveReturnUrl() {
-            if (window.location.hash && window.location.hash.includes('access_token')) return;
+            if (window.location.hash.includes('access_token') || new URLSearchParams(window.location.search).has('code')) return;
             const referrer = document.referrer;
             const currentOrigin = window.location.origin;
-            if (referrer && referrer.includes(currentOrigin) && !referrer.includes('user.html')) {
-                sessionStorage.setItem('gx_return_url', referrer);
+            if (referrer && referrer.includes(currentOrigin) && !referrer.includes('/news/flash/user.html') && !referrer.includes('/news/flash/account.html')) {
+                const refUrl = new URL(referrer);
+                sessionStorage.setItem(RETURN_URL_STORAGE_KEY, `${refUrl.pathname}${refUrl.search}${refUrl.hash}`);
             }
         }
 
         function performRedirect() {
-            // 注意：此时不需要再 remove('hidden')，因为现在默认为显示状态
             document.getElementById('loading-text').textContent = "REDIRECTING...";
             
-            const savedUrl = sessionStorage.getItem('gx_return_url');
+            const savedUrl = sessionStorage.getItem(RETURN_URL_STORAGE_KEY);
             const targetUrl = savedUrl ? savedUrl : DEFAULT_HOME_PATH;
-            sessionStorage.removeItem('gx_return_url');
+            sessionStorage.removeItem(RETURN_URL_STORAGE_KEY);
             
-            // 稍微等待让用户看到状态（如果不需要延迟，可以把时间设为 0）
             setTimeout(() => { window.location.href = targetUrl; }, 500);
         }
 
@@ -165,20 +187,27 @@
             setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
-        window.toggleMode = function() {
-            isSignUp = !isSignUp;
+        function toggleModeState(nextMode) {
+            isSignUp = nextMode;
             document.getElementById('page-title').textContent = isSignUp ? "Create Account" : "Welcome Back";
+            document.getElementById('page-subtitle').textContent = isSignUp ? "Create your flash news account" : "Sign in to access real-time data";
             document.getElementById('btn-text').textContent = isSignUp ? "Create Account" : "Sign In";
             document.getElementById('toggle-text').textContent = isSignUp ? "Already have an account?" : "Don't have an account?";
             document.getElementById('toggle-btn').textContent = isSignUp ? "Sign In" : "Sign Up";
+            document.getElementById('password').setAttribute('autocomplete', isSignUp ? 'new-password' : 'current-password');
+        }
+
+        window.toggleMode = function() {
+            toggleModeState(!isSignUp);
         }
 
         window.handleGoogleLogin = async function() {
             if (!gxClient) return showToast("Supabase SDK Error", "error");
+            saveReturnUrl();
             try {
                 const { error } = await gxClient.auth.signInWithOAuth({
                     provider: 'google',
-                    options: { redirectTo: window.location.href, queryParams: { access_type: 'offline', prompt: 'consent' } },
+                    options: { redirectTo: getAuthRedirectUrl() },
                 });
                 if (error) throw error;
             } catch (err) { showToast(err.message, 'error'); }
@@ -189,53 +218,53 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const btn = document.getElementById('submit-btn');
-            
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+            saveReturnUrl();
+            setButtonBusy(btn, true);
 
             try {
                 const { data, error } = isSignUp 
-                    ? await gxClient.auth.signUp({ email, password })
+                    ? await gxClient.auth.signUp({ email, password, options: { emailRedirectTo: getAuthRedirectUrl() } })
                     : await gxClient.auth.signInWithPassword({ email, password });
 
                 if (error) throw error;
 
                 if (isSignUp && !data.session) {
                     showToast('Success! Please check your email to confirm.');
-                    btn.disabled = false; btn.innerHTML = '<span id="btn-text">Create Account</span><i id="btn-icon" class="fa-solid fa-arrow-right"></i>';
+                    setButtonBusy(btn, false);
+                    toggleModeState(false);
+                    document.getElementById('password').value = '';
+                    return;
                 } else {
                     showToast('Login successful!');
                     performRedirect();
                 }
             } catch (err) { 
                 showToast(err.message, 'error'); 
-                btn.disabled = false; 
-                btn.innerHTML = `<span id="btn-text">${isSignUp?'Create Account':'Sign In'}</span><i id="btn-icon" class="fa-solid fa-arrow-right"></i>`;
+            } finally {
+                setButtonBusy(btn, false);
             }
         }
 
-        // 🔥 核心逻辑优化：加载时先判断
         window.onload = async () => {
             if (!gxClient) return;
 
+            toggleModeState(false);
             saveReturnUrl();
+            gxClient.auth.onAuthStateChange((_event, sessionValue) => {
+                if (sessionValue?.user) performRedirect();
+            });
 
-            // 1. 获取 Session
             const { data: { session } } = await gxClient.auth.getSession();
             
             if (session) {
-                // 2A. 如果已经登录（或从 Google 带着 Token 回来）：
-                // 保持 Overlay 显示状态，直接跳转
                 console.log("User detected, redirecting...");
                 performRedirect();
             } else {
-                // 2B. 如果没登录：
-                // 手动隐藏 Loading Overlay，显示登录表单
                 document.getElementById('loading-overlay').classList.add('hidden');
             }
         };
     </script>
-<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js"></script>
+<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js?v=20260321flashauth01"></script>
 </body>
 </html>
 

@@ -2,8 +2,13 @@
 import { renderSharedAuthState } from '../../shared/modules/layout.shared.js?v=20260308footer2';
 import { HEADER_NAVIGATION } from '../../shared/config/navigation.config.js';
 
-const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+const DEFAULT_MAIN_AUTH = Object.freeze({
+    storageKey: 'gasgx-main-auth',
+    supabaseUrl: 'https://mkpcliytqudclkwtewru.supabase.co',
+    supabaseKey: 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw',
+});
+const FLASH_ACCOUNT_URL = '/news/flash/account.html';
+const FLASH_SIGN_IN_URL = '/news/flash/user.html';
 const API_BASE = 'https://api.theblockbeats.news/v1/open-api/open-flash';
 const FLASH_PROXY_BASES = ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='];
 const FLASH_FETCH_TIMEOUT_MS = 15000;
@@ -123,6 +128,15 @@ const MAIN_TEMPLATE = `
 
 let flashAppInstance = null;
 
+function getFlashMainAuthConfig() {
+    const source = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
+    return {
+        storageKey: typeof source.storageKey === 'string' && source.storageKey.trim() ? source.storageKey.trim() : DEFAULT_MAIN_AUTH.storageKey,
+        supabaseUrl: typeof source.supabaseUrl === 'string' && source.supabaseUrl.trim() ? source.supabaseUrl.trim() : DEFAULT_MAIN_AUTH.supabaseUrl,
+        supabaseKey: typeof source.supabaseKey === 'string' && source.supabaseKey.trim() ? source.supabaseKey.trim() : DEFAULT_MAIN_AUTH.supabaseKey,
+    };
+}
+
 export function mountFlashMain(container) {
     if (!container) return;
     container.innerHTML = MAIN_TEMPLATE;
@@ -132,7 +146,15 @@ export function createFlashApp() {
     if (flashAppInstance) return flashAppInstance;
 
     const { createClient } = supabase;
-    const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const authConfig = getFlashMainAuthConfig();
+    const _supabase = createClient(authConfig.supabaseUrl, authConfig.supabaseKey, {
+        auth: {
+            storageKey: authConfig.storageKey,
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+        },
+    });
 
     flashAppInstance = {
         state: {
@@ -259,7 +281,7 @@ export function createFlashApp() {
 
         async toggleBookmark(id) {
             if (!this.state.user) {
-                window.location.href = '/news/flash/user.html';
+                window.location.href = FLASH_SIGN_IN_URL;
                 return;
             }
 
@@ -313,7 +335,7 @@ export function createFlashApp() {
                 currentUser: this.state.user,
                 displayName: this.state.displayName,
                 accountUrl: '/news/flash/account.html',
-                signInUrl: '/news/flash/user.html',
+                signInUrl: FLASH_SIGN_IN_URL,
                 activeTitle: 'FLASH',
             });
         },

@@ -1,10 +1,22 @@
 import { mountSharedHeader, mountSharedFooter, renderSharedAuthState } from './layout.shared.js?v=20260308footer2';
 import { HEADER_NAVIGATION } from '../config/navigation.config.js';
 
-const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+const DEFAULT_MAIN_AUTH = Object.freeze({
+    storageKey: 'gasgx-main-auth',
+    supabaseUrl: 'https://mkpcliytqudclkwtewru.supabase.co',
+    supabaseKey: 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw',
+});
 const LEGACY_HIDDEN_STYLE_ID = 'gsh-legacy-hidden-style';
 const LEGACY_HIDDEN_CLASS = 'gsh-legacy-hidden';
+
+function getLegacyMainAuthConfig() {
+    const source = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
+    return {
+        storageKey: typeof source.storageKey === 'string' && source.storageKey.trim() ? source.storageKey.trim() : DEFAULT_MAIN_AUTH.storageKey,
+        supabaseUrl: typeof source.supabaseUrl === 'string' && source.supabaseUrl.trim() ? source.supabaseUrl.trim() : DEFAULT_MAIN_AUTH.supabaseUrl,
+        supabaseKey: typeof source.supabaseKey === 'string' && source.supabaseKey.trim() ? source.supabaseKey.trim() : DEFAULT_MAIN_AUTH.supabaseKey,
+    };
+}
 
 function ensureLegacyHiddenStyle() {
     if (document.getElementById(LEGACY_HIDDEN_STYLE_ID)) return;
@@ -162,7 +174,15 @@ async function initAuthBridge({ page, idPrefix, activeTitle, activePath }) {
 
     if (!window.supabase || typeof window.supabase.createClient !== 'function') return;
 
-    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const authConfig = getLegacyMainAuthConfig();
+    const client = window.supabase.createClient(authConfig.supabaseUrl, authConfig.supabaseKey, {
+        auth: {
+            storageKey: authConfig.storageKey,
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+        },
+    });
 
     try {
         const {
