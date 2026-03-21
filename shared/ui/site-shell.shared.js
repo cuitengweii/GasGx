@@ -16,6 +16,8 @@
         supabaseUrl: "https://mkpcliytqudclkwtewru.supabase.co",
         supabaseKey: "sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw"
     });
+    const SITE_SHELL_CONFIG_TABLE = "site_shell_configs";
+    const SITE_SHELL_CONFIG_SCOPE = "global";
     const MAIN_AUTH_FALLBACK_AVATAR = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2232%22 fill=%22%23121812%22/%3E%3Cpath d=%22M32 33c7.18 0 13-5.82 13-13S39.18 7 32 7 19 12.82 19 20s5.82 13 13 13Zm0 4c-9.94 0-18 6.27-18 14v2h36v-2c0-7.73-8.06-14-18-14Z%22 fill=%22%235DD62C%22/%3E%3C/svg%3E";
     const SHARED_TEXT = {
         en: {
@@ -259,10 +261,94 @@
         client: null,
         runtimeConfig: null
     };
+    let publishedSiteShellPromise = null;
+
+    function cloneSiteShellValue(value) {
+        return JSON.parse(JSON.stringify(value || null));
+    }
+
+    function isSiteShellVisible(item) {
+        return !!item && item.visible !== false && item.hidden !== true;
+    }
+
+    function filterVisibleItems(items) {
+        return Array.isArray(items) ? items.filter(isSiteShellVisible) : [];
+    }
+
+    function mergeSiteShellConfig(baseConfig, sourceConfig) {
+        const base = baseConfig && typeof baseConfig === "object" ? cloneSiteShellValue(baseConfig) : {};
+        const source = sourceConfig && typeof sourceConfig === "object" ? sourceConfig : {};
+        return Object.assign({}, base, source, {
+            navigation: Array.isArray(source.navigation) ? cloneSiteShellValue(source.navigation) : (Array.isArray(base.navigation) ? cloneSiteShellValue(base.navigation) : []),
+            sharedText: Object.assign({}, base.sharedText || {}, source.sharedText || {}),
+            footer: Object.assign({}, base.footer || {}, source.footer || {})
+        });
+    }
+
+    function applySiteShellConfig(config) {
+        if (!config || typeof config !== "object") return;
+        window.GASGX_SITE_SHELL_CONFIG = mergeSiteShellConfig(DEFAULT_SITE_SHELL_CONFIG, config);
+    }
 
     function getSiteShellConfig() {
         const config = window.GASGX_SITE_SHELL_CONFIG;
-        return config && typeof config === "object" ? config : {};
+        if (config && typeof config === "object") {
+            return mergeSiteShellConfig(DEFAULT_SITE_SHELL_CONFIG, config);
+        }
+        return DEFAULT_SITE_SHELL_CONFIG;
+    }
+
+    function fetchPublishedSiteShellConfig() {
+        if (typeof window === "undefined" || typeof fetch !== "function") {
+            return Promise.resolve(null);
+        }
+        if (publishedSiteShellPromise) return publishedSiteShellPromise;
+
+        const authConfig = getMainAuthConfig();
+        const query = new URLSearchParams({
+            select: "config",
+            scope: `eq.${SITE_SHELL_CONFIG_SCOPE}`,
+            limit: "1"
+        });
+
+        publishedSiteShellPromise = fetch(`${authConfig.supabaseUrl}/rest/v1/${SITE_SHELL_CONFIG_TABLE}?${query.toString()}`, {
+            cache: "no-store",
+            headers: {
+                apikey: authConfig.supabaseKey,
+                Authorization: `Bearer ${authConfig.supabaseKey}`
+            }
+        })
+            .then((response) => (response.ok ? response.json() : []))
+            .then((rows) => {
+                const firstRow = Array.isArray(rows) ? rows[0] : null;
+                const config = firstRow && firstRow.config && typeof firstRow.config === "object" ? firstRow.config : null;
+                if (!config) publishedSiteShellPromise = null;
+                return config;
+            })
+            .catch(() => {
+                publishedSiteShellPromise = null;
+                return null;
+            });
+
+        return publishedSiteShellPromise;
+    }
+
+    function refreshShellStructure() {
+        mountSlot("ggx-site-footer-slot", buildFooterTemplate());
+        refreshShellNavigation(true);
+        syncLanguageUI(getCurrentLang());
+    }
+
+    function syncPublishedSiteShellConfig() {
+        return fetchPublishedSiteShellConfig().then((config) => {
+            if (!config) return null;
+            applySiteShellConfig(config);
+            if (state.mounted) {
+                refreshShellStructure();
+            }
+            document.dispatchEvent(new CustomEvent("gasgx:site-shell-config-updated"));
+            return config;
+        });
     }
 
     function getFooterConfig() {
@@ -306,6 +392,8 @@
             });
 
         return {
+            visible: sourceFooter.visible !== false,
+            socialEnabled: sourceFooter.socialEnabled !== false,
             contact: Object.assign({}, defaultFooter.contact, sourceFooter.contact || {}),
             privacyPolicy: Object.assign({}, defaultFooter.privacyPolicy, sourceFooter.privacyPolicy || {}),
             partners: partners,
@@ -318,7 +406,7 @@
         if (!Array.isArray(siteShellConfig.navigation)) {
             return [];
         }
-        return siteShellConfig.navigation;
+        return filterVisibleItems(siteShellConfig.navigation);
     }
 
     function normalizePath(path) {
@@ -469,11 +557,11 @@
 
     function getItemChildren(item) {
         if (!item || typeof item !== "object") return [];
-        if (Array.isArray(item.children)) return item.children;
+        if (Array.isArray(item.children)) return filterVisibleItems(item.children);
         if (Array.isArray(item.sections)) {
-            return item.sections
+            return filterVisibleItems(item.sections)
                 .filter((section) => section && Array.isArray(section.items))
-                .flatMap((section) => section.items || []);
+                .flatMap((section) => filterVisibleItems(section.items || []));
         }
         return [];
     }
@@ -509,20 +597,20 @@
                 return `<a href="${itemPath}" class="nav-item-link font-medium text-sm"><span>${title}</span></a>`;
             }
 
-            if (itemType === "mega" && Array.isArray(item.sections) && item.sections.length) {
+            const visibleSections = filterVisibleItems(item && item.sections);
+
+            if (itemType === "mega" && visibleSections.length) {
                 const gridCols = typeof item.gridCols === "string" && item.gridCols.trim()
                     ? escapeHtml(item.gridCols.trim())
                     : "grid-cols-5";
-                const sectionsHtml = item.sections.map((section, sectionIndex) => {
+                const sectionsHtml = visibleSections.map((section, sectionIndex) => {
                     const header = escapeHtml(getLabelValue(section && section.header, lang));
-                    const itemsHtml = Array.isArray(section && section.items)
-                        ? section.items.map((subItem) => {
+                    const itemsHtml = filterVisibleItems(section && section.items).map((subItem) => {
                             const subTitle = escapeHtml(getLabelValue(subItem && subItem.title, lang));
                             const subPath = escapeHtml(normalizePath(subItem && subItem.path));
                             return `<li class="mb-2"><a href="${subPath}" class="text-gray-400 hover:text-gas-green text-xs flex items-center gap-2 transition-colors"><i class="fa-solid fa-angle-right text-[10px] opacity-50"></i>${subTitle}</a></li>`;
-                        }).join("")
-                        : "";
-                    const borderClass = sectionIndex === item.sections.length - 1 ? "" : "border-r border-white/5";
+                        }).join("");
+                    const borderClass = sectionIndex === visibleSections.length - 1 ? "" : "border-r border-white/5";
                     return `
                         <div class="col-span-1 space-y-4 ${borderClass} px-2">
                             <h3 class="text-gas-green font-bold text-sm uppercase tracking-wider mb-3 border-b border-white/5 pb-2">${header}</h3>
@@ -573,6 +661,7 @@
             const title = escapeHtml(getLabelValue(item && item.title, lang));
             const itemPath = escapeHtml(normalizePath(item && item.path));
             const children = getItemChildren(item);
+            const visibleSections = filterVisibleItems(item && item.sections);
 
             if (!children.length) {
                 return `
@@ -591,9 +680,9 @@
                     return `<a href="${childPath}" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">${childTitle}</a>`;
                 }).join("");
             } else {
-                childLinks = (item.sections || []).map((section) => {
+                childLinks = visibleSections.map((section) => {
                     const header = escapeHtml(getLabelValue(section && section.header, lang));
-                    const subItems = (section && Array.isArray(section.items) ? section.items : []).map((subItem) => {
+                    const subItems = filterVisibleItems(section && section.items).map((subItem) => {
                         const subTitle = escapeHtml(getLabelValue(subItem && subItem.title, lang));
                         const subPath = escapeHtml(normalizePath(subItem && subItem.path));
                         return `<a href="${subPath}" class="block py-2 pl-6 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">${subTitle}</a>`;
@@ -624,18 +713,20 @@
             const footerSubId = `ggx-footer-section-${index}`;
             let contentHtml = "";
             let desktopContentHtml = "";
+            const visibleChildren = filterVisibleItems(item && item.children);
+            const visibleSections = filterVisibleItems(item && item.sections);
 
-            if (item && item.type === "menu" && Array.isArray(item.children) && item.children.length) {
-                const links = item.children.map((child) => {
+            if (item && item.type === "menu" && visibleChildren.length) {
+                const links = visibleChildren.map((child) => {
                     const childTitle = escapeHtml(getLabelValue(child && child.title, lang));
                     const childPath = escapeHtml(normalizePath(child && child.path));
                     return `<a href="${childPath}" class="footer-link hover:text-gas-green text-gray-400 mr-4 mb-2 inline-block">${childTitle}</a>`;
                 }).join("");
                 contentHtml = `<div class="flex flex-wrap">${links}</div>`;
-            } else if (item && item.type === "mega" && Array.isArray(item.sections) && item.sections.length) {
-                const desktopSections = item.sections.map((section) => {
+            } else if (item && item.type === "mega" && visibleSections.length) {
+                const desktopSections = visibleSections.map((section) => {
                     const sectionTitle = escapeHtml(getLabelValue(section && section.header, lang));
-                    const sectionLinks = (Array.isArray(section && section.items) ? section.items : []).map((subItem) => {
+                    const sectionLinks = filterVisibleItems(section && section.items).map((subItem) => {
                         const subTitle = escapeHtml(getLabelValue(subItem && subItem.title, lang));
                         const subPath = escapeHtml(normalizePath(subItem && subItem.path));
                         return `<a href="${subPath}" class="hover:text-gas-green text-gray-400 ml-2 text-xs">${subTitle}</a>`;
@@ -643,8 +734,8 @@
                     return `<div class="flex items-baseline mr-6 mb-2"><span class="text-gas-green text-xs font-bold uppercase mr-1 whitespace-nowrap">${sectionTitle}:</span><div class="flex flex-wrap">${sectionLinks}</div></div>`;
                 }).join("");
 
-                const mobileLinks = item.sections.map((section) => {
-                    return (Array.isArray(section && section.items) ? section.items : []).map((subItem) => {
+                const mobileLinks = visibleSections.map((section) => {
+                    return filterVisibleItems(section && section.items).map((subItem) => {
                         const subTitle = escapeHtml(getLabelValue(subItem && subItem.title, lang));
                         const subPath = escapeHtml(normalizePath(subItem && subItem.path));
                         return `<a href="${subPath}" class="footer-link block pl-2 border-l border-white/10 hover:border-gas-green mb-1">${subTitle}</a>`;
@@ -1003,6 +1094,9 @@
 
     function buildFooterTemplate() {
         const footerConfig = getFooterConfig();
+        if (footerConfig.visible === false) {
+            return "";
+        }
         const contactHtml = buildFooterContact(footerConfig.contact);
         const privacyHtml = buildFooterPrivacyLink(footerConfig.privacyPolicy);
         const partnerHtml = footerConfig.partners.map(buildFooterPartnerEntry).join("");
@@ -1655,6 +1749,7 @@
             runAppIntegrationHooks();
             refreshShellNavigation(true);
             syncLanguageUI(getCurrentLang());
+            syncPublishedSiteShellConfig();
             return;
         }
 
@@ -1691,11 +1786,14 @@
 
         document.dispatchEvent(new CustomEvent("gasgx:shared-ui-ready"));
 
+        syncPublishedSiteShellConfig();
+
         // Let page scripts finish their own init first, then re-apply shared nav/footer once.
         window.setTimeout(function () {
             runAppIntegrationHooks();
             refreshShellNavigation(true);
             syncLanguageUI(getCurrentLang());
+            syncPublishedSiteShellConfig();
         }, 0);
     }
 
@@ -1707,6 +1805,7 @@
         callApp: callApp,
         mount: mount,
         refreshNavigation: refreshShellNavigation,
+        reloadShellConfig: syncPublishedSiteShellConfig,
         syncLanguageUI: syncLanguageUI,
         initBackToTop: initBackToTop,
         initChatbot: initChatbot,

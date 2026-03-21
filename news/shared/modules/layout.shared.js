@@ -119,6 +119,8 @@ function renderFlashHeader({ idPrefix, appGlobal }) {
 }
 
 const SITE_SHELL_CONFIG_SCRIPT_SRC = '/shared/ui/site-shell.config.js';
+const SITE_SHELL_CONFIG_TABLE = 'site_shell_configs';
+const SITE_SHELL_CONFIG_SCOPE = 'global';
 const FOOTER_SOCIAL_SETTINGS_TABLE = 'feeder_form_options';
 const FOOTER_SOCIAL_SECTION = 'footer_social';
 const FOOTER_SOCIAL_META_SECTION = 'footer_social_meta';
@@ -130,6 +132,30 @@ const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
 let siteShellConfigPromise = null;
 let footerSocialSettingsPromise = null;
+
+function isVisibleFooterItem(item) {
+    return !!item && item.visible !== false && item.hidden !== true;
+}
+
+function filterVisibleFooterItems(items) {
+    return Array.isArray(items) ? items.filter(isVisibleFooterItem) : [];
+}
+
+function cloneSiteShellConfig(value) {
+    return JSON.parse(JSON.stringify(value || null));
+}
+
+function mergeSiteShellRootConfig(baseConfig, sourceConfig) {
+    const base = baseConfig && typeof baseConfig === 'object' ? cloneSiteShellConfig(baseConfig) : {};
+    const source = sourceConfig && typeof sourceConfig === 'object' ? sourceConfig : {};
+    return {
+        ...base,
+        ...source,
+        navigation: Array.isArray(source.navigation) ? cloneSiteShellConfig(source.navigation) : Array.isArray(base.navigation) ? cloneSiteShellConfig(base.navigation) : [],
+        sharedText: { ...(base.sharedText || {}), ...(source.sharedText || {}) },
+        footer: { ...(base.footer || {}), ...(source.footer || {}) },
+    };
+}
 
 const DEFAULT_HOMEPAGE_FOOTER_NAV = [
     {
@@ -211,13 +237,13 @@ function isHomeFooterPath(path) {
 
 function getHomepageFooterConfig() {
     const rootConfig = typeof window !== 'undefined' ? window.GASGX_SITE_SHELL_CONFIG : null;
-    return rootConfig && typeof rootConfig === 'object' ? rootConfig : {};
+    return mergeSiteShellRootConfig({}, rootConfig && typeof rootConfig === 'object' ? rootConfig : {});
 }
 
 function getHomepageFooterNavigation() {
     const config = getHomepageFooterConfig();
     return Array.isArray(config.navigation) && config.navigation.length
-        ? config.navigation
+        ? filterVisibleFooterItems(config.navigation)
         : DEFAULT_HOMEPAGE_FOOTER_NAV;
 }
 
@@ -231,6 +257,7 @@ function getHomepageFooterSettings() {
     return {
         contact: footer.contact && typeof footer.contact === 'object' ? footer.contact : {},
         privacyPolicy: footer.privacyPolicy && typeof footer.privacyPolicy === 'object' ? footer.privacyPolicy : {},
+        visible: footer.visible !== false,
         socialEnabled: footer.socialEnabled !== false,
         socialLinks,
     };
@@ -273,7 +300,7 @@ function mergeFooterSocialSettings(baseSettings, overrides) {
 }
 
 function getFooterItemChildren(item) {
-    return Array.isArray(item?.children) ? item.children.filter((entry) => entry && entry.path) : [];
+    return filterVisibleFooterItems(item?.children).filter((entry) => entry && entry.path);
 }
 
 function resolveFooterSocialHref(item) {
@@ -407,6 +434,7 @@ function buildHomepageFooterLinksHtml(navigation) {
             const children = getFooterItemChildren(item);
             let mobileContentHtml = '';
             let desktopContentHtml = '';
+            const visibleSections = filterVisibleFooterItems(item?.sections);
 
             if (itemType === 'menu' && children.length) {
                 const links = children
@@ -418,11 +446,11 @@ function buildHomepageFooterLinksHtml(navigation) {
                     .join('');
                 mobileContentHtml = `<div class="flex flex-wrap">${links}</div>`;
                 desktopContentHtml = mobileContentHtml;
-            } else if (itemType === 'mega' && Array.isArray(item?.sections) && item.sections.length) {
-                desktopContentHtml = item.sections
+            } else if (itemType === 'mega' && visibleSections.length) {
+                desktopContentHtml = visibleSections
                     .map((section) => {
                         const sectionTitle = escapeHtml(resolveFooterLabel(section?.header, 'Section'));
-                        const sectionLinks = (Array.isArray(section?.items) ? section.items : [])
+                        const sectionLinks = filterVisibleFooterItems(section?.items)
                             .map((subItem) => {
                                 const subTitle = escapeHtml(resolveFooterLabel(subItem?.title, 'Link'));
                                 const subPath = escapeHtml(normalizeFooterHref(subItem?.path));
@@ -434,9 +462,9 @@ function buildHomepageFooterLinksHtml(navigation) {
                     .join('');
                 desktopContentHtml = `<div class="flex flex-wrap items-center">${desktopContentHtml}</div>`;
 
-                mobileContentHtml = item.sections
+                mobileContentHtml = visibleSections
                     .map((section) => {
-                        const sectionLinks = (Array.isArray(section?.items) ? section.items : [])
+                        const sectionLinks = filterVisibleFooterItems(section?.items)
                             .map((subItem) => {
                                 const subTitle = escapeHtml(resolveFooterLabel(subItem?.title, 'Link'));
                                 const subPath = escapeHtml(normalizeFooterHref(subItem?.path));
@@ -478,6 +506,30 @@ function buildHomepageFooterLinksHtml(navigation) {
         .join('');
 }
 
+function fetchPublishedSiteShellConfig() {
+    if (typeof window === 'undefined' || typeof fetch !== 'function') return Promise.resolve(null);
+
+    const query = new URLSearchParams({
+        select: 'config',
+        scope: `eq.${SITE_SHELL_CONFIG_SCOPE}`,
+        limit: '1',
+    });
+
+    return fetch(`${SUPABASE_URL}/rest/v1/${SITE_SHELL_CONFIG_TABLE}?${query.toString()}`, {
+        cache: 'no-store',
+        headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+        },
+    })
+        .then((response) => (response.ok ? response.json() : []))
+        .then((rows) => {
+            const firstRow = Array.isArray(rows) ? rows[0] : null;
+            return firstRow?.config && typeof firstRow.config === 'object' ? firstRow.config : null;
+        })
+        .catch(() => null);
+}
+
 function ensureSiteShellConfigLoaded() {
     if (typeof window === 'undefined' || typeof document === 'undefined') return Promise.resolve(null);
     if (window.GASGX_SITE_SHELL_CONFIG && typeof window.GASGX_SITE_SHELL_CONFIG === 'object') {
@@ -485,27 +537,35 @@ function ensureSiteShellConfigLoaded() {
     }
     if (siteShellConfigPromise) return siteShellConfigPromise;
 
-    siteShellConfigPromise = new Promise((resolve) => {
-        const done = () => resolve(window.GASGX_SITE_SHELL_CONFIG || null);
-        const fail = () => resolve(null);
-        const existing = document.querySelector('script[data-gsh-site-shell-config="1"]');
+    siteShellConfigPromise = fetchPublishedSiteShellConfig()
+        .then((publishedConfig) => {
+            if (publishedConfig) {
+                window.GASGX_SITE_SHELL_CONFIG = mergeSiteShellRootConfig(window.GASGX_SITE_SHELL_CONFIG || {}, publishedConfig);
+                return window.GASGX_SITE_SHELL_CONFIG;
+            }
 
-        if (existing) {
-            if (window.GASGX_SITE_SHELL_CONFIG) return done();
-            existing.addEventListener('load', done, { once: true });
-            existing.addEventListener('error', fail, { once: true });
-            return undefined;
-        }
+            return new Promise((resolve) => {
+                const done = () => resolve(window.GASGX_SITE_SHELL_CONFIG || null);
+                const fail = () => resolve(null);
+                const existing = document.querySelector('script[data-gsh-site-shell-config="1"]');
 
-        const script = document.createElement('script');
-        script.src = SITE_SHELL_CONFIG_SCRIPT_SRC;
-        script.async = true;
-        script.dataset.gshSiteShellConfig = '1';
-        script.addEventListener('load', done, { once: true });
-        script.addEventListener('error', fail, { once: true });
-        document.head.appendChild(script);
-        return undefined;
-    });
+                if (existing) {
+                    if (window.GASGX_SITE_SHELL_CONFIG) return done();
+                    existing.addEventListener('load', done, { once: true });
+                    existing.addEventListener('error', fail, { once: true });
+                    return undefined;
+                }
+
+                const script = document.createElement('script');
+                script.src = SITE_SHELL_CONFIG_SCRIPT_SRC;
+                script.async = true;
+                script.dataset.gshSiteShellConfig = '1';
+                script.addEventListener('load', done, { once: true });
+                script.addEventListener('error', fail, { once: true });
+                document.head.appendChild(script);
+                return undefined;
+            });
+        });
 
     return siteShellConfigPromise;
 }
@@ -533,6 +593,11 @@ function refreshHomepageFooterContact(container, overrides = null) {
     if (!contactSlot) return;
     const settings = mergeFooterSocialSettings(getHomepageFooterSettings(), overrides);
     contactSlot.innerHTML = buildHomepageFooterContactHtml(settings);
+}
+
+function shouldUseLegacyFooterOverrides() {
+    const config = getHomepageFooterConfig();
+    return !config || !config.footer || (Array.isArray(config.navigation) && config.navigation.length === 0);
 }
 
 function bindHomepageFooterInteractions(container) {
@@ -563,6 +628,7 @@ function bindHomepageFooterInteractions(container) {
 
 function renderFullFooter() {
     const settings = getHomepageFooterSettings();
+    if (settings.visible === false) return '';
     const linksHtml = buildHomepageFooterLinksHtml(getHomepageFooterNavigation());
     const contactHtml = buildHomepageFooterContactHtml(settings);
     const privacyHtml = buildHomepageFooterPrivacyHtml(settings);
@@ -1073,12 +1139,15 @@ export function mountSharedFooter(container, options = {}) {
         bindHomepageFooterInteractions(container);
         ensureSiteShellConfigLoaded()
             .then(() => {
+                container.innerHTML = renderFullFooter();
+                bindHomepageFooterInteractions(container);
                 refreshHomepageFooterLinks(container);
                 refreshHomepageFooterContact(container);
                 refreshHomepageFooterSocial(container);
-                return fetchFooterSocialSettings();
+                return shouldUseLegacyFooterOverrides() ? fetchFooterSocialSettings() : null;
             })
             .then((overrides) => {
+                if (!overrides) return;
                 refreshHomepageFooterContact(container, overrides);
                 refreshHomepageFooterSocial(container, overrides);
             })

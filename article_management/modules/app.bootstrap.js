@@ -25,7 +25,7 @@ import {
     rejectQueueItem,
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
-import { fetchFooterSocialSettings, updateFooterSocialGroupVisible, upsertFooterContactSettings, upsertFooterSocialItem } from './site-settings.module.js';
+import { renderSiteFooterAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js';
 
 const HOMEPAGE_MARK_LIMIT = Number.isFinite(Number(featuredApi.HOMEPAGE_MARK_LIMIT)) ? Number(featuredApi.HOMEPAGE_MARK_LIMIT) : 3;
@@ -129,14 +129,14 @@ const state = {
     recycle: { page: 1, pageSize: 20, search: '' },
     editor: createEditorState(),
     featured: { limit: DEFAULT_FEATURED_LIMIT, ids: [], heroIds: [], poolScrollTop: 0 },
-    siteSettings: { footerSocial: null },
+    siteShell: { draft: null, source: 'static', error: null, row: null, dirty: false },
     queue: { page: 1, pageSize: 20, status: 'all' },
     cache: {
         articles: null,
         dashboard: null,
         recycle: null,
         featured: null,
-        siteSettings: null,
+        siteShell: null,
         queue: null,
         tagOptions: null,
         tags: null,
@@ -831,6 +831,15 @@ function navButton(id, label, icon) {
     return `<button type="button" class="ams-nav-btn ${active}" data-page="${id}"><span><i class="fa-solid ${icon}"></i> ${label}</span><i class="fa-solid fa-angle-right"></i></button>`;
 }
 
+function navGroup(label, items = []) {
+    return `
+        <div class="ams-nav-group">
+            <div class="ams-nav-group-label">${esc(label)}</div>
+            <div class="ams-nav-group-items">${items.join('')}</div>
+        </div>
+    `;
+}
+
 function renderShell() {
     const name = esc(getDisplayName(state.user));
     root.innerHTML = `
@@ -838,24 +847,29 @@ function renderShell() {
             <aside class="ams-sidebar">
                 <div class="ams-sidebar-head">
                     <h2 class="ams-sidebar-title">GasGx <span>AMS</span></h2>
-                    <div class="ams-sidebar-meta">文章运营控制台</div>
+                    <div class="ams-sidebar-meta">网站管理后台</div>
                 </div>
                 <nav class="ams-nav">
-                    ${navButton('dashboard', '总览', 'fa-chart-line')}
-                    ${navButton('articles', '文章管理', 'fa-file-lines')}
-                    ${navButton('editor', '新建文章', 'fa-pen-to-square')}
-                    ${navButton('recycle', '回收站', 'fa-trash-can-arrow-up')}
-                    ${navButton('featured', '首页推荐位', 'fa-ranking-star')}
-                    ${navButton('site-settings', '站点设置', 'fa-share-nodes')}
-                    ${navButton('queue', '采集队列', 'fa-list-check')}
-                    ${navButton('tags', '标签管理', 'fa-tags')}
+                    ${navGroup('Dashboard', [navButton('dashboard', '总览', 'fa-chart-line')])}
+                    ${navGroup('Site', [
+                        navButton('site-navigation', '主站导航', 'fa-compass'),
+                        navButton('site-footer', '主站 Footer', 'fa-window-maximize'),
+                    ])}
+                    ${navGroup('News', [
+                        navButton('articles', '文章管理', 'fa-file-lines'),
+                        navButton('editor', '新建文章', 'fa-pen-to-square'),
+                        navButton('recycle', '回收站', 'fa-trash-can-arrow-up'),
+                        navButton('featured', '首页推荐位', 'fa-ranking-star'),
+                        navButton('queue', '采集队列', 'fa-list-check'),
+                        navButton('tags', '标签管理', 'fa-tags'),
+                    ])}
                 </nav>
             </aside>
             <main class="ams-main">
                 <header class="ams-header">
                     <div>
-                        <h1 id="ams-page-title">文章管理后台</h1>
-                        <p id="ams-page-sub">GasGx 新闻内容运营后台</p>
+                        <h1 id="ams-page-title">GasGx 网站管理后台</h1>
+                        <p id="ams-page-sub">统一管理主站壳、News 内容与推荐位</p>
                     </div>
                     <div class="ams-user">
                         <span><i class="fa-solid fa-user"></i> <strong>${name}</strong></span>
@@ -889,7 +903,7 @@ function renderShell() {
     });
 }
 async function renderDashboard(forceRefresh = false) {
-    setPageHeader('总览', '查看文章、推荐位和采集队列的整体状态。');
+    setPageHeader('总览', '查看主站导航、News 内容、推荐位和采集队列的整体状态。');
 
     const dashboardCacheKey = JSON.stringify({ featuredLimit: state.featured.limit });
     let dashboardData = !forceRefresh && state.cache.dashboard?.key === dashboardCacheKey ? state.cache.dashboard.data : null;
@@ -921,8 +935,8 @@ async function renderDashboard(forceRefresh = false) {
         <section class="ams-card ams-dashboard-intro">
             <div class="ams-dashboard-intro-copy">
                 <p class="ams-eyebrow">Dashboard</p>
-                <h2>文章发布、推荐位调整和采集处理都从这里开始。</h2>
-                <p class="ams-hero-text">首页改成了更常规的后台概览结构：先看整体状态，再进入具体操作页，信息分区更直观，阅读顺序也更自然。</p>
+                <h2>把主站壳、内容发布、推荐位和采集审核放进同一个后台。</h2>
+                <p class="ams-hero-text">第一阶段先接管 www.gasgx.com 的共享 Header / Footer，同时保留原有 News 内容运营功能。这里先看整体状态，再进入 Site 或 News 具体操作页。</p>
             </div>
             <div class="ams-dashboard-intro-meta">
                 <div class="ams-dashboard-highlight">
@@ -930,12 +944,26 @@ async function renderDashboard(forceRefresh = false) {
                     <strong>${queue.count ? `优先处理 ${queue.count} 条采集记录` : '当前没有待处理采集内容'}</strong>
                 </div>
                 <div class="ams-dashboard-highlight">
-                    <span>推荐位状态</span>
-                    <strong>首页 ${heroSlots.length}/${HOMEPAGE_MARK_LIMIT}，广告 ${featured.length}/${state.featured.limit}</strong>
+                    <span>站点壳状态</span>
+                    <strong>主站导航与 Footer 现已可在 Site 模块中统一管理</strong>
                 </div>
             </div>
         </section>
         <section class="ams-dashboard-actions">
+            <button class="ams-quick-link" type="button" data-dashboard-nav="site-navigation">
+                <div class="ams-quick-link-icon"><i class="fa-solid fa-compass"></i></div>
+                <div class="ams-quick-link-body">
+                    <strong>主站导航</strong>
+                    <span>调整 Header 与 Footer 导航树</span>
+                </div>
+            </button>
+            <button class="ams-quick-link" type="button" data-dashboard-nav="site-footer">
+                <div class="ams-quick-link-icon"><i class="fa-solid fa-window-maximize"></i></div>
+                <div class="ams-quick-link-body">
+                    <strong>主站 Footer</strong>
+                    <span>管理 Contact、社交入口与合作伙伴</span>
+                </div>
+            </button>
             <button class="ams-quick-link" type="button" data-dashboard-nav="editor">
                 <div class="ams-quick-link-icon"><i class="fa-solid fa-pen-to-square"></i></div>
                 <div class="ams-quick-link-body">
@@ -2624,16 +2652,35 @@ async function renderPage() {
         return;
     }
 
+    if (state.page === 'site-settings') {
+        state.page = 'site-footer';
+    }
+
     clearPreviewBinding();
     renderShell();
 
     try {
         if (state.page === 'dashboard') await renderDashboard();
+        else if (state.page === 'site-navigation') await renderSiteNavigationAdmin({
+            user: state.user,
+            setPageHeader,
+            setContent,
+            showToast,
+            withButtonBusy,
+            rerender: () => renderPage(),
+        });
+        else if (state.page === 'site-footer') await renderSiteFooterAdmin({
+            user: state.user,
+            setPageHeader,
+            setContent,
+            showToast,
+            withButtonBusy,
+            rerender: () => renderPage(),
+        });
         else if (state.page === 'articles') await renderArticles();
         else if (state.page === 'editor') await renderEditor();
         else if (state.page === 'recycle') await renderRecycleBin();
         else if (state.page === 'featured') await renderFeatured();
-        else if (state.page === 'site-settings') await renderSiteSettings();
         else if (state.page === 'queue') await renderQueue();
         else if (state.page === 'tags') await renderTags();
         else setContent('<div class="ams-empty">未知页面。</div>');

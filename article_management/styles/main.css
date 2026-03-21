@@ -1217,7 +1217,7 @@ textarea {
 .ams-dashboard-actions {
     margin-bottom: 12px;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 12px;
 }
 
@@ -1714,5 +1714,426 @@ textarea {
 
     .ams-quick-link {
         padding: 12px;
+    }
+}
+
+.ams-nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ams-nav-group + .ams-nav-group {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ams-nav-group-label {
+    padding: 0 6px;
+    color: #747474;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.ams-nav-group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ams-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    border: 1px solid #2c2c2c;
+    background: #111;
+    color: #d0d0d0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.ams-status-pill.is-ok {
+    border-color: rgba(93, 214, 44, 0.4);
+    color: var(--ams-green);
+    background: rgba(93, 214, 44, 0.08);
+}
+
+.ams-status-pill.is-warn {
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #ffd188;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.ams-site-hero {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.ams-site-hero-copy h2 {
+    margin: 6px 0 0;
+    font-size: 32px;
+    line-height: 1.08;
+    font-weight: 800;
+}
+
+.ams-site-hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.ams-site-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.ams-site-notice {
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 12px;
+    background: rgba(245, 158, 11, 0.08);
+    padding: 12px 14px;
+}
+
+.ams-site-notice-copy {
+    font-size: 12px;
+    color: #ffd188;
+}
+
+.ams-site-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.95fr);
+    gap: 14px;
+}
+
+.ams-site-main,
+.ams-site-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.ams-site-header-actions,
+.ams-site-inline-actions,
+.ams-site-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.ams-site-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ams-site-tree-node {
+    border: 1px solid #252525;
+    border-radius: 14px;
+    background: #101010;
+}
+
+.ams-site-tree-node-root {
+    background: linear-gradient(180deg, rgba(18, 18, 18, 0.98), rgba(12, 12, 12, 0.98));
+}
+
+.ams-site-tree-node-child,
+.ams-site-tree-node-section,
+.ams-site-tree-node-leaf {
+    background: #0d0d0d;
+}
+
+.ams-site-tree-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+}
+
+.ams-site-tree-main {
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+}
+
+.ams-site-tree-toggle {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #2b2b2b;
+    border-radius: 10px;
+    background: #111;
+    color: #cfcfcf;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+}
+
+.ams-site-tree-toggle:hover {
+    border-color: rgba(93, 214, 44, 0.45);
+    color: var(--ams-green);
+}
+
+.ams-site-tree-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ams-site-tree-copy-toggle,
+.ams-site-branch-title.ams-site-tree-copy-toggle {
+    cursor: pointer;
+}
+
+.ams-site-tree-copy strong {
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.ams-site-tree-copy span {
+    color: #8f8f8f;
+    font-size: 12px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.ams-site-tree-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.ams-site-editor-panel {
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ams-site-branch {
+    margin: 0 16px 16px;
+    border: 1px solid #202020;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ams-site-branch-head {
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.ams-site-branch-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #d4d4d4;
+}
+
+.ams-site-branch-title span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: rgba(93, 214, 44, 0.12);
+    color: var(--ams-green);
+    font-size: 11px;
+}
+
+.ams-site-tree-children {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ams-site-editor-stack,
+.ams-site-nested-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ams-site-editor-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ams-site-card-head,
+.ams-site-subcard-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.ams-site-subcard {
+    border: 1px solid #252525;
+    border-radius: 12px;
+    background: #0f0f0f;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ams-site-subcard-compact {
+    background: #0d0d0d;
+}
+
+.ams-site-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.ams-site-field-grid-wide {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ams-site-visible-toggle {
+    align-self: center;
+}
+
+.ams-site-preview-block {
+    border: 1px solid #252525;
+    border-radius: 12px;
+    background: #121212;
+    padding: 12px;
+}
+
+.ams-site-preview-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.ams-site-preview-chip {
+    min-width: 0;
+    border: 1px solid #2d2d2d;
+    border-radius: 999px;
+    background: #0f0f0f;
+    padding: 10px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ams-site-preview-chip strong {
+    font-size: 12px;
+    color: #fff;
+}
+
+.ams-site-preview-chip em {
+    font-style: normal;
+    font-size: 10px;
+    color: var(--ams-green);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.ams-site-preview-stack {
+    display: grid;
+    gap: 10px;
+}
+
+.ams-site-preview-pane {
+    border: 1px solid #262626;
+    border-radius: 12px;
+    background: #0f0f0f;
+    padding: 12px;
+}
+
+.ams-site-preview-pane > strong {
+    display: block;
+    margin-bottom: 10px;
+    color: #fff;
+    font-size: 13px;
+}
+
+.ams-site-preview-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ams-site-preview-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    border: 1px solid #232323;
+    border-radius: 10px;
+    background: #121212;
+    padding: 9px 10px;
+    font-size: 12px;
+}
+
+.ams-site-preview-row span {
+    color: #d7d7d7;
+}
+
+.ams-site-preview-row em {
+    font-style: normal;
+    color: var(--ams-green);
+}
+
+@media (max-width: 1280px) {
+    .ams-site-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 960px) {
+    .ams-site-card-head,
+    .ams-site-subcard-head,
+    .ams-site-header-actions,
+    .ams-site-inline-actions,
+    .ams-site-tree-row,
+    .ams-site-tree-main,
+    .ams-site-tree-actions,
+    .ams-site-branch-head {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ams-site-field-grid,
+    .ams-site-field-grid-wide {
+        grid-template-columns: 1fr;
+    }
+
+    .ams-site-visible-toggle {
+        align-self: flex-start;
+    }
+
+    .ams-site-editor-panel,
+    .ams-site-tree-children,
+    .ams-site-branch,
+    .ams-site-row {
+        margin-inline: 0;
     }
 }
