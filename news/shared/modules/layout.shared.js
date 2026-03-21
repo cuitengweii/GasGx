@@ -40,6 +40,9 @@ function renderLoggedInDesktopAuth({ accountUrl, safeName, avatarUrl }) {
                     <a href="${safeAccountUrl}" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors flex items-center">
                         <i class="fa-solid fa-user mr-2"></i><span>Open account</span>
                     </a>
+                    <button type="button" onclick="window.GGXNewsAuthSignOut && window.GGXNewsAuthSignOut()" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-red-400 hover:bg-white/5 transition-colors flex items-center">
+                        <i class="fa-solid fa-right-from-bracket mr-2"></i><span>Logout</span>
+                    </button>
                 </div>
             </div>
         </div>

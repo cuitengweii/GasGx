@@ -1,5 +1,5 @@
 ﻿
-import { renderSharedAuthState } from './layout.shared.js?v=20260321newsacct01';
+import { renderSharedAuthState } from './layout.shared.js?v=20260322logout01';
 import { HEADER_NAVIGATION } from '../config/navigation.config.js';
 import {
     DEFAULT_COVER,

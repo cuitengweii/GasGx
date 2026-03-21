@@ -364,7 +364,7 @@
     <div id="ggx-back-to-top-slot"></div>
     <div id="ggx-chatbot-slot"></div>
     <script src="/shared/ui/site-shell.config.js?v=20260321auth02"></script>
-    <script src="/shared/ui/site-shell.shared.js?v=20260321auth02"></script>
+    <script src="/shared/ui/site-shell.shared.js?v=20260322logout01"></script>
     <script>
         const MAIN_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
         const SUPABASE_URL = MAIN_AUTH.supabaseUrl || 'https://mkpcliytqudclkwtewru.supabase.co';
@@ -485,6 +485,13 @@
             } catch (_error) {
                 return null;
             }
+        }
+
+        function clearAuthStorage() {
+            [MAIN_AUTH_STORAGE_KEY, `${MAIN_AUTH_STORAGE_KEY}-code-verifier`].forEach((key) => {
+                try { window.localStorage.removeItem(key); } catch (error) { console.warn('Local storage cleanup warning:', error); }
+                try { window.sessionStorage.removeItem(key); } catch (error) { console.warn('Session storage cleanup warning:', error); }
+            });
         }
 
         function applyViewModel(viewModel) {
@@ -726,8 +733,15 @@
         };
 
         window.handleSignOut = async function() {
-            await client.auth.signOut();
-            window.location.href = SIGN_IN_URL;
+            document.getElementById('auth-loader').classList.remove('hidden');
+            try {
+                await client.auth.signOut({ scope: 'global' });
+            } catch (error) {
+                console.error('Account sign-out failed:', error);
+            } finally {
+                clearAuthStorage();
+                window.location.replace(SIGN_IN_URL);
+            }
         };
 
         window.refreshAccount = async function() {

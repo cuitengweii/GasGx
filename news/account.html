@@ -258,6 +258,13 @@
             }, 3200);
         }
 
+        function clearAuthStorage() {
+            [MAIN_AUTH_STORAGE_KEY, `${MAIN_AUTH_STORAGE_KEY}-code-verifier`].forEach((key) => {
+                try { window.localStorage.removeItem(key); } catch (error) { console.warn('Local storage cleanup warning:', error); }
+                try { window.sessionStorage.removeItem(key); } catch (error) { console.warn('Session storage cleanup warning:', error); }
+            });
+        }
+
         // --- AUTH & LOAD ---
         document.addEventListener('DOMContentLoaded', async () => {
             const loader = document.getElementById('auth-loader');
@@ -508,11 +515,18 @@
         }
 
         window.handleSignOut = async function() {
-            await client.auth.signOut();
-            window.location.href = SIGN_IN_URL;
+            document.getElementById('auth-loader').classList.remove('hidden');
+            try {
+                await client.auth.signOut({ scope: 'global' });
+            } catch (error) {
+                console.error('News account sign-out failed:', error);
+            } finally {
+                clearAuthStorage();
+                window.location.replace(SIGN_IN_URL);
+            }
         }
     </script>
-<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js?v=20260321newsacct01"></script>
+<script type="module" src="/news/shared/modules/legacy-shell.bootstrap.js?v=20260322logout01"></script>
 </body>
 </html>
 

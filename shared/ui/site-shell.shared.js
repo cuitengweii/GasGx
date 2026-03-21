@@ -1602,21 +1602,52 @@
         return undefined;
     }
 
+    function clearMainAuthStorage(config) {
+        const keys = [
+            config.storageKey,
+            `${config.storageKey}-code-verifier`
+        ];
+
+        keys.forEach((key) => {
+            try {
+                window.localStorage.removeItem(key);
+            } catch (error) {
+                console.warn("Main auth localStorage cleanup warning:", error);
+            }
+            try {
+                window.sessionStorage.removeItem(key);
+            } catch (error) {
+                console.warn("Main auth sessionStorage cleanup warning:", error);
+            }
+        });
+    }
+
     async function mainAuthBridgeSignOut() {
-        if (isNewsPath()) return undefined;
         const config = authBridgeState.runtimeConfig || getMainAuthConfig();
+
+        if (!authBridgeState.client && window.supabase && typeof window.supabase.createClient === "function") {
+            authBridgeState.client = window.supabase.createClient(config.supabaseUrl, config.supabaseKey, {
+                auth: {
+                    storageKey: config.storageKey,
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                }
+            });
+        }
 
         if (authBridgeState.client) {
             try {
-                await authBridgeState.client.auth.signOut();
+                await authBridgeState.client.auth.signOut({ scope: "global" });
             } catch (error) {
                 console.error("Main auth sign-out failed:", error);
             }
         }
 
+        clearMainAuthStorage(config);
         authBridgeState.currentUser = null;
         applyMainAuthState(null, "Sign In");
-        window.location.href = config.signOutRedirectUrl;
+        window.location.replace(config.signOutRedirectUrl);
         return undefined;
     }
 

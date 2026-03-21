@@ -1,4 +1,4 @@
-import { mountSharedHeader, mountSharedFooter, renderSharedAuthState } from './layout.shared.js?v=20260321newsacct01';
+import { mountSharedHeader, mountSharedFooter, renderSharedAuthState } from './layout.shared.js?v=20260322logout01';
 import { HEADER_NAVIGATION } from '../config/navigation.config.js';
 
 const DEFAULT_MAIN_AUTH = Object.freeze({
@@ -8,6 +8,8 @@ const DEFAULT_MAIN_AUTH = Object.freeze({
 });
 const LEGACY_HIDDEN_STYLE_ID = 'gsh-legacy-hidden-style';
 const LEGACY_HIDDEN_CLASS = 'gsh-legacy-hidden';
+let legacyAuthClient = null;
+let legacyAuthConfig = null;
 
 function getLegacyMainAuthConfig() {
     const source = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
@@ -166,6 +168,39 @@ function applySharedNavState({ page, idPrefix, currentUser, displayName, activeT
     });
 }
 
+function clearLegacyAuthStorage(authConfig) {
+    if (!authConfig) return;
+    [authConfig.storageKey, `${authConfig.storageKey}-code-verifier`].forEach((key) => {
+        try { window.localStorage.removeItem(key); } catch (error) { console.warn('Legacy auth localStorage cleanup warning:', error); }
+        try { window.sessionStorage.removeItem(key); } catch (error) { console.warn('Legacy auth sessionStorage cleanup warning:', error); }
+    });
+}
+
+async function signOutLegacyAuth() {
+    const authConfig = legacyAuthConfig || getLegacyMainAuthConfig();
+    if (!legacyAuthClient && window.supabase && typeof window.supabase.createClient === 'function') {
+        legacyAuthClient = window.supabase.createClient(authConfig.supabaseUrl, authConfig.supabaseKey, {
+            auth: {
+                storageKey: authConfig.storageKey,
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+            },
+        });
+    }
+
+    if (legacyAuthClient) {
+        try {
+            await legacyAuthClient.auth.signOut({ scope: 'global' });
+        } catch (error) {
+            console.error('Legacy shell sign-out failed:', error);
+        }
+    }
+
+    clearLegacyAuthStorage(authConfig);
+    window.location.replace('/account/user.html');
+}
+
 async function initAuthBridge({ page, idPrefix, activeTitle, activePath }) {
     let currentUser = null;
     let displayName = null;
@@ -183,6 +218,9 @@ async function initAuthBridge({ page, idPrefix, activeTitle, activePath }) {
             detectSessionInUrl: true,
         },
     });
+    legacyAuthClient = client;
+    legacyAuthConfig = authConfig;
+    window.GGXNewsAuthSignOut = signOutLegacyAuth;
 
     try {
         const {
