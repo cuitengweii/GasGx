@@ -151,6 +151,10 @@ const EMPTY_SITE_SHELL_CONFIG = Object.freeze({
             returnUrlStorageKey: 'gx_main_return_url',
             supabaseUrl: 'https://mkpcliytqudclkwtewru.supabase.co',
             supabaseKey: 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw',
+            providerRollout: {
+                twitter: false,
+                linkedin: false,
+            },
         },
     },
     footer: {
@@ -435,6 +439,8 @@ function normalizeSiteFeatures(source, fallback) {
 function normalizeSiteMainAuth(source, fallback) {
     const safeSource = isPlainObject(source) ? source : {};
     const safeFallback = isPlainObject(fallback) ? fallback : {};
+    const sourceProviderRollout = isPlainObject(safeSource.providerRollout) ? safeSource.providerRollout : {};
+    const fallbackProviderRollout = isPlainObject(safeFallback.providerRollout) ? safeFallback.providerRollout : {};
     return {
         storageKey: normalizeText(safeSource.storageKey || safeFallback.storageKey || 'gasgx-main-auth') || 'gasgx-main-auth',
         signInUrl: normalizeText(safeSource.signInUrl || safeFallback.signInUrl || '/account/user.html') || '/account/user.html',
@@ -443,6 +449,10 @@ function normalizeSiteMainAuth(source, fallback) {
         returnUrlStorageKey: normalizeText(safeSource.returnUrlStorageKey || safeFallback.returnUrlStorageKey || 'gx_main_return_url') || 'gx_main_return_url',
         supabaseUrl: normalizeText(safeSource.supabaseUrl || safeFallback.supabaseUrl || 'https://mkpcliytqudclkwtewru.supabase.co'),
         supabaseKey: normalizeText(safeSource.supabaseKey || safeFallback.supabaseKey || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw'),
+        providerRollout: {
+            twitter: normalizeBoolean(sourceProviderRollout.twitter, normalizeBoolean(fallbackProviderRollout.twitter, false)),
+            linkedin: normalizeBoolean(sourceProviderRollout.linkedin, normalizeBoolean(fallbackProviderRollout.linkedin, false)),
+        },
     };
 }
 

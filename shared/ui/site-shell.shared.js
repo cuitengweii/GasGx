@@ -14,7 +14,11 @@
         signOutRedirectUrl: "/account/user.html",
         returnUrlStorageKey: "gx_main_return_url",
         supabaseUrl: "https://mkpcliytqudclkwtewru.supabase.co",
-        supabaseKey: "sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw"
+        supabaseKey: "sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw",
+        providerRollout: {
+            twitter: false,
+            linkedin: false
+        }
     });
     const SITE_SHELL_CONFIG_TABLE = "site_shell_configs";
     const SITE_SHELL_CONFIG_SCOPE = "global";
@@ -274,7 +278,8 @@
                 signOutRedirectUrl: MAIN_AUTH_DEFAULTS.signOutRedirectUrl,
                 returnUrlStorageKey: MAIN_AUTH_DEFAULTS.returnUrlStorageKey,
                 supabaseUrl: MAIN_AUTH_DEFAULTS.supabaseUrl,
-                supabaseKey: MAIN_AUTH_DEFAULTS.supabaseKey
+                supabaseKey: MAIN_AUTH_DEFAULTS.supabaseKey,
+                providerRollout: Object.assign({}, MAIN_AUTH_DEFAULTS.providerRollout)
             }
         },
         footer: {
@@ -1464,7 +1469,11 @@
             signOutRedirectUrl: pickString("signOutRedirectUrl", MAIN_AUTH_DEFAULTS.signOutRedirectUrl),
             returnUrlStorageKey: pickString("returnUrlStorageKey", MAIN_AUTH_DEFAULTS.returnUrlStorageKey),
             supabaseUrl: pickString("supabaseUrl", MAIN_AUTH_DEFAULTS.supabaseUrl),
-            supabaseKey: pickString("supabaseKey", MAIN_AUTH_DEFAULTS.supabaseKey)
+            supabaseKey: pickString("supabaseKey", MAIN_AUTH_DEFAULTS.supabaseKey),
+            providerRollout: {
+                twitter: Boolean(sourceConfig.providerRollout && sourceConfig.providerRollout.twitter === true),
+                linkedin: Boolean(sourceConfig.providerRollout && sourceConfig.providerRollout.linkedin === true)
+            }
         };
     }
 

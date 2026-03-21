@@ -10,7 +10,7 @@ import {
     normalizeSiteShellConfig,
     resetSiteShellConfigCache,
     savePublishedSiteShellConfig,
-} from './site-shell.module.js?v=20260321site05';
+} from './site-shell.module.js?v=20260321site06';
 
 const moduleState = {
     draft: null,
@@ -401,6 +401,7 @@ function renderGeneralPreview(config) {
     const brand = site.brand || {};
     const features = site.features || {};
     const mainAuth = site.mainAuth || {};
+    const providerRollout = mainAuth.providerRollout || {};
     const sharedText = config.sharedText || {};
     const home = config.pages?.home || {};
     const zhText = sharedText.zh || {};
@@ -453,6 +454,7 @@ function renderGeneralPreview(config) {
                         <span class="ams-site-preview-row"><span>登录地址</span><em>${esc(mainAuth.signInUrl || '/account/user.html')}</em></span>
                         <span class="ams-site-preview-row"><span>账号地址</span><em>${esc(mainAuth.accountUrl || '/account/account.html')}</em></span>
                         <span class="ams-site-preview-row"><span>返回地址缓存键</span><em>${esc(mainAuth.returnUrlStorageKey || 'gx_main_return_url')}</em></span>
+                        <span class="ams-site-preview-row"><span>第三方登录</span><em>${esc(['Google', providerRollout.twitter ? 'X' : null, providerRollout.linkedin ? 'LinkedIn' : null].filter(Boolean).join(' / '))}</em></span>
                     </div>
                 </div>
                 <div class="ams-site-preview-pane">
@@ -866,6 +868,7 @@ function renderGeneralPage() {
     const brand = site.brand || {};
     const features = site.features || {};
     const mainAuth = site.mainAuth || {};
+    const providerRollout = mainAuth.providerRollout || {};
     const sharedText = config.sharedText || {};
 
     return `
@@ -945,6 +948,11 @@ function renderGeneralPage() {
                                 ${renderTextField('site.mainAuth.supabaseUrl', '认证 Supabase 地址', mainAuth.supabaseUrl, 'https://mkpcliytqudclkwtewru.supabase.co')}
                                 ${renderTextField('site.mainAuth.supabaseKey', '认证 Supabase 密钥', mainAuth.supabaseKey, 'sb_publishable_...')}
                             </div>
+                            <div class="ams-site-inline-actions">
+                                <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="site.mainAuth.providerRollout.twitter" data-site-input-type="boolean" ${providerRollout.twitter === true ? 'checked' : ''}><span>启用 X 登录按钮</span></label>
+                                <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="site.mainAuth.providerRollout.linkedin" data-site-input-type="boolean" ${providerRollout.linkedin === true ? 'checked' : ''}><span>启用 LinkedIn 登录按钮</span></label>
+                            </div>
+                            <div class="ams-footnote">Google 和邮箱登录默认常开。这里仅控制前台登录页是否显示 X / LinkedIn 按钮；实际 Client ID / Secret 仍需在 Supabase Authentication Providers 中配置。</div>
                         `)}
                     </div>
                 </article>

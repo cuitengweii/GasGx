@@ -979,7 +979,11 @@
                         signOutRedirectUrl: "/account/user.html",
                         returnUrlStorageKey: "gx_main_return_url",
                         supabaseUrl: "https://mkpcliytqudclkwtewru.supabase.co",
-                        supabaseKey: "sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw"
+                        supabaseKey: "sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw",
+                        providerRollout: {
+                                twitter: false,
+                                linkedin: false
+                        }
                 }
         },
         footer: {
