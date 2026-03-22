@@ -1403,6 +1403,62 @@ textarea {
     max-width: 780px;
 }
 
+.ams-quote-product-hero {
+    grid-template-columns: minmax(0, 1.55fr) minmax(280px, 340px);
+    align-items: start;
+}
+
+.ams-quote-product-hero .ams-hero-copy {
+    min-width: 0;
+    max-width: 780px;
+}
+
+.ams-quote-product-hero .ams-hero-copy h2 {
+    max-width: 700px;
+}
+
+.ams-quote-product-hero .ams-hero-text {
+    max-width: 620px;
+    margin-top: 6px;
+}
+
+.ams-quote-product-quick-actions {
+    max-width: 340px;
+    width: 100%;
+    justify-self: end;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.ams-quote-product-hero .ams-quick-link {
+    padding: 10px 12px;
+}
+
+.ams-quote-product-hero .ams-quick-link-body {
+    gap: 4px;
+}
+
+.ams-quote-product-hero .ams-quote-template-loader {
+    align-items: start;
+}
+
+.ams-quote-product-hero .ams-quote-template-loader-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: stretch;
+}
+
+.ams-quote-product-hero .ams-quote-template-select {
+    min-width: 0;
+    flex: 0 1 auto;
+}
+
+.ams-quote-product-hero #ams-quote-product-load-base-template {
+    white-space: nowrap;
+}
+
 .ams-quote-instance-quick-actions {
     max-width: 320px;
     width: 100%;
@@ -2644,8 +2700,13 @@ textarea {
         padding: 14px;
     }
 
+    .ams-quote-product-quick-actions,
     .ams-quote-instance-quick-actions {
         max-width: none;
+    }
+
+    .ams-quote-product-hero .ams-quote-template-loader-actions {
+        grid-template-columns: 1fr;
     }
 
     .ams-editor-action-bar {

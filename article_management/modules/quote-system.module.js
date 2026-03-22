@@ -3070,13 +3070,13 @@ export async function renderQuoteProductsPage(input) {
     currentProductBrandDraft();
     input.setPageHeader('报价系统 / 产品模板', '在品牌下维护标准产品模板，定义主配置、选配、默认汇率和有效期。');
     input.setContent(`
-        <section class="ams-card ams-hero-card">
+        <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-product-hero">
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">Product Templates</p>
                 <h2>当前基础模板只认 VMAN 和 MinerPower 两套。</h2>
                 <p class="ams-hero-text">先从这两套真实模板载入一份基础版本，再复制到具体品牌 / 产品上维护。现在这一步先解决模板来源，不再让你从空白模板开始。</p>
             </div>
-            <div class="ams-quick-actions">
+            <div class="ams-quick-actions ams-quote-product-quick-actions">
                 <button class="ams-quick-link" type="button" id="ams-quote-product-new">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-cube"></i></div>
                     <div class="ams-quick-link-body"><strong>空白模板</strong><span>仅在你明确要从零搭建时使用；正常请优先载入下面的基础模板。</span></div>
