@@ -1468,14 +1468,14 @@
         if (!title) return "";
 
         const href = typeof item.href === "string" ? item.href.trim() : "";
-        const pillHtml = `<span class="ggx-partner-pill">${escapeHtml(title)}</span>`;
+        const pillHtml = `<span class="ggx-partner-pill inline-flex items-center justify-center min-h-[1.9rem] px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.02] text-gray-300 text-xs font-semibold leading-none transition-colors duration-200">${escapeHtml(title)}</span>`;
         if (!href) {
             return `<span class="ggx-partner-entry">${pillHtml}</span>`;
         }
 
         const target = escapeHtml(item.target || "_blank");
         const rel = escapeHtml(item.rel || "noopener noreferrer");
-        return `<a href="${escapeHtml(href)}" target="${target}" rel="${rel}" class="ggx-partner-entry" aria-label="${escapeHtml(title)}">${pillHtml}</a>`;
+        return `<a href="${escapeHtml(href)}" target="${target}" rel="${rel}" class="ggx-partner-entry no-underline" aria-label="${escapeHtml(title)}">${pillHtml}</a>`;
     }
 
     function buildFooterTemplate() {
@@ -1488,7 +1488,7 @@
         const privacyHtml = buildFooterPrivacyLink(footerConfig.privacyPolicy);
         const partnerHtml = footerConfig.partners.map(buildFooterPartnerEntry).join("");
         const partnerContainer = partnerHtml
-            ? `<div class="ggx-partner-block"><span class="ggx-partner-label">战略合作伙伴</span><div class="ggx-partner-grid">${partnerHtml}</div></div>`
+            ? `<div class="ggx-partner-block flex flex-wrap items-center justify-center gap-y-2 gap-x-3 w-full"><span class="ggx-partner-label text-[11px] font-semibold tracking-[0.18em] uppercase text-gas-green/80" data-ggx-text="strategic-partners">战略合作伙伴</span><div class="ggx-partner-grid flex flex-wrap justify-center gap-2">${partnerHtml}</div></div>`
             : "";
 
         return `
