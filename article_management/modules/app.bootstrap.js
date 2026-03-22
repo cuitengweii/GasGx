@@ -155,6 +155,7 @@ const state = {
     session: null,
     user: null,
     adminAccess: null,
+    renderedUserId: null,
     page: pageFromUrl() || 'dashboard',
     authView: 'login',
     articles: { page: 1, pageSize: 20, search: '', status: 'all', tag: 'all', category: 'all' },
@@ -504,6 +505,9 @@ function shouldIgnoreAuthRender(event, nextSession = null) {
     if (nextEvent === 'SIGNED_IN') {
         const currentUserId = state.user?.id || '';
         const nextUserId = nextSession?.user?.id || '';
+        if (state.renderedUserId && nextUserId && state.renderedUserId === nextUserId) {
+            return true;
+        }
         if (currentUserId && nextUserId && currentUserId === nextUserId && state.authView !== 'login') {
             return true;
         }
@@ -2822,6 +2826,7 @@ async function refreshAdminAccess(forceRefresh = false) {
 
 async function renderPage() {
     if (!state.user || !(await refreshAdminAccess(false))) {
+        state.renderedUserId = null;
         state.authView = isPasswordRecoveryMode() ? 'reset' : 'login';
         renderLogin();
         return;
@@ -2833,6 +2838,7 @@ async function renderPage() {
 
     clearPreviewBinding();
     renderShell();
+    state.renderedUserId = state.user?.id || null;
     syncPageToUrl();
 
     try {
