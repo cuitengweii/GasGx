@@ -32,6 +32,8 @@ const TABLE_PRODUCT_ITEMS = 'quote_product_items';
 const TABLE_PRODUCT_MEDIA = 'quote_product_media';
 const TABLE_INSTANCES = 'quote_instances';
 const TABLE_INSTANCE_ITEMS = 'quote_instance_items';
+const TRANSLATE_FUNCTION_NAME = 'quote-translate';
+const AUTO_TRANSLATE_TARGETS = ['en', 'ru'];
 
 const dict = {
     zh: {
@@ -201,6 +203,7 @@ const state = {
     baseTime: Date.now(),
     clockTimer: 0,
     galleryIndex: 0,
+    translationDirty: new Set(),
 };
 
 function byId(id) {
@@ -231,6 +234,32 @@ function t(key) {
 
 function localeCopy(map) {
     return map[state.currentLang] || map.en || map.zh || '';
+}
+
+function markTranslationDirty(path) {
+    if (state.currentLang !== DEFAULT_LANG) return;
+    if (!path) return;
+    state.translationDirty.add(path);
+}
+
+function clearTranslationDirty() {
+    state.translationDirty = new Set();
+}
+
+function hasMeaningfulTranslation(localized, lang) {
+    const normalized = normalizeLocalizedText(localized);
+    const zh = text(normalized.zh);
+    const current = text(normalized[lang]);
+    return Boolean(current && current !== zh);
+}
+
+function shouldTranslateLocalized(path, localized, lang, force = false) {
+    const normalized = normalizeLocalizedText(localized);
+    const zh = text(normalized.zh);
+    if (!zh) return false;
+    if (force) return true;
+    if (state.translationDirty.has(path)) return true;
+    return !hasMeaningfulTranslation(normalized, lang);
 }
 
 function expandLocalizedFromChinese(value) {
@@ -349,6 +378,136 @@ function setSectionConfig(nextSections) {
         state.product.section_config = normalizeSectionConfig(nextSections);
     }
 }
+
+  function collectTranslationEntries(force = false) {
+      const entries = [];
+    const pushEntry = (path, localized) => {
+        const normalized = normalizeLocalizedText(localized);
+        const zh = text(normalized.zh);
+        if (!zh) return;
+        const targets = AUTO_TRANSLATE_TARGETS.filter((lang) => shouldTranslateLocalized(path, normalized, lang, force));
+        if (!targets.length) return;
+        entries.push({ path, text: zh, targets });
+    };
+
+    pushEntry('brand.overview_title', state.brand?.overview_title);
+    pushEntry('brand.footer_note', state.brand?.footer_note);
+    pushEntry('product.public_title', state.product?.public_title);
+
+    Object.entries(state.product?.ui_text || {}).forEach(([key, localized]) => {
+        pushEntry(`product.ui_text.${key}`, localized);
+    });
+
+    currentSectionConfig().forEach((section) => {
+        pushEntry(`section.${section.key}.title`, section.title);
+    });
+
+    state.items.forEach((item) => {
+        pushEntry(`item.${item.localId}.name_i18n`, item.name_i18n);
+    });
+
+      return entries;
+  }
+
+  function chunkTranslationEntries(entries) {
+      const chunks = [];
+      let current = [];
+      let charCount = 0;
+      entries.forEach((entry) => {
+          const nextSize = text(entry?.text).length;
+          const wouldOverflow = current.length >= 10 || (charCount + nextSize) > 320;
+          if (current.length && wouldOverflow) {
+              chunks.push(current);
+              current = [];
+              charCount = 0;
+          }
+          current.push(entry);
+          charCount += nextSize;
+      });
+      if (current.length) chunks.push(current);
+      return chunks;
+  }
+
+function setLocalizedByPath(path, lang, value) {
+    const nextValue = text(value);
+    if (!nextValue) return;
+
+    if (path === 'brand.overview_title') {
+        state.brand.overview_title = normalizeLocalizedText(state.brand.overview_title);
+        state.brand.overview_title[lang] = nextValue;
+        return;
+    }
+    if (path === 'brand.footer_note') {
+        state.brand.footer_note = normalizeLocalizedText(state.brand.footer_note);
+        state.brand.footer_note[lang] = nextValue;
+        return;
+    }
+    if (path === 'product.public_title') {
+        state.product.public_title = normalizeLocalizedText(state.product.public_title);
+        state.product.public_title[lang] = nextValue;
+        return;
+    }
+    if (path.startsWith('product.ui_text.')) {
+        const key = path.slice('product.ui_text.'.length);
+        state.product.ui_text[key] = normalizeLocalizedText(state.product.ui_text[key]);
+        state.product.ui_text[key][lang] = nextValue;
+        return;
+    }
+    if (path.startsWith('section.')) {
+        const sectionKey = path.split('.')[1];
+        const section = currentSectionConfig().find((entry) => entry.key === sectionKey);
+        if (!section) return;
+        section.title = normalizeLocalizedText(section.title);
+        section.title[lang] = nextValue;
+        updateSection(sectionKey, { title: section.title });
+        return;
+    }
+    if (path.startsWith('item.')) {
+        const itemId = path.split('.')[1];
+        const item = state.items.find((entry) => entry.localId === itemId);
+        if (!item) return;
+        const nextName = normalizeLocalizedText(item.name_i18n);
+        nextName[lang] = nextValue;
+        updateItem(itemId, { name_i18n: nextName });
+    }
+}
+
+  async function autoTranslateLocalizedFields(force = false) {
+      const entries = collectTranslationEntries(force);
+      if (!entries.length) return { attempted: false, translated: false };
+
+      const mergedTranslations = Object.fromEntries(
+          AUTO_TRANSLATE_TARGETS.map((lang) => [lang, {}]),
+      );
+      const chunks = chunkTranslationEntries(entries);
+      for (const chunk of chunks) {
+          const { data, error } = await client.functions.invoke(TRANSLATE_FUNCTION_NAME, {
+              body: {
+                  source: DEFAULT_LANG,
+                  targets: AUTO_TRANSLATE_TARGETS,
+                  entries: chunk.map((entry) => ({ key: entry.path, text: entry.text })),
+              },
+          });
+          if (error) throw error;
+          const translations = data?.translations && typeof data.translations === 'object' ? data.translations : {};
+          AUTO_TRANSLATE_TARGETS.forEach((lang) => {
+              const bucket = translations?.[lang] && typeof translations[lang] === 'object' ? translations[lang] : {};
+              Object.assign(mergedTranslations[lang], bucket);
+          });
+      }
+
+      AUTO_TRANSLATE_TARGETS.forEach((lang) => {
+          const bucket = mergedTranslations[lang] && typeof mergedTranslations[lang] === 'object' ? mergedTranslations[lang] : {};
+          entries.forEach((entry) => {
+              if (!entry.targets.includes(lang)) return;
+              const translated = text(bucket?.[entry.path]);
+              if (translated) setLocalizedByPath(entry.path, lang, translated);
+          });
+      });
+
+      clearTranslationDirty();
+      return { attempted: true, translated: true };
+  }
 
 function sectionSubtotal(section, items = []) {
     if (section?.subtotalMode === 'sum') {
@@ -838,10 +997,12 @@ function updateSection(sectionKey, patch = {}) {
 function bindContentArea() {
     byId('edit-product-title').onblur = (event) => {
         setLocalizedValue(state.product, 'public_title', event.currentTarget.textContent);
+        markTranslationDirty('product.public_title');
         renderAll();
     };
     byId('edit-total-label').onblur = (event) => {
         setLocalizedValue(state.product.ui_text, 'system_total_label', event.currentTarget.textContent);
+        markTranslationDirty('product.ui_text.system_total_label');
         renderAll();
     };
 
@@ -852,6 +1013,7 @@ function bindContentArea() {
             if (!section) return;
             section.title = normalizeLocalizedText(section.title);
             section.title[state.currentLang] = text(event.currentTarget.textContent);
+            markTranslationDirty(`section.${sectionKey}.title`);
             updateSection(sectionKey, { title: section.title });
             renderAll();
         };
@@ -875,6 +1037,7 @@ function bindContentArea() {
                 if (!item) return;
                 const nextName = normalizeLocalizedText(item.name_i18n);
                 nextName[state.currentLang] = text(event.currentTarget.textContent);
+                markTranslationDirty(`item.${itemId}.name_i18n`);
                 updateItem(itemId, { name_i18n: nextName });
             } else if (field === 'price_rmb') {
                 updateItem(itemId, { price_rmb: parseMoneyInput(event.currentTarget.textContent), is_included: false });
@@ -908,14 +1071,17 @@ function bindContentArea() {
 function bindStaticEditors() {
     byId('edit-overview-title').onblur = (event) => {
         setLocalizedValue(state.brand, 'overview_title', event.currentTarget.textContent);
+        markTranslationDirty('brand.overview_title');
         renderAll();
     };
     byId('edit-send-label').onblur = (event) => {
         setLocalizedValue(state.product.ui_text, 'send_button', event.currentTarget.textContent);
+        markTranslationDirty('product.ui_text.send_button');
         renderAll();
     };
     byId('edit-supplier-label').onblur = (event) => {
         setLocalizedValue(state.product.ui_text, 'supplier_label', event.currentTarget.textContent);
+        markTranslationDirty('product.ui_text.supplier_label');
         renderAll();
     };
     byId('edit-supplier-value').onblur = (event) => {
@@ -924,6 +1090,7 @@ function bindStaticEditors() {
     };
     byId('edit-sender-label').onblur = (event) => {
         setLocalizedValue(state.product.ui_text, 'sender_label', event.currentTarget.textContent);
+        markTranslationDirty('product.ui_text.sender_label');
         renderAll();
     };
     byId('edit-sender-value').onblur = (event) => {
@@ -932,10 +1099,12 @@ function bindStaticEditors() {
     };
     byId('edit-validity-label').onblur = (event) => {
         setLocalizedValue(state.product.ui_text, 'validity_label', event.currentTarget.textContent);
+        markTranslationDirty('product.ui_text.validity_label');
         renderAll();
     };
     byId('edit-receiver-label').onblur = (event) => {
         setLocalizedValue(state.product.ui_text, 'receiver_label', event.currentTarget.textContent);
+        markTranslationDirty('product.ui_text.receiver_label');
         renderAll();
     };
     byId('edit-receiver-value').onblur = (event) => {
@@ -943,15 +1112,18 @@ function bindStaticEditors() {
             state.instance.receiver_name = text(event.currentTarget.textContent);
         } else {
             setLocalizedValue(state.product.ui_text, 'receiver_placeholder', event.currentTarget.textContent);
+            markTranslationDirty('product.ui_text.receiver_placeholder');
         }
         renderAll();
     };
     byId('footer-note').onblur = (event) => {
         setLocalizedValue(state.brand, 'footer_note', event.currentTarget.textContent);
+        markTranslationDirty('brand.footer_note');
         renderAll();
     };
     byId('btn-text-refresh').onblur = (event) => {
         setLocalizedValue(state.product.ui_text, 'refresh_button', event.currentTarget.textContent);
+        markTranslationDirty('product.ui_text.refresh_button');
         renderAll();
     };
 }
@@ -1124,12 +1296,36 @@ async function saveInstance(user) {
     state.id = saved.id;
 }
 
+async function runAutoTranslation(force = false) {
+    try {
+        const result = await autoTranslateLocalizedFields(force);
+        if (!result.attempted) {
+            return { attempted: false, translated: false, fallback: false };
+        }
+        renderAll();
+        renderStatus(localeCopy({
+            zh: force ? '已重新生成 EN / RU。' : '已自动补全 EN / RU。',
+            en: force ? 'EN / RU regenerated.' : 'EN / RU auto-filled.',
+            ru: force ? 'EN / RU пересозданы.' : 'EN / RU заполнены автоматически.',
+        }), 'success');
+        return { attempted: true, translated: true, fallback: false };
+    } catch (error) {
+        renderStatus(localeCopy({
+            zh: '星火翻译暂不可用，本次将继续按中文回退保存。',
+            en: 'Spark translation is unavailable. Saving will fall back to Chinese values.',
+            ru: 'Перевод Spark недоступен. Сохранение продолжится с откатом на китайский текст.',
+        }), 'warning');
+        return { attempted: true, translated: false, fallback: true, error };
+    }
+}
+
 async function handleSave() {
     renderStatus('保存中...');
     try {
         const auth = await client.auth.getUser();
         state.user = auth?.data?.user || null;
         if (!state.user) renderStatus(t('needLogin'), 'warning');
+        await runAutoTranslation(false);
         if (state.kind === 'product') {
             await saveProduct(state.user);
         } else {
@@ -1137,6 +1333,7 @@ async function handleSave() {
         }
         state.snapshot = buildSnapshot();
         renderAll();
+        clearTranslationDirty();
         renderStatus(t('saveSuccess'), 'success');
     } catch (error) {
         renderStatus(`${t('saveFailed')} ${error.message || ''}`, 'error');
@@ -1228,6 +1425,14 @@ function bindGlobal() {
         state.items = [...state.items, { ...createQuoteItem(SECTION_KEYS.OPTIONAL), sort_order: (state.items.length + 1) * 10 }];
         renderAll();
     };
+    byId('btn-auto-translate').onclick = async () => {
+        renderStatus(localeCopy({
+            zh: '正在生成 EN / RU...',
+            en: 'Generating EN / RU...',
+            ru: 'Генерация EN / RU...',
+        }), 'warning');
+        await runAutoTranslation(true);
+    };
     byId('btn-save-editor').onclick = () => {
         void handleSave();
     };
@@ -1254,6 +1459,7 @@ async function init() {
         } else {
             await loadInstance(state.id);
         }
+        clearTranslationDirty();
         state.baseTime = Date.now();
         renderAll();
         startClock();
