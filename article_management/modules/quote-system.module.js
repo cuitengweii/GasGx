@@ -85,6 +85,19 @@ const SEND_STATUS_ORDER = {
     closed: 6,
 };
 
+const PUBLIC_TEMPLATE_LIBRARY = Object.freeze({
+    vman: {
+        label: 'VMAN / 独立发电模板',
+        hint: '独立燃气发电机组模板，适合标准发电产品线。',
+        order: 10,
+    },
+    minerpower: {
+        label: 'MinerPower / 一体化产品模板',
+        hint: '矿电一体和集装箱模板，适合整机集成产品线。',
+        order: 20,
+    },
+});
+
 function esc(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -1603,23 +1616,35 @@ async function importLegacySeedData(user) {
 }
 
 async function ensureBaseTemplates() {
-    if (moduleState.baseTemplates.length) return moduleState.baseTemplates;
+    const liveTemplates = await buildLiveBaseTemplates();
+    if (liveTemplates.length) {
+        moduleState.baseTemplates = liveTemplates;
+        return moduleState.baseTemplates;
+    }
+
     const legacyPages = await ensureLegacyQuotePagesLoaded('/shared/quote-system/quote-pages.js');
     const bundles = convertLegacyPagesToSeedPayloads(legacyPages);
-    moduleState.baseTemplates = bundles.map((bundle) => ({
-        key: text(bundle?.brand?.slug),
-        label: text(bundle?.brand?.display_name || bundle?.brand?.brand_name || bundle?.brand?.slug),
-        brand: createBrandDraft(bundle?.brand || {}),
-        products: (bundle?.products || []).map((entry) => ({
-            key: `${text(bundle?.brand?.slug)}:${text(entry?.product?.slug)}`,
-            brandKey: text(bundle?.brand?.slug),
-            label: `${text(bundle?.brand?.display_name || bundle?.brand?.brand_name || bundle?.brand?.slug)} / ${pickLocalized(entry?.product?.public_title, 'zh', text(entry?.product?.slug))}`,
-            product: createProductDraft({
-                ...(entry?.product || {}),
-                items: entry?.items || [],
-            }),
-        })),
-    }));
+    moduleState.baseTemplates = bundles
+        .map((bundle) => {
+            const brandSlug = text(bundle?.brand?.slug).toLowerCase();
+            const meta = PUBLIC_TEMPLATE_LIBRARY[brandSlug];
+            return {
+                key: brandSlug,
+                label: text(meta?.label || bundle?.brand?.display_name || bundle?.brand?.brand_name || bundle?.brand?.slug),
+                hint: text(meta?.hint),
+                brand: createBrandDraft(bundle?.brand || {}),
+                products: (bundle?.products || []).map((entry) => ({
+                    key: `${brandSlug}:${text(entry?.product?.slug)}`,
+                    brandKey: brandSlug,
+                    label: pickLocalized(entry?.product?.public_title, 'zh', text(entry?.product?.slug)),
+                    product: createProductDraft({
+                        ...(entry?.product || {}),
+                        items: entry?.items || [],
+                    }),
+                })),
+            };
+        })
+        .filter((group) => group.products.length);
     return moduleState.baseTemplates;
 }
 
@@ -1654,15 +1679,112 @@ function applyBaseTemplateToProductEditor(templateKey = '') {
         ...templateProduct.product,
         id: '',
         brand_id: currentBrandId,
-        slug: templateProduct.product.slug,
+        slug: buildTemplateProductSlug(currentBrandId, templateProduct.product.slug),
         product_code: templateProduct.product.product_code,
         items: templateProduct.product.items,
+        media_gallery: templateProduct.product.media_gallery,
     });
-    moduleState.productBrandDraft = createBrandDraft({
-        ...templateGroup.brand,
-        id: currentBrandId,
-        default_quote_slug: '',
-    });
+    syncProductBrandDraft(currentBrandId);
+}
+
+function templateLibraryMeta(brandSlug = '') {
+    return PUBLIC_TEMPLATE_LIBRARY[text(brandSlug).toLowerCase()] || null;
+}
+
+function normalizeSlugPart(value = '', fallback = 'template') {
+    return text(value, fallback)
+        .toLowerCase()
+        .replace(/[^a-z0-9-]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '') || fallback;
+}
+
+function buildTemplateProductSlug(targetBrandId = '', sourceSlug = '') {
+    const targetBrandSlug = normalizeSlugPart(brandSlugById(targetBrandId), '');
+    const source = normalizeSlugPart(sourceSlug, 'product');
+    const baseSlug = targetBrandSlug && !source.startsWith(`${targetBrandSlug}-`)
+        ? `${targetBrandSlug}-${source}`
+        : source;
+    const existingSlugs = new Set(moduleState.products.map((product) => text(product.slug).toLowerCase()).filter(Boolean));
+    if (!existingSlugs.has(baseSlug.toLowerCase())) return baseSlug;
+
+    let index = 2;
+    let candidate = `${baseSlug}-copy`;
+    while (existingSlugs.has(candidate.toLowerCase())) {
+        candidate = `${baseSlug}-copy-${index}`;
+        index += 1;
+    }
+    return candidate;
+}
+
+async function buildLiveBaseTemplates() {
+    const sourceBrands = moduleState.brands
+        .map((brand) => {
+            const slug = text(brand.slug).toLowerCase();
+            const meta = templateLibraryMeta(slug);
+            if (!meta || !brand.id) return null;
+            return { brand, slug, meta };
+        })
+        .filter(Boolean)
+        .sort((left, right) => safeNumber(left.meta?.order, 100) - safeNumber(right.meta?.order, 100));
+
+    if (!sourceBrands.length) return [];
+
+    const sourceBrandIds = new Set(sourceBrands.map((entry) => entry.brand.id));
+    const sourceProducts = moduleState.products.filter((product) => sourceBrandIds.has(product.brand_id) && product.is_active !== false);
+    if (!sourceProducts.length) return [];
+
+    const productIds = sourceProducts.map((product) => text(product.id)).filter(Boolean);
+    const itemsByProduct = new Map();
+    const mediaByProduct = new Map();
+    if (productIds.length) {
+        const [itemsResult, mediaResult] = await Promise.all([
+            client.from(TABLE_PRODUCT_ITEMS).select('*').in('product_id', productIds).order('sort_order', { ascending: true }),
+            client.from(TABLE_PRODUCT_MEDIA).select('*').in('product_id', productIds).order('sort_order', { ascending: true }),
+        ]);
+        if (itemsResult.error) throw itemsResult.error;
+        if (mediaResult.error) throw mediaResult.error;
+
+        (itemsResult.data || []).forEach((row) => {
+            const key = text(row.product_id);
+            const list = itemsByProduct.get(key) || [];
+            list.push(row);
+            itemsByProduct.set(key, list);
+        });
+        (mediaResult.data || []).forEach((row) => {
+            const key = text(row.product_id);
+            const list = mediaByProduct.get(key) || [];
+            list.push(row);
+            mediaByProduct.set(key, list);
+        });
+    }
+
+    return sourceBrands
+        .map(({ brand, slug, meta }) => ({
+            key: slug,
+            label: meta.label,
+            hint: meta.hint,
+            brand: createBrandDraft(brand),
+            products: sourceProducts
+                .filter((product) => product.brand_id === brand.id)
+                .map((product) => ({
+                    key: `${slug}:${text(product.slug)}`,
+                    brandKey: slug,
+                    label: pickLocalized(product.public_title, product.default_lang, text(product.slug)),
+                    product: createProductDraft({
+                        ...product,
+                        items: itemsByProduct.get(text(product.id)) || [],
+                        media_gallery: mediaByProduct.get(text(product.id)) || [],
+                    }),
+                }))
+                .sort((left, right) => {
+                    const leftOrder = safeNumber(left.product?.sort_order, 100);
+                    const rightOrder = safeNumber(right.product?.sort_order, 100);
+                    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+                    return text(left.label).localeCompare(text(right.label));
+                }),
+        }))
+        .filter((group) => group.products.length);
 }
 
 function filteredProducts() {
@@ -3143,13 +3265,21 @@ export async function renderQuoteProductsPage(input) {
                 <div class="ams-quick-link ams-quote-template-loader">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-layer-group"></i></div>
                     <div class="ams-quick-link-body">
-                        <strong>载入基础模板</strong>
-                        <span>当前仅提供 VMAN / MinerPower 两套基础模板族。</span>
+                        <strong>公共模板区</strong>
+                        <span>新品牌先从 VMAN 独立发电模板或 MinerPower 一体化模板复制一份，再在当前品牌下 DIY。</span>
+                        <div class="ams-quote-template-family-list">
+                            ${moduleState.baseTemplates.map((group) => `
+                                <div class="ams-quote-template-family-chip">
+                                    <strong>${esc(group.label)}</strong>
+                                    <span>${esc(group.hint || '')}</span>
+                                </div>
+                            `).join('')}
+                        </div>
                         <div class="ams-inline-actions ams-quote-template-loader-actions">
                             <select id="ams-quote-product-base-template" class="ams-select ams-quote-template-select">
                                 ${baseTemplateOptionsMarkup()}
                             </select>
-                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-product-load-base-template">载入到当前编辑区</button>
+                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-product-load-base-template">复制到当前品牌编辑区</button>
                         </div>
                     </div>
                 </div>
