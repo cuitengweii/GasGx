@@ -99,3 +99,41 @@ News footer 若未取到统一站点壳配置：
 - 全站栏目级页面配置
 - 全站页面模板管理
 - 更细粒度的站点运营模块
+## 2026-03-22 architecture update
+
+### Quote-system runtime layers
+
+- Admin workflow shell:
+  - `article_management/modules/quote-system.module.js`
+  - manages brand/product/instance selection and admin actions
+- Real quote editor runtime:
+  - `quote/editor.html`
+  - `shared/quote-system/quote-editor.module.js`
+  - uses the actual quote-page structure as the editing surface
+- Customer quote runtime:
+  - `quote/view.html`
+  - `shared/quote-system/quote-runtime.module.js`
+  - renders published quote snapshots or preview snapshots
+- Shared quote data/style layer:
+  - `shared/quote-system/quote-data.module.js`
+  - `shared/quote-system/quote-system.css`
+
+### Translation architecture
+
+- Chinese source strings are collected from the real editor runtime.
+- Translation requests are sent in batches to `quote-translate`.
+- `quote-translate` uses XFYUN Spark over WebSocket and returns EN / RU JSON payloads.
+- The editor writes translated fields back into localized quote/template state before save.
+
+### Media architecture
+
+- Product media library is stored separately and bound per brand/product.
+- Quote rendering consumes both media gallery items and media display config:
+  - show/hide
+  - above title / below table
+  - carousel / stacked mode
+
+### Current boundary
+
+- `vman/` and `minerpower/` remain public-facing brand quote entry paths.
+- The system source of truth has shifted into shared quote runtime + admin-managed product/instance data rather than per-brand static HTML duplication.

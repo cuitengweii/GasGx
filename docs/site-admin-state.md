@@ -131,3 +131,43 @@
 2. 优先梳理哪些主站页面仍在各自 HTML / JS 中维护散落文案与 meta，再逐步收口到 `site_shell_configs`
 3. 将当前导航与页脚编辑器从“树 + 内联表单”继续升级为“左侧树 + 右侧属性面板”，减少纵向滚动与重复展开操作
 4. 将后台人员管理从 allowlist + 自助密码能力继续升级到更完整的邀请制或服务端 Admin API，减少前端侧账号开通约束
+## 2026-03-22 update
+
+### Latest milestone
+
+- Quote System V1 now exists as a working admin flow inside `article_management`.
+- `vman` and `minerpower` are no longer treated as isolated static quote pages only; they now act as the first baseline templates and brand entries.
+- The editing direction has been corrected from a fake admin visual shell to the real quote-page DOM itself.
+
+### Effective entry points
+
+- Admin shell: `D:\code\GasGx\article_management\index.html`
+- Real product-template editor: `D:\code\GasGx\quote\editor.html?kind=product&id=<product_id>`
+- Real quote-instance editor: `D:\code\GasGx\quote\editor.html?kind=instance&id=<instance_id>`
+- Customer quote page: `D:\code\GasGx\quote\view.html?quote=<public_slug>`
+
+### Effective behaviors
+
+- Quote authoring is now Chinese-first.
+- EN / RU are optional overrides and can be auto-generated instead of manually maintained for every field.
+- Product media is handled as a per-brand/per-product gallery and rendered by page config.
+- Saving from the real quote editor triggers automatic EN / RU generation through Supabase Edge Function `quote-translate`.
+
+### Solved in this thread
+
+- Real quote-page editing replaced the previous fake "1:1 visual editor" direction.
+- Spark translation was connected through Supabase and fixed for streamed WebSocket output.
+- Large-template translation now runs in batches instead of one oversized request.
+- Sitemap output now discovers `/news/account/`, `/tools/quote-system/`, and newly published article routes.
+
+### Unfinished
+
+- Translation glossary still needs a second pass for long technical row text.
+- Some admin/editor status copy still contains legacy encoding noise.
+- Sitemap generation still emits Playwright Vite routes under `node_modules`.
+
+### Next Step
+
+1. Polish EN / RU terminology for technical rows and repeated UI labels.
+2. Clean the remaining encoding-corrupted status text in quote editor/admin modules.
+3. Tighten `scripts/generate_sitemap.py` exclusions so internal toolchain routes never enter sitemap output.

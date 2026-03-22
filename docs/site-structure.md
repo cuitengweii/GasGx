@@ -1,6 +1,6 @@
 ﻿# GasGx 网站目录结构文档
 
-更新时间：2026-03-21
+更新时间：2026-03-22
 根目录：`D:\code\GasGx`
 
 ## 1. 站点根目录（一级）
@@ -120,4 +120,27 @@ news/
   - 主站导航
   - 主站 Footer
 - `News` 模块继续保留文章、推荐位、采集队列等内容运营功能
+
+## 2026-03-22 supplement
+
+- New quote-system directories are now part of the active site structure:
+  - `quote/` for customer-facing quote view and real-template editing entry
+  - `shared/quote-system/` for quote runtime, editor runtime, shared styles, and data helpers
+  - `supabase/functions/quote-translate/` for Spark-based EN/RU translation proxy
+  - `tools/quote-system/` for internal quote-system workbench and preview entry
+  - `minerpower/` and `vman/` remain public brand quote entry paths
+
+- `scripts/generate_sitemap.py` is the current sitemap generator.
+  - It enumerates public `index.html` routes.
+  - It excludes `.git`, `.github`, `.vscode`, `node_modules`, `news/test`, and `private-use`.
+  - It resolves `lastmod` from `git log` first and falls back to file mtime.
+
+- Current sitemap output now includes:
+  - `/news/account/`
+  - `/tools/quote-system/`
+  - daily news article routes under `/news/article/<id>/`
+
+- Current sitemap still includes Playwright internal Vite routes under `node_modules/playwright-core/lib/vite/...`.
+  - This indicates the exclusion logic is prefix-based on parent directories only.
+  - Next cleanup should explicitly exclude nested `node_modules` route artifacts from generated output.
 

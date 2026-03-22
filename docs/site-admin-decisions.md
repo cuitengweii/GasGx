@@ -58,3 +58,22 @@
 - mega item
 
 统一的折叠树结构进行编辑。
+## 2026-03-22 decisions
+
+### Decision 6: Use the real quote page as the editor
+
+- The quote system will not continue with a fake visual editor shell in admin.
+- The real quote page DOM is now the editing surface for both product templates and quote instances.
+- Admin remains the workflow shell for selection and management, but not the primary content editing surface.
+
+### Decision 7: Chinese-first quote authoring with optional generated EN / RU
+
+- Quote maintenance defaults to Chinese only.
+- EN / RU are no longer required input fields during normal authoring.
+- Missing EN / RU content falls back to Chinese until Spark-generated output or manual overrides are present.
+
+### Decision 8: Spark translation runs through Supabase Edge Function
+
+- Translation is mediated by `supabase/functions/quote-translate/index.ts`.
+- Edge Function is deployed with `--no-verify-jwt` at the gateway layer because publishable-token browser calls were rejected with `401 Invalid JWT`.
+- The function itself still performs admin-user verification via Supabase Auth + `admin_users`, so access control remains inside the function.
