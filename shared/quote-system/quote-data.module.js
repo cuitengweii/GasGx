@@ -101,9 +101,6 @@ export function normalizeProductUiText(value = {}) {
 export function normalizeShareConfig(value = {}, fallback = {}) {
     const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
     const base = fallback && typeof fallback === 'object' && !Array.isArray(fallback) ? fallback : {};
-    const rawHistory = Array.isArray(source.send_history || source.sendHistory)
-        ? (source.send_history || source.sendHistory)
-        : (Array.isArray(base.send_history || base.sendHistory) ? (base.send_history || base.sendHistory) : []);
     return {
         recipient_name: text(source.recipient_name || source.recipientName || base.recipient_name || base.recipientName),
         recipient_email: text(source.recipient_email || source.recipientEmail || base.recipient_email || base.recipientEmail),
@@ -111,11 +108,6 @@ export function normalizeShareConfig(value = {}, fallback = {}) {
         follow_up_notes: text(source.follow_up_notes || source.followUpNotes || base.follow_up_notes || base.followUpNotes),
         owner_name: text(source.owner_name || source.ownerName || base.owner_name || base.ownerName),
         owner_email: text(source.owner_email || source.ownerEmail || base.owner_email || base.ownerEmail),
-        send_history: rawHistory
-            .map((entry) => normalizeShareHistoryEntry(entry))
-            .filter((entry) => entry.id || entry.sent_at || entry.recipient_email || entry.recipient_name)
-            .sort((left, right) => text(right.sent_at).localeCompare(text(left.sent_at)))
-            .slice(0, 50),
     };
 }
 

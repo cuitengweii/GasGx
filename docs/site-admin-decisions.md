@@ -108,8 +108,8 @@
 - Runtime send actions still create or advance recipient-thread records automatically, but admin can now update a row's status, add outcome notes, and increment resend count from the quote detail page.
 - These mutable workflow fields now live on relational send rows, so resend counts and operator outcomes are no longer blocked by quote-row JSON shape.
 
-### Decision 14: `share_config.send_history` is retained only as compatibility fallback during rollout
+### Decision 14: `quote_instance_sends` is now the only send-ledger source of truth
 
-- If `quote_instance_sends` is missing, runtime/admin fall back to `share_config.send_history` so existing installs do not break before SQL rollout.
-- Admin now surfaces compatibility-mode hints and can import legacy JSON send-history rows into `quote_instance_sends` after the new table exists.
-- The intended end state is relational send-ledger truth with JSON fallback removed after backfill is complete.
+- Runtime/admin now require `011_quote_send_ledger.sql` and no longer fall back to `share_config.send_history`.
+- Quote/customer admin surfaces were simplified to read `quote_instance_sends` only; compatibility-mode hints and JSON backfill actions were removed.
+- This decision was finalized after 2026-03-23 production verification found no remaining legacy JSON send-history rows to migrate.

@@ -157,7 +157,7 @@
 - Quote instances are archived instead of hard-deleted; archived quotes retain customer relations, published snapshots, and access history.
 - Quote page runtime now writes best-effort event logs for direct views, share-link opens, passcode unlocks, admin previews, share-link generation, and email-trigger actions.
 - Quote instances now store structured share metadata in `share_config`, so the default recipient, company, owner, and follow-up notes travel through publish, share generation, and analytics logging.
-- Quote instances now persist operator-side send workflow into `quote_instance_sends`, while `share_config.send_history` remains as rollout/backward-compatibility fallback only.
+- Quote instances now persist operator-side send workflow only in `quote_instance_sends`; `share_config.send_history` is no longer read or written by runtime/admin.
 - Send-ledger rows can accumulate resend attempts and operator-updated outcomes, and legacy JSON rows can now be imported into the relational ledger from admin.
 
 ### Solved in this thread
@@ -171,8 +171,8 @@
 - The quote list now supports `归档 / 恢复` actions instead of assuming hard deletion from the list panel.
 - Quote runtime now records who opened preview/share/direct quote routes, including logged-in session email or fallback viewer label.
 - Quote instance editor now exposes a dedicated share-recipient block, and generated share links sign the current recipient/owner metadata into the token so later share-open events remain traceable.
-- Quote runtime now writes outbound recipient threads into `quote_instance_sends` first, with JSON fallback only when `011_quote_send_ledger.sql` has not been applied yet.
-- Quote/customer admin pages now expose relational send-ledger reads, compatibility-mode hints, and import buttons for old `share_config.send_history` rows.
+- Quote runtime now writes outbound recipient threads directly into `quote_instance_sends` and treats `011_quote_send_ledger.sql` as required schema.
+- Quote/customer admin pages now read the relational send ledger only; compatibility-mode hints and legacy JSON backfill actions were removed after production verification found no remaining `share_config.send_history` rows.
 - Quote instance admin now allows operators to update send-ledger status, write outcome notes, manually record resend attempts, and backfill legacy ledger rows from the quote details page.
 - Sitemap exclusion rules now block nested `node_modules` and other internal toolchain path segments instead of only excluding top-level prefixes.
 
@@ -182,14 +182,14 @@
 - The customer page is now available, but it is still a lightweight admin surface rather than a full CRM with ownership, follow-up workflow, or export.
 - Access analytics is currently exposed per quote instance; cross-customer aggregation, export, and follow-up workflow are not built yet.
 - Share metadata is still quote-level default state, not yet a full multi-recipient CRM object model with separate recipient ownership and authorization rules.
-- The send ledger now lives in a dedicated relational table, but historical JSON rows may still need one-off backfill before the compatibility fallback can be retired.
+- Production verification on 2026-03-23 found `quote_instances.share_config.send_history = 0` and `quote_instance_sends = 0`, so retiring the JSON fallback does not strand any historical send rows in the current environment.
 - The customer-side identity model still distinguishes logged-in vs anonymous session access, but has not yet introduced a dedicated CRM-style recipient/contact authorization model.
 
 ### Next Step
 
-1. Backfill any remaining historical `share_config.send_history` rows into `quote_instance_sends`, then decide when to retire the JSON fallback path.
-2. Surface richer analytics filters in admin, including event type, date range, and logged-in vs anonymous viewers.
-3. Add explicit owner workflow fields such as next follow-up date, reminder status, and closed reason on top of the current send ledger.
+1. Surface richer analytics filters in admin, including event type, date range, and logged-in vs anonymous viewers.
+2. Add explicit owner workflow fields such as next follow-up date, reminder status, and closed reason on top of the current send ledger.
+3. When the first real outbound send records appear in production, verify the relational ledger lifecycle again against actual operator traffic instead of migration cases.
 
 ### Auth email template sync helper
 
