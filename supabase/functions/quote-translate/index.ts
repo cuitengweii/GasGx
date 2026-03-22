@@ -7,7 +7,7 @@ const corsHeaders = {
     'Content-Type': 'application/json; charset=utf-8',
 };
 
-const SPARK_TIMEOUT_MS = 25000;
+const SPARK_TIMEOUT_MS = 45000;
 const DEFAULT_DOMAIN = 'generalv3.5';
 const SUPPORTED_TARGETS = new Set(['en', 'ru']);
 
