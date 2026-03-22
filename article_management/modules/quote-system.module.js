@@ -1066,10 +1066,32 @@ async function saveBrandDraft(user, draft) {
         is_active: payload.is_active !== false,
         updated_by: user?.id || null,
     };
-    if (payload.id) savePayload.id = payload.id;
-    if (!payload.id) savePayload.created_by = user?.id || null;
-
-    const { data, error } = await client.from(TABLE_BRANDS).upsert(savePayload, { onConflict: 'slug' }).select('*').single();
+    let data = null;
+    let error = null;
+    if (payload.id) {
+        const result = await client
+            .from(TABLE_BRANDS)
+            .update(savePayload)
+            .eq('id', payload.id)
+            .select('*')
+            .single();
+        data = result.data;
+        error = result.error;
+    } else {
+        const result = await client
+            .from(TABLE_BRANDS)
+            .insert({
+                ...savePayload,
+                created_by: user?.id || null,
+            })
+            .select('*')
+            .single();
+        data = result.data;
+        error = result.error;
+    }
+    if (error?.code === '23505') {
+        throw new Error('Brand slug already exists. Use a unique slug.');
+    }
     if (error) throw error;
     const saved = createBrandDraft(data);
     await fetchBrandRows();
@@ -1108,10 +1130,32 @@ async function saveProductDraft(user, draft) {
         is_active: payload.is_active !== false,
         updated_by: user?.id || null,
     };
-    if (payload.id) savePayload.id = payload.id;
-    if (!payload.id) savePayload.created_by = user?.id || null;
-
-    const { data, error } = await client.from(TABLE_PRODUCTS).upsert(savePayload, { onConflict: 'slug' }).select('*').single();
+    let data = null;
+    let error = null;
+    if (payload.id) {
+        const result = await client
+            .from(TABLE_PRODUCTS)
+            .update(savePayload)
+            .eq('id', payload.id)
+            .select('*')
+            .single();
+        data = result.data;
+        error = result.error;
+    } else {
+        const result = await client
+            .from(TABLE_PRODUCTS)
+            .insert({
+                ...savePayload,
+                created_by: user?.id || null,
+            })
+            .select('*')
+            .single();
+        data = result.data;
+        error = result.error;
+    }
+    if (error?.code === '23505') {
+        throw new Error('Product slug already exists. Use a unique slug.');
+    }
     if (error) throw error;
 
     const [savedItems, savedMedia] = await Promise.all([
