@@ -2637,12 +2637,27 @@ function instanceInsightsMarkup() {
 function bindBrandEditor(input) {
     const content = document.getElementById('ams-content');
     if (!content) return;
+    const displayNameField = () => content.querySelector('[data-brand-field="display_name"]');
 
     content.querySelectorAll('[data-brand-field]').forEach((node) => {
         node.addEventListener('input', () => {
             const field = node.dataset.brandField;
             if (!field) return;
-            moduleState.brandEditor[field] = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
+            const nextValue = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
+            if (field === 'brand_name') {
+                const previousBrandName = text(moduleState.brandEditor.brand_name);
+                const currentDisplayName = text(moduleState.brandEditor.display_name);
+                moduleState.brandEditor[field] = nextValue;
+                if (!currentDisplayName || currentDisplayName === previousBrandName) {
+                    moduleState.brandEditor.display_name = text(nextValue);
+                    const displayNode = displayNameField();
+                    if (displayNode && displayNode.value !== moduleState.brandEditor.display_name) {
+                        displayNode.value = moduleState.brandEditor.display_name;
+                    }
+                }
+                return;
+            }
+            moduleState.brandEditor[field] = nextValue;
         });
         if (node.type === 'checkbox') {
             node.addEventListener('change', () => {
