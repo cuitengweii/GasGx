@@ -179,6 +179,8 @@ function renderFlashHeader({ idPrefix, appGlobal }) {
 }
 
 const SITE_SHELL_CONFIG_SCRIPT_SRC = '/shared/ui/site-shell.config.js';
+const MAIN_SITE_SHELL_SCRIPT_SRC = '/shared/ui/site-shell.shared.js';
+const MAIN_SITE_SHELL_STYLE_HREF = '/shared/ui/site-shell.shared.css';
 const SITE_SHELL_CONFIG_TABLE = 'site_shell_configs';
 const SITE_SHELL_CONFIG_SCOPE = 'global';
 const FOOTER_SOCIAL_SETTINGS_TABLE = 'feeder_form_options';
@@ -628,6 +630,56 @@ function ensureSiteShellConfigLoaded() {
         });
 
     return siteShellConfigPromise;
+}
+
+function ensureMainSiteFooterAssets() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return Promise.resolve(null);
+
+    if (!document.querySelector('link[data-gsh-main-site-shell-css="1"]')) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = MAIN_SITE_SHELL_STYLE_HREF;
+        link.dataset.gshMainSiteShellCss = '1';
+        document.head.appendChild(link);
+    }
+
+    if (window.GasGxSharedUI && typeof window.GasGxSharedUI.mountFooter === 'function') {
+        return Promise.resolve(window.GasGxSharedUI);
+    }
+
+    return new Promise((resolve) => {
+        const done = () => resolve(window.GasGxSharedUI || null);
+        const fail = () => resolve(null);
+        const existing = document.querySelector('script[data-gsh-main-site-shell-js="1"]');
+
+        if (existing) {
+            if (window.GasGxSharedUI) return done();
+            existing.addEventListener('load', done, { once: true });
+            existing.addEventListener('error', fail, { once: true });
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = MAIN_SITE_SHELL_SCRIPT_SRC;
+        script.async = true;
+        script.dataset.gshMainSiteShellJs = '1';
+        script.addEventListener('load', done, { once: true });
+        script.addEventListener('error', fail, { once: true });
+        document.head.appendChild(script);
+    });
+}
+
+function mountManagedMainSiteFooter(container) {
+    return ensureMainSiteFooterAssets()
+        .then((sharedUI) => {
+            if (!sharedUI || typeof sharedUI.mountFooter !== 'function') {
+                return false;
+            }
+
+            sharedUI.mountFooter(container);
+            return true;
+        })
+        .catch(() => false);
 }
 
 function refreshHomepageFooterLinks(container) {
@@ -1188,19 +1240,25 @@ export function mountSharedFooter(container, options = {}) {
 
     if (!isMinimal) {
         bindHomepageFooterInteractions(container);
-        ensureSiteShellConfigLoaded()
-            .then(() => {
-                container.innerHTML = renderFullFooter();
-                bindHomepageFooterInteractions(container);
-                refreshHomepageFooterLinks(container);
-                refreshHomepageFooterContact(container);
-                refreshHomepageFooterSocial(container);
-                return shouldUseLegacyFooterOverrides() ? fetchFooterSocialSettings() : null;
-            })
-            .then((overrides) => {
-                if (!overrides) return;
-                refreshHomepageFooterContact(container, overrides);
-                refreshHomepageFooterSocial(container, overrides);
+        mountManagedMainSiteFooter(container)
+            .then((mountedManagedFooter) => {
+                if (mountedManagedFooter) return null;
+
+                return ensureSiteShellConfigLoaded()
+                    .then(() => {
+                        container.innerHTML = renderFullFooter();
+                        bindHomepageFooterInteractions(container);
+                        refreshHomepageFooterLinks(container);
+                        refreshHomepageFooterContact(container);
+                        refreshHomepageFooterSocial(container);
+                        return shouldUseLegacyFooterOverrides() ? fetchFooterSocialSettings() : null;
+                    })
+                    .then((overrides) => {
+                        if (!overrides) return null;
+                        refreshHomepageFooterContact(container, overrides);
+                        refreshHomepageFooterSocial(container, overrides);
+                        return overrides;
+                    });
             })
             .catch(() => undefined);
     }

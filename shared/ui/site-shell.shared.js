@@ -2239,6 +2239,56 @@
         }, 0);
     }
 
+    function ensureFooterOnlySlot(container) {
+        const host = typeof container === "string"
+            ? document.getElementById(container)
+            : container;
+
+        if (!host || typeof host !== "object") {
+            return null;
+        }
+
+        if (host.id === "ggx-site-footer-slot") {
+            return host;
+        }
+
+        let slot = host.querySelector("#ggx-site-footer-slot");
+        if (slot) {
+            return slot;
+        }
+
+        host.innerHTML = '<div id="ggx-site-footer-slot"></div>';
+        return host.querySelector("#ggx-site-footer-slot");
+    }
+
+    function renderFooterOnlySlot() {
+        mountSlot("ggx-site-footer-slot", buildFooterTemplate());
+        refreshShellNavigation(true);
+        syncLanguageUI(getCurrentLang());
+    }
+
+    function mountFooter(container) {
+        const slot = ensureFooterOnlySlot(container);
+        if (!slot) {
+            return null;
+        }
+
+        bindActionDelegation();
+        renderFooterOnlySlot();
+
+        fetchPublishedSiteShellConfig()
+            .then((config) => {
+                if (!config) return null;
+                applySiteShellConfig(config);
+                renderFooterOnlySlot();
+                document.dispatchEvent(new CustomEvent("gasgx:site-shell-config-updated"));
+                return config;
+            })
+            .catch(() => null);
+
+        return slot;
+    }
+
     window.GasGxSharedUI = {
         __initialized: true,
         get mounted() {
@@ -2246,6 +2296,7 @@
         },
         callApp: callApp,
         mount: mount,
+        mountFooter: mountFooter,
         refreshNavigation: refreshShellNavigation,
         reloadShellConfig: syncPublishedSiteShellConfig,
         syncLanguageUI: syncLanguageUI,
@@ -2254,14 +2305,22 @@
         ensureMainAuthBridge: ensureMainAuthBridge
     };
 
+    function shouldAutoMountShell() {
+        return !!document.getElementById("ggx-site-header-slot");
+    }
+
     if (document.readyState === "loading") {
-        if (document.getElementById("ggx-site-header-slot")) {
+        if (shouldAutoMountShell()) {
             mount();
         }
         document.addEventListener("DOMContentLoaded", function () {
-            mount();
+            if (shouldAutoMountShell()) {
+                mount();
+            }
         }, { once: true });
     } else {
-        mount();
+        if (shouldAutoMountShell()) {
+            mount();
+        }
     }
 })();
