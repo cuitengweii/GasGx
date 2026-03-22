@@ -894,7 +894,6 @@ function renderLogin() {
                     <div class="ams-auth-links">
                         <button class="ams-btn ams-btn-muted" type="button" data-auth-view="login">返回登录</button>
                     </div>
-                    <p class="ams-footnote">系统会把重置链接发到该邮箱。只有后台人员名单中的账号才允许登录后台。</p>
                 `
                           : `
                     <form id="ams-login-form" class="ams-form">
@@ -911,7 +910,6 @@ function renderLogin() {
                     <div class="ams-auth-links">
                         <button class="ams-btn ams-btn-link" type="button" data-auth-view="forgot">忘记密码</button>
                     </div>
-                    <p class="ams-footnote">使用 Supabase Auth 登录，后台人员权限由 admin_users 名单控制。</p>
                 `
                 }
             </div>
