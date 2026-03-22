@@ -2667,19 +2667,19 @@ export async function renderQuoteInstancesPage(input) {
     }
     input.setPageHeader('报价系统 / 报价单管理', '从产品模板生成客户报价单草稿，编辑后发布，生成客户独立链接。');
     input.setContent(`
-        <section class="ams-card ams-hero-card">
+        <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-instance-hero">
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">Quote Instances</p>
                 <h2>报价单实例才是最终业务对象。</h2>
                 <p class="ams-hero-text">实例从产品模板复制品牌快照、产品标题、主配置/选配和汇率。保存草稿不影响客户页，点击发布后才会更新客户看到的内容；默认按中文生成，多语言缺省项会自动继承中文。</p>
             </div>
-            <div class="ams-quick-actions">
-                <div class="ams-quick-link ams-quick-link-static">
+            <div class="ams-quick-actions ams-quote-instance-quick-actions">
+                <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-file-circle-plus"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>从模板生成报价单</strong>
                         <span>先选一个产品模板，系统会按中文默认值生成一份可编辑草稿；EN / RU 未填写时会自动继承中文。</span>
-                        <div class="ams-inline-actions ams-quote-create-bar">
+                        <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
                             <select id="ams-quote-instance-product-select" class="ams-select ams-quote-create-select">
                                 <option value="">请选择产品模板</option>
                                 ${moduleState.products.map((product) => `<option value="${esc(product.id)}">${esc(brandLabelById(product.brand_id))} / ${esc(pickLocalized(product.public_title, product.default_lang, product.slug))}</option>`).join('')}

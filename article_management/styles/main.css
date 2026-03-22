@@ -1390,6 +1390,50 @@ textarea {
     min-height: 40px;
 }
 
+.ams-quote-instance-hero {
+    grid-template-columns: minmax(0, 1.45fr) minmax(280px, 320px);
+    align-items: start;
+}
+
+.ams-quote-instance-hero .ams-hero-copy {
+    min-width: 0;
+}
+
+.ams-quote-instance-hero .ams-hero-text {
+    max-width: 780px;
+}
+
+.ams-quote-instance-quick-actions {
+    max-width: 320px;
+    width: 100%;
+    justify-self: end;
+}
+
+.ams-quote-create-panel {
+    padding: 12px 14px;
+    background:
+        linear-gradient(180deg, rgba(13, 24, 9, 0.92), rgba(12, 14, 16, 0.98)),
+        radial-gradient(circle at top right, rgba(93, 214, 44, 0.12), transparent 42%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.ams-quote-create-panel .ams-quick-link-body {
+    gap: 5px;
+}
+
+.ams-quote-create-bar-compact {
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.ams-quote-create-bar-compact .ams-btn {
+    width: 100%;
+}
+
+.ams-quote-create-panel .ams-field-help {
+    margin-top: 6px;
+}
+
 .ams-hero-copy h2,
 .ams-editor-hero h2 {
     margin: 0;
@@ -2448,6 +2492,10 @@ textarea {
     .ams-hero-card-compact {
         grid-template-columns: 1fr;
         padding: 14px;
+    }
+
+    .ams-quote-instance-quick-actions {
+        max-width: none;
     }
 
     .ams-editor-action-bar {
