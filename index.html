@@ -175,12 +175,42 @@
             .map-info-box.mobile-fixed {
                 top: auto !important;
                 left: 50% !important;
-                /* Lifted up to avoid bottom drawer handle (approx 45px + padding) */
-                bottom: 65px !important; 
                 transform: translateX(-50%);
-                width: 90%;
+                width: min(94vw, 360px) !important;
+                max-height: min(32vh, 260px);
+                overflow-y: auto;
+                padding: 12px 14px;
                 border-left: 1px solid rgba(93, 214, 44, 0.4); 
                 border-top: 3px solid #5DD62C;
+                border-radius: 16px;
+                box-shadow: 0 16px 40px rgba(0, 0, 0, 0.72);
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .map-info-box.mobile-fixed .map-info-box__header,
+            .map-info-box.mobile-fixed .map-info-box__summary {
+                gap: 0.65rem;
+            }
+
+            .map-info-box.mobile-fixed .map-info-box__header {
+                align-items: flex-start;
+            }
+
+            .map-info-box.mobile-fixed .map-info-box__summary {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .map-info-box.mobile-fixed .map-info-box__summary-copy {
+                margin-right: 0;
+            }
+
+            .map-info-box.mobile-fixed .map-info-box__action {
+                width: 100%;
+                max-width: none !important;
+                justify-content: center;
+                min-height: 2.5rem;
+                font-size: 11px;
             }
 
             /* Hide detailed star ratings on mobile to save space */
@@ -223,36 +253,6 @@
             -webkit-backdrop-filter: blur(12px);
         }
 
-        body.home-shell-news-style #ggx-site-header-slot #mobile-menu-container {
-            left: auto;
-            right: 0;
-            width: min(82vw, 16rem);
-            background: rgba(15, 15, 15, 0.95);
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            z-index: 250;
-        }
-
-        body.home-shell-news-style #ggx-site-header-slot #index-mobile-menu-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 240;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(3px);
-            -webkit-backdrop-filter: blur(3px);
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-
-        body.home-shell-news-style #ggx-site-header-slot #mobile-menu-container[data-ggx-open="1"] + #index-mobile-menu-overlay {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-        }
     </style>
     <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
 </head>
@@ -292,18 +292,24 @@
                 </div>
             </div>
 
-            <div id="ranking-sidebar" class="absolute bottom-0 left-0 w-full xl:static xl:w-[280px] xl:h-full bg-[#121212] xl:bg-[#0a0a0a] border-t xl:border-t-0 xl:border-r border-white/10 flex flex-col z-[200] shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] rounded-t-2xl xl:rounded-none transition-transform duration-300 transform translate-y-[calc(100%-45px)] xl:translate-y-0 h-[60vh] xl:h-auto xl:order-first">
-                
-                <div id="mobile-drawer-handle" class="xl:hidden w-full h-5 flex items-center justify-center cursor-pointer active:bg-white/5 pt-2" onclick="window.app.toggleDrawer()">
-                    <div class="w-10 h-1 bg-gray-600 rounded-full"></div>
-                </div>
+            <div id="ranking-sidebar" class="absolute bottom-0 left-0 w-full xl:static xl:w-[280px] xl:h-full bg-[#121212] xl:bg-[#0a0a0a] border-t xl:border-t-0 xl:border-r border-white/10 flex flex-col z-[200] shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] rounded-t-2xl xl:rounded-none transition-transform duration-300 transform translate-y-[calc(100%-72px)] xl:translate-y-0 h-[58vh] xl:h-auto xl:order-first">
 
-                <div class="px-3 pb-2 xl:py-3 border-b border-white/5 bg-[#121212] xl:bg-[#121212] flex justify-between items-center cursor-pointer xl:cursor-default" onclick="window.app.toggleDrawer()">
+                <button id="mobile-drawer-toggle" type="button" class="xl:hidden mx-3 mt-3 mb-2 min-h-11 rounded-full border border-white/10 bg-[#171717] px-4 py-3 text-left shadow-[0_8px_20px_rgba(0,0,0,0.35)] active:scale-[0.99] [touch-action:manipulation] flex items-center justify-between gap-3" onclick="window.app.toggleDrawer()" aria-expanded="false">
+                    <span class="min-w-0">
+                        <span class="flex items-center gap-1 text-gas-green font-bold text-[10px] uppercase tracking-widest">
+                            <i class="fa-solid fa-trophy"></i>
+                            <span data-i18n="top_producers">Total Score Ranking</span>
+                        </span>
+                        <span id="drawer-action-label" class="block text-[10px] text-gray-500 mt-1">Tap to expand ranking</span>
+                    </span>
+                    <i id="drawer-icon" class="fa-solid fa-chevron-up text-gray-500 text-xs transition-transform duration-300"></i>
+                </button>
+
+                <div class="hidden xl:flex px-3 pb-2 xl:py-3 border-b border-white/5 bg-[#121212] xl:bg-[#121212] justify-between items-center">
                     <h2 class="text-gas-green font-bold text-[10px] uppercase tracking-widest flex items-center gap-1">
                         <i class="fa-solid fa-trophy"></i>
                         <span data-i18n="top_producers">Total Score Ranking</span>
                     </h2>
-                    <i id="drawer-icon" class="fa-solid fa-chevron-up text-gray-500 text-xs xl:hidden transition-transform duration-300"></i>
                 </div>
 
                 <div id="country-list" class="flex-1 p-1 space-y-0.5 overflow-y-auto custom-scrollbar bg-[#080808]"></div>
@@ -493,24 +499,6 @@
                 applyAuthState(currentUser, displayName);
             }
 
-            function ensureNewsStyleMobileOverlay() {
-                const menu = document.getElementById('mobile-menu-container');
-                if (!menu) return;
-                if (!menu.dataset.ggxOpen) menu.dataset.ggxOpen = '0';
-                if (document.getElementById('index-mobile-menu-overlay')) return;
-
-                const overlay = document.createElement('button');
-                overlay.type = 'button';
-                overlay.id = 'index-mobile-menu-overlay';
-                overlay.setAttribute('aria-label', 'Close mobile menu');
-                overlay.addEventListener('click', () => {
-                    const menuBtn = document.getElementById('mobile-menu-btn');
-                    if (menu.dataset.ggxOpen === '1' && menuBtn) menuBtn.click();
-                });
-
-                menu.insertAdjacentElement('afterend', overlay);
-            }
-
             window.AuthApp = {
                 signIn: async () => {
                     window.location.href = currentUser ? ACCOUNT_URL : SIGN_IN_URL;
@@ -556,7 +544,6 @@
             }
 
             async function bootHomeShellBridge() {
-                ensureNewsStyleMobileOverlay();
                 await initSupabaseAuth();
             }
 
@@ -567,7 +554,6 @@
             }
 
             document.addEventListener('gasgx:shared-ui-ready', () => {
-                ensureNewsStyleMobileOverlay();
                 applyHomePageConfig(window.app?.currentLang || 'en');
                 if (currentUser) {
                     applyAuthState(currentUser, resolveDisplayName(currentUser));
@@ -810,12 +796,13 @@ window.app = {
             currentLang: 'en', isMobileMenuOpen: false,
             rotationTimer: null, projection: null, projectionAir: null, geoGenerator: null, svg: null, width: 0, height: 0, countries: [], activeData: null, lastElapsed: 0, dragVelocity: { x: 0, y: 0 }, friction: 0.95, autoRotateSpeed: 0.2,
             rafPending: false, frameIntervalMs: 16, perfLite: false, visibilityBound: false, hudLine: null, hudDot: null,
-            countrySelection: null, iconSelection: null, labelSelection: null,
+            countrySelection: null, iconSelection: null, labelSelection: null, isDrawerOpen: false, resizeBound: false,
 
             init() {
                 this.updateStaticText();
                 this.init3DGlobe();
                 this.renderLeaderboard();
+                this.syncDrawerState();
                 if (!this.visibilityBound) {
                     document.addEventListener('visibilitychange', () => {
                         if (document.hidden) {
@@ -825,6 +812,15 @@ window.app = {
                         }
                     });
                     this.visibilityBound = true;
+                }
+                if (!this.resizeBound) {
+                    const refreshMobileLayout = () => {
+                        this.syncDrawerState();
+                        if (this.activeData) this.updateInfoBox(true);
+                    };
+                    window.addEventListener('resize', refreshMobileLayout);
+                    window.addEventListener('orientationchange', refreshMobileLayout);
+                    this.resizeBound = true;
                 }
             },
 
@@ -836,12 +832,54 @@ window.app = {
                     if (btn) btn.className = `ggx-lang-option ${l === lang ? "is-active" : ""}`;
                     if (mobBtn) mobBtn.className = `ggx-lang-btn ggx-lang-btn-mobile ${l === lang ? "text-gas-green font-semibold" : "text-gray-500 hover:text-gray-300"}`;
                 });
-                this.updateStaticText(); this.renderLeaderboard(); this.refreshCountryLabels(); this.redrawGlobe(); this.updateInfoBox(true);
+                this.updateStaticText(); this.renderLeaderboard(); this.refreshCountryLabels(); this.redrawGlobe(); this.syncDrawerState(); this.updateInfoBox(true);
                 const modal = document.getElementById('detail-modal'); if (!modal.classList.contains('hidden') && this.activeData) { this.openDetailModal(this.activeData.data.en); }
             },
             t(key) {
                 const dict = AppData.i18n[this.currentLang] || AppData.i18n.en || {};
                 return dict[key] || key;
+            },
+            isMobileDrawerMode() {
+                return window.innerWidth < 1280;
+            },
+            getDrawerActionLabel(isOpen) {
+                return this.currentLang === 'zh'
+                    ? (isOpen ? '点击收起排行' : '点击展开排行')
+                    : (isOpen ? 'Tap to collapse ranking' : 'Tap to expand ranking');
+            },
+            getMobileDrawerPeekHeight() {
+                const toggle = document.getElementById('mobile-drawer-toggle');
+                if (!toggle) return 72;
+                return Math.max(72, Math.ceil(toggle.getBoundingClientRect().height + 24));
+            },
+            syncDrawerState() {
+                const sidebar = document.getElementById('ranking-sidebar');
+                const icon = document.getElementById('drawer-icon');
+                const actionLabel = document.getElementById('drawer-action-label');
+                const toggle = document.getElementById('mobile-drawer-toggle');
+                if (!sidebar) return;
+
+                if (!this.isMobileDrawerMode()) {
+                    sidebar.style.transform = 'translateY(0)';
+                    sidebar.dataset.drawerOpen = '1';
+                    if (toggle) toggle.setAttribute('aria-expanded', 'true');
+                    if (icon) icon.style.transform = 'rotate(180deg)';
+                    if (actionLabel) actionLabel.innerText = this.getDrawerActionLabel(true);
+                    return;
+                }
+
+                const peekHeight = this.getMobileDrawerPeekHeight();
+                sidebar.style.transform = this.isDrawerOpen ? 'translateY(0)' : `translateY(calc(100% - ${peekHeight}px))`;
+                sidebar.dataset.drawerOpen = this.isDrawerOpen ? '1' : '0';
+                if (toggle) toggle.setAttribute('aria-expanded', this.isDrawerOpen ? 'true' : 'false');
+                if (icon) icon.style.transform = this.isDrawerOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+                if (actionLabel) actionLabel.innerText = this.getDrawerActionLabel(this.isDrawerOpen);
+            },
+            toggleDrawer(forceState) {
+                if (!this.isMobileDrawerMode()) return;
+                this.isDrawerOpen = typeof forceState === 'boolean' ? forceState : !this.isDrawerOpen;
+                this.syncDrawerState();
+                if (this.activeData) this.updateInfoBox(true);
             },
             getText(dataObj) {
                 if (!dataObj) return "";
@@ -919,7 +957,9 @@ window.app = {
                 document.querySelectorAll('.list-item-hover').forEach(el => { el.classList.remove('list-item-active'); el.classList.add('list-item-dimmed'); });
                 const activeItem = document.getElementById(`list-item-${countryName.replace(/\s+/g, '-')}`); if (activeItem) { activeItem.classList.add('list-item-active'); activeItem.classList.remove('list-item-dimmed'); const listContainer = document.getElementById('country-list'); if (listContainer) { const containerRect = listContainer.getBoundingClientRect(); const itemRect = activeItem.getBoundingClientRect(); listContainer.scrollTo({ top: listContainer.scrollTop + (itemRect.top - containerRect.top) - (containerRect.height / 2) + (itemRect.height / 2), behavior: 'smooth' }); } }
                 d3.select('#map-container').classed('map-has-highlight', true); d3.selectAll('.country').classed('highlighted', false); d3.select(`#country-${countryName.replace(/\s+/g, '-')}`).classed('highlighted', true);
-                this.activeData = { data: data, geo: feature }; this.updateInfoBox(true); 
+                this.activeData = { data: data, geo: feature }; 
+                if (this.isMobileDrawerMode()) this.toggleDrawer(false);
+                this.updateInfoBox(true); 
                 if (rotate) { const p = d3.geoCentroid(feature); const r = d3.interpolate(this.projection.rotate(), [-p[0], -p[1]]); d3.transition().duration(1500).ease(d3.easeCubicOut).tween("rotate", () => (t) => { const rot = r(t); this.projection.rotate(rot); this.projectionAir.rotate(rot); this.scheduleRedraw(); }); } else { this.redrawGlobe(); }
             },
             resetMap() {
@@ -943,24 +983,34 @@ window.app = {
                 if (forceContent || infoBox.dataset.contentKey !== contentKey) {
                     const generateStars = (score) => { let html = ''; for(let i=0; i<5; i++) { const active = i < Math.floor(score); html += `<svg class="btc-star ${active?'':'inactive'}" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`; } return html; };
                     let dimHtml = ''; data.dims.forEach((score, idx) => { dimHtml += `<div class="dim-row"><span>${this.getText(DIMENSION_DEFS[idx])}</span><div class="dim-stars">${generateStars(score)}</div></div>`; });
-                    infoBox.innerHTML = `<div class="flex items-center justify-between mb-3 pb-2 border-b" style="border-color:${color}50"><div class="font-bold text-white text-sm uppercase tracking-wider">${this.getName(data)}</div><div class="text-xs font-mono font-bold" style="color:${color}">Score: ${data.score}</div></div><div class="mb-3 flex justify-between items-center bg-white/5 p-2 rounded border border-white/5"><div class="flex-1 mr-2"><div class="text-[10px] text-gray-400 mb-0.5">${this.t('policy_status')}</div><div class="text-xs font-bold text-white flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full" style="background:${color}"></div>${this.getText(data.mining)}</div></div><button onclick="window.app.openDetailModal('${data.en}')" class="shrink-0 px-2 py-1.5 bg-gas-green hover:bg-white text-black text-[10px] font-bold rounded transition-colors flex items-center gap-1 pointer-events-auto h-auto whitespace-normal leading-tight text-left max-w-[120px]" style="cursor: pointer;"><i class="fa-solid fa-file-lines"></i> ${this.t('analysis_10')}</button></div><div class="mb-3 space-y-1 text-xs"><div class="flex justify-between"><span class="text-gray-400">${this.t('gas_production')}:</span> <span class="text-white font-mono">${data.vol} Bcm</span></div></div><div class="pt-2 border-t border-white/10">${dimHtml}</div>`;
+                    infoBox.innerHTML = `<div class="map-info-box__header flex items-center justify-between mb-3 pb-2 border-b" style="border-color:${color}50"><div class="font-bold text-white text-sm uppercase tracking-wider">${this.getName(data)}</div><div class="text-xs font-mono font-bold" style="color:${color}">Score: ${data.score}</div></div><div class="map-info-box__summary mb-3 flex justify-between items-center bg-white/5 p-2 rounded border border-white/5"><div class="map-info-box__summary-copy flex-1 mr-2"><div class="text-[10px] text-gray-400 mb-0.5">${this.t('policy_status')}</div><div class="text-xs font-bold text-white flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full" style="background:${color}"></div>${this.getText(data.mining)}</div></div><button onclick="window.app.openDetailModal('${data.en}')" class="map-info-box__action shrink-0 px-2 py-1.5 bg-gas-green hover:bg-white text-black text-[10px] font-bold rounded transition-colors flex items-center gap-1 pointer-events-auto h-auto whitespace-normal leading-tight text-left max-w-[120px]" style="cursor: pointer;"><i class="fa-solid fa-file-lines"></i> ${this.t('analysis_10')}</button></div><div class="mb-3 space-y-1 text-xs"><div class="flex justify-between"><span class="text-gray-400">${this.t('gas_production')}:</span> <span class="text-white font-mono">${data.vol} Bcm</span></div></div><div class="pt-2 border-t border-white/10">${dimHtml}</div>`;
                     infoBox.dataset.contentKey = contentKey;
                 }
                 
                 // --- FIX: Responsive Positioning ---
                 const isMobile = this.width < 768;
+                const mapContainer = document.getElementById('map-container');
+                const rankingSidebar = document.getElementById('ranking-sidebar');
                 
                 if (isMobile) {
-                    // Mobile: Fixed at bottom, full width
-                    infoBox.style.width = '94%';
-                    infoBox.style.left = '3%';
+                    infoBox.classList.add('mobile-fixed');
+                    const containerRect = mapContainer ? mapContainer.getBoundingClientRect() : null;
+                    const sidebarRect = rankingSidebar ? rankingSidebar.getBoundingClientRect() : null;
+                    const reservedBottom = containerRect && sidebarRect
+                        ? Math.max(0, containerRect.bottom - sidebarRect.top)
+                        : 0;
+                    infoBox.style.width = 'min(94vw, 360px)';
+                    infoBox.style.maxHeight = 'min(32vh, 260px)';
+                    infoBox.style.left = '50%';
                     infoBox.style.top = 'auto';
-                    infoBox.style.bottom = '10px';
-                    infoBox.style.transform = 'none';
+                    infoBox.style.bottom = `${Math.max(12, Math.round(reservedBottom + 12))}px`;
+                    infoBox.style.transform = 'translateX(-50%)';
                     // No lines on mobile
                     if (this.hudLine) this.hudLine.setAttribute('display', 'none');
                     if (this.hudDot) this.hudDot.setAttribute('display', 'none');
                 } else {
+                    infoBox.classList.remove('mobile-fixed');
+                    infoBox.style.maxHeight = 'none';
                     // Desktop: Relative to Globe
                     const cx = this.width / 2; 
                     const cy = this.height / 2 + 50; 

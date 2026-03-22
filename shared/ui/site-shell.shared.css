@@ -88,6 +88,34 @@
 
 #ggx-site-header-slot #mobile-menu-container {
     transition: transform 0.3s ease-in-out;
+    left: auto;
+    right: 0;
+    width: min(82vw, 20rem);
+    background: rgba(15, 15, 15, 0.95);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 250;
+}
+
+#ggx-site-header-slot #mobile-menu-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 240;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#ggx-site-header-slot #mobile-menu-container[data-ggx-open="1"] + #mobile-menu-overlay {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 #ggx-site-header-slot .mobile-submenu {

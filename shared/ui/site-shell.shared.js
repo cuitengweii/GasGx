@@ -101,6 +101,11 @@
                 </div>
             </div>
 
+            <a id="mob-header-auth-link" href="/account/user.html" class="xl:hidden flex items-center gap-2 text-[10px] font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-3 py-1.5 shadow-glow max-w-[132px]" aria-label="Sign in">
+                <i id="mob-header-auth-icon" class="fa-solid fa-right-to-bracket"></i>
+                <span id="mob-header-auth-label" class="truncate" data-ggx-text="auth-login">Login</span>
+            </a>
+
             <button id="mobile-menu-btn" data-ggx-action="toggle-mobile-menu" class="xl:hidden p-2 text-white hover:text-gas-green text-xl focus:outline-none z-50 relative" aria-label="Toggle mobile menu">
                 <i class="fa-solid fa-bars"></i>
             </button>
@@ -135,7 +140,8 @@
          </div>
     </div>
     <nav id="mobile-nav-content" class="flex flex-col space-y-1"></nav>
-</div>`;
+</div>
+<button id="mobile-menu-overlay" type="button" data-ggx-action="toggle-mobile-menu" class="xl:hidden" aria-label="Close mobile menu"></button>`;
 
     const DEFAULT_SITE_SHELL_CONFIG = {
         pages: {
@@ -1565,7 +1571,10 @@
             mobUserProfile: document.getElementById("mob-auth-user-profile"),
             mobAccountLink: document.getElementById("mob-auth-account-link"),
             mobUserAvatar: document.getElementById("mob-auth-user-avatar"),
-            mobUsername: document.getElementById("mob-auth-username")
+            mobUsername: document.getElementById("mob-auth-username"),
+            mobHeaderAuthLink: document.getElementById("mob-header-auth-link"),
+            mobHeaderAuthIcon: document.getElementById("mob-header-auth-icon"),
+            mobHeaderAuthLabel: document.getElementById("mob-header-auth-label")
         };
     }
 
@@ -1599,6 +1608,27 @@
         return meta.avatar_url || meta.picture || MAIN_AUTH_FALLBACK_AVATAR;
     }
 
+    function applyMobileHeaderAuthState(user, displayName, authConfig) {
+        const els = getMainAuthElements();
+        const text = getSharedText(getCurrentLang());
+        if (!els.mobHeaderAuthLink || !els.mobHeaderAuthLabel || !els.mobHeaderAuthIcon) return;
+
+        if (user) {
+            els.mobHeaderAuthLink.href = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
+            els.mobHeaderAuthLink.className = "xl:hidden flex items-center gap-2 text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full px-3 py-1.5 max-w-[132px]";
+            els.mobHeaderAuthLink.setAttribute("aria-label", text.account || "Account");
+            els.mobHeaderAuthIcon.className = "fa-solid fa-user";
+            els.mobHeaderAuthLabel.textContent = displayName;
+            return;
+        }
+
+        els.mobHeaderAuthLink.href = authConfig.signInUrl || MAIN_AUTH_DEFAULTS.signInUrl;
+        els.mobHeaderAuthLink.className = "xl:hidden flex items-center gap-2 text-[10px] font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-3 py-1.5 shadow-glow max-w-[132px]";
+        els.mobHeaderAuthLink.setAttribute("aria-label", text.authLogin || "Login");
+        els.mobHeaderAuthIcon.className = "fa-solid fa-right-to-bracket";
+        els.mobHeaderAuthLabel.textContent = text.authLogin || "Login";
+    }
+
     function applyMainAuthState(user, displayName) {
         const els = getMainAuthElements();
         const authConfig = authBridgeState.runtimeConfig || getMainAuthConfig();
@@ -1617,6 +1647,7 @@
             if (els.mobUserAvatar) els.mobUserAvatar.src = avatar;
             if (els.dropdownUsername) els.dropdownUsername.textContent = displayName;
             if (els.mobUsername) els.mobUsername.textContent = displayName;
+            applyMobileHeaderAuthState(user, displayName, authConfig);
             return;
         }
 
@@ -1624,6 +1655,7 @@
         setAuthElementVisibility(els.userProfile, false);
         setAuthElementVisibility(els.mobLoginBtn, true);
         setAuthElementVisibility(els.mobUserProfile, false);
+        applyMobileHeaderAuthState(null, displayName, authConfig);
     }
 
     async function fetchMainAuthProfileName(userId) {
