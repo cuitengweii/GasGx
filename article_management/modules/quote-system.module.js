@@ -30,7 +30,7 @@ import {
     pickLocalized,
     sortMediaItems,
     sortItems,
-} from '../../shared/quote-system/quote-data.module.js';
+} from '../../shared/quote-system/quote-data.module.js?v=20260322quote05';
 
 const TABLE_BRANDS = 'quote_brands';
 const TABLE_PRODUCTS = 'quote_products';
@@ -3572,7 +3572,7 @@ export async function renderQuoteCustomersPage(input) {
                 <div class="ams-section-head">
                     <div>
                         <h3>${activeCustomerId ? '编辑客户档案' : '新建客户档案'}</h3>
-                        <p>客户主档是后台关系视图；报价单内的 `customer_snapshot` 仍用于保留发布时的业务历史。</p>
+                        <p>客户主档是后台关系视图；报价单内的 <code>customer_snapshot</code> 仍用于保留发布时的业务历史。</p>
                     </div>
                     <div class="ams-row-actions">
                         <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-save">保存客户档案</button>
