@@ -36,21 +36,30 @@ const TABLE_BRANDS = 'quote_brands';
 const TABLE_PRODUCTS = 'quote_products';
 const TABLE_PRODUCT_ITEMS = 'quote_product_items';
 const TABLE_PRODUCT_MEDIA = 'quote_product_media';
+const TABLE_CUSTOMERS = 'quote_customers';
 const TABLE_INSTANCES = 'quote_instances';
 const TABLE_INSTANCE_ITEMS = 'quote_instance_items';
+const TABLE_INSTANCE_EVENTS = 'quote_instance_events';
 const STORAGE_BUCKET_PRODUCT_MEDIA = 'quote-product-media';
 
 const moduleState = {
     brands: [],
     products: [],
+    customers: [],
     instances: [],
     baseTemplates: [],
     brandEditor: null,
     productEditor: null,
     productBrandDraft: null,
     instanceEditor: null,
+    instanceEvents: [],
+    instanceEventSummary: null,
+    customerEditor: null,
+    customerEvents: [],
     productLoadedId: '',
     instanceLoadedId: '',
+    customerLoadedId: '',
+    customerSearch: '',
     productBrandFilter: 'all',
     instanceBrandFilter: 'all',
     instanceStatusFilter: 'all',
@@ -86,6 +95,143 @@ function safeNumber(value, fallback = 0) {
 
 function text(value, fallback = '') {
     return String(value ?? fallback).trim();
+}
+
+function hasTextValue(value) {
+    return Boolean(text(value));
+}
+
+function normalizeCustomerSnapshot(value = {}) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return {
+            company_name: '',
+            contact_name: '',
+            email: '',
+            phone: '',
+            country: '',
+            notes: '',
+        };
+    }
+    return {
+        company_name: text(value.company_name || value.companyName),
+        contact_name: text(value.contact_name || value.contactName),
+        email: text(value.email),
+        phone: text(value.phone),
+        country: text(value.country),
+        notes: text(value.notes),
+    };
+}
+
+function createCustomerRecord(seed = {}) {
+    return {
+        id: text(seed.id),
+        company_name: text(seed.company_name || seed.companyName),
+        contact_name: text(seed.contact_name || seed.contactName),
+        email: text(seed.email),
+        phone: text(seed.phone),
+        country: text(seed.country),
+        notes: text(seed.notes),
+        is_active: seed.is_active !== false,
+        created_at: text(seed.created_at || seed.createdAt),
+        updated_at: text(seed.updated_at || seed.updatedAt),
+    };
+}
+
+function createCustomerDraft(seed = {}) {
+    return createCustomerRecord(seed);
+}
+
+function customerDisplayName(customer = {}) {
+    return text(customer.company_name || customer.customer_name || customer.contact_name || customer.email, '未关联客户');
+}
+
+function buildInstanceCustomerSnapshot(draft = {}) {
+    return normalizeCustomerSnapshot({
+        company_name: draft.customer_name,
+        contact_name: draft.receiver_name,
+        email: draft.receiver_email,
+        phone: draft.customer_phone,
+        country: draft.customer_country,
+        notes: draft.customer_notes,
+    });
+}
+
+function emptyInstanceEventSummary() {
+    return {
+        total_views: 0,
+        share_views: 0,
+        admin_views: 0,
+        share_links: 0,
+        email_clicks: 0,
+        last_viewed_at: '',
+        last_shared_at: '',
+    };
+}
+
+function summarizeInstanceEvents(events = []) {
+    return events.reduce((summary, event) => {
+        const createdAt = text(event.created_at || event.createdAt);
+        const type = text(event.event_type || event.eventType);
+        if (type === 'quote_viewed' || type === 'share_opened' || type === 'preview_opened' || type === 'passcode_unlocked') {
+            summary.total_views += 1;
+            if (!summary.last_viewed_at || createdAt > summary.last_viewed_at) summary.last_viewed_at = createdAt;
+        }
+        if (type === 'share_opened' || type === 'passcode_unlocked') summary.share_views += 1;
+        if (type === 'preview_opened') summary.admin_views += 1;
+        if (type === 'share_link_generated') {
+            summary.share_links += 1;
+            if (!summary.last_shared_at || createdAt > summary.last_shared_at) summary.last_shared_at = createdAt;
+        }
+        if (type === 'email_clicked') summary.email_clicks += 1;
+        return summary;
+    }, emptyInstanceEventSummary());
+}
+
+function summarizeCustomerQuotes(customerId = '') {
+    return moduleState.instances.reduce((summary, instance) => {
+        if (text(instance.customer_id) !== text(customerId)) return summary;
+        summary.total_quotes += 1;
+        if (instance.status === 'published') summary.published_quotes += 1;
+        else if (instance.status === 'archived') summary.archived_quotes += 1;
+        else summary.draft_quotes += 1;
+        if (!summary.last_quote_updated_at || text(instance.updated_at) > summary.last_quote_updated_at) {
+            summary.last_quote_updated_at = text(instance.updated_at);
+        }
+        return summary;
+    }, {
+        total_quotes: 0,
+        draft_quotes: 0,
+        published_quotes: 0,
+        archived_quotes: 0,
+        last_quote_updated_at: '',
+    });
+}
+
+function summarizeCustomerActivity(customerId = '', events = []) {
+    const quoteSummary = summarizeCustomerQuotes(customerId);
+    const eventSummary = summarizeInstanceEvents(events);
+    const viewerEmails = new Set();
+    let logged_in_views = 0;
+    let anonymous_views = 0;
+
+    events.forEach((event) => {
+        const label = text(event.viewer_label);
+        const email = text(event.viewer_email).toLowerCase();
+        if (label === 'anonymous') {
+            anonymous_views += 1;
+        } else if (label !== 'admin') {
+            logged_in_views += 1;
+            if (email) viewerEmails.add(email);
+        }
+    });
+
+    return {
+        ...quoteSummary,
+        ...eventSummary,
+        logged_in_views,
+        anonymous_views,
+        named_viewers: viewerEmails.size,
+    };
 }
 
 function ensureQuoteBusyMask() {
@@ -245,19 +391,30 @@ function createProductDraft(seed = {}) {
 }
 
 function createInstanceDraft(seed = {}) {
+    const customerSnapshot = seed.customer_snapshot && typeof seed.customer_snapshot === 'object'
+        ? deepClone(seed.customer_snapshot)
+        : (seed.customerSnapshot && typeof seed.customerSnapshot === 'object' ? deepClone(seed.customerSnapshot) : {});
+    const normalizedStatus = text(seed.status || 'draft').toLowerCase();
     return {
         id: text(seed.id),
         brand_id: text(seed.brand_id || seed.brandId),
         product_id: text(seed.product_id || seed.productId),
+        customer_id: text(seed.customer_id || seed.customerId),
         public_slug: text(seed.public_slug || seed.publicSlug),
-        status: text(seed.status || 'draft') === 'published' ? 'published' : 'draft',
+        status: normalizedStatus === 'published' || normalizedStatus === 'archived' ? normalizedStatus : 'draft',
+        last_active_status: text(seed.last_active_status || seed.lastActiveStatus || 'draft') === 'published' ? 'published' : 'draft',
+        archived_at: text(seed.archived_at || seed.archivedAt),
         customer_name: text(seed.customer_name || seed.customerName),
         receiver_name: text(seed.receiver_name || seed.receiverName),
         receiver_email: text(seed.receiver_email || seed.receiverEmail),
+        customer_phone: text(seed.customer_phone || seed.customerPhone || customerSnapshot.phone),
+        customer_country: text(seed.customer_country || seed.customerCountry || customerSnapshot.country),
+        customer_notes: text(seed.customer_notes || seed.customerNotes || customerSnapshot.notes),
         default_lang: SUPPORTED_LANGS.includes(text(seed.default_lang || seed.defaultLang)) ? text(seed.default_lang || seed.defaultLang) : DEFAULT_LANG,
         validity_hours: Math.max(1, safeNumber(seed.validity_hours || seed.validityHours, 72)),
         draft_rates: normalizeRates(seed.draft_rates || seed.rates || DEFAULT_RATES),
         share_config: seed.share_config && typeof seed.share_config === 'object' ? deepClone(seed.share_config) : {},
+        customer_snapshot: customerSnapshot,
         brand_snapshot: extractBrandSnapshot(seed.brand_snapshot || seed.brandSnapshot || {}),
         product_snapshot: extractProductSnapshot(seed.product_snapshot || seed.productSnapshot || {}),
         section_config: normalizeSectionConfig(seed.section_config || seed.sectionConfig),
@@ -355,6 +512,18 @@ async function fetchBrandRows() {
     return moduleState.brands;
 }
 
+async function fetchCustomerRows() {
+    const { data, error } = await client
+        .from(TABLE_CUSTOMERS)
+        .select('id, company_name, contact_name, email, phone, country, notes, is_active, created_at, updated_at')
+        .eq('is_active', true)
+        .order('company_name', { ascending: true })
+        .order('contact_name', { ascending: true });
+    if (error) throw error;
+    moduleState.customers = Array.isArray(data) ? data.map((row) => createCustomerRecord(row)) : [];
+    return moduleState.customers;
+}
+
 async function fetchProductRows() {
     const { data, error } = await client
         .from(TABLE_PRODUCTS)
@@ -400,22 +569,61 @@ async function fetchProductEditor(productId) {
 async function fetchInstanceRows() {
     const { data, error } = await client
         .from(TABLE_INSTANCES)
-        .select('id, brand_id, product_id, public_slug, status, customer_name, receiver_name, receiver_email, default_lang, validity_hours, published_at, updated_at')
+        .select('id, brand_id, product_id, customer_id, public_slug, status, last_active_status, archived_at, customer_name, receiver_name, receiver_email, customer_snapshot, default_lang, validity_hours, published_at, updated_at')
         .order('updated_at', { ascending: false });
     if (error) throw error;
     moduleState.instances = Array.isArray(data) ? data.map((row) => createInstanceDraft(row)) : [];
     return moduleState.instances;
 }
 
+async function fetchInstanceAnalytics(instanceId) {
+    if (!instanceId) {
+        moduleState.instanceEvents = [];
+        moduleState.instanceEventSummary = emptyInstanceEventSummary();
+        return moduleState.instanceEventSummary;
+    }
+    const { data, error } = await client
+        .from(TABLE_INSTANCE_EVENTS)
+        .select('*')
+        .eq('instance_id', instanceId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+    if (error) throw error;
+    moduleState.instanceEvents = Array.isArray(data) ? data : [];
+    moduleState.instanceEventSummary = summarizeInstanceEvents(moduleState.instanceEvents);
+    return moduleState.instanceEventSummary;
+}
+
+async function fetchCustomerAnalytics(customerId) {
+    if (!customerId) {
+        moduleState.customerEvents = [];
+        return [];
+    }
+    const { data, error } = await client
+        .from(TABLE_INSTANCE_EVENTS)
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+        .limit(200);
+    if (error) throw error;
+    moduleState.customerEvents = Array.isArray(data) ? data : [];
+    return moduleState.customerEvents;
+}
+
 async function fetchInstanceEditor(instanceId) {
     if (!instanceId) {
         moduleState.instanceLoadedId = '';
         moduleState.instanceEditor = createInstanceDraft();
+        moduleState.instanceEvents = [];
+        moduleState.instanceEventSummary = emptyInstanceEventSummary();
         return moduleState.instanceEditor;
     }
     const { data, error } = await client.from(TABLE_INSTANCES).select('*').eq('id', instanceId).single();
     if (error) throw error;
-    const itemsResult = await client.from(TABLE_INSTANCE_ITEMS).select('*').eq('instance_id', instanceId).order('sort_order', { ascending: true });
+    const [itemsResult] = await Promise.all([
+        client.from(TABLE_INSTANCE_ITEMS).select('*').eq('instance_id', instanceId).order('sort_order', { ascending: true }),
+        fetchInstanceAnalytics(instanceId),
+    ]);
     if (itemsResult.error) throw itemsResult.error;
     moduleState.instanceLoadedId = instanceId;
     moduleState.instanceEditor = createInstanceDraft({
@@ -423,6 +631,21 @@ async function fetchInstanceEditor(instanceId) {
         items: itemsResult.data || [],
     });
     return moduleState.instanceEditor;
+}
+
+async function fetchCustomerEditor(customerId) {
+    if (!customerId) {
+        moduleState.customerLoadedId = '';
+        moduleState.customerEditor = createCustomerDraft();
+        moduleState.customerEvents = [];
+        return moduleState.customerEditor;
+    }
+    const { data, error } = await client.from(TABLE_CUSTOMERS).select('*').eq('id', customerId).single();
+    if (error) throw error;
+    await fetchCustomerAnalytics(customerId);
+    moduleState.customerLoadedId = customerId;
+    moduleState.customerEditor = createCustomerDraft(data);
+    return moduleState.customerEditor;
 }
 
 async function persistItemRows(tableName, ownerColumn, ownerId, items = []) {
@@ -705,6 +928,163 @@ async function saveProductDraft(user, draft) {
     return moduleState.productEditor;
 }
 
+async function saveCustomerDraft(user, draft) {
+    const payload = createCustomerDraft(draft);
+    if (!payload.company_name && !payload.contact_name && !payload.email) {
+        throw new Error('请至少填写客户公司、联系人或邮箱中的一项。');
+    }
+
+    const savePayload = {
+        company_name: payload.company_name,
+        contact_name: payload.contact_name,
+        email: payload.email,
+        phone: payload.phone,
+        country: payload.country,
+        notes: payload.notes,
+        is_active: true,
+        updated_by: user?.id || null,
+    };
+
+    let saved = null;
+    if (payload.id) {
+        const { data, error } = await client.from(TABLE_CUSTOMERS).update(savePayload).eq('id', payload.id).select('*').single();
+        if (error) throw error;
+        saved = data;
+    } else {
+        const { data, error } = await client.from(TABLE_CUSTOMERS).insert({
+            ...savePayload,
+            created_by: user?.id || null,
+        }).select('*').single();
+        if (error) throw error;
+        saved = data;
+    }
+
+    await fetchCustomerRows();
+    moduleState.customerLoadedId = text(saved?.id);
+    moduleState.customerEditor = createCustomerDraft(saved);
+    return moduleState.customerEditor;
+}
+
+async function upsertCustomerForInstance(user, draft) {
+    const snapshot = buildInstanceCustomerSnapshot(draft);
+    const hasCustomerData = Object.values(snapshot).some((value) => hasTextValue(value));
+    if (!hasCustomerData) {
+        return {
+            customer_id: '',
+            customer_snapshot: normalizeCustomerSnapshot({}),
+        };
+    }
+
+    const payload = {
+        company_name: snapshot.company_name,
+        contact_name: snapshot.contact_name,
+        email: snapshot.email,
+        phone: snapshot.phone,
+        country: snapshot.country,
+        notes: snapshot.notes,
+        is_active: true,
+        updated_by: user?.id || null,
+    };
+
+    let savedCustomer = null;
+    const currentCustomerId = text(draft.customer_id);
+    if (currentCustomerId) {
+        const { data, error } = await client.from(TABLE_CUSTOMERS).update(payload).eq('id', currentCustomerId).select('*').single();
+        if (error) throw error;
+        savedCustomer = data;
+    } else if (payload.email) {
+        const lookupResult = await client.from(TABLE_CUSTOMERS).select('*').ilike('email', payload.email).maybeSingle();
+        if (lookupResult.error && lookupResult.error.code !== 'PGRST116') throw lookupResult.error;
+        if (lookupResult.data?.id) {
+            const { data, error } = await client.from(TABLE_CUSTOMERS).update(payload).eq('id', lookupResult.data.id).select('*').single();
+            if (error) throw error;
+            savedCustomer = data;
+        }
+    }
+
+    if (!savedCustomer) {
+        const insertPayload = {
+            ...payload,
+            created_by: user?.id || null,
+        };
+        const { data, error } = await client.from(TABLE_CUSTOMERS).insert(insertPayload).select('*').single();
+        if (error) throw error;
+        savedCustomer = data;
+    }
+
+    await fetchCustomerRows();
+    return {
+        customer_id: text(savedCustomer?.id),
+        customer_snapshot: normalizeCustomerSnapshot(savedCustomer),
+    };
+}
+
+async function archiveQuoteInstance(user, instanceId) {
+    if (!instanceId) throw new Error('请先选择一份报价单。');
+    const current = moduleState.instances.find((item) => item.id === instanceId) || moduleState.instanceEditor;
+    const previousStatus = text(current?.status);
+    const fallbackStatus = previousStatus === 'published' ? 'published' : 'draft';
+    const { data, error } = await client
+        .from(TABLE_INSTANCES)
+        .update({
+            status: 'archived',
+            last_active_status: fallbackStatus,
+            archived_at: new Date().toISOString(),
+            archived_by: user?.id || null,
+            updated_by: user?.id || null,
+        })
+        .eq('id', instanceId)
+        .select('*')
+        .single();
+    if (error) throw error;
+    await fetchInstanceRows();
+    if (moduleState.instanceEditor.id === data.id) {
+        moduleState.instanceLoadedId = data.id;
+        moduleState.instanceEditor = createInstanceDraft({
+            ...(current || {}),
+            ...data,
+            items: moduleState.instanceEditor.items,
+        });
+    }
+    return createInstanceDraft({
+        ...(current || {}),
+        ...data,
+        items: moduleState.instanceEditor.id === data.id ? moduleState.instanceEditor.items : [],
+    });
+}
+
+async function restoreQuoteInstance(user, instanceId) {
+    if (!instanceId) throw new Error('请先选择一份报价单。');
+    const current = moduleState.instances.find((item) => item.id === instanceId) || moduleState.instanceEditor;
+    const nextStatus = text(current?.last_active_status || 'draft') === 'published' ? 'published' : 'draft';
+    const { data, error } = await client
+        .from(TABLE_INSTANCES)
+        .update({
+            status: nextStatus,
+            archived_at: null,
+            archived_by: null,
+            updated_by: user?.id || null,
+        })
+        .eq('id', instanceId)
+        .select('*')
+        .single();
+    if (error) throw error;
+    await fetchInstanceRows();
+    if (moduleState.instanceEditor.id === data.id) {
+        moduleState.instanceLoadedId = data.id;
+        moduleState.instanceEditor = createInstanceDraft({
+            ...(current || {}),
+            ...data,
+            items: moduleState.instanceEditor.items,
+        });
+    }
+    return createInstanceDraft({
+        ...(current || {}),
+        ...data,
+        items: moduleState.instanceEditor.id === data.id ? moduleState.instanceEditor.items : [],
+    });
+}
+
 async function createInstanceFromProduct(user, productId) {
     const product = productId
         ? moduleState.productEditor?.id === productId
@@ -723,6 +1103,7 @@ async function createInstanceFromProduct(user, productId) {
         product_id: product.id,
         public_slug: createPublicSlug(brand.slug, product.slug),
         status: 'draft',
+        last_active_status: 'draft',
         customer_name: '',
         receiver_name: '',
         receiver_email: '',
@@ -750,11 +1131,14 @@ async function createInstanceFromProduct(user, productId) {
         .insert({
             brand_id: draft.brand_id,
             product_id: draft.product_id,
+            customer_id: null,
             public_slug: draft.public_slug,
             status: 'draft',
+            last_active_status: 'draft',
             customer_name: '',
             receiver_name: '',
             receiver_email: '',
+            customer_snapshot: {},
             default_lang: draft.default_lang,
             validity_hours: draft.validity_hours,
             draft_rates: draft.draft_rates,
@@ -784,12 +1168,17 @@ async function saveInstanceDraft(user, draft) {
     if (!payload.brand_id || !payload.product_id) throw new Error('报价单必须绑定品牌和产品模板。');
     if (!payload.public_slug) throw new Error('请填写公开链接 slug。');
     if (!pickLocalized(payload.product_snapshot.public_title, payload.default_lang)) throw new Error('请至少填写一个产品标题。');
+    const customerRelation = await upsertCustomerForInstance(user, payload);
 
     const savePayload = {
         brand_id: payload.brand_id,
         product_id: payload.product_id,
+        customer_id: customerRelation.customer_id || null,
         public_slug: payload.public_slug,
         status: 'draft',
+        last_active_status: 'draft',
+        archived_at: null,
+        archived_by: null,
         customer_name: payload.customer_name,
         receiver_name: payload.receiver_name,
         receiver_email: payload.receiver_email,
@@ -797,6 +1186,7 @@ async function saveInstanceDraft(user, draft) {
         validity_hours: payload.validity_hours,
         draft_rates: normalizeRates(payload.draft_rates),
         share_config: payload.share_config && typeof payload.share_config === 'object' ? payload.share_config : {},
+        customer_snapshot: customerRelation.customer_snapshot,
         brand_snapshot: extractBrandSnapshot({
             ...payload.brand_snapshot,
             overview_title: expandLocalizedFromChinese(payload.brand_snapshot?.overview_title),
@@ -845,6 +1235,9 @@ async function publishInstance(user, draft) {
         .from(TABLE_INSTANCES)
         .update({
             status: 'published',
+            last_active_status: 'published',
+            archived_at: null,
+            archived_by: null,
             published_snapshot: snapshot,
             published_at: snapshot.quote.publishedAt,
             updated_by: user?.id || null,
@@ -991,6 +1384,31 @@ function filteredInstances() {
     });
 }
 
+function filteredCustomers() {
+    const query = text(moduleState.customerSearch).toLowerCase();
+    const rows = moduleState.customers.filter((customer) => {
+        if (!query) return true;
+        return [
+            customer.company_name,
+            customer.contact_name,
+            customer.email,
+            customer.phone,
+            customer.country,
+        ].some((value) => text(value).toLowerCase().includes(query));
+    });
+    return rows.sort((left, right) => {
+        const leftName = customerDisplayName(left).toLowerCase();
+        const rightName = customerDisplayName(right).toLowerCase();
+        return leftName.localeCompare(rightName);
+    });
+}
+
+function customerQuotes(customerId = '') {
+    return moduleState.instances
+        .filter((item) => text(item.customer_id) === text(customerId))
+        .sort((left, right) => text(right.updated_at).localeCompare(text(left.updated_at)));
+}
+
 function brandLabelById(brandId) {
     const brand = moduleState.brands.find((item) => item.id === brandId);
     return brand?.display_name || brand?.brand_name || '--';
@@ -1020,7 +1438,7 @@ function productLabelById(productId) {
 }
 
 async function ensureBaseData() {
-    await Promise.all([fetchBrandRows(), fetchProductRows(), fetchInstanceRows()]);
+    await Promise.all([fetchBrandRows(), fetchProductRows(), fetchCustomerRows(), fetchInstanceRows()]);
 }
 
 function isQuoteSetupMissing(error) {
@@ -1051,7 +1469,7 @@ function renderQuoteSetupRequired(input, error) {
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-database"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>执行 SQL 文件</strong>
-                        <span>请先在 Supabase SQL Editor 执行最新的 <code>article_management/sql/006_quote_system.sql</code>；已有旧版库时，再补执行 <code>article_management/sql/008_quote_product_media.sql</code>。</span>
+                        <span>请先在 Supabase SQL Editor 执行 <code>article_management/sql/006_quote_system.sql</code>；已有旧版库时，再补执行 <code>article_management/sql/008_quote_product_media.sql</code> 和 <code>article_management/sql/010_quote_customer_tracking.sql</code>。</span>
                     </div>
                 </div>
                 <div class="ams-quick-link ams-quick-link-static">
@@ -1155,8 +1573,28 @@ function sectionConfigMarkup(prefix, sections = createSectionConfig()) {
 }
 
 function statusPill(status = 'draft') {
-    const key = text(status || 'draft').toLowerCase() === 'published' ? 'published' : 'draft';
-    return `<span class="ams-pill ${esc(key)}">${key === 'published' ? '已发布' : '草稿'}</span>`;
+    const normalized = text(status || 'draft').toLowerCase();
+    const key = normalized === 'published' || normalized === 'archived' ? normalized : 'draft';
+    const label = key === 'published' ? '已发布' : key === 'archived' ? '已归档' : '草稿';
+    return `<span class="ams-pill ${esc(key)}">${label}</span>`;
+}
+
+function eventTypeLabel(eventType = '') {
+    const key = text(eventType);
+    if (key === 'share_link_generated') return '生成分享链接';
+    if (key === 'share_opened') return '外链访问';
+    if (key === 'preview_opened') return '后台预览';
+    if (key === 'passcode_unlocked') return '提取码解锁';
+    if (key === 'email_clicked') return '点击邮件发送';
+    return '报价浏览';
+}
+
+function accessModeLabel(accessMode = '') {
+    const key = text(accessMode);
+    if (key === 'share') return '分享链接';
+    if (key === 'preview') return '后台预览';
+    if (key === 'admin') return '管理员';
+    return '公开链接';
 }
 
 function itemTableMarkup(prefix, sectionKey, items = []) {
@@ -1706,15 +2144,175 @@ function renderInstanceList() {
         ? rows
               .map(
                   (quote) => `
-                <button class="ams-quote-list-card ${quote.id === moduleState.instanceEditor.id ? 'is-active' : ''}" type="button" data-instance-edit="${esc(quote.id)}">
-                    <strong>${esc(quote.customer_name || productLabelById(quote.product_id) || quote.public_slug)}</strong>
-                    <span>${esc(brandLabelById(quote.brand_id))} · ${esc(productLabelById(quote.product_id))}</span>
-                    <em>${statusPill(quote.status)} <span class="ams-quote-inline-meta">${esc(quote.public_slug)}</span></em>
-                </button>
+                <article class="ams-quote-list-card-shell ${quote.id === moduleState.instanceEditor.id ? 'is-active' : ''}">
+                    <button class="ams-quote-list-card ${quote.id === moduleState.instanceEditor.id ? 'is-active' : ''}" type="button" data-instance-edit="${esc(quote.id)}">
+                        <strong>${esc(quote.customer_name || productLabelById(quote.product_id) || quote.public_slug)}</strong>
+                        <span>${esc(brandLabelById(quote.brand_id))} · ${esc(productLabelById(quote.product_id))}</span>
+                        <span class="ams-quote-inline-submeta">${esc(customerDisplayName(quote.customer_snapshot || { company_name: quote.customer_name, contact_name: quote.receiver_name, email: quote.receiver_email }))}</span>
+                        <em>${statusPill(quote.status)} <span class="ams-quote-inline-meta">${esc(quote.public_slug)}</span></em>
+                    </button>
+                    <div class="ams-quote-list-card-actions">
+                        ${
+                            quote.status === 'archived'
+                                ? `<button class="ams-btn ams-btn-muted" type="button" data-instance-restore="${esc(quote.id)}">恢复</button>`
+                                : `<button class="ams-btn ams-btn-danger" type="button" data-instance-archive="${esc(quote.id)}">归档</button>`
+                        }
+                    </div>
+                </article>
             `,
               )
               .join('')
         : '<div class="ams-empty">当前筛选下没有报价单。</div>';
+}
+
+function renderCustomerList() {
+    const rows = filteredCustomers();
+    return rows.length
+        ? rows
+              .map((customer) => {
+                  const quoteSummary = summarizeCustomerQuotes(customer.id);
+                  return `
+                    <article class="ams-customer-list-card-shell">
+                        <button class="ams-quote-list-card ${moduleState.customerLoadedId === customer.id ? 'active' : ''}" type="button" data-customer-edit="${esc(customer.id)}">
+                            <strong>${esc(customerDisplayName(customer))}</strong>
+                            <span>${esc(text(customer.contact_name || customer.email || customer.phone, '未填写联系人'))}</span>
+                            <span class="ams-quote-inline-submeta">${esc(text(customer.email || customer.phone || customer.country, '未填写联系信息'))}</span>
+                            <em>${quoteSummary.total_quotes} 份报价单 <span class="ams-quote-inline-meta">${quoteSummary.published_quotes} 已发布 / ${quoteSummary.archived_quotes} 已归档</span></em>
+                        </button>
+                    </article>
+                `;
+              })
+              .join('')
+        : '<div class="ams-empty">当前没有客户档案。</div>';
+}
+
+function customerQuoteListMarkup(customerId = '') {
+    const rows = customerQuotes(customerId);
+    return rows.length
+        ? rows
+              .map((quote) => `
+                    <article class="ams-customer-quote-row">
+                        <div class="ams-customer-quote-copy">
+                            <strong>${esc(quote.customer_name || productLabelById(quote.product_id) || quote.public_slug)}</strong>
+                            <span>${esc(brandLabelById(quote.brand_id))} · ${esc(productLabelById(quote.product_id))}</span>
+                            <span class="ams-quote-inline-submeta">${statusPill(quote.status)} <span class="ams-quote-inline-meta">${esc(quote.public_slug)}</span></span>
+                        </div>
+                        <div class="ams-customer-quote-meta">
+                            <time>${esc(fmtDate(quote.updated_at))}</time>
+                            <div class="ams-row-actions">
+                                <button class="ams-btn ams-btn-muted" type="button" data-customer-quote-preview="${esc(quote.id)}">后台预览</button>
+                                ${quote.status === 'published'
+                                    ? `<button class="ams-btn ams-btn-warning" type="button" data-customer-quote-public="${esc(quote.public_slug)}">客户页</button>`
+                                    : ''}
+                            </div>
+                        </div>
+                    </article>
+                `)
+              .join('')
+        : '<div class="ams-empty">这个客户还没有关联报价单。</div>';
+}
+
+function customerInsightsMarkup() {
+    const customerId = text(moduleState.customerLoadedId || moduleState.customerEditor?.id);
+    if (!customerId) return '<div class="ams-empty">先创建客户档案，或从左侧选择一个已有关联记录的客户。</div>';
+    const summary = summarizeCustomerActivity(customerId, moduleState.customerEvents);
+    const timeline = moduleState.customerEvents.length
+        ? moduleState.customerEvents
+              .map((event) => {
+                  const quote = moduleState.instances.find((item) => item.id === event.instance_id);
+                  const quoteLabel = quote
+                      ? `${brandLabelById(quote.brand_id)} · ${productLabelById(quote.product_id)} · ${text(quote.public_slug, quote.id)}`
+                      : text(event.instance_id);
+                  return `
+                    <article class="ams-quote-event-row">
+                        <div class="ams-quote-event-copy">
+                            <strong>${esc(eventTypeLabel(event.event_type))}</strong>
+                            <span>${esc(accessModeLabel(event.access_mode))} · ${esc(text(event.viewer_email || event.viewer_label, '匿名访问'))}</span>
+                            <span class="ams-quote-inline-submeta">${esc(quoteLabel)}</span>
+                        </div>
+                        <time>${esc(fmtDate(event.created_at))}</time>
+                    </article>
+                `;
+              })
+              .join('')
+        : '<div class="ams-empty">这个客户还没有浏览或分享事件。</div>';
+
+    return `
+        <section class="ams-quote-block">
+            <div class="ams-section-head">
+                <div>
+                    <h3>客户洞察</h3>
+                    <p>按客户聚合这名客户关联的全部报价单、分享行为和浏览事件。</p>
+                </div>
+            </div>
+            <div class="ams-summary-row">
+                <span class="ams-summary-chip"><strong>关联报价单</strong><span>${esc(summary.total_quotes)}</span></span>
+                <span class="ams-summary-chip"><strong>草稿</strong><span>${esc(summary.draft_quotes)}</span></span>
+                <span class="ams-summary-chip"><strong>已发布</strong><span>${esc(summary.published_quotes)}</span></span>
+                <span class="ams-summary-chip"><strong>已归档</strong><span>${esc(summary.archived_quotes)}</span></span>
+                <span class="ams-summary-chip"><strong>总浏览</strong><span>${esc(summary.total_views)}</span></span>
+                <span class="ams-summary-chip"><strong>分享访问</strong><span>${esc(summary.share_views)}</span></span>
+                <span class="ams-summary-chip"><strong>登录浏览</strong><span>${esc(summary.logged_in_views)}</span></span>
+                <span class="ams-summary-chip"><strong>匿名浏览</strong><span>${esc(summary.anonymous_views)}</span></span>
+                <span class="ams-summary-chip"><strong>分享次数</strong><span>${esc(summary.share_links)}</span></span>
+                <span class="ams-summary-chip"><strong>邮件触发</strong><span>${esc(summary.email_clicks)}</span></span>
+                <span class="ams-summary-chip"><strong>最近浏览</strong><span>${esc(fmtDate(summary.last_viewed_at))}</span></span>
+                <span class="ams-summary-chip"><strong>最近报价更新</strong><span>${esc(fmtDate(summary.last_quote_updated_at))}</span></span>
+            </div>
+            <div class="ams-quote-block">
+                <div class="ams-section-head"><div><h3>关联报价单</h3><p>这里列出这名客户当前关联的全部报价单实例。</p></div></div>
+                <div class="ams-customer-quote-list">${customerQuoteListMarkup(customerId)}</div>
+            </div>
+            <div class="ams-quote-block">
+                <div class="ams-section-head"><div><h3>最近事件</h3><p>已登录用户会记录邮箱，匿名访问则降级为匿名标签。</p></div></div>
+                <div class="ams-quote-event-timeline">${timeline}</div>
+            </div>
+        </section>
+    `;
+}
+
+function instanceInsightsMarkup() {
+    if (!moduleState.instanceEditor?.id) return '';
+    const summary = moduleState.instanceEventSummary || emptyInstanceEventSummary();
+    const currentCustomer = moduleState.instanceEditor.customer_id
+        ? moduleState.customers.find((item) => item.id === moduleState.instanceEditor.customer_id)
+        : null;
+    const timeline = moduleState.instanceEvents.length
+        ? moduleState.instanceEvents
+              .map(
+                  (event) => `
+                    <article class="ams-quote-event-row">
+                        <div class="ams-quote-event-copy">
+                            <strong>${esc(eventTypeLabel(event.event_type))}</strong>
+                            <span>${esc(accessModeLabel(event.access_mode))} · ${esc(text(event.viewer_email || event.viewer_label, '匿名访问'))}</span>
+                        </div>
+                        <time>${esc(fmtDate(event.created_at))}</time>
+                    </article>
+                `,
+              )
+              .join('')
+        : '<div class="ams-empty">还没有访问记录。</div>';
+    return `
+        <section class="ams-quote-block">
+            <div class="ams-section-head">
+                <div>
+                    <h3>客户关系与访问洞察</h3>
+                    <p>这里会显示报价单绑定的客户档案，以及分享、浏览、后台预览的事件流水。</p>
+                </div>
+            </div>
+            <div class="ams-summary-row">
+                <span class="ams-summary-chip"><strong>客户档案</strong><span>${esc(customerDisplayName(currentCustomer || buildInstanceCustomerSnapshot(moduleState.instanceEditor)))}</span></span>
+                <span class="ams-summary-chip"><strong>总浏览</strong><span>${esc(summary.total_views)}</span></span>
+                <span class="ams-summary-chip"><strong>分享访问</strong><span>${esc(summary.share_views)}</span></span>
+                <span class="ams-summary-chip"><strong>后台预览</strong><span>${esc(summary.admin_views)}</span></span>
+                <span class="ams-summary-chip"><strong>分享次数</strong><span>${esc(summary.share_links)}</span></span>
+                <span class="ams-summary-chip"><strong>邮件触发</strong><span>${esc(summary.email_clicks)}</span></span>
+                <span class="ams-summary-chip"><strong>最近分享</strong><span>${esc(fmtDate(summary.last_shared_at))}</span></span>
+                <span class="ams-summary-chip"><strong>最近浏览</strong><span>${esc(fmtDate(summary.last_viewed_at))}</span></span>
+            </div>
+            <div class="ams-quote-event-timeline">${timeline}</div>
+        </section>
+    `;
 }
 
 function bindBrandEditor(input) {
@@ -2335,19 +2933,61 @@ function bindInstanceEditor(input) {
         });
     });
 
+    document.querySelectorAll('[data-instance-archive]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                await withQuoteBusy('正在归档报价单...', async () => {
+                    await archiveQuoteInstance(input.user, button.dataset.instanceArchive);
+                    await fetchInstanceAnalytics(button.dataset.instanceArchive);
+                    await renderQuoteInstancesPage(input);
+                }, button, '归档只会隐藏业务入口，不会删除报价单、客户关系和浏览记录。');
+                input.showToast('报价单已归档。');
+            } catch (error) {
+                input.showToast(error.message || '归档报价单失败。', true);
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-instance-restore]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                await withQuoteBusy('正在恢复报价单...', async () => {
+                    await restoreQuoteInstance(input.user, button.dataset.instanceRestore);
+                    await fetchInstanceAnalytics(button.dataset.instanceRestore);
+                    await renderQuoteInstancesPage(input);
+                }, button, '恢复后会回到归档前的草稿或已发布状态。');
+                input.showToast('报价单已恢复。');
+            } catch (error) {
+                input.showToast(error.message || '恢复报价单失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-quote-instance-customer-select')?.addEventListener('change', (event) => {
+        const customerId = event.currentTarget.value || '';
+        moduleState.instanceEditor.customer_id = customerId;
+        if (!customerId) return;
+        const customer = moduleState.customers.find((item) => item.id === customerId);
+        if (!customer) return;
+        moduleState.instanceEditor.customer_name = customer.company_name;
+        moduleState.instanceEditor.receiver_name = customer.contact_name;
+        moduleState.instanceEditor.receiver_email = customer.email;
+        moduleState.instanceEditor.customer_phone = customer.phone;
+        moduleState.instanceEditor.customer_country = customer.country;
+        moduleState.instanceEditor.customer_notes = customer.notes;
+        moduleState.instanceEditor.customer_snapshot = normalizeCustomerSnapshot(customer);
+        void renderQuoteInstancesPage(input);
+    });
+
     content.querySelectorAll('[data-instance-field]').forEach((node) => {
-        node.addEventListener('input', () => {
+        const apply = () => {
             const field = node.dataset.instanceField;
             if (!field) return;
             moduleState.instanceEditor[field] = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
-        });
-        if (node.type === 'checkbox' || node.tagName === 'SELECT') {
-            node.addEventListener('change', () => {
-                const field = node.dataset.instanceField;
-                if (!field) return;
-                moduleState.instanceEditor[field] = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
-            });
-        }
+            moduleState.instanceEditor.customer_snapshot = buildInstanceCustomerSnapshot(moduleState.instanceEditor);
+        };
+        node.addEventListener('input', apply);
+        if (node.type === 'checkbox' || node.tagName === 'SELECT') node.addEventListener('change', apply);
     });
 
     content.querySelectorAll('[data-rate-prefix="instance"]').forEach((node) => {
@@ -2655,6 +3295,75 @@ function bindInstanceEditor(input) {
     });
 }
 
+function bindCustomerEditor(input) {
+    const content = document.getElementById('ams-content');
+    if (!content) return;
+
+    document.getElementById('ams-quote-customer-search')?.addEventListener('input', (event) => {
+        moduleState.customerSearch = event.currentTarget.value || '';
+        void renderQuoteCustomersPage(input);
+    });
+
+    document.getElementById('ams-quote-customer-new')?.addEventListener('click', () => {
+        moduleState.customerLoadedId = '';
+        moduleState.customerEditor = createCustomerDraft();
+        moduleState.customerEvents = [];
+        void renderQuoteCustomersPage(input);
+    });
+
+    document.querySelectorAll('[data-customer-edit]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                await withQuoteBusy('正在加载客户档案...', async () => {
+                    await fetchCustomerEditor(button.dataset.customerEdit);
+                    await renderQuoteCustomersPage(input);
+                }, button, '正在聚合这名客户关联的报价单和最近访问事件。');
+            } catch (error) {
+                input.showToast(error.message || '加载客户档案失败。', true);
+            }
+        });
+    });
+
+    content.querySelectorAll('[data-customer-field]').forEach((node) => {
+        const apply = () => {
+            const field = node.dataset.customerField;
+            if (!field) return;
+            moduleState.customerEditor[field] = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
+        };
+        node.addEventListener('input', apply);
+        if (node.type === 'checkbox' || node.tagName === 'SELECT') node.addEventListener('change', apply);
+    });
+
+    document.getElementById('ams-quote-customer-save')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
+            try {
+                const saved = await saveCustomerDraft(input.user, moduleState.customerEditor);
+                await fetchCustomerAnalytics(saved.id);
+                input.showToast('客户档案已保存。');
+                await renderQuoteCustomersPage(input);
+            } catch (error) {
+                input.showToast(error.message || '保存客户档案失败。', true);
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-customer-quote-preview]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const instanceId = button.dataset.customerQuotePreview;
+            if (!instanceId) return;
+            window.open(previewQuoteUrl(instanceId), '_blank', 'noopener');
+        });
+    });
+
+    document.querySelectorAll('[data-customer-quote-public]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const publicSlug = button.dataset.customerQuotePublic;
+            if (!publicSlug) return;
+            window.open(publicQuoteUrl(publicSlug), '_blank', 'noopener');
+        });
+    });
+}
+
 export async function renderQuoteInstancesPage(input) {
     try {
         await ensureBaseData();
@@ -2708,6 +3417,7 @@ export async function renderQuoteInstancesPage(input) {
                             <option value="all" ${moduleState.instanceStatusFilter === 'all' ? 'selected' : ''}>全部状态</option>
                             <option value="draft" ${moduleState.instanceStatusFilter === 'draft' ? 'selected' : ''}>草稿</option>
                             <option value="published" ${moduleState.instanceStatusFilter === 'published' ? 'selected' : ''}>已发布</option>
+                            <option value="archived" ${moduleState.instanceStatusFilter === 'archived' ? 'selected' : ''}>已归档</option>
                         </select>
                     </div>
                 </div>
@@ -2736,6 +3446,7 @@ export async function renderQuoteInstancesPage(input) {
                         ? `
                     <div class="ams-quote-meta-grid">
                         <div class="ams-summary-chip"><strong>状态</strong><span>${statusPill(moduleState.instanceEditor.status)}</span></div>
+                        <div class="ams-summary-chip"><strong>客户档案</strong><span>${esc(customerDisplayName(moduleState.customers.find((item) => item.id === moduleState.instanceEditor.customer_id) || buildInstanceCustomerSnapshot(moduleState.instanceEditor)))}</span></div>
                         <div class="ams-summary-chip"><strong>公开链接</strong><span>${esc(publicQuoteUrl(moduleState.instanceEditor.public_slug))}</span></div>
                         <div class="ams-summary-chip"><strong>预览链接</strong><span>${esc(previewQuoteUrl(moduleState.instanceEditor.id))}</span></div>
                         <div class="ams-summary-chip"><strong>最近发布时间</strong><span>${esc(fmtDate(moduleState.instanceEditor.published_at))}</span></div>
@@ -2743,11 +3454,25 @@ export async function renderQuoteInstancesPage(input) {
                     <div class="ams-site-field-grid ams-site-field-grid-wide">
                         <div class="ams-field"><label>公开链接 slug</label><input class="ams-input" data-instance-field="public_slug" value="${esc(moduleState.instanceEditor.public_slug)}"></div>
                         <div class="ams-field"><label>默认语言</label><select class="ams-select" data-instance-field="default_lang">${SUPPORTED_LANGS.map((lang) => `<option value="${lang}" ${moduleState.instanceEditor.default_lang === lang ? 'selected' : ''}>${lang.toUpperCase()}</option>`).join('')}</select></div>
-                        <div class="ams-field"><label>客户名称</label><input class="ams-input" data-instance-field="customer_name" value="${esc(moduleState.instanceEditor.customer_name)}" placeholder="Demo Customer"></div>
-                        <div class="ams-field"><label>收件人</label><input class="ams-input" data-instance-field="receiver_name" value="${esc(moduleState.instanceEditor.receiver_name)}" placeholder="Receiver"></div>
+                        <div class="ams-field">
+                            <label>客户档案</label>
+                            <select class="ams-select" id="ams-quote-instance-customer-select">
+                                <option value="">新建或未关联</option>
+                                ${moduleState.customers.map((customer) => `<option value="${esc(customer.id)}" ${moduleState.instanceEditor.customer_id === customer.id ? 'selected' : ''}>${esc(customerDisplayName(customer))}${customer.email ? ` · ${esc(customer.email)}` : ''}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="ams-field"><label>客户公司</label><input class="ams-input" data-instance-field="customer_name" value="${esc(moduleState.instanceEditor.customer_name)}" placeholder="Demo Customer"></div>
+                        <div class="ams-field"><label>联系人</label><input class="ams-input" data-instance-field="receiver_name" value="${esc(moduleState.instanceEditor.receiver_name)}" placeholder="Receiver"></div>
                         <div class="ams-field"><label>客户邮箱</label><input class="ams-input" data-instance-field="receiver_email" value="${esc(moduleState.instanceEditor.receiver_email)}" placeholder="customer@example.com"></div>
+                        <div class="ams-field"><label>客户电话</label><input class="ams-input" data-instance-field="customer_phone" value="${esc(moduleState.instanceEditor.customer_phone)}" placeholder="+7 000 000 0000"></div>
+                        <div class="ams-field"><label>国家/地区</label><input class="ams-input" data-instance-field="customer_country" value="${esc(moduleState.instanceEditor.customer_country)}" placeholder="Russia"></div>
                         <div class="ams-field"><label>有效期（小时）</label><input class="ams-input" type="number" min="1" step="1" data-instance-field="validity_hours" value="${esc(moduleState.instanceEditor.validity_hours)}"></div>
                     </div>
+                    <div class="ams-field">
+                        <label>客户备注</label>
+                        <textarea class="ams-textarea" rows="3" data-instance-field="customer_notes" placeholder="记录客户偏好、分享要求或跟进备注。">${esc(moduleState.instanceEditor.customer_notes)}</textarea>
+                    </div>
+                    ${instanceInsightsMarkup()}
                     <section class="ams-quote-block">
                         <div class="ams-section-head"><div><h3>品牌信息快照</h3><p>这是当前报价单自己的品牌页头和页脚，不会反向改动品牌模板。</p></div></div>
                         <div class="ams-site-field-grid ams-site-field-grid-wide">
@@ -2786,4 +3511,93 @@ export async function renderQuoteInstancesPage(input) {
         </section>
     `);
     bindInstanceEditor(input);
+}
+
+export async function renderQuoteCustomersPage(input) {
+    try {
+        await ensureBaseData();
+    } catch (error) {
+        if (isQuoteSetupMissing(error)) {
+            renderQuoteSetupRequired(input, error);
+            return;
+        }
+        throw error;
+    }
+
+    if (!moduleState.customerEditor) {
+        moduleState.customerEditor = createCustomerDraft();
+    }
+
+    const currentCustomerExists = moduleState.customerLoadedId && moduleState.customers.some((item) => item.id === moduleState.customerLoadedId);
+    if (moduleState.customerLoadedId && !currentCustomerExists) {
+        moduleState.customerLoadedId = '';
+        moduleState.customerEditor = createCustomerDraft();
+        moduleState.customerEvents = [];
+    }
+    if (!moduleState.customerLoadedId && !moduleState.customerEditor?.id && moduleState.customers[0]?.id) {
+        await fetchCustomerEditor(moduleState.customers[0].id);
+    }
+
+    const activeCustomerId = text(moduleState.customerLoadedId || moduleState.customerEditor?.id);
+    const quoteSummary = activeCustomerId ? summarizeCustomerQuotes(activeCustomerId) : summarizeCustomerQuotes('');
+    input.setPageHeader('报价系统 / 客户洞察', '按客户查看关联报价单、浏览记录、分享动作，并维护客户主档信息。');
+    input.setContent(`
+        <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-instance-hero">
+            <div class="ams-hero-copy">
+                <p class="ams-eyebrow">Quote Customers</p>
+                <h2>客户是报价系统里的主业务对象。</h2>
+                <p class="ams-hero-text">这里按客户聚合相关报价单、访问时间线和分享行为。报价单继续保留自己的客户快照，客户主档则作为后台的长期关系入口。</p>
+            </div>
+            <div class="ams-quick-actions ams-quote-instance-quick-actions">
+                <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
+                    <div class="ams-quick-link-icon"><i class="fa-solid fa-address-book"></i></div>
+                    <div class="ams-quick-link-body">
+                        <strong>客户主档</strong>
+                        <span>客户主档用于复用公司、联系人、邮箱、电话和备注；每份报价单发布时仍然保留自己的客户快照。</span>
+                        <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
+                            <input id="ams-quote-customer-search" class="ams-input ams-quote-create-select" value="${esc(moduleState.customerSearch)}" placeholder="搜索公司 / 联系人 / 邮箱 / 电话">
+                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-new">新建客户档案</button>
+                        </div>
+                        <div class="ams-field-help ams-quote-create-hint">已执行 <code>010_quote_customer_tracking.sql</code> 后，这里会读取 <code>quote_customers</code> 和 <code>quote_instance_events</code>。</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="ams-quote-layout">
+            <aside class="ams-card ams-quote-list-panel">
+                <div class="ams-section-head"><div><h3>客户列表</h3><p>共 ${filteredCustomers().length} 个活跃客户</p></div></div>
+                <div class="ams-quote-list">${renderCustomerList()}</div>
+            </aside>
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${activeCustomerId ? '编辑客户档案' : '新建客户档案'}</h3>
+                        <p>客户主档是后台关系视图；报价单内的 `customer_snapshot` 仍用于保留发布时的业务历史。</p>
+                    </div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-save">保存客户档案</button>
+                    </div>
+                </div>
+                <div class="ams-quote-meta-grid">
+                    <div class="ams-summary-chip"><strong>客户名称</strong><span>${esc(customerDisplayName(moduleState.customerEditor || {}))}</span></div>
+                    <div class="ams-summary-chip"><strong>关联报价单</strong><span>${esc(quoteSummary.total_quotes)}</span></div>
+                    <div class="ams-summary-chip"><strong>创建时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.created_at))}</span></div>
+                    <div class="ams-summary-chip"><strong>更新时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.updated_at))}</span></div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field"><label>客户公司</label><input class="ams-input" data-customer-field="company_name" value="${esc(moduleState.customerEditor?.company_name)}" placeholder="Demo Customer"></div>
+                    <div class="ams-field"><label>联系人</label><input class="ams-input" data-customer-field="contact_name" value="${esc(moduleState.customerEditor?.contact_name)}" placeholder="Receiver"></div>
+                    <div class="ams-field"><label>客户邮箱</label><input class="ams-input" data-customer-field="email" value="${esc(moduleState.customerEditor?.email)}" placeholder="customer@example.com"></div>
+                    <div class="ams-field"><label>客户电话</label><input class="ams-input" data-customer-field="phone" value="${esc(moduleState.customerEditor?.phone)}" placeholder="+7 000 000 0000"></div>
+                    <div class="ams-field"><label>国家/地区</label><input class="ams-input" data-customer-field="country" value="${esc(moduleState.customerEditor?.country)}" placeholder="Russia"></div>
+                </div>
+                <div class="ams-field">
+                    <label>客户备注</label>
+                    <textarea class="ams-textarea" rows="4" data-customer-field="notes" placeholder="记录客户来源、偏好、跟进节奏、分享要求或内部备注。">${esc(moduleState.customerEditor?.notes)}</textarea>
+                </div>
+                ${customerInsightsMarkup()}
+            </section>
+        </section>
+    `);
+    bindCustomerEditor(input);
 }

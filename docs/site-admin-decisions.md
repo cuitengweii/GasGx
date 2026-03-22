@@ -1,6 +1,6 @@
 # GasGx 网站后台稳定决策
 
-更新时间：2026-03-21
+更新时间：2026-03-22
 
 ## 决策 1：网站壳配置不复用其它通用配置表
 
@@ -77,3 +77,15 @@
 - Translation is mediated by `supabase/functions/quote-translate/index.ts`.
 - Edge Function is deployed with `--no-verify-jwt` at the gateway layer because publishable-token browser calls were rejected with `401 Invalid JWT`.
 - The function itself still performs admin-user verification via Supabase Auth + `admin_users`, so access control remains inside the function.
+
+### Decision 9: Quote instances use soft archive, not hard delete
+
+- Quote instances should be hidden from normal active workflow by setting `status = archived`, not physically deleted.
+- Archiving must preserve the quote's published snapshot, customer linkage, and analytics history.
+- Restoring an archived quote returns it to the last active business state recorded in `last_active_status`.
+
+### Decision 10: Quote-to-customer relation uses master record plus per-quote snapshot
+
+- Customer data is stored in `quote_customers` as the reusable master entity.
+- Each quote instance also stores `customer_snapshot` so published/business history remains stable even if the customer master profile changes later.
+- Quote runtime writes best-effort events into `quote_instance_events` for share generation, direct views, shared-link opens, passcode unlocks, admin previews, and email-trigger actions.

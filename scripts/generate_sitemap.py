@@ -12,13 +12,16 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
 
 
-EXCLUDE_DIR_PREFIXES = {
+EXCLUDE_PATH_PARTS = {
     ".git",
     ".github",
     ".vscode",
     "node_modules",
-    "news/test",
     "private-use",
+}
+
+EXCLUDE_DIR_PREFIXES = {
+    "news/test",
 }
 
 
@@ -32,10 +35,10 @@ def parse_args() -> argparse.Namespace:
 
 def should_exclude(relative_path: str) -> bool:
     normalized = relative_path.replace("\\", "/")
-    return any(
-        normalized == prefix or normalized.startswith(f"{prefix}/")
-        for prefix in EXCLUDE_DIR_PREFIXES
-    )
+    parts = [part for part in normalized.split("/") if part and part != "."]
+    if any(part in EXCLUDE_PATH_PARTS for part in parts):
+        return True
+    return any(normalized == prefix or normalized.startswith(f"{prefix}/") for prefix in EXCLUDE_DIR_PREFIXES)
 
 
 def route_from_index(index_file: Path, root: Path) -> str:

@@ -1794,6 +1794,18 @@ textarea {
     gap: 10px;
 }
 
+.ams-quote-list-card-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ams-customer-list-card-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 .ams-quote-list-card {
     width: 100%;
     border: 1px solid #242424;
@@ -1841,6 +1853,10 @@ textarea {
     font-size: 12px;
 }
 
+.ams-quote-inline-submeta {
+    color: #b8c3b2 !important;
+}
+
 .ams-quote-list-card em {
     color: var(--ams-green);
     font-style: normal;
@@ -1860,6 +1876,85 @@ textarea {
 
 .ams-quote-inline-meta {
     color: #7d7d7d;
+}
+
+.ams-quote-list-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.ams-customer-quote-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ams-customer-quote-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ams-customer-quote-copy,
+.ams-customer-quote-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ams-customer-quote-copy strong {
+    color: #fff;
+    font-size: 13px;
+}
+
+.ams-customer-quote-copy span,
+.ams-customer-quote-meta time {
+    color: #8f8f8f;
+    font-size: 12px;
+}
+
+.ams-customer-quote-meta {
+    align-items: flex-end;
+}
+
+.ams-quote-event-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ams-quote-event-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ams-quote-event-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ams-quote-event-copy strong {
+    color: #fff;
+    font-size: 13px;
+}
+
+.ams-quote-event-copy span,
+.ams-quote-event-row time {
+    color: #8f8f8f;
+    font-size: 12px;
 }
 
 .ams-quote-field-card,
@@ -2386,6 +2481,33 @@ textarea {
 
     .ams-social-row {
         grid-template-columns: 1fr;
+    }
+
+    .ams-quote-event-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .ams-customer-quote-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .ams-customer-quote-meta {
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .ams-quote-list-card-actions {
+        justify-content: stretch;
+    }
+
+    .ams-quote-list-card-actions .ams-btn {
+        width: 100%;
+    }
+
+    .ams-customer-quote-meta .ams-btn {
+        width: 100%;
     }
 }
 

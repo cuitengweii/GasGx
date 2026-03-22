@@ -37,7 +37,7 @@ import {
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
 import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260321admin01';
-import { renderQuoteBrandsPage, renderQuoteInstancesPage, renderQuoteProductsPage } from './quote-system.module.js?v=20260322quote04';
+import { renderQuoteBrandsPage, renderQuoteCustomersPage, renderQuoteInstancesPage, renderQuoteProductsPage } from './quote-system.module.js?v=20260322quote05';
 import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260321site08';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js?v=20260321admin01';
 
@@ -129,6 +129,7 @@ const ADMIN_PAGE_IDS = new Set([
     'admin-users',
     'admin-security',
     'quote-brands',
+    'quote-customers',
     'quote-products',
     'quote-instances',
     'articles',
@@ -1020,6 +1021,7 @@ function renderShell() {
                     ])}
                     ${navGroup('Quotes', [
                         navButton('quote-brands', '品牌管理', 'fa-layer-group'),
+                        navButton('quote-customers', '客户洞察', 'fa-address-book'),
                         navButton('quote-products', '产品模板', 'fa-cubes'),
                         navButton('quote-instances', '报价单管理', 'fa-file-invoice-dollar'),
                     ])}
@@ -2884,6 +2886,14 @@ async function renderPage() {
             rerender: () => renderPage(),
         });
         else if (state.page === 'quote-brands') await renderQuoteBrandsPage({
+            user: state.user,
+            setPageHeader,
+            setContent,
+            showToast,
+            withButtonBusy,
+            rerender: () => renderPage(),
+        });
+        else if (state.page === 'quote-customers') await renderQuoteCustomersPage({
             user: state.user,
             setPageHeader,
             setContent,

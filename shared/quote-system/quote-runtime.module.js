@@ -17,6 +17,7 @@ const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.su
 const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
 const ADMIN_EMAILS = ['cuitengwei@gasgx.com'];
 const RATE_API_URL = 'https://open.er-api.com/v6/latest/CNY';
+const TABLE_INSTANCE_EVENTS = 'quote_instance_events';
 
 const dict = {
     zh: {
@@ -1349,6 +1350,16 @@ async function generateShareLink() {
         const url = `${window.location.origin}/quote/view.html?share=${encodeURIComponent(token)}`;
         byId('share-link-output').value = url;
         const copied = await copyText(url);
+        void logQuoteEvent('share_link_generated', {
+            accessMode: 'admin',
+            shareToken: token,
+            shareExpiresAt: expiresAt,
+            metadata: {
+                shareTarget: state.shareTarget?.type || '',
+                passcodeProtected: Boolean(passcode),
+                customerName: text(state.snapshot?.quote?.customerName),
+            },
+        });
         setStatusMessage(copied ? t('shareCopySuccess') : t('shareCopyFallback'), !copied);
     } catch (error) {
         setStatusMessage(error.message || t('shareGenerateError'), true);
@@ -1365,6 +1376,14 @@ function sendEmail() {
     const sender = text(state.snapshot?.brand?.sender_email || state.snapshot?.brand?.senderEmail);
     const brandName = text(state.snapshot?.brand?.subject_name || state.snapshot?.brand?.display_name || state.snapshot?.brand?.brand_name);
     const title = text(byId('f-title')?.textContent, 'Quotation');
+    void logQuoteEvent('email_clicked', {
+        accessMode: state.isAdmin ? 'admin' : 'quote',
+        metadata: {
+            receiver,
+            brandName,
+            title,
+        },
+    });
     const subject = encodeURIComponent(`${t('mailSubjectPrefix')} ${title} - ${brandName}`);
     const body = encodeURIComponent(`Dear sir/madam,\n\nPlease find the latest quotation document attached or review it from the shared quote page.\n\nBest Regards,\n${sender}`);
     window.location.href = `mailto:${receiver}?subject=${subject}&body=${body}`;
@@ -1455,6 +1474,56 @@ function getClient() {
     return getClient.instance;
 }
 
+function hydrateSnapshotWithLiveMeta(snapshot, row = {}) {
+    if (!snapshot || typeof snapshot !== 'object') return null;
+    const quote = snapshot.quote && typeof snapshot.quote === 'object' ? { ...snapshot.quote } : {};
+    if (!text(quote.id) && text(row.id)) quote.id = text(row.id);
+    if (!text(quote.publicSlug) && text(row.public_slug)) quote.publicSlug = text(row.public_slug);
+    if (!text(quote.customerId) && text(row.customer_id)) quote.customerId = text(row.customer_id);
+    if ((!quote.customerProfile || typeof quote.customerProfile !== 'object' || !Object.keys(quote.customerProfile).length)
+        && row.customer_snapshot && typeof row.customer_snapshot === 'object') {
+        quote.customerProfile = { ...row.customer_snapshot };
+    }
+    return {
+        ...snapshot,
+        quote,
+    };
+}
+
+async function sha256Hex(value) {
+    const input = text(value);
+    if (!input || !window.crypto?.subtle) return '';
+    const digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+    return Array.from(new Uint8Array(digest), (item) => item.toString(16).padStart(2, '0')).join('');
+}
+
+async function logQuoteEvent(eventType, options = {}) {
+    const supabase = getClient();
+    const instanceId = text(state.snapshot?.quote?.id);
+    if (!supabase || !instanceId) return;
+    try {
+        const shareTokenHash = options.shareToken ? await sha256Hex(options.shareToken) : '';
+        await supabase.from(TABLE_INSTANCE_EVENTS).insert({
+            instance_id: instanceId,
+            customer_id: text(state.snapshot?.quote?.customerId) || null,
+            event_type: text(eventType),
+            access_mode: text(options.accessMode || 'quote') || 'quote',
+            viewer_email: text(state.adminUser?.email).toLowerCase(),
+            viewer_user_id: state.adminUser?.id || null,
+            viewer_label: state.isAdmin ? 'admin' : (state.isLoggedIn ? 'logged-in-user' : 'anonymous'),
+            share_token_hash: shareTokenHash,
+            share_expires_at: text(options.shareExpiresAt) || null,
+            user_agent: text(navigator.userAgent).slice(0, 1200),
+            referrer_url: text(document.referrer).slice(0, 1200),
+            page_url: text(window.location.href).slice(0, 1200),
+            locale: text(state.currentLang, DEFAULT_LANG),
+            metadata: options.metadata && typeof options.metadata === 'object' ? options.metadata : {},
+        });
+    } catch (_error) {
+        // Event logging is best-effort and must not block customer access.
+    }
+}
+
 async function resolveAdminSession() {
     const supabase = getClient();
     if (!supabase) return { allowed: false, isLoggedIn: false, user: null };
@@ -1476,12 +1545,12 @@ async function fetchPublishedQuoteBySlug(publicSlug) {
     if (!supabase || !publicSlug) return null;
     const { data, error } = await supabase
         .from('quote_instances')
-        .select('public_slug,published_snapshot')
+        .select('id, public_slug, customer_id, customer_snapshot, published_snapshot')
         .eq('public_slug', publicSlug)
         .eq('status', 'published')
         .maybeSingle();
     if (error) return null;
-    return data?.published_snapshot || null;
+    return hydrateSnapshotWithLiveMeta(data?.published_snapshot || null, data || {});
 }
 
 async function fetchPreviewQuote(instanceId) {
@@ -1509,13 +1578,13 @@ async function fetchPreviewQuote(instanceId) {
                 : productResult.data?.ui_text || {},
         media_gallery: liveMedia.length ? liveMedia : sortMediaItems(data.product_snapshot?.media_gallery || []),
     };
-    return buildQuoteSnapshot({
+    return hydrateSnapshotWithLiveMeta(buildQuoteSnapshot({
         brand: data.brand_snapshot,
         product: mergedProductSnapshot,
         instance: data,
         items: itemsResult.data || [],
         mode: 'preview',
-    });
+    }), data);
 }
 
 async function resolveSnapshotFromBrand(brandSlug, productId = '') {
@@ -1666,6 +1735,22 @@ async function handlePasscodeSubmit() {
         state.pendingSharedAccess = null;
         closeAccessOverlay();
         applySnapshot(pending.snapshot);
+        void logQuoteEvent('passcode_unlocked', {
+            accessMode: 'share',
+            shareToken: state.route?.token,
+            shareExpiresAt: pending.payload?.expiresAt || '',
+            metadata: {
+                passcodeProtected: true,
+            },
+        });
+        void logQuoteEvent('share_opened', {
+            accessMode: 'share',
+            shareToken: state.route?.token,
+            shareExpiresAt: pending.payload?.expiresAt || '',
+            metadata: {
+                unlockedByPasscode: true,
+            },
+        });
         await fetchRates(false);
         return;
     }
@@ -1705,6 +1790,12 @@ async function resolveRouteSnapshot() {
         }
         closeAccessOverlay();
         applySnapshot(snapshot);
+        void logQuoteEvent('preview_opened', {
+            accessMode: 'preview',
+            metadata: {
+                previewId: state.route.previewId,
+            },
+        });
         await fetchRates(false);
         return true;
     }
@@ -1721,6 +1812,14 @@ async function resolveRouteSnapshot() {
             state.sharePayload = result.payload;
             closeAccessOverlay();
             applySnapshot(result.snapshot);
+            void logQuoteEvent('share_opened', {
+                accessMode: 'share',
+                shareToken: state.route.token,
+                shareExpiresAt: result.payload?.expiresAt || '',
+                metadata: {
+                    passcodeProtected: Boolean(result.payload?.passcode),
+                },
+            });
             await fetchRates(false);
             return true;
         }
@@ -1777,6 +1876,12 @@ async function resolveRouteSnapshot() {
         }
         closeAccessOverlay();
         applySnapshot(snapshot);
+        void logQuoteEvent('quote_viewed', {
+            accessMode: state.isAdmin ? 'admin' : 'quote',
+            metadata: {
+                quoteSlug: state.route.quoteSlug,
+            },
+        });
         await fetchRates(false);
         return true;
     }
@@ -1793,6 +1898,13 @@ async function resolveRouteSnapshot() {
     }
     closeAccessOverlay();
     applySnapshot(snapshot);
+    void logQuoteEvent('quote_viewed', {
+        accessMode: state.isAdmin ? 'admin' : 'quote',
+        metadata: {
+            brand: state.route.brand,
+            productId: state.route.productId || '',
+        },
+    });
     await fetchRates(false);
     return true;
 }

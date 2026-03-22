@@ -1,6 +1,6 @@
 # GasGx 网站后台状态
 
-更新时间：2026-03-21
+更新时间：2026-03-22
 适用范围：`D:\code\GasGx`
 
 ## 当前状态
@@ -135,7 +135,7 @@
 
 ### Latest milestone
 
-- Quote System V1 now exists as a working admin flow inside `article_management`.
+- Quote System V1 now includes customer relationship binding, soft-archive workflow, and quote access analytics inside `article_management`.
 - `vman` and `minerpower` are no longer treated as isolated static quote pages only; they now act as the first baseline templates and brand entries.
 - The editing direction has been corrected from a fake admin visual shell to the real quote-page DOM itself.
 
@@ -152,25 +152,32 @@
 - EN / RU are optional overrides and can be auto-generated instead of manually maintained for every field.
 - Product media is handled as a per-brand/per-product gallery and rendered by page config.
 - Saving from the real quote editor triggers automatic EN / RU generation through Supabase Edge Function `quote-translate`.
+- Quote instances now bind to a reusable customer master record while preserving a per-quote customer snapshot for audit-safe publishing.
+- Quote instances are archived instead of hard-deleted; archived quotes retain customer relations, published snapshots, and access history.
+- Quote page runtime now writes best-effort event logs for direct views, share-link opens, passcode unlocks, admin previews, share-link generation, and email-trigger actions.
 
 ### Solved in this thread
 
 - Real quote-page editing replaced the previous fake "1:1 visual editor" direction.
 - Spark translation was connected through Supabase and fixed for streamed WebSocket output.
 - Large-template translation now runs in batches instead of one oversized request.
-- Sitemap output now discovers `/news/account/`, `/tools/quote-system/`, and newly published article routes.
+- EN / RU glossary was refined for repeated technical row terms in generator, rack module, switchgear, valves, heat-recovery, container, and service-cost terminology.
+- Quote instances now support customer linkage via `quote_customers`, with snapshot persistence on each instance and analytics reads from `quote_instance_events`.
+- The quote list now supports `归档 / 恢复` actions instead of assuming hard deletion from the list panel.
+- Quote runtime now records who opened preview/share/direct quote routes, including logged-in session email or fallback viewer label.
+- Sitemap exclusion rules now block nested `node_modules` and other internal toolchain path segments instead of only excluding top-level prefixes.
 
 ### Unfinished
 
-- Translation glossary still needs a second pass for long technical row text.
-- Some admin/editor status copy still contains legacy encoding noise.
-- Sitemap generation still emits Playwright Vite routes under `node_modules`.
+- The customer dimension is still quote-centric; there is not yet a dedicated customer management page showing all quotes and full interaction history grouped by customer.
+- Access analytics is currently exposed per quote instance; cross-customer aggregation, export, and follow-up workflow are not built yet.
+- The customer-side identity model still distinguishes logged-in vs anonymous session access, but has not yet introduced a dedicated CRM-style recipient/contact authorization model.
 
 ### Next Step
 
-1. Polish EN / RU terminology for technical rows and repeated UI labels.
-2. Clean the remaining encoding-corrupted status text in quote editor/admin modules.
-3. Tighten `scripts/generate_sitemap.py` exclusions so internal toolchain routes never enter sitemap output.
+1. Add a customer-focused admin view so one customer can list all related quote instances, latest status, and aggregated access timeline in one place.
+2. Extend quote sharing metadata with recipient identity fields and follow-up notes so each outbound share is tied to a concrete business contact.
+3. Surface richer analytics filters in admin, including event type, date range, and logged-in vs anonymous viewers.
 
 ### Auth email template sync helper
 

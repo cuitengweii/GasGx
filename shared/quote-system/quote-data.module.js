@@ -325,9 +325,14 @@ export function buildQuoteSnapshot({ brand, product, instance, items = [], publi
             id: text(instance?.id),
             publicSlug: text(instance?.public_slug || instance?.publicSlug),
             status: text(instance?.status || mode),
+            customerId: text(instance?.customer_id || instance?.customerId),
             customerName: text(instance?.customer_name || instance?.customerName),
             receiverName: text(instance?.receiver_name || instance?.receiverName),
             receiverEmail: text(instance?.receiver_email || instance?.receiverEmail),
+            customerProfile:
+                instance?.customer_snapshot && typeof instance.customer_snapshot === 'object'
+                    ? { ...instance.customer_snapshot }
+                    : {},
             defaultLang: SUPPORTED_LANGS.includes(text(instance?.default_lang || instance?.defaultLang))
                 ? text(instance?.default_lang || instance?.defaultLang)
                 : productSnapshot.default_lang,
