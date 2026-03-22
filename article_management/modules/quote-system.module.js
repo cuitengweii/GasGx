@@ -65,6 +65,7 @@ const moduleState = {
     instanceLoadedId: '',
     customerLoadedId: '',
     customerSearch: '',
+    brandDisplayNameTouched: false,
     productBrandFilter: 'all',
     instanceBrandFilter: 'all',
     instanceStatusFilter: 'all',
@@ -2760,6 +2761,13 @@ function bindBrandEditor(input) {
     const content = document.getElementById('ams-content');
     if (!content) return;
     const displayNameField = () => content.querySelector('[data-brand-field="display_name"]');
+    const syncDisplayNameFromBrandName = (value) => {
+        moduleState.brandEditor.display_name = text(value);
+        const displayNode = displayNameField();
+        if (displayNode && displayNode.value !== moduleState.brandEditor.display_name) {
+            displayNode.value = moduleState.brandEditor.display_name;
+        }
+    };
 
     content.querySelectorAll('[data-brand-field]').forEach((node) => {
         node.addEventListener('input', () => {
@@ -2767,19 +2775,16 @@ function bindBrandEditor(input) {
             if (!field) return;
             const nextValue = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
             if (field === 'brand_name') {
-                const previousBrandName = text(moduleState.brandEditor.brand_name);
-                const currentDisplayName = text(moduleState.brandEditor.display_name);
                 moduleState.brandEditor[field] = nextValue;
-                if (!currentDisplayName || currentDisplayName === previousBrandName) {
-                    moduleState.brandEditor.display_name = text(nextValue);
-                    const displayNode = displayNameField();
-                    if (displayNode && displayNode.value !== moduleState.brandEditor.display_name) {
-                        displayNode.value = moduleState.brandEditor.display_name;
-                    }
+                if (!moduleState.brandDisplayNameTouched) {
+                    syncDisplayNameFromBrandName(nextValue);
                 }
                 return;
             }
             moduleState.brandEditor[field] = nextValue;
+            if (field === 'display_name') {
+                moduleState.brandDisplayNameTouched = text(nextValue) !== text(moduleState.brandEditor.brand_name);
+            }
         });
         if (node.type === 'checkbox') {
             node.addEventListener('change', () => {
@@ -2801,6 +2806,7 @@ function bindBrandEditor(input) {
 
     document.getElementById('ams-quote-brand-new')?.addEventListener('click', () => {
         moduleState.brandEditor = createBrandDraft();
+        moduleState.brandDisplayNameTouched = false;
         void renderQuoteBrandsPage(input);
     });
 
@@ -2810,6 +2816,7 @@ function bindBrandEditor(input) {
             const brand = moduleState.brands.find((item) => item.id === brandId);
             if (!brand) return;
             moduleState.brandEditor = createBrandDraft(brand);
+            moduleState.brandDisplayNameTouched = false;
             void renderQuoteBrandsPage(input);
         });
     });
@@ -2818,6 +2825,7 @@ function bindBrandEditor(input) {
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
             try {
                 await saveBrandDraft(input.user, moduleState.brandEditor);
+                moduleState.brandDisplayNameTouched = false;
                 input.showToast('品牌已保存。');
                 await renderQuoteBrandsPage(input);
             } catch (error) {
