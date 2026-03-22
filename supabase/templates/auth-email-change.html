@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<body style="margin:0;padding:0;background-color:#060807;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;color:#f5f7f6;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#060807;margin:0;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:640px;margin:0 auto;background:#0b0f0d;border:1px solid #182119;border-radius:24px;overflow:hidden;">
+          <tr>
+            <td style="padding:28px 32px;background:linear-gradient(135deg,#101712 0%,#18251a 55%,#0d120f 100%);">
+              <div style="font-size:34px;line-height:1;font-weight:800;color:#5DD62C;letter-spacing:0.04em;">GasGx</div>
+              <div style="margin-top:8px;font-size:12px;line-height:18px;color:#9cb0a2;letter-spacing:0.08em;text-transform:uppercase;">Email Update</div>
+              <h1 style="margin:22px 0 12px 0;font-size:30px;line-height:38px;font-weight:800;color:#ffffff;">Confirm your new email address</h1>
+              <p style="margin:0;font-size:15px;line-height:25px;color:#c8d2cb;">A request was made to update your GasGx login email from <strong style="color:#ffffff;">{{ .Email }}</strong> to <strong style="color:#ffffff;">{{ .NewEmail }}</strong>.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#0f1511;border:1px solid #1f2d22;border-radius:18px;">
+                <tr>
+                  <td style="padding:22px;">
+                    <div style="font-size:12px;line-height:18px;font-weight:700;color:#84f55b;letter-spacing:0.08em;text-transform:uppercase;">Verification Required</div>
+                    <p style="margin:10px 0 18px 0;font-size:14px;line-height:24px;color:#c5cec8;">Confirm this change to finish updating your account email.</p>
+                    <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 24px;border-radius:999px;background:#5DD62C;color:#041005;font-size:14px;line-height:20px;font-weight:800;text-decoration:none;">Confirm Email Change</a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:24px 0 0 0;font-size:13px;line-height:22px;color:#8fa093;">If the button does not open, copy and paste this link into your browser:</p>
+              <p style="margin:8px 0 0 0;word-break:break-all;font-size:12px;line-height:22px;color:#d8e3db;">
+                <a href="{{ .ConfirmationURL }}" style="color:#84f55b;text-decoration:none;">{{ .ConfirmationURL }}</a>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 30px 32px;">
+              <div style="height:1px;background:#182119;"></div>
+              <p style="margin:18px 0 0 0;font-size:12px;line-height:20px;color:#74857a;">GasGx · Energy-compute infrastructure for mining operators<br><a href="https://www.gasgx.com" style="color:#84f55b;text-decoration:none;">www.gasgx.com</a></p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

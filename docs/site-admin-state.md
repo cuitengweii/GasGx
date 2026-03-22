@@ -171,3 +171,11 @@
 1. Polish EN / RU terminology for technical rows and repeated UI labels.
 2. Clean the remaining encoding-corrupted status text in quote editor/admin modules.
 3. Tighten `scripts/generate_sitemap.py` exclusions so internal toolchain routes never enter sitemap output.
+
+### Auth email template sync helper
+
+- A local auth-email template sync helper is now present:
+  - `D:\code\GasGx\scripts\update_supabase_auth_email_templates.mjs`
+- Local HTML sources for Supabase Auth mailers are now organized under:
+  - `D:\code\GasGx\supabase\templates\`
+- This path is currently an operator/developer sync tool, not yet an admin-UI feature.

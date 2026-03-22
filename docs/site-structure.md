@@ -127,10 +127,12 @@ news/
   - `quote/` for customer-facing quote view and real-template editing entry
   - `shared/quote-system/` for quote runtime, editor runtime, shared styles, and data helpers
   - `supabase/functions/quote-translate/` for Spark-based EN/RU translation proxy
+  - `supabase/templates/` for Supabase Auth email HTML templates
   - `tools/quote-system/` for internal quote-system workbench and preview entry
   - `minerpower/` and `vman/` remain public brand quote entry paths
 
 - `scripts/generate_sitemap.py` is the current sitemap generator.
+- `scripts/update_supabase_auth_email_templates.mjs` is the current operator script for pushing local Auth mail templates to Supabase project config.
   - It enumerates public `index.html` routes.
   - It excludes `.git`, `.github`, `.vscode`, `node_modules`, `news/test`, and `private-use`.
   - It resolves `lastmod` from `git log` first and falls back to file mtime.
