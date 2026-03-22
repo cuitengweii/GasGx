@@ -1485,6 +1485,39 @@ textarea {
     white-space: nowrap;
 }
 
+.ams-brand-default-link-panel {
+    gap: 12px;
+}
+
+.ams-brand-default-link-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.6fr);
+    gap: 12px;
+    align-items: end;
+}
+
+.ams-brand-default-link-meta {
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid rgba(93, 214, 44, 0.18);
+    border-radius: 12px;
+    background: rgba(93, 214, 44, 0.06);
+    display: grid;
+    gap: 4px;
+}
+
+.ams-brand-default-link-meta strong {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--gas-green-light);
+}
+
+.ams-brand-default-link-meta span {
+    font-size: 13px;
+    word-break: break-word;
+}
+
 .ams-quote-instance-quick-actions {
     max-width: 320px;
     width: 100%;
@@ -3229,6 +3262,10 @@ textarea {
 
     .ams-site-field-grid,
     .ams-site-field-grid-wide {
+        grid-template-columns: 1fr;
+    }
+
+    .ams-brand-default-link-row {
         grid-template-columns: 1fr;
     }
 

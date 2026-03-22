@@ -66,6 +66,7 @@ const moduleState = {
     customerLoadedId: '',
     customerSearch: '',
     brandDisplayNameTouched: false,
+    brandDefaultLinkTouched: false,
     productBrandFilter: 'all',
     instanceBrandFilter: 'all',
     instanceStatusFilter: 'all',
@@ -1836,6 +1837,16 @@ function brandSlugById(brandId) {
     return brand?.slug || '';
 }
 
+function latestPublishedQuoteSlugForBrand(brandId = '') {
+    return moduleState.instances
+        .filter((item) => text(item.brand_id) === text(brandId) && text(item.status) === 'published' && text(item.public_slug))
+        .sort((left, right) => {
+            const rightStamp = text(right.published_at || right.updated_at);
+            const leftStamp = text(left.published_at || left.updated_at);
+            return rightStamp.localeCompare(leftStamp);
+        })[0]?.public_slug || '';
+}
+
 function syncProductBrandDraft(brandId) {
     const brand = moduleState.brands.find((item) => item.id === brandId);
     moduleState.productBrandDraft = createBrandDraft(brand || { id: brandId });
@@ -2761,6 +2772,7 @@ function bindBrandEditor(input) {
     const content = document.getElementById('ams-content');
     if (!content) return;
     const displayNameField = () => content.querySelector('[data-brand-field="display_name"]');
+    const defaultLinkField = () => content.querySelector('[data-brand-field="default_quote_slug"]');
     const syncDisplayNameFromBrandName = (value) => {
         moduleState.brandEditor.display_name = text(value);
         const displayNode = displayNameField();
@@ -2768,6 +2780,18 @@ function bindBrandEditor(input) {
             displayNode.value = moduleState.brandEditor.display_name;
         }
     };
+    const syncDefaultLinkField = (force = false) => {
+        if (moduleState.brandDefaultLinkTouched && !force) return;
+        const candidate = latestPublishedQuoteSlugForBrand(moduleState.brandEditor.id);
+        if (!candidate && !force) return;
+        moduleState.brandEditor.default_quote_slug = candidate;
+        const defaultNode = defaultLinkField();
+        if (defaultNode && defaultNode.value !== moduleState.brandEditor.default_quote_slug) {
+            defaultNode.value = moduleState.brandEditor.default_quote_slug;
+        }
+    };
+
+    syncDefaultLinkField(false);
 
     content.querySelectorAll('[data-brand-field]').forEach((node) => {
         node.addEventListener('input', () => {
@@ -2784,6 +2808,8 @@ function bindBrandEditor(input) {
             moduleState.brandEditor[field] = nextValue;
             if (field === 'display_name') {
                 moduleState.brandDisplayNameTouched = text(nextValue) !== text(moduleState.brandEditor.brand_name);
+            } else if (field === 'default_quote_slug') {
+                moduleState.brandDefaultLinkTouched = true;
             }
         });
         if (node.type === 'checkbox') {
@@ -2807,6 +2833,7 @@ function bindBrandEditor(input) {
     document.getElementById('ams-quote-brand-new')?.addEventListener('click', () => {
         moduleState.brandEditor = createBrandDraft();
         moduleState.brandDisplayNameTouched = false;
+        moduleState.brandDefaultLinkTouched = false;
         void renderQuoteBrandsPage(input);
     });
 
@@ -2817,8 +2844,14 @@ function bindBrandEditor(input) {
             if (!brand) return;
             moduleState.brandEditor = createBrandDraft(brand);
             moduleState.brandDisplayNameTouched = false;
+            moduleState.brandDefaultLinkTouched = false;
             void renderQuoteBrandsPage(input);
         });
+    });
+
+    document.getElementById('ams-brand-default-link-autofill')?.addEventListener('click', () => {
+        moduleState.brandDefaultLinkTouched = false;
+        syncDefaultLinkField(true);
     });
 
     document.getElementById('ams-quote-brand-save')?.addEventListener('click', async (event) => {
@@ -2826,6 +2859,7 @@ function bindBrandEditor(input) {
             try {
                 await saveBrandDraft(input.user, moduleState.brandEditor);
                 moduleState.brandDisplayNameTouched = false;
+                moduleState.brandDefaultLinkTouched = false;
                 input.showToast('品牌已保存。');
                 await renderQuoteBrandsPage(input);
             } catch (error) {
@@ -2900,8 +2934,26 @@ export async function renderQuoteBrandsPage(input) {
                     <div class="ams-field"><label>深绿底</label><input class="ams-input" data-brand-field="theme_dark" value="${esc(moduleState.brandEditor.theme_dark)}" placeholder="#337418"></div>
                     <div class="ams-field"><label>分享签名密钥</label><input class="ams-input" data-brand-field="share_signing_secret" value="${esc(moduleState.brandEditor.share_signing_secret)}"></div>
                     <div class="ams-field"><label>分享本地前缀</label><input class="ams-input" data-brand-field="share_unlock_prefix" value="${esc(moduleState.brandEditor.share_unlock_prefix)}"></div>
-                    <div class="ams-field"><label>默认品牌链接 slug</label><input class="ams-input" data-brand-field="default_quote_slug" value="${esc(moduleState.brandEditor.default_quote_slug)}" placeholder="vman-p1200gf-demo"></div>
                     <div class="ams-field"><label class="ams-social-toggle"><input type="checkbox" data-brand-field="is_active" ${moduleState.brandEditor.is_active ? 'checked' : ''}><span>启用品牌</span></label></div>
+                </div>
+                <div class="ams-quote-block ams-brand-default-link-panel">
+                    <div class="ams-section-head">
+                        <div>
+                            <h3>默认链接</h3>
+                            <p>左侧绿色“默认链接”显示这里。会优先带入该品牌最近已发布报价单的 slug，你也可以手动自定义。</p>
+                        </div>
+                        <div class="ams-row-actions"><button class="ams-btn ams-btn-muted" type="button" id="ams-brand-default-link-autofill">自动带入已发布报价</button></div>
+                    </div>
+                    <div class="ams-brand-default-link-row">
+                        <div class="ams-field">
+                            <label>默认链接 slug</label>
+                            <input class="ams-input" data-brand-field="default_quote_slug" value="${esc(moduleState.brandEditor.default_quote_slug || latestPublishedQuoteSlugForBrand(moduleState.brandEditor.id))}" placeholder="vman-p1200gf-demo">
+                        </div>
+                        <div class="ams-brand-default-link-meta">
+                            <strong>当前显示</strong>
+                            <span>${esc(moduleState.brandEditor.default_quote_slug || latestPublishedQuoteSlugForBrand(moduleState.brandEditor.id) || '--')}</span>
+                        </div>
+                    </div>
                 </div>
                 ${localizedFieldGroup('brand:overview_title', '页面总标题', moduleState.brandEditor.overview_title)}
                 ${localizedFieldGroup('brand:footer_note', '页脚说明', moduleState.brandEditor.footer_note)}
