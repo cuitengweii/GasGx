@@ -10,14 +10,18 @@ import {
     ensureLegacyQuotePagesLoaded,
     normalizeMediaConfig,
     normalizeRates,
+    normalizeShareConfig,
+    normalizeShareHistoryEntry,
     sortMediaItems,
-} from './quote-data.module.js';
+} from './quote-data.module.js?v=20260323quote09';
 
 const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
 const ADMIN_EMAILS = ['cuitengwei@gasgx.com'];
 const RATE_API_URL = 'https://open.er-api.com/v6/latest/CNY';
+const TABLE_INSTANCES = 'quote_instances';
 const TABLE_INSTANCE_EVENTS = 'quote_instance_events';
+const TABLE_INSTANCE_SENDS = 'quote_instance_sends';
 
 const dict = {
     zh: {
@@ -362,6 +366,37 @@ function esc(value) {
 
 function text(value, fallback = '') {
     return String(value ?? fallback).trim();
+}
+
+function currentShareConfig() {
+    return normalizeShareConfig(state.snapshot?.quote?.shareConfig, {
+        recipient_name: state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name,
+        recipient_email: state.snapshot?.quote?.receiverEmail || state.snapshot?.quote?.receiver_email,
+        recipient_company: state.snapshot?.quote?.customerName || state.snapshot?.quote?.customer_name,
+    });
+}
+
+function shareMetadata(config = currentShareConfig()) {
+    const normalized = normalizeShareConfig(config);
+    return {
+        recipientName: normalized.recipient_name,
+        recipientEmail: normalized.recipient_email,
+        recipientCompany: normalized.recipient_company,
+        followUpNotes: normalized.follow_up_notes,
+        ownerName: normalized.owner_name,
+        ownerEmail: normalized.owner_email,
+    };
+}
+
+function isMissingRelationError(error, relationName = '') {
+    const code = text(error?.code).toUpperCase();
+    const message = String(error?.message || '').toLowerCase();
+    return code === '42P01' || (relationName && message.includes(relationName.toLowerCase()) && message.includes('does not exist'));
+}
+
+function createShareRecordId() {
+    if (typeof window.crypto?.randomUUID === 'function') return window.crypto.randomUUID();
+    return `share-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function isMobileViewport() {
@@ -1332,11 +1367,13 @@ async function generateShareLink() {
     try {
         const expiresAt = getShareExpiry();
         const passcode = text(byId('share-passcode-output')?.value, generatePasscode()).toUpperCase();
+        const shareMeta = shareMetadata();
         byId('share-passcode-output').value = passcode;
         const payload = {
             createdAt: new Date().toISOString(),
             expiresAt: expiresAt || '',
             passcode,
+            shareMeta,
         };
 
         if (state.shareTarget.type === 'quote') {
@@ -1350,6 +1387,20 @@ async function generateShareLink() {
         const url = `${window.location.origin}/quote/view.html?share=${encodeURIComponent(token)}`;
         byId('share-link-output').value = url;
         const copied = await copyText(url);
+        void appendShareHistoryRecord({
+            channel: 'share_link',
+            status: 'generated',
+            recipientName: shareMeta.recipientName,
+            recipientEmail: shareMeta.recipientEmail,
+            recipientCompany: shareMeta.recipientCompany,
+            ownerName: shareMeta.ownerName,
+            ownerEmail: shareMeta.ownerEmail,
+            followUpNotes: shareMeta.followUpNotes,
+            sentAt: payload.createdAt,
+            expiresAt,
+            passcodeProtected: Boolean(passcode),
+            shareTarget: state.shareTarget?.type || '',
+        });
         void logQuoteEvent('share_link_generated', {
             accessMode: 'admin',
             shareToken: token,
@@ -1358,6 +1409,7 @@ async function generateShareLink() {
                 shareTarget: state.shareTarget?.type || '',
                 passcodeProtected: Boolean(passcode),
                 customerName: text(state.snapshot?.quote?.customerName),
+                ...shareMeta,
             },
         });
         setStatusMessage(copied ? t('shareCopySuccess') : t('shareCopyFallback'), !copied);
@@ -1368,7 +1420,8 @@ async function generateShareLink() {
 
 function sendEmail() {
     if (!requireSignedIn('send')) return;
-    const receiver = text(state.snapshot?.quote?.receiverEmail || state.snapshot?.quote?.receiver_email || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name);
+    const shareMeta = shareMetadata();
+    const receiver = text(shareMeta.recipientEmail || state.snapshot?.quote?.receiverEmail || state.snapshot?.quote?.receiver_email || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name);
     if (!receiver) {
         window.alert(t('noEmail'));
         return;
@@ -1376,16 +1429,30 @@ function sendEmail() {
     const sender = text(state.snapshot?.brand?.sender_email || state.snapshot?.brand?.senderEmail);
     const brandName = text(state.snapshot?.brand?.subject_name || state.snapshot?.brand?.display_name || state.snapshot?.brand?.brand_name);
     const title = text(byId('f-title')?.textContent, 'Quotation');
+    const salutation = text(shareMeta.recipientName, 'sir/madam');
+    void appendShareHistoryRecord({
+        channel: 'email',
+        status: 'emailed',
+        recipientName: shareMeta.recipientName,
+        recipientEmail: receiver,
+        recipientCompany: shareMeta.recipientCompany,
+        ownerName: shareMeta.ownerName,
+        ownerEmail: shareMeta.ownerEmail,
+        followUpNotes: shareMeta.followUpNotes,
+        sentAt: new Date().toISOString(),
+        shareTarget: state.shareTarget?.type || '',
+    });
     void logQuoteEvent('email_clicked', {
         accessMode: state.isAdmin ? 'admin' : 'quote',
         metadata: {
             receiver,
             brandName,
             title,
+            ...shareMeta,
         },
     });
     const subject = encodeURIComponent(`${t('mailSubjectPrefix')} ${title} - ${brandName}`);
-    const body = encodeURIComponent(`Dear sir/madam,\n\nPlease find the latest quotation document attached or review it from the shared quote page.\n\nBest Regards,\n${sender}`);
+    const body = encodeURIComponent(`Dear ${salutation},\n\nPlease find the latest quotation document attached or review it from the shared quote page.\n\nBest Regards,\n${sender}`);
     window.location.href = `mailto:${receiver}?subject=${subject}&body=${body}`;
 }
 
@@ -1521,6 +1588,233 @@ async function logQuoteEvent(eventType, options = {}) {
         });
     } catch (_error) {
         // Event logging is best-effort and must not block customer access.
+    }
+}
+
+async function appendShareHistoryRecordJson(options = {}) {
+    const supabase = getClient();
+    const instanceId = text(state.snapshot?.quote?.id);
+    if (!supabase || !instanceId || !state.isLoggedIn) return null;
+
+    try {
+        const baseConfig = currentShareConfig();
+        const history = Array.isArray(baseConfig.send_history) ? baseConfig.send_history.map((entry) => normalizeShareHistoryEntry(entry)) : [];
+        const now = text(options.sentAt, new Date().toISOString());
+        const recipientEmail = text(options.recipientEmail, baseConfig.recipient_email).toLowerCase();
+        const recipientName = text(options.recipientName, baseConfig.recipient_name);
+        const recipientCompany = text(options.recipientCompany, baseConfig.recipient_company);
+        const ownerEmail = text(options.ownerEmail, baseConfig.owner_email).toLowerCase();
+        const ownerName = text(options.ownerName, baseConfig.owner_name);
+        const channel = text(options.channel, 'share_link');
+        const nextStatus = text(options.status, channel === 'email' ? 'emailed' : 'generated');
+        const existingIndex = history.findIndex((entry) => {
+            const sameRecipient = recipientEmail
+                ? text(entry.recipient_email).toLowerCase() === recipientEmail
+                : text(entry.recipient_name) === recipientName && text(entry.recipient_company) === recipientCompany;
+            const sameOwner = ownerEmail
+                ? text(entry.owner_email).toLowerCase() === ownerEmail
+                : text(entry.owner_name) === ownerName;
+            return sameRecipient && sameOwner && text(entry.share_target) === text(options.shareTarget, state.shareTarget?.type || '') && text(entry.status) !== 'closed';
+        });
+
+        let entry = null;
+        let nextHistory = [...history];
+        if (existingIndex >= 0) {
+            const current = history[existingIndex];
+            entry = normalizeShareHistoryEntry({
+                ...current,
+                channel,
+                channels: Array.from(new Set([...(Array.isArray(current.channels) ? current.channels : [current.channel]), channel].filter(Boolean))),
+                status: nextStatus,
+                recipient_name: recipientName || current.recipient_name,
+                recipient_email: recipientEmail || current.recipient_email,
+                recipient_company: recipientCompany || current.recipient_company,
+                owner_name: ownerName || current.owner_name,
+                owner_email: ownerEmail || current.owner_email,
+                follow_up_notes: text(options.followUpNotes, current.follow_up_notes),
+                first_sent_at: text(current.first_sent_at || current.sent_at, now),
+                last_sent_at: now,
+                sent_at: text(current.sent_at, now),
+                expires_at: text(options.expiresAt, current.expires_at),
+                passcode_protected: options.passcodeProtected === true || current.passcode_protected === true,
+                share_target: text(options.shareTarget, current.share_target || state.shareTarget?.type || ''),
+                sender_name: userDisplayName(state.adminUser),
+                sender_email: text(state.adminUser?.email).toLowerCase(),
+                updated_at: now,
+                attempt_count: Math.max(1, Number(current.attempt_count || 1)) + 1,
+            });
+            nextHistory[existingIndex] = entry;
+        } else {
+            entry = normalizeShareHistoryEntry({
+                id: text(options.recordId, createShareRecordId()),
+                channel,
+                channels: [channel],
+                status: nextStatus,
+                recipient_name: recipientName,
+                recipient_email: recipientEmail,
+                recipient_company: recipientCompany,
+                owner_name: ownerName,
+                owner_email: ownerEmail,
+                follow_up_notes: text(options.followUpNotes, baseConfig.follow_up_notes),
+                first_sent_at: now,
+                last_sent_at: now,
+                sent_at: now,
+                expires_at: text(options.expiresAt),
+                passcode_protected: options.passcodeProtected === true,
+                share_target: text(options.shareTarget, state.shareTarget?.type || ''),
+                sender_name: userDisplayName(state.adminUser),
+                sender_email: text(state.adminUser?.email).toLowerCase(),
+                updated_at: now,
+                attempt_count: 1,
+            });
+            nextHistory = [entry, ...nextHistory];
+        }
+
+        const nextConfig = normalizeShareConfig({
+            ...baseConfig,
+            send_history: nextHistory,
+        });
+
+        const { error } = await supabase
+            .from(TABLE_INSTANCES)
+            .update({
+                share_config: nextConfig,
+                updated_by: state.adminUser?.id || null,
+            })
+            .eq('id', instanceId);
+        if (error) return null;
+
+        if (state.snapshot?.quote) {
+            state.snapshot.quote.shareConfig = nextConfig;
+        }
+        return entry;
+    } catch (_error) {
+        return null;
+    }
+}
+
+async function appendShareHistoryRecord(options = {}) {
+    const supabase = getClient();
+    const instanceId = text(state.snapshot?.quote?.id);
+    if (!supabase || !instanceId || !state.isLoggedIn) return null;
+
+    try {
+        const baseConfig = currentShareConfig();
+        const customerId = text(state.snapshot?.quote?.customerId) || null;
+        const now = text(options.sentAt, new Date().toISOString());
+        const recipientEmail = text(options.recipientEmail, baseConfig.recipient_email).toLowerCase();
+        const recipientName = text(options.recipientName, baseConfig.recipient_name);
+        const recipientCompany = text(options.recipientCompany, baseConfig.recipient_company);
+        const ownerEmail = text(options.ownerEmail, baseConfig.owner_email).toLowerCase();
+        const ownerName = text(options.ownerName, baseConfig.owner_name);
+        const shareTarget = text(options.shareTarget, state.shareTarget?.type || '');
+        const channel = text(options.channel, 'share_link');
+        const nextStatus = text(options.status, channel === 'email' ? 'emailed' : 'generated');
+
+        let query = supabase
+            .from(TABLE_INSTANCE_SENDS)
+            .select('*')
+            .eq('instance_id', instanceId)
+            .eq('share_target', shareTarget)
+            .order('updated_at', { ascending: false })
+            .limit(20);
+        if (recipientEmail) {
+            query = query.eq('recipient_email', recipientEmail);
+        } else {
+            query = query.eq('recipient_name', recipientName).eq('recipient_company', recipientCompany);
+        }
+        const { data: matches, error: matchError } = await query;
+        if (matchError) throw matchError;
+
+        const existing = (Array.isArray(matches) ? matches : [])
+            .map((entry) => normalizeShareHistoryEntry({
+                ...entry,
+                instance_id: entry.instance_id,
+                customer_id: entry.customer_id,
+                updated_at: entry.updated_at,
+            }))
+            .find((entry) => text(entry.status) !== 'closed') || null;
+
+        let saved = null;
+        if (existing?.id) {
+            const nextChannels = Array.from(new Set([...(Array.isArray(existing.channels) ? existing.channels : [existing.channel]), channel].filter(Boolean)));
+            const { data, error } = await supabase
+                .from(TABLE_INSTANCE_SENDS)
+                .update({
+                    customer_id: customerId,
+                    recipient_name: recipientName || existing.recipient_name,
+                    recipient_email: recipientEmail || existing.recipient_email,
+                    recipient_company: recipientCompany || existing.recipient_company,
+                    owner_name: ownerName || existing.owner_name,
+                    owner_email: ownerEmail || existing.owner_email,
+                    follow_up_notes: text(options.followUpNotes, existing.follow_up_notes),
+                    share_target: shareTarget,
+                    last_channel: channel,
+                    channels: nextChannels,
+                    status: nextStatus,
+                    attempt_count: Math.max(1, Number(existing.attempt_count || 1)) + 1,
+                    last_sent_at: now,
+                    expires_at: text(options.expiresAt, existing.expires_at) || null,
+                    passcode_protected: options.passcodeProtected === true || existing.passcode_protected === true,
+                    sender_name: userDisplayName(state.adminUser),
+                    sender_email: text(state.adminUser?.email).toLowerCase(),
+                    updated_by: state.adminUser?.id || null,
+                })
+                .eq('id', existing.id)
+                .select('*')
+                .single();
+            if (error) throw error;
+            saved = data;
+        } else {
+            const { data, error } = await supabase
+                .from(TABLE_INSTANCE_SENDS)
+                .insert({
+                    instance_id: instanceId,
+                    customer_id: customerId,
+                    recipient_name: recipientName,
+                    recipient_email: recipientEmail,
+                    recipient_company: recipientCompany,
+                    owner_name: ownerName,
+                    owner_email: ownerEmail,
+                    follow_up_notes: text(options.followUpNotes, baseConfig.follow_up_notes),
+                    share_target: shareTarget,
+                    last_channel: channel,
+                    channels: [channel],
+                    status: nextStatus,
+                    attempt_count: 1,
+                    first_sent_at: now,
+                    last_sent_at: now,
+                    expires_at: text(options.expiresAt) || null,
+                    passcode_protected: options.passcodeProtected === true,
+                    sender_name: userDisplayName(state.adminUser),
+                    sender_email: text(state.adminUser?.email).toLowerCase(),
+                    created_by: state.adminUser?.id || null,
+                    updated_by: state.adminUser?.id || null,
+                })
+                .select('*')
+                .single();
+            if (error) throw error;
+            saved = data;
+        }
+
+        if (saved && state.snapshot?.quote?.shareConfig) {
+            const current = normalizeShareConfig(state.snapshot.quote.shareConfig);
+            state.snapshot.quote.shareConfig = normalizeShareConfig({
+                ...current,
+                recipient_name: recipientName || current.recipient_name,
+                recipient_email: recipientEmail || current.recipient_email,
+                recipient_company: recipientCompany || current.recipient_company,
+                owner_name: ownerName || current.owner_name,
+                owner_email: ownerEmail || current.owner_email,
+                follow_up_notes: text(options.followUpNotes, current.follow_up_notes),
+            });
+        }
+        return saved;
+    } catch (error) {
+        if (isMissingRelationError(error, TABLE_INSTANCE_SENDS)) {
+            return appendShareHistoryRecordJson(options);
+        }
+        return appendShareHistoryRecordJson(options);
     }
 }
 
@@ -1741,6 +2035,7 @@ async function handlePasscodeSubmit() {
             shareExpiresAt: pending.payload?.expiresAt || '',
             metadata: {
                 passcodeProtected: true,
+                ...(pending.payload?.shareMeta && typeof pending.payload.shareMeta === 'object' ? pending.payload.shareMeta : {}),
             },
         });
         void logQuoteEvent('share_opened', {
@@ -1749,6 +2044,7 @@ async function handlePasscodeSubmit() {
             shareExpiresAt: pending.payload?.expiresAt || '',
             metadata: {
                 unlockedByPasscode: true,
+                ...(pending.payload?.shareMeta && typeof pending.payload.shareMeta === 'object' ? pending.payload.shareMeta : {}),
             },
         });
         await fetchRates(false);
@@ -1818,6 +2114,7 @@ async function resolveRouteSnapshot() {
                 shareExpiresAt: result.payload?.expiresAt || '',
                 metadata: {
                     passcodeProtected: Boolean(result.payload?.passcode),
+                    ...(result.payload?.shareMeta && typeof result.payload.shareMeta === 'object' ? result.payload.shareMeta : {}),
                 },
             });
             await fetchRates(false);

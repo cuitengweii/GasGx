@@ -27,10 +27,11 @@ import {
     normalizeQuoteMediaItem,
     normalizeRates,
     normalizeSectionConfig,
+    normalizeShareConfig,
     pickLocalized,
     sortMediaItems,
     sortItems,
-} from '../../shared/quote-system/quote-data.module.js?v=20260322quote05';
+} from '../../shared/quote-system/quote-data.module.js?v=20260323quote09';
 
 const TABLE_BRANDS = 'quote_brands';
 const TABLE_PRODUCTS = 'quote_products';
@@ -40,6 +41,7 @@ const TABLE_CUSTOMERS = 'quote_customers';
 const TABLE_INSTANCES = 'quote_instances';
 const TABLE_INSTANCE_ITEMS = 'quote_instance_items';
 const TABLE_INSTANCE_EVENTS = 'quote_instance_events';
+const TABLE_INSTANCE_SENDS = 'quote_instance_sends';
 const STORAGE_BUCKET_PRODUCT_MEDIA = 'quote-product-media';
 
 const moduleState = {
@@ -54,12 +56,15 @@ const moduleState = {
     instanceEditor: null,
     instanceEvents: [],
     instanceEventSummary: null,
+    instanceSends: [],
     customerEditor: null,
     customerEvents: [],
+    customerSends: [],
     productLoadedId: '',
     instanceLoadedId: '',
     customerLoadedId: '',
     customerSearch: '',
+    sendLedgerTableReady: null,
     productBrandFilter: 'all',
     instanceBrandFilter: 'all',
     instanceStatusFilter: 'all',
@@ -67,6 +72,17 @@ const moduleState = {
 
 const quoteBusyState = {
     depth: 0,
+};
+
+const SEND_STATUS_ORDER = {
+    recorded: 0,
+    generated: 1,
+    emailed: 2,
+    following_up: 3,
+    delivered: 4,
+    replied: 5,
+    failed: 5,
+    closed: 6,
 };
 
 function esc(value) {
@@ -154,6 +170,249 @@ function buildInstanceCustomerSnapshot(draft = {}) {
         country: draft.customer_country,
         notes: draft.customer_notes,
     });
+}
+
+function defaultShareConfigFromInstance(draft = {}) {
+    return normalizeShareConfig({}, {
+        recipient_name: draft.receiver_name,
+        recipient_email: draft.receiver_email,
+        recipient_company: draft.customer_name,
+        follow_up_notes: draft.customer_notes,
+    });
+}
+
+function syncInstanceShareConfig(draft = {}, options = {}) {
+    const defaults = defaultShareConfigFromInstance(draft);
+    const current = normalizeShareConfig(draft.share_config || draft.shareConfig, defaults);
+    const forceRecipient = options.forceRecipient === true;
+    const forceNotes = options.forceNotes === true;
+    return normalizeShareConfig({
+        recipient_name: forceRecipient || !hasTextValue(current.recipient_name) ? defaults.recipient_name : current.recipient_name,
+        recipient_email: forceRecipient || !hasTextValue(current.recipient_email) ? defaults.recipient_email : current.recipient_email,
+        recipient_company: forceRecipient || !hasTextValue(current.recipient_company) ? defaults.recipient_company : current.recipient_company,
+        follow_up_notes: forceNotes || !hasTextValue(current.follow_up_notes) ? defaults.follow_up_notes : current.follow_up_notes,
+        owner_name: current.owner_name,
+        owner_email: current.owner_email,
+    });
+}
+
+function shareConfigSummary(config = {}, options = {}) {
+    const normalized = normalizeShareConfig(config);
+    return {
+        recipient: text(normalized.recipient_name || normalized.recipient_email || normalized.recipient_company, '未设定'),
+        company: text(normalized.recipient_company, '未设定'),
+        owner: text(normalized.owner_name || normalized.owner_email, '未设定'),
+        send_count: safeNumber(options.sendCount, Array.isArray(normalized.send_history) ? normalized.send_history.length : 0),
+    };
+}
+
+function eventRecipientSummary(event = {}) {
+    const metadata = event?.metadata && typeof event.metadata === 'object' ? event.metadata : {};
+    const recipient = text(metadata.recipientName || metadata.recipientEmail || metadata.recipientCompany);
+    const owner = text(metadata.ownerName || metadata.ownerEmail);
+    const parts = [recipient, owner ? `负责人 ${owner}` : ''].filter(Boolean);
+    return parts.join(' · ');
+}
+
+function isMissingRelationError(error, relationName = '') {
+    const code = text(error?.code).toUpperCase();
+    const message = String(error?.message || '').toLowerCase();
+    return code === '42P01' || (relationName && message.includes(relationName.toLowerCase()) && message.includes('does not exist'));
+}
+
+function createSendLedgerRecord(seed = {}) {
+    return {
+        ...normalizeShareHistoryEntry(seed),
+        instance_id: text(seed.instance_id || seed.instanceId),
+        customer_id: text(seed.customer_id || seed.customerId),
+        created_at: text(seed.created_at || seed.createdAt),
+        updated_at: text(seed.updated_at || seed.updatedAt),
+    };
+}
+
+function shareHistoryRecipientLine(entry = {}) {
+    const parts = [
+        text(entry.recipient_name || entry.recipient_email || entry.recipient_company),
+        text(entry.owner_name || entry.owner_email) ? `负责人 ${text(entry.owner_name || entry.owner_email)}` : '',
+    ].filter(Boolean);
+    return parts.join(' · ');
+}
+
+function shareHistoryStatusLabel(status = '') {
+    const key = text(status, 'recorded');
+    if (key === 'emailed') return '已触发邮件';
+    if (key === 'generated') return '已生成链接';
+    if (key === 'following_up') return '跟进中';
+    if (key === 'delivered') return '已送达';
+    if (key === 'replied') return '已回复';
+    if (key === 'failed') return '发送失败';
+    if (key === 'closed') return '已关闭';
+    return '已记录';
+}
+
+function shareHistoryChannelLabel(channel = '') {
+    const key = text(channel, 'share_link');
+    if (key === 'email') return '邮件发送';
+    return '分享链接';
+}
+
+function shareHistoryStatusOptions(current = '') {
+    const value = text(current, 'recorded');
+    return [
+        ['generated', '已生成链接'],
+        ['emailed', '已触发邮件'],
+        ['following_up', '跟进中'],
+        ['delivered', '已送达'],
+        ['replied', '已回复'],
+        ['failed', '发送失败'],
+        ['closed', '已关闭'],
+    ].map(([optionValue, label]) => `<option value="${esc(optionValue)}" ${value === optionValue ? 'selected' : ''}>${esc(label)}</option>`).join('');
+}
+
+function legacySendHistoryFromInstance(instance = {}) {
+    return normalizeShareConfig(instance?.share_config, defaultShareConfigFromInstance(instance)).send_history || [];
+}
+
+function mergeShareHistoryChannels(...groups) {
+    return Array.from(new Set(groups.flatMap((group) => {
+        if (Array.isArray(group)) return group.map((entry) => text(entry)).filter(Boolean);
+        return [text(group)].filter(Boolean);
+    })));
+}
+
+function earliestIso(...values) {
+    return values.map((value) => text(value)).filter(Boolean).sort((left, right) => left.localeCompare(right))[0] || '';
+}
+
+function latestIso(...values) {
+    const items = values.map((value) => text(value)).filter(Boolean).sort((left, right) => left.localeCompare(right));
+    return items[items.length - 1] || '';
+}
+
+function preferShareHistoryStatus(current = '', incoming = '') {
+    const currentKey = text(current, 'recorded');
+    const incomingKey = text(incoming, currentKey);
+    return (SEND_STATUS_ORDER[incomingKey] ?? 0) > (SEND_STATUS_ORDER[currentKey] ?? 0) ? incomingKey : currentKey;
+}
+
+function sameShareHistoryThread(left = {}, right = {}) {
+    const leftTarget = text(left.share_target);
+    const rightTarget = text(right.share_target);
+    if (leftTarget && rightTarget && leftTarget !== rightTarget) return false;
+    const leftEmail = text(left.recipient_email).toLowerCase();
+    const rightEmail = text(right.recipient_email).toLowerCase();
+    if (leftEmail || rightEmail) return Boolean(leftEmail && rightEmail && leftEmail === rightEmail);
+    const leftName = text(left.recipient_name);
+    const rightName = text(right.recipient_name);
+    const leftCompany = text(left.recipient_company);
+    const rightCompany = text(right.recipient_company);
+    return Boolean(leftName && rightName && leftName === rightName && leftCompany === rightCompany);
+}
+
+function findMatchingSendLedgerEntry(entries = [], target = {}) {
+    const candidates = Array.isArray(entries) ? entries.map((entry) => createSendLedgerRecord(entry)) : [];
+    return candidates.find((entry) => sameShareHistoryThread(entry, target) && text(entry.status) !== 'closed')
+        || candidates.find((entry) => sameShareHistoryThread(entry, target))
+        || null;
+}
+
+function pendingLegacySendCountForInstance(instance = {}, relationalEntries = []) {
+    const legacyEntries = legacySendHistoryFromInstance(instance);
+    if (moduleState.sendLedgerTableReady !== true) return legacyEntries.length;
+    const candidates = Array.isArray(relationalEntries) ? relationalEntries.map((entry) => createSendLedgerRecord(entry)) : [];
+    return legacyEntries.reduce((count, legacyEntry) => {
+        const normalized = createSendLedgerRecord({
+            ...legacyEntry,
+            instance_id: instance.id,
+            customer_id: instance.customer_id,
+        });
+        return count + (findMatchingSendLedgerEntry(candidates, normalized) ? 0 : 1);
+    }, 0);
+}
+
+function sendLedgerModeMarkup(options = {}) {
+    const scope = options.scope === 'customer' ? 'customer' : 'instance';
+    const legacyCount = safeNumber(options.legacyCount, 0);
+    const targetId = text(options.targetId);
+    if (moduleState.sendLedgerTableReady === false) {
+        return '<div class="ams-field-help ams-quote-ledger-note is-warning">当前发送台账仍在兼容模式，后台正在从 <code>share_config.send_history</code> 读取记录。请先执行 <code>article_management/sql/011_quote_send_ledger.sql</code>，再导入旧数据。</div>';
+    }
+    if (!legacyCount) {
+        return moduleState.sendLedgerTableReady === true
+            ? '<div class="ams-field-help ams-quote-ledger-note">当前发送台账优先读取 <code>quote_instance_sends</code>。</div>'
+            : '';
+    }
+    const button = scope === 'customer'
+        ? `<button class="ams-btn ams-btn-muted" type="button" data-share-history-backfill-customer="${esc(targetId)}">导入该客户旧台账</button>`
+        : `<button class="ams-btn ams-btn-muted" type="button" data-share-history-backfill-instance="${esc(targetId)}">导入旧台账</button>`;
+    return `
+        <div class="ams-field-help ams-quote-ledger-note">
+            检测到 ${esc(legacyCount)} 条旧版 <code>share_config.send_history</code> 记录尚未迁入发送表。
+        </div>
+        ${moduleState.sendLedgerTableReady === true ? `<div class="ams-row-actions">${button}</div>` : ''}
+    `;
+}
+
+function instanceShareHistory() {
+    if (moduleState.sendLedgerTableReady !== false && moduleState.instanceSends.length) return moduleState.instanceSends;
+    if (moduleState.sendLedgerTableReady === true) return moduleState.instanceSends;
+    return normalizeShareConfig(moduleState.instanceEditor?.share_config).send_history || [];
+}
+
+function customerShareHistory(customerId = '') {
+    if (moduleState.sendLedgerTableReady !== false && moduleState.customerSends.length) return moduleState.customerSends;
+    if (moduleState.sendLedgerTableReady === true) return moduleState.customerSends;
+    return customerQuotes(customerId)
+        .flatMap((quote) => {
+            const entries = normalizeShareConfig(quote.share_config).send_history || [];
+            return entries.map((entry) => ({
+                ...entry,
+                instance_id: quote.id,
+                public_slug: quote.public_slug,
+                brand_id: quote.brand_id,
+                product_id: quote.product_id,
+            }));
+        })
+        .sort((left, right) => text(right.sent_at).localeCompare(text(left.sent_at)))
+        .slice(0, 50);
+}
+
+function renderShareHistoryList(entries = [], options = {}) {
+    const includeQuoteMeta = options.includeQuoteMeta === true;
+    const editable = options.editable === true;
+    return entries.length
+        ? entries.map((entry) => {
+            const recipientLine = shareHistoryRecipientLine(entry);
+            const quoteLine = includeQuoteMeta
+                ? `${brandLabelById(entry.brand_id)} · ${productLabelById(entry.product_id)} · ${text(entry.public_slug || entry.instance_id)}`
+                : '';
+            return `
+                <article class="ams-quote-event-row">
+                    <div class="ams-quote-event-copy">
+                        <strong>${esc(shareHistoryChannelLabel(entry.channel))} · ${esc(shareHistoryStatusLabel(entry.status))}</strong>
+                        <span>${esc(recipientLine || '未记录收件人')}</span>
+                        <span class="ams-quote-inline-submeta">尝试 ${esc(entry.attempt_count || 1)} 次 · 最近发送 ${esc(fmtDate(entry.last_sent_at || entry.sent_at))}</span>
+                        ${quoteLine ? `<span class="ams-quote-inline-submeta">${esc(quoteLine)}</span>` : ''}
+                        ${text(entry.follow_up_notes) ? `<span class="ams-quote-inline-submeta">${esc(entry.follow_up_notes)}</span>` : ''}
+                        ${text(entry.outcome_notes) ? `<span class="ams-quote-inline-submeta">${esc(entry.outcome_notes)}</span>` : ''}
+                        ${editable ? `
+                            <div class="ams-share-history-editor">
+                                <select class="ams-select" data-share-history-status="${esc(entry.id)}">
+                                    ${shareHistoryStatusOptions(entry.status)}
+                                </select>
+                                <textarea class="ams-textarea" rows="2" data-share-history-outcome="${esc(entry.id)}" placeholder="记录交付结果、回复摘要、失败原因或关闭说明。">${esc(entry.outcome_notes)}</textarea>
+                                <div class="ams-row-actions">
+                                    <button class="ams-btn ams-btn-primary" type="button" data-share-history-save="${esc(entry.id)}">更新结果</button>
+                                    <button class="ams-btn ams-btn-muted" type="button" data-share-history-retry="${esc(entry.id)}">记录重发</button>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <time>${esc(fmtDate(entry.updated_at || entry.last_sent_at || entry.sent_at || entry.expires_at))}</time>
+                </article>
+            `;
+        }).join('')
+        : '<div class="ams-empty">还没有发送台账。</div>';
 }
 
 function emptyInstanceEventSummary() {
@@ -395,7 +654,7 @@ function createInstanceDraft(seed = {}) {
         ? deepClone(seed.customer_snapshot)
         : (seed.customerSnapshot && typeof seed.customerSnapshot === 'object' ? deepClone(seed.customerSnapshot) : {});
     const normalizedStatus = text(seed.status || 'draft').toLowerCase();
-    return {
+    const draft = {
         id: text(seed.id),
         brand_id: text(seed.brand_id || seed.brandId),
         product_id: text(seed.product_id || seed.productId),
@@ -413,7 +672,12 @@ function createInstanceDraft(seed = {}) {
         default_lang: SUPPORTED_LANGS.includes(text(seed.default_lang || seed.defaultLang)) ? text(seed.default_lang || seed.defaultLang) : DEFAULT_LANG,
         validity_hours: Math.max(1, safeNumber(seed.validity_hours || seed.validityHours, 72)),
         draft_rates: normalizeRates(seed.draft_rates || seed.rates || DEFAULT_RATES),
-        share_config: seed.share_config && typeof seed.share_config === 'object' ? deepClone(seed.share_config) : {},
+        share_config: normalizeShareConfig(seed.share_config || seed.shareConfig, {
+            recipient_name: seed.receiver_name || seed.receiverName,
+            recipient_email: seed.receiver_email || seed.receiverEmail,
+            recipient_company: seed.customer_name || seed.customerName,
+            follow_up_notes: seed.customer_notes || seed.customerNotes || customerSnapshot.notes,
+        }),
         customer_snapshot: customerSnapshot,
         brand_snapshot: extractBrandSnapshot(seed.brand_snapshot || seed.brandSnapshot || {}),
         product_snapshot: extractProductSnapshot(seed.product_snapshot || seed.productSnapshot || {}),
@@ -422,6 +686,8 @@ function createInstanceDraft(seed = {}) {
         updated_at: text(seed.updated_at || seed.updatedAt),
         items: sortItems((seed.items || []).map((item) => normalizeQuoteItem(item, item?.section_key))),
     };
+    draft.share_config = syncInstanceShareConfig(draft);
+    return draft;
 }
 
 moduleState.brandEditor = createBrandDraft();
@@ -569,7 +835,7 @@ async function fetchProductEditor(productId) {
 async function fetchInstanceRows() {
     const { data, error } = await client
         .from(TABLE_INSTANCES)
-        .select('id, brand_id, product_id, customer_id, public_slug, status, last_active_status, archived_at, customer_name, receiver_name, receiver_email, customer_snapshot, default_lang, validity_hours, published_at, updated_at')
+        .select('id, brand_id, product_id, customer_id, public_slug, status, last_active_status, archived_at, customer_name, receiver_name, receiver_email, customer_snapshot, share_config, default_lang, validity_hours, published_at, updated_at')
         .order('updated_at', { ascending: false });
     if (error) throw error;
     moduleState.instances = Array.isArray(data) ? data.map((row) => createInstanceDraft(row)) : [];
@@ -594,6 +860,32 @@ async function fetchInstanceAnalytics(instanceId) {
     return moduleState.instanceEventSummary;
 }
 
+async function fetchInstanceSendLedger(instanceId) {
+    if (!instanceId) {
+        moduleState.instanceSends = [];
+        return [];
+    }
+    try {
+        const { data, error } = await client
+            .from(TABLE_INSTANCE_SENDS)
+            .select('*')
+            .eq('instance_id', instanceId)
+            .order('updated_at', { ascending: false })
+            .limit(100);
+        if (error) throw error;
+        moduleState.sendLedgerTableReady = true;
+        moduleState.instanceSends = Array.isArray(data) ? data.map((row) => createSendLedgerRecord(row)) : [];
+        return moduleState.instanceSends;
+    } catch (error) {
+        if (isMissingRelationError(error, TABLE_INSTANCE_SENDS)) {
+            moduleState.sendLedgerTableReady = false;
+            moduleState.instanceSends = [];
+            return [];
+        }
+        throw error;
+    }
+}
+
 async function fetchCustomerAnalytics(customerId) {
     if (!customerId) {
         moduleState.customerEvents = [];
@@ -610,12 +902,39 @@ async function fetchCustomerAnalytics(customerId) {
     return moduleState.customerEvents;
 }
 
+async function fetchCustomerSendLedger(customerId) {
+    if (!customerId) {
+        moduleState.customerSends = [];
+        return [];
+    }
+    try {
+        const { data, error } = await client
+            .from(TABLE_INSTANCE_SENDS)
+            .select('*')
+            .eq('customer_id', customerId)
+            .order('updated_at', { ascending: false })
+            .limit(200);
+        if (error) throw error;
+        moduleState.sendLedgerTableReady = true;
+        moduleState.customerSends = Array.isArray(data) ? data.map((row) => createSendLedgerRecord(row)) : [];
+        return moduleState.customerSends;
+    } catch (error) {
+        if (isMissingRelationError(error, TABLE_INSTANCE_SENDS)) {
+            moduleState.sendLedgerTableReady = false;
+            moduleState.customerSends = [];
+            return [];
+        }
+        throw error;
+    }
+}
+
 async function fetchInstanceEditor(instanceId) {
     if (!instanceId) {
         moduleState.instanceLoadedId = '';
         moduleState.instanceEditor = createInstanceDraft();
         moduleState.instanceEvents = [];
         moduleState.instanceEventSummary = emptyInstanceEventSummary();
+        moduleState.instanceSends = [];
         return moduleState.instanceEditor;
     }
     const { data, error } = await client.from(TABLE_INSTANCES).select('*').eq('id', instanceId).single();
@@ -623,6 +942,7 @@ async function fetchInstanceEditor(instanceId) {
     const [itemsResult] = await Promise.all([
         client.from(TABLE_INSTANCE_ITEMS).select('*').eq('instance_id', instanceId).order('sort_order', { ascending: true }),
         fetchInstanceAnalytics(instanceId),
+        fetchInstanceSendLedger(instanceId),
     ]);
     if (itemsResult.error) throw itemsResult.error;
     moduleState.instanceLoadedId = instanceId;
@@ -638,11 +958,15 @@ async function fetchCustomerEditor(customerId) {
         moduleState.customerLoadedId = '';
         moduleState.customerEditor = createCustomerDraft();
         moduleState.customerEvents = [];
+        moduleState.customerSends = [];
         return moduleState.customerEditor;
     }
     const { data, error } = await client.from(TABLE_CUSTOMERS).select('*').eq('id', customerId).single();
     if (error) throw error;
-    await fetchCustomerAnalytics(customerId);
+    await Promise.all([
+        fetchCustomerAnalytics(customerId),
+        fetchCustomerSendLedger(customerId),
+    ]);
     moduleState.customerLoadedId = customerId;
     moduleState.customerEditor = createCustomerDraft(data);
     return moduleState.customerEditor;
@@ -963,6 +1287,292 @@ async function saveCustomerDraft(user, draft) {
     moduleState.customerLoadedId = text(saved?.id);
     moduleState.customerEditor = createCustomerDraft(saved);
     return moduleState.customerEditor;
+}
+
+async function updateInstanceShareHistoryJson(user, instanceId, entryId, patch = {}, options = {}) {
+    if (!instanceId || !entryId) throw new Error('未找到需要更新的发送记录。');
+    const current = moduleState.instanceEditor?.id === instanceId
+        ? createInstanceDraft(moduleState.instanceEditor)
+        : await fetchInstanceEditor(instanceId);
+    const shareConfig = normalizeShareConfig(current.share_config, defaultShareConfigFromInstance(current));
+    const history = Array.isArray(shareConfig.send_history) ? shareConfig.send_history : [];
+    const now = new Date().toISOString();
+    let found = false;
+    const nextHistory = history.map((entry) => {
+        if (text(entry.id) !== text(entryId)) return entry;
+        found = true;
+        const nextAttemptCount = options.incrementAttempt === true ? Math.max(1, safeNumber(entry.attempt_count, 1)) + 1 : Math.max(1, safeNumber(entry.attempt_count, 1));
+        return {
+            ...entry,
+            status: text(patch.status, entry.status),
+            outcome_notes: text(patch.outcome_notes, entry.outcome_notes),
+            attempt_count: nextAttemptCount,
+            last_sent_at: options.incrementAttempt === true ? now : text(entry.last_sent_at || entry.sent_at),
+            updated_at: now,
+        };
+    });
+    if (!found) throw new Error('发送记录不存在或已被刷新。');
+
+    const nextShareConfig = normalizeShareConfig({
+        ...shareConfig,
+        send_history: nextHistory,
+    }, defaultShareConfigFromInstance(current));
+
+    const { data, error } = await client
+        .from(TABLE_INSTANCES)
+        .update({
+            share_config: nextShareConfig,
+            updated_by: user?.id || null,
+        })
+        .eq('id', instanceId)
+        .select('id, share_config, updated_at')
+        .single();
+    if (error) throw error;
+
+    moduleState.instances = moduleState.instances.map((item) => item.id === instanceId ? createInstanceDraft({
+        ...item,
+        share_config: data.share_config,
+        updated_at: data.updated_at,
+    }) : item);
+    if (moduleState.instanceEditor?.id === instanceId) {
+        moduleState.instanceEditor = createInstanceDraft({
+            ...moduleState.instanceEditor,
+            share_config: data.share_config,
+            updated_at: data.updated_at,
+        });
+    }
+    return normalizeShareConfig(data.share_config);
+}
+
+async function updateInstanceShareHistory(user, instanceId, entryId, patch = {}, options = {}) {
+    if (!instanceId || !entryId) throw new Error('未找到需要更新的发送记录。');
+    if (moduleState.sendLedgerTableReady === false) {
+        return updateInstanceShareHistoryJson(user, instanceId, entryId, patch, options);
+    }
+
+    try {
+        const { data: existing, error: existingError } = await client
+            .from(TABLE_INSTANCE_SENDS)
+            .select('*')
+            .eq('id', entryId)
+            .maybeSingle();
+        if (existingError) throw existingError;
+        if (!existing) throw new Error('发送记录不存在或已被刷新。');
+        const now = new Date().toISOString();
+        const nextAttemptCount = options.incrementAttempt === true
+            ? Math.max(1, safeNumber(existing.attempt_count, 1)) + 1
+            : Math.max(1, safeNumber(existing.attempt_count, 1));
+        const currentChannels = Array.isArray(existing.channels) ? existing.channels.map((entry) => text(entry)).filter(Boolean) : [text(existing.last_channel)].filter(Boolean);
+        const nextChannels = options.incrementAttempt === true
+            ? Array.from(new Set([...currentChannels, text(existing.last_channel, 'share_link')].filter(Boolean)))
+            : currentChannels;
+
+        const { data, error } = await client
+            .from(TABLE_INSTANCE_SENDS)
+            .update({
+                status: text(patch.status, existing.status),
+                outcome_notes: text(patch.outcome_notes, existing.outcome_notes),
+                attempt_count: nextAttemptCount,
+                last_sent_at: options.incrementAttempt === true ? now : existing.last_sent_at,
+                channels: nextChannels,
+                updated_at: now,
+                updated_by: user?.id || null,
+            })
+            .eq('id', entryId)
+            .select('*')
+            .single();
+        if (error) throw error;
+
+        moduleState.sendLedgerTableReady = true;
+        moduleState.instanceSends = moduleState.instanceSends.map((entry) => entry.id === data.id ? createSendLedgerRecord(data) : entry);
+        if (!moduleState.instanceSends.some((entry) => entry.id === data.id)) {
+            moduleState.instanceSends = [createSendLedgerRecord(data), ...moduleState.instanceSends];
+        }
+        if (moduleState.instanceEditor?.customer_id) {
+            moduleState.customerSends = moduleState.customerSends.map((entry) => entry.id === data.id ? createSendLedgerRecord(data) : entry);
+        }
+        await fetchInstanceRows();
+        return createSendLedgerRecord(data);
+    } catch (error) {
+        if (isMissingRelationError(error, TABLE_INSTANCE_SENDS)) {
+            moduleState.sendLedgerTableReady = false;
+            return updateInstanceShareHistoryJson(user, instanceId, entryId, patch, options);
+        }
+        throw error;
+    }
+}
+
+function createBackfillPayload(instance = {}, entry = {}, existing = null, user = null) {
+    const normalized = createSendLedgerRecord({
+        ...entry,
+        instance_id: instance.id,
+        customer_id: instance.customer_id,
+    });
+    const current = existing ? createSendLedgerRecord(existing) : null;
+    const nextChannels = mergeShareHistoryChannels(
+        current?.channels,
+        current?.channel,
+        normalized.channels,
+        normalized.channel,
+    );
+    const firstSentAt = earliestIso(
+        current?.first_sent_at,
+        current?.sent_at,
+        current?.created_at,
+        normalized.first_sent_at,
+        normalized.sent_at,
+        normalized.updated_at,
+    ) || new Date().toISOString();
+    const lastSentAt = latestIso(
+        current?.last_sent_at,
+        current?.updated_at,
+        current?.sent_at,
+        normalized.last_sent_at,
+        normalized.updated_at,
+        normalized.sent_at,
+        firstSentAt,
+    ) || firstSentAt;
+    return {
+        instance_id: instance.id,
+        customer_id: text(instance.customer_id) || null,
+        recipient_name: text(normalized.recipient_name, current?.recipient_name),
+        recipient_email: text(normalized.recipient_email, current?.recipient_email).toLowerCase(),
+        recipient_company: text(normalized.recipient_company, current?.recipient_company),
+        owner_name: text(normalized.owner_name, current?.owner_name),
+        owner_email: text(normalized.owner_email, current?.owner_email).toLowerCase(),
+        follow_up_notes: text(current?.follow_up_notes || normalized.follow_up_notes),
+        outcome_notes: text(current?.outcome_notes || normalized.outcome_notes),
+        share_target: text(normalized.share_target, current?.share_target),
+        last_channel: text(normalized.channel, current?.channel || 'share_link'),
+        channels: nextChannels.length ? nextChannels : ['share_link'],
+        status: preferShareHistoryStatus(current?.status, normalized.status),
+        attempt_count: Math.max(1, safeNumber(current?.attempt_count, 1), safeNumber(normalized.attempt_count, 1)),
+        first_sent_at: firstSentAt,
+        last_sent_at: lastSentAt,
+        expires_at: text(current?.expires_at || normalized.expires_at) || null,
+        passcode_protected: current?.passcode_protected === true || normalized.passcode_protected === true,
+        sender_name: text(current?.sender_name || normalized.sender_name),
+        sender_email: text(current?.sender_email || normalized.sender_email).toLowerCase(),
+        updated_by: user?.id || null,
+    };
+}
+
+function isSameBackfillPayload(existing = {}, payload = {}) {
+    const current = createSendLedgerRecord(existing);
+    return (
+        text(current.recipient_name) === text(payload.recipient_name)
+        && text(current.recipient_email).toLowerCase() === text(payload.recipient_email).toLowerCase()
+        && text(current.recipient_company) === text(payload.recipient_company)
+        && text(current.owner_name) === text(payload.owner_name)
+        && text(current.owner_email).toLowerCase() === text(payload.owner_email).toLowerCase()
+        && text(current.follow_up_notes) === text(payload.follow_up_notes)
+        && text(current.outcome_notes) === text(payload.outcome_notes)
+        && text(current.share_target) === text(payload.share_target)
+        && text(current.channel || current.last_channel) === text(payload.last_channel)
+        && JSON.stringify(mergeShareHistoryChannels(current.channels, current.channel)) === JSON.stringify(mergeShareHistoryChannels(payload.channels, payload.last_channel))
+        && text(current.status) === text(payload.status)
+        && safeNumber(current.attempt_count, 1) === safeNumber(payload.attempt_count, 1)
+        && text(current.first_sent_at) === text(payload.first_sent_at)
+        && text(current.last_sent_at) === text(payload.last_sent_at)
+        && text(current.expires_at) === text(payload.expires_at)
+        && Boolean(current.passcode_protected) === Boolean(payload.passcode_protected)
+        && text(current.sender_name) === text(payload.sender_name)
+        && text(current.sender_email).toLowerCase() === text(payload.sender_email).toLowerCase()
+    );
+}
+
+async function backfillLegacySendLedger(user, instanceIds = []) {
+    const ids = Array.from(new Set((Array.isArray(instanceIds) ? instanceIds : [instanceIds]).map((value) => text(value)).filter(Boolean)));
+    if (!ids.length) return { instances: 0, total: 0, inserted: 0, updated: 0, skipped: 0 };
+    if (moduleState.sendLedgerTableReady === false) {
+        throw new Error('当前仍在兼容模式，请先执行 011_quote_send_ledger.sql。');
+    }
+
+    const stats = { instances: 0, total: 0, inserted: 0, updated: 0, skipped: 0 };
+    for (const instanceId of ids) {
+        const instance = moduleState.instanceEditor?.id === instanceId
+            ? createInstanceDraft(moduleState.instanceEditor)
+            : createInstanceDraft(moduleState.instances.find((item) => item.id === instanceId) || { id: instanceId });
+        const legacyEntries = legacySendHistoryFromInstance(instance);
+        if (!legacyEntries.length) continue;
+
+        let existingRows = [];
+        try {
+            const { data, error } = await client
+                .from(TABLE_INSTANCE_SENDS)
+                .select('*')
+                .eq('instance_id', instanceId)
+                .order('updated_at', { ascending: false })
+                .limit(200);
+            if (error) throw error;
+            moduleState.sendLedgerTableReady = true;
+            existingRows = Array.isArray(data) ? data.map((row) => createSendLedgerRecord(row)) : [];
+        } catch (error) {
+            if (isMissingRelationError(error, TABLE_INSTANCE_SENDS)) {
+                moduleState.sendLedgerTableReady = false;
+                throw new Error('缺少 quote_instance_sends，请先执行 011_quote_send_ledger.sql。');
+            }
+            throw error;
+        }
+
+        stats.instances += 1;
+        for (const legacyEntry of legacyEntries) {
+            stats.total += 1;
+            const normalizedLegacy = createSendLedgerRecord({
+                ...legacyEntry,
+                instance_id: instance.id,
+                customer_id: instance.customer_id,
+            });
+            const existing = findMatchingSendLedgerEntry(existingRows, normalizedLegacy);
+            const payload = createBackfillPayload(instance, normalizedLegacy, existing, user);
+            if (existing?.id) {
+                if (isSameBackfillPayload(existing, payload)) {
+                    stats.skipped += 1;
+                    continue;
+                }
+                const { data, error } = await client
+                    .from(TABLE_INSTANCE_SENDS)
+                    .update(payload)
+                    .eq('id', existing.id)
+                    .select('*')
+                    .single();
+                if (error) throw error;
+                existingRows = existingRows.map((row) => row.id === data.id ? createSendLedgerRecord(data) : row);
+                stats.updated += 1;
+                continue;
+            }
+
+            const { data, error } = await client
+                .from(TABLE_INSTANCE_SENDS)
+                .insert({
+                    ...payload,
+                    created_by: user?.id || null,
+                })
+                .select('*')
+                .single();
+            if (error) throw error;
+            existingRows = [createSendLedgerRecord(data), ...existingRows];
+            stats.inserted += 1;
+        }
+
+        if (moduleState.instanceEditor?.id === instanceId) {
+            moduleState.instanceSends = existingRows
+                .map((row) => createSendLedgerRecord(row))
+                .sort((left, right) => text(right.updated_at || right.last_sent_at).localeCompare(text(left.updated_at || left.last_sent_at)));
+        }
+    }
+
+    await fetchInstanceRows();
+    if (moduleState.instanceEditor?.id && ids.includes(moduleState.instanceEditor.id)) {
+        await fetchInstanceSendLedger(moduleState.instanceEditor.id);
+    }
+    if (moduleState.customerEditor?.id) {
+        const relatedInstanceIds = new Set(customerQuotes(moduleState.customerEditor.id).map((quote) => quote.id));
+        if (ids.some((instanceId) => relatedInstanceIds.has(instanceId))) {
+            await fetchCustomerSendLedger(moduleState.customerEditor.id);
+        }
+    }
+    return stats;
 }
 
 async function upsertCustomerForInstance(user, draft) {
@@ -1469,7 +2079,7 @@ function renderQuoteSetupRequired(input, error) {
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-database"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>执行 SQL 文件</strong>
-                        <span>请先在 Supabase SQL Editor 执行 <code>article_management/sql/006_quote_system.sql</code>；已有旧版库时，再补执行 <code>article_management/sql/008_quote_product_media.sql</code> 和 <code>article_management/sql/010_quote_customer_tracking.sql</code>。</span>
+                        <span>请先在 Supabase SQL Editor 执行 <code>article_management/sql/006_quote_system.sql</code>；已有旧版库时，再补执行 <code>article_management/sql/008_quote_product_media.sql</code>、<code>article_management/sql/010_quote_customer_tracking.sql</code> 和 <code>article_management/sql/011_quote_send_ledger.sql</code>。</span>
                     </div>
                 </div>
                 <div class="ams-quick-link ams-quick-link-static">
@@ -2216,6 +2826,12 @@ function customerInsightsMarkup() {
     const customerId = text(moduleState.customerLoadedId || moduleState.customerEditor?.id);
     if (!customerId) return '<div class="ams-empty">先创建客户档案，或从左侧选择一个已有关联记录的客户。</div>';
     const summary = summarizeCustomerActivity(customerId, moduleState.customerEvents);
+    const sendHistory = customerShareHistory(customerId);
+    const legacySendCount = customerQuotes(customerId).reduce((count, quote) => {
+        const relatedEntries = sendHistory.filter((entry) => text(entry.instance_id) === text(quote.id));
+        return count + pendingLegacySendCountForInstance(quote, relatedEntries);
+    }, 0);
+    const sendLedgerNote = sendLedgerModeMarkup({ scope: 'customer', targetId: customerId, legacyCount: legacySendCount });
     const timeline = moduleState.customerEvents.length
         ? moduleState.customerEvents
               .map((event) => {
@@ -2223,12 +2839,14 @@ function customerInsightsMarkup() {
                   const quoteLabel = quote
                       ? `${brandLabelById(quote.brand_id)} · ${productLabelById(quote.product_id)} · ${text(quote.public_slug, quote.id)}`
                       : text(event.instance_id);
+                  const recipientLine = eventRecipientSummary(event);
                   return `
                     <article class="ams-quote-event-row">
                         <div class="ams-quote-event-copy">
                             <strong>${esc(eventTypeLabel(event.event_type))}</strong>
                             <span>${esc(accessModeLabel(event.access_mode))} · ${esc(text(event.viewer_email || event.viewer_label, '匿名访问'))}</span>
                             <span class="ams-quote-inline-submeta">${esc(quoteLabel)}</span>
+                            ${recipientLine ? `<span class="ams-quote-inline-submeta">${esc(recipientLine)}</span>` : ''}
                         </div>
                         <time>${esc(fmtDate(event.created_at))}</time>
                     </article>
@@ -2256,12 +2874,18 @@ function customerInsightsMarkup() {
                 <span class="ams-summary-chip"><strong>匿名浏览</strong><span>${esc(summary.anonymous_views)}</span></span>
                 <span class="ams-summary-chip"><strong>分享次数</strong><span>${esc(summary.share_links)}</span></span>
                 <span class="ams-summary-chip"><strong>邮件触发</strong><span>${esc(summary.email_clicks)}</span></span>
+                <span class="ams-summary-chip"><strong>发送台账</strong><span>${esc(sendHistory.length)}</span></span>
                 <span class="ams-summary-chip"><strong>最近浏览</strong><span>${esc(fmtDate(summary.last_viewed_at))}</span></span>
                 <span class="ams-summary-chip"><strong>最近报价更新</strong><span>${esc(fmtDate(summary.last_quote_updated_at))}</span></span>
             </div>
             <div class="ams-quote-block">
                 <div class="ams-section-head"><div><h3>关联报价单</h3><p>这里列出这名客户当前关联的全部报价单实例。</p></div></div>
                 <div class="ams-customer-quote-list">${customerQuoteListMarkup(customerId)}</div>
+            </div>
+            <div class="ams-quote-block">
+                <div class="ams-section-head"><div><h3>发送台账</h3><p>这里聚合这名客户全部报价单上的分享链接生成和邮件触发记录。</p></div></div>
+                ${sendLedgerNote}
+                <div class="ams-quote-event-timeline">${renderShareHistoryList(sendHistory, { includeQuoteMeta: true })}</div>
             </div>
             <div class="ams-quote-block">
                 <div class="ams-section-head"><div><h3>最近事件</h3><p>已登录用户会记录邮箱，匿名访问则降级为匿名标签。</p></div></div>
@@ -2277,18 +2901,26 @@ function instanceInsightsMarkup() {
     const currentCustomer = moduleState.instanceEditor.customer_id
         ? moduleState.customers.find((item) => item.id === moduleState.instanceEditor.customer_id)
         : null;
+    const sendHistory = instanceShareHistory();
+    const legacySendCount = pendingLegacySendCountForInstance(moduleState.instanceEditor, sendHistory);
+    const shareSummary = shareConfigSummary(moduleState.instanceEditor.share_config, { sendCount: sendHistory.length });
+    const sendLedgerNote = sendLedgerModeMarkup({ scope: 'instance', targetId: moduleState.instanceEditor.id, legacyCount: legacySendCount });
     const timeline = moduleState.instanceEvents.length
         ? moduleState.instanceEvents
               .map(
-                  (event) => `
+                  (event) => {
+                      const recipientLine = eventRecipientSummary(event);
+                      return `
                     <article class="ams-quote-event-row">
                         <div class="ams-quote-event-copy">
                             <strong>${esc(eventTypeLabel(event.event_type))}</strong>
                             <span>${esc(accessModeLabel(event.access_mode))} · ${esc(text(event.viewer_email || event.viewer_label, '匿名访问'))}</span>
+                            ${recipientLine ? `<span class="ams-quote-inline-submeta">${esc(recipientLine)}</span>` : ''}
                         </div>
                         <time>${esc(fmtDate(event.created_at))}</time>
                     </article>
-                `,
+                `;
+                  },
               )
               .join('')
         : '<div class="ams-empty">还没有访问记录。</div>';
@@ -2302,6 +2934,9 @@ function instanceInsightsMarkup() {
             </div>
             <div class="ams-summary-row">
                 <span class="ams-summary-chip"><strong>客户档案</strong><span>${esc(customerDisplayName(currentCustomer || buildInstanceCustomerSnapshot(moduleState.instanceEditor)))}</span></span>
+                <span class="ams-summary-chip"><strong>分享联系人</strong><span>${esc(shareSummary.recipient)}</span></span>
+                <span class="ams-summary-chip"><strong>负责跟进</strong><span>${esc(shareSummary.owner)}</span></span>
+                <span class="ams-summary-chip"><strong>发送台账</strong><span>${esc(shareSummary.send_count)}</span></span>
                 <span class="ams-summary-chip"><strong>总浏览</strong><span>${esc(summary.total_views)}</span></span>
                 <span class="ams-summary-chip"><strong>分享访问</strong><span>${esc(summary.share_views)}</span></span>
                 <span class="ams-summary-chip"><strong>后台预览</strong><span>${esc(summary.admin_views)}</span></span>
@@ -2309,6 +2944,11 @@ function instanceInsightsMarkup() {
                 <span class="ams-summary-chip"><strong>邮件触发</strong><span>${esc(summary.email_clicks)}</span></span>
                 <span class="ams-summary-chip"><strong>最近分享</strong><span>${esc(fmtDate(summary.last_shared_at))}</span></span>
                 <span class="ams-summary-chip"><strong>最近浏览</strong><span>${esc(fmtDate(summary.last_viewed_at))}</span></span>
+            </div>
+            <div class="ams-quote-block">
+                <div class="ams-section-head"><div><h3>发送台账</h3><p>记录管理员生成分享链接或触发邮件发送时的收件人、负责人和备注快照。</p></div></div>
+                ${sendLedgerNote}
+                <div class="ams-quote-event-timeline">${renderShareHistoryList(sendHistory, { editable: true })}</div>
             </div>
             <div class="ams-quote-event-timeline">${timeline}</div>
         </section>
@@ -2976,6 +3616,7 @@ function bindInstanceEditor(input) {
         moduleState.instanceEditor.customer_country = customer.country;
         moduleState.instanceEditor.customer_notes = customer.notes;
         moduleState.instanceEditor.customer_snapshot = normalizeCustomerSnapshot(customer);
+        moduleState.instanceEditor.share_config = syncInstanceShareConfig(moduleState.instanceEditor, { forceRecipient: true, forceNotes: true });
         void renderQuoteInstancesPage(input);
     });
 
@@ -2985,9 +3626,79 @@ function bindInstanceEditor(input) {
             if (!field) return;
             moduleState.instanceEditor[field] = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
             moduleState.instanceEditor.customer_snapshot = buildInstanceCustomerSnapshot(moduleState.instanceEditor);
+            if (['customer_name', 'receiver_name', 'receiver_email', 'customer_notes'].includes(field)) {
+                moduleState.instanceEditor.share_config = syncInstanceShareConfig(moduleState.instanceEditor);
+            }
         };
         node.addEventListener('input', apply);
         if (node.type === 'checkbox' || node.tagName === 'SELECT') node.addEventListener('change', apply);
+    });
+
+    content.querySelectorAll('[data-instance-share-field]').forEach((node) => {
+        const apply = () => {
+            const field = node.dataset.instanceShareField;
+            if (!field) return;
+            moduleState.instanceEditor.share_config = normalizeShareConfig({
+                ...(moduleState.instanceEditor.share_config || {}),
+                [field]: node.value,
+            }, defaultShareConfigFromInstance(moduleState.instanceEditor));
+        };
+        node.addEventListener('input', apply);
+        node.addEventListener('change', apply);
+    });
+
+    document.querySelectorAll('[data-share-history-save]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            const entryId = button.dataset.shareHistorySave;
+            const statusNode = content.querySelector(`[data-share-history-status="${entryId}"]`);
+            const outcomeNode = content.querySelector(`[data-share-history-outcome="${entryId}"]`);
+            await input.withButtonBusy(event.currentTarget, '更新中...', async () => {
+                try {
+                    await updateInstanceShareHistory(input.user, moduleState.instanceEditor.id, entryId, {
+                        status: statusNode?.value || '',
+                        outcome_notes: outcomeNode?.value || '',
+                    });
+                    input.showToast('发送记录已更新。');
+                    await renderQuoteInstancesPage(input);
+                } catch (error) {
+                    input.showToast(error.message || '更新发送记录失败。', true);
+                }
+            });
+        });
+    });
+
+    document.querySelectorAll('[data-share-history-retry]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            const entryId = button.dataset.shareHistoryRetry;
+            await input.withButtonBusy(event.currentTarget, '记录中...', async () => {
+                try {
+                    await updateInstanceShareHistory(input.user, moduleState.instanceEditor.id, entryId, {
+                        status: 'following_up',
+                    }, {
+                        incrementAttempt: true,
+                    });
+                    input.showToast('已记录一次重发。');
+                    await renderQuoteInstancesPage(input);
+                } catch (error) {
+                    input.showToast(error.message || '记录重发失败。', true);
+                }
+            });
+        });
+    });
+
+    document.querySelectorAll('[data-share-history-backfill-instance]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            const instanceId = button.dataset.shareHistoryBackfillInstance;
+            await input.withButtonBusy(event.currentTarget, '导入中...', async () => {
+                try {
+                    const result = await backfillLegacySendLedger(input.user, instanceId);
+                    input.showToast(`已导入 ${result.inserted} 条，更新 ${result.updated} 条旧台账。`);
+                    await renderQuoteInstancesPage(input);
+                } catch (error) {
+                    input.showToast(error.message || '导入旧发送台账失败。', true);
+                }
+            });
+        });
     });
 
     content.querySelectorAll('[data-rate-prefix="instance"]').forEach((node) => {
@@ -3362,6 +4073,22 @@ function bindCustomerEditor(input) {
             window.open(publicQuoteUrl(publicSlug), '_blank', 'noopener');
         });
     });
+
+    document.querySelectorAll('[data-share-history-backfill-customer]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            const customerId = button.dataset.shareHistoryBackfillCustomer;
+            const instanceIds = customerQuotes(customerId).map((quote) => quote.id);
+            await input.withButtonBusy(event.currentTarget, '导入中...', async () => {
+                try {
+                    const result = await backfillLegacySendLedger(input.user, instanceIds);
+                    input.showToast(`已导入 ${result.inserted} 条，更新 ${result.updated} 条客户旧台账。`);
+                    await renderQuoteCustomersPage(input);
+                } catch (error) {
+                    input.showToast(error.message || '导入客户旧发送台账失败。', true);
+                }
+            });
+        });
+    });
 }
 
 export async function renderQuoteInstancesPage(input) {
@@ -3472,6 +4199,21 @@ export async function renderQuoteInstancesPage(input) {
                         <label>客户备注</label>
                         <textarea class="ams-textarea" rows="3" data-instance-field="customer_notes" placeholder="记录客户偏好、分享要求或跟进备注。">${esc(moduleState.instanceEditor.customer_notes)}</textarea>
                     </div>
+                    <section class="ams-quote-block">
+                        <div class="ams-section-head"><div><h3>分享对象</h3><p>这里维护默认外发联系人、跟进负责人和分享备注；运行时生成链接、邮件动作和分享访问事件都会带上这些信息。</p></div></div>
+                        <div class="ams-site-field-grid ams-site-field-grid-wide">
+                            <div class="ams-field"><label>分享联系人</label><input class="ams-input" data-instance-share-field="recipient_name" value="${esc(moduleState.instanceEditor.share_config?.recipient_name)}" placeholder="Receiver"></div>
+                            <div class="ams-field"><label>分享邮箱</label><input class="ams-input" data-instance-share-field="recipient_email" value="${esc(moduleState.instanceEditor.share_config?.recipient_email)}" placeholder="customer@example.com"></div>
+                            <div class="ams-field"><label>分享公司</label><input class="ams-input" data-instance-share-field="recipient_company" value="${esc(moduleState.instanceEditor.share_config?.recipient_company)}" placeholder="Demo Customer"></div>
+                            <div class="ams-field"><label>跟进负责人</label><input class="ams-input" data-instance-share-field="owner_name" value="${esc(moduleState.instanceEditor.share_config?.owner_name)}" placeholder="Allen"></div>
+                            <div class="ams-field"><label>负责人邮箱</label><input class="ams-input" data-instance-share-field="owner_email" value="${esc(moduleState.instanceEditor.share_config?.owner_email)}" placeholder="allen@example.com"></div>
+                        </div>
+                        <div class="ams-field">
+                            <label>分享备注</label>
+                            <textarea class="ams-textarea" rows="3" data-instance-share-field="follow_up_notes" placeholder="记录这份报价对外发送的上下文、承诺、跟进节点或提醒。">${esc(moduleState.instanceEditor.share_config?.follow_up_notes)}</textarea>
+                        </div>
+                        <div class="ams-field-help">客户公司 / 联系人 / 邮箱 / 客户备注变更时，未手工覆盖的分享对象字段会自动继承默认值。</div>
+                    </section>
                     ${instanceInsightsMarkup()}
                     <section class="ams-quote-block">
                         <div class="ams-section-head"><div><h3>品牌信息快照</h3><p>这是当前报价单自己的品牌页头和页脚，不会反向改动品牌模板。</p></div></div>
@@ -3558,7 +4300,7 @@ export async function renderQuoteCustomersPage(input) {
                             <input id="ams-quote-customer-search" class="ams-input ams-quote-create-select" value="${esc(moduleState.customerSearch)}" placeholder="搜索公司 / 联系人 / 邮箱 / 电话">
                             <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-new">新建客户档案</button>
                         </div>
-                        <div class="ams-field-help ams-quote-create-hint">已执行 <code>010_quote_customer_tracking.sql</code> 后，这里会读取 <code>quote_customers</code> 和 <code>quote_instance_events</code>。</div>
+                        <div class="ams-field-help ams-quote-create-hint">已执行 <code>010_quote_customer_tracking.sql</code> 和 <code>011_quote_send_ledger.sql</code> 后，这里会读取 <code>quote_customers</code>、<code>quote_instance_events</code> 和 <code>quote_instance_sends</code>。</div>
                     </div>
                 </div>
             </div>

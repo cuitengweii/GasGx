@@ -98,6 +98,59 @@ export function normalizeProductUiText(value = {}) {
     return base;
 }
 
+export function normalizeShareConfig(value = {}, fallback = {}) {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const base = fallback && typeof fallback === 'object' && !Array.isArray(fallback) ? fallback : {};
+    const rawHistory = Array.isArray(source.send_history || source.sendHistory)
+        ? (source.send_history || source.sendHistory)
+        : (Array.isArray(base.send_history || base.sendHistory) ? (base.send_history || base.sendHistory) : []);
+    return {
+        recipient_name: text(source.recipient_name || source.recipientName || base.recipient_name || base.recipientName),
+        recipient_email: text(source.recipient_email || source.recipientEmail || base.recipient_email || base.recipientEmail),
+        recipient_company: text(source.recipient_company || source.recipientCompany || base.recipient_company || base.recipientCompany),
+        follow_up_notes: text(source.follow_up_notes || source.followUpNotes || base.follow_up_notes || base.followUpNotes),
+        owner_name: text(source.owner_name || source.ownerName || base.owner_name || base.ownerName),
+        owner_email: text(source.owner_email || source.ownerEmail || base.owner_email || base.ownerEmail),
+        send_history: rawHistory
+            .map((entry) => normalizeShareHistoryEntry(entry))
+            .filter((entry) => entry.id || entry.sent_at || entry.recipient_email || entry.recipient_name)
+            .sort((left, right) => text(right.sent_at).localeCompare(text(left.sent_at)))
+            .slice(0, 50),
+    };
+}
+
+export function normalizeShareHistoryEntry(value = {}) {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const channels = Array.isArray(source.channels)
+        ? source.channels.map((entry) => text(entry)).filter(Boolean)
+        : [text(source.channel)].filter(Boolean);
+    const firstSentAt = text(source.first_sent_at || source.firstSentAt || source.sent_at || source.sentAt || source.created_at || source.createdAt);
+    const lastSentAt = text(source.last_sent_at || source.lastSentAt || source.sent_at || source.sentAt || source.updated_at || source.updatedAt);
+    return {
+        id: text(source.id),
+        channel: text(source.channel || channels[channels.length - 1], 'share_link'),
+        channels: Array.from(new Set(channels.length ? channels : ['share_link'])),
+        status: text(source.status, 'recorded'),
+        recipient_name: text(source.recipient_name || source.recipientName),
+        recipient_email: text(source.recipient_email || source.recipientEmail),
+        recipient_company: text(source.recipient_company || source.recipientCompany),
+        owner_name: text(source.owner_name || source.ownerName),
+        owner_email: text(source.owner_email || source.ownerEmail),
+        follow_up_notes: text(source.follow_up_notes || source.followUpNotes),
+        outcome_notes: text(source.outcome_notes || source.outcomeNotes),
+        attempt_count: Math.max(1, safeNumber(source.attempt_count || source.attemptCount, 1)),
+        first_sent_at: firstSentAt,
+        last_sent_at: lastSentAt,
+        sent_at: text(source.sent_at || source.sentAt || source.created_at || source.createdAt),
+        expires_at: text(source.expires_at || source.expiresAt),
+        passcode_protected: source.passcode_protected === true || source.passcodeProtected === true,
+        share_target: text(source.share_target || source.shareTarget),
+        sender_name: text(source.sender_name || source.senderName),
+        sender_email: text(source.sender_email || source.senderEmail),
+        updated_at: text(source.updated_at || source.updatedAt || lastSentAt || firstSentAt),
+    };
+}
+
 export function pickLocalized(value, lang = DEFAULT_LANG, fallback = '') {
     const localized = normalizeLocalizedText(value, fallback);
     const ordered = [localized[lang], localized.en, localized.zh, localized.ru, fallback].map((entry) => text(entry));
@@ -340,7 +393,11 @@ export function buildQuoteSnapshot({ brand, product, instance, items = [], publi
             rates: normalizeRates(instance?.draft_rates || instance?.rates || productSnapshot.default_rates),
             publishedAt: text(publishedAt || instance?.published_at || instance?.publishedAt),
             updatedAt: text(instance?.updated_at || instance?.updatedAt),
-            shareConfig: instance?.share_config && typeof instance.share_config === 'object' ? { ...instance.share_config } : {},
+            shareConfig: normalizeShareConfig(instance?.share_config || instance?.shareConfig, {
+                recipient_name: instance?.receiver_name || instance?.receiverName,
+                recipient_email: instance?.receiver_email || instance?.receiverEmail,
+                recipient_company: instance?.customer_name || instance?.customerName,
+            }),
         },
     };
 }

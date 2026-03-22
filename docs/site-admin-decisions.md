@@ -1,6 +1,6 @@
 # GasGx 网站后台稳定决策
 
-更新时间：2026-03-22
+更新时间：2026-03-23
 
 ## 决策 1：网站壳配置不复用其它通用配置表
 
@@ -89,3 +89,27 @@
 - Customer data is stored in `quote_customers` as the reusable master entity.
 - Each quote instance also stores `customer_snapshot` so published/business history remains stable even if the customer master profile changes later.
 - Quote runtime writes best-effort events into `quote_instance_events` for share generation, direct views, shared-link opens, passcode unlocks, admin previews, and email-trigger actions.
+
+### Decision 11: Share recipient metadata lives on the quote, and share links carry a signed snapshot
+
+- Default outbound-share metadata is stored in `quote_instances.share_config`, not as loose UI-only state.
+- The quote editor maintains a structured set of fields for recipient name, recipient email, recipient company, follow-up notes, owner name, and owner email.
+- When a share link is generated, the current share metadata is signed into the token payload so later `share_opened` and `passcode_unlocked` events can still be attributed even if the quote's default share settings change afterwards.
+
+### Decision 12: Outbound-send workflow now uses `quote_instance_sends` as the primary operator ledger
+
+- Outbound recipient-thread tracking now lives in `quote_instance_sends`, created by `011_quote_send_ledger.sql`.
+- Runtime share-link generation and email-trigger actions insert or advance recipient-thread rows in that relational table.
+- Customer/quote analytics pages read `quote_instance_sends` for operator-facing send traceability, while `quote_instance_events` remains the source of truth for public/open-side access events.
+
+### Decision 13: Send-ledger rows can be operator-updated in place to accumulate attempts and outcomes
+
+- The send ledger is no longer treated as strictly append-only for operator workflows.
+- Runtime send actions still create or advance recipient-thread records automatically, but admin can now update a row's status, add outcome notes, and increment resend count from the quote detail page.
+- These mutable workflow fields now live on relational send rows, so resend counts and operator outcomes are no longer blocked by quote-row JSON shape.
+
+### Decision 14: `share_config.send_history` is retained only as compatibility fallback during rollout
+
+- If `quote_instance_sends` is missing, runtime/admin fall back to `share_config.send_history` so existing installs do not break before SQL rollout.
+- Admin now surfaces compatibility-mode hints and can import legacy JSON send-history rows into `quote_instance_sends` after the new table exists.
+- The intended end state is relational send-ledger truth with JSON fallback removed after backfill is complete.

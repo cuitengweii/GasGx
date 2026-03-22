@@ -1,6 +1,6 @@
 # GasGx 网站后台状态
 
-更新时间：2026-03-22
+更新时间：2026-03-23
 适用范围：`D:\code\GasGx`
 
 ## 当前状态
@@ -136,6 +136,7 @@
 ### Latest milestone
 
 - Quote System V1 now includes customer relationship binding, soft-archive workflow, and quote access analytics inside `article_management`.
+- Quote System V1 now also exposes a customer-centric admin page so operators can inspect one customer's related quotes and access timeline in one place.
 - `vman` and `minerpower` are no longer treated as isolated static quote pages only; they now act as the first baseline templates and brand entries.
 - The editing direction has been corrected from a fake admin visual shell to the real quote-page DOM itself.
 
@@ -155,6 +156,9 @@
 - Quote instances now bind to a reusable customer master record while preserving a per-quote customer snapshot for audit-safe publishing.
 - Quote instances are archived instead of hard-deleted; archived quotes retain customer relations, published snapshots, and access history.
 - Quote page runtime now writes best-effort event logs for direct views, share-link opens, passcode unlocks, admin previews, share-link generation, and email-trigger actions.
+- Quote instances now store structured share metadata in `share_config`, so the default recipient, company, owner, and follow-up notes travel through publish, share generation, and analytics logging.
+- Quote instances now persist operator-side send workflow into `quote_instance_sends`, while `share_config.send_history` remains as rollout/backward-compatibility fallback only.
+- Send-ledger rows can accumulate resend attempts and operator-updated outcomes, and legacy JSON rows can now be imported into the relational ledger from admin.
 
 ### Solved in this thread
 
@@ -163,21 +167,29 @@
 - Large-template translation now runs in batches instead of one oversized request.
 - EN / RU glossary was refined for repeated technical row terms in generator, rack module, switchgear, valves, heat-recovery, container, and service-cost terminology.
 - Quote instances now support customer linkage via `quote_customers`, with snapshot persistence on each instance and analytics reads from `quote_instance_events`.
+- A dedicated `客户洞察` admin page now aggregates related quote instances and recent events by customer, while still allowing master-profile edits for company/contact data.
 - The quote list now supports `归档 / 恢复` actions instead of assuming hard deletion from the list panel.
 - Quote runtime now records who opened preview/share/direct quote routes, including logged-in session email or fallback viewer label.
+- Quote instance editor now exposes a dedicated share-recipient block, and generated share links sign the current recipient/owner metadata into the token so later share-open events remain traceable.
+- Quote runtime now writes outbound recipient threads into `quote_instance_sends` first, with JSON fallback only when `011_quote_send_ledger.sql` has not been applied yet.
+- Quote/customer admin pages now expose relational send-ledger reads, compatibility-mode hints, and import buttons for old `share_config.send_history` rows.
+- Quote instance admin now allows operators to update send-ledger status, write outcome notes, manually record resend attempts, and backfill legacy ledger rows from the quote details page.
 - Sitemap exclusion rules now block nested `node_modules` and other internal toolchain path segments instead of only excluding top-level prefixes.
 
 ### Unfinished
 
 - The customer dimension is still quote-centric; there is not yet a dedicated customer management page showing all quotes and full interaction history grouped by customer.
+- The customer page is now available, but it is still a lightweight admin surface rather than a full CRM with ownership, follow-up workflow, or export.
 - Access analytics is currently exposed per quote instance; cross-customer aggregation, export, and follow-up workflow are not built yet.
+- Share metadata is still quote-level default state, not yet a full multi-recipient CRM object model with separate recipient ownership and authorization rules.
+- The send ledger now lives in a dedicated relational table, but historical JSON rows may still need one-off backfill before the compatibility fallback can be retired.
 - The customer-side identity model still distinguishes logged-in vs anonymous session access, but has not yet introduced a dedicated CRM-style recipient/contact authorization model.
 
 ### Next Step
 
-1. Add a customer-focused admin view so one customer can list all related quote instances, latest status, and aggregated access timeline in one place.
-2. Extend quote sharing metadata with recipient identity fields and follow-up notes so each outbound share is tied to a concrete business contact.
-3. Surface richer analytics filters in admin, including event type, date range, and logged-in vs anonymous viewers.
+1. Backfill any remaining historical `share_config.send_history` rows into `quote_instance_sends`, then decide when to retire the JSON fallback path.
+2. Surface richer analytics filters in admin, including event type, date range, and logged-in vs anonymous viewers.
+3. Add explicit owner workflow fields such as next follow-up date, reminder status, and closed reason on top of the current send ledger.
 
 ### Auth email template sync helper
 
