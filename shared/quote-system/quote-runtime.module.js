@@ -267,12 +267,70 @@ const dict = {
     },
 };
 
+const supplementalDict = {
+    zh: {
+        authLogin: '登录',
+        authAccount: '账号',
+        authModalTitle: '需要登录',
+        authModalMessage: '登录后才能继续使用报价页的受限操作。',
+        authModalHint: '当前浏览不会中断，登录完成后会自动回到这个报价页。',
+        authModalLogin: '立即登录',
+        authModalCancel: '继续浏览',
+        authProtectedAction: '受限功能',
+        authActionShare: '分享与导出',
+        authActionSend: '邮件发送',
+        authActionImage: '图片导出',
+        authActionPdf: 'PDF 导出',
+        authActionLink: '分享链接',
+        tableSwipeHint: '手机端可左右滑动表格查看完整报价明细',
+    },
+    en: {
+        authLogin: 'Login',
+        authAccount: 'Account',
+        authModalTitle: 'Login required',
+        authModalMessage: 'Sign in to keep using protected quote actions.',
+        authModalHint: 'Browsing stays open. After sign-in, you will return to this quote automatically.',
+        authModalLogin: 'Login now',
+        authModalCancel: 'Continue browsing',
+        authProtectedAction: 'Protected action',
+        authActionShare: 'Share / Export',
+        authActionSend: 'Send email',
+        authActionImage: 'Export image',
+        authActionPdf: 'Export PDF',
+        authActionLink: 'Create share link',
+        tableSwipeHint: 'Swipe sideways on mobile to review the full pricing table',
+    },
+    ru: {
+        authLogin: 'Login',
+        authAccount: 'Account',
+        authModalTitle: 'Login required',
+        authModalMessage: 'Sign in to keep using protected quote actions.',
+        authModalHint: 'Browsing stays open. After sign-in, you will return to this quote automatically.',
+        authModalLogin: 'Login now',
+        authModalCancel: 'Continue browsing',
+        authProtectedAction: 'Protected action',
+        authActionShare: 'Share / Export',
+        authActionSend: 'Send email',
+        authActionImage: 'Export image',
+        authActionPdf: 'Export PDF',
+        authActionLink: 'Create share link',
+        tableSwipeHint: 'Swipe sideways on mobile to review the full pricing table',
+    },
+};
+
+SUPPORTED_LANGS.forEach((lang) => {
+    dict[lang] = Object.assign({}, dict[lang] || {}, supplementalDict[lang] || {});
+});
+
 const params = new URLSearchParams(window.location.search);
 
 const state = {
     snapshot: null,
     currentLang: DEFAULT_LANG,
     rates: { ...DEFAULT_RATES },
+    rateStatusMode: 'online',
+    rateDetail: { message: '', tone: 'muted' },
+    isLoggedIn: false,
     isAdmin: false,
     adminUser: null,
     route: null,
@@ -283,6 +341,10 @@ const state = {
     clockTimer: null,
     galleryIndex: 0,
 };
+
+function localeCopy(options = {}) {
+    return options[state.currentLang] || options.en || options.zh || '';
+}
 
 function byId(id) {
     return document.getElementById(id);
@@ -305,8 +367,102 @@ function isMobileViewport() {
     return window.matchMedia('(max-width: 767px)').matches;
 }
 
+const AUTH_ACTIONS = Object.freeze({
+    share: { icon: 'fa-share-nodes', labelKey: 'authActionShare' },
+    send: { icon: 'fa-paper-plane', labelKey: 'authActionSend' },
+    image: { icon: 'fa-image', labelKey: 'authActionImage' },
+    pdf: { icon: 'fa-file-pdf', labelKey: 'authActionPdf' },
+    link: { icon: 'fa-link', labelKey: 'authActionLink' },
+});
+
+function getAuthConfig() {
+    const helper = window.GasGxMainAuthShared;
+    if (helper?.resolveConfig) {
+        return helper.resolveConfig(window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth);
+    }
+    return {
+        signInUrl: '/account/user.html',
+        accountUrl: '/account/account.html',
+        returnUrlStorageKey: 'gx_main_return_url',
+    };
+}
+
+function currentReturnUrl() {
+    return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+}
+
+function persistReturnUrl() {
+    const config = getAuthConfig();
+    try {
+        window.sessionStorage.setItem(config.returnUrlStorageKey, currentReturnUrl());
+    } catch (_error) {
+        return null;
+    }
+    return config.returnUrlStorageKey;
+}
+
+function redirectToSignIn() {
+    const config = getAuthConfig();
+    persistReturnUrl();
+    window.location.href = config.signInUrl;
+}
+
+function userDisplayName(user) {
+    const metadata = user?.user_metadata && typeof user.user_metadata === 'object' ? user.user_metadata : {};
+    const candidate = text(
+        metadata.full_name ||
+            metadata.name ||
+            metadata.user_name ||
+            metadata.preferred_username ||
+            metadata.email ||
+            user?.email,
+    );
+    if (!candidate) return '';
+    return candidate.length > 18 ? `${candidate.slice(0, 17)}…` : candidate;
+}
+
+function authActionMeta(actionKey = 'share') {
+    return AUTH_ACTIONS[actionKey] || AUTH_ACTIONS.share;
+}
+
+function openAuthModal(actionKey = 'share') {
+    const modal = byId('auth-modal');
+    if (!modal) return;
+    const action = authActionMeta(actionKey);
+    byId('auth-modal-kicker').textContent = t('authProtectedAction');
+    byId('auth-modal-title').textContent = t('authModalTitle');
+    byId('auth-modal-message').textContent = t('authModalMessage');
+    byId('auth-modal-hint').textContent = t('authModalHint');
+    byId('auth-modal-action').textContent = t(action.labelKey);
+    const icon = byId('auth-modal-icon');
+    if (icon) icon.className = `fa-solid ${action.icon}`;
+    byId('auth-modal-login-text').textContent = t('authModalLogin');
+    byId('auth-modal-cancel-text').textContent = t('authModalCancel');
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeAuthModal() {
+    const modal = byId('auth-modal');
+    if (!modal) return;
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+function requireSignedIn(actionKey = 'share') {
+    if (state.isLoggedIn) return true;
+    closeShareMenu();
+    openAuthModal(actionKey);
+    return false;
+}
+
 function t(key) {
     return dict[state.currentLang]?.[key] || dict.en[key] || key;
+}
+
+function uiText(key, fallbackKey = key, fallback = '') {
+    const value = pickDisplayText(state.snapshot?.product?.ui_text?.[key], '');
+    return value || t(fallbackKey) || fallback || '';
 }
 
 function looksCorrupted(value) {
@@ -414,10 +570,62 @@ function updateRateStatus(mode = 'online') {
     node.innerHTML = `<i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i>${esc(t('ratesOnline'))}`;
 }
 
+function renderRateDetail() {
+    const node = byId('rate-status-detail');
+    if (!node) return;
+    const message = text(state.rateDetail?.message);
+    if (!message) {
+        node.textContent = '';
+        node.classList.add('hidden');
+        return;
+    }
+    node.textContent = message;
+    node.classList.remove('hidden');
+    node.dataset.tone = text(state.rateDetail?.tone, 'muted');
+}
+
+function setRateDetail(message = '', tone = 'muted') {
+    state.rateDetail = { message: text(message), tone: text(tone, 'muted') };
+    renderRateDetail();
+}
+
 function renderRateLine() {
     const node = byId('live-rates-display');
     if (!node) return;
     node.innerHTML = `1 CNY <i class="fa-solid fa-arrow-right-arrow-left mx-1 text-white"></i> <span class="text-[var(--gas-green-light)]">${state.rates.USD.toFixed(4)} USD</span> | <span class="text-[var(--gas-green-light)]">${state.rates.EUR.toFixed(4)} EUR</span> | <span class="text-[var(--gas-green-light)]">${state.rates.CAD.toFixed(4)} CAD</span> | <span class="text-[var(--gas-green-light)]">${state.rates.RUB.toFixed(4)} RUB</span>`;
+}
+
+function renderViewContextBanner() {
+    const banner = byId('view-context-banner');
+    const kicker = byId('view-context-kicker');
+    const title = byId('view-context-title');
+    const meta = byId('view-context-meta');
+    if (!banner || !kicker || !title || !meta) return;
+
+    if (state.route?.type !== 'preview') {
+        banner.classList.add('hidden');
+        return;
+    }
+
+    kicker.textContent = localeCopy({
+        zh: 'ADMIN PREVIEW',
+        en: 'ADMIN PREVIEW',
+        ru: 'ADMIN PREVIEW',
+    });
+    title.textContent = localeCopy({
+        zh: '当前页面正在读取后台草稿快照，只用于校对，不会直接对外展示。',
+        en: 'This page is reading the current draft snapshot for internal review only.',
+        ru: 'Эта страница показывает текущий черновик только для внутренней проверки.',
+    });
+
+    const slug = text(state.snapshot?.quote?.publicSlug || state.snapshot?.quote?.public_slug);
+    const modeText = localeCopy({
+        zh: '继续在“报价单管理”里修改并重新发布，客户页才会更新。',
+        en: 'Keep editing in Quote Instances and publish again to update the customer page.',
+        ru: 'Продолжайте редактировать в Quote Instances и опубликуйте снова, чтобы обновить клиентскую страницу.',
+    });
+    meta.textContent = slug ? `${modeText} SLUG: ${slug}` : modeText;
+    banner.classList.remove('hidden');
 }
 
 function renderToolbar() {
@@ -426,6 +634,19 @@ function renderToolbar() {
     const node = byId('toolbar-brand-name');
     if (!node) return;
     node.innerHTML = `<span>${esc(brandLabel)}</span> <span class="text-[var(--gas-green-light)] font-bold ml-1 md:ml-2">RFQ SYS</span>`;
+}
+
+function renderAuthButton() {
+    const button = byId('btn-auth');
+    const label = byId('btn-text-auth');
+    const icon = byId('icon-auth');
+    if (!button || !label || !icon) return;
+    const signedIn = state.isLoggedIn === true;
+    const displayName = userDisplayName(state.adminUser);
+    label.textContent = signedIn ? (isMobileViewport() ? t('authAccount') : displayName || t('authAccount')) : t('authLogin');
+    button.title = signedIn ? t('authAccount') : t('authLogin');
+    button.classList.toggle('is-signed-in', signedIn);
+    icon.className = `fa-solid ${signedIn ? 'fa-user-check' : 'fa-user-lock'}`;
 }
 
 function renderLangButtons() {
@@ -447,6 +668,8 @@ function renderStaticText() {
 
     renderLangButtons();
     renderToolbar();
+    renderAuthButton();
+    renderViewContextBanner();
 
     const overviewTitle = pickDisplayText(snapshot.brand.overview_title, pickDisplayText(snapshot.product.public_title, snapshot.product.product_code));
     const supplier = text(snapshot.brand.supplier_name || snapshot.brand.display_name, t('unknownBrand'));
@@ -454,22 +677,25 @@ function renderStaticText() {
     const receiver = text(snapshot.quote.receiver_email || snapshot.quote.receiver_name || snapshot.quote.customer_name, '');
 
     byId('f-title').textContent = overviewTitle;
-    byId('lbl-supplier').textContent = t('supplier');
-    byId('lbl-sender').textContent = t('sender');
-    byId('lbl-receiver').textContent = t('receiver');
-    byId('lbl-validity').textContent = t('validity');
+    byId('lbl-supplier').textContent = uiText('supplier_label', 'supplier');
+    byId('lbl-sender').textContent = uiText('sender_label', 'sender');
+    byId('lbl-receiver').textContent = uiText('receiver_label', 'receiver');
+    byId('lbl-validity').textContent = uiText('validity_label', 'validity');
     byId('lbl-update').innerHTML = `<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>${esc(t('update'))}`;
     byId('val-supplier').textContent = supplier;
     byId('val-sender').textContent = sender;
     byId('val-receiver').textContent = receiver;
-    byId('val-receiver').setAttribute('data-placeholder', t('receiverPlaceholder'));
+    byId('val-receiver').setAttribute('data-placeholder', uiText('receiver_placeholder', 'receiverPlaceholder'));
     byId('footer-note').innerHTML = pickDisplayText(snapshot.brand.footer_note, '');
-    byId('btn-text-send').textContent = t('send');
-    byId('btn-text-share').textContent = t('share');
+    byId('btn-text-send').textContent = uiText('send_button', 'send');
+    byId('btn-text-share').textContent = isMobileViewport()
+        ? (state.currentLang === 'zh' ? '分享' : 'Share')
+        : uiText('share_button', 'share');
+    byId('btn-text-share').className = isMobileViewport() ? '' : 'ml-2';
     byId('btn-menu-share-link').textContent = t('shareLink');
     byId('btn-menu-img').textContent = t('exportImage');
     byId('btn-menu-pdf').textContent = t('exportPdf');
-    byId('btn-text-refresh').textContent = t('refresh');
+    byId('btn-text-refresh').textContent = uiText('refresh_button', 'refresh');
     byId('export-loading-text').textContent = t('exportLoading');
     byId('export-sub-text').textContent = t('exportSubText');
     byId('back-to-top').setAttribute('aria-label', state.currentLang === 'zh' ? '返回顶部' : state.currentLang === 'ru' ? 'Наверх' : 'Back to top');
@@ -479,7 +705,7 @@ function renderStaticText() {
     byId('share-expiry-label').textContent = t('shareExpiryLabel');
     byId('share-custom-expiry-label').textContent = t('shareCustomLabel');
     byId('share-custom-expiry-picker-text').textContent = t('shareCustomPicker');
-    byId('share-admin-hint').textContent = t('shareAdminHint');
+    byId('share-admin-hint').textContent = state.isAdmin ? t('shareAdminHint') : t('authModalHint');
     byId('share-passcode-label').textContent = t('sharePasscodeLabel');
     byId('share-link-label').textContent = t('shareLinkLabel');
     byId('btn-generate-share-text').textContent = t('shareGenerate');
@@ -490,6 +716,12 @@ function renderStaticText() {
     byId('access-passcode-label').textContent = t('accessPasscodeLabel');
     byId('access-passcode-submit-text').textContent = t('accessPasscodeSubmit');
     byId('access-gate-refresh-text').textContent = t('accessRefresh');
+    byId('auth-modal-kicker').textContent = t('authProtectedAction');
+    byId('auth-modal-title').textContent = t('authModalTitle');
+    byId('auth-modal-message').textContent = t('authModalMessage');
+    byId('auth-modal-hint').textContent = t('authModalHint');
+    byId('auth-modal-login-text').textContent = t('authModalLogin');
+    byId('auth-modal-cancel-text').textContent = t('authModalCancel');
 
     const expirySelect = byId('share-expiry-select');
     if (expirySelect) {
@@ -612,6 +844,22 @@ function bindProductMediaControls() {
     });
 }
 
+function syncScrollableTable(wrapper) {
+    const shell = wrapper?.closest('.table-scroll-shell');
+    if (!wrapper || !shell) return;
+    const maxScroll = Math.max(0, wrapper.scrollWidth - wrapper.clientWidth);
+    shell.dataset.scrollLeft = wrapper.scrollLeft > 12 ? 'true' : 'false';
+    shell.dataset.scrollRight = wrapper.scrollLeft < maxScroll - 12 ? 'true' : 'false';
+}
+
+function bindScrollableTables(root = document) {
+    [...root.querySelectorAll('.table-responsive-wrapper')].forEach((wrapper) => {
+        const sync = () => syncScrollableTable(wrapper);
+        wrapper.addEventListener('scroll', sync, { passive: true });
+        window.requestAnimationFrame(sync);
+    });
+}
+
 function renderContent() {
     const snapshot = state.snapshot;
     const container = byId('content-area');
@@ -628,7 +876,7 @@ function renderContent() {
     (snapshot.product.sections || []).forEach((section) => {
         const subtotal = sectionSubtotal(section);
         rows.push(`
-            <tr style="background-color: var(--bg-base);">
+            <tr class="quote-section-row" style="background-color: var(--bg-base);">
                 <td class="text-[var(--text-muted)] opacity-50 text-center text-xs font-mono-num whitespace-nowrap">-</td>
                 <td class="text-[var(--gas-green-light)] font-semibold whitespace-nowrap">${esc(getSectionLabel(section))}</td>
                 <td class="text-[var(--text-muted)] opacity-50 text-xs whitespace-nowrap">-</td>
@@ -645,7 +893,7 @@ function renderContent() {
             const included = item.isIncluded === true;
             const price = safeNumber(item.priceRmb, 0);
             rows.push(`
-                <tr>
+                <tr class="quote-item-row">
                     <td class="text-[var(--text-body)] text-center text-xs font-mono-num whitespace-nowrap">${esc(item.lineCode || '--')}</td>
                     <td class="text-white min-w-[200px]">${esc(pickDisplayText(item.nameI18n, item.lineCode || '--'))}</td>
                     <td class="text-[var(--text-body)] text-xs whitespace-nowrap">${esc(item.brandLabel || '-')}</td>
@@ -668,9 +916,9 @@ function renderContent() {
             </h3>
             ${mediaAbove}
 
-            <div class="bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between shadow-inner gap-4">
-                <span class="font-bold text-white tracking-wider text-xs md:text-sm">${esc(t('systemTotal'))}:</span>
-                <div class="flex flex-wrap gap-x-4 md:gap-x-6 gap-y-2 text-sm md:text-[15px]">
+            <div class="quote-total-card bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between shadow-inner gap-4">
+                <span class="font-bold text-white tracking-wider text-xs md:text-sm">${esc(uiText('system_total_label', 'systemTotal'))}:</span>
+                <div class="quote-total-grid text-sm md:text-[15px]">
                     <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RMB', total))}</span></span>
                     <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('USD', total * state.rates.USD))}</span></span>
                     <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('EUR', total * state.rates.EUR))}</span></span>
@@ -679,17 +927,21 @@ function renderContent() {
                 </div>
             </div>
 
-            <div class="table-responsive-wrapper w-full">
-                <table class="industrial-table text-left">
-                    <thead>
-                        <tr>${t('headers').map((header, index) => `<th class="${index === 0 ? 'w-12 text-center whitespace-nowrap' : 'whitespace-nowrap'}">${esc(header)}</th>`).join('')}</tr>
-                    </thead>
-                    <tbody>${rows.join('')}</tbody>
-                </table>
+            <div class="table-scroll-shell" data-scroll-left="false" data-scroll-right="false">
+                <div class="table-scroll-note"><i class="fa-solid fa-arrows-left-right"></i><span>${esc(t('tableSwipeHint'))}</span></div>
+                <div class="table-responsive-wrapper w-full">
+                    <table class="industrial-table text-left">
+                        <thead>
+                            <tr>${t('headers').map((header, index) => `<th class="${index === 0 ? 'w-12 text-center whitespace-nowrap' : 'whitespace-nowrap'}">${esc(header)}</th>`).join('')}</tr>
+                        </thead>
+                        <tbody>${rows.join('')}</tbody>
+                    </table>
+                </div>
             </div>
             ${mediaBelow}
         </div>
     `;
+    bindScrollableTables(container);
     bindProductMediaControls();
 }
 
@@ -699,7 +951,8 @@ function renderAll() {
     renderStaticText();
     renderContent();
     renderRateLine();
-    updateRateStatus('online');
+    updateRateStatus(state.rateStatusMode || 'online');
+    renderRateDetail();
     syncShareAvailability();
 }
 
@@ -739,8 +992,59 @@ function startClock() {
     state.clockTimer = window.setInterval(renderClock, 1000);
 }
 
+function changedRateCodes(previousRates = {}, nextRates = {}, digits = null) {
+    return ['USD', 'EUR', 'CAD', 'RUB'].filter((code) => {
+        const prev = safeNumber(previousRates[code], 0);
+        const next = safeNumber(nextRates[code], 0);
+        if (digits === null) return Math.abs(prev - next) > 1e-12;
+        return prev.toFixed(digits) !== next.toFixed(digits);
+    });
+}
+
+function manualRateRefreshMessage(previousRates = {}, nextRates = {}) {
+    const exactChanged = changedRateCodes(previousRates, nextRates);
+    const roundedChanged = changedRateCodes(previousRates, nextRates, 4);
+    const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    if (!exactChanged.length) {
+        return {
+            tone: 'muted',
+            message: localeCopy({
+                zh: `汇率已刷新，接口返回未变化。${timeLabel}`,
+                en: `Rates refreshed. The API returned the same values. ${timeLabel}`,
+                ru: `Курсы обновлены. API вернул те же значения. ${timeLabel}`,
+            }),
+        };
+    }
+
+    if (!roundedChanged.length) {
+        return {
+            tone: 'muted',
+            message: localeCopy({
+                zh: `汇率已刷新，但四舍五入到 4 位后显示未变化。${timeLabel}`,
+                en: `Rates refreshed, but the rounded 4-digit display did not change. ${timeLabel}`,
+                ru: `Курсы обновлены, но после округления до 4 знаков отображение не изменилось. ${timeLabel}`,
+            }),
+        };
+    }
+
+    const changedText = roundedChanged.join(' / ');
+    return {
+        tone: 'success',
+        message: localeCopy({
+            zh: `汇率已刷新，${changedText} 已更新。${timeLabel}`,
+            en: `Rates refreshed. Updated: ${changedText}. ${timeLabel}`,
+            ru: `Курсы обновлены. Изменено: ${changedText}. ${timeLabel}`,
+        }),
+    };
+}
+
 async function fetchRates(isManual = false) {
-    if (isManual) updateRateStatus('loading');
+    if (isManual) {
+        state.rateStatusMode = 'loading';
+        updateRateStatus('loading');
+    }
+    const previousRates = normalizeRates(state.rates);
     try {
         const response = await fetch(RATE_API_URL, { cache: 'no-store' });
         const data = await response.json();
@@ -752,13 +1056,29 @@ async function fetchRates(isManual = false) {
                 RUB: data.rates.RUB,
             });
         }
+        state.rateStatusMode = 'online';
         renderContent();
         renderRateLine();
         updateRateStatus('online');
+        if (isManual) {
+            const detail = manualRateRefreshMessage(previousRates, state.rates);
+            setRateDetail(detail.message, detail.tone);
+        }
     } catch (_error) {
+        state.rateStatusMode = 'error';
         renderContent();
         renderRateLine();
         updateRateStatus('error');
+        if (isManual) {
+            setRateDetail(
+                localeCopy({
+                    zh: '汇率刷新失败，当前继续使用报价单里的汇率快照。',
+                    en: 'Rate refresh failed. The page is still using the saved quote snapshot.',
+                    ru: 'Не удалось обновить курсы. Страница продолжает использовать сохраненный снимок.',
+                }),
+                'error',
+            );
+        }
     }
 }
 
@@ -833,6 +1153,7 @@ function hideExportOverlay() {
 
 async function exportImage() {
     if (!window.html2canvas) return;
+    if (!requireSignedIn('image')) return;
     closeShareMenu();
     showExportOverlay();
     try {
@@ -848,6 +1169,7 @@ async function exportImage() {
 
 async function exportPdf() {
     if (!window.html2pdf || !window.html2canvas) return;
+    if (!requireSignedIn('pdf')) return;
     closeShareMenu();
     showExportOverlay();
     try {
@@ -886,31 +1208,31 @@ function closeShareMenu() {
 }
 
 function toggleShareMenu(event) {
-    if (!isMobileViewport()) return;
-    event.preventDefault();
-    event.stopPropagation();
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    if (!requireSignedIn('share')) return;
     const menu = byId('share-menu');
     const arrow = byId('icon-share-down');
     if (!menu) return;
-    state.isMobileMenuOpen = menu.classList.contains('hidden');
-    menu.classList.toggle('hidden');
-    if (arrow) arrow.classList.toggle('rotate-180', state.isMobileMenuOpen);
+    const willOpen = menu.classList.contains('hidden');
+    menu.classList.toggle('hidden', !willOpen);
+    state.isMobileMenuOpen = willOpen;
+    if (arrow) arrow.classList.toggle('rotate-180', willOpen);
 }
 
 function syncShareAvailability() {
     const shareLinkButton = byId('btn-menu-share-link-wrap');
     const divider = byId('share-menu-divider');
     if (!shareLinkButton) return;
-    const allow = state.isAdmin && Boolean(state.shareTarget);
+    const allow = Boolean(state.shareTarget);
     shareLinkButton.classList.toggle('hidden', !allow);
     if (divider) divider.classList.toggle('hidden', !allow);
 }
 
 function openShareModal() {
-    if (!state.isAdmin) {
-        setStatusMessage(t('shareAdminOnly'), true);
-        return;
-    }
+    if (!requireSignedIn('link')) return;
     if (!state.shareTarget) {
         setStatusMessage(t('shareUnavailable'), true);
         return;
@@ -1000,10 +1322,7 @@ async function copyText(value) {
 }
 
 async function generateShareLink() {
-    if (!state.isAdmin) {
-        setStatusMessage(t('shareAdminOnly'), true);
-        return;
-    }
+    if (!requireSignedIn('link')) return;
     if (!state.shareTarget) {
         setStatusMessage(t('shareUnavailable'), true);
         return;
@@ -1037,6 +1356,7 @@ async function generateShareLink() {
 }
 
 function sendEmail() {
+    if (!requireSignedIn('send')) return;
     const receiver = text(state.snapshot?.quote?.receiverEmail || state.snapshot?.quote?.receiver_email || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name);
     if (!receiver) {
         window.alert(t('noEmail'));
@@ -1137,18 +1457,18 @@ function getClient() {
 
 async function resolveAdminSession() {
     const supabase = getClient();
-    if (!supabase) return { allowed: false, user: null };
+    if (!supabase) return { allowed: false, isLoggedIn: false, user: null };
     const {
         data: { session },
     } = await supabase.auth.getSession();
     const user = session?.user || null;
     const email = String(user?.email || '').trim().toLowerCase();
-    if (!email) return { allowed: false, user: null };
-    if (ADMIN_EMAILS.includes(email)) return { allowed: true, user };
+    if (!email) return { allowed: false, isLoggedIn: false, user: null };
+    if (ADMIN_EMAILS.includes(email)) return { allowed: true, isLoggedIn: true, user };
 
     const { data, error } = await supabase.from('admin_users').select('email,is_active').eq('email', email).maybeSingle();
-    if (error) return { allowed: false, user };
-    return { allowed: data?.is_active === true, user };
+    if (error) return { allowed: false, isLoggedIn: true, user };
+    return { allowed: data?.is_active === true, isLoggedIn: true, user };
 }
 
 async function fetchPublishedQuoteBySlug(publicSlug) {
@@ -1169,11 +1489,29 @@ async function fetchPreviewQuote(instanceId) {
     if (!supabase || !instanceId) return null;
     const { data, error } = await supabase.from('quote_instances').select('*').eq('id', instanceId).maybeSingle();
     if (error || !data) return null;
-    const itemsResult = await supabase.from('quote_instance_items').select('*').eq('instance_id', instanceId).order('sort_order', { ascending: true });
+    const [itemsResult, productResult, mediaResult] = await Promise.all([
+        supabase.from('quote_instance_items').select('*').eq('instance_id', instanceId).order('sort_order', { ascending: true }),
+        supabase.from('quote_products').select('media_config, ui_text').eq('id', data.product_id).maybeSingle(),
+        supabase.from('quote_product_media').select('title,storage_path,public_url,sort_order,is_active').eq('product_id', data.product_id).eq('is_active', true).order('sort_order', { ascending: true }),
+    ]);
     if (itemsResult.error) return null;
+    const liveMedia = sortMediaItems(mediaResult.data || []);
+    const mergedProductSnapshot = {
+        ...(data.product_snapshot || {}),
+        media_config: normalizeMediaConfig(
+            data.product_snapshot?.media_config && typeof data.product_snapshot.media_config === 'object'
+                ? data.product_snapshot.media_config
+                : productResult.data?.media_config || {}
+        ),
+        ui_text:
+            data.product_snapshot?.ui_text && typeof data.product_snapshot.ui_text === 'object'
+                ? data.product_snapshot.ui_text
+                : productResult.data?.ui_text || {},
+        media_gallery: liveMedia.length ? liveMedia : sortMediaItems(data.product_snapshot?.media_gallery || []),
+    };
     return buildQuoteSnapshot({
         brand: data.brand_snapshot,
-        product: data.product_snapshot,
+        product: mergedProductSnapshot,
         instance: data,
         items: itemsResult.data || [],
         mode: 'preview',
@@ -1236,6 +1574,8 @@ function applySnapshot(snapshot) {
     state.galleryIndex = 0;
     state.currentLang = normalizeLang(params.get('lang') || snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG);
     state.rates = normalizeRates(snapshot?.quote?.rates || snapshot?.product?.default_rates || DEFAULT_RATES);
+    state.rateStatusMode = 'online';
+    state.rateDetail = { message: '', tone: 'muted' };
     state.shareTarget = deriveShareTarget();
     bodyReadonly(!state.isAdmin);
     renderAll();
@@ -1458,6 +1798,13 @@ async function resolveRouteSnapshot() {
 }
 
 function bindEvents() {
+    byId('btn-auth')?.addEventListener('click', () => {
+        if (state.isLoggedIn) {
+            window.location.href = getAuthConfig().accountUrl;
+            return;
+        }
+        redirectToSignIn();
+    });
     byId('btn-zh')?.addEventListener('click', () => {
         state.currentLang = 'zh';
         renderAll();
@@ -1489,6 +1836,16 @@ function bindEvents() {
     });
     byId('btn-menu-share-link-wrap')?.addEventListener('click', openShareModal);
     byId('btn-share')?.addEventListener('click', toggleShareMenu);
+    byId('btn-auth-modal-close')?.addEventListener('click', closeAuthModal);
+    byId('btn-auth-modal-cancel')?.addEventListener('click', closeAuthModal);
+    byId('btn-auth-modal-login')?.addEventListener('click', () => {
+        closeAuthModal();
+        if (state.isLoggedIn) {
+            window.location.href = getAuthConfig().accountUrl;
+            return;
+        }
+        redirectToSignIn();
+    });
     byId('btn-share-modal-close')?.addEventListener('click', closeShareModal);
     byId('btn-share-close')?.addEventListener('click', closeShareModal);
     byId('share-expiry-select')?.addEventListener('change', syncShareExpiryUi);
@@ -1525,6 +1882,18 @@ function bindEvents() {
         closeShareMenu();
     });
 
+    document.addEventListener('click', (event) => {
+        if (event.target === byId('auth-modal')) closeAuthModal();
+        if (event.target === byId('share-modal')) closeShareModal();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        closeShareMenu();
+        closeAuthModal();
+        closeShareModal();
+    });
+
     window.addEventListener('resize', () => {
         if (!isMobileViewport()) closeShareMenu();
     });
@@ -1535,6 +1904,7 @@ async function init() {
     bindEvents();
     state.route = resolveInitialRoute();
     const access = await resolveAdminSession();
+    state.isLoggedIn = access.isLoggedIn === true;
     state.isAdmin = access.allowed === true;
     state.adminUser = access.user;
     bodyReadonly(!state.isAdmin);

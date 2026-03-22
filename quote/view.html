@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="../shared/ui/main-auth.shared.js"></script>
     <link rel="stylesheet" href="../shared/quote-system/quote-system.css">
 </head>
 <body class="antialiased pb-10 md:pb-20 access-resolved">
@@ -63,17 +64,22 @@
         </div>
 
         <div class="toolbar-actions flex items-center space-x-2 md:space-x-4 text-xs md:text-sm">
+            <button id="btn-auth" type="button" class="toolbar-auth-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center justify-center gap-2" title="Login">
+                <i id="icon-auth" class="fa-solid fa-user-lock"></i>
+                <span id="btn-text-auth" class="toolbar-auth-text">Login</span>
+            </button>
+
             <div class="toolbar-lang flex bg-[#161B22] rounded p-1 border border-[#2C2F33]">
                 <button type="button" id="btn-zh" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">CN</button>
                 <button type="button" id="btn-en" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">EN</button>
                 <button type="button" id="btn-ru" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">РУ</button>
             </div>
 
-            <div id="share-group" class="toolbar-share-group relative group">
+            <div id="share-group" class="toolbar-share-group relative">
                 <button id="btn-share" type="button" class="btn-glow px-3 py-1.5 md:px-6 md:py-2 flex items-center">
                     <i class="fa-solid fa-share-nodes" id="icon-share"></i> <span id="btn-text-share" class="hidden md:inline ml-2">分享/导出</span> <i class="fa-solid fa-angle-down ml-1 md:ml-2 text-xs" id="icon-share-down"></i>
                 </button>
-                <div id="share-menu" class="toolbar-share-menu absolute right-0 top-full pt-2 w-48 hidden md:group-hover:block z-50">
+                <div id="share-menu" class="toolbar-share-menu absolute right-0 top-full pt-2 w-48 hidden z-50">
                     <div class="bg-[#161B22] shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-[#2C2F33] rounded overflow-hidden">
                         <button id="btn-menu-share-link-wrap" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-link mr-3 text-lg"></i><span id="btn-menu-share-link">创建分享链接</span></button>
                         <div id="share-menu-divider" class="h-px bg-[#2C2F33]"></div>
@@ -86,9 +92,14 @@
     </div>
 
     <div id="doc-container" class="max-w-7xl mx-auto mt-20 md:mt-28 p-4 md:p-12 rounded-lg relative shadow-[0_20px_50px_rgba(0,0,0,0.7)]" style="background-color: var(--bg-card); border: 1px solid var(--border-color);">
+        <div id="view-context-banner" class="quote-view-banner hidden">
+            <div class="quote-view-banner__kicker" id="view-context-kicker">ADMIN PREVIEW</div>
+            <div class="quote-view-banner__title" id="view-context-title">This page is showing a draft preview.</div>
+            <div class="quote-view-banner__meta" id="view-context-meta"></div>
+        </div>
         <div id="export-area" style="background-color: var(--bg-card);">
-            <div class="border-b border-[var(--border-color)] pb-6 md:pb-8 mb-8 md:mb-10 flex flex-col xl:flex-row justify-between items-start gap-6">
-                <div class="w-full xl:flex-1 xl:pr-8 overflow-hidden">
+            <div class="quote-head-shell border-b border-[var(--border-color)] pb-6 md:pb-8 mb-8 md:mb-10 flex flex-col xl:flex-row justify-between items-start gap-6">
+                <div class="quote-head-main w-full xl:flex-1 xl:pr-8 overflow-hidden">
                     <div class="doc-title-row flex items-start md:items-center justify-between gap-4 mb-4 md:mb-8 w-full">
                         <h1 class="text-xl md:text-3xl font-bold tracking-wide text-[var(--gas-green-light)] leading-snug break-words flex-1 m-0" id="f-title"></h1>
                         <button id="btn-send" type="button" class="doc-send-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center flex-shrink-0 mt-1 md:mt-0" title="调用邮件应用">
@@ -124,7 +135,7 @@
                     </div>
                 </div>
 
-                <div class="w-full xl:w-auto text-left xl:text-right flex-shrink-0 flex flex-col items-start xl:items-end">
+                <div class="quote-head-side w-full xl:w-auto text-left xl:text-right flex-shrink-0 flex flex-col items-start xl:items-end">
                     <div class="bg-[var(--bg-base)] border border-[var(--border-color)] p-4 md:p-5 rounded shadow-inner w-full xl:min-w-[280px]">
                         <div class="text-xs text-[var(--text-muted)] mb-2 uppercase tracking-widest flex items-center justify-start xl:justify-end gap-2" id="lbl-update">
                             <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>
@@ -149,6 +160,7 @@
                 </div>
             </div>
 
+            <div id="rate-status-detail" class="hidden mb-4 text-[11px] md:text-xs font-mono-num text-[var(--text-muted)] text-left xl:text-right"></div>
             <div id="content-area"></div>
 
             <div id="footer-note" class="mt-12 md:mt-16 pt-6 md:pt-8 border-t border-[var(--border-color)] text-center text-xs md:text-sm text-[var(--text-muted)] leading-relaxed px-2"></div>
@@ -158,6 +170,42 @@
     <button id="back-to-top" type="button" class="back-to-top z-40" aria-label="返回顶部" title="返回顶部">
         <i class="fa-solid fa-arrow-up text-sm"></i>
     </button>
+
+    <div id="auth-modal" class="share-modal-backdrop" aria-hidden="true">
+        <div class="share-modal-card auth-modal-card p-5 md:p-6">
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <div class="text-[var(--gas-green-light)] text-xs uppercase tracking-[0.28em] font-mono-num mb-2" id="auth-modal-kicker">Protected Action</div>
+                    <h3 id="auth-modal-title" class="text-xl md:text-2xl font-bold text-white">Login required</h3>
+                    <p id="auth-modal-message" class="text-sm text-[var(--text-body)] mt-2 leading-6">Sign in to keep using quote sharing, export, and email actions.</p>
+                </div>
+                <button type="button" id="btn-auth-modal-close" class="btn-outline w-10 h-10 inline-flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="auth-modal-feature">
+                <div class="auth-modal-feature-icon">
+                    <i id="auth-modal-icon" class="fa-solid fa-user-lock"></i>
+                </div>
+                <div class="min-w-0">
+                    <div id="auth-modal-action" class="text-sm font-semibold text-white tracking-wide">Share / Export</div>
+                    <div id="auth-modal-hint" class="text-sm text-[var(--text-body)] mt-1 leading-6">Browsing stays open. We will return you to this quote after sign-in.</div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3 mt-6">
+                <button id="btn-auth-modal-login" type="button" class="btn-glow px-4 py-2.5 inline-flex items-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span id="auth-modal-login-text">Login now</span>
+                </button>
+                <button type="button" id="btn-auth-modal-cancel" class="btn-outline px-4 py-2.5 inline-flex items-center gap-2">
+                    <i class="fa-solid fa-eye"></i>
+                    <span id="auth-modal-cancel-text">Continue browsing</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div id="share-modal" class="share-modal-backdrop" aria-hidden="true">
         <div class="share-modal-card p-5 md:p-6">

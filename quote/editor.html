@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx Quote Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../shared/quote-system/quote-system.css">
+</head>
+<body class="antialiased pb-10 md:pb-20 access-resolved quote-editor-mode">
+    <div id="toolbar" class="fixed top-0 left-0 right-0 z-50 px-3 md:px-8 py-3 md:py-4 flex justify-between items-center border-b backdrop-blur-md" style="background-color: rgba(10, 14, 20, 0.85); border-color: var(--border-color);">
+        <div class="toolbar-brand flex items-center space-x-2 md:space-x-4">
+            <div id="toolbar-brand-name" class="text-[var(--gas-green-light)] text-xl md:text-3xl font-black tracking-tight flex whitespace-nowrap items-center flex-shrink-0">
+                <span>GASGX</span> <span class="text-[var(--gas-green-light)] font-bold ml-1 md:ml-2">RFQ SYS</span>
+            </div>
+        </div>
+
+        <div class="toolbar-actions flex items-center space-x-2 md:space-x-4 text-xs md:text-sm">
+            <div class="toolbar-lang flex bg-[#161B22] rounded p-1 border border-[#2C2F33]">
+                <button type="button" id="btn-zh" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">ZH</button>
+                <button type="button" id="btn-en" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">EN</button>
+                <button type="button" id="btn-ru" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">RU</button>
+            </div>
+            <a id="btn-back-admin" class="btn-outline px-3 py-1.5 md:px-4 md:py-2 inline-flex items-center gap-2" href="/article_management/index.html?page=quote-products">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>返回后台</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="quote-editor-bar">
+        <div class="quote-editor-bar__meta">
+            <span class="quote-editor-bar__kicker">REAL TEMPLATE EDITOR</span>
+            <strong id="editor-status-title">真实报价页编辑</strong>
+            <span id="editor-status-text">正在加载...</span>
+        </div>
+        <div class="quote-editor-bar__actions">
+            <button id="btn-add-main-row" type="button" class="btn-outline px-3 py-2">主配置新增行</button>
+            <button id="btn-add-optional-row" type="button" class="btn-outline px-3 py-2">选配新增行</button>
+            <button id="btn-save-editor" type="button" class="btn-glow px-4 py-2.5">保存</button>
+        </div>
+    </div>
+
+    <div id="doc-container" class="max-w-7xl mx-auto mt-32 md:mt-36 p-4 md:p-12 rounded-lg relative shadow-[0_20px_50px_rgba(0,0,0,0.7)]" style="background-color: var(--bg-card); border: 1px solid var(--border-color);">
+        <div class="quote-view-banner" id="editor-banner">
+            <div class="quote-view-banner__kicker">TEMPLATE SOURCE</div>
+            <div class="quote-view-banner__title" id="editor-banner-title">你现在编辑的就是最终报价页本体。</div>
+            <div class="quote-view-banner__meta" id="editor-banner-meta"></div>
+        </div>
+
+        <details class="quote-editor-settings" id="editor-settings">
+            <summary>页面设置</summary>
+            <div id="editor-settings-fields" class="quote-editor-settings__body"></div>
+        </details>
+
+        <div id="export-area" style="background-color: var(--bg-card);">
+            <div class="quote-head-shell border-b border-[var(--border-color)] pb-6 md:pb-8 mb-8 md:mb-10 flex flex-col xl:flex-row justify-between items-start gap-6">
+                <div class="quote-head-main w-full xl:flex-1 xl:pr-8 overflow-hidden">
+                    <div class="doc-title-row flex items-start md:items-center justify-between gap-4 mb-4 md:mb-8 w-full">
+                        <h1 class="text-xl md:text-3xl font-bold tracking-wide text-[var(--gas-green-light)] leading-snug break-words flex-1 m-0">
+                            <span id="edit-overview-title" class="quote-editable" contenteditable="true"></span>
+                        </h1>
+                        <button type="button" class="doc-send-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center flex-shrink-0 mt-1 md:mt-0">
+                            <i class="fa-solid fa-paper-plane mr-1.5 text-[var(--text-body)]"></i>
+                            <span id="edit-send-label" class="quote-editable" contenteditable="true"></span>
+                        </button>
+                    </div>
+
+                    <div class="doc-meta-grid grid grid-cols-1 md:grid-cols-2 gap-x-8 md:gap-x-12 gap-y-4 md:gap-y-5 text-sm md:text-[15px]">
+                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                            <span id="edit-supplier-label" class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap quote-editable" contenteditable="true"></span>
+                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                                <span id="edit-supplier-value" class="font-semibold text-white whitespace-nowrap outline-none w-full text-left block quote-editable" contenteditable="true"></span>
+                            </div>
+                        </div>
+                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                            <span id="edit-sender-label" class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap quote-editable" contenteditable="true"></span>
+                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                                <span id="edit-sender-value" class="text-[var(--gas-green-light)] whitespace-nowrap outline-none w-full text-left block quote-editable" contenteditable="true"></span>
+                            </div>
+                        </div>
+                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                            <span id="edit-validity-label" class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap quote-editable" contenteditable="true"></span>
+                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                                <span id="edit-validity-value" class="font-semibold text-white font-mono-num whitespace-nowrap outline-none w-full text-left block"></span>
+                            </div>
+                        </div>
+                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                            <span id="edit-receiver-label" class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap quote-editable" contenteditable="true"></span>
+                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
+                                <span id="edit-receiver-value" class="text-[var(--gas-green-light)] empty-placeholder whitespace-nowrap outline-none w-full text-left block quote-editable" contenteditable="true"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quote-head-side w-full xl:w-auto text-left xl:text-right flex-shrink-0 flex flex-col items-start xl:items-end">
+                    <div class="bg-[var(--bg-base)] border border-[var(--border-color)] p-4 md:p-5 rounded shadow-inner w-full xl:min-w-[280px]">
+                        <div class="text-xs text-[var(--text-muted)] mb-2 uppercase tracking-widest flex items-center justify-start xl:justify-end gap-2">
+                            <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>
+                            SYS_TIME_SYNC
+                        </div>
+                        <div class="text-2xl md:text-3xl font-mono-num text-white tracking-widest" id="live-date">--</div>
+                        <div class="text-xs md:text-sm font-mono-num text-[var(--text-body)] mt-1" id="live-clock">--:--:--</div>
+                    </div>
+
+                    <div class="mt-4 text-xs md:text-sm font-mono-num text-[var(--gas-green-light)] bg-[var(--gas-green-bg)] px-3 py-2 rounded border border-[var(--gas-green-primary)] break-all" id="live-rates-display"></div>
+                    <div id="rate-status-detail" class="hidden mt-2 text-[11px] md:text-xs font-mono-num text-[var(--text-muted)] text-left xl:text-right w-full"></div>
+
+                    <div class="mt-3 flex flex-wrap items-center justify-start xl:justify-end gap-2 w-full">
+                        <span id="rate-status" class="text-[10px] md:text-[11px] text-[var(--gas-green-light)] font-mono-num flex items-center bg-[var(--gas-green-bg-solid)] px-2 py-1.5 rounded border border-[var(--gas-green-primary)] shadow-[0_0_8px_rgba(93,214,44,0.2)]">
+                            <i class="fa-solid fa-pen-ruler text-[var(--gas-green-light)] mr-1.5"></i> 当前为真实报价页编辑模式
+                        </span>
+                        <button id="btn-refresh-rates" type="button" class="btn-outline bg-[var(--bg-card)] px-3 py-1.5 rounded text-[10px] md:text-[11px] font-bold flex items-center">
+                            <i class="fa-solid fa-rotate-right mr-1.5"></i>
+                            <span id="btn-text-refresh" class="quote-editable" contenteditable="true"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-area"></div>
+            <div id="footer-note" class="mt-12 md:mt-16 pt-6 md:pt-8 border-t border-[var(--border-color)] text-center text-xs md:text-sm text-[var(--text-muted)] leading-relaxed px-2 quote-editable" contenteditable="true"></div>
+        </div>
+    </div>
+
+    <button id="back-to-top" type="button" class="back-to-top z-40" aria-label="返回顶部" title="返回顶部">
+        <i class="fa-solid fa-arrow-up text-sm"></i>
+    </button>
+
+    <script type="module" src="../shared/quote-system/quote-editor.module.js?v=20260322editor01"></script>
+</body>
+</html>

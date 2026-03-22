@@ -37,7 +37,7 @@ import {
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
 import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260321admin01';
-import { renderQuoteBrandsPage, renderQuoteInstancesPage, renderQuoteProductsPage } from './quote-system.module.js?v=20260321quote01';
+import { renderQuoteBrandsPage, renderQuoteInstancesPage, renderQuoteProductsPage } from './quote-system.module.js?v=20260322quote02';
 import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260321site08';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js?v=20260321admin01';
 
@@ -121,6 +121,23 @@ const ARTICLE_STATUS_FILTER_OPTIONS = [
     { value: 'scraping', label: '采集中' },
     { value: 'failed', label: '采集失败' },
 ];
+const ADMIN_PAGE_IDS = new Set([
+    'dashboard',
+    'site-general',
+    'site-navigation',
+    'site-footer',
+    'admin-users',
+    'admin-security',
+    'quote-brands',
+    'quote-products',
+    'quote-instances',
+    'articles',
+    'editor',
+    'recycle',
+    'featured',
+    'queue',
+    'tags',
+]);
 
 function createEditorState(mode = 'create', id = null, payload = null, extra = {}) {
     return {
@@ -138,7 +155,7 @@ const state = {
     session: null,
     user: null,
     adminAccess: null,
-    page: 'dashboard',
+    page: pageFromUrl() || 'dashboard',
     authView: 'login',
     articles: { page: 1, pageSize: 20, search: '', status: 'all', tag: 'all', category: 'all' },
     recycle: { page: 1, pageSize: 20, search: '' },
@@ -252,6 +269,27 @@ function invalidateTagOptionsCache() {
     state.cache.tagOptions = null;
     state.cache.tags = null;
     state.cache.articles = null;
+}
+
+function pageFromUrl() {
+    try {
+        const url = new URL(window.location.href);
+        const page = String(url.searchParams.get('page') || '').trim();
+        return ADMIN_PAGE_IDS.has(page) ? page : null;
+    } catch {
+        return null;
+    }
+}
+
+function syncPageToUrl() {
+    try {
+        const url = new URL(window.location.href);
+        if (state.page && state.page !== 'dashboard') url.searchParams.set('page', state.page);
+        else url.searchParams.delete('page');
+        window.history.replaceState({}, '', url);
+    } catch {
+        return;
+    }
 }
 
 async function getCachedTagOptions(forceRefresh = false) {
@@ -458,6 +496,19 @@ function sortQueueStatuses(values = []) {
 function clearPreviewBinding() {
     if (typeof state.previewUnbind === 'function') state.previewUnbind();
     state.previewUnbind = null;
+}
+
+function shouldIgnoreAuthRender(event, nextSession = null) {
+    const nextEvent = String(event || '').trim().toUpperCase();
+    if (nextEvent === 'TOKEN_REFRESHED' || nextEvent === 'INITIAL_SESSION') return true;
+    if (nextEvent === 'SIGNED_IN') {
+        const currentUserId = state.user?.id || '';
+        const nextUserId = nextSession?.user?.id || '';
+        if (currentUserId && nextUserId && currentUserId === nextUserId && state.authView !== 'login') {
+            return true;
+        }
+    }
+    return false;
 }
 
 function summarizeCategoryStats(rows, limit = 10) {
@@ -1013,6 +1064,7 @@ function renderShell() {
             if (state.page === 'editor' && state.editor.mode !== 'edit') {
                 state.editor = prepareEditorState('create');
             }
+            syncPageToUrl();
             void renderPage();
         });
     });
@@ -2783,6 +2835,7 @@ async function renderPage() {
 
     clearPreviewBinding();
     renderShell();
+    syncPageToUrl();
 
     try {
         if (state.page === 'dashboard') await renderDashboard();
@@ -2883,6 +2936,7 @@ async function boot() {
         onAuthStateChange(async (event, nextSession) => {
             state.session = nextSession;
             state.user = nextSession?.user || null;
+            if (shouldIgnoreAuthRender(event, nextSession)) return;
             if (event === 'PASSWORD_RECOVERY' || isPasswordRecoveryMode()) {
                 state.authView = 'reset';
                 renderLogin();

@@ -342,11 +342,6 @@
             visibility: hidden;
         }
 
-        body.is-readonly #share-group,
-        body.is-readonly .doc-send-btn {
-            display: none !important;
-        }
-
         .access-gate-overlay {
             position: fixed;
             inset: 0;
@@ -396,6 +391,318 @@
             box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
         }
 
+        .auth-modal-card {
+            max-width: 520px;
+        }
+
+        .auth-modal-feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 16px;
+            border: 1px solid rgba(93, 214, 44, 0.22);
+            border-radius: 14px;
+            background:
+                linear-gradient(135deg, rgba(93, 214, 44, 0.12), rgba(93, 214, 44, 0.04)),
+                rgba(10, 14, 20, 0.72);
+        }
+
+        .auth-modal-feature-icon {
+            width: 46px;
+            height: 46px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border-radius: 14px;
+            border: 1px solid rgba(93, 214, 44, 0.28);
+            background: rgba(93, 214, 44, 0.12);
+            color: var(--gas-green-light);
+            font-size: 1.1rem;
+        }
+
+        .toolbar-auth-btn {
+            min-width: 120px;
+            white-space: nowrap;
+        }
+
+        .toolbar-auth-text {
+            max-width: 10rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .toolbar-auth-btn.is-signed-in {
+            border-color: rgba(93, 214, 44, 0.45);
+            color: var(--gas-green-light);
+            background: rgba(93, 214, 44, 0.08);
+        }
+
+        .quote-total-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quote-view-banner {
+            margin-bottom: 18px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(93, 214, 44, 0.22);
+            background: linear-gradient(135deg, rgba(93, 214, 44, 0.1), rgba(10, 14, 20, 0.96));
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .quote-view-banner__kicker {
+            margin-bottom: 8px;
+            color: var(--gas-green-light);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+        }
+
+        .quote-view-banner__title {
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.55;
+        }
+
+        .quote-view-banner__meta {
+            margin-top: 6px;
+            color: var(--text-body);
+            font-size: 12px;
+            line-height: 1.6;
+            word-break: break-word;
+        }
+
+        .quote-editor-mode .quote-editable {
+            outline: 1px dashed transparent;
+            outline-offset: 3px;
+            transition: outline-color 0.15s ease, background-color 0.15s ease;
+            border-radius: 6px;
+        }
+
+        .quote-editor-mode .quote-editable:hover,
+        .quote-editor-mode .quote-editable:focus {
+            outline-color: rgba(93, 214, 44, 0.55);
+            background: rgba(93, 214, 44, 0.08);
+        }
+
+        .quote-editor-mode .quote-editable-inline {
+            display: inline-block;
+            min-width: 1ch;
+        }
+
+        .quote-editor-bar {
+            position: sticky;
+            top: 74px;
+            z-index: 35;
+            max-width: 1280px;
+            margin: 96px auto 0;
+            padding: 12px 16px;
+            border: 1px solid rgba(93, 214, 44, 0.2);
+            border-radius: 18px;
+            background: rgba(10, 14, 20, 0.92);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .quote-editor-bar__meta {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 0;
+        }
+
+        .quote-editor-bar__meta strong {
+            color: #fff;
+            font-size: 15px;
+        }
+
+        .quote-editor-bar__meta span:last-child {
+            color: var(--text-body);
+            font-size: 12px;
+        }
+
+        .quote-editor-bar__kicker {
+            color: var(--gas-green-light);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+        }
+
+        .quote-editor-bar__actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .quote-editor-settings {
+            margin: 0 0 18px;
+            border: 1px solid rgba(93, 214, 44, 0.14);
+            border-radius: 16px;
+            background: rgba(93, 214, 44, 0.04);
+            overflow: hidden;
+        }
+
+        .quote-editor-settings summary {
+            cursor: pointer;
+            padding: 12px 14px;
+            color: #fff;
+            font-weight: 700;
+            list-style: none;
+        }
+
+        .quote-editor-settings__body {
+            padding: 0 14px 14px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .quote-editor-setting {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .quote-editor-setting span {
+            font-size: 12px;
+            color: var(--text-body);
+        }
+
+        .quote-editor-setting input,
+        .quote-editor-setting select {
+            width: 100%;
+            min-height: 40px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: rgba(10, 14, 20, 0.92);
+            color: #fff;
+        }
+
+        .quote-editor-hint {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .quote-editor-desc-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .quote-editor-desc-wrap .quote-editable {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .quote-editor-row-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            flex: 0 0 auto;
+        }
+
+        .quote-item-row:hover .quote-editor-row-actions,
+        .quote-item-row:focus-within .quote-editor-row-actions {
+            opacity: 1;
+        }
+
+        .quote-editor-icon-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            border: 1px solid rgba(93, 214, 44, 0.25);
+            background: rgba(10, 14, 20, 0.92);
+            color: var(--gas-green-light);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+        }
+
+        .quote-editor-icon-btn.is-danger {
+            border-color: rgba(248, 113, 113, 0.32);
+            color: #f87171;
+        }
+
+        #rate-status-detail[data-tone="success"] {
+            color: var(--gas-green-light);
+        }
+
+        #rate-status-detail[data-tone="error"] {
+            color: #fca5a5;
+        }
+
+        .quote-total-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+        }
+
+        .table-scroll-shell {
+            position: relative;
+        }
+
+        .table-scroll-shell::before,
+        .table-scroll-shell::after {
+            content: "";
+            position: absolute;
+            top: 44px;
+            bottom: 0;
+            width: 18px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 4;
+        }
+
+        .table-scroll-shell::before {
+            left: 0;
+            background: linear-gradient(90deg, rgba(10, 14, 20, 0.75), rgba(10, 14, 20, 0));
+        }
+
+        .table-scroll-shell::after {
+            right: 0;
+            background: linear-gradient(-90deg, rgba(10, 14, 20, 0.75), rgba(10, 14, 20, 0));
+        }
+
+        .table-scroll-shell[data-scroll-left="true"]::before,
+        .table-scroll-shell[data-scroll-right="true"]::after {
+            opacity: 1;
+        }
+
+        .table-scroll-note {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            letter-spacing: 0.02em;
+        }
+
+        .table-scroll-note i {
+            color: var(--gas-green-light);
+        }
+
+        .quote-section-row td:first-child,
+        .quote-section-row td:nth-child(2) {
+            color: var(--gas-green-light);
+        }
+
         .share-input,
         .share-select {
             width: 100%;
@@ -439,9 +746,10 @@
 
         @media (max-width: 767px) {
             #toolbar {
-                padding: 10px 12px;
-                gap: 10px;
+                padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px;
+                gap: 8px;
                 align-items: flex-start;
+                flex-wrap: wrap;
             }
 
             .toolbar-brand {
@@ -449,39 +757,99 @@
                 min-width: 0;
             }
 
+            #toolbar-brand-name {
+                font-size: 1.05rem;
+                line-height: 1.05;
+            }
+
             .toolbar-actions {
                 width: 100%;
                 min-width: 0;
+                display: flex !important;
+                align-items: center;
                 justify-content: space-between;
-                gap: 8px;
+                flex-wrap: nowrap;
+                gap: 6px;
+            }
+
+            .toolbar-actions > :not([hidden]) ~ :not([hidden]) {
+                margin-left: 0;
+            }
+
+            .toolbar-auth-btn,
+            #btn-share {
+                width: auto !important;
+                min-height: 34px;
+                justify-content: center;
+                padding-left: 12px;
+                padding-right: 12px;
+                font-size: 0.72rem;
+                border-radius: 10px;
+            }
+
+            #icon-auth,
+            #icon-share,
+            #icon-share-down {
+                display: none;
+            }
+
+            .toolbar-auth-btn {
+                min-width: 0;
+                flex: 0 0 auto;
+            }
+
+            .toolbar-lang {
+                flex: 1 1 auto;
+                justify-content: center;
+                min-width: 0;
+                padding: 2px;
+                border-radius: 10px;
             }
 
             .toolbar-lang button {
-                min-width: 40px;
-                padding-left: 10px;
-                padding-right: 10px;
+                min-width: 0;
+                flex: 1 1 0;
+                padding-left: 6px;
+                padding-right: 6px;
+                font-size: 0.72rem;
             }
 
             .toolbar-share-group {
-                margin-left: auto;
+                width: auto !important;
+                margin-left: 0;
+                flex: 0 0 auto;
             }
 
             .toolbar-share-menu {
-                width: min(12rem, calc(100vw - 24px));
+                width: min(220px, calc(100vw - 24px));
             }
 
             .back-to-top {
                 right: 12px;
-                bottom: 16px;
+                bottom: calc(16px + env(safe-area-inset-bottom, 0px));
                 width: 42px;
                 height: 42px;
             }
 
             #doc-container {
-                margin-top: 88px;
+                margin-top: 118px;
+                padding: 12px 12px 18px;
+                border-radius: 18px 18px 0 0;
+                box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
+            }
+
+            .quote-view-banner {
+                margin-bottom: 14px;
                 padding: 12px;
-                border-radius: 0;
-                box-shadow: none;
+                border-radius: 14px;
+            }
+
+            .quote-view-banner__title {
+                font-size: 13px;
+            }
+
+            .quote-view-banner__meta {
+                font-size: 11px;
             }
 
             #export-area {
@@ -492,42 +860,170 @@
             .doc-title-row {
                 flex-direction: column;
                 align-items: stretch;
+                gap: 10px;
+                margin-bottom: 12px;
             }
 
             .doc-send-btn {
-                width: 100%;
+                width: auto;
+                align-self: flex-start;
                 justify-content: center;
                 margin-top: 0;
+                min-height: 34px;
+                padding: 7px 12px;
+                font-size: 0.78rem;
+            }
+
+            #f-title {
+                font-size: 1.05rem;
+                line-height: 1.35;
             }
 
             .doc-meta-grid {
-                gap: 12px;
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 10px;
             }
 
             .doc-meta-item {
+                padding: 10px 12px;
+                border: 1px solid rgba(44, 47, 51, 0.9);
+                border-radius: 12px;
+                background: rgba(10, 14, 20, 0.45);
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 4px;
+                justify-content: center;
+                gap: 6px;
                 min-width: 0;
+                min-height: 68px;
             }
 
             .doc-meta-item > span:first-child {
                 padding-right: 0;
+                font-size: 0.74rem;
             }
 
             .doc-meta-value {
-                width: 100%;
+                width: 100% !important;
+                min-width: 0 !important;
+                flex: 1 1 auto !important;
+            }
+
+            .doc-meta-value span {
+                white-space: normal !important;
+                overflow-wrap: anywhere;
+                line-height: 1.35;
+                font-size: 0.82rem;
+            }
+
+            .quote-view-banner {
+                padding: 12px 14px;
+                border-radius: 14px;
+                margin-bottom: 14px;
+            }
+
+            .quote-view-banner__kicker {
+                font-size: 0.68rem;
+                margin-bottom: 6px;
+            }
+
+            .quote-view-banner__title {
+                font-size: 0.95rem;
+                line-height: 1.45;
+                margin-bottom: 6px;
+            }
+
+            .quote-view-banner__meta {
+                font-size: 0.72rem;
+                line-height: 1.45;
+                gap: 6px;
+            }
+
+            .quote-editor-bar {
+                top: 66px;
+                margin-top: 86px;
+                padding: 10px 12px;
+                border-radius: 14px;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .quote-editor-bar__actions {
+                justify-content: flex-start;
+            }
+
+            .quote-editor-settings__body {
+                grid-template-columns: 1fr;
+            }
+
+            .quote-editor-desc-wrap {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .quote-editor-row-actions {
+                opacity: 1;
+                flex-wrap: wrap;
+            }
+
+            .quote-head-shell {
+                gap: 14px;
+                padding-bottom: 18px;
+                margin-bottom: 18px;
+            }
+
+            .quote-head-side {
+                gap: 10px;
+            }
+
+            .quote-head-side > div:first-child {
+                padding: 12px 14px;
                 min-width: 0;
             }
 
+            #live-date {
+                font-size: 1.6rem;
+                line-height: 1.1;
+            }
+
+            #live-clock {
+                font-size: 0.82rem;
+            }
+
             #live-rates-display {
+                margin-top: 0;
                 white-space: normal;
                 word-break: break-word;
                 line-height: 1.5;
+                padding: 9px 10px;
+                font-size: 0.7rem;
+            }
+
+            #rate-status {
+                font-size: 0.62rem !important;
+                padding: 6px 8px !important;
+            }
+
+            #btn-refresh-rates {
+                min-height: 32px;
+                padding-left: 10px;
+                padding-right: 10px;
+                font-size: 0.68rem !important;
+            }
+
+            #rate-status-detail {
+                margin-bottom: 12px;
+                font-size: 0.68rem;
+            }
+
+            .quote-total-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+                width: 100%;
             }
 
             .industrial-table {
-                min-width: 760px;
+                min-width: 680px;
             }
 
             .industrial-table th {
@@ -538,6 +1034,34 @@
             .industrial-table td {
                 padding: 10px 12px;
                 font-size: 0.8rem;
+            }
+
+            .industrial-table th:first-child,
+            .industrial-table td:first-child {
+                position: sticky;
+                left: 0;
+                z-index: 3;
+                box-shadow: 10px 0 18px rgba(10, 14, 20, 0.45);
+            }
+
+            .industrial-table th:first-child {
+                background: var(--bg-base);
+            }
+
+            .quote-item-row td:first-child {
+                background: var(--bg-card);
+            }
+
+            .industrial-table tr:nth-child(even).quote-item-row td:first-child {
+                background: rgba(255, 255, 255, 0.015);
+            }
+
+            .quote-section-row td:first-child {
+                background: var(--bg-base);
+            }
+
+            .table-scroll-note {
+                display: inline-flex;
             }
 
             .quote-product-media-head {
@@ -557,6 +1081,17 @@
             .access-gate-card,
             .share-modal-card {
                 border-radius: 16px;
+            }
+
+            .auth-modal-card,
+            .share-modal-card {
+                max-height: min(86vh, 720px);
+                overflow-y: auto;
+            }
+
+            .auth-modal-feature {
+                padding: 14px;
+                gap: 12px;
             }
 
             .share-inline-field {

@@ -12,6 +12,7 @@ import {
     buildQuoteSnapshot,
     convertLegacyPagesToSeedPayloads,
     createMediaConfig,
+    createProductUiText,
     createPublicSlug,
     createQuoteItem,
     createQuoteMediaItem,
@@ -21,6 +22,7 @@ import {
     extractProductSnapshot,
     normalizeLocalizedText,
     normalizeMediaConfig,
+    normalizeProductUiText,
     normalizeQuoteItem,
     normalizeQuoteMediaItem,
     normalizeRates,
@@ -42,8 +44,10 @@ const moduleState = {
     brands: [],
     products: [],
     instances: [],
+    baseTemplates: [],
     brandEditor: null,
     productEditor: null,
+    productBrandDraft: null,
     instanceEditor: null,
     productLoadedId: '',
     instanceLoadedId: '',
@@ -95,6 +99,14 @@ function expandSectionConfigLocalized(sections = createSectionConfig()) {
         ...section,
         title: expandLocalizedFromChinese(section.title),
     }));
+}
+
+function enableMediaIfNeeded(config = {}, gallery = []) {
+    const normalized = normalizeMediaConfig(config);
+    if (normalizeMediaGallery(gallery).length && normalized.enabled !== true) {
+        normalized.enabled = true;
+    }
+    return normalized;
 }
 
 function normalizeMediaGallery(items = []) {
@@ -166,6 +178,7 @@ function createProductDraft(seed = {}) {
         validity_hours: Math.max(1, safeNumber(seed.validity_hours || seed.validityHours, 72)),
         default_rates: normalizeRates(seed.default_rates || seed.defaultRates || DEFAULT_RATES),
         section_config: normalizeSectionConfig(seed.section_config || seed.sectionConfig),
+        ui_text: normalizeProductUiText(seed.ui_text || seed.uiText || createProductUiText()),
         media_config: normalizeMediaConfig(seed.media_config || seed.mediaConfig),
         sort_order: safeNumber(seed.sort_order, 100),
         is_active: seed.is_active !== false,
@@ -199,6 +212,7 @@ function createInstanceDraft(seed = {}) {
 
 moduleState.brandEditor = createBrandDraft();
 moduleState.productEditor = createProductDraft();
+moduleState.productBrandDraft = createBrandDraft();
 moduleState.instanceEditor = createInstanceDraft();
 
 function upsertLocalizedField(target, key, lang, value) {
@@ -287,7 +301,7 @@ async function fetchBrandRows() {
 async function fetchProductRows() {
     const { data, error } = await client
         .from(TABLE_PRODUCTS)
-        .select('id, brand_id, slug, product_code, public_title, default_lang, validity_hours, default_rates, section_config, media_config, sort_order, is_active, created_at, updated_at')
+        .select('*')
         .order('sort_order', { ascending: true })
         .order('slug', { ascending: true });
     if (error) throw error;
@@ -306,6 +320,7 @@ async function fetchProductEditor(productId) {
     if (!productId) {
         moduleState.productLoadedId = '';
         moduleState.productEditor = createProductDraft();
+        moduleState.productBrandDraft = createBrandDraft();
         return moduleState.productEditor;
     }
     const { data, error } = await client.from(TABLE_PRODUCTS).select('*').eq('id', productId).single();
@@ -321,6 +336,7 @@ async function fetchProductEditor(productId) {
         items: itemsResult.data || [],
         media_gallery: mediaRows,
     });
+    syncProductBrandDraft(moduleState.productEditor.brand_id);
     return moduleState.productEditor;
 }
 
@@ -399,6 +415,58 @@ async function persistProductMediaRows(ownerId, items = []) {
     return insertResult.data || [];
 }
 
+async function syncDraftInstanceMedia(productId, mediaConfig = {}, mediaGallery = [], userId = null) {
+    if (!productId) return;
+    const listResult = await client
+        .from(TABLE_INSTANCES)
+        .select('id, product_snapshot')
+        .eq('product_id', productId)
+        .eq('status', 'draft');
+    if (listResult.error) throw listResult.error;
+    const rows = Array.isArray(listResult.data) ? listResult.data : [];
+    if (!rows.length) return;
+
+    await Promise.all(
+        rows.map((row) =>
+            client
+                .from(TABLE_INSTANCES)
+                .update({
+                    product_snapshot: extractProductSnapshot({
+                        ...(row.product_snapshot || {}),
+                        media_config: enableMediaIfNeeded(mediaConfig, mediaGallery),
+                        media_gallery: normalizeMediaGallery(mediaGallery),
+                    }),
+                    updated_by: userId || null,
+                })
+                .eq('id', row.id),
+        ),
+    ).then((results) => {
+        const failed = results.find((result) => result?.error);
+        if (failed?.error) throw failed.error;
+    });
+}
+
+async function syncProductMediaState(productId, mediaConfig = {}, mediaGallery = [], userId = null) {
+    if (!productId) {
+        return normalizeMediaConfig(enableMediaIfNeeded(mediaConfig, mediaGallery));
+    }
+
+    const nextConfig = normalizeMediaConfig(enableMediaIfNeeded(mediaConfig, mediaGallery));
+    const updateResult = await client
+        .from(TABLE_PRODUCTS)
+        .update({
+            media_config: expandMediaConfig(nextConfig),
+            updated_by: userId || null,
+        })
+        .eq('id', productId)
+        .select('media_config')
+        .single();
+    if (updateResult.error) throw updateResult.error;
+
+    await syncDraftInstanceMedia(productId, nextConfig, mediaGallery, userId);
+    return normalizeMediaConfig(updateResult.data?.media_config || nextConfig);
+}
+
 async function uploadProductMediaFiles(product, files = []) {
     if (!product?.id) throw new Error('请先保存产品模板，再上传图片。');
     if (!files.length) return normalizeMediaGallery(product.media_gallery);
@@ -475,14 +543,19 @@ async function replaceProductMediaFile(product, gallery, mediaItem, file) {
     return saveProductMediaCollection(product.id, nextGallery);
 }
 
-function syncProductMediaToEditors(productId, mediaGallery) {
+function syncProductMediaToEditors(productId, mediaGallery, mediaConfig = null) {
     const nextGallery = normalizeMediaGallery(mediaGallery);
+    const nextConfig = normalizeMediaConfig(enableMediaIfNeeded(mediaConfig || {}, nextGallery));
     if (moduleState.productEditor?.id === productId) {
         moduleState.productEditor.media_gallery = nextGallery;
+        moduleState.productEditor.media_config = mediaConfig
+            ? nextConfig
+            : enableMediaIfNeeded(moduleState.productEditor.media_config, nextGallery);
     }
     if (moduleState.instanceEditor?.product_id === productId) {
         moduleState.instanceEditor.product_snapshot = extractProductSnapshot({
             ...moduleState.instanceEditor.product_snapshot,
+            media_config: mediaConfig ? nextConfig : enableMediaIfNeeded(moduleState.instanceEditor.product_snapshot?.media_config, nextGallery),
             media_gallery: nextGallery,
         });
     }
@@ -527,6 +600,16 @@ async function saveProductDraft(user, draft) {
     if (!payload.slug) throw new Error('产品 slug 不能为空。');
     if (!pickLocalized(payload.public_title, payload.default_lang)) throw new Error('请至少填写一个产品标题。');
 
+    const linkedBrandDraft = currentProductBrandDraft();
+    if (linkedBrandDraft?.id === payload.brand_id || linkedBrandDraft?.slug) {
+        const savedBrand = await saveBrandDraft(user, {
+            ...linkedBrandDraft,
+            id: linkedBrandDraft.id || payload.brand_id,
+        });
+        moduleState.productBrandDraft = savedBrand;
+        payload.brand_id = savedBrand.id;
+    }
+
     const savePayload = {
         brand_id: payload.brand_id,
         slug: payload.slug,
@@ -536,6 +619,7 @@ async function saveProductDraft(user, draft) {
         validity_hours: payload.validity_hours,
         default_rates: normalizeRates(payload.default_rates),
         section_config: expandSectionConfigLocalized(payload.section_config),
+        ui_text: normalizeProductUiText(payload.ui_text),
         media_config: expandMediaConfig(payload.media_config),
         sort_order: payload.sort_order,
         is_active: payload.is_active !== false,
@@ -551,10 +635,13 @@ async function saveProductDraft(user, draft) {
         persistItemRows(TABLE_PRODUCT_ITEMS, 'product_id', data.id, payload.items),
         persistProductMediaRows(data.id, payload.media_gallery),
     ]);
+    const syncedMediaConfig = await syncProductMediaState(data.id, data.media_config, savedMedia, user?.id || null);
+    syncProductMediaToEditors(data.id, savedMedia, syncedMediaConfig);
     await fetchProductRows();
     moduleState.productLoadedId = data.id;
     moduleState.productEditor = createProductDraft({
         ...data,
+        media_config: syncedMediaConfig,
         items: savedItems,
         media_gallery: savedMedia,
     });
@@ -563,9 +650,11 @@ async function saveProductDraft(user, draft) {
 
 async function createInstanceFromProduct(user, productId) {
     const product = productId
-        ? await fetchProductEditor(productId)
+        ? moduleState.productEditor?.id === productId
+            ? createProductDraft(moduleState.productEditor)
+            : await fetchProductEditor(productId)
         : moduleState.productEditor?.id
-          ? moduleState.productEditor
+          ? createProductDraft(moduleState.productEditor)
           : null;
     if (!product?.id) throw new Error('请先选择一个产品模板。');
 
@@ -724,6 +813,10 @@ function previewQuoteUrl(instanceId) {
     return new URL(`/quote/view.html?preview=${encodeURIComponent(instanceId)}`, window.location.origin).toString();
 }
 
+function quoteEditorUrl(kind, id) {
+    return new URL(`/quote/editor.html?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(id)}`, window.location.origin).toString();
+}
+
 async function importLegacySeedData(user) {
     const legacyPages = await ensureLegacyQuotePagesLoaded('/shared/quote-system/quote-pages.js');
     const bundles = convertLegacyPagesToSeedPayloads(legacyPages);
@@ -765,6 +858,69 @@ async function importLegacySeedData(user) {
     await Promise.all([fetchBrandRows(), fetchProductRows(), fetchInstanceRows()]);
 }
 
+async function ensureBaseTemplates() {
+    if (moduleState.baseTemplates.length) return moduleState.baseTemplates;
+    const legacyPages = await ensureLegacyQuotePagesLoaded('/shared/quote-system/quote-pages.js');
+    const bundles = convertLegacyPagesToSeedPayloads(legacyPages);
+    moduleState.baseTemplates = bundles.map((bundle) => ({
+        key: text(bundle?.brand?.slug),
+        label: text(bundle?.brand?.display_name || bundle?.brand?.brand_name || bundle?.brand?.slug),
+        brand: createBrandDraft(bundle?.brand || {}),
+        products: (bundle?.products || []).map((entry) => ({
+            key: `${text(bundle?.brand?.slug)}:${text(entry?.product?.slug)}`,
+            brandKey: text(bundle?.brand?.slug),
+            label: `${text(bundle?.brand?.display_name || bundle?.brand?.brand_name || bundle?.brand?.slug)} / ${pickLocalized(entry?.product?.public_title, 'zh', text(entry?.product?.slug))}`,
+            product: createProductDraft({
+                ...(entry?.product || {}),
+                items: entry?.items || [],
+            }),
+        })),
+    }));
+    return moduleState.baseTemplates;
+}
+
+function baseTemplateOptionsMarkup() {
+    const options = moduleState.baseTemplates
+        .map(
+            (group) => `
+                <optgroup label="${esc(group.label)}">
+                    ${group.products
+                        .map((entry) => `<option value="${esc(entry.key)}">${esc(entry.label)}</option>`)
+                        .join('')}
+                </optgroup>
+            `,
+        )
+        .join('');
+    return options || '<option value="">当前没有可载入的基础模板</option>';
+}
+
+function applyBaseTemplateToProductEditor(templateKey = '') {
+    const [brandKey, productKey] = String(templateKey || '').split(':');
+    const templateGroup = moduleState.baseTemplates.find((entry) => entry.key === brandKey);
+    const templateProduct = templateGroup?.products.find((entry) => entry.product.slug === productKey);
+    if (!templateGroup || !templateProduct) throw new Error('未找到对应的基础模板。');
+
+    const currentBrandId =
+        text(moduleState.productEditor?.brand_id) ||
+        (moduleState.productBrandFilter !== 'all' ? text(moduleState.productBrandFilter) : '') ||
+        text(moduleState.brands[0]?.id);
+
+    moduleState.productLoadedId = '';
+    moduleState.productEditor = createProductDraft({
+        ...templateProduct.product,
+        id: '',
+        brand_id: currentBrandId,
+        slug: templateProduct.product.slug,
+        product_code: templateProduct.product.product_code,
+        items: templateProduct.product.items,
+    });
+    moduleState.productBrandDraft = createBrandDraft({
+        ...templateGroup.brand,
+        id: currentBrandId,
+        default_quote_slug: '',
+    });
+}
+
 function filteredProducts() {
     if (moduleState.productBrandFilter === 'all') return moduleState.products;
     return moduleState.products.filter((item) => item.brand_id === moduleState.productBrandFilter);
@@ -786,6 +942,19 @@ function brandLabelById(brandId) {
 function brandSlugById(brandId) {
     const brand = moduleState.brands.find((item) => item.id === brandId);
     return brand?.slug || '';
+}
+
+function syncProductBrandDraft(brandId) {
+    const brand = moduleState.brands.find((item) => item.id === brandId);
+    moduleState.productBrandDraft = createBrandDraft(brand || { id: brandId });
+    return moduleState.productBrandDraft;
+}
+
+function currentProductBrandDraft() {
+    if (!moduleState.productBrandDraft?.id || moduleState.productBrandDraft.id !== moduleState.productEditor?.brand_id) {
+        syncProductBrandDraft(moduleState.productEditor?.brand_id);
+    }
+    return moduleState.productBrandDraft;
 }
 
 function productLabelById(productId) {
@@ -814,7 +983,7 @@ function isQuoteSetupMissing(error) {
 function renderQuoteSetupRequired(input, error) {
     input.setPageHeader('报价系统 / 初始化', '当前环境还没有完成报价系统数据表初始化。');
     input.setContent(`
-        <section class="ams-card ams-hero-card">
+        <section class="ams-card ams-hero-card ams-hero-card-compact">
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">Quote System</p>
                 <h2>先执行 SQL 初始化，再进入品牌 / 产品 / 报价单管理。</h2>
@@ -1002,10 +1171,350 @@ function itemTableMarkup(prefix, sectionKey, items = []) {
     `;
 }
 
+function visualSectionName(sectionKey) {
+    return sectionKey === SECTION_KEYS.OPTIONAL ? '选配区块' : '主配置区块';
+}
+
+function visualSectionEditorMarkup(prefix, section, items = []) {
+    const rows = sortItems(items.filter((item) => item.section_key === section.key));
+    return `
+        <section class="ams-quote-visual-block">
+            <div class="ams-quote-visual-block-head">
+                <div class="ams-quote-visual-block-copy">
+                    <span class="ams-quote-visual-kicker">${esc(visualSectionName(section.key))}</span>
+                    <textarea class="ams-textarea ams-quote-visual-title-input" rows="2" data-i18n-prefix="${esc(`${prefix}:title:${section.key}`)}" data-lang="zh">${esc(section.title?.zh || '')}</textarea>
+                    <details class="ams-locale-details ams-locale-details-compact">
+                        <summary>可选：多语言标题</summary>
+                        <div class="ams-site-field-grid ams-site-field-grid-wide">
+                            ${['en', 'ru']
+                                .map(
+                                    (lang) => `
+                                        <div class="ams-field">
+                                            <label>${lang.toUpperCase()}</label>
+                                            <textarea class="ams-textarea ams-quote-row-textarea" rows="2" data-i18n-prefix="${esc(`${prefix}:title:${section.key}`)}" data-lang="${esc(lang)}">${esc(section.title?.[lang] || '')}</textarea>
+                                        </div>
+                                    `,
+                                )
+                                .join('')}
+                        </div>
+                    </details>
+                </div>
+                <div class="ams-quote-visual-block-meta">
+                    <div class="ams-field">
+                        <label>小计模式</label>
+                        <select class="ams-select" data-section-prefix="${esc(prefix)}" data-section-key="${esc(section.key)}" data-section-field="subtotalMode">
+                            <option value="manual" ${section.subtotalMode === 'manual' ? 'selected' : ''}>手动小计</option>
+                            <option value="sum" ${section.subtotalMode === 'sum' ? 'selected' : ''}>自动汇总</option>
+                        </select>
+                    </div>
+                    <div class="ams-field">
+                        <label>手动小计 RMB</label>
+                        <input class="ams-input" type="number" step="0.01" min="0" data-section-prefix="${esc(prefix)}" data-section-key="${esc(section.key)}" data-section-field="subtotal" value="${esc(section.subtotal)}">
+                    </div>
+                </div>
+            </div>
+            <div class="ams-table-wrap ams-quote-visual-table-wrap">
+                <table class="ams-table ams-quote-visual-table">
+                    <thead>
+                        <tr>
+                            <th>SEQ</th>
+                            <th>描述</th>
+                            <th>品牌</th>
+                            <th>QTY</th>
+                            <th>RMB</th>
+                            <th>包含</th>
+                            <th class="ams-col-actions">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${
+                            rows.length
+                                ? rows
+                                      .map(
+                                          (row) => `
+                                    <tr data-item-row="${esc(row.localId)}">
+                                        <td>
+                                            <input class="ams-input ams-quote-inline-input" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-field="line_code" value="${esc(row.line_code)}" placeholder="I-1">
+                                        </td>
+                                        <td>
+                                            <textarea class="ams-textarea ams-quote-inline-textarea" rows="2" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-lang="zh">${esc(row.name_i18n?.zh || '')}</textarea>
+                                            <details class="ams-locale-details ams-locale-details-compact ams-quote-inline-locales">
+                                                <summary>EN / RU 可选</summary>
+                                                <div class="ams-quote-locale-stack">
+                                                    <div class="ams-field">
+                                                        <label>EN</label>
+                                                        <textarea class="ams-textarea ams-quote-row-textarea" rows="2" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-lang="en">${esc(row.name_i18n?.en || '')}</textarea>
+                                                    </div>
+                                                    <div class="ams-field">
+                                                        <label>RU</label>
+                                                        <textarea class="ams-textarea ams-quote-row-textarea" rows="2" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-lang="ru">${esc(row.name_i18n?.ru || '')}</textarea>
+                                                    </div>
+                                                </div>
+                                            </details>
+                                        </td>
+                                        <td><input class="ams-input ams-quote-inline-input" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-field="brand_label" value="${esc(row.brand_label)}" placeholder="Vman"></td>
+                                        <td><input class="ams-input ams-quote-inline-input" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-field="qty_label" value="${esc(row.qty_label)}" placeholder="1"></td>
+                                        <td><input class="ams-input ams-quote-inline-input" type="number" step="0.01" min="0" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-field="price_rmb" value="${esc(row.price_rmb)}"></td>
+                                        <td class="ams-col-check"><input class="ams-check" type="checkbox" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-field="is_included" ${row.is_included ? 'checked' : ''}></td>
+                                        <td class="ams-col-actions">
+                                            <div class="ams-row-actions ams-quote-visual-row-actions">
+                                                <button class="ams-btn ams-btn-muted" type="button" data-item-move="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-direction="-1">上移</button>
+                                                <button class="ams-btn ams-btn-muted" type="button" data-item-move="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-direction="1">下移</button>
+                                                <button class="ams-btn ams-btn-danger" type="button" data-item-delete="${esc(prefix)}" data-item-id="${esc(row.localId)}">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `,
+                                      )
+                                      .join('')
+                                : '<tr><td colspan="7"><div class="ams-empty">当前区块还没有明细，点击下方按钮新增一行。</div></td></tr>'
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="ams-inline-actions">
+                <button class="ams-btn ams-btn-primary ams-quote-visual-add" type="button" data-item-add="${esc(prefix)}" data-section-key="${esc(section.key)}">新增一行</button>
+            </div>
+        </section>
+    `;
+}
+
+function uiTextFieldMarkup(prefix, key, label, value = {}) {
+    const localized = normalizeLocalizedText(value);
+    return `
+        <div class="ams-field ams-quote-ui-field">
+            <label>${esc(label)}</label>
+            <input class="ams-input" data-ui-text-prefix="${esc(prefix)}" data-ui-text-key="${esc(key)}" data-lang="zh" value="${esc(localized.zh || '')}" placeholder="留空则使用系统默认">
+            <details class="ams-locale-details ams-locale-details-compact">
+                <summary>EN / RU 可选</summary>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field">
+                        <label>EN</label>
+                        <input class="ams-input" data-ui-text-prefix="${esc(prefix)}" data-ui-text-key="${esc(key)}" data-lang="en" value="${esc(localized.en || '')}">
+                    </div>
+                    <div class="ams-field">
+                        <label>RU</label>
+                        <input class="ams-input" data-ui-text-prefix="${esc(prefix)}" data-ui-text-key="${esc(key)}" data-lang="ru" value="${esc(localized.ru || '')}">
+                    </div>
+                </div>
+            </details>
+        </div>
+    `;
+}
+
+function quoteUiTextMarkup(prefix, uiText = {}) {
+    const normalized = normalizeProductUiText(uiText);
+    const fields = [
+        ['receiver_placeholder', '收件人提示语'],
+        ['supplier_label', '供应商标签'],
+        ['sender_label', '发件人标签'],
+        ['receiver_label', '收件人标签'],
+        ['validity_label', '有效期标签'],
+        ['system_total_label', '总价标题'],
+        ['refresh_button', '刷新汇率按钮'],
+        ['send_button', '发送按钮'],
+        ['share_button', '分享按钮'],
+    ];
+    return `
+        <details class="ams-quote-ui-panel">
+            <summary>页面文案与提示语</summary>
+            <div class="ams-site-field-grid ams-site-field-grid-wide">
+                ${fields.map(([key, label]) => uiTextFieldMarkup(prefix, key, label, normalized[key])).join('')}
+            </div>
+        </details>
+    `;
+}
+
+function productVisualEditorMarkup(product, brandDraft = {}) {
+    const normalized = createProductDraft(product);
+    const brand = createBrandDraft(brandDraft);
+    const title = normalizeLocalizedText(normalized.public_title);
+    const rates = normalizeRates(normalized.default_rates);
+    const sections = normalizeSectionConfig(normalized.section_config);
+    return `
+        <section class="ams-quote-visual-shell ams-instance-visual-shell" id="ams-product-visual-editor">
+            <div class="ams-quote-visual-stage">
+                <div class="ams-quote-visual-header">
+                    <div class="ams-quote-visual-title-panel">
+                        <span class="ams-quote-visual-kicker">原页面可视化编辑</span>
+                        <textarea class="ams-textarea ams-quote-visual-hero-input" rows="2" data-product-brand-i18n="overview_title" data-lang="zh">${esc(brand.overview_title?.zh || '')}</textarea>
+                        <div class="ams-quote-visual-meta-grid">
+                            <div class="ams-field">
+                                <label>供应商</label>
+                                <input class="ams-input" data-product-brand-field="supplier_name" value="${esc(brand.supplier_name)}" placeholder="VMAN Engineering">
+                            </div>
+                            <div class="ams-field">
+                                <label>发件邮箱</label>
+                                <input class="ams-input" data-product-brand-field="sender_email" value="${esc(brand.sender_email)}" placeholder="sales@example.com">
+                            </div>
+                        </div>
+                        <div class="ams-quote-visual-product-title">
+                            <span class="ams-quote-visual-kicker">产品标题</span>
+                            <textarea class="ams-textarea ams-quote-visual-title-input" rows="2" data-i18n-prefix="product:public_title" data-lang="zh">${esc(title.zh || '')}</textarea>
+                        </div>
+                        <details class="ams-locale-details">
+                            <summary>可选：多语言标题与页头</summary>
+                            <div class="ams-site-field-grid ams-site-field-grid-wide">
+                                ${['en', 'ru']
+                                    .map(
+                                        (lang) => `
+                                            <div class="ams-field">
+                                                <label>页面总标题 ${lang.toUpperCase()}</label>
+                                                <textarea class="ams-textarea ams-quote-textarea" data-product-brand-i18n="overview_title" data-lang="${esc(lang)}">${esc(brand.overview_title?.[lang] || '')}</textarea>
+                                            </div>
+                                            <div class="ams-field">
+                                                <label>产品标题 ${lang.toUpperCase()}</label>
+                                                <textarea class="ams-textarea ams-quote-textarea" data-i18n-prefix="product:public_title" data-lang="${esc(lang)}">${esc(title[lang] || '')}</textarea>
+                                            </div>
+                                        `,
+                                    )
+                                    .join('')}
+                            </div>
+                        </details>
+                        ${quoteUiTextMarkup('product', normalized.ui_text)}
+                    </div>
+                    <div class="ams-quote-visual-rates-card">
+                        <div class="ams-quote-visual-rates-head">
+                            <strong>默认汇率</strong>
+                            <span>直接改这里，生成报价单时自动带入</span>
+                        </div>
+                        <div class="ams-quote-visual-rates-grid">
+                            ${Object.entries(rates)
+                                .map(
+                                    ([code, value]) => `
+                                        <label class="ams-quote-rate-chip">
+                                            <span>${esc(code)}</span>
+                                            <input class="ams-input ams-quote-rate-input" type="number" step="0.0001" min="0" data-rate-prefix="product" data-rate-code="${esc(code)}" value="${esc(value)}">
+                                        </label>
+                                    `,
+                                )
+                                .join('')}
+                        </div>
+                        <div class="ams-field">
+                            <label>页脚说明</label>
+                            <textarea class="ams-textarea ams-quote-textarea" rows="4" data-product-brand-i18n="footer_note" data-lang="zh">${esc(brand.footer_note?.zh || '')}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="ams-quote-visual-sections">
+                    ${sections.map((section) => visualSectionEditorMarkup('product', section, normalized.items)).join('')}
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function instanceVisualEditorMarkup(instance) {
+    const draft = createInstanceDraft(instance);
+    const brand = extractBrandSnapshot(draft.brand_snapshot);
+    const product = extractProductSnapshot({
+        ...draft.product_snapshot,
+        section_config: draft.section_config,
+    });
+    const title = normalizeLocalizedText(product.public_title);
+    const sections = normalizeSectionConfig(draft.section_config);
+    const rates = normalizeRates(draft.draft_rates);
+
+    return `
+        <section class="ams-quote-visual-shell" id="ams-instance-visual-editor">
+            <div class="ams-quote-visual-stage">
+                <div class="ams-quote-visual-header">
+                    <div class="ams-quote-visual-title-panel">
+                        <span class="ams-quote-visual-kicker">报价页 1:1 可视化编辑</span>
+                        <textarea class="ams-textarea ams-quote-visual-hero-input" rows="2" data-i18n-prefix="instance-brand:overview_title" data-lang="zh">${esc(brand.overview_title?.zh || '')}</textarea>
+                        <div class="ams-quote-visual-meta-grid">
+                            <div class="ams-field">
+                                <label>供应商</label>
+                                <input class="ams-input" data-brand-snapshot-field="supplier_name" value="${esc(brand.supplier_name)}" placeholder="VMAN Engineering">
+                            </div>
+                            <div class="ams-field">
+                                <label>发件邮箱</label>
+                                <input class="ams-input" data-brand-snapshot-field="sender_email" value="${esc(brand.sender_email)}" placeholder="sales@example.com">
+                            </div>
+                            <div class="ams-field">
+                                <label>收件人</label>
+                                <input class="ams-input" data-instance-field="receiver_name" value="${esc(draft.receiver_name)}" placeholder="Receiver">
+                            </div>
+                            <div class="ams-field">
+                                <label>客户邮箱</label>
+                                <input class="ams-input" data-instance-field="receiver_email" value="${esc(draft.receiver_email)}" placeholder="customer@example.com">
+                            </div>
+                        </div>
+                        <div class="ams-quote-visual-product-title">
+                            <span class="ams-quote-visual-kicker">产品标题</span>
+                            <textarea class="ams-textarea ams-quote-visual-title-input" rows="2" data-i18n-prefix="instance-product:public_title" data-lang="zh">${esc(title.zh || '')}</textarea>
+                        </div>
+                        <details class="ams-locale-details">
+                            <summary>可选：多语言页头与标题</summary>
+                            <div class="ams-site-field-grid ams-site-field-grid-wide">
+                                ${['en', 'ru']
+                                    .map(
+                                        (lang) => `
+                                            <div class="ams-field">
+                                                <label>页面总标题 ${lang.toUpperCase()}</label>
+                                                <textarea class="ams-textarea ams-quote-textarea" data-i18n-prefix="instance-brand:overview_title" data-lang="${esc(lang)}">${esc(brand.overview_title?.[lang] || '')}</textarea>
+                                            </div>
+                                            <div class="ams-field">
+                                                <label>产品标题 ${lang.toUpperCase()}</label>
+                                                <textarea class="ams-textarea ams-quote-textarea" data-i18n-prefix="instance-product:public_title" data-lang="${esc(lang)}">${esc(title[lang] || '')}</textarea>
+                                            </div>
+                                        `,
+                                    )
+                                    .join('')}
+                            </div>
+                        </details>
+                        ${quoteUiTextMarkup('instance', product.ui_text)}
+                    </div>
+                    <div class="ams-quote-visual-rates-card">
+                        <div class="ams-quote-visual-rates-head">
+                            <strong>报价页头部信息</strong>
+                            <span>这里改的就是客户最终看到的这张报价页。</span>
+                        </div>
+                        <div class="ams-quote-visual-meta-grid">
+                            <div class="ams-field">
+                                <label>客户名称</label>
+                                <input class="ams-input" data-instance-field="customer_name" value="${esc(draft.customer_name)}" placeholder="Demo Customer">
+                            </div>
+                            <div class="ams-field">
+                                <label>有效期（小时）</label>
+                                <input class="ams-input" type="number" min="1" step="1" data-instance-field="validity_hours" value="${esc(draft.validity_hours)}">
+                            </div>
+                        </div>
+                        <div class="ams-quote-visual-rates-head">
+                            <strong>汇率快照</strong>
+                            <span>预览页和发布页都会按这里的数值重算总价与小计。</span>
+                        </div>
+                        <div class="ams-quote-visual-rates-grid">
+                            ${Object.entries(rates)
+                                .map(
+                                    ([code, value]) => `
+                                        <label class="ams-quote-rate-chip">
+                                            <span>${esc(code)}</span>
+                                            <input class="ams-input ams-quote-rate-input" type="number" step="0.0001" min="0" data-rate-prefix="instance" data-rate-code="${esc(code)}" value="${esc(value)}">
+                                        </label>
+                                    `,
+                                )
+                                .join('')}
+                        </div>
+                        <div class="ams-field">
+                            <label>页脚说明</label>
+                            <textarea class="ams-textarea ams-quote-textarea" rows="4" data-i18n-prefix="instance-brand:footer_note" data-lang="zh">${esc(brand.footer_note?.zh || '')}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="ams-quote-visual-sections">
+                    ${sections.map((section) => visualSectionEditorMarkup('instance', section, draft.items)).join('')}
+                </div>
+            </div>
+        </section>
+    `;
+}
+
 function mediaLibraryMarkup(prefix, mediaConfig = createMediaConfig(), mediaGallery = [], options = {}) {
     const config = normalizeMediaConfig(mediaConfig);
     const gallery = normalizeMediaGallery(mediaGallery);
     const editable = options.editable !== false;
+    const extraClass = prefix === 'instance' ? 'ams-quote-media-block' : text(options.extraClass);
     const uploadLabel = options.uploadLabel || '上传图片';
     const description =
         options.description ||
@@ -1014,7 +1523,7 @@ function mediaLibraryMarkup(prefix, mediaConfig = createMediaConfig(), mediaGall
             : '每个品牌 / 产品维护独立图片库。客户页可选择展示在产品上方或下方，并切换为轮播图或纵向铺图。');
 
     return `
-        <section class="ams-quote-block">
+        <section class="ams-quote-block ${esc(extraClass)}">
             <div class="ams-section-head">
                 <div>
                     <h3>产品图片库</h3>
@@ -1231,7 +1740,7 @@ export async function renderQuoteBrandsPage(input) {
     }
     input.setPageHeader('报价系统 / 品牌管理', '维护报价品牌、供应商信息、统一页头页脚和默认对外入口。');
     input.setContent(`
-        <section class="ams-card ams-hero-card">
+        <section class="ams-card ams-hero-card ams-hero-card-compact">
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">Quote System</p>
                 <h2>先维护品牌，再维护产品模板和客户报价单。</h2>
@@ -1253,7 +1762,7 @@ export async function renderQuoteBrandsPage(input) {
                 <div class="ams-section-head"><div><h3>品牌列表</h3><p>共 ${moduleState.brands.length} 个品牌</p></div></div>
                 <div class="ams-quote-list">${renderBrandList()}</div>
             </aside>
-            <section class="ams-card ams-quote-editor-panel">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
                 <div class="ams-section-head">
                     <div>
                         <h3>${moduleState.brandEditor.id ? '编辑品牌' : '新建品牌'}</h3>
@@ -1287,6 +1796,14 @@ function bindProductEditor(input) {
     const content = document.getElementById('ams-content');
     if (!content) return;
 
+    document.getElementById('ams-open-product-visual-editor')?.addEventListener('click', () => {
+        if (!moduleState.productEditor?.id) {
+            input.showToast('请先保存模板，再打开真实模板页。', true);
+            return;
+        }
+        window.open(quoteEditorUrl('product', moduleState.productEditor.id), '_blank', 'noopener');
+    });
+
     document.getElementById('ams-quote-product-brand-filter')?.addEventListener('change', (event) => {
         moduleState.productBrandFilter = event.currentTarget.value || 'all';
         void renderQuoteProductsPage(input);
@@ -1297,7 +1814,20 @@ function bindProductEditor(input) {
         moduleState.productEditor = createProductDraft({
             brand_id: moduleState.productBrandFilter !== 'all' ? moduleState.productBrandFilter : '',
         });
+        syncProductBrandDraft(moduleState.productEditor.brand_id);
         void renderQuoteProductsPage(input);
+    });
+
+    document.getElementById('ams-quote-product-load-base-template')?.addEventListener('click', () => {
+        try {
+            const templateKey = document.getElementById('ams-quote-product-base-template')?.value || '';
+            if (!templateKey) throw new Error('请先选择一个基础模板。');
+            applyBaseTemplateToProductEditor(templateKey);
+            input.showToast('基础模板已载入当前编辑区。');
+            void renderQuoteProductsPage(input);
+        } catch (error) {
+            input.showToast(error.message || '载入基础模板失败。', true);
+        }
     });
 
     document.querySelectorAll('[data-product-edit]').forEach((button) => {
@@ -1322,8 +1852,29 @@ function bindProductEditor(input) {
                 const field = node.dataset.productField;
                 if (!field) return;
                 moduleState.productEditor[field] = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
+                if (field === 'brand_id') {
+                    syncProductBrandDraft(moduleState.productEditor.brand_id);
+                    void renderQuoteProductsPage(input);
+                }
             });
         }
+    });
+
+    content.querySelectorAll('[data-product-brand-field]').forEach((node) => {
+        node.addEventListener('input', () => {
+            const field = node.dataset.productBrandField;
+            if (!field) return;
+            currentProductBrandDraft()[field] = node.value;
+        });
+    });
+
+    content.querySelectorAll('[data-product-brand-i18n]').forEach((node) => {
+        node.addEventListener('input', () => {
+            const field = node.dataset.productBrandI18n;
+            const lang = node.dataset.lang;
+            if (!field || !lang) return;
+            upsertLocalizedField(currentProductBrandDraft(), field, lang, node.value);
+        });
     });
 
     content.querySelectorAll('[data-i18n-prefix="product:public_title"]').forEach((node) => {
@@ -1332,6 +1883,18 @@ function bindProductEditor(input) {
             if (!lang) return;
             upsertLocalizedField(moduleState.productEditor, 'public_title', lang, node.value);
         });
+    });
+
+    content.querySelectorAll('[data-ui-text-prefix="product"]').forEach((node) => {
+        const apply = () => {
+            const key = node.dataset.uiTextKey;
+            const lang = node.dataset.lang;
+            if (!key || !lang) return;
+            moduleState.productEditor.ui_text = normalizeProductUiText(moduleState.productEditor.ui_text);
+            moduleState.productEditor.ui_text[key][lang] = node.value;
+        };
+        node.addEventListener('input', apply);
+        node.addEventListener('change', apply);
     });
 
     content.querySelectorAll('[data-media-config-prefix="product"]').forEach((node) => {
@@ -1357,7 +1920,13 @@ function bindProductEditor(input) {
                     brand_slug: brandSlugById(moduleState.productEditor.brand_id),
                 };
                 const gallery = await uploadProductMediaFiles(productContext, files);
-                syncProductMediaToEditors(moduleState.productEditor.id, gallery);
+                const mediaConfig = await syncProductMediaState(
+                    moduleState.productEditor.id,
+                    moduleState.productEditor.media_config,
+                    gallery,
+                    input.user?.id || null,
+                );
+                syncProductMediaToEditors(moduleState.productEditor.id, gallery, mediaConfig);
                 input.showToast(`已上传 ${gallery.length} 张产品图片。`);
                 await renderQuoteProductsPage(input);
             } catch (error) {
@@ -1457,7 +2026,13 @@ function bindProductEditor(input) {
                 const direction = safeNumber(button.dataset.direction, 0);
                 const nextGallery = mediaMove(moduleState.productEditor.media_gallery, mediaId, direction);
                 const savedGallery = await saveProductMediaCollection(moduleState.productEditor.id, nextGallery);
-                syncProductMediaToEditors(moduleState.productEditor.id, savedGallery);
+                const mediaConfig = await syncProductMediaState(
+                    moduleState.productEditor.id,
+                    moduleState.productEditor.media_config,
+                    savedGallery,
+                    input.user?.id || null,
+                );
+                syncProductMediaToEditors(moduleState.productEditor.id, savedGallery, mediaConfig);
                 await renderQuoteProductsPage(input);
             } catch (error) {
                 input.showToast(error.message || '调整图片顺序失败。', true);
@@ -1472,7 +2047,13 @@ function bindProductEditor(input) {
                 const mediaItem = normalizeMediaGallery(moduleState.productEditor.media_gallery).find((item) => item.localId === mediaId);
                 if (!mediaItem) return;
                 const savedGallery = await deleteProductMediaItem(moduleState.productEditor.id, moduleState.productEditor.media_gallery, mediaItem);
-                syncProductMediaToEditors(moduleState.productEditor.id, savedGallery);
+                const mediaConfig = await syncProductMediaState(
+                    moduleState.productEditor.id,
+                    moduleState.productEditor.media_config,
+                    savedGallery,
+                    input.user?.id || null,
+                );
+                syncProductMediaToEditors(moduleState.productEditor.id, savedGallery, mediaConfig);
                 input.showToast('产品图片已删除。');
                 await renderQuoteProductsPage(input);
             } catch (error) {
@@ -1495,7 +2076,13 @@ function bindProductEditor(input) {
                     brand_slug: brandSlugById(moduleState.productEditor.brand_id),
                 };
                 const savedGallery = await replaceProductMediaFile(productContext, moduleState.productEditor.media_gallery, mediaItem, files[0]);
-                syncProductMediaToEditors(moduleState.productEditor.id, savedGallery);
+                const mediaConfig = await syncProductMediaState(
+                    moduleState.productEditor.id,
+                    moduleState.productEditor.media_config,
+                    savedGallery,
+                    input.user?.id || null,
+                );
+                syncProductMediaToEditors(moduleState.productEditor.id, savedGallery, mediaConfig);
                 input.showToast('产品图片已更换。');
                 await renderQuoteProductsPage(input);
             } catch (error) {
@@ -1533,6 +2120,7 @@ function bindProductEditor(input) {
 export async function renderQuoteProductsPage(input) {
     try {
         await ensureBaseData();
+        await ensureBaseTemplates();
     } catch (error) {
         if (isQuoteSetupMissing(error)) {
             renderQuoteSetupRequired(input, error);
@@ -1543,19 +2131,33 @@ export async function renderQuoteProductsPage(input) {
     if (!moduleState.productEditor.brand_id && moduleState.brands[0]?.id) {
         moduleState.productEditor.brand_id = moduleState.brands[0].id;
     }
+    currentProductBrandDraft();
     input.setPageHeader('报价系统 / 产品模板', '在品牌下维护标准产品模板，定义主配置、选配、默认汇率和有效期。');
     input.setContent(`
         <section class="ams-card ams-hero-card">
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">Product Templates</p>
-                <h2>产品模板是报价单的默认来源。</h2>
-                <p class="ams-hero-text">品牌建好后，在这里维护标准产品、默认标题、主配置/选配区块和明细行。默认只录中文，EN / RU 作为可选覆盖；生成客户报价时，未填写的语言会自动继承中文内容。</p>
+                <h2>当前基础模板只认 VMAN 和 MinerPower 两套。</h2>
+                <p class="ams-hero-text">先从这两套真实模板载入一份基础版本，再复制到具体品牌 / 产品上维护。现在这一步先解决模板来源，不再让你从空白模板开始。</p>
             </div>
             <div class="ams-quick-actions">
                 <button class="ams-quick-link" type="button" id="ams-quote-product-new">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-cube"></i></div>
-                    <div class="ams-quick-link-body"><strong>新建模板</strong><span>从空白开始创建一个新的产品报价模板。</span></div>
+                    <div class="ams-quick-link-body"><strong>空白模板</strong><span>仅在你明确要从零搭建时使用；正常请优先载入下面的基础模板。</span></div>
                 </button>
+                <div class="ams-quick-link ams-quote-template-loader">
+                    <div class="ams-quick-link-icon"><i class="fa-solid fa-layer-group"></i></div>
+                    <div class="ams-quick-link-body">
+                        <strong>载入基础模板</strong>
+                        <span>当前仅提供 VMAN / MinerPower 两套基础模板族。</span>
+                        <div class="ams-inline-actions ams-quote-template-loader-actions">
+                            <select id="ams-quote-product-base-template" class="ams-select ams-quote-template-select">
+                                ${baseTemplateOptionsMarkup()}
+                            </select>
+                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-product-load-base-template">载入到当前编辑区</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
         <section class="ams-quote-layout">
@@ -1572,16 +2174,21 @@ export async function renderQuoteProductsPage(input) {
                 </div>
                 <div class="ams-quote-list">${renderProductList()}</div>
             </aside>
-            <section class="ams-card ams-quote-editor-panel">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
                 <div class="ams-section-head">
                     <div>
                         <h3>${moduleState.productEditor.id ? '编辑产品模板' : '新建产品模板'}</h3>
                         <p>模板只做默认值来源，不直接给客户使用。</p>
                     </div>
                     <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-warning" type="button" id="ams-open-product-visual-editor" ${moduleState.productEditor.id ? '' : 'disabled'}>打开真实模板页</button>
                         <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-product-create-instance">从模板生成报价单</button>
                         <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-product-save">保存模板</button>
                     </div>
+                </div>
+                <div class="ams-direct-entry-banner">
+                    <strong>真实模板页入口</strong>
+                    <span>${moduleState.productEditor.id ? '点击上面的“打开真实模板页”，会进入原报价模板页面本体进行编辑。' : '先保存或选择一个已存在模板，再打开真实模板页。'}</span>
                 </div>
                 <div class="ams-site-field-grid ams-site-field-grid-wide">
                     <div class="ams-field">
@@ -1603,26 +2210,10 @@ export async function renderQuoteProductsPage(input) {
                     <div class="ams-field"><label>排序</label><input class="ams-input" type="number" min="0" step="10" data-product-field="sort_order" value="${esc(moduleState.productEditor.sort_order)}"></div>
                     <div class="ams-field"><label class="ams-social-toggle"><input type="checkbox" data-product-field="is_active" ${moduleState.productEditor.is_active ? 'checked' : ''}><span>启用模板</span></label></div>
                 </div>
-                ${localizedFieldGroup('product:public_title', '产品标题', moduleState.productEditor.public_title)}
+                ${productVisualEditorMarkup(moduleState.productEditor, currentProductBrandDraft())}
                 ${mediaLibraryMarkup('product', moduleState.productEditor.media_config, moduleState.productEditor.media_gallery, {
                     uploadLabel: '上传产品图片',
                 })}
-                <section class="ams-quote-block">
-                    <div class="ams-section-head"><div><h3>区块配置</h3><p>固定分成主配置和选配两大类，可手动或自动计算小计。</p></div></div>
-                    <div class="ams-quote-section-grid">${sectionConfigMarkup('product', moduleState.productEditor.section_config)}</div>
-                </section>
-                <section class="ams-quote-block">
-                    <div class="ams-section-head"><div><h3>默认汇率</h3><p>新报价单会从模板复制一份，可在报价单里单独覆盖。</p></div></div>
-                    ${ratesFieldset('product', moduleState.productEditor.default_rates)}
-                </section>
-                <section class="ams-quote-block">
-                    <div class="ams-section-head"><div><h3>主配置明细</h3><p>这些行会出现在客户报价的主配置区块。</p></div></div>
-                    ${itemTableMarkup('product', SECTION_KEYS.MAIN, moduleState.productEditor.items)}
-                </section>
-                <section class="ams-quote-block">
-                    <div class="ams-section-head"><div><h3>选配明细</h3><p>这些行会出现在客户报价的选配区块。</p></div></div>
-                    ${itemTableMarkup('product', SECTION_KEYS.OPTIONAL, moduleState.productEditor.items)}
-                </section>
             </section>
         </section>
     `);
@@ -1632,6 +2223,14 @@ export async function renderQuoteProductsPage(input) {
 function bindInstanceEditor(input) {
     const content = document.getElementById('ams-content');
     if (!content) return;
+
+    document.getElementById('ams-open-instance-visual-editor')?.addEventListener('click', () => {
+        if (!moduleState.instanceEditor?.id) {
+            input.showToast('先从左侧选择一份报价单，再打开真实报价页。', true);
+            return;
+        }
+        window.open(quoteEditorUrl('instance', moduleState.instanceEditor.id), '_blank', 'noopener');
+    });
 
     document.getElementById('ams-quote-instance-brand-filter')?.addEventListener('change', (event) => {
         moduleState.instanceBrandFilter = event.currentTarget.value || 'all';
@@ -1715,6 +2314,19 @@ function bindInstanceEditor(input) {
         });
     });
 
+    content.querySelectorAll('[data-ui-text-prefix="instance"]').forEach((node) => {
+        const apply = () => {
+            const key = node.dataset.uiTextKey;
+            const lang = node.dataset.lang;
+            if (!key || !lang) return;
+            moduleState.instanceEditor.product_snapshot = extractProductSnapshot(moduleState.instanceEditor.product_snapshot);
+            moduleState.instanceEditor.product_snapshot.ui_text = normalizeProductUiText(moduleState.instanceEditor.product_snapshot.ui_text);
+            moduleState.instanceEditor.product_snapshot.ui_text[key][lang] = node.value;
+        };
+        node.addEventListener('input', apply);
+        node.addEventListener('change', apply);
+    });
+
     content.querySelectorAll('[data-media-config-prefix="instance"]').forEach((node) => {
         const apply = () => {
             const field = node.dataset.mediaConfigField;
@@ -1745,7 +2357,13 @@ function bindInstanceEditor(input) {
                     media_gallery: moduleState.instanceEditor.product_snapshot?.media_gallery || [],
                 };
                 const savedGallery = await uploadProductMediaFiles(productContext, files);
-                syncProductMediaToEditors(moduleState.instanceEditor.product_id, savedGallery);
+                const mediaConfig = await syncProductMediaState(
+                    moduleState.instanceEditor.product_id,
+                    moduleState.instanceEditor.product_snapshot?.media_config,
+                    savedGallery,
+                    input.user?.id || null,
+                );
+                syncProductMediaToEditors(moduleState.instanceEditor.product_id, savedGallery, mediaConfig);
                 input.showToast('当前产品图片库已更新。');
                 await renderQuoteInstancesPage(input);
             } catch (error) {
@@ -1813,7 +2431,13 @@ function bindInstanceEditor(input) {
                 const direction = safeNumber(button.dataset.direction, 0);
                 const nextGallery = mediaMove(moduleState.instanceEditor.product_snapshot?.media_gallery || [], mediaId, direction);
                 const savedGallery = await saveProductMediaCollection(moduleState.instanceEditor.product_id, nextGallery);
-                syncProductMediaToEditors(moduleState.instanceEditor.product_id, savedGallery);
+                const mediaConfig = await syncProductMediaState(
+                    moduleState.instanceEditor.product_id,
+                    moduleState.instanceEditor.product_snapshot?.media_config,
+                    savedGallery,
+                    input.user?.id || null,
+                );
+                syncProductMediaToEditors(moduleState.instanceEditor.product_id, savedGallery, mediaConfig);
                 await renderQuoteInstancesPage(input);
             } catch (error) {
                 input.showToast(error.message || '调整图片顺序失败。', true);
@@ -1828,7 +2452,13 @@ function bindInstanceEditor(input) {
                 const mediaItem = normalizeMediaGallery(moduleState.instanceEditor.product_snapshot?.media_gallery || []).find((item) => item.localId === mediaId);
                 if (!mediaItem) return;
                 const savedGallery = await deleteProductMediaItem(moduleState.instanceEditor.product_id, moduleState.instanceEditor.product_snapshot?.media_gallery || [], mediaItem);
-                syncProductMediaToEditors(moduleState.instanceEditor.product_id, savedGallery);
+                const mediaConfig = await syncProductMediaState(
+                    moduleState.instanceEditor.product_id,
+                    moduleState.instanceEditor.product_snapshot?.media_config,
+                    savedGallery,
+                    input.user?.id || null,
+                );
+                syncProductMediaToEditors(moduleState.instanceEditor.product_id, savedGallery, mediaConfig);
                 input.showToast('产品图片已删除。');
                 await renderQuoteInstancesPage(input);
             } catch (error) {
@@ -1855,7 +2485,13 @@ function bindInstanceEditor(input) {
                     media_gallery: moduleState.instanceEditor.product_snapshot?.media_gallery || [],
                 };
                 const savedGallery = await replaceProductMediaFile(productContext, moduleState.instanceEditor.product_snapshot?.media_gallery || [], mediaItem, files[0]);
-                syncProductMediaToEditors(moduleState.instanceEditor.product_id, savedGallery);
+                const mediaConfig = await syncProductMediaState(
+                    moduleState.instanceEditor.product_id,
+                    moduleState.instanceEditor.product_snapshot?.media_config,
+                    savedGallery,
+                    input.user?.id || null,
+                );
+                syncProductMediaToEditors(moduleState.instanceEditor.product_id, savedGallery, mediaConfig);
                 input.showToast('产品图片已更换。');
                 await renderQuoteInstancesPage(input);
             } catch (error) {
@@ -1920,11 +2556,19 @@ function bindInstanceEditor(input) {
     });
 
     document.getElementById('ams-quote-instance-preview')?.addEventListener('click', () => {
-        if (!moduleState.instanceEditor.id) {
-            input.showToast('请先保存报价单草稿。', true);
-            return;
-        }
-        window.open(previewQuoteUrl(moduleState.instanceEditor.id), '_blank', 'noopener');
+        input.withButtonBusy(document.getElementById('ams-quote-instance-preview'), '预览中...', async () => {
+            if (!moduleState.instanceEditor.id) {
+                input.showToast('请先保存报价单草稿。', true);
+                return;
+            }
+            try {
+                const saved = await saveInstanceDraft(input.user, moduleState.instanceEditor);
+                moduleState.instanceEditor = saved;
+                window.open(previewQuoteUrl(saved.id), '_blank', 'noopener');
+            } catch (error) {
+                input.showToast(error.message || '预览前保存草稿失败。', true);
+            }
+        });
     });
 
     document.getElementById('ams-quote-instance-copy-link')?.addEventListener('click', async () => {
@@ -2000,18 +2644,23 @@ export async function renderQuoteInstancesPage(input) {
                 </div>
                 <div class="ams-quote-list">${renderInstanceList()}</div>
             </aside>
-            <section class="ams-card ams-quote-editor-panel">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
                 <div class="ams-section-head">
                     <div>
                         <h3>${moduleState.instanceEditor.id ? '编辑报价单' : '选择一份报价单'}</h3>
                         <p>客户页只读取已发布快照。草稿变更只有再次发布后才会生效。</p>
                     </div>
                     <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-warning" type="button" id="ams-open-instance-visual-editor" ${moduleState.instanceEditor.id ? '' : 'disabled'}>打开真实报价页</button>
                         <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-preview">预览客户页</button>
                         <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-copy-link">复制客户链接</button>
                         <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-instance-save">保存草稿</button>
                         <button class="ams-btn ams-btn-warning" type="button" id="ams-quote-instance-publish">发布</button>
                     </div>
+                </div>
+                <div class="ams-direct-entry-banner">
+                    <strong>真实报价页入口</strong>
+                    <span>${moduleState.instanceEditor.id ? '点击上面的“打开真实报价页”，会进入客户报价页本体进行编辑。' : '先从左侧选择一份报价单，顶部按钮才会启用。'}</span>
                 </div>
                 ${
                     moduleState.instanceEditor.id
@@ -2044,6 +2693,7 @@ export async function renderQuoteInstancesPage(input) {
                         ${localizedFieldGroup('instance-product:public_title', '产品标题', moduleState.instanceEditor.product_snapshot.public_title)}
                         <div class="ams-quote-section-grid">${sectionConfigMarkup('instance', moduleState.instanceEditor.section_config)}</div>
                     </section>
+                    ${instanceVisualEditorMarkup(moduleState.instanceEditor)}
                     ${mediaLibraryMarkup('instance', moduleState.instanceEditor.product_snapshot.media_config, moduleState.instanceEditor.product_snapshot.media_gallery, {
                         uploadLabel: '上传当前产品图片',
                         description: '这里是当前报价单使用的产品图片入口。图片库按产品独立维护，上传、替换、删除和排序后，本报价草稿会同步最新图片快照；展示位置和样式可单独调整。',

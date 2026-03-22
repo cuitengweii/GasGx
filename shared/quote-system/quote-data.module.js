@@ -21,6 +21,17 @@ export const MEDIA_POSITIONS = Object.freeze({
     ABOVE: 'above',
     BELOW: 'below',
 });
+export const PRODUCT_UI_TEXT_KEYS = Object.freeze([
+    'supplier_label',
+    'sender_label',
+    'receiver_label',
+    'validity_label',
+    'system_total_label',
+    'refresh_button',
+    'send_button',
+    'share_button',
+    'receiver_placeholder',
+]);
 
 const DEFAULT_SECTION_TITLES = Object.freeze({
     [SECTION_KEYS.MAIN]: {
@@ -60,6 +71,13 @@ export function createLocalizedText(seed = '') {
     };
 }
 
+export function createProductUiText(seed = {}) {
+    return PRODUCT_UI_TEXT_KEYS.reduce((acc, key) => {
+        acc[key] = createLocalizedText(seed?.[key] || '');
+        return acc;
+    }, {});
+}
+
 export function normalizeLocalizedText(value, fallback = '') {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
         const next = { ...createLocalizedText(fallback), ...value };
@@ -69,6 +87,15 @@ export function normalizeLocalizedText(value, fallback = '') {
         return next;
     }
     return createLocalizedText(value || fallback);
+}
+
+export function normalizeProductUiText(value = {}) {
+    const base = createProductUiText();
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return base;
+    PRODUCT_UI_TEXT_KEYS.forEach((key) => {
+        base[key] = normalizeLocalizedText(value?.[key] || '', '');
+    });
+    return base;
 }
 
 export function pickLocalized(value, lang = DEFAULT_LANG, fallback = '') {
@@ -252,6 +279,7 @@ export function extractProductSnapshot(value = {}) {
         validity_hours: Math.max(1, safeNumber(value.validity_hours || value.validityHours, 72)),
         default_rates: normalizeRates(value.default_rates || value.defaultRates || DEFAULT_RATES),
         section_config: normalizeSectionConfig(value.section_config || value.sectionConfig),
+        ui_text: normalizeProductUiText(value.ui_text || value.uiText),
         media_config: normalizeMediaConfig(value.media_config || value.mediaConfig),
         media_gallery: sortMediaItems(value.media_gallery || value.mediaGallery || []),
     };

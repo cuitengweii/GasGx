@@ -1,6 +1,9 @@
 alter table public.quote_products
     add column if not exists media_config jsonb not null default '{"enabled": false, "position": "below", "layout": "carousel"}'::jsonb;
 
+alter table public.quote_products
+    add column if not exists ui_text jsonb not null default '{}'::jsonb;
+
 create table if not exists public.quote_product_media (
     id uuid primary key default gen_random_uuid(),
     product_id uuid not null references public.quote_products(id) on delete cascade,
