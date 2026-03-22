@@ -56,6 +56,10 @@ const moduleState = {
     instanceStatusFilter: 'all',
 };
 
+const quoteBusyState = {
+    depth: 0,
+};
+
 function esc(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -82,6 +86,59 @@ function safeNumber(value, fallback = 0) {
 
 function text(value, fallback = '') {
     return String(value ?? fallback).trim();
+}
+
+function ensureQuoteBusyMask() {
+    const host = document.getElementById('ams-content');
+    if (!host) return null;
+    let mask = host.querySelector('.ams-page-busy');
+    if (mask) return mask;
+
+    mask = document.createElement('div');
+    mask.className = 'ams-page-busy';
+    mask.innerHTML = `
+        <div class="ams-page-busy-card">
+            <span class="ams-page-busy-spinner" aria-hidden="true"></span>
+            <strong data-quote-busy-title>正在加载...</strong>
+            <span data-quote-busy-subtitle>请稍候，后台正在处理当前操作。</span>
+        </div>
+    `;
+    host.appendChild(mask);
+    return mask;
+}
+
+function showQuoteBusy(message = '正在加载...', subtitle = '请稍候，后台正在处理当前操作。') {
+    const host = document.getElementById('ams-content');
+    const mask = ensureQuoteBusyMask();
+    if (!host || !mask) return;
+
+    quoteBusyState.depth += 1;
+    host.classList.add('is-busy');
+    const titleNode = mask.querySelector('[data-quote-busy-title]');
+    const subtitleNode = mask.querySelector('[data-quote-busy-subtitle]');
+    if (titleNode) titleNode.textContent = message;
+    if (subtitleNode) subtitleNode.textContent = subtitle;
+    mask.classList.add('is-active');
+}
+
+function hideQuoteBusy() {
+    const host = document.getElementById('ams-content');
+    const mask = host?.querySelector('.ams-page-busy');
+    quoteBusyState.depth = Math.max(0, quoteBusyState.depth - 1);
+    if (quoteBusyState.depth > 0) return;
+    if (mask) mask.classList.remove('is-active');
+    if (host) host.classList.remove('is-busy');
+}
+
+async function withQuoteBusy(message, task, sourceNode = null, subtitle = '请稍候，后台正在处理当前操作。') {
+    if (sourceNode?.classList) sourceNode.classList.add('is-loading');
+    showQuoteBusy(message, subtitle);
+    try {
+        return await task();
+    } finally {
+        if (sourceNode?.classList) sourceNode.classList.remove('is-loading');
+        hideQuoteBusy();
+    }
 }
 
 function expandLocalizedFromChinese(value) {
@@ -1806,7 +1863,9 @@ function bindProductEditor(input) {
 
     document.getElementById('ams-quote-product-brand-filter')?.addEventListener('change', (event) => {
         moduleState.productBrandFilter = event.currentTarget.value || 'all';
-        void renderQuoteProductsPage(input);
+        void withQuoteBusy('正在刷新模板列表...', async () => {
+            await renderQuoteProductsPage(input);
+        });
     });
 
     document.getElementById('ams-quote-product-new')?.addEventListener('click', () => {
@@ -1833,8 +1892,10 @@ function bindProductEditor(input) {
     document.querySelectorAll('[data-product-edit]').forEach((button) => {
         button.addEventListener('click', async () => {
             try {
-                await fetchProductEditor(button.dataset.productEdit);
-                await renderQuoteProductsPage(input);
+                await withQuoteBusy('正在加载产品模板...', async () => {
+                    await fetchProductEditor(button.dataset.productEdit);
+                    await renderQuoteProductsPage(input);
+                }, button, '正在读取模板详情、配置项和图片库。');
             } catch (error) {
                 input.showToast(error.message || '加载产品模板失败。', true);
             }
@@ -1854,7 +1915,9 @@ function bindProductEditor(input) {
                 moduleState.productEditor[field] = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
                 if (field === 'brand_id') {
                     syncProductBrandDraft(moduleState.productEditor.brand_id);
-                    void renderQuoteProductsPage(input);
+                    void withQuoteBusy('正在切换品牌配置...', async () => {
+                        await renderQuoteProductsPage(input);
+                    });
                 }
             });
         }
@@ -2234,11 +2297,15 @@ function bindInstanceEditor(input) {
 
     document.getElementById('ams-quote-instance-brand-filter')?.addEventListener('change', (event) => {
         moduleState.instanceBrandFilter = event.currentTarget.value || 'all';
-        void renderQuoteInstancesPage(input);
+        void withQuoteBusy('正在刷新报价单列表...', async () => {
+            await renderQuoteInstancesPage(input);
+        });
     });
     document.getElementById('ams-quote-instance-status-filter')?.addEventListener('change', (event) => {
         moduleState.instanceStatusFilter = event.currentTarget.value || 'all';
-        void renderQuoteInstancesPage(input);
+        void withQuoteBusy('正在刷新报价单列表...', async () => {
+            await renderQuoteInstancesPage(input);
+        });
     });
 
     document.getElementById('ams-quote-instance-create-from-product')?.addEventListener('click', async (event) => {
@@ -2258,8 +2325,10 @@ function bindInstanceEditor(input) {
     document.querySelectorAll('[data-instance-edit]').forEach((button) => {
         button.addEventListener('click', async () => {
             try {
-                await fetchInstanceEditor(button.dataset.instanceEdit);
-                await renderQuoteInstancesPage(input);
+                await withQuoteBusy('正在加载报价单...', async () => {
+                    await fetchInstanceEditor(button.dataset.instanceEdit);
+                    await renderQuoteInstancesPage(input);
+                }, button, '正在读取报价单详情、条目和媒体配置。');
             } catch (error) {
                 input.showToast(error.message || '加载报价单失败。', true);
             }

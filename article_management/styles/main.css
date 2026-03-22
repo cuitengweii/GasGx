@@ -350,6 +350,68 @@ textarea {
     background: rgba(8, 8, 8, 0.96);
     min-height: 72vh;
     padding: 18px;
+    position: relative;
+}
+
+.ams-content.is-busy {
+    cursor: wait;
+}
+
+.ams-page-busy {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 90px 20px 20px;
+    background: rgba(6, 10, 8, 0.52);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+}
+
+.ams-page-busy.is-active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.ams-page-busy-card {
+    min-width: min(100%, 320px);
+    max-width: 420px;
+    border: 1px solid rgba(93, 214, 44, 0.28);
+    border-radius: 14px;
+    background: rgba(12, 14, 12, 0.96);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ams-page-busy-card strong {
+    display: block;
+    color: #fff;
+    font-size: 14px;
+}
+
+.ams-page-busy-card span:last-child {
+    display: block;
+    color: #a0a0a0;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.ams-page-busy-spinner {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    border-top-color: var(--ams-green);
+    border-radius: 999px;
+    animation: ams-spin 0.85s linear infinite;
 }
 
 .ams-grid {
@@ -1700,7 +1762,28 @@ textarea {
     flex-direction: column;
     gap: 6px;
     cursor: pointer;
+    position: relative;
     transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.ams-quote-list-card.is-loading {
+    cursor: wait;
+    pointer-events: none;
+    border-color: rgba(93, 214, 44, 0.45);
+    background: rgba(93, 214, 44, 0.08);
+}
+
+.ams-quote-list-card.is-loading::after {
+    content: '';
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    border-top-color: var(--ams-green);
+    border-radius: 999px;
+    animation: ams-spin 0.85s linear infinite;
 }
 
 .ams-quote-list-card strong {
