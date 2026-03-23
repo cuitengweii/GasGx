@@ -2556,6 +2556,15 @@ textarea {
     display: none;
 }
 
+.ams-instance-editor-panel > .ams-brand-default-link-panel {
+    display: block;
+    order: -1;
+}
+
+.ams-locale-details > .ams-brand-default-link-panel {
+    display: none;
+}
+
 .ams-instance-editor-panel > .ams-quote-media-block {
     display: block;
 }
