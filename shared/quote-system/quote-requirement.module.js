@@ -287,6 +287,17 @@ function renderApp() {
 
     document.title = `${text(requirement.requester_company || requirement.title || 'Requirement Intake')} | GasGx`;
     root().innerHTML = `
+        <div class="requirement-page ${locked ? 'is-locked' : ''}">
+        ${locked ? `
+            <div class="requirement-watermark" aria-hidden="true">
+                <span>已存证不可修改</span>
+                <span>已存证不可修改</span>
+                <span>已存证不可修改</span>
+                <span>已存证不可修改</span>
+                <span>已存证不可修改</span>
+                <span>已存证不可修改</span>
+            </div>
+        ` : ''}
         <section class="requirement-hero">
             <div class="requirement-hero__copy">
                 <div class="requirement-hero__kicker">GASGX REQUIREMENT INTAKE</div>
@@ -439,6 +450,7 @@ function renderApp() {
                 <div id="requirement-submit-status" class="requirement-submit-status">${locked ? `已于 ${esc(fmtDate(requirement.submitted_at))} 提交。` : (state.submitConfirmed ? '提交后公开需求页会自动锁定。' : '请先勾选最终确认，再提交需求单。')}</div>
             </div>
         </section>
+        </div>
     `;
 
     bindEvents();

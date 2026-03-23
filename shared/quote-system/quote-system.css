@@ -1106,6 +1106,42 @@
             padding: 88px 16px 32px;
         }
 
+        .requirement-page {
+            position: relative;
+        }
+
+        .requirement-watermark {
+            position: fixed;
+            inset: 0;
+            z-index: 6;
+            pointer-events: none;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(180px, 1fr));
+            align-content: center;
+            justify-items: center;
+            gap: 72px 36px;
+            padding: 72px 24px;
+            overflow: hidden;
+        }
+
+        .requirement-watermark span {
+            transform: rotate(-24deg);
+            color: rgba(93, 214, 44, 0.12);
+            font-size: clamp(24px, 3.6vw, 44px);
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            text-shadow: 0 0 18px rgba(93, 214, 44, 0.06);
+        }
+
+        .requirement-page.is-locked .requirement-card,
+        .requirement-page.is-locked .requirement-hero__copy,
+        .requirement-page.is-locked .requirement-hero__meta {
+            position: relative;
+            z-index: 1;
+        }
+
         .requirement-hero {
             display: grid;
             grid-template-columns: minmax(0, 1.45fr) minmax(280px, 360px);

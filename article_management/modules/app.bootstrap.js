@@ -37,7 +37,7 @@ import {
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
 import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260321admin01';
-import { renderQuoteBrandsPage, renderQuoteCustomersPage, renderQuoteInstancesPage, renderQuoteProductsPage, renderQuoteRequirementsPage } from './quote-system.module.js?v=20260323quote28';
+import { renderQuoteBrandsPage, renderQuoteCustomersPage, renderQuoteInstancesPage, renderQuoteProductsPage, renderQuoteRequirementsPage } from './quote-system.module.js?v=20260323quote29';
 import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260321site08';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js?v=20260321admin01';
 
@@ -1022,9 +1022,9 @@ function renderShell() {
                     ])}
                     ${navGroup('Quotes', [
                         navButton('quote-brands', '品牌管理', 'fa-layer-group'),
+                        navButton('quote-products', '产品模板', 'fa-cubes'),
                         navButton('quote-customers', '客户洞察', 'fa-address-book'),
                         navButton('quote-requirements', '需求获取单', 'fa-clipboard-list'),
-                        navButton('quote-products', '产品模板', 'fa-cubes'),
                         navButton('quote-instances', '报价单管理', 'fa-file-invoice-dollar'),
                     ])}
                     ${navGroup('News', [

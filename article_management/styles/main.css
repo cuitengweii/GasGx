@@ -116,9 +116,24 @@ textarea {
     text-transform: uppercase;
 }
 
+.ams-field-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.ams-field-label-row .ams-btn {
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 11px;
+    flex: 0 0 auto;
+}
+
 .ams-input,
 .ams-select,
 .ams-textarea {
+    box-sizing: border-box;
     width: 100%;
     border: 1px solid #2d2d2d;
     border-radius: 10px;
@@ -133,6 +148,18 @@ textarea {
 .ams-textarea:focus {
     outline: none;
     border-color: rgba(93, 214, 44, 0.6);
+}
+
+.ams-select option {
+    background: #101010;
+    color: #f5f7f2;
+}
+
+.ams-select option:checked,
+.ams-select option:hover,
+.ams-select option:focus {
+    background: rgba(93, 214, 44, 0.18);
+    color: #8df05f;
 }
 
 .ams-textarea {
@@ -358,13 +385,13 @@ textarea {
 }
 
 .ams-page-busy {
-    position: absolute;
+    position: fixed;
     inset: 0;
-    z-index: 30;
+    z-index: 1200;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
-    padding: 90px 20px 20px;
+    padding: 20px;
     background: rgba(6, 10, 8, 0.52);
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
@@ -1245,6 +1272,31 @@ textarea {
     font-size: 10px;
 }
 
+.ams-summary-chip-link {
+    display: grid;
+    gap: 8px;
+    align-items: start;
+    border-radius: 16px;
+    padding: 10px 12px;
+}
+
+.ams-summary-chip-link span {
+    word-break: break-all;
+    line-height: 1.45;
+}
+
+.ams-summary-chip-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.ams-summary-chip-actions .ams-btn {
+    min-width: 76px;
+    min-height: 32px;
+    padding: 0 12px;
+}
+
 .ams-mini-chip.is-ok {
     border-color: rgba(93, 214, 44, 0.35);
     color: var(--ams-green);
@@ -1406,7 +1458,7 @@ textarea {
 }
 
 .ams-quote-instance-hero {
-    grid-template-columns: minmax(0, 1.24fr) minmax(420px, 0.76fr);
+    grid-template-columns: minmax(0, 1.12fr) minmax(560px, 0.88fr);
     align-items: start;
 }
 
@@ -1446,7 +1498,7 @@ textarea {
 }
 
 .ams-quote-instance-quick-actions {
-    max-width: 520px;
+    max-width: 620px;
     width: 100%;
     justify-self: stretch;
     grid-template-columns: 1fr;
@@ -1565,9 +1617,10 @@ textarea {
 }
 
 .ams-quote-instance-quick-actions {
-    max-width: 320px;
+    max-width: 520px;
     width: 100%;
-    justify-self: end;
+    justify-self: stretch;
+    min-width: 0;
 }
 
 .ams-quote-create-panel {
@@ -1580,14 +1633,24 @@ textarea {
 
 .ams-quote-create-panel .ams-quick-link-body {
     gap: 5px;
+    min-width: 0;
 }
 
 .ams-quote-create-bar-compact {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1.9fr) auto;
     gap: 8px;
+    align-items: stretch;
+    width: 100%;
+    min-width: 0;
 }
 
 .ams-quote-create-bar-compact .ams-btn {
+    width: auto;
+    min-width: 112px;
+}
+
+.ams-quote-create-bar-compact .ams-quote-create-select {
+    min-width: 0;
     width: 100%;
 }
 
@@ -1953,6 +2016,21 @@ textarea {
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+.ams-list-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 4px;
+    border-top: 1px solid #1f1f1f;
+}
+
+.ams-list-pagination-meta {
+    color: #8f8f8f;
+    font-size: 12px;
+    line-height: 1.5;
 }
 
 .ams-quote-list-card-shell {
@@ -2359,6 +2437,66 @@ textarea {
     gap: 12px;
 }
 
+.ams-quote-management-primary {
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+    border: 1px solid rgba(93, 214, 44, 0.12);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ams-quote-management-fold {
+    border: 1px solid rgba(93, 214, 44, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    overflow: hidden;
+}
+
+.ams-quote-management-fold summary {
+    cursor: pointer;
+    list-style: none;
+    display: grid;
+    gap: 4px;
+    padding: 14px 16px;
+}
+
+.ams-quote-management-fold summary::-webkit-details-marker {
+    display: none;
+}
+
+.ams-quote-management-fold summary span {
+    color: #f2f5f0;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.ams-quote-management-fold summary small {
+    color: #949b91;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.ams-quote-management-fold[open] summary {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ams-quote-management-fold-body {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+}
+
+.ams-quote-management-link-grid .ams-summary-chip {
+    min-height: 100%;
+    align-items: flex-start;
+}
+
+.ams-quote-management-link-grid .ams-summary-chip span {
+    word-break: break-all;
+}
+
 .ams-quick-link-static {
     cursor: default;
 }
@@ -2369,21 +2507,24 @@ textarea {
 
 .ams-quote-create-bar {
     margin-top: 14px;
-    grid-template-columns: minmax(0, 1.8fr) auto;
+    grid-template-columns: minmax(360px, 3fr) auto;
     align-items: stretch;
     gap: 10px;
 }
 
 .ams-quote-create-select {
-    min-width: 0;
+    min-width: 360px;
     min-height: 56px;
     border-radius: 14px;
+    padding-right: 40px;
+    font-size: 14px;
 }
 
 .ams-quote-create-bar .ams-btn {
-    min-width: 112px;
+    min-width: 132px;
     min-height: 56px;
     border-radius: 14px;
+    white-space: nowrap;
 }
 
 .ams-quote-create-hint {
