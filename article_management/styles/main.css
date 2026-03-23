@@ -1406,7 +1406,7 @@ textarea {
 }
 
 .ams-quote-instance-hero {
-    grid-template-columns: minmax(0, 1.45fr) minmax(280px, 320px);
+    grid-template-columns: minmax(0, 1.24fr) minmax(420px, 0.76fr);
     align-items: start;
 }
 
@@ -1419,7 +1419,7 @@ textarea {
 }
 
 .ams-quote-product-hero {
-    grid-template-columns: minmax(0, 1.55fr) minmax(280px, 340px);
+    grid-template-columns: minmax(0, 1.22fr) minmax(440px, 0.78fr);
     align-items: start;
 }
 
@@ -1438,15 +1438,28 @@ textarea {
 }
 
 .ams-quote-product-quick-actions {
-    max-width: 340px;
+    max-width: 520px;
     width: 100%;
-    justify-self: end;
+    justify-self: stretch;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.ams-quote-instance-quick-actions {
+    max-width: 520px;
+    width: 100%;
+    justify-self: stretch;
     grid-template-columns: 1fr;
     gap: 10px;
 }
 
 .ams-quote-product-hero .ams-quick-link {
     padding: 10px 12px;
+}
+
+.ams-quote-instance-hero .ams-quick-link,
+.ams-quote-product-hero .ams-quick-link {
+    min-height: 64px;
 }
 
 .ams-quote-product-hero .ams-quick-link-body {

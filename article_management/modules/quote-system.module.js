@@ -1,4 +1,4 @@
-import { client } from './supabase.client.js';
+﻿import { client } from './supabase.client.js';
 import {
     DEFAULT_LANG,
     DEFAULT_RATES,
@@ -4578,6 +4578,13 @@ function bindInstanceEditor(input) {
             await renderQuoteInstancesPage(input);
         });
     });
+    document.getElementById('ams-quote-instance-archive-hero')?.addEventListener('click', () => {
+        moduleState.instanceArchiveView = !moduleState.instanceArchiveView;
+        moduleState.instanceStatusFilter = 'all';
+        void withQuoteBusy(moduleState.instanceArchiveView ? '正在打开归档报价单...' : '正在返回报价单列表...', async () => {
+            await renderQuoteInstancesPage(input);
+        });
+    });
     document.getElementById('ams-quote-instance-status-filter')?.addEventListener('change', (event) => {
         moduleState.instanceStatusFilter = event.currentTarget.value || 'all';
         void withQuoteBusy('正在刷新报价单列表...', async () => {
@@ -5283,7 +5290,7 @@ function bindRequirementEditor(input) {
     content.querySelectorAll('[data-requirement-create-instance]').forEach((button) => {
         button.addEventListener('click', async (event) => {
             const productId = moduleState.requirementProductSelection || '';
-            await input.withButtonBusy(event.currentTarget, '鐢熸垚涓?..', async () => {
+            await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
                 try {
                     const savedRequirement = await saveRequirementDraft(input.user, moduleState.requirementEditor);
                     const instance = await createInstanceFromRequirement(input.user, savedRequirement.id, productId);
@@ -5292,12 +5299,12 @@ function bindRequirementEditor(input) {
                         status: 'quoted',
                     });
                     await saveRequirementDraft(input.user, moduleState.requirementEditor);
-                    input.showToast('宸蹭粠闇€姹傝幏鍙栧崟鐢熸垚鎶ヤ环鑽夌銆?);
+                    input.showToast('已从需求获取单生成报价草稿。');
                     await fetchRequirementEditor(savedRequirement.id);
                     await renderQuoteRequirementsPage(input);
                     window.open(quoteEditorUrl('instance', instance.id), '_blank', 'noopener');
                 } catch (error) {
-                    input.showToast(error.message || '浠庨渶姹傝幏鍙栧崟鐢熸垚鎶ヤ环澶辫触銆?, true);
+                    input.showToast(error.message || '从需求获取单生成报价失败。', true);
                 }
             });
         });
@@ -5376,14 +5383,24 @@ export async function renderQuoteRequirementsPage(input) {
                 <p class="ams-hero-text">这里的需求单不是内部代填表，而是客户公开填写的唯一链接。你先绑定客户、保存需求单，再把链接发给客户；客户提交后，这一轮需求就成为后续报价的基线。</p>
             </div>
             <div class="ams-quick-actions ams-quote-instance-quick-actions">
-                <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
+                <button class="ams-quick-link" type="button" id="ams-quote-requirement-new">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-clipboard-list"></i></div>
                     <div class="ams-quick-link-body">
-                        <strong>客户公开需求链接</strong>
-                        <span>客户侧表单默认用下拉、多选和少量补充字段，尽量少写字。先确认矿机品牌、风冷 / 液冷、单机算力、单机功耗、数量和供电规模，再进入正式报价。</span>
+                        <strong>新建需求单</strong>
+                        <span>先绑定客户，生成唯一公开链接，再把需求表发给客户填写。</span>
+                    </div>
+                </button>
+                <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
+                    <div class="ams-quick-link-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                    <div class="ams-quick-link-body">
+                        <strong>从需求生成报价单</strong>
+                        <span>${canCreateQuote ? '客户已提交，选择产品模板后，直接生成报价草稿并打开真实报价页。' : '只有客户正式提交后的需求单才能进入报价链路。当前需求还不能生成报价单。'}</span>
                         <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
-                            <input id="ams-quote-requirement-search" class="ams-input ams-quote-create-select" value="${esc(moduleState.requirementSearch)}" placeholder="搜索客户 / 国家 / 需求标题 / 联系人 / 品牌偏好">
-                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-requirement-new">新建需求单</button>
+                            <select class="ams-select ams-quote-create-select" data-requirement-product-select>
+                                <option value="">请选择产品模板</option>
+                                ${availableProducts.map((product) => `<option value="${esc(product.id)}" ${selectedRequirementProductId === product.id ? 'selected' : ''}>${esc(brandLabelById(product.brand_id))} / ${esc(pickLocalized(product.public_title, product.default_lang, product.slug))}</option>`).join('')}
+                            </select>
+                            <button class="ams-btn ams-btn-warning" type="button" data-requirement-create-instance ${canCreateQuote ? '' : 'disabled'}>生成报价草稿</button>
                         </div>
                     </div>
                 </div>
@@ -5392,6 +5409,10 @@ export async function renderQuoteRequirementsPage(input) {
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
                 <div class="ams-section-head"><div><h3>需求单列表</h3><p>共 ${filteredRequirements().length} 份需求单</p></div></div>
+                <div class="ams-field">
+                    <label>搜索需求单</label>
+                    <input id="ams-quote-requirement-search" class="ams-input" value="${esc(moduleState.requirementSearch)}" placeholder="搜索客户 / 国家 / 需求标题 / 联系人 / 品牌偏好">
+                </div>
                 <div class="ams-field">
                     <label>状态筛选</label>
                     <select id="ams-quote-requirement-status-filter" class="ams-select">
@@ -5594,6 +5615,13 @@ export async function renderQuoteInstancesPage(input) {
                 <p class="ams-hero-text">实例从产品模板复制品牌快照、产品标题、主配置/选配和汇率。保存草稿不影响客户页，点击发布后才会更新客户看到的内容；默认按中文生成，多语言缺省项会自动继承中文。</p>
             </div>
             <div class="ams-quick-actions ams-quote-instance-quick-actions">
+                <button class="ams-quick-link" type="button" id="ams-quote-instance-archive-hero">
+                    <div class="ams-quick-link-icon"><i class="fa-solid ${archiveView ? 'fa-list' : 'fa-box-archive'}"></i></div>
+                    <div class="ams-quick-link-body">
+                        <strong>${archiveView ? '返回主列表' : '查看归档报价'}</strong>
+                        <span>${archiveView ? '当前正在查看已归档报价单，点击返回正常编辑列表。' : `已删除或收口的报价单统一收进归档列表，当前共 ${archivedInstanceCount()} 份。`}</span>
+                    </div>
+                </button>
                 <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-file-circle-plus"></i></div>
                     <div class="ams-quick-link-body">
@@ -5816,15 +5844,18 @@ export async function renderQuoteCustomersPage(input) {
                 <p class="ams-hero-text">这里按客户聚合相关报价单、访问时间线和分享行为。报价单继续保留自己的客户快照，客户主档则作为后台的长期关系入口。</p>
             </div>
             <div class="ams-quick-actions ams-quote-instance-quick-actions">
-                <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
+                <button class="ams-quick-link" type="button" id="ams-quote-customer-new">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-address-book"></i></div>
                     <div class="ams-quick-link-body">
-                        <strong>客户主档</strong>
+                        <strong>新建客户档案</strong>
+                        <span>先建立长期客户主档，再复用公司、联系人和联系方式到后续需求与报价流程。</span>
+                    </div>
+                </button>
+                <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
+                    <div class="ams-quick-link-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                    <div class="ams-quick-link-body">
+                        <strong>客户主档检索</strong>
                         <span>客户主档用于复用公司、联系人、邮箱、电话和备注；每份报价单发布时仍然保留自己的客户快照。</span>
-                        <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
-                            <input id="ams-quote-customer-search" class="ams-input ams-quote-create-select" value="${esc(moduleState.customerSearch)}" placeholder="搜索公司 / 联系人 / 邮箱 / 电话">
-                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-new">新建客户档案</button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -5832,6 +5863,10 @@ export async function renderQuoteCustomersPage(input) {
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
                 <div class="ams-section-head"><div><h3>客户列表</h3><p>共 ${filteredCustomers().length} 个活跃客户</p></div></div>
+                <div class="ams-field">
+                    <label>搜索客户</label>
+                    <input id="ams-quote-customer-search" class="ams-input" value="${esc(moduleState.customerSearch)}" placeholder="搜索公司 / 联系人 / 邮箱 / 电话">
+                </div>
                 <div class="ams-quote-list">${renderCustomerList()}</div>
             </aside>
             <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
