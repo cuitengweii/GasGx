@@ -72,6 +72,7 @@ const moduleState = {
     requirementSearch: '',
     requirementProductSelection: '',
     requirementStatusFilter: 'all',
+    customerArchiveView: false,
     customerCreateMode: false,
     requirementCreateMode: false,
     brandDisplayNameTouched: false,
@@ -84,7 +85,7 @@ const moduleState = {
     instanceRequirementFilter: '',
     instancePage: 1,
     instancePageSize: 10,
-    instanceArchiveView: false,
+    instanceListMode: 'active',
 };
 
 const quoteBusyState = {
@@ -456,6 +457,15 @@ function defaultShareConfigFromInstance(draft = {}) {
     });
 }
 
+function currentSalesOwner(user = null) {
+    const email = text(user?.email).toLowerCase();
+    const fullName = text(user?.user_metadata?.full_name);
+    return {
+        name: text(fullName || (email.includes('@') ? email.split('@')[0] : email), '当前销售'),
+        email,
+    };
+}
+
 function syncInstanceShareConfig(draft = {}, options = {}) {
     const defaults = defaultShareConfigFromInstance(draft);
     const current = normalizeShareConfig(draft.share_config || draft.shareConfig, defaults);
@@ -469,6 +479,18 @@ function syncInstanceShareConfig(draft = {}, options = {}) {
         owner_name: current.owner_name,
         owner_email: current.owner_email,
     });
+}
+
+function syncInstanceSalesOwner(draft = {}, user = null, options = {}) {
+    const current = normalizeShareConfig(draft.share_config || draft.shareConfig, defaultShareConfigFromInstance(draft));
+    const salesOwner = currentSalesOwner(user);
+    const forceOwner = options.forceOwner === true;
+    draft.share_config = normalizeShareConfig({
+        ...current,
+        owner_name: forceOwner || !hasTextValue(current.owner_name) ? salesOwner.name : current.owner_name,
+        owner_email: forceOwner || !hasTextValue(current.owner_email) ? salesOwner.email : current.owner_email,
+    }, defaultShareConfigFromInstance(draft));
+    return draft.share_config;
 }
 
 function shareConfigSummary(config = {}, options = {}) {
@@ -539,7 +561,7 @@ function shareHistoryStatusOptions(current = '') {
 }
 
 function sendLedgerModeMarkup() {
-    return '<div class="ams-field-help ams-quote-ledger-note">Send ledger now reads only <code>quote_instance_sends</code>.</div>';
+    return '<div class="ams-field-help ams-quote-ledger-note">这里记录这份报价实际发给过谁、由谁负责跟进，以及每次发送后的结果。</div>';
 }
 
 function instanceShareHistory() {
@@ -626,6 +648,7 @@ function summarizeCustomerQuotes(customerId = '') {
         summary.total_quotes += 1;
         if (instance.status === 'published') summary.published_quotes += 1;
         else if (instance.status === 'archived') summary.archived_quotes += 1;
+        else if (instance.status === 'voided') summary.voided_quotes += 1;
         else summary.draft_quotes += 1;
         if (!summary.last_quote_updated_at || text(instance.updated_at) > summary.last_quote_updated_at) {
             summary.last_quote_updated_at = text(instance.updated_at);
@@ -636,6 +659,7 @@ function summarizeCustomerQuotes(customerId = '') {
         draft_quotes: 0,
         published_quotes: 0,
         archived_quotes: 0,
+        voided_quotes: 0,
         last_quote_updated_at: '',
     });
 }
@@ -857,7 +881,7 @@ function createInstanceDraft(seed = {}) {
         customer_id: text(seed.customer_id || seed.customerId),
         requirement_id: text(seed.requirement_id || seed.requirementId),
         public_slug: text(seed.public_slug || seed.publicSlug),
-        status: normalizedStatus === 'published' || normalizedStatus === 'archived' ? normalizedStatus : 'draft',
+        status: normalizedStatus === 'published' || normalizedStatus === 'archived' || normalizedStatus === 'voided' ? normalizedStatus : 'draft',
         last_active_status: text(seed.last_active_status || seed.lastActiveStatus || 'draft') === 'published' ? 'published' : 'draft',
         archived_at: text(seed.archived_at || seed.archivedAt),
         customer_name: text(seed.customer_name || seed.customerName),
@@ -980,7 +1004,6 @@ async function fetchCustomerRows() {
     const { data, error } = await client
         .from(TABLE_CUSTOMERS)
         .select('id, company_name, contact_name, email, phone, country, notes, is_active, created_at, updated_at')
-        .eq('is_active', true)
         .order('company_name', { ascending: true })
         .order('contact_name', { ascending: true });
     if (error) throw error;
@@ -1580,7 +1603,7 @@ async function saveCustomerDraft(user, draft) {
         phone: payload.phone,
         country: payload.country,
         notes: payload.notes,
-        is_active: true,
+        is_active: payload.is_active !== false,
         updated_by: user?.id || null,
     };
 
@@ -1751,15 +1774,16 @@ async function upsertCustomerForInstance(user, draft) {
     };
 }
 
-async function archiveQuoteInstance(user, instanceId) {
+async function setQuoteInstanceInactive(user, instanceId, nextStatus = 'voided') {
     if (!instanceId) throw new Error('请先选择一份报价单。');
     const current = moduleState.instances.find((item) => item.id === instanceId) || moduleState.instanceEditor;
     const previousStatus = text(current?.status);
     const fallbackStatus = previousStatus === 'published' ? 'published' : 'draft';
+    const inactiveStatus = text(nextStatus).toLowerCase() === 'archived' ? 'archived' : 'voided';
     const { data, error } = await client
         .from(TABLE_INSTANCES)
         .update({
-            status: 'archived',
+            status: inactiveStatus,
             last_active_status: fallbackStatus,
             archived_at: new Date().toISOString(),
             archived_by: user?.id || null,
@@ -2388,8 +2412,13 @@ function filteredInstances() {
     const query = text(moduleState.instanceSearch).toLowerCase();
     return moduleState.instances.filter((item) => {
         if (moduleState.instanceRequirementFilter && text(item.requirement_id) !== text(moduleState.instanceRequirementFilter)) return false;
-        if (moduleState.instanceArchiveView) return item.status === 'archived';
-        if (item.status === 'archived') return false;
+        if (moduleState.instanceListMode === 'archived') {
+            if (item.status !== 'archived') return false;
+        } else if (moduleState.instanceListMode === 'voided') {
+            if (item.status !== 'voided') return false;
+        } else if (item.status === 'archived' || item.status === 'voided') {
+            return false;
+        }
         if (moduleState.instanceStatusFilter !== 'all' && item.status !== moduleState.instanceStatusFilter) return false;
         if (!query) return true;
         const linkedRequirement = requirementById(item.requirement_id);
@@ -2410,6 +2439,10 @@ function filteredInstances() {
 
 function archivedInstanceCount() {
     return moduleState.instances.filter((item) => item.status === 'archived').length;
+}
+
+function voidedInstanceCount() {
+    return moduleState.instances.filter((item) => item.status === 'voided').length;
 }
 
 function instancePaginationState() {
@@ -2438,6 +2471,11 @@ function pagedInstances() {
 function filteredCustomers() {
     const query = text(moduleState.customerSearch).toLowerCase();
     const rows = moduleState.customers.filter((customer) => {
+        if (moduleState.customerArchiveView) {
+            if (customer.is_active !== false) return false;
+        } else if (customer.is_active === false) {
+            return false;
+        }
         if (!query) return true;
         return [
             customer.company_name,
@@ -2452,6 +2490,10 @@ function filteredCustomers() {
         const rightName = customerDisplayName(right).toLowerCase();
         return leftName.localeCompare(rightName);
     });
+}
+
+function archivedCustomerCount() {
+    return moduleState.customers.filter((item) => item.is_active === false).length;
 }
 
 function filteredRequirements() {
@@ -2485,6 +2527,7 @@ function summarizeRequirementQuotes(requirementId = '') {
         summary.total_quotes += 1;
         if (instance.status === 'published') summary.published_quotes += 1;
         else if (instance.status === 'archived') summary.archived_quotes += 1;
+        else if (instance.status === 'voided') summary.voided_quotes += 1;
         else summary.draft_quotes += 1;
         return summary;
     }, {
@@ -2492,6 +2535,7 @@ function summarizeRequirementQuotes(requirementId = '') {
         draft_quotes: 0,
         published_quotes: 0,
         archived_quotes: 0,
+        voided_quotes: 0,
     });
 }
 
@@ -2767,8 +2811,8 @@ function sectionConfigMarkup(prefix, sections = createSectionConfig()) {
 
 function statusPill(status = 'draft') {
     const normalized = text(status || 'draft').toLowerCase();
-    const key = normalized === 'published' || normalized === 'archived' ? normalized : 'draft';
-    const label = key === 'published' ? '已发布' : key === 'archived' ? '已归档' : '草稿';
+    const key = normalized === 'published' ? 'published' : normalized === 'archived' ? 'archived' : normalized === 'voided' ? 'archived' : 'draft';
+    const label = normalized === 'published' ? '已发布' : normalized === 'archived' ? '已归档' : normalized === 'voided' ? '已作废' : '草稿';
     return `<span class="ams-pill ${esc(key)}">${label}</span>`;
 }
 
@@ -3566,9 +3610,12 @@ function renderInstanceList() {
                     </button>
                     <div class="ams-quote-list-card-actions">
                         ${
-                            quote.status === 'archived'
+                            quote.status === 'archived' || quote.status === 'voided'
                                 ? `<button class="ams-btn ams-btn-muted" type="button" data-instance-restore="${esc(quote.id)}">恢复</button>`
-                                : `<button class="ams-btn ams-btn-danger" type="button" data-instance-archive="${esc(quote.id)}">作废归档</button>`
+                                : `
+                                    <button class="ams-btn ams-btn-muted" type="button" data-instance-archive="${esc(quote.id)}">归档</button>
+                                    <button class="ams-btn ams-btn-danger" type="button" data-instance-void="${esc(quote.id)}">作废</button>
+                                `
                         }
                     </div>
                 </article>
@@ -3605,13 +3652,20 @@ function renderCustomerList() {
                             <strong>${esc(customerDisplayName(customer))}</strong>
                             <span>${esc(text(customer.contact_name || customer.email || customer.phone, '未填写联系人'))}</span>
                             <span class="ams-quote-inline-submeta">${esc(text(customer.email || customer.phone || customer.country, '未填写联系信息'))}</span>
-                            <em>${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单 <span class="ams-quote-inline-meta">${quoteSummary.published_quotes} 已发布 / ${quoteSummary.archived_quotes} 已归档</span></em>
+                            <em>${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单 <span class="ams-quote-inline-meta">${quoteSummary.published_quotes} 已发布 / ${quoteSummary.archived_quotes} 已归档 / ${quoteSummary.voided_quotes} 已作废</span></em>
                         </button>
+                        <div class="ams-quote-list-card-actions">
+                            ${
+                                customer.is_active === false
+                                    ? `<button class="ams-btn ams-btn-muted" type="button" data-customer-restore="${esc(customer.id)}">恢复</button>`
+                                    : `<button class="ams-btn ams-btn-danger" type="button" data-customer-archive="${esc(customer.id)}">归档</button>`
+                            }
+                        </div>
                     </article>
                 `;
               })
               .join('')
-        : '<div class="ams-empty">当前没有客户档案。</div>';
+        : `<div class="ams-empty">${moduleState.customerArchiveView ? '当前没有已归档客户。' : '当前没有有效客户档案。'}</div>`;
 }
 
 function requirementStatusPill(status = 'draft') {
@@ -3769,6 +3823,7 @@ function customerInsightsMarkup() {
                 <span class="ams-summary-chip"><strong>草稿</strong><span>${esc(summary.draft_quotes)}</span></span>
                 <span class="ams-summary-chip"><strong>已发布</strong><span>${esc(summary.published_quotes)}</span></span>
                 <span class="ams-summary-chip"><strong>已归档</strong><span>${esc(summary.archived_quotes)}</span></span>
+                <span class="ams-summary-chip"><strong>已作废</strong><span>${esc(summary.voided_quotes)}</span></span>
                 <span class="ams-summary-chip"><strong>总浏览</strong><span>${esc(summary.total_views)}</span></span>
                 <span class="ams-summary-chip"><strong>分享访问</strong><span>${esc(summary.share_views)}</span></span>
                 <span class="ams-summary-chip"><strong>登录浏览</strong><span>${esc(summary.logged_in_views)}</span></span>
@@ -3834,30 +3889,33 @@ function instanceInsightsMarkup() {
         <section class="ams-quote-block">
             <div class="ams-section-head">
                 <div>
-                    <h3>客户关系与访问洞察</h3>
-                    <p>这里会显示报价单绑定的客户档案，以及分享、浏览、后台预览的事件流水。</p>
+                    <h3>发送与查看记录</h3>
+                    <p>这里专门回答三件事：这份报价发给谁，谁负责跟进，以及客户后来有没有打开看过。</p>
                 </div>
             </div>
             <div class="ams-summary-row">
                 <span class="ams-summary-chip"><strong>客户档案</strong><span>${esc(customerDisplayName(currentCustomer || buildInstanceCustomerSnapshot(moduleState.instanceEditor)))}</span></span>
                 <span class="ams-summary-chip"><strong>关联需求单</strong><span>${esc(linkedRequirement ? requirementDisplayName(linkedRequirement) : '未绑定')}</span></span>
-                <span class="ams-summary-chip"><strong>分享联系人</strong><span>${esc(shareSummary.recipient)}</span></span>
-                <span class="ams-summary-chip"><strong>负责跟进</strong><span>${esc(shareSummary.owner)}</span></span>
-                <span class="ams-summary-chip"><strong>发送台账</strong><span>${esc(shareSummary.send_count)}</span></span>
+                <span class="ams-summary-chip"><strong>当前发给谁</strong><span>${esc(shareSummary.recipient)}</span></span>
+                <span class="ams-summary-chip"><strong>负责销售</strong><span>${esc(shareSummary.owner)}</span></span>
+                <span class="ams-summary-chip"><strong>发送记录</strong><span>${esc(shareSummary.send_count)} 条</span></span>
                 <span class="ams-summary-chip"><strong>总浏览</strong><span>${esc(summary.total_views)}</span></span>
-                <span class="ams-summary-chip"><strong>分享访问</strong><span>${esc(summary.share_views)}</span></span>
+                <span class="ams-summary-chip"><strong>客户打开</strong><span>${esc(summary.share_views)}</span></span>
                 <span class="ams-summary-chip"><strong>后台预览</strong><span>${esc(summary.admin_views)}</span></span>
-                <span class="ams-summary-chip"><strong>分享次数</strong><span>${esc(summary.share_links)}</span></span>
-                <span class="ams-summary-chip"><strong>邮件触发</strong><span>${esc(summary.email_clicks)}</span></span>
-                <span class="ams-summary-chip"><strong>最近分享</strong><span>${esc(fmtDate(summary.last_shared_at))}</span></span>
+                <span class="ams-summary-chip"><strong>链接发送</strong><span>${esc(summary.share_links)}</span></span>
+                <span class="ams-summary-chip"><strong>邮件发送</strong><span>${esc(summary.email_clicks)}</span></span>
+                <span class="ams-summary-chip"><strong>最近发送</strong><span>${esc(fmtDate(summary.last_shared_at))}</span></span>
                 <span class="ams-summary-chip"><strong>最近浏览</strong><span>${esc(fmtDate(summary.last_viewed_at))}</span></span>
             </div>
             <div class="ams-quote-block">
-                <div class="ams-section-head"><div><h3>发送台账</h3><p>记录管理员生成分享链接或触发邮件发送时的收件人、负责人和备注快照。</p></div></div>
+                <div class="ams-section-head"><div><h3>发送记录</h3><p>每一条都代表一次对外发送动作，能看出当时发给谁、谁负责，以及后续结果。</p></div></div>
                 ${sendLedgerNote}
                 <div class="ams-quote-event-timeline">${renderShareHistoryList(sendHistory, { editable: true })}</div>
             </div>
-            <div class="ams-quote-event-timeline">${timeline}</div>
+            <div class="ams-quote-block">
+                <div class="ams-section-head"><div><h3>查看记录</h3><p>这里记录客户打开链接、后台预览和其他访问动作，用来判断这份报价有没有被真正查看。</p></div></div>
+                <div class="ams-quote-event-timeline">${timeline}</div>
+            </div>
         </section>
     `;
 }
@@ -4599,15 +4657,15 @@ export async function renderQuoteProductsPage(input) {
                 </div>
             </div>
         </section>
+        <div class="ams-inline-actions" style="margin: 0 0 16px;">
+            <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-product-archive-entry">${archiveView ? '返回主列表' : `已删除列表（${archivedProductCount()}）`}</button>
+            <span class="ams-field-help">${archiveView ? '这里只显示已删除模板，可恢复继续使用。' : '默认只显示有效模板，已删除模板收纳在单独列表。'}</span>
+        </div>
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
                 <div class="ams-section-head">
                     <div><h3>${archiveView ? '已删除模板' : '模板列表'}</h3><p>品牌筛选后共 ${visibleProductCount} 个模板</p></div>
-                    <div class="ams-row-actions">
-                        <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-product-archive-entry">${archiveView ? '返回主列表' : `已删除列表（${archivedProductCount()}）`}</button>
-                    </div>
                 </div>
-                <div class="ams-field-help" style="margin: 0 0 12px;">${archiveView ? '这里只显示已删除模板，可恢复继续使用。' : '默认只显示有效模板，已删除模板收纳在单独列表。'}</div>
                 <div class="ams-field">
                     <label>品牌筛选</label>
                     <select id="ams-quote-product-brand-filter" class="ams-select">
@@ -4676,7 +4734,7 @@ function bindInstanceEditor(input) {
 
     document.getElementById('ams-open-instance-visual-editor')?.addEventListener('click', () => {
         if (!moduleState.instanceEditor?.id) {
-            input.showToast('先从左侧选择一份报价单，再打开真实报价页。', true);
+            input.showToast('先从左侧选择一份报价单，再进入可视化编辑。', true);
             return;
         }
         window.open(quoteEditorUrl('instance', moduleState.instanceEditor.id), '_blank', 'noopener');
@@ -4696,20 +4754,20 @@ function bindInstanceEditor(input) {
             await renderQuoteInstancesPage(input);
         });
     });
-    document.getElementById('ams-quote-instance-archive-entry')?.addEventListener('click', () => {
-        moduleState.instanceArchiveView = !moduleState.instanceArchiveView;
-        moduleState.instanceStatusFilter = 'all';
-        moduleState.instancePage = 1;
-        void withQuoteBusy(moduleState.instanceArchiveView ? '正在打开归档报价单...' : '正在返回报价单列表...', async () => {
-            await renderQuoteInstancesPage(input);
-        });
-    });
-    document.getElementById('ams-quote-instance-archive-hero')?.addEventListener('click', () => {
-        moduleState.instanceArchiveView = !moduleState.instanceArchiveView;
-        moduleState.instanceStatusFilter = 'all';
-        moduleState.instancePage = 1;
-        void withQuoteBusy(moduleState.instanceArchiveView ? '正在打开归档报价单...' : '正在返回报价单列表...', async () => {
-            await renderQuoteInstancesPage(input);
+    document.querySelectorAll('[data-instance-list-mode]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const nextMode = text(button.dataset.instanceListMode, 'active');
+            moduleState.instanceListMode = nextMode;
+            moduleState.instanceStatusFilter = 'all';
+            moduleState.instancePage = 1;
+            const busyLabel = nextMode === 'archived'
+                ? '正在打开归档报价单...'
+                : nextMode === 'voided'
+                    ? '正在打开作废报价单...'
+                    : '正在返回报价单列表...';
+            void withQuoteBusy(busyLabel, async () => {
+                await renderQuoteInstancesPage(input);
+            });
         });
     });
     document.getElementById('ams-quote-instance-status-filter')?.addEventListener('change', (event) => {
@@ -4759,13 +4817,28 @@ function bindInstanceEditor(input) {
         button.addEventListener('click', async () => {
             try {
                 await withQuoteBusy('正在归档报价单...', async () => {
-                    await archiveQuoteInstance(input.user, button.dataset.instanceArchive);
+                    await setQuoteInstanceInactive(input.user, button.dataset.instanceArchive, 'archived');
                     await fetchInstanceAnalytics(button.dataset.instanceArchive);
                     await renderQuoteInstancesPage(input);
-                }, button, '归档只会隐藏业务入口，不会删除报价单、客户关系和浏览记录。');
+                }, button, '归档代表这份报价单已经完成收口，默认退出主编辑列表，但历史链路和浏览记录都会保留。');
                 input.showToast('报价单已归档。');
             } catch (error) {
                 input.showToast(error.message || '归档报价单失败。', true);
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-instance-void]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                await withQuoteBusy('正在作废报价单...', async () => {
+                    await setQuoteInstanceInactive(input.user, button.dataset.instanceVoid, 'voided');
+                    await fetchInstanceAnalytics(button.dataset.instanceVoid);
+                    await renderQuoteInstancesPage(input);
+                }, button, '作废代表这份报价单不再继续使用，会从主业务入口移出，但历史链路和浏览记录仍然保留。');
+                input.showToast('报价单已作废。');
+            } catch (error) {
+                input.showToast(error.message || '作废报价单失败。', true);
             }
         });
     });
@@ -4775,6 +4848,7 @@ function bindInstanceEditor(input) {
             try {
                 await withQuoteBusy('正在恢复报价单...', async () => {
                     await restoreQuoteInstance(input.user, button.dataset.instanceRestore);
+                    moduleState.instanceListMode = 'active';
                     await fetchInstanceAnalytics(button.dataset.instanceRestore);
                     await renderQuoteInstancesPage(input);
                 }, button, '恢复后会回到归档前的草稿或已发布状态。');
@@ -4786,6 +4860,10 @@ function bindInstanceEditor(input) {
     });
 
     document.getElementById('ams-quote-instance-customer-select')?.addEventListener('change', (event) => {
+        if (text(moduleState.instanceEditor.customer_id)) {
+            void renderQuoteInstancesPage(input);
+            return;
+        }
         const customerId = event.currentTarget.value || '';
         moduleState.instanceEditor.customer_id = customerId;
         const availableRequirements = instanceRequirementOptions(moduleState.instanceEditor);
@@ -4806,10 +4884,15 @@ function bindInstanceEditor(input) {
         moduleState.instanceEditor.customer_notes = customer.notes;
         moduleState.instanceEditor.customer_snapshot = normalizeCustomerSnapshot(customer);
         moduleState.instanceEditor.share_config = syncInstanceShareConfig(moduleState.instanceEditor, { forceRecipient: true, forceNotes: true });
+        syncInstanceSalesOwner(moduleState.instanceEditor, input.user);
         void renderQuoteInstancesPage(input);
     });
 
     document.getElementById('ams-quote-instance-requirement-select')?.addEventListener('change', (event) => {
+        if (text(moduleState.instanceEditor.requirement_id)) {
+            void renderQuoteInstancesPage(input);
+            return;
+        }
         moduleState.instanceEditor.requirement_id = event.currentTarget.value || '';
         void renderQuoteInstancesPage(input);
     });
@@ -4830,6 +4913,7 @@ function bindInstanceEditor(input) {
             moduleState.instanceEditor.customer_snapshot = buildInstanceCustomerSnapshot(moduleState.instanceEditor);
             if (['customer_name', 'receiver_name', 'receiver_email', 'customer_notes'].includes(field)) {
                 moduleState.instanceEditor.share_config = syncInstanceShareConfig(moduleState.instanceEditor);
+                syncInstanceSalesOwner(moduleState.instanceEditor, input.user);
             }
         };
         node.addEventListener('input', apply);
@@ -5140,6 +5224,7 @@ function bindInstanceEditor(input) {
     document.getElementById('ams-quote-instance-save')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
             try {
+                syncInstanceSalesOwner(moduleState.instanceEditor, input.user, { forceOwner: true });
                 await saveInstanceDraft(input.user, moduleState.instanceEditor);
                 input.showToast('报价单草稿已保存。');
                 await renderQuoteInstancesPage(input);
@@ -5152,6 +5237,7 @@ function bindInstanceEditor(input) {
     document.getElementById('ams-quote-instance-publish')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '发布中...', async () => {
             try {
+                syncInstanceSalesOwner(moduleState.instanceEditor, input.user, { forceOwner: true });
                 await publishInstance(input.user, moduleState.instanceEditor);
                 input.showToast('报价单已发布。');
                 await renderQuoteInstancesPage(input);
@@ -5168,6 +5254,7 @@ function bindInstanceEditor(input) {
                 return;
             }
             try {
+                syncInstanceSalesOwner(moduleState.instanceEditor, input.user, { forceOwner: true });
                 const saved = await saveInstanceDraft(input.user, moduleState.instanceEditor);
                 moduleState.instanceEditor = saved;
                 window.open(previewQuoteUrl(saved.id), '_blank', 'noopener');
@@ -5196,12 +5283,32 @@ function bindCustomerEditor(input) {
     const content = document.getElementById('ams-content');
     if (!content) return;
 
+    document.getElementById('ams-quote-customer-archive-entry')?.addEventListener('click', () => {
+        moduleState.customerArchiveView = !moduleState.customerArchiveView;
+        if (moduleState.customerArchiveView && moduleState.customerEditor?.is_active !== false) {
+            const archived = moduleState.customers.find((item) => item.is_active === false);
+            if (archived) {
+                moduleState.customerLoadedId = archived.id;
+                moduleState.customerEditor = createCustomerDraft(archived);
+                moduleState.customerCreateMode = false;
+            }
+        }
+        if (!moduleState.customerArchiveView && moduleState.customerEditor?.is_active === false) {
+            const active = moduleState.customers.find((item) => item.is_active !== false);
+            moduleState.customerLoadedId = text(active?.id);
+            moduleState.customerEditor = active ? createCustomerDraft(active) : createCustomerDraft();
+            moduleState.customerCreateMode = !active;
+        }
+        void renderQuoteCustomersPage(input);
+    });
+
     document.getElementById('ams-quote-customer-search')?.addEventListener('input', (event) => {
         moduleState.customerSearch = event.currentTarget.value || '';
         void renderQuoteCustomersPage(input);
     });
 
     document.getElementById('ams-quote-customer-new')?.addEventListener('click', () => {
+        moduleState.customerArchiveView = false;
         moduleState.customerLoadedId = '';
         moduleState.customerEditor = createCustomerDraft();
         moduleState.customerEvents = [];
@@ -5219,6 +5326,89 @@ function bindCustomerEditor(input) {
                 }, button, '正在聚合这名客户关联的报价单和最近访问事件。');
             } catch (error) {
                 input.showToast(error.message || '加载客户档案失败。', true);
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-customer-archive]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                await withQuoteBusy('正在归档客户...', async () => {
+                    const saved = await saveCustomerDraft(input.user, {
+                        ...(moduleState.customers.find((item) => item.id === button.dataset.customerArchive) || {}),
+                        is_active: false,
+                    });
+                    await Promise.all([
+                        fetchCustomerAnalytics(saved.id),
+                        fetchCustomerSendLedger(saved.id),
+                    ]);
+                    await renderQuoteCustomersPage(input);
+                }, button, '归档后客户会从默认客户列表和新建绑定入口中隐藏，但历史需求和报价仍会保留。');
+                input.showToast('客户已归档。');
+            } catch (error) {
+                input.showToast(error.message || '归档客户失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-quote-instance-archive-current')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '归档中...', async () => {
+            try {
+                await setQuoteInstanceInactive(input.user, moduleState.instanceEditor.id, 'archived');
+                await fetchInstanceAnalytics(moduleState.instanceEditor.id);
+                input.showToast('报价单已归档。');
+                await renderQuoteInstancesPage(input);
+            } catch (error) {
+                input.showToast(error.message || '归档报价单失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-quote-instance-void-current')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '作废中...', async () => {
+            try {
+                await setQuoteInstanceInactive(input.user, moduleState.instanceEditor.id, 'voided');
+                await fetchInstanceAnalytics(moduleState.instanceEditor.id);
+                input.showToast('报价单已作废。');
+                await renderQuoteInstancesPage(input);
+            } catch (error) {
+                input.showToast(error.message || '作废报价单失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-quote-instance-restore-current')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '恢复中...', async () => {
+            try {
+                await restoreQuoteInstance(input.user, moduleState.instanceEditor.id);
+                moduleState.instanceListMode = 'active';
+                await fetchInstanceAnalytics(moduleState.instanceEditor.id);
+                input.showToast('报价单已恢复。');
+                await renderQuoteInstancesPage(input);
+            } catch (error) {
+                input.showToast(error.message || '恢复报价单失败。', true);
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-customer-restore]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                await withQuoteBusy('正在恢复客户...', async () => {
+                    const saved = await saveCustomerDraft(input.user, {
+                        ...(moduleState.customers.find((item) => item.id === button.dataset.customerRestore) || {}),
+                        is_active: true,
+                    });
+                    await Promise.all([
+                        fetchCustomerAnalytics(saved.id),
+                        fetchCustomerSendLedger(saved.id),
+                    ]);
+                    moduleState.customerArchiveView = false;
+                    await renderQuoteCustomersPage(input);
+                }, button, '恢复后客户会重新出现在主列表、需求绑定和报价关联入口中。');
+                input.showToast('客户已恢复。');
+            } catch (error) {
+                input.showToast(error.message || '恢复客户失败。', true);
             }
         });
     });
@@ -5242,6 +5432,45 @@ function bindCustomerEditor(input) {
                 await renderQuoteCustomersPage(input);
             } catch (error) {
                 input.showToast(error.message || '保存客户档案失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-quote-customer-archive-current')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '归档中...', async () => {
+            try {
+                const saved = await saveCustomerDraft(input.user, {
+                    ...moduleState.customerEditor,
+                    is_active: false,
+                });
+                await Promise.all([
+                    fetchCustomerAnalytics(saved.id),
+                    fetchCustomerSendLedger(saved.id),
+                ]);
+                input.showToast('客户已归档。');
+                await renderQuoteCustomersPage(input);
+            } catch (error) {
+                input.showToast(error.message || '归档客户失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-quote-customer-restore-current')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '恢复中...', async () => {
+            try {
+                const saved = await saveCustomerDraft(input.user, {
+                    ...moduleState.customerEditor,
+                    is_active: true,
+                });
+                await Promise.all([
+                    fetchCustomerAnalytics(saved.id),
+                    fetchCustomerSendLedger(saved.id),
+                ]);
+                moduleState.customerArchiveView = false;
+                input.showToast('客户已恢复。');
+                await renderQuoteCustomersPage(input);
+            } catch (error) {
+                input.showToast(error.message || '恢复客户失败。', true);
             }
         });
     });
@@ -5781,11 +6010,19 @@ export async function renderQuoteInstancesPage(input) {
     }
 
     input.setPageHeader('报价系统 / 报价单管理', '从产品生成客户报价单草稿，编辑后发布，生成客户独立链接。');
-    const archiveView = moduleState.instanceArchiveView === true;
+    const listMode = text(moduleState.instanceListMode, 'active');
+    const archiveView = listMode === 'archived';
+    const voidedView = listMode === 'voided';
+    const inactiveEditor = ['archived', 'voided'].includes(text(moduleState.instanceEditor?.status));
+    syncInstanceSalesOwner(moduleState.instanceEditor, input.user);
+    const salesOwner = currentSalesOwner(input.user);
     const linkedRequirement = requirementById(moduleState.instanceEditor?.requirement_id);
     const focusedRequirement = requirementById(moduleState.instanceRequirementFilter);
     const availableRequirements = instanceRequirementOptions(moduleState.instanceEditor);
-    if (!archiveView && moduleState.instanceStatusFilter === 'archived') {
+    if ((archiveView || voidedView) && moduleState.instanceStatusFilter !== 'all') {
+        moduleState.instanceStatusFilter = 'all';
+    }
+    if (!archiveView && !voidedView && moduleState.instanceStatusFilter === 'archived') {
         moduleState.instanceStatusFilter = 'all';
     }
     const pagination = instancePaginationState();
@@ -5798,11 +6035,18 @@ export async function renderQuoteInstancesPage(input) {
                 <p class="ams-hero-text">这里的产品已经是正式业务产品。生成报价单后可以直接给客户；如果有细节不满意，直接在报价单里继续改，不需要再回到模板概念里理解。</p>
             </div>
             <div class="ams-quick-actions ams-quote-instance-quick-actions">
-                <button class="ams-quick-link" type="button" id="ams-quote-instance-archive-hero">
+                <button class="ams-quick-link" type="button" data-instance-list-mode="${archiveView ? 'active' : 'archived'}">
                     <div class="ams-quick-link-icon"><i class="fa-solid ${archiveView ? 'fa-list' : 'fa-box-archive'}"></i></div>
                     <div class="ams-quick-link-body">
-                        <strong>${archiveView ? '返回主列表' : '查看作废归档'}</strong>
-                        <span>${archiveView ? '当前正在查看已作废归档报价单，点击返回正常编辑列表。' : `已经完成、失败或不再跟进的报价单统一收进作废归档列表，当前共 ${archivedInstanceCount()} 份。`}</span>
+                        <strong>${archiveView ? '返回主列表' : '查看归档报价'}</strong>
+                        <span>${archiveView ? '当前正在查看已归档报价单，点击返回正常编辑列表。' : `已经成交、完成或收口的报价单统一收进归档列表，当前共 ${archivedInstanceCount()} 份。`}</span>
+                    </div>
+                </button>
+                <button class="ams-quick-link" type="button" data-instance-list-mode="${voidedView ? 'active' : 'voided'}">
+                    <div class="ams-quick-link-icon"><i class="fa-solid ${voidedView ? 'fa-list' : 'fa-ban'}"></i></div>
+                    <div class="ams-quick-link-body">
+                        <strong>${voidedView ? '返回主列表' : '查看作废报价'}</strong>
+                        <span>${voidedView ? '当前正在查看已作废报价单，点击返回正常编辑列表。' : `中止、不再跟进或判废的报价单统一收进作废列表，当前共 ${voidedInstanceCount()} 份。`}</span>
                     </div>
                 </button>
                 <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
@@ -5818,7 +6062,7 @@ export async function renderQuoteInstancesPage(input) {
                             <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-instance-create-from-product">生成草稿</button>
                         </div>
                         <div class="ams-field-help ams-quote-create-hint">生成后可在草稿里单独补充客户信息、覆盖汇率、调整主配置和选配明细。</div>
-                        <div class="ams-field-help ams-quote-create-hint">Send ledger is now stored only in <code>quote_instance_sends</code>.</div>
+                        <div class="ams-field-help ams-quote-create-hint">发送记录统一按报价单维度保存，后续跟进、重发和结果更新都在这里继续追加。</div>
                     </div>
                 </div>
             </div>
@@ -5826,10 +6070,11 @@ export async function renderQuoteInstancesPage(input) {
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
                 <div class="ams-section-head">
-                    <div><h3>${archiveView ? '作废归档报价单' : '报价单列表'}</h3><p>共 ${visibleCountLabel} 份${archiveView ? '作废归档报价单' : focusedRequirement ? `关联“${esc(requirementDisplayName(focusedRequirement))}”的报价单` : '报价单'}</p></div>
+                    <div><h3>${archiveView ? '归档报价单' : voidedView ? '作废报价单' : '报价单列表'}</h3><p>共 ${visibleCountLabel} 份${archiveView ? '归档报价单' : voidedView ? '作废报价单' : focusedRequirement ? `关联“${esc(requirementDisplayName(focusedRequirement))}”的报价单` : '报价单'}</p></div>
                     <div class="ams-row-actions">
                         ${moduleState.instanceRequirementFilter ? '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-clear-requirement-filter">返回全部报价</button>' : ''}
-                        <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-instance-archive-entry">${archiveView ? '返回主列表' : `作废归档（${archivedInstanceCount()}）`}</button>
+                        <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" data-instance-list-mode="${archiveView ? 'active' : 'archived'}">${archiveView ? '返回主列表' : `归档列表（${archivedInstanceCount()}）`}</button>
+                        <button class="ams-btn ${voidedView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" data-instance-list-mode="${voidedView ? 'active' : 'voided'}">${voidedView ? '返回主列表' : `作废列表（${voidedInstanceCount()}）`}</button>
                     </div>
                 </div>
                 <div class="ams-site-field-grid ams-site-field-grid-wide">
@@ -5838,13 +6083,13 @@ export async function renderQuoteInstancesPage(input) {
                         <input id="ams-quote-instance-search" class="ams-input" value="${esc(moduleState.instanceSearch)}" placeholder="搜索客户 / 需求单 / 产品 / slug / 联系人">
                     </div>
                     ${
-                        archiveView
+                        archiveView || voidedView
                             ? `
                         <div class="ams-field">
                             <label>当前列表</label>
                             <div class="ams-brand-default-link-meta">
                                 <strong>筛选范围</strong>
-                                <span>仅显示已归档报价单</span>
+                                <span>仅显示${archiveView ? '已归档报价单' : '已作废报价单'}</span>
                             </div>
                         </div>
                     `
@@ -5879,15 +6124,23 @@ export async function renderQuoteInstancesPage(input) {
                             <p>这里主要做报价单基础管理。第一屏只保留客户、需求和链接入口；具体文案、价格和发布动作请进入真实报价页处理。</p>
                         </div>
                         <div class="ams-row-actions">
-                            <button class="ams-btn ams-btn-warning" type="button" id="ams-open-instance-visual-editor">打开真实报价页</button>
+                            <button class="ams-btn ams-btn-warning" type="button" id="ams-open-instance-visual-editor" ${inactiveEditor ? 'disabled' : ''}>可视化编辑</button>
                             <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-preview">预览客户页</button>
                             <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-copy-link">复制客户链接</button>
-                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-instance-save">保存草稿</button>
+                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-instance-save" ${inactiveEditor ? 'disabled' : ''}>保存草稿</button>
                         </div>
                     </div>
+                    <div class="ams-inline-actions">
+                        ${
+                            inactiveEditor
+                                ? '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-restore-current">恢复报价单</button>'
+                                : '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-archive-current">归档</button><button class="ams-btn ams-btn-danger" type="button" id="ams-quote-instance-void-current">作废</button>'
+                        }
+                        <span class="ams-field-help">${moduleState.instanceEditor.status === 'archived' ? '归档代表这份报价单已经完成收口；如需继续编辑，请先恢复到主列表。' : moduleState.instanceEditor.status === 'voided' ? '作废代表这份报价单已经废弃不用；如需重新启用，请先恢复，再决定是否继续调整。' : '归档用于已完成收口的报价单；作废用于中止、判废或不再继续的报价单。'}</span>
+                    </div>
                     <div class="ams-direct-entry-banner">
-                        <strong>真实报价页入口</strong>
-                        <span>点击上面的“打开真实报价页”，会进入客户报价页本体进行编辑。</span>
+                        <strong>可视化编辑入口</strong>
+                        <span>${inactiveEditor ? '当前这份报价单已退出主编辑流；如需继续改动，请先恢复，再进入可视化编辑。' : '点击上面的“可视化编辑”，会进入客户报价页本体进行编辑。'}</span>
                     </div>
                     <div class="ams-quote-meta-grid">
                         <div class="ams-summary-chip"><strong>状态</strong><span>${statusPill(moduleState.instanceEditor.status)}</span></div>
@@ -5906,21 +6159,22 @@ export async function renderQuoteInstancesPage(input) {
                         <div class="ams-site-field-grid ams-site-field-grid-wide">
                             <div class="ams-field">
                                 <label>客户档案</label>
-                                <select class="ams-select" id="ams-quote-instance-customer-select">
+                                <select class="ams-select" id="ams-quote-instance-customer-select" ${text(moduleState.instanceEditor.customer_id) ? 'disabled' : ''}>
                                     <option value="">新建或未关联</option>
                                     ${moduleState.customers.map((customer) => `<option value="${esc(customer.id)}" ${moduleState.instanceEditor.customer_id === customer.id ? 'selected' : ''}>${esc(customerDisplayName(customer))}${customer.email ? ` · ${esc(customer.email)}` : ''}</option>`).join('')}
                                 </select>
+                                <div class="ams-field-help">${text(moduleState.instanceEditor.customer_id) ? '客户档案一旦绑定到这份报价单后即锁定；如归属有误，请作废当前报价单后重新建立新报价单。' : '客户档案只允许首次绑定一次。'}</div>
                             </div>
                             <div class="ams-field">
                                 <div class="ams-field-label-row">
                                     <label>关联需求单</label>
                                     <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-open-requirement" ${linkedRequirement ? '' : 'disabled'}>打开</button>
                                 </div>
-                                <select class="ams-select" id="ams-quote-instance-requirement-select">
+                                <select class="ams-select" id="ams-quote-instance-requirement-select" ${text(moduleState.instanceEditor.requirement_id) ? 'disabled' : ''}>
                                     <option value="">未绑定需求单</option>
                                     ${availableRequirements.map((requirement) => `<option value="${esc(requirement.id)}" ${moduleState.instanceEditor.requirement_id === requirement.id ? 'selected' : ''}>${esc(requirementDisplayName(requirement))}</option>`).join('')}
                                 </select>
-                                <div class="ams-field-help">${moduleState.instanceEditor.customer_id ? '优先显示当前客户名下需求单。' : '先绑定客户后，这里会收窄到该客户对应需求单。'}</div>
+                                <div class="ams-field-help">${text(moduleState.instanceEditor.requirement_id) ? '需求单一旦绑定到这份报价单后即锁定；如链路有误，请作废当前报价单后重新建立新报价单。' : moduleState.instanceEditor.customer_id ? '优先显示当前客户名下需求单；首次绑定后即锁定。' : '先绑定客户后，这里会收窄到该客户对应需求单。'}</div>
                             </div>
                             <div class="ams-field"><label>客户公司</label><input class="ams-input" data-instance-field="customer_name" value="${esc(moduleState.instanceEditor.customer_name)}" placeholder="Demo Customer"></div>
                             <div class="ams-field"><label>联系人</label><input class="ams-input" data-instance-field="receiver_name" value="${esc(moduleState.instanceEditor.receiver_name)}" placeholder="Receiver"></div>
@@ -5940,26 +6194,28 @@ export async function renderQuoteInstancesPage(input) {
                     )}
                     ${quoteManagementFold(
                         '客户备注与分享对象',
-                        '客户备注、默认外发联系人和跟进人不占第一屏，按需展开。',
+                        '客户备注和对外发送对象按需展开；销售负责人默认按当前登录后台账号记录。',
                         `
                             <div class="ams-field">
                                 <label>客户备注</label>
                                 <textarea class="ams-textarea" rows="3" data-instance-field="customer_notes" placeholder="记录客户偏好、分享要求或跟进备注。">${esc(moduleState.instanceEditor.customer_notes)}</textarea>
                             </div>
                             <section class="ams-quote-block">
-                                <div class="ams-section-head"><div><h3>分享对象</h3><p>这里维护默认外发联系人、跟进负责人和分享备注；运行时生成链接、邮件动作和分享访问事件都会带上这些信息。</p></div></div>
+                                <div class="ams-section-head"><div><h3>分享对象</h3><p>这里维护默认外发联系人和分享备注；销售负责人默认取当前登录人。</p></div></div>
+                                <div class="ams-quote-meta-grid">
+                                    <div class="ams-summary-chip"><strong>当前负责销售</strong><span>${esc(moduleState.instanceEditor.share_config?.owner_name || salesOwner.name)}</span></div>
+                                    <div class="ams-summary-chip"><strong>销售邮箱</strong><span>${esc(moduleState.instanceEditor.share_config?.owner_email || salesOwner.email || '--')}</span></div>
+                                </div>
                                 <div class="ams-site-field-grid ams-site-field-grid-wide">
                                     <div class="ams-field"><label>分享联系人</label><input class="ams-input" data-instance-share-field="recipient_name" value="${esc(moduleState.instanceEditor.share_config?.recipient_name)}" placeholder="Receiver"></div>
                                     <div class="ams-field"><label>分享邮箱</label><input class="ams-input" data-instance-share-field="recipient_email" value="${esc(moduleState.instanceEditor.share_config?.recipient_email)}" placeholder="customer@example.com"></div>
                                     <div class="ams-field"><label>分享公司</label><input class="ams-input" data-instance-share-field="recipient_company" value="${esc(moduleState.instanceEditor.share_config?.recipient_company)}" placeholder="Demo Customer"></div>
-                                    <div class="ams-field"><label>跟进负责人</label><input class="ams-input" data-instance-share-field="owner_name" value="${esc(moduleState.instanceEditor.share_config?.owner_name)}" placeholder="Allen"></div>
-                                    <div class="ams-field"><label>负责人邮箱</label><input class="ams-input" data-instance-share-field="owner_email" value="${esc(moduleState.instanceEditor.share_config?.owner_email)}" placeholder="allen@example.com"></div>
                                 </div>
                                 <div class="ams-field">
                                     <label>分享备注</label>
                                     <textarea class="ams-textarea" rows="3" data-instance-share-field="follow_up_notes" placeholder="记录这份报价对外发送的上下文、承诺、跟进节点或提醒。">${esc(moduleState.instanceEditor.share_config?.follow_up_notes)}</textarea>
                                 </div>
-                                <div class="ams-field-help">客户公司 / 联系人 / 邮箱 / 客户备注变更时，未手工覆盖的分享对象字段会自动继承默认值。</div>
+                                <div class="ams-field-help">客户公司 / 联系人 / 邮箱 / 客户备注变更时，对外联系人字段会自动继承默认值；负责销售默认随当前登录账号同步。</div>
                             </section>
                         `,
                     )}
@@ -5968,49 +6224,17 @@ export async function renderQuoteInstancesPage(input) {
                         '发送、浏览和客户互动记录放在这里，避免第一屏被事件明细打断。',
                         instanceInsightsMarkup(),
                     )}
-                    ${quoteManagementFold(
-                        '品牌与展示快照',
-                        '品牌页头、页脚和产品展示标题属于报价快照，必要时再展开。',
-                        `
-                            <section class="ams-quote-block">
-                                <div class="ams-section-head"><div><h3>品牌信息快照</h3><p>这是当前报价单自己的品牌页头和页脚，不会反向改动品牌模板。</p></div></div>
-                                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                                    <div class="ams-field"><label>供应商</label><input class="ams-input" data-brand-snapshot-field="supplier_name" value="${esc(moduleState.instanceEditor.brand_snapshot.supplier_name)}"></div>
-                                    <div class="ams-field"><label>发件邮箱</label><input class="ams-input" data-brand-snapshot-field="sender_email" value="${esc(moduleState.instanceEditor.brand_snapshot.sender_email)}"></div>
-                                </div>
-                                ${localizedFieldGroup('instance-brand:overview_title', '页面总标题', moduleState.instanceEditor.brand_snapshot.overview_title)}
-                                ${localizedFieldGroup('instance-brand:footer_note', '页脚说明', moduleState.instanceEditor.brand_snapshot.footer_note)}
-                            </section>
-                            <section class="ams-quote-block">
-                                <div class="ams-section-head"><div><h3>产品展示信息</h3><p>这里维护客户页上显示的产品标题和区块标题。</p></div></div>
-                                ${localizedFieldGroup('instance-product:public_title', '产品标题', moduleState.instanceEditor.product_snapshot.public_title)}
-                                <div class="ams-quote-section-grid">${sectionConfigMarkup('instance', moduleState.instanceEditor.section_config)}</div>
-                            </section>
-                        `,
-                    )}
-                    ${quoteManagementFold(
-                        '报价内容快照（备用）',
-                        '主配置、选配、图片和汇率已保留在这里；正常编辑仍建议进入真实报价页。',
-                        `
-                            ${instanceVisualEditorMarkup(moduleState.instanceEditor)}
-                            ${mediaLibraryMarkup('instance', moduleState.instanceEditor.product_snapshot.media_config, moduleState.instanceEditor.product_snapshot.media_gallery, {
-                                uploadLabel: '上传当前产品图片',
-                                description: '这里是当前报价单使用的产品图片入口。图片库按产品独立维护，上传、替换、删除和排序后，本报价草稿会同步最新图片快照；展示位置和样式可单独调整。',
-                            })}
-                            <section class="ams-quote-block">
-                                <div class="ams-section-head"><div><h3>汇率</h3><p>保存的是这份报价单自己的汇率快照，刷新汇率时会在客户页即时重算。</p></div></div>
-                                ${ratesFieldset('instance', moduleState.instanceEditor.draft_rates)}
-                            </section>
-                            <section class="ams-quote-block">
-                                <div class="ams-section-head"><div><h3>主配置明细</h3><p>支持独立增删排序，发布后客户页只读取这一版快照。</p></div></div>
-                                ${itemTableMarkup('instance', SECTION_KEYS.MAIN, moduleState.instanceEditor.items)}
-                            </section>
-                            <section class="ams-quote-block">
-                                <div class="ams-section-head"><div><h3>选配明细</h3><p>与主配置分开维护，发布后一起进入客户页。</p></div></div>
-                                ${itemTableMarkup('instance', SECTION_KEYS.OPTIONAL, moduleState.instanceEditor.items)}
-                            </section>
-                        `,
-                    )}
+                    <section class="ams-quote-block">
+                        <div class="ams-section-head">
+                            <div>
+                                <h3>品牌与展示内容</h3>
+                                <p>这部分统一以可视化编辑页为准，这里不再重复展示和维护。</p>
+                            </div>
+                            <div class="ams-row-actions">
+                                <a class="ams-btn ams-btn-warning" href="${esc(quoteEditorUrl('instance', moduleState.instanceEditor.id))}" target="_blank" rel="noopener">前往可视化编辑</a>
+                            </div>
+                        </div>
+                    </section>
                 `
                         : '<div class="ams-empty">先从左侧选择一份报价单，或从上方正式产品生成一份新的草稿。</div>'
                 }
@@ -6051,6 +6275,7 @@ export async function renderQuoteCustomersPage(input) {
         moduleState.customerSends = [];
         moduleState.customerCreateMode = true;
     }
+    const archiveView = moduleState.customerArchiveView === true;
     const activeCustomerId = text(moduleState.customerLoadedId || moduleState.customerEditor?.id);
     const quoteSummary = activeCustomerId ? summarizeCustomerQuotes(activeCustomerId) : summarizeCustomerQuotes('');
     const requirementSummary = activeCustomerId ? summarizeCustomerRequirements(activeCustomerId) : summarizeCustomerRequirements('');
@@ -6079,9 +6304,13 @@ export async function renderQuoteCustomersPage(input) {
                 </div>
             </div>
         </section>
+        <div class="ams-inline-actions" style="margin: 0 0 16px;">
+            <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-archive-entry">${archiveView ? '返回主列表' : `归档列表（${archivedCustomerCount()}）`}</button>
+            <span class="ams-field-help">${archiveView ? '这里只显示已归档客户，可恢复继续使用。' : '默认只显示有效客户，已归档客户收纳在单独列表。'}</span>
+        </div>
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
-                <div class="ams-section-head"><div><h3>客户列表</h3><p>共 ${filteredCustomers().length} 个活跃客户</p></div></div>
+                <div class="ams-section-head"><div><h3>${archiveView ? '已归档客户' : '客户列表'}</h3><p>共 ${filteredCustomers().length} 个${archiveView ? '归档客户' : '活跃客户'}</p></div></div>
                 <div class="ams-field">
                     <label>搜索客户</label>
                     <input id="ams-quote-customer-search" class="ams-input" value="${esc(moduleState.customerSearch)}" placeholder="搜索公司 / 联系人 / 邮箱 / 电话">
@@ -6101,6 +6330,20 @@ export async function renderQuoteCustomersPage(input) {
                             <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-save">保存客户档案</button>
                         </div>
                     </div>
+                    ${
+                        activeCustomerId
+                            ? `
+                    <div class="ams-inline-actions">
+                        ${
+                            moduleState.customerEditor?.is_active === false
+                                ? '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-customer-restore-current">恢复客户</button>'
+                                : '<button class="ams-btn ams-btn-danger" type="button" id="ams-quote-customer-archive-current">归档客户</button>'
+                        }
+                        <span class="ams-field-help">${moduleState.customerEditor?.is_active === false ? '已归档客户默认不再出现在客户主列表、需求绑定和报价关联入口。' : '归档后客户会从默认客户列表和新建绑定入口中隐藏，但历史数据仍保留。'}</span>
+                    </div>
+                    `
+                            : ''
+                    }
                     <div class="ams-quote-meta-grid">
                         <div class="ams-summary-chip"><strong>客户名称</strong><span>${esc(customerDisplayName(moduleState.customerEditor || {}))}</span></div>
                         <div class="ams-summary-chip"><strong>关联需求单</strong><span>${esc(requirementSummary.total_requirements)}</span></div>
