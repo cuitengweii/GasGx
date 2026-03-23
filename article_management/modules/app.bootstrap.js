@@ -129,8 +129,8 @@ const ADMIN_PAGE_IDS = new Set([
     'admin-users',
     'admin-security',
     'quote-brands',
-    'quote-customers',
     'quote-requirements',
+    'quote-customers',
     'quote-products',
     'quote-instances',
     'articles',
@@ -1023,8 +1023,8 @@ function renderShell() {
                     ${navGroup('Quotes', [
                         navButton('quote-brands', '品牌管理', 'fa-layer-group'),
                         navButton('quote-products', '产品模板', 'fa-cubes'),
-                        navButton('quote-customers', '客户洞察', 'fa-address-book'),
-                        navButton('quote-requirements', '需求获取单', 'fa-clipboard-list'),
+                        navButton('quote-requirements', '客户线索', 'fa-clipboard-list'),
+                        navButton('quote-customers', '客户跟踪', 'fa-address-book'),
                         navButton('quote-instances', '报价单管理', 'fa-file-invoice-dollar'),
                     ])}
                     ${navGroup('News', [

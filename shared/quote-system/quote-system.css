@@ -1125,6 +1125,9 @@
         }
 
         .requirement-watermark span {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
             transform: rotate(-24deg);
             color: rgba(93, 214, 44, 0.12);
             font-size: clamp(24px, 3.6vw, 44px);
@@ -1133,6 +1136,13 @@
             text-transform: uppercase;
             white-space: nowrap;
             text-shadow: 0 0 18px rgba(93, 214, 44, 0.06);
+        }
+
+        .requirement-watermark svg {
+            width: clamp(20px, 3vw, 36px);
+            height: clamp(20px, 3vw, 36px);
+            fill: currentColor;
+            opacity: 0.9;
         }
 
         .requirement-page.is-locked .requirement-card,
@@ -1155,6 +1165,9 @@
             border-radius: 20px;
             background: rgba(22, 27, 34, 0.92);
             box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+            transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease, background 0.35s ease;
+            will-change: transform, box-shadow;
+            animation: requirementCardIn 0.55s ease both;
         }
 
         .requirement-hero__copy {
@@ -1188,6 +1201,9 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
+            transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease, background 0.35s ease;
+            will-change: transform, box-shadow;
+            animation: requirementCardIn 0.55s ease both;
         }
 
         .requirement-hero__meta-line {
@@ -1257,6 +1273,35 @@
             margin-bottom: 18px;
         }
 
+        .requirement-card:hover,
+        .requirement-hero__copy:hover,
+        .requirement-hero__meta:hover {
+            transform: translateY(-4px);
+            border-color: rgba(93, 214, 44, 0.28);
+            box-shadow: 0 20px 46px rgba(0, 0, 0, 0.4);
+            background: rgba(24, 32, 40, 0.96);
+        }
+
+        @keyframes requirementCardIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .requirement-card,
+            .requirement-hero__copy,
+            .requirement-hero__meta {
+                animation: none;
+                transition: none;
+            }
+        }
+
         .requirement-section-head {
             display: flex;
             align-items: flex-start;
@@ -1306,6 +1351,10 @@
             gap: 10px 12px;
         }
 
+        .requirement-choice-grid.is-detailed {
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+
         .requirement-choice {
             display: flex;
             align-items: center;
@@ -1318,6 +1367,30 @@
             color: var(--text-body);
             cursor: pointer;
             transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+        }
+
+        .requirement-choice-detail {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .requirement-choice-detail strong {
+            color: #ffffff;
+            font-size: 0.92rem;
+        }
+
+        .requirement-choice-detail small {
+            color: var(--text-body);
+            font-size: 0.78rem;
+        }
+
+        .requirement-empty-hint {
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px dashed rgba(255, 255, 255, 0.14);
+            color: var(--text-body);
+            font-size: 0.9rem;
         }
 
         .requirement-choice input {
@@ -1485,5 +1558,46 @@
 
             .requirement-submit-status {
                 text-align: left;
+            }
+
+            .requirement-hero__copy,
+            .requirement-card,
+            .requirement-hero__meta {
+                border-radius: 18px;
+            }
+
+            .requirement-hero__copy,
+            .requirement-card {
+                padding: 20px;
+            }
+
+            .requirement-grid {
+                gap: 14px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .requirement-shell {
+                padding: 60px 12px 24px;
+            }
+
+            .requirement-hero__copy,
+            .requirement-card,
+            .requirement-hero__meta {
+                border-radius: 16px;
+            }
+
+            .requirement-hero__copy,
+            .requirement-card,
+            .requirement-hero__meta {
+                padding: 16px;
+            }
+
+            .requirement-hero__copy h1 {
+                font-size: clamp(1.6rem, 7vw, 2.2rem);
+            }
+
+            .requirement-grid {
+                gap: 12px;
             }
         }

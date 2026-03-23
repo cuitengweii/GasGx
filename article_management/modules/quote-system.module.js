@@ -72,9 +72,11 @@ const moduleState = {
     requirementSearch: '',
     requirementProductSelection: '',
     requirementStatusFilter: 'all',
-    customerArchiveView: false,
+    customerListMode: 'active',
+    brandCreateMode: false,
     customerCreateMode: false,
     requirementCreateMode: false,
+    productCreateMode: false,
     brandDisplayNameTouched: false,
     brandDefaultLinkTouched: false,
     brandArchiveView: false,
@@ -115,6 +117,23 @@ const PUBLIC_TEMPLATE_LIBRARY = Object.freeze({
         hint: '矿电一体和集装箱模板，适合整机集成产品线。',
         order: 20,
     },
+});
+
+const LEGACY_TEMPLATE_BRAND_ALIASES = Object.freeze({
+    vman: Object.freeze({
+        slug: 'independent-power',
+        brand_name: '独立发电',
+        display_name: '独立发电产品线',
+        supplier_name: '独立发电产品线',
+        subject_name: '独立发电产品线',
+    }),
+    minerpower: Object.freeze({
+        slug: 'integrated-power',
+        brand_name: '一体化供电',
+        display_name: '一体化产品线',
+        supplier_name: '一体化产品线',
+        subject_name: '一体化产品线',
+    }),
 });
 
 const REQUIREMENT_STATUS_OPTIONS = Object.freeze([
@@ -337,6 +356,7 @@ function createCustomerRecord(seed = {}) {
         country: text(seed.country),
         notes: text(seed.notes),
         is_active: seed.is_active !== false,
+        is_deleted: seed.is_deleted === true,
         created_at: text(seed.created_at || seed.createdAt),
         updated_at: text(seed.updated_at || seed.updatedAt),
     };
@@ -927,6 +947,7 @@ function createInstanceDraft(seed = {}) {
         brand_snapshot: extractBrandSnapshot(seed.brand_snapshot || seed.brandSnapshot || {}),
         product_snapshot: extractProductSnapshot(seed.product_snapshot || seed.productSnapshot || {}),
         section_config: normalizeSectionConfig(seed.section_config || seed.sectionConfig),
+        created_at: text(seed.created_at || seed.createdAt),
         published_at: text(seed.published_at || seed.publishedAt),
         updated_at: text(seed.updated_at || seed.updatedAt),
         items: sortItems((seed.items || []).map((item) => normalizeQuoteItem(item, item?.section_key))),
@@ -1027,7 +1048,7 @@ async function fetchBrandRows() {
 async function fetchCustomerRows() {
     const { data, error } = await client
         .from(TABLE_CUSTOMERS)
-        .select('id, company_name, contact_name, email, phone, country, notes, is_active, created_at, updated_at')
+        .select('id, company_name, contact_name, email, phone, country, notes, is_active, is_deleted, created_at, updated_at')
         .order('company_name', { ascending: true })
         .order('contact_name', { ascending: true });
     if (error) throw error;
@@ -1084,6 +1105,7 @@ async function fetchProductEditor(productId) {
         moduleState.productLoadedId = '';
         moduleState.productEditor = createProductDraft();
         moduleState.productBrandDraft = createBrandDraft();
+        moduleState.productCreateMode = false;
         return moduleState.productEditor;
     }
     const { data, error } = await client.from(TABLE_PRODUCTS).select('*').eq('id', productId).single();
@@ -1099,6 +1121,7 @@ async function fetchProductEditor(productId) {
         items: itemsResult.data || [],
         media_gallery: mediaRows,
     });
+    moduleState.productCreateMode = false;
     syncProductBrandDraft(moduleState.productEditor.brand_id);
     return moduleState.productEditor;
 }
@@ -1106,7 +1129,7 @@ async function fetchProductEditor(productId) {
 async function fetchInstanceRows() {
     const { data, error } = await client
         .from(TABLE_INSTANCES)
-        .select('id, brand_id, product_id, customer_id, requirement_id, public_slug, status, last_active_status, archived_at, customer_name, receiver_name, receiver_email, customer_snapshot, share_config, default_lang, validity_hours, published_at, updated_at')
+        .select('id, brand_id, product_id, customer_id, requirement_id, public_slug, status, last_active_status, archived_at, customer_name, receiver_name, receiver_email, customer_snapshot, share_config, default_lang, validity_hours, created_at, published_at, updated_at')
         .order('updated_at', { ascending: false });
     if (error) throw error;
     moduleState.instances = Array.isArray(data) ? data.map((row) => createInstanceDraft(row)) : [];
@@ -1472,6 +1495,7 @@ async function saveBrandDraft(user, draft) {
     const saved = createBrandDraft(data);
     await fetchBrandRows();
     moduleState.brandEditor = saved;
+    moduleState.brandCreateMode = false;
     return saved;
 }
 
@@ -1551,6 +1575,7 @@ async function saveProductDraft(user, draft) {
         items: savedItems,
         media_gallery: savedMedia,
     });
+    moduleState.productCreateMode = false;
     return moduleState.productEditor;
 }
 
@@ -1630,6 +1655,7 @@ async function saveCustomerDraft(user, draft) {
         country: payload.country,
         notes: payload.notes,
         is_active: payload.is_active !== false,
+        is_deleted: payload.is_deleted === true,
         updated_by: user?.id || null,
     };
 
@@ -2147,11 +2173,190 @@ function publicQuoteUrl(publicSlug) {
     return new URL(`/quote/view.html?quote=${encodeURIComponent(publicSlug)}`, window.location.origin).toString();
 }
 
+function quoteSharePrimaryBrandLine(instance = {}) {
+    const brand = displayBrandDraft(extractBrandSnapshot(instance.brand_snapshot || instance.brandSnapshot || {}));
+    return text(brand.display_name || brand.brand_name || brandLabelById(instance.brand_id), 'GasGx');
+}
+
+function quoteSharePrimaryProductLine(instance = {}) {
+    const product = extractProductSnapshot(instance.product_snapshot || instance.productSnapshot || {});
+    return text(pickLocalized(product.public_title, instance.default_lang || product.default_lang, ''), productLabelById(instance.product_id));
+}
+
+function quoteShareSupportLine(instance = {}) {
+    const shareConfig = normalizeShareConfig(instance.share_config || instance.shareConfig || {});
+    return text(shareConfig.owner_email || shareConfig.recipient_email || '', 'sales@gasgx.com');
+}
+
+function quoteShareCopyText(instance = {}) {
+    const url = publicQuoteUrl(instance.public_slug);
+    const brandLine = quoteSharePrimaryBrandLine(instance);
+    const productLine = quoteSharePrimaryProductLine(instance);
+    const customerLine = text(instance.customer_name || instance.receiver_name || '', '尊敬的客户');
+    return [
+        `${customerLine}，您好：`,
+        '',
+        `这是来自 ${brandLine} 的 ${productLine} 报价方案链接。`,
+        '用途说明：打开后可直接查看本次产品配置、价格明细、交付范围与说明，方便您内部转发、评估和确认。',
+        '品牌说明：GasGx 提供面向燃气发电与矿电场景的产品方案整合、配置呈现与报价支持服务。',
+        '',
+        '查看链接：',
+        url,
+        '',
+        `如需调整配置或补充商务信息，请直接联系 ${quoteShareSupportLine(instance)} 。`,
+    ].join('\n');
+}
+
+function quoteQrImageUrl(url = '') {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=0&format=svg&data=${encodeURIComponent(url)}`;
+}
+
+function svgTextLine(value = '', fallback = '--') {
+    return text(value, fallback)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function quoteSharePosterDataUrl(instance = {}) {
+    const url = publicQuoteUrl(instance.public_slug);
+    const brandLine = svgTextLine(quoteSharePrimaryBrandLine(instance), 'GasGx');
+    const productLine = svgTextLine(quoteSharePrimaryProductLine(instance), '客户报价方案');
+    const customerLine = svgTextLine(text(instance.customer_name || instance.receiver_name || '', '专属客户报价'));
+    const supportLine = svgTextLine(quoteShareSupportLine(instance), 'sales@gasgx.com');
+    const qrUrl = svgTextLine(quoteQrImageUrl(url), '');
+    const slugLine = svgTextLine(text(instance.public_slug), '');
+    const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1360" viewBox="0 0 960 1360">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d170d"/>
+      <stop offset="55%" stop-color="#122112"/>
+      <stop offset="100%" stop-color="#091009"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#163116"/>
+      <stop offset="100%" stop-color="#0e1a0e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7dff45"/>
+      <stop offset="100%" stop-color="#49b61f"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="1360" rx="0" fill="url(#bg)"/>
+  <circle cx="790" cy="140" r="180" fill="#163916" opacity="0.24"/>
+  <circle cx="170" cy="1180" r="220" fill="#163916" opacity="0.18"/>
+  <rect x="56" y="56" width="848" height="1248" rx="42" fill="rgba(8,12,8,0.74)" stroke="rgba(125,255,69,0.22)" />
+  <text x="108" y="150" fill="#ffffff" font-size="64" font-weight="800" font-family="Segoe UI, Arial, sans-serif">GasGx</text>
+  <text x="315" y="150" fill="#7dff45" font-size="64" font-weight="800" font-family="Segoe UI, Arial, sans-serif">AMS</text>
+  <text x="108" y="214" fill="#8be35b" font-size="22" font-weight="700" font-family="Segoe UI, Arial, sans-serif" letter-spacing="5">QUOTE SHARE</text>
+
+  <rect x="108" y="262" width="744" height="206" rx="30" fill="url(#panel)" stroke="rgba(125,255,69,0.18)" />
+  <text x="146" y="322" fill="#ffffff" font-size="26" font-weight="800" font-family="Segoe UI, Arial, sans-serif">${customerLine}</text>
+  <text x="146" y="374" fill="#f4fbef" font-size="44" font-weight="800" font-family="Segoe UI, Arial, sans-serif">${productLine}</text>
+  <text x="146" y="424" fill="#a8ba9d" font-size="24" font-weight="600" font-family="Segoe UI, Arial, sans-serif">${brandLine}</text>
+
+  <text x="108" y="548" fill="#ffffff" font-size="34" font-weight="800" font-family="Segoe UI, Arial, sans-serif">扫描二维码查看专属报价方案</text>
+  <text x="108" y="592" fill="#b9c7b1" font-size="24" font-weight="500" font-family="Segoe UI, Arial, sans-serif">用途说明：用于查看本次产品配置、报价明细、交付范围与说明，便于内部评估与确认。</text>
+  <text x="108" y="632" fill="#b9c7b1" font-size="24" font-weight="500" font-family="Segoe UI, Arial, sans-serif">品牌说明：GasGx 提供燃气发电与矿电场景的产品方案整合、配置呈现与报价支持服务。</text>
+
+  <rect x="176" y="700" width="608" height="608" rx="36" fill="#ffffff"/>
+  <image x="222" y="746" width="516" height="516" href="${qrUrl}" />
+  <rect x="352" y="944" width="256" height="120" rx="24" fill="#0f190f"/>
+  <text x="480" y="996" text-anchor="middle" fill="#ffffff" font-size="42" font-weight="800" font-family="Segoe UI, Arial, sans-serif">GasGx</text>
+  <text x="480" y="1038" text-anchor="middle" fill="#7dff45" font-size="28" font-weight="800" font-family="Segoe UI, Arial, sans-serif">QUOTE</text>
+
+  <rect x="108" y="1154" width="744" height="84" rx="22" fill="rgba(125,255,69,0.08)" stroke="rgba(125,255,69,0.16)" />
+  <text x="146" y="1204" fill="#dff5d4" font-size="20" font-weight="700" font-family="Segoe UI, Arial, sans-serif">公开链接识别：${slugLine}</text>
+  <text x="146" y="1258" fill="#9fb099" font-size="20" font-weight="500" font-family="Segoe UI, Arial, sans-serif">商务支持：${supportLine}</text>
+</svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
 function requirementPublicUrl(publicSlug, publicToken) {
     const url = new URL('/quote/requirement.html', window.location.origin);
     if (text(publicSlug)) url.searchParams.set('req', text(publicSlug));
     if (text(publicToken)) url.searchParams.set('token', text(publicToken));
     return url.toString();
+}
+
+function requirementLinkCopyText({ url = '', customerName = '', title = '' } = {}) {
+    const header = 'GasGx 客户需求采集入口';
+    const customerLine = customerName ? `客户：${customerName}` : '客户：请填写客户名称';
+    const titleLine = title ? `需求主题：${title}` : '需求主题：请填写需求主题';
+    const hintLine = '请通过以下链接填写需求信息（提交后将自动锁定）：';
+    return [header, customerLine, titleLine, hintLine, url].filter(Boolean).join('\n');
+}
+
+function requirementShareSupportLine(requirement = {}) {
+    const contact = text(requirement.requester_name || requirement.requester_company || requirement.customer_name || '');
+    return contact || 'GasGx Sales Desk';
+}
+
+function requirementShareCopyText(requirement = {}) {
+    const url = requirementPublicUrl(requirement.public_slug, requirement.public_token);
+    const customerLine = text(requirement.requester_company || requirement.requester_name || requirement.customer_name || '', '待填写客户');
+    const titleLine = text(requirementDisplayName(requirement), '客户需求填报单');
+    return [
+        'GasGx 客户原始需求填报单',
+        `客户：${customerLine}`,
+        `需求主题：${titleLine}`,
+        '用途说明：请客户直接打开此链接，按当前采购/部署计划分步填写；系统会自动保存填写进度，后台可随时查看最新内容。',
+        '品牌说明：GasGx 将基于这份原始需求，统一整理后续方案、报价与交付建议。',
+        `对接支持：${requirementShareSupportLine(requirement)}`,
+        url,
+    ].filter(Boolean).join('\n');
+}
+
+function requirementSharePosterDataUrl(requirement = {}) {
+    const url = requirementPublicUrl(requirement.public_slug, requirement.public_token);
+    const customerLine = svgTextLine(text(requirement.requester_company || requirement.requester_name || requirement.customer_name || '', '专属客户需求入口'));
+    const titleLine = svgTextLine(text(requirementDisplayName(requirement), '客户原始需求填报单'));
+    const supportLine = svgTextLine(requirementShareSupportLine(requirement), 'GasGx Sales Desk');
+    const qrUrl = svgTextLine(quoteQrImageUrl(url), '');
+    const slugLine = svgTextLine(text(requirement.public_slug), '');
+    const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1360" viewBox="0 0 960 1360">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d170d"/>
+      <stop offset="55%" stop-color="#122112"/>
+      <stop offset="100%" stop-color="#091009"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#163116"/>
+      <stop offset="100%" stop-color="#0e1a0e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7fff3a"/>
+      <stop offset="100%" stop-color="#4dcf22"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="1360" rx="36" fill="url(#bg)"/>
+  <rect x="44" y="44" width="872" height="1272" rx="32" fill="rgba(6,10,6,0.72)" stroke="rgba(127,255,58,0.18)"/>
+  <text x="84" y="122" fill="#8fff5b" font-size="30" font-family="Segoe UI, Arial, sans-serif" font-weight="800" letter-spacing="4">GASGX AMS</text>
+  <text x="84" y="170" fill="#ffffff" font-size="64" font-family="Segoe UI, Arial, sans-serif" font-weight="800">客户需求填报入口</text>
+  <text x="84" y="222" fill="rgba(255,255,255,0.78)" font-size="24" font-family="Segoe UI, Arial, sans-serif">请客户直接扫码填写，系统会自动保存进度，后台可随时查看最新填写内容。</text>
+  <rect x="84" y="276" width="792" height="250" rx="28" fill="url(#panel)" stroke="rgba(127,255,58,0.18)"/>
+  <text x="118" y="334" fill="#8fff5b" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="700">客户信息</text>
+  <text x="118" y="386" fill="#ffffff" font-size="40" font-family="Segoe UI, Arial, sans-serif" font-weight="700">${customerLine}</text>
+  <text x="118" y="446" fill="#ffffff" font-size="34" font-family="Segoe UI, Arial, sans-serif" font-weight="700">${titleLine}</text>
+  <text x="118" y="496" fill="rgba(255,255,255,0.72)" font-size="24" font-family="Segoe UI, Arial, sans-serif">GasGx 会基于这份原始需求，统一整理后续方案、报价与交付建议。</text>
+  <rect x="84" y="566" width="792" height="360" rx="28" fill="rgba(11,18,11,0.9)" stroke="rgba(127,255,58,0.18)"/>
+  <rect x="122" y="604" width="716" height="284" rx="24" fill="#ffffff"/>
+  <image href="${qrUrl}" x="402" y="644" width="156" height="156"/>
+  <text x="480" y="840" fill="#101510" font-size="24" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="700">扫码填写客户需求</text>
+  <text x="480" y="874" fill="#5b615b" font-size="18" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">${slugLine}</text>
+  <rect x="84" y="968" width="792" height="246" rx="28" fill="rgba(17,28,17,0.94)" stroke="rgba(127,255,58,0.18)"/>
+  <text x="118" y="1028" fill="#8fff5b" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="700">填写引导</text>
+  <text x="118" y="1078" fill="#ffffff" font-size="24" font-family="Segoe UI, Arial, sans-serif">1. 按当前采购/部署计划逐项填写。</text>
+  <text x="118" y="1122" fill="#ffffff" font-size="24" font-family="Segoe UI, Arial, sans-serif">2. 可中途离开，系统会自动保存，稍后继续填写。</text>
+  <text x="118" y="1166" fill="#ffffff" font-size="24" font-family="Segoe UI, Arial, sans-serif">3. 提交后需求将锁定，作为 GasGx 后续报价与跟进基线。</text>
+  <text x="118" y="1240" fill="rgba(255,255,255,0.74)" font-size="24" font-family="Segoe UI, Arial, sans-serif">GasGx Support · ${supportLine}</text>
+</svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 function adminPageUrl(page, params = {}) {
@@ -2337,6 +2542,7 @@ function applyBaseTemplateToProductEditor(templateKey = '') {
         items: templateProduct.product.items,
         media_gallery: templateProduct.product.media_gallery,
     });
+    moduleState.productCreateMode = true;
     syncProductBrandDraft(currentBrandId);
 }
 
@@ -2516,12 +2722,145 @@ function pagedInstances() {
     return rows.slice(start, start + pagination.pageSize);
 }
 
+let customSelectBindingsReady = false;
+
+function closeCustomSelectPanels(scope = document) {
+    scope.querySelectorAll('.ams-select-shell.is-open').forEach((shell) => shell.classList.remove('is-open'));
+}
+
+function ensureCustomSelectBindings() {
+    if (customSelectBindingsReady) return;
+    customSelectBindingsReady = true;
+    document.addEventListener('pointerdown', (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target?.closest('.ams-select-shell')) closeCustomSelectPanels();
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeCustomSelectPanels();
+    });
+    window.addEventListener('resize', () => closeCustomSelectPanels());
+}
+
+function customSelectCurrentLabel(select) {
+    const selectedOption = select.options[select.selectedIndex];
+    return text(selectedOption?.textContent || selectedOption?.label || '', text(select.dataset.placeholder || '请选择'));
+}
+
+function customSelectGroupMarkup(groupLabel = '', optionButtons = '') {
+    return `
+        <div class="ams-select-group">
+            ${groupLabel ? `<div class="ams-select-group-label">${esc(groupLabel)}</div>` : ''}
+            ${optionButtons}
+        </div>
+    `;
+}
+
+function customSelectPanelMarkup(select) {
+    const groups = [];
+    let rootButtons = '';
+    Array.from(select.children).forEach((node) => {
+        if (node.tagName === 'OPTGROUP') {
+            const optionButtons = Array.from(node.children)
+                .filter((option) => option.tagName === 'OPTION' && text(option.value) !== '')
+                .map((option) => {
+                    const isSelected = option.selected;
+                    const isDisabled = select.disabled || option.disabled;
+                    return `<button class="ams-select-option ${isSelected ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}" type="button" data-custom-select-value="${esc(option.value)}" ${isDisabled ? 'disabled' : ''}>${esc(option.textContent || option.label || option.value)}</button>`;
+                })
+                .join('');
+            if (optionButtons) groups.push(customSelectGroupMarkup(node.label || '', optionButtons));
+            return;
+        }
+        if (node.tagName === 'OPTION' && text(node.value) !== '') {
+            const isSelected = node.selected;
+            const isDisabled = select.disabled || node.disabled;
+            rootButtons += `<button class="ams-select-option ${isSelected ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}" type="button" data-custom-select-value="${esc(node.value)}" ${isDisabled ? 'disabled' : ''}>${esc(node.textContent || node.label || node.value)}</button>`;
+        }
+    });
+    if (rootButtons) groups.unshift(customSelectGroupMarkup('', rootButtons));
+    return groups.join('');
+}
+
+function refreshCustomSelect(select) {
+    const shell = select.closest('.ams-select-shell');
+    if (!shell) return;
+    const trigger = shell.querySelector('.ams-select-display');
+    const triggerValue = shell.querySelector('.ams-select-display-value');
+    const panel = shell.querySelector('.ams-select-panel');
+    shell.classList.toggle('is-disabled', Boolean(select.disabled));
+    if (trigger) trigger.disabled = Boolean(select.disabled);
+    if (triggerValue) triggerValue.textContent = customSelectCurrentLabel(select);
+    if (panel) panel.innerHTML = customSelectPanelMarkup(select);
+}
+
+function hydrateCustomSelect(select) {
+    if (!(select instanceof HTMLSelectElement) || select.multiple) return;
+    if (select.closest('.ams-select-shell')) {
+        refreshCustomSelect(select);
+        return;
+    }
+
+    const shell = document.createElement('div');
+    shell.className = 'ams-select-shell';
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'ams-select-display';
+    trigger.innerHTML = `
+        <span class="ams-select-display-value"></span>
+        <svg class="ams-select-display-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path d="M4.5 6.75 9 11.25l4.5-4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+    `;
+
+    const panel = document.createElement('div');
+    panel.className = 'ams-select-panel';
+
+    select.parentNode?.insertBefore(shell, select);
+    shell.appendChild(select);
+    shell.appendChild(trigger);
+    shell.appendChild(panel);
+    select.classList.add('ams-select-native');
+
+    trigger.addEventListener('click', () => {
+        if (select.disabled) return;
+        const nextState = !shell.classList.contains('is-open');
+        closeCustomSelectPanels(document);
+        if (nextState) shell.classList.add('is-open');
+    });
+
+    panel.addEventListener('click', (event) => {
+        const target = event.target instanceof Element ? event.target.closest('[data-custom-select-value]') : null;
+        if (!target || target.hasAttribute('disabled')) return;
+        const nextValue = target.getAttribute('data-custom-select-value') || '';
+        if (select.value !== nextValue) {
+            select.value = nextValue;
+            select.dispatchEvent(new Event('input', { bubbles: true }));
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+            refreshCustomSelect(select);
+        }
+        shell.classList.remove('is-open');
+    });
+
+    select.addEventListener('change', () => refreshCustomSelect(select));
+    refreshCustomSelect(select);
+}
+
+function hydrateCustomSelects(root = document) {
+    ensureCustomSelectBindings();
+    root.querySelectorAll('select.ams-select').forEach((select) => hydrateCustomSelect(select));
+}
+
 function filteredCustomers() {
     const query = text(moduleState.customerSearch).toLowerCase();
     const rows = moduleState.customers.filter((customer) => {
-        if (moduleState.customerArchiveView) {
-            if (customer.is_active !== false) return false;
-        } else if (customer.is_active === false) {
+        const listMode = moduleState.customerListMode || 'active';
+        if (listMode === 'archived') {
+            if (customer.is_active !== false || customer.is_deleted) return false;
+        } else if (listMode === 'deleted') {
+            if (!customer.is_deleted) return false;
+        } else if (customer.is_active === false || customer.is_deleted) {
             return false;
         }
         if (!query) return true;
@@ -2541,7 +2880,11 @@ function filteredCustomers() {
 }
 
 function archivedCustomerCount() {
-    return moduleState.customers.filter((item) => item.is_active === false).length;
+    return moduleState.customers.filter((item) => item.is_active === false && !item.is_deleted).length;
+}
+
+function deletedCustomerCount() {
+    return moduleState.customers.filter((item) => item.is_deleted).length;
 }
 
 function filteredRequirements() {
@@ -2568,6 +2911,26 @@ function requirementQuotes(requirementId = '') {
     return moduleState.instances
         .filter((item) => text(item.requirement_id) === text(requirementId))
         .sort((left, right) => text(right.updated_at).localeCompare(text(left.updated_at)));
+}
+
+function requirementQuoteJumpMarkup(requirementId = '') {
+    const rows = requirementQuotes(requirementId);
+    if (!rows.length) return '<span>0</span>';
+    if (rows.length === 1) {
+        const quote = rows[0];
+        const label = text(quote.customer_name || productLabelById(quote.product_id) || quote.public_slug, quote.id);
+        return `<a class="ams-inline-link" href="${esc(adminPageUrl('quote-instances', { instance: quote.id }))}">${esc(label)}</a>`;
+    }
+    return `
+        <select class="ams-select" data-requirement-linked-instance>
+            <option value="">共 ${rows.length} 份报价，选择后直达</option>
+            ${rows.map((quote) => {
+                const label = text(quote.customer_name || productLabelById(quote.product_id) || quote.public_slug, quote.id);
+                const statusText = text(quote.status) === 'published' ? '已发布' : text(quote.status) === 'archived' ? '已归档' : text(quote.status) === 'voided' ? '已作废' : '草稿';
+                return `<option value="${esc(quote.id)}">${esc(label)} · ${esc(statusText)}</option>`;
+            }).join('')}
+        </select>
+    `;
 }
 
 function summarizeRequirementQuotes(requirementId = '') {
@@ -2630,13 +2993,13 @@ function requirementSummaryLine(requirement = {}) {
     return pieces.join(' · ');
 }
 
-function requirementCheckboxGroup(field, options = [], selectedValues = []) {
+function requirementCheckboxGroup(field, options = [], selectedValues = [], disabled = false) {
     const selected = new Set(normalizeStringList(selectedValues));
     return `
         <div class="ams-choice-grid">
             ${options.map((option) => `
                 <label class="ams-social-toggle">
-                    <input type="checkbox" data-requirement-check="${esc(field)}" value="${esc(option.value)}" ${selected.has(option.value) ? 'checked' : ''}>
+                    <input type="checkbox" data-requirement-check="${esc(field)}" value="${esc(option.value)}" ${selected.has(option.value) ? 'checked' : ''} ${disabled ? 'disabled' : ''}>
                     <span>${esc(option.label)}</span>
                 </label>
             `).join('')}
@@ -2648,9 +3011,45 @@ function selectOptionsMarkup(options = [], current = '') {
     return options.map((option) => `<option value="${esc(option.value)}" ${text(current) === text(option.value) ? 'selected' : ''}>${esc(option.label)}</option>`).join('');
 }
 
-function brandLabelById(brandId) {
+function legacyTemplateBrandAlias(brand = {}) {
+    const slug = text(brand?.slug || brand?.brand_slug || brand?.brandSlug || brandSlugById(brand?.id)).toLowerCase();
+    return LEGACY_TEMPLATE_BRAND_ALIASES[slug] || null;
+}
+
+function hasLegacyTemplateBrandToken(value = '') {
+    return /vman|minerpower/i.test(text(value));
+}
+
+function displayBrandFieldValue(value = '', brand = {}, field = 'display_name') {
+    const raw = text(value);
+    const alias = legacyTemplateBrandAlias(brand);
+    if (!alias || !hasLegacyTemplateBrandToken(raw)) return raw;
+    return text(alias[field] || alias.display_name || raw, raw);
+}
+
+function displayBrandSlugValue(value = '', brand = {}) {
+    const raw = text(value);
+    const alias = legacyTemplateBrandAlias(brand);
+    if (!alias || !hasLegacyTemplateBrandToken(raw)) return raw;
+    return raw.replace(/vman|minerpower/gi, alias.slug);
+}
+
+function displayBrandDraft(brand = {}) {
+    return {
+        ...brand,
+        slug: displayBrandFieldValue(brand.slug, brand, 'slug'),
+        brand_name: displayBrandFieldValue(brand.brand_name, brand, 'brand_name'),
+        display_name: displayBrandFieldValue(brand.display_name, brand, 'display_name'),
+        supplier_name: displayBrandFieldValue(brand.supplier_name, brand, 'supplier_name'),
+        subject_name: displayBrandFieldValue(brand.subject_name, brand, 'subject_name'),
+    };
+}
+
+function brandLabelById(brandId, options = {}) {
     const brand = moduleState.brands.find((item) => item.id === brandId);
-    return brand?.display_name || brand?.brand_name || '--';
+    const rawLabel = brand?.display_name || brand?.brand_name || '--';
+    if (options.allowTemplateSourceName) return rawLabel;
+    return displayBrandFieldValue(rawLabel, brand, 'display_name') || '--';
 }
 
 function brandSlugById(brandId) {
@@ -2754,14 +3153,14 @@ function renderQuoteSetupRequired(input, error) {
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-database"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>执行 SQL 文件</strong>
-                        <span>请先在 Supabase SQL Editor 执行 <code>article_management/sql/006_quote_system.sql</code>；已有旧版库时，再补执行 <code>article_management/sql/008_quote_product_media.sql</code>、<code>article_management/sql/010_quote_customer_tracking.sql</code>、<code>article_management/sql/011_quote_send_ledger.sql</code>、<code>article_management/sql/012_quote_requirement_intake.sql</code> 和 <code>article_management/sql/013_quote_requirement_public_flow.sql</code>。</span>
+                        <span>请先在 Supabase SQL Editor 执行 <code>article_management/sql/006_quote_system.sql</code>；已有旧版库时，再补执行 <code>article_management/sql/008_quote_product_media.sql</code>、<code>article_management/sql/010_quote_customer_tracking.sql</code>、<code>article_management/sql/011_quote_send_ledger.sql</code>、<code>article_management/sql/012_quote_requirement_intake.sql</code>、<code>article_management/sql/013_quote_requirement_public_flow.sql</code>；如果当前错误是 <code>quote_customers.is_deleted does not exist</code>，再单独执行 <code>article_management/sql/015_quote_customer_soft_delete.sql</code>。</span>
                     </div>
                 </div>
                 <div class="ams-quick-link ams-quick-link-static">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-file-import"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>完成后导入示例模板</strong>
-                        <span>执行完成后回到“品牌管理”，点击“导入示例模板”，即可生成 VMAN / MinerPower 的初始品牌、产品模板和演示报价单。</span>
+                        <span>执行完成后回到“品牌管理”，点击“导入示例模板”，即可生成两套初始品牌、产品和演示报价单。</span>
                     </div>
                 </div>
             </div>
@@ -2778,8 +3177,10 @@ function renderQuoteSetupRequired(input, error) {
     `);
 }
 
-function localizedFieldGroup(idPrefix, label, value = {}) {
+function localizedFieldGroup(idPrefix, label, value = {}, options = {}) {
     const localized = normalizeLocalizedText(value);
+    const placeholders = options.placeholders || {};
+    const effective = options.forceEmpty ? {} : localized;
     return `
         <div class="ams-quote-field-card">
             <div class="ams-quote-field-card-head">
@@ -2788,7 +3189,7 @@ function localizedFieldGroup(idPrefix, label, value = {}) {
             </div>
             <div class="ams-field">
                 <label>中文</label>
-                <textarea class="ams-textarea ams-quote-textarea" data-i18n-prefix="${esc(idPrefix)}" data-lang="zh">${esc(localized.zh || '')}</textarea>
+                <textarea class="ams-textarea ams-quote-textarea" data-i18n-prefix="${esc(idPrefix)}" data-lang="zh" placeholder="${esc(placeholders.zh || '')}">${esc(effective.zh || '')}</textarea>
                 <div class="ams-field-help">EN / RU 不填时会自动继承中文内容。</div>
             </div>
             <details class="ams-locale-details">
@@ -2799,7 +3200,7 @@ function localizedFieldGroup(idPrefix, label, value = {}) {
                             (lang) => `
                                 <div class="ams-field">
                                     <label>${lang.toUpperCase()}</label>
-                                    <textarea class="ams-textarea ams-quote-textarea" data-i18n-prefix="${esc(idPrefix)}" data-lang="${esc(lang)}">${esc(localized[lang] || '')}</textarea>
+                                    <textarea class="ams-textarea ams-quote-textarea" data-i18n-prefix="${esc(idPrefix)}" data-lang="${esc(lang)}" placeholder="${esc(placeholders[lang] || '')}">${esc(effective[lang] || '')}</textarea>
                                 </div>
                             `,
                         )
@@ -3032,7 +3433,7 @@ function visualSectionEditorMarkup(prefix, section, items = []) {
                                                 </div>
                                             </details>
                                         </td>
-                                        <td><input class="ams-input ams-quote-inline-input" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-field="brand_label" value="${esc(row.brand_label)}" placeholder="Vman"></td>
+                                        <td><input class="ams-input ams-quote-inline-input" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-field="brand_label" value="${esc(row.brand_label)}" placeholder="品牌名"></td>
                                         <td><input class="ams-input ams-quote-inline-input" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-field="qty_label" value="${esc(row.qty_label)}" placeholder="1"></td>
                                         <td><input class="ams-input ams-quote-inline-input" type="number" step="0.01" min="0" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-field="price_rmb" value="${esc(row.price_rmb)}"></td>
                                         <td class="ams-col-check"><input class="ams-check" type="checkbox" data-item-prefix="${esc(prefix)}" data-item-id="${esc(row.localId)}" data-item-field="is_included" ${row.is_included ? 'checked' : ''}></td>
@@ -3105,8 +3506,10 @@ function quoteUiTextMarkup(prefix, uiText = {}) {
     `;
 }
 
-function productBrandLocalizedFieldGroup(field, label, value = {}) {
+function productBrandLocalizedFieldGroup(field, label, value = {}, options = {}) {
     const localized = normalizeLocalizedText(value);
+    const placeholders = options.placeholders || {};
+    const effective = options.forceEmpty ? {} : localized;
     return `
         <div class="ams-quote-field-card">
             <div class="ams-quote-field-card-head">
@@ -3115,7 +3518,7 @@ function productBrandLocalizedFieldGroup(field, label, value = {}) {
             </div>
             <div class="ams-field">
                 <label>中文</label>
-                <textarea class="ams-textarea ams-quote-textarea" data-product-brand-i18n="${esc(field)}" data-lang="zh">${esc(localized.zh || '')}</textarea>
+                <textarea class="ams-textarea ams-quote-textarea" data-product-brand-i18n="${esc(field)}" data-lang="zh" placeholder="${esc(placeholders.zh || '')}">${esc(effective.zh || '')}</textarea>
                 <div class="ams-field-help">EN / RU 留空时会沿用中文内容。</div>
             </div>
             <details class="ams-locale-details">
@@ -3126,7 +3529,7 @@ function productBrandLocalizedFieldGroup(field, label, value = {}) {
                             (lang) => `
                                 <div class="ams-field">
                                     <label>${lang.toUpperCase()}</label>
-                                    <textarea class="ams-textarea ams-quote-textarea" data-product-brand-i18n="${esc(field)}" data-lang="${esc(lang)}">${esc(localized[lang] || '')}</textarea>
+                                    <textarea class="ams-textarea ams-quote-textarea" data-product-brand-i18n="${esc(field)}" data-lang="${esc(lang)}" placeholder="${esc(placeholders[lang] || '')}">${esc(effective[lang] || '')}</textarea>
                                 </div>
                             `,
                         )
@@ -3140,6 +3543,23 @@ function productBrandLocalizedFieldGroup(field, label, value = {}) {
 function productPublishCopyPanelMarkup(product, brandDraft = {}) {
     const normalized = createProductDraft(product);
     const brand = createBrandDraft(brandDraft);
+    const copyPlaceholders = {
+        productTitle: {
+            zh: '填写客户看到的产品名称，例如：P1200GF 独立发电系统',
+            en: 'Customer-facing product title in English.',
+            ru: 'Customer-facing product title in Russian.',
+        },
+        overviewTitle: {
+            zh: '填写页面页头标题，例如：燃气发电产品报价',
+            en: 'Quote page header title in English.',
+            ru: 'Quote page header title in Russian.',
+        },
+        footerNote: {
+            zh: '填写页脚说明或品牌落款，例如：GasGx 报价支持',
+            en: 'Footer note or brand signature in English.',
+            ru: 'Footer note or brand signature in Russian.',
+        },
+    };
     return `
         <section class="ams-quote-block ams-quote-product-copy-panel">
             <div class="ams-section-head">
@@ -3150,9 +3570,9 @@ function productPublishCopyPanelMarkup(product, brandDraft = {}) {
             </div>
             <div class="ams-field-help">供应商、发件邮箱、邮件署名继承品牌默认信息，无需在模板中重复维护。</div>
             <div class="ams-quote-product-copy-grid">
-                ${localizedFieldGroup('product:public_title', '产品标题', normalized.public_title)}
-                ${productBrandLocalizedFieldGroup('overview_title', '页面页头标题', brand.overview_title)}
-                ${productBrandLocalizedFieldGroup('footer_note', '页脚说明', brand.footer_note)}
+                ${localizedFieldGroup('product:public_title', '产品标题', normalized.public_title, { placeholders: copyPlaceholders.productTitle, forceEmpty: true })}
+                ${productBrandLocalizedFieldGroup('overview_title', '页面页头标题', brand.overview_title, { placeholders: copyPlaceholders.overviewTitle, forceEmpty: true })}
+                ${productBrandLocalizedFieldGroup('footer_note', '页脚说明', brand.footer_note, { placeholders: copyPlaceholders.footerNote, forceEmpty: true })}
             </div>
         </section>
     `;
@@ -3342,7 +3762,7 @@ function productVisualEditorSurfaceMarkup(product, brandDraft = {}) {
 
 function instanceVisualEditorMarkup(instance) {
     const draft = createInstanceDraft(instance);
-    const brand = extractBrandSnapshot(draft.brand_snapshot);
+    const brand = displayBrandDraft(extractBrandSnapshot(draft.brand_snapshot));
     const product = extractProductSnapshot({
         ...draft.product_snapshot,
         section_config: draft.section_config,
@@ -3361,7 +3781,7 @@ function instanceVisualEditorMarkup(instance) {
                         <div class="ams-quote-visual-meta-grid">
                             <div class="ams-field">
                                 <label>供应商</label>
-                                <input class="ams-input" data-brand-snapshot-field="supplier_name" value="${esc(brand.supplier_name)}" placeholder="VMAN Engineering">
+                            <input class="ams-input" data-brand-snapshot-field="supplier_name" value="${esc(brand.supplier_name)}" placeholder="供应商名称">
                             </div>
                             <div class="ams-field">
                                 <label>发件邮箱</label>
@@ -3546,13 +3966,16 @@ function renderBrandList() {
     return rows.length
         ? rows
               .map(
-                  (brand) => `
+                  (brand) => {
+                      const viewBrand = displayBrandDraft(brand);
+                      return `
                 <button class="ams-quote-list-card ${brand.id === moduleState.brandEditor.id ? 'is-active' : ''}" type="button" data-brand-edit="${esc(brand.id)}">
-                    <strong>${esc(brand.display_name || brand.brand_name)}</strong>
-                    <span>${esc(brand.slug)}</span>
-                    <em>${brand.is_active === false ? '已归档' : '启用中'} · 默认链接 ${esc(brand.default_quote_slug || '--')}</em>
+                    <strong>${esc(viewBrand.display_name || viewBrand.brand_name)}</strong>
+                    <span>${esc(viewBrand.slug)}</span>
+                    <em>${brand.is_active === false ? '已归档' : '启用中'} · 默认链接 ${esc(displayBrandSlugValue(brand.default_quote_slug || '--', brand))}</em>
                 </button>
-            `,
+            `;
+                  },
               )
               .join('')
         : `<div class="ams-empty">${moduleState.brandArchiveView ? '当前没有已归档品牌。' : '当前没有有效品牌。'}</div>`;
@@ -3572,16 +3995,19 @@ function renderProductList() {
     return rows.length
         ? rows
               .map(
-                  (product) => `
+                  (product) => {
+                      const title = pickLocalized(product.public_title, product.default_lang, product.slug);
+                      const brandLabel = brandLabelById(product.brand_id);
+                      return `
                 <button class="ams-quote-list-card ${product.id === moduleState.productEditor.id ? 'is-active' : ''}" type="button" data-product-edit="${esc(product.id)}">
-                    <strong>${esc(pickLocalized(product.public_title, product.default_lang, product.slug))}</strong>
-                    <span>${esc(product.slug)} · ${esc(brandLabelById(product.brand_id))}</span>
+                    <strong>${esc(`${brandLabel} / ${title}`)}</strong>
                     <em>${product.is_active ? '启用中' : '已停用'} · 有效期 ${esc(product.validity_hours)} 小时</em>
                 </button>
-            `,
+            `;
+                  },
               )
               .join('')
-        : '<div class="ams-empty">当前筛选下没有产品模板。</div>';
+        : '<div class="ams-empty">当前筛选下没有产品。</div>';
 }
 
 function renderProductListCards() {
@@ -3589,11 +4015,13 @@ function renderProductListCards() {
     return rows.length
         ? rows
               .map(
-                  (product) => `
+                  (product) => {
+                      const title = pickLocalized(product.public_title, product.default_lang, product.slug);
+                      const brandLabel = brandLabelById(product.brand_id);
+                      return `
                 <article class="ams-quote-list-card-shell ${product.id === moduleState.productEditor.id ? 'is-active' : ''}">
                     <button class="ams-quote-list-card ${product.id === moduleState.productEditor.id ? 'is-active' : ''}" type="button" data-product-edit="${esc(product.id)}">
-                        <strong>${esc(pickLocalized(product.public_title, product.default_lang, product.slug))}</strong>
-                        <span>${esc(product.slug)} 路 ${esc(brandLabelById(product.brand_id))}</span>
+                        <strong>${esc(`${brandLabel} / ${title}`)}</strong>
                         <em>${product.is_active === false ? '已删除' : '启用中'} 路 有效期 ${esc(product.validity_hours)} 小时</em>
                     </button>
                     <div class="ams-quote-list-card-actions">
@@ -3604,10 +4032,11 @@ function renderProductListCards() {
                         }
                     </div>
                 </article>
-            `,
+            `;
+                  },
               )
               .join('')
-        : '<div class="ams-empty">当前筛选下没有产品模板。</div>';
+        : '<div class="ams-empty">当前筛选下没有产品。</div>';
 }
 
 function renderInstanceList() {
@@ -3616,7 +4045,12 @@ function renderInstanceList() {
         ? rows
               .map((quote) => {
                   const linkedRequirement = requirementById(quote.requirement_id);
-                  const syncLabel = quote.published_at ? `发布于 ${fmtDate(quote.published_at)}` : `更新于 ${fmtDate(quote.updated_at)}`;
+                  const generatedAt = quote.published_at || quote.created_at || quote.updated_at;
+                  const syncLabel = quote.published_at
+                      ? `发布于 ${fmtDate(quote.published_at)}`
+                      : generatedAt
+                          ? `生成于 ${fmtDate(generatedAt)}`
+                          : `更新于 ${fmtDate(quote.updated_at)}`;
                   const relationshipLine = [
                       customerDisplayName(quote.customer_snapshot || { company_name: quote.customer_name, contact_name: quote.receiver_name, email: quote.receiver_email }),
                       linkedRequirement ? `需求：${requirementDisplayName(linkedRequirement)}` : '',
@@ -3632,8 +4066,12 @@ function renderInstanceList() {
                     <div class="ams-quote-list-card-actions">
                         ${
                             quote.status === 'archived' || quote.status === 'voided'
-                                ? `<button class="ams-btn ams-btn-muted" type="button" data-instance-restore="${esc(quote.id)}">恢复</button>`
+                                ? `
+                                    ${linkedRequirement ? `<button class="ams-btn ams-btn-muted" type="button" data-instance-open-requirement="${esc(quote.id)}">查看需求</button>` : ''}
+                                    <button class="ams-btn ams-btn-muted" type="button" data-instance-restore="${esc(quote.id)}">恢复</button>
+                                  `
                                 : `
+                                    ${linkedRequirement ? `<button class="ams-btn ams-btn-muted" type="button" data-instance-open-requirement="${esc(quote.id)}">查看需求</button>` : ''}
                                     <button class="ams-btn ams-btn-muted" type="button" data-instance-archive="${esc(quote.id)}">归档</button>
                                     <button class="ams-btn ams-btn-danger" type="button" data-instance-void="${esc(quote.id)}">作废</button>
                                 `
@@ -3667,26 +4105,44 @@ function renderCustomerList() {
               .map((customer) => {
                   const quoteSummary = summarizeCustomerQuotes(customer.id);
                   const requirementSummary = summarizeCustomerRequirements(customer.id);
+                  const isActive = text(moduleState.customerLoadedId || moduleState.customerEditor?.id) === text(customer.id);
+                  const notePreview = text(customer.notes).replace(/\s+/g, ' ').trim();
                   return `
-                    <article class="ams-customer-list-card-shell">
-                        <button class="ams-quote-list-card ${moduleState.customerLoadedId === customer.id ? 'active' : ''}" type="button" data-customer-edit="${esc(customer.id)}">
+                    <article class="ams-customer-list-card-shell ${isActive ? 'is-active' : ''}">
+                        <button class="ams-quote-list-card ${isActive ? 'is-active' : ''}" type="button" data-customer-edit="${esc(customer.id)}">
                             <strong>${esc(customerDisplayName(customer))}</strong>
                             <span>${esc(text(customer.contact_name || customer.email || customer.phone, '未填写联系人'))}</span>
-                            <span class="ams-quote-inline-submeta">${esc(text(customer.email || customer.phone || customer.country, '未填写联系信息'))}</span>
+                            <span class="ams-quote-inline-submeta">${esc(text(customer.company_name || customer.email || customer.phone || customer.country, '未填写联系信息'))}</span>
+                            <span class="ams-quote-inline-submeta">${esc(notePreview ? `客户备注：${notePreview.slice(0, 42)}${notePreview.length > 42 ? '...' : ''}` : '客户备注：未填写')}</span>
+                            <span class="ams-quote-inline-submeta">${esc(`更新时间：${fmtDate(customer.updated_at || customer.created_at)}`)}</span>
                             <em>${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单 <span class="ams-quote-inline-meta">${quoteSummary.published_quotes} 已发布 / ${quoteSummary.archived_quotes} 已归档 / ${quoteSummary.voided_quotes} 已作废</span></em>
                         </button>
-                        <div class="ams-quote-list-card-actions">
-                            ${
-                                customer.is_active === false
-                                    ? `<button class="ams-btn ams-btn-muted" type="button" data-customer-restore="${esc(customer.id)}">恢复</button>`
-                                    : `<button class="ams-btn ams-btn-danger" type="button" data-customer-archive="${esc(customer.id)}">归档</button>`
-                            }
-                        </div>
-                    </article>
-                `;
+                <div class="ams-quote-list-card-actions">
+                    ${
+                        customer.is_deleted
+                            ? `<button class="ams-btn ams-btn-muted" type="button" data-customer-restore="${esc(customer.id)}">恢复</button>`
+                            : customer.is_active === false
+                                ? `
+                                    <button class="ams-btn ams-btn-muted" type="button" data-customer-restore="${esc(customer.id)}">恢复</button>
+                                    <button class="ams-btn ams-btn-danger" type="button" data-customer-delete="${esc(customer.id)}">删除</button>
+                                  `
+                                : `
+                                    <button class="ams-btn ams-btn-muted" type="button" data-customer-archive="${esc(customer.id)}">归档</button>
+                                    <button class="ams-btn ams-btn-danger" type="button" data-customer-delete="${esc(customer.id)}">删除</button>
+                                  `
+                    }
+                </div>
+            </article>
+        `;
               })
               .join('')
-        : `<div class="ams-empty">${moduleState.customerArchiveView ? '当前没有已归档客户。' : '当前没有有效客户档案。'}</div>`;
+        : `<div class="ams-empty">${
+            moduleState.customerListMode === 'deleted'
+                ? '当前没有已删除客户。'
+                : moduleState.customerListMode === 'archived'
+                    ? '当前没有已归档客户。'
+                    : '当前没有有效客户档案。'
+        }</div>`;
 }
 
 function requirementStatusPill(status = 'draft') {
@@ -3725,7 +4181,9 @@ function requirementQuoteListMarkup(requirementId = '') {
     const rows = requirementQuotes(requirementId);
     return rows.length
         ? rows
-              .map((quote) => `
+              .map((quote) => {
+                  const stamp = quote.published_at || quote.created_at || quote.updated_at;
+                  return `
                     <article class="ams-customer-quote-row">
                         <div class="ams-customer-quote-copy">
                             <strong>${esc(quote.customer_name || productLabelById(quote.product_id) || quote.public_slug)}</strong>
@@ -3733,7 +4191,7 @@ function requirementQuoteListMarkup(requirementId = '') {
                             <span class="ams-quote-inline-submeta">${statusPill(quote.status)} <span class="ams-quote-inline-meta">${esc(quote.public_slug)}</span></span>
                         </div>
                         <div class="ams-customer-quote-meta">
-                            <time>${esc(fmtDate(quote.updated_at))}</time>
+                            <time>${esc(fmtDate(stamp))}</time>
                             <div class="ams-row-actions">
                                 <button class="ams-btn ams-btn-muted" type="button" data-requirement-quote-open="${esc(quote.id)}">后台查看</button>
                                 ${quote.status === 'published'
@@ -3742,7 +4200,8 @@ function requirementQuoteListMarkup(requirementId = '') {
                             </div>
                         </div>
                     </article>
-                `)
+                `;
+              })
               .join('')
         : '<div class="ams-empty">这份需求单还没有生成报价单。</div>';
 }
@@ -3751,7 +4210,9 @@ function customerQuoteListMarkup(customerId = '') {
     const rows = customerQuotes(customerId);
     return rows.length
         ? rows
-              .map((quote) => `
+              .map((quote) => {
+                  const stamp = quote.published_at || quote.created_at || quote.updated_at;
+                  return `
                     <article class="ams-customer-quote-row">
                         <div class="ams-customer-quote-copy">
                             <strong>${esc(quote.customer_name || productLabelById(quote.product_id) || quote.public_slug)}</strong>
@@ -3759,7 +4220,7 @@ function customerQuoteListMarkup(customerId = '') {
                             <span class="ams-quote-inline-submeta">${statusPill(quote.status)} <span class="ams-quote-inline-meta">${esc(quote.public_slug)}</span></span>
                         </div>
                         <div class="ams-customer-quote-meta">
-                            <time>${esc(fmtDate(quote.updated_at))}</time>
+                            <time>${esc(fmtDate(stamp))}</time>
                             <div class="ams-row-actions">
                                 <button class="ams-btn ams-btn-muted" type="button" data-customer-quote-preview="${esc(quote.id)}">后台预览</button>
                                 ${quote.status === 'published'
@@ -3768,7 +4229,8 @@ function customerQuoteListMarkup(customerId = '') {
                             </div>
                         </div>
                     </article>
-                `)
+                `;
+              })
               .join('')
         : '<div class="ams-empty">这个客户还没有关联报价单。</div>';
 }
@@ -3797,6 +4259,266 @@ function customerRequirementListMarkup(customerId = '') {
               })
               .join('')
         : '<div class="ams-empty">这个客户还没有需求获取单。</div>';
+}
+
+function customerTrackingStageSummary(customerId = '') {
+    const requirements = customerRequirements(customerId);
+    const quotes = customerQuotes(customerId);
+    const sends = customerShareHistory(customerId);
+    const events = Array.isArray(moduleState.customerEvents) ? moduleState.customerEvents : [];
+    const latestRequirement = requirements[0] || null;
+    const latestQuote = quotes[0] || null;
+    const latestSend = sends[0] || null;
+    const latestEvent = events[0] || null;
+
+    if (latestEvent) {
+        return {
+            title: '客户已查看报价',
+            detail: `${eventTypeLabel(latestEvent.event_type)} · ${fmtDate(latestEvent.created_at)}`,
+            tone: 'success',
+            href: latestEvent.instance_id ? adminPageUrl('quote-instances', { instance: latestEvent.instance_id }) : '',
+        };
+    }
+    if (latestSend) {
+        return {
+            title: '报价已发出待反馈',
+            detail: `${shareHistoryStatusLabel(latestSend.status)} · ${fmtDate(latestSend.updated_at || latestSend.last_sent_at || latestSend.sent_at)}`,
+            tone: 'active',
+            href: latestSend.instance_id ? adminPageUrl('quote-instances', { instance: latestSend.instance_id }) : '',
+        };
+    }
+    if (latestQuote) {
+        return {
+            title: text(latestQuote.status) === 'published' ? '报价已发布' : '报价推进中',
+            detail: `${productLabelById(latestQuote.product_id)} · ${fmtDate(latestQuote.updated_at || latestQuote.created_at)}`,
+            tone: 'active',
+            href: adminPageUrl('quote-instances', { instance: latestQuote.id }),
+        };
+    }
+    if (latestRequirement) {
+        return {
+            title: requirementStatusReadyForQuote(latestRequirement.status) ? '需求已进入报价前整理' : '需求收集中',
+            detail: `${requirementStatusLabel(latestRequirement.status)} · ${fmtDate(latestRequirement.updated_at || latestRequirement.created_at)}`,
+            tone: 'warning',
+            href: adminPageUrl('quote-requirements', { requirement: latestRequirement.id }),
+        };
+    }
+    return {
+        title: '等待录入首条线索',
+        detail: '客户已建档，可继续进入线索收集。',
+        tone: 'muted',
+        href: customerId ? adminPageUrl('quote-customers', { customer: customerId }) : '',
+    };
+}
+
+function customerPipelineNodeMarkup(node = {}) {
+    const href = text(node.href);
+    const external = node.external === true;
+    const tag = href ? 'a' : 'div';
+    const attrs = href
+        ? ` href="${esc(href)}"${external ? ' target="_blank" rel="noopener"' : ''}`
+        : '';
+    return `
+        <${tag} class="ams-customer-pipeline-node is-${esc(text(node.tone, 'muted'))}${href ? ' is-link' : ''}"${attrs}>
+            <div class="ams-customer-pipeline-node-head">
+                <span class="ams-customer-pipeline-icon"><i class="fa-solid ${esc(text(node.icon, 'fa-circle'))}"></i></span>
+                <span class="ams-customer-pipeline-badge">${esc(text(node.badge, '--'))}</span>
+            </div>
+            <strong>${esc(text(node.title, '未命名节点'))}</strong>
+            <span>${esc(text(node.detail, '暂无状态'))}</span>
+            <em>${esc(text(node.meta, href ? '点击直达查看' : '等待链路推进'))}</em>
+        </${tag}>
+    `;
+}
+
+function customerPipelineMarkup(customerId = '') {
+    if (!customerId) {
+        return `
+            <section class="ams-card ams-customer-pipeline-shell">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>客户跟踪流水线</h3>
+                        <p>从客户建档到线索、报价、发送和访问，整条链路会在这里汇总。</p>
+                    </div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-muted" type="button" disabled>关系图谱</button>
+                    </div>
+                </div>
+                <div class="ams-empty">先从下方左侧选择一个客户，流水线和关系图谱会自动聚合这名客户的完整链路。</div>
+            </section>
+        `;
+    }
+
+    const customer = moduleState.customers.find((item) => item.id === customerId) || moduleState.customerEditor || {};
+    const requirements = customerRequirements(customerId);
+    const latestRequirement = requirements[0] || null;
+    const quotes = customerQuotes(customerId);
+    const latestQuote = quotes[0] || null;
+    const sends = customerShareHistory(customerId);
+    const latestSend = sends[0] || null;
+    const events = Array.isArray(moduleState.customerEvents) ? moduleState.customerEvents : [];
+    const latestEvent = events[0] || null;
+    const stage = customerTrackingStageSummary(customerId);
+    const publicRequirementLink = latestRequirement?.public_slug && latestRequirement?.public_token
+        ? requirementPublicUrl(latestRequirement.public_slug, latestRequirement.public_token)
+        : '';
+
+    const nodes = [
+        {
+            icon: 'fa-address-book',
+            badge: '客户',
+            title: '客户主档',
+            detail: customerDisplayName(customer),
+            meta: `创建于 ${fmtDate(customer.created_at)}`,
+            tone: 'success',
+            href: adminPageUrl('quote-customers', { customer: customerId }),
+        },
+        {
+            icon: 'fa-clipboard-list',
+            badge: `${requirements.length} 份`,
+            title: '客户线索',
+            detail: latestRequirement ? requirementDisplayName(latestRequirement) : '暂未录入线索',
+            meta: latestRequirement ? `${requirementStatusLabel(latestRequirement.status)} · ${fmtDate(latestRequirement.updated_at || latestRequirement.created_at)}` : '点击直达线索页',
+            tone: latestRequirement ? 'warning' : 'muted',
+            href: latestRequirement ? adminPageUrl('quote-requirements', { requirement: latestRequirement.id }) : '',
+        },
+        {
+            icon: 'fa-link',
+            badge: publicRequirementLink ? '已生成' : '未生成',
+            title: '公开填报页',
+            detail: publicRequirementLink ? '客户可直接填写原始线索' : '当前还没有可发给客户的公开页',
+            meta: publicRequirementLink ? '点击打开客户填写入口' : '先保存并生成公开链接',
+            tone: publicRequirementLink ? 'active' : 'muted',
+            href: publicRequirementLink,
+            external: true,
+        },
+        {
+            icon: 'fa-file-invoice-dollar',
+            badge: `${quotes.length} 份`,
+            title: '报价单',
+            detail: latestQuote ? productLabelById(latestQuote.product_id) : '当前还没有报价单',
+            meta: latestQuote ? `${text(latestQuote.status) === 'published' ? '已发布' : text(latestQuote.status) === 'archived' ? '已归档' : text(latestQuote.status) === 'voided' ? '已作废' : '草稿'} · ${fmtDate(latestQuote.updated_at || latestQuote.created_at)}` : '点击后会进入报价管理',
+            tone: latestQuote ? (text(latestQuote.status) === 'published' ? 'success' : 'active') : 'muted',
+            href: latestQuote ? adminPageUrl('quote-instances', { instance: latestQuote.id }) : '',
+        },
+        {
+            icon: 'fa-paper-plane',
+            badge: `${sends.length} 次`,
+            title: '发送台账',
+            detail: latestSend ? shareHistoryStatusLabel(latestSend.status) : '暂未对外发送报价',
+            meta: latestSend ? `${shareHistoryRecipientLine(latestSend) || '未记录收件人'} · ${fmtDate(latestSend.updated_at || latestSend.last_sent_at || latestSend.sent_at)}` : '点击后直达最近发送相关报价',
+            tone: latestSend ? 'active' : 'muted',
+            href: latestSend?.instance_id ? adminPageUrl('quote-instances', { instance: latestSend.instance_id }) : '',
+        },
+        {
+            icon: 'fa-binoculars',
+            badge: `${events.length} 次`,
+            title: '客户查看',
+            detail: latestEvent ? eventTypeLabel(latestEvent.event_type) : '客户还没有查看记录',
+            meta: latestEvent ? `${accessModeLabel(latestEvent.access_mode)} · ${fmtDate(latestEvent.created_at)}` : '点击后直达最近浏览相关报价',
+            tone: latestEvent ? 'success' : 'muted',
+            href: latestEvent?.instance_id ? adminPageUrl('quote-instances', { instance: latestEvent.instance_id }) : '',
+        },
+        {
+            icon: 'fa-flag-checkered',
+            badge: '当前',
+            title: '链路阶段',
+            detail: stage.title,
+            meta: stage.detail,
+            tone: stage.tone,
+            href: stage.href,
+        },
+    ];
+
+    return `
+        <section class="ams-card ams-customer-pipeline-shell">
+            <div class="ams-section-head">
+                <div>
+                    <h3>客户跟踪流水线</h3>
+                    <p>一条标准链路会依次经过客户建档、线索收集、公开填报、报价生成、发送跟进和客户查看；下面所有节点都支持一键直达。</p>
+                </div>
+                <div class="ams-row-actions">
+                    <button class="ams-btn ams-btn-muted" type="button" id="ams-customer-graph-open">
+                        <i class="fa-solid fa-diagram-project"></i>
+                        关系图谱
+                    </button>
+                </div>
+            </div>
+            <div class="ams-customer-pipeline-track">
+                ${nodes.map((node) => customerPipelineNodeMarkup(node)).join('')}
+            </div>
+        </section>
+    `;
+}
+
+function customerRelationshipGraphMarkup(customerId = '') {
+    if (!customerId) return '';
+    const customer = moduleState.customers.find((item) => item.id === customerId) || moduleState.customerEditor || {};
+    const requirements = customerRequirements(customerId);
+    const quotes = customerQuotes(customerId);
+    const sends = customerShareHistory(customerId);
+    const events = Array.isArray(moduleState.customerEvents) ? moduleState.customerEvents : [];
+    const latestQuote = quotes[0] || null;
+    const latestRequirement = requirements[0] || null;
+    const brandLine = latestQuote ? brandLabelById(latestQuote.brand_id) : '--';
+    const productLine = latestQuote ? productLabelById(latestQuote.product_id) : '--';
+    const stage = customerTrackingStageSummary(customerId);
+
+    const nodeMarkup = (title, subtitle, detail, tone = 'muted') => `
+        <article class="ams-customer-graph-node is-${esc(tone)}">
+            <strong>${esc(title)}</strong>
+            <span>${esc(subtitle)}</span>
+            <em>${esc(detail)}</em>
+        </article>
+    `;
+
+    return `
+        <div class="ams-customer-graph-modal" id="ams-customer-graph-modal" hidden>
+            <div class="ams-customer-graph-backdrop" data-customer-graph-close></div>
+            <div class="ams-customer-graph-dialog">
+                <div class="ams-customer-graph-head">
+                    <div>
+                        <strong>客户关系图谱</strong>
+                        <span>按当前客户聚合客户主档、线索、公开入口、品牌产品、报价单、发送台账和访问事件。</span>
+                    </div>
+                    <button class="ams-btn ams-btn-muted" type="button" data-customer-graph-close>关闭</button>
+                </div>
+                <div class="ams-customer-graph-summary">
+                    <span class="ams-summary-chip"><strong>当前客户</strong><span>${esc(customerDisplayName(customer))}</span></span>
+                    <span class="ams-summary-chip"><strong>当前阶段</strong><span>${esc(stage.title)}</span></span>
+                    <span class="ams-summary-chip"><strong>最近动作</strong><span>${esc(stage.detail)}</span></span>
+                </div>
+                <div class="ams-customer-graph-board">
+                    <div class="ams-customer-graph-row ams-customer-graph-row-top">
+                        ${nodeMarkup('quote_customers', '客户主档', customerDisplayName(customer), 'success')}
+                        ${nodeMarkup('quote_brands', '品牌', brandLine, latestQuote ? 'active' : 'muted')}
+                    </div>
+                    <div class="ams-customer-graph-connector-row">
+                        <span>↓</span>
+                        <span>↓</span>
+                    </div>
+                    <div class="ams-customer-graph-row ams-customer-graph-row-middle">
+                        ${nodeMarkup('quote_requirements', '客户线索', latestRequirement ? `${requirements.length} 份 / ${requirementStatusLabel(latestRequirement.status)}` : '暂无线索', latestRequirement ? 'warning' : 'muted')}
+                        ${nodeMarkup('quote_products', '产品', latestQuote ? productLine : '暂无产品关联', latestQuote ? 'active' : 'muted')}
+                    </div>
+                    <div class="ams-customer-graph-branch-row">
+                        ${nodeMarkup('quote/requirement.html', '公开填报页', latestRequirement?.public_slug && latestRequirement?.public_token ? '已生成客户填写入口' : '未生成公开页', latestRequirement?.public_slug && latestRequirement?.public_token ? 'active' : 'muted')}
+                        <span class="ams-customer-graph-merge">→</span>
+                        ${nodeMarkup('quote_instances', '报价单', quotes.length ? `${quotes.length} 份 / ${latestQuote ? productLine : '已生成'}` : '暂无报价', quotes.length ? 'success' : 'muted')}
+                    </div>
+                    <div class="ams-customer-graph-connector-row is-wide">
+                        <span>↘</span>
+                        <span>↓</span>
+                        <span>↙</span>
+                    </div>
+                    <div class="ams-customer-graph-row ams-customer-graph-row-bottom">
+                        ${nodeMarkup('quote_instance_sends', '发送台账', sends.length ? `${sends.length} 次 / ${shareHistoryStatusLabel(sends[0]?.status)}` : '暂无发送', sends.length ? 'active' : 'muted')}
+                        ${nodeMarkup('quote_instance_events', '访问事件', events.length ? `${events.length} 次 / ${eventTypeLabel(events[0]?.event_type)}` : '暂无访问', events.length ? 'success' : 'muted')}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 function customerInsightsMarkup() {
@@ -3832,7 +4554,7 @@ function customerInsightsMarkup() {
         <section class="ams-quote-block">
             <div class="ams-section-head">
                 <div>
-                    <h3>客户洞察</h3>
+                    <h3>客户跟踪</h3>
                     <p>按客户聚合这名客户关联的全部报价单、分享行为和浏览事件。</p>
                 </div>
             </div>
@@ -3884,6 +4606,8 @@ function instanceInsightsMarkup() {
         ? moduleState.customers.find((item) => item.id === moduleState.instanceEditor.customer_id)
         : null;
     const linkedRequirement = requirementById(moduleState.instanceEditor.requirement_id);
+    const customerJumpHref = currentCustomer?.id ? adminPageUrl('quote-customers', { customer: currentCustomer.id }) : '';
+    const requirementJumpHref = linkedRequirement?.id ? adminPageUrl('quote-requirements', { requirement: linkedRequirement.id }) : '';
     const sendHistory = instanceShareHistory();
     const shareSummary = shareConfigSummary(moduleState.instanceEditor.share_config, { sendCount: sendHistory.length });
     const sendLedgerNote = sendLedgerModeMarkup();
@@ -3914,46 +4638,55 @@ function instanceInsightsMarkup() {
         <section class="ams-quote-block">
             <div class="ams-section-head">
                 <div>
-                    <h3>发送与查看记录</h3>
+                    <h3>客户轨迹记录</h3>
                     <p>这里专门回答三件事：这份报价发给谁，谁负责跟进，以及客户后来有没有打开看过。</p>
                 </div>
             </div>
-            <div class="ams-summary-row">
-                <span class="ams-summary-chip"><strong>客户档案</strong><span>${esc(customerDisplayName(currentCustomer || buildInstanceCustomerSnapshot(moduleState.instanceEditor)))}</span></span>
-                <span class="ams-summary-chip"><strong>关联需求单</strong><span>${esc(linkedRequirement ? requirementDisplayName(linkedRequirement) : '未绑定')}</span></span>
-                <span class="ams-summary-chip"><strong>当前发给谁</strong><span>${esc(shareSummary.recipient)}</span></span>
-                <span class="ams-summary-chip"><strong>负责销售</strong><span>${esc(shareSummary.owner)}</span></span>
-                <span class="ams-summary-chip"><strong>发送记录</strong><span>${esc(shareSummary.send_count)} 条</span></span>
-                <span class="ams-summary-chip"><strong>总浏览</strong><span>${esc(summary.total_views)}</span></span>
-                <span class="ams-summary-chip"><strong>客户打开</strong><span>${esc(summary.share_views)}</span></span>
-                <span class="ams-summary-chip"><strong>后台预览</strong><span>${esc(summary.admin_views)}</span></span>
-                <span class="ams-summary-chip"><strong>链接发送</strong><span>${esc(summary.share_links)}</span></span>
-                <span class="ams-summary-chip"><strong>邮件发送</strong><span>${esc(summary.email_clicks)}</span></span>
-                <span class="ams-summary-chip"><strong>最近发送</strong><span>${esc(fmtDate(summary.last_shared_at))}</span></span>
-                <span class="ams-summary-chip"><strong>最近浏览</strong><span>${esc(fmtDate(summary.last_viewed_at))}</span></span>
-            </div>
-            <div class="ams-quote-block">
-                <div class="ams-section-head"><div><h3>发送记录</h3><p>每一条都代表一次对外发送动作，能看出当时发给谁、谁负责，以及后续结果。</p></div></div>
-                ${sendLedgerNote}
-                <div class="ams-quote-event-timeline">${renderShareHistoryList(sendHistory, { editable: true })}</div>
-            </div>
-            <div class="ams-quote-block">
-                <details class="ams-quote-management-fold" open>
-                    <summary>
-                        <div>
-                            <h3>查看记录</h3>
-                            <p>这里记录客户打开链接、后台预览和其他访问动作。已显示 ${visibleEvents.length} / ${moduleState.instanceEvents.length} 条。</p>
-                        </div>
-                    </summary>
-                    <div class="ams-quote-management-fold-body">
-                        <div class="ams-quote-event-timeline">${timeline}</div>
+            <div class="ams-summary-group-grid">
+                <section class="ams-summary-group-card">
+                    <div class="ams-summary-group-head">
+                        <strong>归属信息</strong>
+                        <span>这份报价当前绑定给谁</span>
+                    </div>
+                    <div class="ams-summary-group-body">
                         ${
-                            hasMoreEvents
-                                ? `<div class="ams-inline-actions"><button class="ams-btn ams-btn-muted" type="button" data-instance-view-more>加载更多（10条）</button></div>`
-                                : ''
+                            customerJumpHref
+                                ? `<a class="ams-summary-chip ams-summary-chip-link-card" href="${esc(customerJumpHref)}"><strong>客户档案</strong><span>${esc(customerDisplayName(currentCustomer || buildInstanceCustomerSnapshot(moduleState.instanceEditor)))}</span></a>`
+                                : `<span class="ams-summary-chip"><strong>客户档案</strong><span>${esc(customerDisplayName(currentCustomer || buildInstanceCustomerSnapshot(moduleState.instanceEditor)))}</span></span>`
+                        }
+                        ${
+                            requirementJumpHref
+                                ? `<a class="ams-summary-chip ams-summary-chip-link-card" href="${esc(requirementJumpHref)}"><strong>关联需求单</strong><span>${esc(requirementDisplayName(linkedRequirement))}</span></a>`
+                                : `<span class="ams-summary-chip"><strong>关联需求单</strong><span>${esc(linkedRequirement ? requirementDisplayName(linkedRequirement) : '未绑定')}</span></span>`
                         }
                     </div>
-                </details>
+                </section>
+                <section class="ams-summary-group-card">
+                    <div class="ams-summary-group-head">
+                        <strong>发送信息</strong>
+                        <span>现在由谁发，发了多少次</span>
+                    </div>
+                    <div class="ams-summary-group-body">
+                        <span class="ams-summary-chip"><strong>当前发给谁</strong><span>${esc(shareSummary.recipient)}</span></span>
+                        <span class="ams-summary-chip"><strong>负责销售</strong><span>${esc(shareSummary.owner)}</span></span>
+                        <span class="ams-summary-chip"><strong>发送记录</strong><span>${esc(shareSummary.send_count)} 条</span></span>
+                        <span class="ams-summary-chip"><strong>最近发送</strong><span>${esc(fmtDate(summary.last_shared_at))}</span></span>
+                    </div>
+                </section>
+                <section class="ams-summary-group-card">
+                    <div class="ams-summary-group-head">
+                        <strong>查看统计</strong>
+                        <span>客户有没有打开，后台看了多少次</span>
+                    </div>
+                    <div class="ams-summary-group-body">
+                        <span class="ams-summary-chip"><strong>总浏览</strong><span>${esc(summary.total_views)}</span></span>
+                        <span class="ams-summary-chip"><strong>客户打开</strong><span>${esc(summary.share_views)}</span></span>
+                        <span class="ams-summary-chip"><strong>后台预览</strong><span>${esc(summary.admin_views)}</span></span>
+                        <span class="ams-summary-chip"><strong>链接发送</strong><span>${esc(summary.share_links)}</span></span>
+                        <span class="ams-summary-chip"><strong>邮件发送</strong><span>${esc(summary.email_clicks)}</span></span>
+                        <span class="ams-summary-chip"><strong>最近浏览</strong><span>${esc(fmtDate(summary.last_viewed_at))}</span></span>
+                    </div>
+                </section>
             </div>
         </section>
     `;
@@ -3966,6 +4699,7 @@ function bindBrandEditor(input) {
     if (legacyDefaultLinkPanel) {
         legacyDefaultLinkPanel.outerHTML = brandDefaultLinkPanelMarkup(moduleState.brandEditor);
     }
+    hydrateCustomSelects(content);
     const displayNameField = () => content.querySelector('[data-brand-field="display_name"]');
     const defaultLinkPicker = () => content.querySelector('[data-brand-default-picker]');
     const defaultLinkOverride = () => content.querySelector('[data-brand-default-override]');
@@ -4078,6 +4812,7 @@ function bindBrandEditor(input) {
         moduleState.brandEditor = createBrandDraft();
         moduleState.brandDisplayNameTouched = false;
         moduleState.brandDefaultLinkTouched = false;
+        moduleState.brandCreateMode = true;
         void renderQuoteBrandsPage(input);
     });
 
@@ -4089,6 +4824,7 @@ function bindBrandEditor(input) {
             moduleState.brandEditor = createBrandDraft(brand);
             moduleState.brandDisplayNameTouched = false;
             moduleState.brandDefaultLinkTouched = false;
+            moduleState.brandCreateMode = false;
             void renderQuoteBrandsPage(input);
         });
     });
@@ -4105,6 +4841,7 @@ function bindBrandEditor(input) {
         }
         moduleState.brandDisplayNameTouched = false;
         moduleState.brandDefaultLinkTouched = false;
+        moduleState.brandCreateMode = false;
         void renderQuoteBrandsPage(input);
     });
 
@@ -4168,7 +4905,7 @@ function bindBrandEditor(input) {
         await input.withButtonBusy(event.currentTarget, '导入中...', async () => {
             try {
                 await importLegacySeedData(input.user);
-                input.showToast('VMAN / MinerPower 示例模板已导入。');
+                input.showToast('两套示例模板已导入。');
                 await renderQuoteBrandsPage(input);
             } catch (error) {
                 input.showToast(error.message || '导入示例模板失败。', true);
@@ -4189,18 +4926,41 @@ export async function renderQuoteBrandsPage(input) {
     }
     const archiveView = moduleState.brandArchiveView === true;
     const visibleBrandCount = filteredBrands().length;
+    const brandEditorView = displayBrandDraft(moduleState.brandEditor);
+    const displayedDefaultQuoteSlug = displayBrandSlugValue(moduleState.brandEditor.default_quote_slug || latestPublishedQuoteSlugForBrand(moduleState.brandEditor.id), moduleState.brandEditor);
+    const showBrandEditor = moduleState.brandCreateMode === true || Boolean(moduleState.brandEditor?.id);
+    const brandFieldPlaceholders = {
+        slug: '用于品牌路由和默认链接前缀，只用小写字母、数字和短横线，例如 gasgx-brand',
+        brand_name: '列表里的短名称，建议 2-8 个字，例如 GasGx',
+        display_name: '完整品牌显示名，会出现在品牌列表和对外页面，例如 GasGx Energy',
+        supplier_name: '供应商 / 公司全称，会显示在报价页基础信息中，例如 GasGx Energy Equipment Co., Ltd.',
+        sender_email: '客户收到邮件时显示的发件邮箱，例如 sales@gasgx.com',
+        subject_name: '邮件主题署名或品牌落款，例如 GasGx Sales Team',
+        share_unlock_prefix: '客户打开分享链接后的本地识别前缀，例如 quote-share-unlocked',
+        default_quote_slug: '默认品牌入口 slug，可手填，也可自动带入最近已发布报价，例如 gasgx-demo-001',
+        overview_title: {
+            zh: '品牌页头主标题，例如：燃气发电产品报价方案',
+            en: 'English page header, optional. Falls back to Chinese when empty.',
+            ru: 'Russian page header, optional. Falls back to Chinese when empty.',
+        },
+        footer_note: {
+            zh: '页脚说明或品牌落款，例如：GasGx 报价支持 | sales@gasgx.com',
+            en: 'English footer note, optional. Falls back to Chinese when empty.',
+            ru: 'Russian footer note, optional. Falls back to Chinese when empty.',
+        },
+    };
     input.setPageHeader('报价系统 / 品牌管理', '维护报价品牌、供应商信息、统一页头页脚和默认对外入口。');
     input.setContent(`
         <section class="ams-card ams-hero-card ams-hero-card-compact">
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">Quote System</p>
                 <h2>先维护品牌，再维护产品模板和客户报价单。</h2>
-                <p class="ams-hero-text">这里定义品牌名、供应商、发件邮箱、主题色、公共标题和默认品牌入口。首批可一键导入 VMAN / MinerPower 示例数据。</p>
+                <p class="ams-hero-text">这里定义品牌名、供应商、发件邮箱、主题色、公共标题和默认品牌入口。首批可一键导入两套基础产品示例数据。</p>
             </div>
             <div class="ams-quick-actions">
                 <button class="ams-quick-link" type="button" id="ams-quote-import-legacy">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-file-import"></i></div>
-                    <div class="ams-quick-link-body"><strong>导入示例模板</strong><span>把现有 VMAN / MinerPower 数据导入成品牌、产品和演示报价单。</span></div>
+                    <div class="ams-quick-link-body"><strong>导入示例模板</strong><span>把现有两套基础产品数据导入成品牌、产品和演示报价单。</span></div>
                 </button>
                 <button class="ams-quick-link" type="button" id="ams-quote-brand-new">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-plus"></i></div>
@@ -4219,6 +4979,9 @@ export async function renderQuoteBrandsPage(input) {
                 <div class="ams-field-help" style="margin: 0 0 12px;">${archiveView ? '这里只显示已归档品牌，可恢复继续使用。' : '默认只显示有效品牌，已归档品牌收纳在单独列表。'}</div>
                 <div class="ams-quote-list">${renderBrandList()}</div>
             </aside>
+            ${
+                showBrandEditor
+                    ? `
             <section class="ams-card ams-quote-editor-panel ams-brand-editor-panel">
                 <div class="ams-section-head">
                     <div>
@@ -4242,12 +5005,12 @@ export async function renderQuoteBrandsPage(input) {
                         : ''
                 }
                 <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>品牌 slug</label><input class="ams-input" data-brand-field="slug" value="${esc(moduleState.brandEditor.slug)}" placeholder="vman"></div>
-                    <div class="ams-field"><label>品牌简称</label><input class="ams-input" data-brand-field="brand_name" value="${esc(moduleState.brandEditor.brand_name)}" placeholder="VMAN"></div>
-                    <div class="ams-field"><label>品牌显示名</label><input class="ams-input" data-brand-field="display_name" value="${esc(moduleState.brandEditor.display_name)}" placeholder="VMAN Engineering"></div>
-                    <div class="ams-field"><label>供应商</label><input class="ams-input" data-brand-field="supplier_name" value="${esc(moduleState.brandEditor.supplier_name)}" placeholder="VMAN Engineering"></div>
-                    <div class="ams-field"><label>发件邮箱</label><input class="ams-input" data-brand-field="sender_email" value="${esc(moduleState.brandEditor.sender_email)}" placeholder="sales@brand.com"></div>
-                    <div class="ams-field"><label>邮件主题署名</label><input class="ams-input" data-brand-field="subject_name" value="${esc(moduleState.brandEditor.subject_name)}" placeholder="VMAN Engineering"></div>
+                    <div class="ams-field"><label>品牌 slug</label><input class="ams-input" data-brand-field="slug" value="${esc(brandEditorView.slug)}" placeholder="${esc(brandFieldPlaceholders.slug)}"></div>
+                    <div class="ams-field"><label>品牌简称</label><input class="ams-input" data-brand-field="brand_name" value="${esc(brandEditorView.brand_name)}" placeholder="${esc(brandFieldPlaceholders.brand_name)}"></div>
+                    <div class="ams-field"><label>品牌显示名</label><input class="ams-input" data-brand-field="display_name" value="${esc(brandEditorView.display_name)}" placeholder="${esc(brandFieldPlaceholders.display_name)}"></div>
+                    <div class="ams-field"><label>供应商</label><input class="ams-input" data-brand-field="supplier_name" value="${esc(brandEditorView.supplier_name)}" placeholder="${esc(brandFieldPlaceholders.supplier_name)}"></div>
+                    <div class="ams-field"><label>发件邮箱</label><input class="ams-input" data-brand-field="sender_email" value="${esc(moduleState.brandEditor.sender_email)}" placeholder="${esc(brandFieldPlaceholders.sender_email)}"></div>
+                    <div class="ams-field"><label>邮件主题署名</label><input class="ams-input" data-brand-field="subject_name" value="${esc(brandEditorView.subject_name)}" placeholder="${esc(brandFieldPlaceholders.subject_name)}"></div>
                     <div class="ams-field"><label>主题绿</label><input class="ams-input" type="color" data-brand-field="theme_primary" value="${esc(moduleState.brandEditor.theme_primary)}"></div>
                     <div class="ams-field"><label>深绿底</label><input class="ams-input" type="color" data-brand-field="theme_dark" value="${esc(moduleState.brandEditor.theme_dark)}"></div>
                     <div class="ams-field">
@@ -4258,7 +5021,7 @@ export async function renderQuoteBrandsPage(input) {
                         </div>
                         <div class="ams-field-help">自动生成，仅支持查看与复制。</div>
                     </div>
-                    <div class="ams-field"><label>分享本地前缀</label><input class="ams-input" data-brand-field="share_unlock_prefix" value="${esc(moduleState.brandEditor.share_unlock_prefix)}"></div>
+                    <div class="ams-field"><label>分享本地前缀</label><input class="ams-input" data-brand-field="share_unlock_prefix" value="${esc(moduleState.brandEditor.share_unlock_prefix)}" placeholder="${esc(brandFieldPlaceholders.share_unlock_prefix)}"></div>
                     <div class="ams-field"><label class="ams-social-toggle"><input type="checkbox" data-brand-field="is_active" ${moduleState.brandEditor.is_active ? 'checked' : ''}><span>启用品牌</span></label></div>
                 </div>
                 <div class="ams-quote-block ams-brand-default-link-panel">
@@ -4272,17 +5035,24 @@ export async function renderQuoteBrandsPage(input) {
                     <div class="ams-brand-default-link-row">
                         <div class="ams-field">
                             <label>默认链接 slug</label>
-                            <input class="ams-input" data-brand-field="default_quote_slug" value="${esc(moduleState.brandEditor.default_quote_slug || latestPublishedQuoteSlugForBrand(moduleState.brandEditor.id))}" placeholder="vman-p1200gf-demo">
+                            <input class="ams-input" data-brand-field="default_quote_slug" value="${esc(displayedDefaultQuoteSlug)}" placeholder="${esc(brandFieldPlaceholders.default_quote_slug)}">
                         </div>
                         <div class="ams-brand-default-link-meta">
                             <strong>当前显示</strong>
-                            <span>${esc(moduleState.brandEditor.default_quote_slug || latestPublishedQuoteSlugForBrand(moduleState.brandEditor.id) || '--')}</span>
+                            <span>${esc(displayedDefaultQuoteSlug || '--')}</span>
                         </div>
                     </div>
                 </div>
-                ${localizedFieldGroup('brand:overview_title', '页面总标题', moduleState.brandEditor.overview_title)}
-                ${localizedFieldGroup('brand:footer_note', '页脚说明', moduleState.brandEditor.footer_note)}
+                ${localizedFieldGroup('brand:overview_title', '页面总标题', moduleState.brandEditor.overview_title, { placeholders: brandFieldPlaceholders.overview_title })}
+                ${localizedFieldGroup('brand:footer_note', '页脚说明', moduleState.brandEditor.footer_note, { placeholders: brandFieldPlaceholders.footer_note })}
             </section>
+                    `
+                    : `
+            <section class="ams-card ams-quote-editor-panel ams-brand-editor-panel">
+                <div class="ams-empty">默认不展开品牌编辑区。点击左侧品牌进入编辑，或点击上方“新建品牌”开始录入。</div>
+            </section>
+                    `
+            }
         </section>
     `);
     bindBrandEditor(input);
@@ -4291,17 +5061,18 @@ export async function renderQuoteBrandsPage(input) {
 function bindProductEditor(input) {
     const content = document.getElementById('ams-content');
     if (!content) return;
+    hydrateCustomSelects(content);
 
     document.getElementById('ams-quote-product-brand-filter')?.addEventListener('change', (event) => {
         moduleState.productBrandFilter = event.currentTarget.value || 'all';
-        void withQuoteBusy('正在刷新模板列表...', async () => {
+        void withQuoteBusy('正在刷新产品列表...', async () => {
             await renderQuoteProductsPage(input);
         });
     });
 
     document.getElementById('ams-quote-product-archive-entry')?.addEventListener('click', () => {
         moduleState.productArchiveView = !moduleState.productArchiveView;
-        void withQuoteBusy(moduleState.productArchiveView ? '正在切换到已删除模板...' : '正在返回模板主列表...', async () => {
+        void withQuoteBusy(moduleState.productArchiveView ? '正在切换到已删除产品...' : '正在返回产品主列表...', async () => {
             await renderQuoteProductsPage(input);
         });
     });
@@ -4311,6 +5082,7 @@ function bindProductEditor(input) {
         moduleState.productEditor = createProductDraft({
             brand_id: moduleState.productBrandFilter !== 'all' ? moduleState.productBrandFilter : '',
         });
+        moduleState.productCreateMode = true;
         syncProductBrandDraft(moduleState.productEditor.brand_id);
         void renderQuoteProductsPage(input);
     });
@@ -4320,7 +5092,7 @@ function bindProductEditor(input) {
             const templateKey = document.getElementById('ams-quote-product-base-template')?.value || '';
             if (!templateKey) throw new Error('请先选择一个基础模板。');
             applyBaseTemplateToProductEditor(templateKey);
-            input.showToast('基础模板已载入当前编辑区。');
+            input.showToast('基础模板已载入当前产品编辑区。');
             void renderQuoteProductsPage(input);
         } catch (error) {
             input.showToast(error.message || '载入基础模板失败。', true);
@@ -4330,27 +5102,27 @@ function bindProductEditor(input) {
     document.querySelectorAll('[data-product-edit]').forEach((button) => {
         button.addEventListener('click', async () => {
             try {
-                await withQuoteBusy('正在加载产品模板...', async () => {
+                await withQuoteBusy('正在加载产品...', async () => {
                     await fetchProductEditor(button.dataset.productEdit);
                     await renderQuoteProductsPage(input);
-                }, button, '正在读取模板详情、配置项和图片库。');
+                }, button, '正在读取产品详情、配置项和图片库。');
             } catch (error) {
-                input.showToast(error.message || '加载产品模板失败。', true);
+                input.showToast(error.message || '加载产品失败。', true);
             }
         });
     });
 
     document.querySelectorAll('[data-product-archive]').forEach((button) => {
         button.addEventListener('click', async () => {
-            if (!window.confirm('删除后会从默认模板列表中隐藏，但不会删除已生成的报价单。确定继续吗？')) return;
+            if (!window.confirm('删除后会从默认产品列表中隐藏，但不会删除已生成的报价单。确定继续吗？')) return;
             try {
-                await withQuoteBusy('正在删除产品模板...', async () => {
+                await withQuoteBusy('正在删除产品...', async () => {
                     await archiveProductTemplate(input.user, button.dataset.productArchive);
                     await renderQuoteProductsPage(input);
-                }, button, '删除会隐藏模板入口，但不会影响已经生成的报价单快照。');
-                input.showToast('产品模板已删除。');
+                }, button, '删除会隐藏产品入口，但不会影响已经生成的报价单快照。');
+                input.showToast('产品已删除。');
             } catch (error) {
-                input.showToast(error.message || '删除产品模板失败。', true);
+                input.showToast(error.message || '删除产品失败。', true);
             }
         });
     });
@@ -4358,26 +5130,26 @@ function bindProductEditor(input) {
     document.querySelectorAll('[data-product-restore]').forEach((button) => {
         button.addEventListener('click', async () => {
             try {
-                await withQuoteBusy('正在恢复产品模板...', async () => {
+                await withQuoteBusy('正在恢复产品...', async () => {
                     await restoreProductTemplate(input.user, button.dataset.productRestore);
                     await renderQuoteProductsPage(input);
-                }, button, '恢复后模板会重新出现在主列表和报价单新建入口中。');
-                input.showToast('产品模板已恢复。');
+                }, button, '恢复后产品会重新出现在主列表和报价单新建入口中。');
+                input.showToast('产品已恢复。');
             } catch (error) {
-                input.showToast(error.message || '恢复产品模板失败。', true);
+                input.showToast(error.message || '恢复产品失败。', true);
             }
         });
     });
 
     document.getElementById('ams-quote-product-archive-current')?.addEventListener('click', async (event) => {
-        if (!window.confirm('删除后会从默认模板列表中隐藏，但不会删除已生成的报价单。确定继续吗？')) return;
+        if (!window.confirm('删除后会从默认产品列表中隐藏，但不会删除已生成的报价单。确定继续吗？')) return;
         await input.withButtonBusy(event.currentTarget, '删除中...', async () => {
             try {
                 await archiveProductTemplate(input.user, moduleState.productEditor.id);
-                input.showToast('产品模板已删除。');
+                input.showToast('产品已删除。');
                 await renderQuoteProductsPage(input);
             } catch (error) {
-                input.showToast(error.message || '删除产品模板失败。', true);
+                input.showToast(error.message || '删除产品失败。', true);
             }
         });
     });
@@ -4386,10 +5158,10 @@ function bindProductEditor(input) {
         await input.withButtonBusy(event.currentTarget, '恢复中...', async () => {
             try {
                 await restoreProductTemplate(input.user, moduleState.productEditor.id);
-                input.showToast('产品模板已恢复。');
+                input.showToast('产品已恢复。');
                 await renderQuoteProductsPage(input);
             } catch (error) {
-                input.showToast(error.message || '恢复产品模板失败。', true);
+                input.showToast(error.message || '恢复产品失败。', true);
             }
         });
     });
@@ -4642,10 +5414,10 @@ function bindProductEditor(input) {
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
             try {
                 await saveProductDraft(input.user, moduleState.productEditor);
-                input.showToast('产品模板已保存。');
+                input.showToast('产品已保存。');
                 await renderQuoteProductsPage(input);
             } catch (error) {
-                input.showToast(error.message || '保存产品模板失败。', true);
+                input.showToast(error.message || '保存产品失败。', true);
             }
         });
     });
@@ -4654,11 +5426,11 @@ function bindProductEditor(input) {
         await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
             try {
                 const instance = await createInstanceFromProduct(input.user, moduleState.productEditor.id);
-                input.showToast('已从模板生成新的报价单草稿。');
+                input.showToast('已从产品生成新的报价单草稿。');
                 await fetchInstanceEditor(instance.id);
                 await renderQuoteInstancesPage(input);
             } catch (error) {
-                input.showToast(error.message || '从模板生成报价单失败。', true);
+                input.showToast(error.message || '从产品生成报价单失败。', true);
             }
         });
     });
@@ -4675,13 +5447,18 @@ export async function renderQuoteProductsPage(input) {
         }
         throw error;
     }
-    if (!moduleState.productEditor.brand_id && moduleState.brands[0]?.id) {
-        moduleState.productEditor.brand_id = moduleState.brands[0].id;
+    const product = moduleState.productEditor || createProductDraft();
+    const showProductEditor = Boolean(moduleState.productLoadedId || moduleState.productCreateMode);
+    if (showProductEditor && !product.brand_id && moduleState.brands[0]?.id) {
+        product.brand_id = moduleState.brands[0].id;
     }
-    currentProductBrandDraft();
+    moduleState.productEditor = product;
+    if (showProductEditor) {
+        currentProductBrandDraft();
+    }
     const archiveView = moduleState.productArchiveView === true;
     const visibleProductCount = filteredProducts().length;
-    input.setPageHeader('报价系统 / 产品模板', '在品牌下维护标准产品模板，定义主配置、选配、默认汇率和有效期。');
+    input.setPageHeader('报价系统 / 产品模板', '在品牌下维护标准产品，定义主配置、选配、默认汇率和有效期。');
     input.setContent(`
         <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-product-hero">
             <div class="ams-hero-copy">
@@ -4692,12 +5469,12 @@ export async function renderQuoteProductsPage(input) {
             <div class="ams-quick-actions ams-quote-product-quick-actions">
                 <button class="ams-quick-link" type="button" id="ams-quote-product-new">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-cube"></i></div>
-                    <div class="ams-quick-link-body"><strong>空白模板</strong><span>仅在你明确要从零搭建时使用；正常请优先载入下面的基础模板。</span></div>
+                    <div class="ams-quick-link-body"><strong>新建产品</strong><span>仅在你明确要从零搭建时使用；正常请优先载入右侧基础模板后再继续。</span></div>
                 </button>
                 <div class="ams-quick-link ams-quote-template-loader">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-layer-group"></i></div>
                     <div class="ams-quick-link-body">
-                        <strong>公共模板区</strong>
+                        <strong>公共产品模板</strong>
                         <span>新品牌先从“独立发电产品模板”或“一体化产品模板”复制一份，再在当前品牌下 DIY。</span>
                         <div class="ams-quote-template-family-list">
                             ${moduleState.baseTemplates.map((group) => `
@@ -4711,7 +5488,7 @@ export async function renderQuoteProductsPage(input) {
                             <select id="ams-quote-product-base-template" class="ams-select ams-quote-template-select">
                                 ${baseTemplateOptionsMarkup()}
                             </select>
-                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-product-load-base-template">复制到当前品牌编辑区</button>
+                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-product-load-base-template">克隆产品信息</button>
                         </div>
                     </div>
                 </div>
@@ -4720,12 +5497,12 @@ export async function renderQuoteProductsPage(input) {
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
                 <div class="ams-section-head">
-                    <div><h3>${archiveView ? '已删除模板' : '模板列表'}</h3><p>品牌筛选后共 ${visibleProductCount} 个模板</p></div>
+                    <div><h3>${archiveView ? '已删除产品' : '产品列表'}</h3><p>品牌筛选后共 ${visibleProductCount} 个产品</p></div>
                     <div class="ams-row-actions">
                         <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-product-archive-entry">${archiveView ? '返回主列表' : `已删除列表（${archivedProductCount()}）`}</button>
                     </div>
                 </div>
-                <div class="ams-field-help" style="margin: 0 0 12px;">${archiveView ? '这里只显示已删除模板，可恢复继续使用。' : '默认只显示有效模板，已删除模板收纳在单独列表。'}</div>
+                <div class="ams-field-help" style="margin: 0 0 12px;">${archiveView ? '这里只显示已删除产品，可恢复继续使用。' : '默认只显示有效产品，已删除产品收纳在单独列表。'}</div>
                 <div class="ams-field">
                     <label>品牌筛选</label>
                     <select id="ams-quote-product-brand-filter" class="ams-select">
@@ -4736,55 +5513,68 @@ export async function renderQuoteProductsPage(input) {
                 <div class="ams-quote-list">${renderProductListCards()}</div>
             </aside>
             <section class="ams-card ams-quote-editor-panel ams-product-editor-panel">
-                <div class="ams-section-head">
-                    <div>
-                        <h3>${moduleState.productEditor.id ? '编辑产品模板' : '新建产品模板'}</h3>
-                        <p>模板只做默认值来源，不直接给客户使用。</p>
-                    </div>
-                    <div class="ams-row-actions">
-                        <label class="ams-social-toggle">
-                            <input type="checkbox" data-product-field="is_active" ${moduleState.productEditor.is_active ? 'checked' : ''}>
-                            <span>启用模板</span>
-                        </label>
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-product-create-instance">从模板生成报价单</button>
-                        <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-product-save">保存模板</button>
-                    </div>
-                </div>
                 ${
-                    moduleState.productEditor.id
+                    showProductEditor
                         ? `
+                    <div class="ams-section-head">
+                        <div>
+                            <h3>${product.id ? '编辑产品' : '新建产品'}</h3>
+                            <p>这里维护的是当前品牌下的实际产品定义，可直接用于后续生成报价单。</p>
+                        </div>
+                        <div class="ams-row-actions">
+                            <label class="ams-social-toggle">
+                                <input type="checkbox" data-product-field="is_active" ${product.is_active ? 'checked' : ''}>
+                                <span>启用产品</span>
+                            </label>
+                            ${
+                                product.id
+                                    ? product.is_active === false
+                                        ? '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-product-restore-current">恢复产品</button>'
+                                        : '<button class="ams-btn ams-btn-danger" type="button" id="ams-quote-product-archive-current">删除产品</button>'
+                                    : ''
+                            }
+                            <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-product-create-instance">从产品生成报价单</button>
+                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-product-save">保存产品</button>
+                        </div>
+                    </div>
                     ${
-                        moduleState.productEditor.is_active === false
-                            ? '<div class="ams-field-help" style="margin-bottom: 12px;">已删除模板默认不再出现在主列表和新建报价入口。</div>'
-                            : '<div class="ams-inline-actions" style="margin-bottom: 12px;"><button class="ams-btn ams-btn-danger" type="button" id="ams-quote-product-archive-current">删除模板</button><span class="ams-field-help">删除只会隐藏模板入口，不会删除已生成报价单。</span></div>'
+                        product.id
+                            ? `
+                        ${
+                            product.is_active === false
+                                ? '<div class="ams-field-help" style="margin-bottom: 12px;">已删除产品默认不再出现在主列表和新建报价入口。</div>'
+                                : '<div class="ams-field-help" style="margin-bottom: 12px;">删除只会隐藏产品入口，不会删除已生成报价单。</div>'
+                        }
+                    `
+                            : ''
                     }
+                    <div class="ams-site-field-grid ams-site-field-grid-wide">
+                        <div class="ams-field">
+                            <label>所属品牌</label>
+                            <select class="ams-select" data-product-field="brand_id">
+                                <option value="">请选择品牌</option>
+                                ${moduleState.brands.map((brand) => `<option value="${esc(brand.id)}" ${product.brand_id === brand.id ? 'selected' : ''}>${esc(brand.display_name)}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="ams-field"><label>产品 slug</label><input class="ams-input" data-product-field="slug" value="" placeholder="用于链接与识别的唯一 slug，例如 p1200gf"></div>
+                        <div class="ams-field"><label>产品代码</label><input class="ams-input" data-product-field="product_code" value="" placeholder="客户看到的产品代号，例如 P1200GF"></div>
+                        <div class="ams-field">
+                            <label>默认语言</label>
+                            <select class="ams-select" data-product-field="default_lang">
+                                ${SUPPORTED_LANGS.map((lang) => `<option value="${lang}" ${product.default_lang === lang ? 'selected' : ''}>${lang.toUpperCase()}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="ams-field"><label>有效期（小时）</label><input class="ams-input" type="number" min="1" step="1" data-product-field="validity_hours" value="" placeholder="报价有效期（小时），例如 72"></div>
+                        <div class="ams-field"><label>排序</label><input class="ams-input" type="number" min="0" step="10" data-product-field="sort_order" value="" placeholder="列表排序，数值越小越靠前"></div>
+                    </div>
+                    ${productPublishCopyPanelMarkup(product, currentProductBrandDraft())}
+                    ${productVisualEditorSurfaceMarkup(product, currentProductBrandDraft())}
+                    ${mediaLibraryMarkup('product', product.media_config, product.media_gallery, {
+                        uploadLabel: '上传产品图片',
+                    })}
                 `
-                        : ''
+                        : '<div class="ams-empty">默认只显示产品列表。点击左侧产品，或使用上方“新建产品”/“克隆产品信息”后再进入编辑区。</div>'
                 }
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field">
-                        <label>所属品牌</label>
-                        <select class="ams-select" data-product-field="brand_id">
-                            <option value="">请选择品牌</option>
-                            ${moduleState.brands.map((brand) => `<option value="${esc(brand.id)}" ${moduleState.productEditor.brand_id === brand.id ? 'selected' : ''}>${esc(brand.display_name)}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="ams-field"><label>模板 slug</label><input class="ams-input" data-product-field="slug" value="${esc(moduleState.productEditor.slug)}" placeholder="p1200gf"></div>
-                    <div class="ams-field"><label>产品代码</label><input class="ams-input" data-product-field="product_code" value="${esc(moduleState.productEditor.product_code)}" placeholder="P1200GF"></div>
-                    <div class="ams-field">
-                        <label>默认语言</label>
-                        <select class="ams-select" data-product-field="default_lang">
-                            ${SUPPORTED_LANGS.map((lang) => `<option value="${lang}" ${moduleState.productEditor.default_lang === lang ? 'selected' : ''}>${lang.toUpperCase()}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="ams-field"><label>有效期（小时）</label><input class="ams-input" type="number" min="1" step="1" data-product-field="validity_hours" value="${esc(moduleState.productEditor.validity_hours)}"></div>
-                    <div class="ams-field"><label>排序</label><input class="ams-input" type="number" min="0" step="10" data-product-field="sort_order" value="${esc(moduleState.productEditor.sort_order)}"></div>
-                </div>
-                ${productPublishCopyPanelMarkup(moduleState.productEditor, currentProductBrandDraft())}
-                ${productVisualEditorSurfaceMarkup(moduleState.productEditor, currentProductBrandDraft())}
-                ${mediaLibraryMarkup('product', moduleState.productEditor.media_config, moduleState.productEditor.media_gallery, {
-                    uploadLabel: '上传产品图片',
-                })}
             </section>
         </section>
     `);
@@ -4794,6 +5584,7 @@ export async function renderQuoteProductsPage(input) {
 function bindInstanceEditor(input) {
     const content = document.getElementById('ams-content');
     if (!content) return;
+    hydrateCustomSelects(content);
 
     document.getElementById('ams-open-instance-visual-editor')?.addEventListener('click', () => {
         if (!moduleState.instanceEditor?.id) {
@@ -4807,13 +5598,6 @@ function bindInstanceEditor(input) {
         moduleState.instanceSearch = event.currentTarget.value || '';
         moduleState.instancePage = 1;
         void withQuoteBusy('正在刷新报价单列表...', async () => {
-            await renderQuoteInstancesPage(input);
-        });
-    });
-    document.getElementById('ams-quote-instance-clear-requirement-filter')?.addEventListener('click', () => {
-        moduleState.instanceRequirementFilter = '';
-        moduleState.instancePage = 1;
-        void withQuoteBusy('正在返回全部报价单...', async () => {
             await renderQuoteInstancesPage(input);
         });
     });
@@ -4968,12 +5752,16 @@ function bindInstanceEditor(input) {
         void renderQuoteInstancesPage(input);
     });
 
-    document.getElementById('ams-quote-instance-open-requirement')?.addEventListener('click', () => {
-        if (!moduleState.instanceEditor.requirement_id) {
-            input.showToast('当前报价单还没有绑定需求单。', true);
-            return;
-        }
-        window.location.assign(adminPageUrl('quote-requirements', { requirement: moduleState.instanceEditor.requirement_id }));
+    content.querySelectorAll('[data-instance-open-requirement]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const instanceId = button.dataset.instanceOpenRequirement;
+            const instance = moduleState.instances.find((item) => item.id === instanceId) || moduleState.instanceEditor;
+            if (!instance?.requirement_id) {
+                input.showToast('当前报价单还没有绑定需求单。', true);
+                return;
+            }
+            window.location.assign(adminPageUrl('quote-requirements', { requirement: instance.requirement_id }));
+        });
     });
 
     content.querySelectorAll('[data-instance-field]').forEach((node) => {
@@ -5335,42 +6123,109 @@ function bindInstanceEditor(input) {
         });
     });
 
-    document.getElementById('ams-quote-instance-copy-link')?.addEventListener('click', async () => {
+    const posterModal = document.getElementById('ams-quote-share-poster-modal');
+    const posterImage = document.getElementById('ams-quote-share-poster-image');
+    const posterDownload = document.getElementById('ams-quote-share-poster-download');
+    const shareMenu = content.querySelector('.ams-share-menu');
+    const closePosterModal = () => {
+        if (posterModal) posterModal.hidden = true;
+    };
+
+    document.getElementById('ams-quote-instance-share-link')?.addEventListener('click', async () => {
         if (!moduleState.instanceEditor.public_slug) {
             input.showToast('请先填写公开链接 slug。', true);
             return;
         }
-        const url = publicQuoteUrl(moduleState.instanceEditor.public_slug);
+        const payload = quoteShareCopyText(moduleState.instanceEditor);
         try {
-            await navigator.clipboard.writeText(url);
-            input.showToast('客户链接已复制。');
+            await navigator.clipboard.writeText(payload);
+            input.showToast('分享文案已复制。');
         } catch (_error) {
-            input.showToast(url, false);
+            input.showToast(payload, false);
         }
+        if (shareMenu) shareMenu.removeAttribute('open');
+    });
+
+    document.getElementById('ams-quote-instance-share-poster')?.addEventListener('click', () => {
+        if (!moduleState.instanceEditor.public_slug) {
+            input.showToast('请先填写公开链接 slug。', true);
+            return;
+        }
+        const posterUrl = quoteSharePosterDataUrl(moduleState.instanceEditor);
+        if (posterImage) posterImage.setAttribute('src', posterUrl);
+        if (posterDownload) posterDownload.setAttribute('href', posterUrl);
+        if (posterModal) posterModal.hidden = false;
+        if (shareMenu) shareMenu.removeAttribute('open');
+    });
+
+    document.getElementById('ams-quote-share-poster-copy-link')?.addEventListener('click', async () => {
+        if (!moduleState.instanceEditor.public_slug) {
+            input.showToast('请先填写公开链接 slug。', true);
+            return;
+        }
+        const payload = quoteShareCopyText(moduleState.instanceEditor);
+        try {
+            await navigator.clipboard.writeText(payload);
+            input.showToast('海报说明文案已复制。');
+        } catch (_error) {
+            input.showToast(payload, false);
+        }
+    });
+
+    content.querySelectorAll('[data-share-poster-close]').forEach((button) => {
+        button.addEventListener('click', closePosterModal);
     });
 }
 
 function bindCustomerEditor(input) {
     const content = document.getElementById('ams-content');
     if (!content) return;
+    hydrateCustomSelects(content);
 
-    document.getElementById('ams-quote-customer-archive-entry')?.addEventListener('click', () => {
-        moduleState.customerArchiveView = !moduleState.customerArchiveView;
-        if (moduleState.customerArchiveView && moduleState.customerEditor?.is_active !== false) {
-            const archived = moduleState.customers.find((item) => item.is_active === false);
+    const graphModal = document.getElementById('ams-customer-graph-modal');
+    const closeGraphModal = () => {
+        if (graphModal) graphModal.hidden = true;
+    };
+
+    document.getElementById('ams-customer-graph-open')?.addEventListener('click', () => {
+        if (graphModal) graphModal.hidden = false;
+    });
+
+    content.querySelectorAll('[data-customer-graph-close]').forEach((button) => {
+        button.addEventListener('click', closeGraphModal);
+    });
+
+    const switchCustomerListMode = (mode) => {
+        moduleState.customerListMode = mode;
+        if (mode === 'archived') {
+            const archived = moduleState.customers.find((item) => item.is_active === false && !item.is_deleted);
             if (archived) {
                 moduleState.customerLoadedId = archived.id;
                 moduleState.customerEditor = createCustomerDraft(archived);
                 moduleState.customerCreateMode = false;
             }
-        }
-        if (!moduleState.customerArchiveView && moduleState.customerEditor?.is_active === false) {
-            const active = moduleState.customers.find((item) => item.is_active !== false);
+        } else if (mode === 'deleted') {
+            const deleted = moduleState.customers.find((item) => item.is_deleted);
+            if (deleted) {
+                moduleState.customerLoadedId = deleted.id;
+                moduleState.customerEditor = createCustomerDraft(deleted);
+                moduleState.customerCreateMode = false;
+            }
+        } else if (moduleState.customerEditor?.is_active === false || moduleState.customerEditor?.is_deleted) {
+            const active = moduleState.customers.find((item) => item.is_active !== false && !item.is_deleted);
             moduleState.customerLoadedId = text(active?.id);
             moduleState.customerEditor = active ? createCustomerDraft(active) : createCustomerDraft();
             moduleState.customerCreateMode = !active;
         }
         void renderQuoteCustomersPage(input);
+    };
+
+    document.getElementById('ams-quote-customer-archive-entry')?.addEventListener('click', () => {
+        switchCustomerListMode(moduleState.customerListMode === 'archived' ? 'active' : 'archived');
+    });
+
+    document.getElementById('ams-quote-customer-delete-entry')?.addEventListener('click', () => {
+        switchCustomerListMode(moduleState.customerListMode === 'deleted' ? 'active' : 'deleted');
     });
 
     document.getElementById('ams-quote-customer-search')?.addEventListener('input', (event) => {
@@ -5379,7 +6234,7 @@ function bindCustomerEditor(input) {
     });
 
     document.getElementById('ams-quote-customer-new')?.addEventListener('click', () => {
-        moduleState.customerArchiveView = false;
+        moduleState.customerListMode = 'active';
         moduleState.customerLoadedId = '';
         moduleState.customerEditor = createCustomerDraft();
         moduleState.customerEvents = [];
@@ -5408,6 +6263,7 @@ function bindCustomerEditor(input) {
                     const saved = await saveCustomerDraft(input.user, {
                         ...(moduleState.customers.find((item) => item.id === button.dataset.customerArchive) || {}),
                         is_active: false,
+                        is_deleted: false,
                     });
                     await Promise.all([
                         fetchCustomerAnalytics(saved.id),
@@ -5418,6 +6274,29 @@ function bindCustomerEditor(input) {
                 input.showToast('客户已归档。');
             } catch (error) {
                 input.showToast(error.message || '归档客户失败。', true);
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-customer-delete]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            if (!window.confirm('删除后客户会进入删除列表，默认不再出现在主列表和归档列表中。确定继续吗？')) return;
+            try {
+                await withQuoteBusy('正在删除客户...', async () => {
+                    const saved = await saveCustomerDraft(input.user, {
+                        ...(moduleState.customers.find((item) => item.id === button.dataset.customerDelete) || {}),
+                        is_active: false,
+                        is_deleted: true,
+                    });
+                    await Promise.all([
+                        fetchCustomerAnalytics(saved.id),
+                        fetchCustomerSendLedger(saved.id),
+                    ]);
+                    await renderQuoteCustomersPage(input);
+                }, button, '删除仅隐藏客户入口，不会清除历史需求与报价数据。');
+                input.showToast('客户已删除。');
+            } catch (error) {
+                input.showToast(error.message || '删除客户失败。', true);
             }
         });
     });
@@ -5469,12 +6348,13 @@ function bindCustomerEditor(input) {
                     const saved = await saveCustomerDraft(input.user, {
                         ...(moduleState.customers.find((item) => item.id === button.dataset.customerRestore) || {}),
                         is_active: true,
+                        is_deleted: false,
                     });
                     await Promise.all([
                         fetchCustomerAnalytics(saved.id),
                         fetchCustomerSendLedger(saved.id),
                     ]);
-                    moduleState.customerArchiveView = false;
+                    moduleState.customerListMode = 'active';
                     await renderQuoteCustomersPage(input);
                 }, button, '恢复后客户会重新出现在主列表、需求绑定和报价关联入口中。');
                 input.showToast('客户已恢复。');
@@ -5513,6 +6393,7 @@ function bindCustomerEditor(input) {
                 const saved = await saveCustomerDraft(input.user, {
                     ...moduleState.customerEditor,
                     is_active: false,
+                    is_deleted: false,
                 });
                 await Promise.all([
                     fetchCustomerAnalytics(saved.id),
@@ -5532,12 +6413,13 @@ function bindCustomerEditor(input) {
                 const saved = await saveCustomerDraft(input.user, {
                     ...moduleState.customerEditor,
                     is_active: true,
+                    is_deleted: false,
                 });
                 await Promise.all([
                     fetchCustomerAnalytics(saved.id),
                     fetchCustomerSendLedger(saved.id),
                 ]);
-                moduleState.customerArchiveView = false;
+                moduleState.customerListMode = 'active';
                 input.showToast('客户已恢复。');
                 await renderQuoteCustomersPage(input);
             } catch (error) {
@@ -5574,6 +6456,14 @@ function bindCustomerEditor(input) {
 function bindRequirementEditor(input) {
     const content = document.getElementById('ams-content');
     if (!content) return;
+    hydrateCustomSelects(content);
+    const requirementShareMenu = content.querySelector('.ams-share-menu');
+    const requirementPosterModal = document.getElementById('ams-requirement-share-poster-modal');
+    const requirementPosterImage = document.getElementById('ams-requirement-share-poster-image');
+    const requirementPosterDownload = document.getElementById('ams-requirement-share-poster-download');
+    const closeRequirementPosterModal = () => {
+        if (requirementPosterModal) requirementPosterModal.hidden = true;
+    };
 
     document.getElementById('ams-quote-requirement-search')?.addEventListener('input', (event) => {
         moduleState.requirementSearch = event.currentTarget.value || '';
@@ -5617,6 +6507,7 @@ function bindRequirementEditor(input) {
         const apply = () => {
             const field = node.dataset.requirementField;
             if (!field) return;
+            if (requirementIsLocked(moduleState.requirementEditor?.status) && field !== 'notes') return;
             if (field === 'customer_id' && text(moduleState.requirementEditor?.id)) return;
             moduleState.requirementEditor[field] = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
             if (field === 'customer_id') {
@@ -5643,6 +6534,7 @@ function bindRequirementEditor(input) {
         const apply = () => {
             const field = node.dataset.requirementAnswer;
             if (!field) return;
+            if (requirementIsLocked(moduleState.requirementEditor?.status)) return;
             moduleState.requirementEditor.answers[field] = node.value;
         };
         node.addEventListener('input', apply);
@@ -5653,6 +6545,7 @@ function bindRequirementEditor(input) {
         const apply = () => {
             const field = node.dataset.requirementCheck;
             if (!field) return;
+            if (requirementIsLocked(moduleState.requirementEditor?.status)) return;
             const checked = [...content.querySelectorAll(`[data-requirement-check="${field}"]`)]
                 .filter((item) => item.checked)
                 .map((item) => item.value);
@@ -5662,7 +6555,7 @@ function bindRequirementEditor(input) {
     });
 
     document.getElementById('ams-quote-requirement-save')?.addEventListener('click', async (event) => {
-        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
+        await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
             try {
                 const saved = await saveRequirementDraft(input.user, moduleState.requirementEditor);
                 input.showToast('需求获取单已保存。');
@@ -5674,23 +6567,6 @@ function bindRequirementEditor(input) {
         });
     });
 
-    document.getElementById('ams-quote-requirement-copy-link')?.addEventListener('click', async () => {
-        if (!moduleState.requirementEditor?.public_slug || !moduleState.requirementEditor?.public_token) {
-            input.showToast('请先保存需求单，再复制客户需求链接。', true);
-            return;
-        }
-        const url = requirementPublicUrl(moduleState.requirementEditor.public_slug, moduleState.requirementEditor.public_token);
-        try {
-            await navigator.clipboard.writeText(url);
-            input.showToast('客户需求链接已复制。');
-        } catch (_error) {
-            input.showToast(url, false);
-        }
-    });
-    document.getElementById('ams-quote-requirement-copy-link-inline')?.addEventListener('click', async () => {
-        document.getElementById('ams-quote-requirement-copy-link')?.click();
-    });
-
     document.getElementById('ams-quote-requirement-open-link')?.addEventListener('click', () => {
         if (!moduleState.requirementEditor?.public_slug || !moduleState.requirementEditor?.public_token) {
             input.showToast('请先保存需求单，再打开公开需求页。', true);
@@ -5700,6 +6576,47 @@ function bindRequirementEditor(input) {
     });
     document.getElementById('ams-quote-requirement-open-link-inline')?.addEventListener('click', () => {
         document.getElementById('ams-quote-requirement-open-link')?.click();
+    });
+    document.getElementById('ams-quote-requirement-share-link')?.addEventListener('click', async () => {
+        if (!moduleState.requirementEditor?.public_slug || !moduleState.requirementEditor?.public_token) {
+            input.showToast('请先生成需求单，再分享给客户填写。', true);
+            return;
+        }
+        const payload = requirementShareCopyText(moduleState.requirementEditor);
+        try {
+            await navigator.clipboard.writeText(payload);
+            input.showToast('需求单分享文案已复制。');
+        } catch (_error) {
+            input.showToast(payload, false);
+        }
+        if (requirementShareMenu) requirementShareMenu.removeAttribute('open');
+    });
+    document.getElementById('ams-quote-requirement-share-poster')?.addEventListener('click', () => {
+        if (!moduleState.requirementEditor?.public_slug || !moduleState.requirementEditor?.public_token) {
+            input.showToast('请先生成需求单，再分享二维码。', true);
+            return;
+        }
+        const posterUrl = requirementSharePosterDataUrl(moduleState.requirementEditor);
+        if (requirementPosterImage) requirementPosterImage.setAttribute('src', posterUrl);
+        if (requirementPosterDownload) requirementPosterDownload.setAttribute('href', posterUrl);
+        if (requirementPosterModal) requirementPosterModal.hidden = false;
+        if (requirementShareMenu) requirementShareMenu.removeAttribute('open');
+    });
+    document.getElementById('ams-requirement-share-poster-copy-link')?.addEventListener('click', async () => {
+        if (!moduleState.requirementEditor?.public_slug || !moduleState.requirementEditor?.public_token) {
+            input.showToast('请先生成需求单，再复制分享说明。', true);
+            return;
+        }
+        const payload = requirementShareCopyText(moduleState.requirementEditor);
+        try {
+            await navigator.clipboard.writeText(payload);
+            input.showToast('海报说明文案已复制。');
+        } catch (_error) {
+            input.showToast(payload, false);
+        }
+    });
+    requirementPosterModal?.querySelectorAll('[data-requirement-share-poster-close]').forEach((node) => {
+        node.addEventListener('click', closeRequirementPosterModal);
     });
 
     document.getElementById('ams-quote-requirement-create-instance')?.addEventListener('click', async (event) => {
@@ -5778,6 +6695,13 @@ function bindRequirementEditor(input) {
             window.location.assign(adminPageUrl('quote-instances', { requirement: requirementId }));
         });
     });
+    content.querySelectorAll('[data-requirement-linked-instance]').forEach((select) => {
+        select.addEventListener('change', (event) => {
+            const instanceId = event.currentTarget.value || '';
+            if (!instanceId) return;
+            window.location.assign(adminPageUrl('quote-instances', { instance: instanceId }));
+        });
+    });
 }
 
 export async function renderQuoteRequirementsPage(input) {
@@ -5821,6 +6745,8 @@ export async function renderQuoteRequirementsPage(input) {
         : '';
     const canCreateQuote = requirementStatusReadyForQuote(requirement.status);
     const linkLocked = requirementIsLocked(requirement.status);
+    const requirementLocked = requirementIsLocked(requirement.status);
+    const requirementSubmitted = normalizeRequirementStatus(requirement.status) === 'submitted';
     const availableProducts = activeProducts();
     if (!availableProducts.some((product) => product.id === moduleState.requirementProductSelection)) {
         moduleState.requirementProductSelection = availableProducts[0]?.id || '';
@@ -5843,7 +6769,7 @@ export async function renderQuoteRequirementsPage(input) {
                         <span>先绑定客户，生成唯一公开链接，再把需求表发给客户填写。</span>
                     </div>
                 </button>
-                <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
+                <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel ${requirementSubmitted ? 'ams-need-attention' : ''}">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>从需求生成报价单</strong>
@@ -5851,7 +6777,7 @@ export async function renderQuoteRequirementsPage(input) {
                         <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
                             <select class="ams-select ams-quote-create-select" data-requirement-product-select>
                                 <option value="">请选择产品模板</option>
-                                ${availableProducts.map((product) => `<option value="${esc(product.id)}" ${selectedRequirementProductId === product.id ? 'selected' : ''}>${esc(brandLabelById(product.brand_id))} / ${esc(pickLocalized(product.public_title, product.default_lang, product.slug))}</option>`).join('')}
+                                ${availableProducts.map((product) => `<option value="${esc(product.id)}" ${selectedRequirementProductId === product.id ? 'selected' : ''}>${esc(productLabelById(product.id))}</option>`).join('')}
                             </select>
                             <button class="ams-btn ams-btn-warning" type="button" data-requirement-create-instance ${canCreateQuote ? '' : 'disabled'}>生成报价草稿</button>
                         </div>
@@ -5881,12 +6807,53 @@ export async function renderQuoteRequirementsPage(input) {
                         ? `
                     <div class="ams-section-head">
                         <div>
-                            <h3>${requirement.id ? '编辑需求获取单' : '新建需求获取单'}</h3>
+                        <h3>${requirement.id ? '客户原始需求填报单' : '新建需求获取单'}</h3>
                             <p>后台在这里做客户绑定、公开链接发放、提交状态确认和报价衔接，不直接代替客户填写问卷。</p>
                         </div>
                         <div class="ams-row-actions">
-                            <button class="ams-btn ams-btn-muted" type="button" data-requirement-open-instances="${esc(requirement.id)}" ${quoteSummary.total_quotes ? '' : 'disabled'}>查看报价单</button>
-                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-requirement-save">保存需求单</button>
+                            ${requirement.id && quoteSummary.total_quotes
+                                ? `<button class="ams-btn ams-btn-muted" type="button" data-requirement-open-instances="${esc(requirement.id)}">查看报价单</button>`
+                                : ''
+                            }
+                            <details class="ams-share-menu">
+                                <summary class="ams-btn ams-btn-muted" ${requirementLink ? '' : 'aria-disabled="true"'}>
+                                    分享需求单
+                                </summary>
+                                <div class="ams-share-menu-panel">
+                                    <div class="ams-share-menu-copy">
+                                        <strong>选择分享方式</strong>
+                                        <span>对外发送时，会自动带上填写引导、GasGx 品牌说明，以及“自动保存、后台可同步查看进度”的说明。</span>
+                                    </div>
+                                    <button class="ams-share-menu-item" type="button" id="ams-quote-requirement-share-link" ${requirementLink ? '' : 'disabled'}>
+                                        <i class="fa-solid fa-link"></i>
+                                        <span>分享链接</span>
+                                    </button>
+                                    <button class="ams-share-menu-item" type="button" id="ams-quote-requirement-share-poster" ${requirementLink ? '' : 'disabled'}>
+                                        <i class="fa-solid fa-qrcode"></i>
+                                        <span>分享二维码</span>
+                                    </button>
+                                </div>
+                            </details>
+                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-requirement-save">生成需求单</button>
+                        </div>
+                    </div>
+                    <div class="ams-share-poster-modal" id="ams-requirement-share-poster-modal" hidden>
+                        <div class="ams-share-poster-backdrop" data-requirement-share-poster-close></div>
+                        <div class="ams-share-poster-dialog">
+                            <div class="ams-share-poster-head">
+                                <div>
+                                    <strong>需求单分享二维码海报</strong>
+                                    <span>适合微信、邮件或群转发，已包含填写引导与 GasGx 品牌说明。</span>
+                                </div>
+                                <button class="ams-btn ams-btn-muted" type="button" data-requirement-share-poster-close>关闭</button>
+                            </div>
+                            <div class="ams-share-poster-stage">
+                                <img class="ams-share-poster-image" id="ams-requirement-share-poster-image" alt="需求单分享二维码海报">
+                            </div>
+                            <div class="ams-row-actions">
+                                <a class="ams-btn ams-btn-primary" id="ams-requirement-share-poster-download" download="gasgx-requirement-share-poster.svg">下载海报</a>
+                                <button class="ams-btn ams-btn-muted" type="button" id="ams-requirement-share-poster-copy-link">复制海报说明文案</button>
+                            </div>
                         </div>
                     </div>
                     <div class="ams-quote-meta-grid">
@@ -5894,42 +6861,41 @@ export async function renderQuoteRequirementsPage(input) {
                         <div class="ams-summary-chip"><strong>当前状态</strong><span>${esc(requirementStatusLabel(requirement.status))}</span></div>
                         <div class="ams-summary-chip ams-summary-chip-link">
                             <strong>公开链接</strong>
-                            <span>${esc(requirementLink || '先保存后生成')}</span>
+                            <span>${requirementLink ? `<a class="ams-inline-link" href="${esc(requirementLink)}" target="_blank" rel="noopener">${esc(requirementLink)}</a>` : esc('先保存后生成')}</span>
                             <div class="ams-summary-chip-actions">
-                                <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-requirement-copy-link-inline" ${requirementLink ? '' : 'disabled'}>复制</button>
                                 <button class="ams-btn ams-btn-warning" type="button" id="ams-quote-requirement-open-link-inline" ${requirementLink ? '' : 'disabled'}>查看</button>
                             </div>
                         </div>
                         <div class="ams-summary-chip"><strong>客户提交时间</strong><span>${esc(fmtDate(requirement.submitted_at))}</span></div>
-                        <div class="ams-summary-chip"><strong>关联报价</strong><span>${esc(quoteSummary.total_quotes)}</span></div>
+                        <div class="ams-summary-chip"><strong>已关联报价</strong><span>${requirementQuoteJumpMarkup(requirement.id)}</span></div>
                         <div class="ams-summary-chip"><strong>更新时间</strong><span>${esc(fmtDate(requirement.updated_at))}</span></div>
                     </div>
                     <div class="ams-site-field-grid ams-site-field-grid-wide">
                         <div class="ams-field">
                             <label>绑定客户</label>
-                            <select class="ams-select" data-requirement-field="customer_id" ${requirement.id ? 'disabled' : ''}>
+                            <select class="ams-select" data-requirement-field="customer_id" ${requirement.id || requirementLocked ? 'disabled' : ''}>
                                 <option value="">请选择客户档案</option>
                                 ${moduleState.customers.map((customer) => `<option value="${esc(customer.id)}" ${requirement.customer_id === customer.id ? 'selected' : ''}>${esc(customerDisplayName(customer))}</option>`).join('')}
                             </select>
                             <div class="ams-field-help">${requirement.id ? '需求单创建后，绑定客户不可更改。若客户归属有误，请新建一份正确的需求单。' : '先绑定客户，再继续完善公开需求链接和问卷内容。'}</div>
                         </div>
-                        <div class="ams-field"><label>需求标题</label><input class="ams-input" data-requirement-field="title" value="${esc(requirement.title)}" placeholder="例如：俄罗斯 200 台液冷矿机一体化需求"></div>
+                        <div class="ams-field"><label>需求标题</label><input class="ams-input" data-requirement-field="title" value="${esc(requirement.title)}" placeholder="例如：俄罗斯 200 台液冷矿机一体化需求" ${requirementLocked ? 'disabled' : ''}></div>
                         <div class="ams-field">
                             <label>状态</label>
-                            <select class="ams-select" data-requirement-field="status">${selectOptionsMarkup(REQUIREMENT_STATUS_OPTIONS, requirement.status)}</select>
+                            <select class="ams-select" data-requirement-field="status" ${requirementLocked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_STATUS_OPTIONS, requirement.status)}</select>
                         </div>
                         <div class="ams-field">
                             <label>需求类型</label>
-                            <select class="ams-select" data-requirement-field="requirement_type">${selectOptionsMarkup(REQUIREMENT_TYPE_OPTIONS, requirement.requirement_type)}</select>
+                            <select class="ams-select" data-requirement-field="requirement_type" ${requirementLocked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_TYPE_OPTIONS, requirement.requirement_type)}</select>
                         </div>
-                        <div class="ams-field"><label>国家 / 地区</label><input class="ams-input" data-requirement-field="country" value="${esc(requirement.country)}" placeholder="Russia"></div>
-                        <div class="ams-field"><label>客户公司</label><input class="ams-input" data-requirement-field="requester_company" value="${esc(requirement.requester_company)}" placeholder="Demo Mining"></div>
-                        <div class="ams-field"><label>联系人</label><input class="ams-input" data-requirement-field="requester_name" value="${esc(requirement.requester_name)}" placeholder="Allen"></div>
-                        <div class="ams-field"><label>邮箱</label><input class="ams-input" data-requirement-field="requester_email" value="${esc(requirement.requester_email)}" placeholder="customer@example.com"></div>
-                        <div class="ams-field"><label>WhatsApp / 电话</label><input class="ams-input" data-requirement-field="requester_phone" value="${esc(requirement.requester_phone)}" placeholder="+7 000 000 0000"></div>
+                        <div class="ams-field"><label>国家 / 地区</label><input class="ams-input" data-requirement-field="country" value="${esc(requirement.country)}" placeholder="Russia" ${requirementLocked ? 'disabled' : ''}></div>
+                        <div class="ams-field"><label>客户公司</label><input class="ams-input" data-requirement-field="requester_company" value="${esc(requirement.requester_company)}" placeholder="Demo Mining" ${requirementLocked ? 'disabled' : ''}></div>
+                        <div class="ams-field"><label>联系人</label><input class="ams-input" data-requirement-field="requester_name" value="${esc(requirement.requester_name)}" placeholder="Allen" ${requirementLocked ? 'disabled' : ''}></div>
+                        <div class="ams-field"><label>邮箱</label><input class="ams-input" data-requirement-field="requester_email" value="${esc(requirement.requester_email)}" placeholder="customer@example.com" ${requirementLocked ? 'disabled' : ''}></div>
+                        <div class="ams-field"><label>WhatsApp / 电话</label><input class="ams-input" data-requirement-field="requester_phone" value="${esc(requirement.requester_phone)}" placeholder="+7 000 000 0000" ${requirementLocked ? 'disabled' : ''}></div>
                         <div class="ams-field">
                             <label>线索来源</label>
-                            <select class="ams-select" data-requirement-answer="source_channel">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.source_channel, answers.source_channel)}</select>
+                            <select class="ams-select" data-requirement-answer="source_channel" ${requirementLocked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.source_channel, answers.source_channel)}</select>
                         </div>
                     </div>
                     <section class="ams-quote-block">
@@ -5948,7 +6914,6 @@ export async function renderQuoteRequirementsPage(input) {
                             </div>
                         </div>
                         <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
-                            <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-requirement-copy-link" ${requirementLink ? '' : 'disabled'}>复制客户需求链接</button>
                             <button class="ams-btn ams-btn-warning" type="button" id="ams-quote-requirement-open-link" ${requirementLink ? '' : 'disabled'}>打开公开需求页</button>
                         </div>
                     </section>
@@ -5957,33 +6922,33 @@ export async function renderQuoteRequirementsPage(input) {
                         <div class="ams-site-field-grid ams-site-field-grid-wide">
                             <div class="ams-field">
                                 <label>部署方式</label>
-                                <select class="ams-select" data-requirement-answer="deployment_mode">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.deployment_mode, answers.deployment_mode)}</select>
+                                <select class="ams-select" data-requirement-answer="deployment_mode" ${requirementLocked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.deployment_mode, answers.deployment_mode)}</select>
                             </div>
                             <div class="ams-field">
                                 <label>单机算力范围</label>
-                                <select class="ams-select" data-requirement-answer="miner_hashrate_band">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_hashrate_band, answers.miner_hashrate_band)}</select>
+                                <select class="ams-select" data-requirement-answer="miner_hashrate_band" ${requirementLocked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_hashrate_band, answers.miner_hashrate_band)}</select>
                             </div>
                             <div class="ams-field">
                                 <label>单机功耗范围</label>
-                                <select class="ams-select" data-requirement-answer="miner_power_band">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_power_band, answers.miner_power_band)}</select>
+                                <select class="ams-select" data-requirement-answer="miner_power_band" ${requirementLocked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_power_band, answers.miner_power_band)}</select>
                             </div>
                             <div class="ams-field">
                                 <label>矿机数量范围</label>
-                                <select class="ams-select" data-requirement-answer="miner_quantity_band">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_quantity_band, answers.miner_quantity_band)}</select>
+                                <select class="ams-select" data-requirement-answer="miner_quantity_band" ${requirementLocked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_quantity_band, answers.miner_quantity_band)}</select>
                             </div>
                             <div class="ams-field">
                                 <label>电压 / 频率</label>
-                                <select class="ams-select" data-requirement-answer="voltage_frequency">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.voltage_frequency, answers.voltage_frequency)}</select>
+                                <select class="ams-select" data-requirement-answer="voltage_frequency" ${requirementLocked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.voltage_frequency, answers.voltage_frequency)}</select>
                             </div>
                         </div>
                         <div class="ams-field">
                             <label>矿机品牌</label>
-                            ${requirementCheckboxGroup('miner_brands', REQUIREMENT_MULTI_OPTIONS.miner_brands, answers.miner_brands)}
+                            ${requirementCheckboxGroup('miner_brands', REQUIREMENT_MULTI_OPTIONS.miner_brands, answers.miner_brands, requirementLocked)}
                             <div class="ams-field-help">可多选；若客户暂时不确定，保留“其他 / 待确认”即可。</div>
                         </div>
                         <div class="ams-field">
                             <label>矿机冷却方式</label>
-                            ${requirementCheckboxGroup('miner_cooling', REQUIREMENT_MULTI_OPTIONS.miner_cooling, answers.miner_cooling)}
+                            ${requirementCheckboxGroup('miner_cooling', REQUIREMENT_MULTI_OPTIONS.miner_cooling, answers.miner_cooling, requirementLocked)}
                         </div>
                     </section>
                     <section class="ams-quote-block">
@@ -5991,35 +6956,35 @@ export async function renderQuoteRequirementsPage(input) {
                         <div class="ams-site-field-grid ams-site-field-grid-wide">
                             <div class="ams-field">
                                 <label>供电规模</label>
-                                <select class="ams-select" data-requirement-answer="power_capacity_band">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.power_capacity_band, answers.power_capacity_band)}</select>
+                                <select class="ams-select" data-requirement-answer="power_capacity_band" ${requirementLocked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.power_capacity_band, answers.power_capacity_band)}</select>
                             </div>
                             <div class="ams-field">
                                 <label>部署偏好</label>
-                                <select class="ams-select" data-requirement-answer="container_preference">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.container_preference, answers.container_preference)}</select>
+                                <select class="ams-select" data-requirement-answer="container_preference" ${requirementLocked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.container_preference, answers.container_preference)}</select>
                             </div>
                             <div class="ams-field">
                                 <label>噪音要求</label>
-                                <select class="ams-select" data-requirement-answer="silent_requirement">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.silent_requirement, answers.silent_requirement)}</select>
+                                <select class="ams-select" data-requirement-answer="silent_requirement" ${requirementLocked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.silent_requirement, answers.silent_requirement)}</select>
                             </div>
                             <div class="ams-field">
                                 <label>预算区间</label>
-                                <select class="ams-select" data-requirement-answer="budget_band">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.budget_band, answers.budget_band)}</select>
+                                <select class="ams-select" data-requirement-answer="budget_band" ${requirementLocked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.budget_band, answers.budget_band)}</select>
                             </div>
                             <div class="ams-field">
                                 <label>期望周期</label>
-                                <select class="ams-select" data-requirement-answer="timeline_band">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.timeline_band, answers.timeline_band)}</select>
+                                <select class="ams-select" data-requirement-answer="timeline_band" ${requirementLocked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.timeline_band, answers.timeline_band)}</select>
                             </div>
                         </div>
                         <div class="ams-field">
                             <label>认证 / 合规要求</label>
-                            ${requirementCheckboxGroup('certification_needs', REQUIREMENT_MULTI_OPTIONS.certification_needs, answers.certification_needs)}
+                            ${requirementCheckboxGroup('certification_needs', REQUIREMENT_MULTI_OPTIONS.certification_needs, answers.certification_needs, requirementLocked)}
                         </div>
                     </section>
                     <div class="ams-field">
                         <label>客户补充</label>
-                        <textarea class="ams-textarea" rows="3" data-requirement-answer="extra_notes" placeholder="只保留必须记录的额外说明，例如特殊站点条件、付款方式、指定矿机型号。">${esc(answers.extra_notes)}</textarea>
+                        <textarea class="ams-textarea" rows="3" data-requirement-answer="extra_notes" placeholder="只保留必须记录的额外说明，例如特殊站点条件、付款方式、指定矿机型号。" ${requirementLocked ? 'disabled' : ''}>${esc(answers.extra_notes)}</textarea>
                     </div>
-                    <div class="ams-field">
+                    <div class="ams-field ${requirementSubmitted ? 'ams-need-attention' : ''}">
                         <label>内部备注</label>
                         <textarea class="ams-textarea" rows="3" data-requirement-field="notes" placeholder="记录内部判断、下一步动作和推荐方向。">${esc(requirement.notes)}</textarea>
                     </div>
@@ -6028,7 +6993,7 @@ export async function renderQuoteRequirementsPage(input) {
                         <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
                             <select id="ams-quote-requirement-product-select" class="ams-select ams-quote-create-select" data-requirement-product-select>
                                 <option value="">请选择产品模板</option>
-                                ${availableProducts.map((product) => `<option value="${esc(product.id)}" ${selectedRequirementProductId === product.id ? 'selected' : ''}>${esc(brandLabelById(product.brand_id))} / ${esc(pickLocalized(product.public_title, product.default_lang, product.slug))}</option>`).join('')}
+                                ${availableProducts.map((product) => `<option value="${esc(product.id)}" ${selectedRequirementProductId === product.id ? 'selected' : ''}>${esc(productLabelById(product.id))}</option>`).join('')}
                             </select>
                             <button class="ams-btn ams-btn-warning" type="button" id="ams-quote-requirement-create-instance" ${canCreateQuote ? '' : 'disabled'}>生成报价草稿并打开真实报价页</button>
                         </div>
@@ -6106,20 +7071,6 @@ export async function renderQuoteInstancesPage(input) {
                 <p class="ams-hero-text">这里的产品已经是正式业务产品。生成报价单后可以直接给客户；如果有细节不满意，直接在报价单里继续改，不需要再回到模板概念里理解。</p>
             </div>
             <div class="ams-quick-actions ams-quote-instance-quick-actions">
-                <button class="ams-quick-link" type="button" data-instance-list-mode="${archiveView ? 'active' : 'archived'}">
-                    <div class="ams-quick-link-icon"><i class="fa-solid ${archiveView ? 'fa-list' : 'fa-box-archive'}"></i></div>
-                    <div class="ams-quick-link-body">
-                        <strong>${archiveView ? '返回主列表' : '查看归档报价'}</strong>
-                        <span>${archiveView ? '当前正在查看已归档报价单，点击返回正常编辑列表。' : `已经成交、完成或收口的报价单统一收进归档列表，当前共 ${archivedInstanceCount()} 份。`}</span>
-                    </div>
-                </button>
-                <button class="ams-quick-link" type="button" data-instance-list-mode="${voidedView ? 'active' : 'voided'}">
-                    <div class="ams-quick-link-icon"><i class="fa-solid ${voidedView ? 'fa-list' : 'fa-ban'}"></i></div>
-                    <div class="ams-quick-link-body">
-                        <strong>${voidedView ? '返回主列表' : '查看作废报价'}</strong>
-                        <span>${voidedView ? '当前正在查看已作废报价单，点击返回正常编辑列表。' : `中止、不再跟进或判废的报价单统一收进作废列表，当前共 ${voidedInstanceCount()} 份。`}</span>
-                    </div>
-                </button>
                 <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-file-circle-plus"></i></div>
                     <div class="ams-quick-link-body">
@@ -6128,7 +7079,7 @@ export async function renderQuoteInstancesPage(input) {
                         <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
                             <select id="ams-quote-instance-product-select" class="ams-select ams-quote-create-select">
                                 <option value="">请选择产品</option>
-                                ${activeProducts().map((product) => `<option value="${esc(product.id)}">${esc(brandLabelById(product.brand_id))} / ${esc(pickLocalized(product.public_title, product.default_lang, product.slug))}</option>`).join('')}
+                                ${activeProducts().map((product) => `<option value="${esc(product.id)}">${esc(productLabelById(product.id))}</option>`).join('')}
                             </select>
                             <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-instance-create-from-product">生成草稿</button>
                         </div>
@@ -6143,7 +7094,6 @@ export async function renderQuoteInstancesPage(input) {
                 <div class="ams-section-head">
                     <div><h3>${archiveView ? '归档报价单' : voidedView ? '作废报价单' : '报价单列表'}</h3><p>共 ${visibleCountLabel} 份${archiveView ? '归档报价单' : voidedView ? '作废报价单' : focusedRequirement ? `关联“${esc(requirementDisplayName(focusedRequirement))}”的报价单` : '报价单'}</p></div>
                     <div class="ams-row-actions">
-                        ${moduleState.instanceRequirementFilter ? '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-clear-requirement-filter">返回全部报价</button>' : ''}
                         <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" data-instance-list-mode="${archiveView ? 'active' : 'archived'}">${archiveView ? '返回主列表' : `归档列表（${archivedInstanceCount()}）`}</button>
                         <button class="ams-btn ${voidedView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" data-instance-list-mode="${voidedView ? 'active' : 'voided'}">${voidedView ? '返回主列表' : `作废列表（${voidedInstanceCount()}）`}</button>
                     </div>
@@ -6195,10 +7145,44 @@ export async function renderQuoteInstancesPage(input) {
                             <p>这里主要做报价单基础管理。第一屏只保留客户、需求和链接入口；具体文案、价格和发布动作请进入真实报价页处理。</p>
                         </div>
                         <div class="ams-row-actions">
-                            <button class="ams-btn ams-btn-warning" type="button" id="ams-open-instance-visual-editor" ${inactiveEditor ? 'disabled' : ''}>可视化编辑</button>
-                            <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-preview">预览客户页</button>
-                            <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-copy-link">复制客户链接</button>
-                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-instance-save" ${inactiveEditor ? 'disabled' : ''}>保存草稿</button>
+                            <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-preview">预览报价单</button>
+                            <details class="ams-share-menu">
+                                <summary class="ams-btn ams-btn-muted">分享报价单</summary>
+                                <div class="ams-share-menu-panel">
+                                    <div class="ams-share-menu-copy">
+                                        <strong>选择分享方式</strong>
+                                        <span>对外发送时，系统会自动带上用途说明和 GasGx 品牌介绍。</span>
+                                    </div>
+                                    <button class="ams-share-menu-item" type="button" id="ams-quote-instance-share-link">
+                                        <i class="fa-solid fa-link"></i>
+                                        <span>分享链接</span>
+                                    </button>
+                                    <button class="ams-share-menu-item" type="button" id="ams-quote-instance-share-poster">
+                                        <i class="fa-solid fa-qrcode"></i>
+                                        <span>分享二维码</span>
+                                    </button>
+                                </div>
+                            </details>
+                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-instance-save" ${inactiveEditor ? 'disabled' : ''}>保存</button>
+                        </div>
+                    </div>
+                    <div class="ams-share-poster-modal" id="ams-quote-share-poster-modal" hidden>
+                        <div class="ams-share-poster-backdrop" data-share-poster-close></div>
+                        <div class="ams-share-poster-dialog">
+                            <div class="ams-share-poster-head">
+                                <div>
+                                    <strong>分享二维码海报</strong>
+                                    <span>适合微信、邮件或内部转发，已包含用途说明与 GasGx 品牌信息。</span>
+                                </div>
+                                <button class="ams-btn ams-btn-muted" type="button" data-share-poster-close>关闭</button>
+                            </div>
+                            <div class="ams-share-poster-stage">
+                                <img class="ams-share-poster-image" id="ams-quote-share-poster-image" alt="报价单分享二维码海报">
+                            </div>
+                            <div class="ams-row-actions">
+                                <a class="ams-btn ams-btn-primary" id="ams-quote-share-poster-download" download="gasgx-quote-share-poster.svg">下载海报</a>
+                                <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-share-poster-copy-link">复制海报说明文案</button>
+                            </div>
                         </div>
                     </div>
                     <div class="ams-inline-actions">
@@ -6209,10 +7193,10 @@ export async function renderQuoteInstancesPage(input) {
                         }
                         <span class="ams-field-help">${moduleState.instanceEditor.status === 'archived' ? '归档代表这份报价单已经完成收口；如需继续编辑，请先恢复到主列表。' : moduleState.instanceEditor.status === 'voided' ? '作废代表这份报价单已经废弃不用；如需重新启用，请先恢复，再决定是否继续调整。' : '归档用于已完成收口的报价单；作废用于中止、判废或不再继续的报价单。'}</span>
                     </div>
-                    <div class="ams-direct-entry-banner">
-                        <strong>可视化编辑入口</strong>
-                        <span>${inactiveEditor ? '当前这份报价单已退出主编辑流；如需继续改动，请先恢复，再进入可视化编辑。' : '点击上面的“可视化编辑”，会进入客户报价页本体进行编辑。'}</span>
-                    </div>
+                    <button class="ams-direct-entry-banner ${inactiveEditor ? 'is-disabled' : ''}" type="button" id="ams-open-instance-visual-editor" ${inactiveEditor ? 'disabled' : ''}>
+                        <strong>进入可视化编辑</strong>
+                        <span>${inactiveEditor ? '当前这份报价单已退出主编辑流；如需继续改动，请先恢复，再进入可视化编辑。' : '点击后直接进入客户报价页本体，按最终展示效果编辑内容。'}</span>
+                    </button>
                     <div class="ams-quote-meta-grid">
                         <div class="ams-summary-chip"><strong>状态</strong><span>${statusPill(moduleState.instanceEditor.status)}</span></div>
                         <div class="ams-summary-chip"><strong>客户档案</strong><span>${esc(customerDisplayName(moduleState.customers.find((item) => item.id === moduleState.instanceEditor.customer_id) || buildInstanceCustomerSnapshot(moduleState.instanceEditor)))}</span></div>
@@ -6220,57 +7204,42 @@ export async function renderQuoteInstancesPage(input) {
                         <div class="ams-summary-chip"><strong>公开 slug</strong><span>${esc(moduleState.instanceEditor.public_slug || '待生成')}</span></div>
                         <div class="ams-summary-chip"><strong>最近发布时间</strong><span>${esc(fmtDate(moduleState.instanceEditor.published_at))}</span></div>
                     </div>
-                    <section class="ams-quote-management-primary">
-                        <div class="ams-section-head">
-                            <div>
-                                <h3>基础管理</h3>
-                                <p>先确认客户、需求和主要联系人；这几个字段决定这张报价单在整条链路里的归属。</p>
-                            </div>
-                        </div>
-                        <div class="ams-site-field-grid ams-site-field-grid-wide">
-                            <div class="ams-field">
-                                <label>客户档案</label>
-                                <select class="ams-select" id="ams-quote-instance-customer-select" ${text(moduleState.instanceEditor.customer_id) ? 'disabled' : ''}>
-                                    <option value="">新建或未关联</option>
-                                    ${moduleState.customers.map((customer) => `<option value="${esc(customer.id)}" ${moduleState.instanceEditor.customer_id === customer.id ? 'selected' : ''}>${esc(customerDisplayName(customer))}${customer.email ? ` · ${esc(customer.email)}` : ''}</option>`).join('')}
-                                </select>
-                                <div class="ams-field-help">${text(moduleState.instanceEditor.customer_id) ? '客户档案一旦绑定到这份报价单后即锁定；如归属有误，请作废当前报价单后重新建立新报价单。' : '客户档案只允许首次绑定一次。'}</div>
-                            </div>
-                            <div class="ams-field">
-                                <div class="ams-field-label-row">
-                                    <label>关联需求单</label>
-                                    <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-open-requirement" ${linkedRequirement ? '' : 'disabled'}>打开</button>
-                                </div>
-                                <select class="ams-select" id="ams-quote-instance-requirement-select" ${text(moduleState.instanceEditor.requirement_id) ? 'disabled' : ''}>
-                                    <option value="">未绑定需求单</option>
-                                    ${availableRequirements.map((requirement) => `<option value="${esc(requirement.id)}" ${moduleState.instanceEditor.requirement_id === requirement.id ? 'selected' : ''}>${esc(requirementDisplayName(requirement))}</option>`).join('')}
-                                </select>
-                                <div class="ams-field-help">${text(moduleState.instanceEditor.requirement_id) ? '需求单一旦绑定到这份报价单后即锁定；如链路有误，请作废当前报价单后重新建立新报价单。' : moduleState.instanceEditor.customer_id ? '优先显示当前客户名下需求单；首次绑定后即锁定。' : '先绑定客户后，这里会收窄到该客户对应需求单。'}</div>
-                            </div>
-                            <div class="ams-field"><label>客户公司</label><input class="ams-input" data-instance-field="customer_name" value="${esc(moduleState.instanceEditor.customer_name)}" placeholder="Demo Customer"></div>
-                            <div class="ams-field"><label>联系人</label><input class="ams-input" data-instance-field="receiver_name" value="${esc(moduleState.instanceEditor.receiver_name)}" placeholder="Receiver"></div>
-                            <div class="ams-field"><label>客户邮箱</label><input class="ams-input" data-instance-field="receiver_email" value="${esc(moduleState.instanceEditor.receiver_email)}" placeholder="customer@example.com"></div>
-                        </div>
-                    </section>
                     ${quoteManagementFold(
-                        '链接与交付设置',
-                        '这里只保留有效期和补充联系信息；链接入口和 slug 信息以上方区域为准。',
+                        '基础管理',
+                        '先确认客户、需求和主要联系人；这几个字段决定这张报价单在整条链路里的归属。',
                         `
                             <div class="ams-site-field-grid ams-site-field-grid-wide">
-                                <div class="ams-field"><label>客户电话</label><input class="ams-input" data-instance-field="customer_phone" value="${esc(moduleState.instanceEditor.customer_phone)}" placeholder="+7 000 000 0000"></div>
-                                <div class="ams-field"><label>国家/地区</label><input class="ams-input" data-instance-field="customer_country" value="${esc(moduleState.instanceEditor.customer_country)}" placeholder="Russia"></div>
-                                <div class="ams-field"><label>有效期（小时）</label><input class="ams-input" type="number" min="1" step="1" data-instance-field="validity_hours" value="${esc(moduleState.instanceEditor.validity_hours)}"></div>
+                                <div class="ams-field">
+                                    <label>客户档案</label>
+                                    <select class="ams-select" id="ams-quote-instance-customer-select" ${text(moduleState.instanceEditor.customer_id) ? 'disabled' : ''}>
+                                        <option value="">新建或未关联</option>
+                                        ${moduleState.customers.map((customer) => `<option value="${esc(customer.id)}" ${moduleState.instanceEditor.customer_id === customer.id ? 'selected' : ''}>${esc(customerDisplayName(customer))}${customer.email ? ` · ${esc(customer.email)}` : ''}</option>`).join('')}
+                                    </select>
+                                    <div class="ams-field-help">${text(moduleState.instanceEditor.customer_id) ? '客户档案一旦绑定到这份报价单后即锁定；如归属有误，请作废当前报价单后重新建立新报价单。' : '客户档案只允许首次绑定一次。'}</div>
+                                </div>
+                                <div class="ams-field">
+                                    <label>关联需求单</label>
+                                    <select class="ams-select" id="ams-quote-instance-requirement-select" ${text(moduleState.instanceEditor.requirement_id) ? 'disabled' : ''}>
+                                        <option value="">未绑定需求单</option>
+                                        ${availableRequirements.map((requirement) => `<option value="${esc(requirement.id)}" ${moduleState.instanceEditor.requirement_id === requirement.id ? 'selected' : ''}>${esc(requirementDisplayName(requirement))}</option>`).join('')}
+                                    </select>
+                                    <div class="ams-field-help">${text(moduleState.instanceEditor.requirement_id) ? '需求单一旦绑定到这份报价单后即锁定；如链路有误，请作废当前报价单后重新建立新报价单。' : moduleState.instanceEditor.customer_id ? '优先显示当前客户名下需求单；首次绑定后即锁定。' : '先绑定客户后，这里会收窄到该客户对应需求单。'}</div>
+                                </div>
+                                <div class="ams-field"><label>客户公司</label><input class="ams-input" data-instance-field="customer_name" value="${esc(moduleState.instanceEditor.customer_name)}" placeholder="Demo Customer"></div>
+                                <div class="ams-field"><label>联系人</label><input class="ams-input" data-instance-field="receiver_name" value="${esc(moduleState.instanceEditor.receiver_name)}" placeholder="Receiver"></div>
+                                <div class="ams-field"><label>客户邮箱</label><input class="ams-input" data-instance-field="receiver_email" value="${esc(moduleState.instanceEditor.receiver_email)}" placeholder="customer@example.com"></div>
                             </div>
-                        `,
-                    )}
-                    ${quoteManagementFold(
-                        '客户备注与分享对象',
-                        '客户备注和对外发送对象按需展开；销售负责人默认按当前登录后台账号记录。',
-                        `
                             <div class="ams-field">
                                 <label>客户备注</label>
                                 <textarea class="ams-textarea" rows="3" data-instance-field="customer_notes" placeholder="记录客户偏好、分享要求或跟进备注。">${esc(moduleState.instanceEditor.customer_notes)}</textarea>
                             </div>
+                        `,
+                        true,
+                    )}
+                    ${quoteManagementFold(
+                        '客户备注与分享对象',
+                        '这里维护默认外发联系人和分享备注；销售负责人默认按当前登录后台账号记录。',
+                        `
                             <section class="ams-quote-block">
                                 <div class="ams-section-head"><div><h3>分享对象</h3><p>这里维护默认外发联系人和分享备注；销售负责人默认取当前登录人。</p></div></div>
                                 <div class="ams-quote-meta-grid">
@@ -6335,11 +7304,22 @@ export async function renderQuoteCustomersPage(input) {
         moduleState.customerSends = [];
         moduleState.customerCreateMode = true;
     }
-    const archiveView = moduleState.customerArchiveView === true;
+    const listMode = moduleState.customerListMode || 'active';
     const activeCustomerId = text(moduleState.customerLoadedId || moduleState.customerEditor?.id);
     const quoteSummary = activeCustomerId ? summarizeCustomerQuotes(activeCustomerId) : summarizeCustomerQuotes('');
     const requirementSummary = activeCustomerId ? summarizeCustomerRequirements(activeCustomerId) : summarizeCustomerRequirements('');
-    input.setPageHeader('报价系统 / 客户洞察', '按客户查看关联报价单、浏览记录、分享动作，并维护客户主档信息。');
+    const requirementLinkTarget = activeCustomerId
+        ? customerRequirements(activeCustomerId)
+            .filter((item) => item.public_slug && item.public_token)
+            .sort((left, right) => new Date(right.updated_at || right.created_at || 0) - new Date(left.updated_at || left.created_at || 0))[0]
+        : null;
+    const requirementLink = requirementLinkTarget
+        ? requirementPublicUrl(requirementLinkTarget.public_slug, requirementLinkTarget.public_token)
+        : '';
+    const requirementChipValue = requirementLink
+        ? `<a class="ams-inline-link" href="${esc(requirementLink)}" target="_blank" rel="noopener">${esc(requirementLink)}</a>`
+        : esc(requirementSummary.total_requirements);
+    input.setPageHeader('报价系统 / 客户跟踪', '按客户查看关联报价单、浏览记录、分享动作，并维护客户主档信息。');
     input.setContent(`
         <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-instance-hero">
             <div class="ams-hero-copy">
@@ -6364,15 +7344,26 @@ export async function renderQuoteCustomersPage(input) {
                 </div>
             </div>
         </section>
+        ${customerPipelineMarkup(activeCustomerId)}
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
                 <div class="ams-section-head">
-                    <div><h3>${archiveView ? '已归档客户' : '客户列表'}</h3><p>共 ${filteredCustomers().length} 个${archiveView ? '归档客户' : '活跃客户'}</p></div>
+                    <div>
+                        <h3>${listMode === 'deleted' ? '已删除客户' : listMode === 'archived' ? '已归档客户' : '客户列表'}</h3>
+                        <p>共 ${filteredCustomers().length} 个${listMode === 'deleted' ? '已删除客户' : listMode === 'archived' ? '归档客户' : '活跃客户'}</p>
+                    </div>
                     <div class="ams-row-actions">
-                        <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-archive-entry">${archiveView ? '返回主列表' : `归档列表（${archivedCustomerCount()}）`}</button>
+                        <button class="ams-btn ${listMode === 'archived' ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-archive-entry">${listMode === 'archived' ? '返回主列表' : `归档列表（${archivedCustomerCount()}）`}</button>
+                        <button class="ams-btn ${listMode === 'deleted' ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-delete-entry">${listMode === 'deleted' ? '返回主列表' : `删除列表（${deletedCustomerCount()}）`}</button>
                     </div>
                 </div>
-                <div class="ams-field-help" style="margin: 0 0 12px;">${archiveView ? '这里只显示已归档客户，可恢复继续使用。' : '默认只显示有效客户，已归档客户收纳在单独列表。'}</div>
+                <div class="ams-field-help" style="margin: 0 0 12px;">${
+                    listMode === 'deleted'
+                        ? '这里只显示已删除客户，可按需恢复。'
+                        : listMode === 'archived'
+                            ? '这里只显示已归档客户，可恢复继续使用。'
+                            : '默认只显示有效客户，已归档和已删除客户收纳在单独列表。'
+                }</div>
                 <div class="ams-field">
                     <label>搜索客户</label>
                     <input id="ams-quote-customer-search" class="ams-input" value="${esc(moduleState.customerSearch)}" placeholder="搜索公司 / 联系人 / 邮箱 / 电话">
@@ -6392,23 +7383,9 @@ export async function renderQuoteCustomersPage(input) {
                             <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-save">保存客户档案</button>
                         </div>
                     </div>
-                    ${
-                        activeCustomerId
-                            ? `
-                    <div class="ams-inline-actions">
-                        ${
-                            moduleState.customerEditor?.is_active === false
-                                ? '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-customer-restore-current">恢复客户</button>'
-                                : '<button class="ams-btn ams-btn-danger" type="button" id="ams-quote-customer-archive-current">归档客户</button>'
-                        }
-                        <span class="ams-field-help">${moduleState.customerEditor?.is_active === false ? '已归档客户默认不再出现在客户主列表、需求绑定和报价关联入口。' : '归档后客户会从默认客户列表和新建绑定入口中隐藏，但历史数据仍保留。'}</span>
-                    </div>
-                    `
-                            : ''
-                    }
                     <div class="ams-quote-meta-grid">
                         <div class="ams-summary-chip"><strong>客户名称</strong><span>${esc(customerDisplayName(moduleState.customerEditor || {}))}</span></div>
-                        <div class="ams-summary-chip"><strong>关联需求单</strong><span>${esc(requirementSummary.total_requirements)}</span></div>
+                        <div class="ams-summary-chip"><strong>关联需求单</strong><span>${requirementChipValue}</span></div>
                         <div class="ams-summary-chip"><strong>关联报价单</strong><span>${esc(quoteSummary.total_quotes)}</span></div>
                         <div class="ams-summary-chip"><strong>创建时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.created_at))}</span></div>
                         <div class="ams-summary-chip"><strong>更新时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.updated_at))}</span></div>
@@ -6430,6 +7407,7 @@ export async function renderQuoteCustomersPage(input) {
                 }
             </section>
         </section>
+        ${customerRelationshipGraphMarkup(activeCustomerId)}
     `);
     bindCustomerEditor(input);
 }

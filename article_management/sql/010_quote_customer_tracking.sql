@@ -7,11 +7,15 @@ create table if not exists public.quote_customers (
     country text not null default '',
     notes text not null default '',
     is_active boolean not null default true,
+    is_deleted boolean not null default false,
     created_at timestamptz not null default timezone('utc', now()),
     updated_at timestamptz not null default timezone('utc', now()),
     created_by uuid null,
     updated_by uuid null
 );
+
+alter table public.quote_customers
+    add column if not exists is_deleted boolean not null default false;
 
 alter table public.quote_instances
     add column if not exists customer_id uuid null references public.quote_customers(id) on delete set null;
@@ -91,6 +95,9 @@ create unique index if not exists quote_customers_email_unique_idx
 
 create index if not exists quote_customers_company_idx
     on public.quote_customers (is_active, company_name, contact_name);
+
+create index if not exists quote_customers_deleted_idx
+    on public.quote_customers (is_deleted, is_active, company_name, contact_name);
 
 create index if not exists quote_instances_customer_idx
     on public.quote_instances (customer_id, status, updated_at desc);
