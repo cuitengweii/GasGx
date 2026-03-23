@@ -86,6 +86,7 @@ const moduleState = {
     instancePage: 1,
     instancePageSize: 10,
     instanceListMode: 'active',
+    instanceViewPage: 1,
 };
 
 const quoteBusyState = {
@@ -815,6 +816,29 @@ function buildStorageFileName(originalName = '') {
     return `${Date.now()}-${Math.random().toString(16).slice(2, 8)}-${stem}${ext}`;
 }
 
+function createShareSigningSecret(seed = {}) {
+    const slugSource = text(seed.slug || seed.brand_name || seed.display_name || 'brand')
+        .toLowerCase()
+        .replace(/[^a-z0-9-_]+/gi, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || 'brand';
+    const timestamp = Date.now().toString(36);
+    const randomToken = (() => {
+        if (window.crypto?.getRandomValues) {
+            const bytes = new Uint8Array(6);
+            window.crypto.getRandomValues(bytes);
+            return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+        }
+        return Math.random().toString(16).slice(2, 10);
+    })();
+    return `GasGx::Quote::ShareGate::${slugSource}-${timestamp}-${randomToken}`;
+}
+
+function ensureShareSigningSecret(seed = {}) {
+    const existing = text(seed.share_signing_secret || seed.shareSigningSecret);
+    return existing || createShareSigningSecret(seed);
+}
+
 function productMediaPath(product, fileName) {
     const brandSlug = text(product?.brand_slug || product?.brandSlug || brandSlugById(product?.brand_id) || brandLabelById(product?.brand_id), 'brand')
         .toLowerCase()
@@ -842,7 +866,7 @@ function createBrandDraft(seed = {}) {
         footer_note: normalizeLocalizedText(seed.footer_note || seed.footerNote || ''),
         theme_primary: text(seed.theme_primary || seed.themePrimary || DEFAULT_THEME_PRIMARY) || DEFAULT_THEME_PRIMARY,
         theme_dark: text(seed.theme_dark || seed.themeDark || DEFAULT_THEME_DARK) || DEFAULT_THEME_DARK,
-        share_signing_secret: text(seed.share_signing_secret || seed.shareSigningSecret || DEFAULT_SHARE_SECRET) || DEFAULT_SHARE_SECRET,
+        share_signing_secret: ensureShareSigningSecret(seed),
         share_unlock_prefix: text(seed.share_unlock_prefix || seed.shareUnlockPrefix || 'quote-share-unlocked') || 'quote-share-unlocked',
         default_quote_slug: text(seed.default_quote_slug || seed.defaultQuoteSlug),
         is_active: seed.is_active !== false,
@@ -1162,6 +1186,7 @@ async function fetchInstanceEditor(instanceId) {
         moduleState.instanceEvents = [];
         moduleState.instanceEventSummary = emptyInstanceEventSummary();
         moduleState.instanceSends = [];
+        moduleState.instanceViewPage = 1;
         return moduleState.instanceEditor;
     }
     const { data, error } = await client.from(TABLE_INSTANCES).select('*').eq('id', instanceId).single();
@@ -1177,6 +1202,7 @@ async function fetchInstanceEditor(instanceId) {
         ...data,
         items: itemsResult.data || [],
     });
+    moduleState.instanceViewPage = 1;
     return moduleState.instanceEditor;
 }
 
@@ -1410,7 +1436,7 @@ async function saveBrandDraft(user, draft) {
         footer_note: expandLocalizedFromChinese(payload.footer_note),
         theme_primary: payload.theme_primary || DEFAULT_THEME_PRIMARY,
         theme_dark: payload.theme_dark || DEFAULT_THEME_DARK,
-        share_signing_secret: payload.share_signing_secret || DEFAULT_SHARE_SECRET,
+        share_signing_secret: ensureShareSigningSecret(payload),
         share_unlock_prefix: payload.share_unlock_prefix || `${payload.slug}-share-unlocked`,
         default_quote_slug: payload.default_quote_slug || null,
         is_active: payload.is_active !== false,
@@ -2259,13 +2285,35 @@ function baseTemplateOptionsMarkup() {
             (group) => `
                 <optgroup label="${esc(group.label)}">
                     ${group.products
-                        .map((entry) => `<option value="${esc(entry.key)}">${esc(entry.label)}</option>`)
+                        .map((entry) => {
+                            const displayLabel = stripTemplateBrandLabel(entry.label, group);
+                            return `<option value="${esc(entry.key)}">${esc(displayLabel)}</option>`;
+                        })
                         .join('')}
                 </optgroup>
             `,
         )
         .join('');
     return options || '<option value="">当前没有可载入的基础模板</option>';
+}
+
+function stripTemplateBrandLabel(label = '', group = {}) {
+    const raw = text(label);
+    if (!raw) return '';
+    const brandCandidates = [
+        group?.brand?.display_name,
+        group?.brand?.brand_name,
+        group?.brand?.slug,
+        group?.key,
+    ].map((value) => text(value)).filter(Boolean);
+    if (!brandCandidates.length) return raw;
+    let cleaned = raw;
+    brandCandidates.forEach((name) => {
+        const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        cleaned = cleaned.replace(new RegExp(`\\b${escaped}\\b\\s*[\\/|·-]?\\s*`, 'gi'), '');
+    });
+    cleaned = cleaned.replace(/\s{2,}/g, ' ').replace(/^[\\/|·-]\s*/, '').trim();
+    return cleaned || raw;
 }
 
 function applyBaseTemplateToProductEditor(templateKey = '') {
@@ -3100,20 +3148,7 @@ function productPublishCopyPanelMarkup(product, brandDraft = {}) {
                     <p>先把客户会直接看到的标题、页头和品牌落款处理完，再往下维护汇率、配置区块和明细行。</p>
                 </div>
             </div>
-            <div class="ams-site-field-grid ams-site-field-grid-wide">
-                <div class="ams-field">
-                    <label>供应商</label>
-                    <input class="ams-input" data-product-brand-field="supplier_name" value="${esc(brand.supplier_name)}" placeholder="VMAN Engineering">
-                </div>
-                <div class="ams-field">
-                    <label>发件邮箱</label>
-                    <input class="ams-input" data-product-brand-field="sender_email" value="${esc(brand.sender_email)}" placeholder="sales@example.com">
-                </div>
-                <div class="ams-field">
-                    <label>邮件主题署名</label>
-                    <input class="ams-input" data-product-brand-field="subject_name" value="${esc(brand.subject_name)}" placeholder="VMAN Engineering">
-                </div>
-            </div>
+            <div class="ams-field-help">供应商、发件邮箱、邮件署名继承品牌默认信息，无需在模板中重复维护。</div>
             <div class="ams-quote-product-copy-grid">
                 ${localizedFieldGroup('product:public_title', '产品标题', normalized.public_title)}
                 ${productBrandLocalizedFieldGroup('overview_title', '页面页头标题', brand.overview_title)}
@@ -3185,16 +3220,7 @@ function productVisualEditorMarkup(product, brandDraft = {}) {
                     <div class="ams-quote-visual-title-panel">
                         <span class="ams-quote-visual-kicker">原页面可视化编辑</span>
                         <textarea class="ams-textarea ams-quote-visual-hero-input" rows="2" data-product-brand-i18n="overview_title" data-lang="zh">${esc(brand.overview_title?.zh || '')}</textarea>
-                        <div class="ams-quote-visual-meta-grid">
-                            <div class="ams-field">
-                                <label>供应商</label>
-                                <input class="ams-input" data-product-brand-field="supplier_name" value="${esc(brand.supplier_name)}" placeholder="VMAN Engineering">
-                            </div>
-                            <div class="ams-field">
-                                <label>发件邮箱</label>
-                                <input class="ams-input" data-product-brand-field="sender_email" value="${esc(brand.sender_email)}" placeholder="sales@example.com">
-                            </div>
-                        </div>
+                        <div class="ams-field-help">供应商与发件邮箱继承品牌默认信息。</div>
                         <div class="ams-quote-visual-product-title">
                             <span class="ams-quote-visual-kicker">产品标题</span>
                             <textarea class="ams-textarea ams-quote-visual-title-input" rows="2" data-i18n-prefix="product:public_title" data-lang="zh">${esc(title.zh || '')}</textarea>
@@ -3440,21 +3466,19 @@ function mediaLibraryMarkup(prefix, mediaConfig = createMediaConfig(), mediaGall
                     <p>${esc(description)}</p>
                 </div>
             </div>
-            <div class="ams-site-field-grid ams-site-field-grid-wide">
-                <div class="ams-field">
-                    <label class="ams-social-toggle">
-                        <input type="checkbox" data-media-config-prefix="${esc(prefix)}" data-media-config-field="enabled" ${config.enabled ? 'checked' : ''} ${editable ? '' : 'disabled'}>
-                        <span>在客户页显示产品图片</span>
-                    </label>
-                </div>
-                <div class="ams-field">
+            <div class="ams-media-toolbar">
+                <label class="ams-social-toggle">
+                    <input type="checkbox" data-media-config-prefix="${esc(prefix)}" data-media-config-field="enabled" ${config.enabled ? 'checked' : ''} ${editable ? '' : 'disabled'}>
+                    <span>在客户页显示产品图片</span>
+                </label>
+                <div class="ams-media-toolbar-group">
                     <label>展示位置</label>
                     <select class="ams-select" data-media-config-prefix="${esc(prefix)}" data-media-config-field="position" ${editable ? '' : 'disabled'}>
                         <option value="${MEDIA_POSITIONS.ABOVE}" ${config.position === MEDIA_POSITIONS.ABOVE ? 'selected' : ''}>产品标题下方</option>
                         <option value="${MEDIA_POSITIONS.BELOW}" ${config.position === MEDIA_POSITIONS.BELOW ? 'selected' : ''}>报价表格下方</option>
                     </select>
                 </div>
-                <div class="ams-field">
+                <div class="ams-media-toolbar-group">
                     <label>展示样式</label>
                     <select class="ams-select" data-media-config-prefix="${esc(prefix)}" data-media-config-field="layout" ${editable ? '' : 'disabled'}>
                         <option value="${MEDIA_LAYOUTS.CAROUSEL}" ${config.layout === MEDIA_LAYOUTS.CAROUSEL ? 'selected' : ''}>轮播图</option>
@@ -3464,18 +3488,15 @@ function mediaLibraryMarkup(prefix, mediaConfig = createMediaConfig(), mediaGall
                 ${
                     editable
                         ? `
-                    <div class="ams-field">
-                        <label>${esc(uploadLabel)}</label>
-                        <label class="ams-media-upload-trigger">
-                            <input class="ams-media-upload-input" type="file" accept="image/*" multiple data-media-upload="${esc(prefix)}">
-                            <span><i class="fa-solid fa-image"></i> 选择图片</span>
-                        </label>
-                    </div>
+                    <label class="ams-media-upload-trigger">
+                        <input class="ams-media-upload-input" type="file" accept="image/*" multiple data-media-upload="${esc(prefix)}">
+                        <span><i class="fa-solid fa-image"></i> ${esc(uploadLabel)}</span>
+                    </label>
                 `
                         : ''
                 }
             </div>
-            <div class="ams-field-help">图片为空时客户页不会显示该图片区块；轮播图适合少量重点图，纵向铺图适合设备细节和安装示意。</div>
+            <div class="ams-field-help ams-media-toolbar-help">图片为空时客户页不会显示该图片区块；轮播图适合少量重点图，纵向铺图适合设备细节和安装示意。</div>
             ${
                 gallery.length
                     ? `
@@ -3866,8 +3887,12 @@ function instanceInsightsMarkup() {
     const sendHistory = instanceShareHistory();
     const shareSummary = shareConfigSummary(moduleState.instanceEditor.share_config, { sendCount: sendHistory.length });
     const sendLedgerNote = sendLedgerModeMarkup();
-    const timeline = moduleState.instanceEvents.length
-        ? moduleState.instanceEvents
+    const viewPageSize = 10;
+    const viewPage = Math.max(1, safeNumber(moduleState.instanceViewPage, 1));
+    const visibleEvents = moduleState.instanceEvents.slice(0, viewPage * viewPageSize);
+    const hasMoreEvents = moduleState.instanceEvents.length > visibleEvents.length;
+    const timeline = visibleEvents.length
+        ? visibleEvents
               .map(
                   (event) => {
                       const recipientLine = eventRecipientSummary(event);
@@ -3913,8 +3938,22 @@ function instanceInsightsMarkup() {
                 <div class="ams-quote-event-timeline">${renderShareHistoryList(sendHistory, { editable: true })}</div>
             </div>
             <div class="ams-quote-block">
-                <div class="ams-section-head"><div><h3>查看记录</h3><p>这里记录客户打开链接、后台预览和其他访问动作，用来判断这份报价有没有被真正查看。</p></div></div>
-                <div class="ams-quote-event-timeline">${timeline}</div>
+                <details class="ams-quote-management-fold" open>
+                    <summary>
+                        <div>
+                            <h3>查看记录</h3>
+                            <p>这里记录客户打开链接、后台预览和其他访问动作。已显示 ${visibleEvents.length} / ${moduleState.instanceEvents.length} 条。</p>
+                        </div>
+                    </summary>
+                    <div class="ams-quote-management-fold-body">
+                        <div class="ams-quote-event-timeline">${timeline}</div>
+                        ${
+                            hasMoreEvents
+                                ? `<div class="ams-inline-actions"><button class="ams-btn ams-btn-muted" type="button" data-instance-view-more>加载更多（10条）</button></div>`
+                                : ''
+                        }
+                    </div>
+                </details>
             </div>
         </section>
     `;
@@ -3933,6 +3972,7 @@ function bindBrandEditor(input) {
     const defaultLinkHint = () => content.querySelector('[data-brand-default-picker-hint]');
     const defaultLinkEffective = () => content.querySelector('[data-brand-default-effective]');
     const defaultLinkMode = () => content.querySelector('[data-brand-default-mode]');
+    const shareSecretField = () => content.querySelector('[data-brand-field="share_signing_secret"]');
     const syncDisplayNameFromBrandName = (value) => {
         moduleState.brandEditor.display_name = text(value);
         const displayNode = displayNameField();
@@ -3969,6 +4009,11 @@ function bindBrandEditor(input) {
     };
 
     syncDefaultLinkField(false);
+    const nextSecret = ensureShareSigningSecret(moduleState.brandEditor);
+    if (nextSecret !== moduleState.brandEditor.share_signing_secret) {
+        moduleState.brandEditor.share_signing_secret = nextSecret;
+        if (shareSecretField()) shareSecretField().value = nextSecret;
+    }
 
     content.querySelectorAll('[data-brand-field]').forEach((node) => {
         node.addEventListener('input', () => {
@@ -3993,6 +4038,20 @@ function bindBrandEditor(input) {
                 if (!field) return;
                 moduleState.brandEditor[field] = Boolean(node.checked);
             });
+        }
+    });
+
+    content.querySelector('[data-brand-copy-secret]')?.addEventListener('click', async () => {
+        const secretValue = text(shareSecretField()?.value || moduleState.brandEditor.share_signing_secret);
+        if (!secretValue) {
+            input.showToast('暂无可复制的密钥。', true);
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(secretValue);
+            input.showToast('密钥已复制。');
+        } catch (error) {
+            input.showToast('复制失败，请手动选择。', true);
         }
     });
 
@@ -4149,13 +4208,15 @@ export async function renderQuoteBrandsPage(input) {
                 </button>
             </div>
         </section>
-        <div class="ams-inline-actions" style="margin: 0 0 16px;">
-            <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-brand-archive-entry">${archiveView ? '返回主列表' : `归档列表（${archivedBrandCount()}）`}</button>
-            <span class="ams-field-help">${archiveView ? '这里只显示已归档品牌，可恢复继续使用。' : '默认只显示有效品牌，已归档品牌收纳在单独列表。'}</span>
-        </div>
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
-                <div class="ams-section-head"><div><h3>${archiveView ? '已归档品牌' : '品牌列表'}</h3><p>共 ${visibleBrandCount} 个${archiveView ? '归档品牌' : '有效品牌'}</p></div></div>
+                <div class="ams-section-head">
+                    <div><h3>${archiveView ? '已归档品牌' : '品牌列表'}</h3><p>共 ${visibleBrandCount} 个${archiveView ? '归档品牌' : '有效品牌'}</p></div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-brand-archive-entry">${archiveView ? '返回主列表' : `归档列表（${archivedBrandCount()}）`}</button>
+                    </div>
+                </div>
+                <div class="ams-field-help" style="margin: 0 0 12px;">${archiveView ? '这里只显示已归档品牌，可恢复继续使用。' : '默认只显示有效品牌，已归档品牌收纳在单独列表。'}</div>
                 <div class="ams-quote-list">${renderBrandList()}</div>
             </aside>
             <section class="ams-card ams-quote-editor-panel ams-brand-editor-panel">
@@ -4164,20 +4225,20 @@ export async function renderQuoteBrandsPage(input) {
                         <h3>${moduleState.brandEditor.id ? '编辑品牌' : '新建品牌'}</h3>
                         <p>品牌是产品模板和报价单的最上层容器。</p>
                     </div>
-                    <div class="ams-row-actions"><button class="ams-btn ams-btn-primary" type="button" id="ams-quote-brand-save">保存品牌</button></div>
+                    <div class="ams-row-actions">
+                        ${
+                            moduleState.brandEditor.id
+                                ? moduleState.brandEditor.is_active === false
+                                    ? '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-brand-restore-current">恢复品牌</button>'
+                                    : '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-brand-archive-current">归档品牌</button>'
+                                : ''
+                        }
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-brand-save">保存品牌</button>
+                    </div>
                 </div>
                 ${
                     moduleState.brandEditor.id
-                        ? `
-                    <div class="ams-inline-actions">
-                        ${
-                            moduleState.brandEditor.is_active === false
-                                ? '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-brand-restore-current">恢复品牌</button>'
-                                : '<button class="ams-btn ams-btn-danger" type="button" id="ams-quote-brand-archive-current">归档品牌</button>'
-                        }
-                        <span class="ams-field-help">${moduleState.brandEditor.is_active === false ? '已归档品牌默认不再出现在主列表、模板选择和报价入口。' : '归档后品牌会从默认列表和新建入口中隐藏，但历史数据仍保留。'}</span>
-                    </div>
-                `
+                        ? `<div class="ams-field-help" style="margin: 6px 0 12px;">${moduleState.brandEditor.is_active === false ? '已归档品牌默认不再出现在主列表、模板选择和报价入口。' : '归档后品牌会从默认列表和新建入口中隐藏，但历史数据仍保留。'}</div>`
                         : ''
                 }
                 <div class="ams-site-field-grid ams-site-field-grid-wide">
@@ -4187,9 +4248,16 @@ export async function renderQuoteBrandsPage(input) {
                     <div class="ams-field"><label>供应商</label><input class="ams-input" data-brand-field="supplier_name" value="${esc(moduleState.brandEditor.supplier_name)}" placeholder="VMAN Engineering"></div>
                     <div class="ams-field"><label>发件邮箱</label><input class="ams-input" data-brand-field="sender_email" value="${esc(moduleState.brandEditor.sender_email)}" placeholder="sales@brand.com"></div>
                     <div class="ams-field"><label>邮件主题署名</label><input class="ams-input" data-brand-field="subject_name" value="${esc(moduleState.brandEditor.subject_name)}" placeholder="VMAN Engineering"></div>
-                    <div class="ams-field"><label>主题绿</label><input class="ams-input" data-brand-field="theme_primary" value="${esc(moduleState.brandEditor.theme_primary)}" placeholder="#5DD62C"></div>
-                    <div class="ams-field"><label>深绿底</label><input class="ams-input" data-brand-field="theme_dark" value="${esc(moduleState.brandEditor.theme_dark)}" placeholder="#337418"></div>
-                    <div class="ams-field"><label>分享签名密钥</label><input class="ams-input" data-brand-field="share_signing_secret" value="${esc(moduleState.brandEditor.share_signing_secret)}"></div>
+                    <div class="ams-field"><label>主题绿</label><input class="ams-input" type="color" data-brand-field="theme_primary" value="${esc(moduleState.brandEditor.theme_primary)}"></div>
+                    <div class="ams-field"><label>深绿底</label><input class="ams-input" type="color" data-brand-field="theme_dark" value="${esc(moduleState.brandEditor.theme_dark)}"></div>
+                    <div class="ams-field">
+                        <label>分享签名密钥</label>
+                        <input class="ams-input" data-brand-field="share_signing_secret" value="${esc(moduleState.brandEditor.share_signing_secret)}" readonly spellcheck="false" autocomplete="off">
+                        <div class="ams-inline-actions ams-inline-actions-compact">
+                            <button class="ams-btn ams-btn-muted" type="button" data-brand-copy-secret>复制密钥</button>
+                        </div>
+                        <div class="ams-field-help">自动生成，仅支持查看与复制。</div>
+                    </div>
                     <div class="ams-field"><label>分享本地前缀</label><input class="ams-input" data-brand-field="share_unlock_prefix" value="${esc(moduleState.brandEditor.share_unlock_prefix)}"></div>
                     <div class="ams-field"><label class="ams-social-toggle"><input type="checkbox" data-brand-field="is_active" ${moduleState.brandEditor.is_active ? 'checked' : ''}><span>启用品牌</span></label></div>
                 </div>
@@ -4345,14 +4413,6 @@ function bindProductEditor(input) {
                 }
             });
         }
-    });
-
-    content.querySelectorAll('[data-product-brand-field]').forEach((node) => {
-        node.addEventListener('input', () => {
-            const field = node.dataset.productBrandField;
-            if (!field) return;
-            currentProductBrandDraft()[field] = node.value;
-        });
     });
 
     content.querySelectorAll('[data-product-brand-i18n]').forEach((node) => {
@@ -4626,8 +4686,8 @@ export async function renderQuoteProductsPage(input) {
         <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-product-hero">
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">Product Templates</p>
-                <h2>当前基础模板只认 VMAN 和 MinerPower 两套。</h2>
-                <p class="ams-hero-text">先从这两套真实模板载入一份基础版本，再复制到具体品牌 / 产品上维护。现在这一步先解决模板来源，不再让你从空白模板开始。</p>
+                <h2>当前基础模板分为“独立发电产品模板”和“一体化产品模板”。</h2>
+                <p class="ams-hero-text">先从对应的基础模板载入一份版本，再复制到具体品牌 / 产品上维护。现在这一步先解决模板来源，不再让你从空白模板开始。</p>
             </div>
             <div class="ams-quick-actions ams-quote-product-quick-actions">
                 <button class="ams-quick-link" type="button" id="ams-quote-product-new">
@@ -4638,7 +4698,7 @@ export async function renderQuoteProductsPage(input) {
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-layer-group"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>公共模板区</strong>
-                        <span>新品牌先从 VMAN 独立发电模板或 MinerPower 一体化模板复制一份，再在当前品牌下 DIY。</span>
+                        <span>新品牌先从“独立发电产品模板”或“一体化产品模板”复制一份，再在当前品牌下 DIY。</span>
                         <div class="ams-quote-template-family-list">
                             ${moduleState.baseTemplates.map((group) => `
                                 <div class="ams-quote-template-family-chip">
@@ -4657,15 +4717,15 @@ export async function renderQuoteProductsPage(input) {
                 </div>
             </div>
         </section>
-        <div class="ams-inline-actions" style="margin: 0 0 16px;">
-            <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-product-archive-entry">${archiveView ? '返回主列表' : `已删除列表（${archivedProductCount()}）`}</button>
-            <span class="ams-field-help">${archiveView ? '这里只显示已删除模板，可恢复继续使用。' : '默认只显示有效模板，已删除模板收纳在单独列表。'}</span>
-        </div>
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
                 <div class="ams-section-head">
                     <div><h3>${archiveView ? '已删除模板' : '模板列表'}</h3><p>品牌筛选后共 ${visibleProductCount} 个模板</p></div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-product-archive-entry">${archiveView ? '返回主列表' : `已删除列表（${archivedProductCount()}）`}</button>
+                    </div>
                 </div>
+                <div class="ams-field-help" style="margin: 0 0 12px;">${archiveView ? '这里只显示已删除模板，可恢复继续使用。' : '默认只显示有效模板，已删除模板收纳在单独列表。'}</div>
                 <div class="ams-field">
                     <label>品牌筛选</label>
                     <select id="ams-quote-product-brand-filter" class="ams-select">
@@ -4682,6 +4742,10 @@ export async function renderQuoteProductsPage(input) {
                         <p>模板只做默认值来源，不直接给客户使用。</p>
                     </div>
                     <div class="ams-row-actions">
+                        <label class="ams-social-toggle">
+                            <input type="checkbox" data-product-field="is_active" ${moduleState.productEditor.is_active ? 'checked' : ''}>
+                            <span>启用模板</span>
+                        </label>
                         <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-product-create-instance">从模板生成报价单</button>
                         <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-product-save">保存模板</button>
                     </div>
@@ -4715,7 +4779,6 @@ export async function renderQuoteProductsPage(input) {
                     </div>
                     <div class="ams-field"><label>有效期（小时）</label><input class="ams-input" type="number" min="1" step="1" data-product-field="validity_hours" value="${esc(moduleState.productEditor.validity_hours)}"></div>
                     <div class="ams-field"><label>排序</label><input class="ams-input" type="number" min="0" step="10" data-product-field="sort_order" value="${esc(moduleState.productEditor.sort_order)}"></div>
-                    <div class="ams-field"><label class="ams-social-toggle"><input type="checkbox" data-product-field="is_active" ${moduleState.productEditor.is_active ? 'checked' : ''}><span>启用模板</span></label></div>
                 </div>
                 ${productPublishCopyPanelMarkup(moduleState.productEditor, currentProductBrandDraft())}
                 ${productVisualEditorSurfaceMarkup(moduleState.productEditor, currentProductBrandDraft())}
@@ -4804,6 +4867,7 @@ function bindInstanceEditor(input) {
         button.addEventListener('click', async () => {
             try {
                 await withQuoteBusy('正在加载报价单...', async () => {
+                    moduleState.instanceViewPage = 1;
                     await fetchInstanceEditor(button.dataset.instanceEdit);
                     await renderQuoteInstancesPage(input);
                 }, button, '正在读取报价单详情、条目和媒体配置。');
@@ -4856,6 +4920,13 @@ function bindInstanceEditor(input) {
             } catch (error) {
                 input.showToast(error.message || '恢复报价单失败。', true);
             }
+        });
+    });
+
+    document.querySelectorAll('[data-instance-view-more]').forEach((button) => {
+        button.addEventListener('click', () => {
+            moduleState.instanceViewPage = Math.max(1, safeNumber(moduleState.instanceViewPage, 1) + 1);
+            void renderQuoteInstancesPage(input);
         });
     });
 
@@ -6224,17 +6295,6 @@ export async function renderQuoteInstancesPage(input) {
                         '发送、浏览和客户互动记录放在这里，避免第一屏被事件明细打断。',
                         instanceInsightsMarkup(),
                     )}
-                    <section class="ams-quote-block">
-                        <div class="ams-section-head">
-                            <div>
-                                <h3>品牌与展示内容</h3>
-                                <p>这部分统一以可视化编辑页为准，这里不再重复展示和维护。</p>
-                            </div>
-                            <div class="ams-row-actions">
-                                <a class="ams-btn ams-btn-warning" href="${esc(quoteEditorUrl('instance', moduleState.instanceEditor.id))}" target="_blank" rel="noopener">前往可视化编辑</a>
-                            </div>
-                        </div>
-                    </section>
                 `
                         : '<div class="ams-empty">先从左侧选择一份报价单，或从上方正式产品生成一份新的草稿。</div>'
                 }
@@ -6304,13 +6364,15 @@ export async function renderQuoteCustomersPage(input) {
                 </div>
             </div>
         </section>
-        <div class="ams-inline-actions" style="margin: 0 0 16px;">
-            <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-archive-entry">${archiveView ? '返回主列表' : `归档列表（${archivedCustomerCount()}）`}</button>
-            <span class="ams-field-help">${archiveView ? '这里只显示已归档客户，可恢复继续使用。' : '默认只显示有效客户，已归档客户收纳在单独列表。'}</span>
-        </div>
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
-                <div class="ams-section-head"><div><h3>${archiveView ? '已归档客户' : '客户列表'}</h3><p>共 ${filteredCustomers().length} 个${archiveView ? '归档客户' : '活跃客户'}</p></div></div>
+                <div class="ams-section-head">
+                    <div><h3>${archiveView ? '已归档客户' : '客户列表'}</h3><p>共 ${filteredCustomers().length} 个${archiveView ? '归档客户' : '活跃客户'}</p></div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-archive-entry">${archiveView ? '返回主列表' : `归档列表（${archivedCustomerCount()}）`}</button>
+                    </div>
+                </div>
+                <div class="ams-field-help" style="margin: 0 0 12px;">${archiveView ? '这里只显示已归档客户，可恢复继续使用。' : '默认只显示有效客户，已归档客户收纳在单独列表。'}</div>
                 <div class="ams-field">
                     <label>搜索客户</label>
                     <input id="ams-quote-customer-search" class="ams-input" value="${esc(moduleState.customerSearch)}" placeholder="搜索公司 / 联系人 / 邮箱 / 电话">
