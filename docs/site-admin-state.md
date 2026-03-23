@@ -198,3 +198,42 @@
 - Local HTML sources for Supabase Auth mailers are now organized under:
   - `D:\code\GasGx\supabase\templates\`
 - This path is currently an operator/developer sync tool, not yet an admin-UI feature.
+
+## 2026-03-23 archive update
+
+### Latest milestone
+
+- Quote product-template admin now exposes a reusable public template library based on the real `vman` and `minerpower` product data instead of relying on a brittle legacy bootstrap path.
+- Brand management now exposes a dedicated default-link editor block so operators can see and edit the brand-level outbound quote slug without hunting through lower form sections.
+- Product-template save now falls back to `product_code` or `slug` when `public_title` is still empty, so copy-template flows no longer fail on a hidden "at least one product title" validation path.
+
+### Effective behaviors
+
+- New or empty brands can bootstrap from two public template families:
+  - `VMAN`: standalone power-generation template family
+  - `MinerPower`: integrated miner-power-container template family
+- Copying a public template into the current brand now preserves the target brand identity and generates a safe product slug for the destination brand instead of reusing the source brand identity.
+- The product-template page hero and import controls were compacted so template selection no longer consumes most of the screen above the actual editor.
+- Brand short-name edits now sync the display name during the same edit session unless the operator explicitly diverges the display name.
+- The dedicated brand default-link panel is forced visible even under older shared panel CSS rules that previously hid non-instance editor blocks.
+- Product-template and brand editor panes are no longer hidden by quote-instance-only layout CSS classes.
+
+### Solved in this thread
+
+- Added a public template library that surfaces `vman` and `minerpower` as reusable starter templates for new brands.
+- Fixed brand/product save semantics to update existing rows by `id` instead of accidentally colliding on primary keys during slug changes.
+- Added a visible default-link editor for brands and corrected the CSS conflict that originally hid it after deployment.
+- Fixed copy-template follow-up editing by removing instance-only hidden-panel CSS from brand/product admin pages.
+- Removed the save blocker where product templates required a hidden localized title field by auto-deriving `public_title` from `product_code` or `slug`.
+
+### Unfinished
+
+- The public template library still assumes only two canonical families; there is not yet a first-class "template family" entity or tagging model in the database.
+- The brand default-link editor is still a free-text slug field, not yet a picker tied to published quote instances or product templates.
+- Product-template editing still has hidden localized content areas lower in the page; the UI now saves safely, but the title/source fields are not yet surfaced clearly enough for operators.
+
+### Next Step
+
+1. Surface product title and key localized fields near the top of the product-template form so operators can see what customer-facing text will be published.
+2. Convert the brand default-link editor from free-text slug entry into a picker with optional manual override, sourced from the brand's published quote instances.
+3. Generalize the public-template library into an explicit template-family model so future brands are not hard-coded around only `vman` and `minerpower`.

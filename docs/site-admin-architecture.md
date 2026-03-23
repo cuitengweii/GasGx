@@ -137,3 +137,24 @@ News footer 若未取到统一站点壳配置：
 
 - `vman/` and `minerpower/` remain public-facing brand quote entry paths.
 - The system source of truth has shifted into shared quote runtime + admin-managed product/instance data rather than per-brand static HTML duplication.
+
+## 2026-03-23 architecture update
+
+### Public template bootstrap layer
+
+- `article_management/modules/quote-system.module.js` now includes a public-template-library layer in front of brand-local product templates.
+- That layer reads reusable starter templates from live `vman` / `minerpower` product records and copies normalized product data into the currently selected brand draft.
+- The admin workflow shell therefore has three product-template sources:
+  - brand-local saved templates
+  - public starter templates
+  - empty/manual product drafts
+
+### Brand routing control layer
+
+- Brand management now exposes `default_quote_slug` as a dedicated visible control instead of leaving it buried in the long brand form.
+- This turns default outbound routing into an explicit admin concern alongside brand identity, rather than an obscure secondary field.
+
+### Editor visibility boundary
+
+- Quote-instance-only panel styles are no longer assumed to be safe for brand and product management surfaces.
+- Brand/product admin editors now require their own visibility rules so product bootstrap flows are not hidden by instance-editor CSS contracts.

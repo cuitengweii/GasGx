@@ -55,3 +55,34 @@ How to detect earlier:
 
 How to prevent recurrence:
 - For streamed numeric status fields, use nullish checks such as `choices.status ?? 2` instead of truthy/falsy defaulting.
+
+## Lesson 4: Hidden admin fields must not be hard validation blockers
+
+Error symptom:
+- Saving a copied product template failed with `请至少填写一个产品标题`, but the operator could not find any visible field for that requirement in the current product-template surface.
+
+Root cause:
+- The save contract still enforced a localized `public_title` requirement even when the relevant editor field was hidden lower in the page or not surfaced in the current bootstrap workflow.
+
+How to detect earlier:
+- After compacting or hiding parts of an admin form, always run one end-to-end create/save flow from the visible controls only.
+- Any validation message that points to a field the operator cannot currently see is a release blocker.
+
+How to prevent recurrence:
+- Either surface every required field near the primary save path, or provide deterministic fallback values from visible inputs such as `product_code` or `slug`.
+- Treat "hidden but required" combinations as a design bug, not just a missing translation or copy issue.
+
+## Lesson 5: Shared panel CSS must not leak instance-specific visibility rules into other admin surfaces
+
+Error symptom:
+- Newly added brand default-link panel and copied product editor blocks appeared to save or load correctly, but were invisible in the page after deployment.
+
+Root cause:
+- Brand/product pages reused container classes that were also targeted by quote-instance-specific `display: none` rules.
+
+How to detect earlier:
+- After reusing an existing admin container class, inspect the final page with all inherited CSS rules applied instead of trusting local DOM insertion alone.
+
+How to prevent recurrence:
+- Keep instance-only layout classes scoped to quote-instance pages.
+- For shared admin primitives, prefer neutral container names and page-specific modifier classes so new surfaces do not inherit hidden-state contracts accidentally.

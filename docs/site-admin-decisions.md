@@ -113,3 +113,23 @@
 - Runtime/admin now require `011_quote_send_ledger.sql` and no longer fall back to `share_config.send_history`.
 - Quote/customer admin surfaces were simplified to read `quote_instance_sends` only; compatibility-mode hints and JSON backfill actions were removed.
 - This decision was finalized after 2026-03-23 production verification found no remaining legacy JSON send-history rows to migrate.
+
+## 2026-03-23 archive decisions
+
+### Decision 15: Public quote starter templates come from live `vman` and `minerpower` product records
+
+- New-brand bootstrap should reuse the real product-template data already maintained for `vman` and `minerpower`, not a separate hard-coded demo payload.
+- `VMAN` is treated as the standalone generation-template family, and `MinerPower` is treated as the integrated miner-power template family.
+- Copying from the public template library must clone editable product structure into the destination brand without carrying over the source brand identity.
+
+### Decision 16: Brand default link needs a dedicated operator-facing editor
+
+- `default_quote_slug` should not stay buried among lower-level brand fields because operators actively use it as a routing/output control.
+- Brand management now treats the default link as a first-class editable field with its own visible panel.
+- The field remains manually overrideable even if later UI layers provide auto-fill or picker behavior.
+
+### Decision 17: Product-template save must not depend on hidden localized-title inputs
+
+- Product-template persistence should not fail solely because `public_title` is empty while the operator has already provided a meaningful `product_code` or `slug`.
+- Save flow now derives a fallback title from `product_code` first, then `slug`, before enforcing the "at least one product title" invariant.
+- This keeps the data contract intact while removing a UI-only hidden-field blocker from template bootstrap flows.
