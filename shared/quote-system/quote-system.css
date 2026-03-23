@@ -1441,6 +1441,33 @@
             gap: 10px;
         }
 
+        .requirement-submit-autosave {
+            display: grid;
+            gap: 6px;
+            margin-top: 18px;
+            padding: 14px 16px;
+            border: 1px solid rgba(93, 214, 44, 0.14);
+            border-radius: 16px;
+            background: rgba(93, 214, 44, 0.05);
+        }
+
+        .requirement-submit-autosave strong {
+            color: #ffffff;
+            font-size: 0.86rem;
+        }
+
+        .requirement-submit-autosave span,
+        .requirement-submit-autosave em {
+            color: var(--text-body);
+            font-size: 0.82rem;
+            line-height: 1.6;
+            font-style: normal;
+        }
+
+        #requirement-autosave-status.is-error {
+            color: #fca5a5;
+        }
+
         .requirement-warning {
             margin-top: 18px;
             padding: 16px 18px;

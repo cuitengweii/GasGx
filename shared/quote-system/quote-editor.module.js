@@ -1,4 +1,5 @@
 import { client } from '../../article_management/modules/supabase.client.js';
+import { ADMIN_ENTRY_KIND, SALES_ENTRY_KIND, adminConsolePath, normalizeEntryKind } from '../../article_management/modules/admin-entry.module.js';
 import {
     DEFAULT_LANG,
     DEFAULT_RATES,
@@ -771,9 +772,20 @@ function renderBanner() {
 function syncBackLink() {
     const node = byId('btn-back-admin');
     if (!node) return;
-    node.href = state.kind === 'product'
-        ? `/article_management/index.html?page=quote-products`
-        : `/article_management/index.html?page=quote-instances`;
+    const params = new URLSearchParams(window.location.search || '');
+    const entryKind = normalizeEntryKind(params.get('admin_entry') || ADMIN_ENTRY_KIND);
+    const basePath = adminConsolePath(entryKind);
+    const page = state.kind === 'product' ? 'quote-products' : 'quote-instances';
+    const url = new URL(basePath, window.location.origin);
+    url.searchParams.set('page', page);
+    if (state.kind === 'instance' && state.instance?.id) {
+        url.searchParams.set('instance', state.instance.id);
+    }
+    const dealId = String(params.get('deal') || '').trim();
+    if (dealId && entryKind === SALES_ENTRY_KIND) {
+        url.searchParams.set('deal', dealId);
+    }
+    node.href = url.toString();
 }
 
 function publicQuoteUrl(publicSlug) {

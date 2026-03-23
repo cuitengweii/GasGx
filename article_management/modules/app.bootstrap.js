@@ -1,5 +1,6 @@
 ﻿
 import {
+    canAccessConsoleEntry,
     clearPasswordRecoveryUrl,
     getAdminUserAccess,
     getCurrentSession,
@@ -10,7 +11,12 @@ import {
     signInWithPassword,
     signOut,
     updateCurrentPassword,
-} from './auth.module.js?v=20260321admin01';
+} from './auth.module.js?v=20260324sales01';
+import {
+    ADMIN_ENTRY_KIND,
+    SALES_ENTRY_KIND,
+    adminConsoleUrl,
+} from './admin-entry.module.js';
 import {
     ARTICLE_TYPE_OPTIONS,
     batchUpdateArticleStatus,
@@ -37,7 +43,7 @@ import {
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
 import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260321admin01';
-import { renderQuoteBrandsPage, renderQuoteCustomersPage, renderQuoteInstancesPage, renderQuoteProductsPage, renderQuoteRequirementsPage } from './quote-system.module.js?v=20260323quote29';
+import { renderQuoteBrandsPage, renderQuoteCustomersPage, renderQuoteInstancesPage, renderQuoteProductsPage, renderQuoteRequirementsPage } from './quote-system.module.js?v=20260324quote31';
 import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260321site08';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js?v=20260321admin01';
 
@@ -157,6 +163,7 @@ const state = {
     session: null,
     user: null,
     adminAccess: null,
+    entryAllowed: false,
     renderedUserId: null,
     page: pageFromUrl() || 'dashboard',
     authView: 'login',
@@ -1002,6 +1009,7 @@ function navGroup(label, items = []) {
 
 function renderShell() {
     const name = esc(getDisplayName(state.user, state.adminAccess?.row || null));
+    const canOpenSalesConsole = canAccessConsoleEntry(state.adminAccess?.row, SALES_ENTRY_KIND);
     root.innerHTML = `
         <div class="ams-app">
             <aside class="ams-sidebar">
@@ -1044,6 +1052,7 @@ function renderShell() {
                         <p id="ams-page-sub">统一管理主站配置、系统导航、News 内容与推荐位</p>
                     </div>
                     <div class="ams-user">
+                        ${canOpenSalesConsole ? `<a class="ams-btn ams-btn-muted" href="${esc(adminConsoleUrl('dashboard', {}, { entryKind: SALES_ENTRY_KIND }))}">进入销售工作台</a>` : ''}
                         <span><i class="fa-solid fa-user"></i> <strong>${name}</strong></span>
                         <button id="ams-signout" class="ams-btn ams-btn-muted" type="button">退出登录</button>
                     </div>
@@ -2822,9 +2831,11 @@ async function renderQueue(forceRefresh = false) {
 async function refreshAdminAccess(forceRefresh = false) {
     if (!state.user) {
         state.adminAccess = null;
+        state.entryAllowed = false;
         return false;
     }
     state.adminAccess = await getAdminUserAccess(state.user, { forceRefresh });
+    state.entryAllowed = state.adminAccess?.allowed === true && canAccessConsoleEntry(state.adminAccess?.row, ADMIN_ENTRY_KIND);
     return state.adminAccess?.allowed === true;
 }
 
@@ -2833,6 +2844,10 @@ async function renderPage() {
         state.renderedUserId = null;
         state.authView = isPasswordRecoveryMode() ? 'reset' : 'login';
         renderLogin();
+        return;
+    }
+    if (!state.entryAllowed) {
+        window.location.assign(adminConsoleUrl('dashboard', {}, { entryKind: SALES_ENTRY_KIND }));
         return;
     }
 
@@ -2952,6 +2967,8 @@ async function boot() {
         } else if (!state.user || !(await refreshAdminAccess(true))) {
             state.authView = 'login';
             renderLogin();
+        } else if (!state.entryAllowed) {
+            window.location.assign(adminConsoleUrl('dashboard', {}, { entryKind: SALES_ENTRY_KIND }));
         } else {
             state.authView = 'login';
             await renderPage();
@@ -2969,6 +2986,10 @@ async function boot() {
             if (!state.user || !(await refreshAdminAccess(true))) {
                 state.authView = 'login';
                 renderLogin();
+                return;
+            }
+            if (!state.entryAllowed) {
+                window.location.assign(adminConsoleUrl('dashboard', {}, { entryKind: SALES_ENTRY_KIND }));
                 return;
             }
             state.authView = 'login';

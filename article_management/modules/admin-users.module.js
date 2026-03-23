@@ -1,4 +1,8 @@
 import {
+    ADMIN_ROLE_ADMIN,
+    ADMIN_ROLE_EDITOR,
+    ADMIN_ROLE_SALES,
+    ADMIN_ROLE_SUPER_ADMIN,
     fetchAdminUsers,
     getDisplayName,
     provisionAdminUserAccount,
@@ -23,17 +27,19 @@ function fmtDate(value) {
 }
 
 function roleLabel(value) {
-    const role = String(value || 'admin').trim();
-    if (role === 'super_admin') return '超级管理员';
-    if (role === 'editor') return '编辑';
+    const role = String(value || ADMIN_ROLE_ADMIN).trim();
+    if (role === ADMIN_ROLE_SUPER_ADMIN) return '超级管理员';
+    if (role === ADMIN_ROLE_EDITOR) return '内容编辑';
+    if (role === ADMIN_ROLE_SALES) return '销售';
     return '管理员';
 }
 
-function roleOptions(selected = 'admin') {
+function roleOptions(selected = ADMIN_ROLE_ADMIN) {
     return [
-        { value: 'super_admin', label: '超级管理员' },
-        { value: 'admin', label: '管理员' },
-        { value: 'editor', label: '编辑' },
+        { value: ADMIN_ROLE_SUPER_ADMIN, label: '超级管理员' },
+        { value: ADMIN_ROLE_ADMIN, label: '管理员' },
+        { value: ADMIN_ROLE_SALES, label: '销售' },
+        { value: ADMIN_ROLE_EDITOR, label: '内容编辑' },
     ]
         .map((item) => `<option value="${item.value}" ${item.value === selected ? 'selected' : ''}>${item.label}</option>`)
         .join('');
@@ -73,7 +79,7 @@ export async function renderAdminUsersPage(input) {
                 </div>
                 <div class="ams-field">
                     <label>角色</label>
-                    <select id="ams-admin-create-role" class="ams-select">${roleOptions('admin')}</select>
+                    <select id="ams-admin-create-role" class="ams-select">${roleOptions(ADMIN_ROLE_ADMIN)}</select>
                 </div>
                 <div class="ams-field">
                     <label>初始密码</label>
@@ -129,7 +135,12 @@ export async function renderAdminUsersPage(input) {
                                                 </div>
                                             </td>
                                             <td><input class="ams-input" data-admin-name="${esc(row.id)}" value="${esc(row.full_name || '')}" placeholder="姓名"></td>
-                                            <td><select class="ams-select" data-admin-role="${esc(row.id)}">${roleOptions(row.role)}</select></td>
+                                            <td>
+                                                <select class="ams-select" data-admin-role="${esc(row.id)}" aria-label="角色">
+                                                    ${roleOptions(row.role)}
+                                                </select>
+                                                <div class="ams-footnote">${esc(roleLabel(row.role))}</div>
+                                            </td>
                                             <td><label class="ams-social-toggle"><input type="checkbox" data-admin-active="${esc(row.id)}" ${row.is_active !== false ? 'checked' : ''}><span>${row.is_active !== false ? '启用' : '停用'}</span></label></td>
                                             <td>${esc(fmtDate(row.updated_at || row.created_at))}</td>
                                             <td class="ams-col-actions">
@@ -157,7 +168,7 @@ export async function renderAdminUsersPage(input) {
     document.getElementById('ams-admin-create-submit')?.addEventListener('click', async (event) => {
         const email = document.getElementById('ams-admin-create-email')?.value || '';
         const fullName = document.getElementById('ams-admin-create-name')?.value || '';
-        const role = document.getElementById('ams-admin-create-role')?.value || 'admin';
+        const role = document.getElementById('ams-admin-create-role')?.value || ADMIN_ROLE_ADMIN;
         const password = document.getElementById('ams-admin-create-password')?.value || '';
         const isActive = Boolean(document.getElementById('ams-admin-create-active')?.checked);
         const createAccount = Boolean(document.getElementById('ams-admin-create-account')?.checked);
@@ -190,7 +201,7 @@ export async function renderAdminUsersPage(input) {
             const row = rows.find((item) => item.id === id);
             if (!row) return;
             const fullName = document.querySelector(`[data-admin-name="${id}"]`)?.value || '';
-            const role = document.querySelector(`[data-admin-role="${id}"]`)?.value || 'admin';
+            const role = document.querySelector(`[data-admin-role="${id}"]`)?.value || ADMIN_ROLE_ADMIN;
             const isActive = Boolean(document.querySelector(`[data-admin-active="${id}"]`)?.checked);
 
             await withButtonBusy(button, '保存中...', async () => {

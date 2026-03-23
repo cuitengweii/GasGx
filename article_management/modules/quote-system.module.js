@@ -1,5 +1,11 @@
 ﻿import { client } from './supabase.client.js';
 import {
+    SALES_ENTRY_KIND,
+    adminConsoleUrl,
+    detectAdminEntryKind,
+    quoteEditorContextParams,
+} from './admin-entry.module.js';
+import {
     DEFAULT_LANG,
     DEFAULT_RATES,
     DEFAULT_SHARE_SECRET,
@@ -44,6 +50,8 @@ const TABLE_INSTANCES = 'quote_instances';
 const TABLE_INSTANCE_ITEMS = 'quote_instance_items';
 const TABLE_INSTANCE_EVENTS = 'quote_instance_events';
 const TABLE_INSTANCE_SENDS = 'quote_instance_sends';
+const TABLE_DEALS = 'quote_deals';
+const TABLE_DEAL_STAGE_RECORDS = 'quote_deal_stage_records';
 const STORAGE_BUCKET_PRODUCT_MEDIA = 'quote-product-media';
 
 const moduleState = {
@@ -52,6 +60,7 @@ const moduleState = {
     customers: [],
     requirements: [],
     instances: [],
+    deals: [],
     baseTemplates: [],
     brandEditor: null,
     productEditor: null,
@@ -62,20 +71,27 @@ const moduleState = {
     instanceSends: [],
     customerEditor: null,
     requirementEditor: null,
+    dealEditor: null,
     customerEvents: [],
     customerSends: [],
+    dealStageRecords: [],
     productLoadedId: '',
     instanceLoadedId: '',
     customerLoadedId: '',
     requirementLoadedId: '',
+    dealLoadedId: '',
     customerSearch: '',
     requirementSearch: '',
+    dealSearch: '',
     requirementProductSelection: '',
     requirementStatusFilter: 'all',
+    dealStageFilter: 'all',
+    dealStatusFilter: 'all',
     customerListMode: 'active',
     brandCreateMode: false,
     customerCreateMode: false,
     requirementCreateMode: false,
+    dealCreateMode: false,
     productCreateMode: false,
     brandDisplayNameTouched: false,
     brandDefaultLinkTouched: false,
@@ -89,6 +105,7 @@ const moduleState = {
     instancePageSize: 10,
     instanceListMode: 'active',
     instanceViewPage: 1,
+    salesPipelineExpanded: false,
 };
 
 const quoteBusyState = {
@@ -105,6 +122,37 @@ const SEND_STATUS_ORDER = {
     failed: 5,
     closed: 6,
 };
+
+const DEAL_STAGE_DEFINITIONS = Object.freeze([
+    { key: 'customer_profile', label: '客户建档', shortLabel: '客户', icon: 'fa-address-card', page: 'quote-customers', anchor: '', scope: 'customer' },
+    { key: 'requirement_capture', label: '获取需求', shortLabel: '需求获取', icon: 'fa-clipboard-list', page: 'quote-requirements', anchor: 'capture', scope: 'requirement' },
+    { key: 'requirement_confirmed', label: '确认需求', shortLabel: '需求确认', icon: 'fa-clipboard-check', page: 'quote-requirements', anchor: 'review', scope: 'requirement' },
+    { key: 'quote_draft', label: '转入报价', shortLabel: '报价草稿', icon: 'fa-file-invoice-dollar', page: 'quote-instances', anchor: 'draft', scope: 'quote' },
+    { key: 'quote_confirmed', label: '确认报价', shortLabel: '报价确认', icon: 'fa-file-circle-check', page: 'quote-instances', anchor: 'confirm', scope: 'quote' },
+    { key: 'contract_signed', label: '签约合同', shortLabel: '合同', icon: 'fa-file-signature', page: 'quote-deals', anchor: 'contract', scope: 'deal' },
+    { key: 'deposit_paid', label: '定金付款', shortLabel: '定金', icon: 'fa-sack-dollar', page: 'quote-deals', anchor: 'deposit', scope: 'deal' },
+    { key: 'production_scheduled', label: '排产安排', shortLabel: '排产', icon: 'fa-industry', page: 'quote-deals', anchor: 'production', scope: 'deal' },
+    { key: 'factory_accepted', label: '出厂验收', shortLabel: '验收', icon: 'fa-clipboard-check', page: 'quote-deals', anchor: 'fat', scope: 'deal' },
+    { key: 'balance_confirmed', label: '尾款确认', shortLabel: '尾款', icon: 'fa-wallet', page: 'quote-deals', anchor: 'balance', scope: 'deal' },
+    { key: 'shipping_in_transit', label: '物流运输', shortLabel: '物流', icon: 'fa-truck-fast', page: 'quote-deals', anchor: 'shipping', scope: 'deal' },
+    { key: 'deployment_completed', label: '到场部署', shortLabel: '部署', icon: 'fa-screwdriver-wrench', page: 'quote-deals', anchor: 'deployment', scope: 'deal' },
+    { key: 'support_active', label: '运维支持', shortLabel: '运维', icon: 'fa-headset', page: 'quote-deals', anchor: 'support', scope: 'deal' },
+]);
+
+const DEAL_STATUS_OPTIONS = Object.freeze([
+    { value: 'active', label: '推进中' },
+    { value: 'paused', label: '暂停' },
+    { value: 'lost', label: '已丢单' },
+    { value: 'cancelled', label: '已取消' },
+    { value: 'completed', label: '已完成' },
+]);
+
+const DEAL_STAGE_STATUS_OPTIONS = Object.freeze([
+    { value: 'pending', label: '待开始' },
+    { value: 'active', label: '进行中' },
+    { value: 'completed', label: '已完成' },
+    { value: 'blocked', label: '阻塞' },
+]);
 
 const PUBLIC_TEMPLATE_LIBRARY = Object.freeze({
     vman: {
@@ -366,6 +414,158 @@ function createCustomerDraft(seed = {}) {
     return createCustomerRecord(seed);
 }
 
+function normalizeDealStageKey(value = '') {
+    const current = text(value, 'requirement_capture');
+    return DEAL_STAGE_DEFINITIONS.some((stage) => stage.key === current) ? current : 'requirement_capture';
+}
+
+function normalizeDealStatus(value = '') {
+    const current = text(value, 'active');
+    return DEAL_STATUS_OPTIONS.some((option) => option.value === current) ? current : 'active';
+}
+
+function normalizeDealStageStatus(value = '') {
+    const current = text(value, 'pending');
+    return DEAL_STAGE_STATUS_OPTIONS.some((option) => option.value === current) ? current : 'pending';
+}
+
+function dealStageDefinition(stageKey = '') {
+    return DEAL_STAGE_DEFINITIONS.find((item) => item.key === normalizeDealStageKey(stageKey)) || DEAL_STAGE_DEFINITIONS[0];
+}
+
+function dealStageLabel(stageKey = '') {
+    return dealStageDefinition(stageKey).label;
+}
+
+function dealStatusLabel(status = '') {
+    return optionLabel(DEAL_STATUS_OPTIONS, normalizeDealStatus(status));
+}
+
+function dealStageStatusLabel(status = '') {
+    return optionLabel(DEAL_STAGE_STATUS_OPTIONS, normalizeDealStageStatus(status));
+}
+
+function stageMetaFields(stageKey = '') {
+    const key = normalizeDealStageKey(stageKey);
+    if (key === 'contract_signed') {
+        return [
+            { key: 'contract_number', label: '合同编号', type: 'text', placeholder: 'CT-2026-001' },
+            { key: 'contract_date', label: '签约日期', type: 'date' },
+            { key: 'contract_amount', label: '合同金额', type: 'number', placeholder: '0' },
+            { key: 'contract_currency', label: '币种', type: 'text', placeholder: 'USD' },
+            { key: 'contract_link', label: '合同链接', type: 'text', placeholder: 'https://...' },
+        ];
+    }
+    if (key === 'deposit_paid') {
+        return [
+            { key: 'deposit_expected', label: '应收定金', type: 'number', placeholder: '0' },
+            { key: 'deposit_received', label: '实收定金', type: 'number', placeholder: '0' },
+            { key: 'deposit_received_at', label: '到账日期', type: 'date' },
+            { key: 'deposit_reference', label: '凭证引用', type: 'text', placeholder: '银行回单 / 流水号' },
+        ];
+    }
+    if (key === 'production_scheduled') {
+        return [
+            { key: 'factory_name', label: '工厂 / 产线', type: 'text', placeholder: 'Factory A' },
+            { key: 'production_batch', label: '批次', type: 'text', placeholder: 'Batch-01' },
+            { key: 'production_start_at', label: '开始时间', type: 'date' },
+            { key: 'production_eta', label: '预计完工', type: 'date' },
+        ];
+    }
+    if (key === 'factory_accepted') {
+        return [
+            { key: 'fat_date', label: '验收日期', type: 'date' },
+            { key: 'fat_result', label: '验收结果', type: 'text', placeholder: '通过 / 待整改' },
+            { key: 'fat_summary', label: '检查摘要', type: 'text', placeholder: '关键检查点摘要' },
+        ];
+    }
+    if (key === 'balance_confirmed') {
+        return [
+            { key: 'balance_expected', label: '应收尾款', type: 'number', placeholder: '0' },
+            { key: 'balance_confirmed_amount', label: '确认金额', type: 'number', placeholder: '0' },
+            { key: 'balance_confirmed_at', label: '确认日期', type: 'date' },
+        ];
+    }
+    if (key === 'shipping_in_transit') {
+        return [
+            { key: 'shipping_carrier', label: '承运商', type: 'text', placeholder: 'DHL / 海运代理' },
+            { key: 'shipping_tracking_no', label: '运单号', type: 'text', placeholder: 'Tracking No.' },
+            { key: 'shipping_departed_at', label: '发运时间', type: 'date' },
+            { key: 'shipping_eta', label: '预计到达', type: 'date' },
+        ];
+    }
+    if (key === 'deployment_completed') {
+        return [
+            { key: 'deployment_site_ready', label: '现场条件', type: 'text', placeholder: '已完成 / 待补电力' },
+            { key: 'deployment_date', label: '部署日期', type: 'date' },
+            { key: 'deployment_result', label: '部署结果', type: 'text', placeholder: '已上线 / 待复检' },
+        ];
+    }
+    if (key === 'support_active') {
+        return [
+            { key: 'support_warranty_until', label: '质保到期', type: 'date' },
+            { key: 'support_owner', label: '支持负责人', type: 'text', placeholder: 'Support Owner' },
+            { key: 'support_channel', label: '支持渠道', type: 'text', placeholder: 'WhatsApp / 邮箱 / 工单' },
+        ];
+    }
+    return [];
+}
+
+function createDealDraft(seed = {}) {
+    return {
+        id: text(seed.id),
+        customer_id: text(seed.customer_id || seed.customerId),
+        title: text(seed.title),
+        current_stage: normalizeDealStageKey(seed.current_stage || seed.currentStage),
+        deal_status: normalizeDealStatus(seed.deal_status || seed.dealStatus),
+        owner_name: text(seed.owner_name || seed.ownerName),
+        owner_email: text(seed.owner_email || seed.ownerEmail),
+        primary_requirement_id: text(seed.primary_requirement_id || seed.primaryRequirementId),
+        primary_instance_id: text(seed.primary_instance_id || seed.primaryInstanceId),
+        summary: text(seed.summary),
+        next_action: text(seed.next_action || seed.nextAction),
+        next_action_due_at: text(seed.next_action_due_at || seed.nextActionDueAt),
+        lost_reason: text(seed.lost_reason || seed.lostReason),
+        created_at: text(seed.created_at || seed.createdAt),
+        updated_at: text(seed.updated_at || seed.updatedAt),
+    };
+}
+
+function createDealStageRecord(seed = {}) {
+    return {
+        id: text(seed.id),
+        deal_id: text(seed.deal_id || seed.dealId),
+        stage_key: normalizeDealStageKey(seed.stage_key || seed.stageKey),
+        stage_status: normalizeDealStageStatus(seed.stage_status || seed.stageStatus),
+        planned_at: text(seed.planned_at || seed.plannedAt),
+        completed_at: text(seed.completed_at || seed.completedAt),
+        owner_name: text(seed.owner_name || seed.ownerName),
+        owner_email: text(seed.owner_email || seed.ownerEmail),
+        notes: text(seed.notes),
+        meta: seed.meta && typeof seed.meta === 'object' && !Array.isArray(seed.meta) ? deepClone(seed.meta) : {},
+        created_at: text(seed.created_at || seed.createdAt),
+        updated_at: text(seed.updated_at || seed.updatedAt),
+    };
+}
+
+function mergeDealStageRecords(deal = {}, rows = []) {
+    return DEAL_STAGE_DEFINITIONS.map((stage, index) => {
+        const existing = rows.find((item) => normalizeDealStageKey(item.stage_key) === stage.key);
+        if (existing) return createDealStageRecord(existing);
+        let stageStatus = 'pending';
+        if (stage.key === 'customer_profile' && text(deal.customer_id)) stageStatus = 'completed';
+        else if (stage.key === normalizeDealStageKey(deal.current_stage)) stageStatus = 'active';
+        else if (!text(deal.id) && index === 1) stageStatus = 'active';
+        return createDealStageRecord({
+            deal_id: deal.id,
+            stage_key: stage.key,
+            stage_status: stageStatus,
+            owner_name: deal.owner_name,
+            owner_email: deal.owner_email,
+        });
+    });
+}
+
 function normalizeStringList(value) {
     if (Array.isArray(value)) return Array.from(new Set(value.map((item) => text(item)).filter(Boolean)));
     if (typeof value === 'string') {
@@ -409,6 +609,7 @@ function createRequirementDraft(seed = {}) {
     return {
         id: text(seed.id),
         customer_id: text(seed.customer_id || seed.customerId),
+        deal_id: text(seed.deal_id || seed.dealId),
         title: text(seed.title),
         status: normalizeRequirementStatus(seed.status),
         requirement_type: REQUIREMENT_TYPE_OPTIONS.some((item) => item.value === text(seed.requirement_type || seed.requirementType))
@@ -485,6 +686,403 @@ function currentSalesOwner(user = null) {
         name: text(fullName || (email.includes('@') ? email.split('@')[0] : email), '当前销售'),
         email,
     };
+}
+
+function currentEntryKind(input = null) {
+    return text(input?.entryKind || detectAdminEntryKind(), 'admin');
+}
+
+function isSalesConsole(input = null) {
+    return currentEntryKind(input) === SALES_ENTRY_KIND;
+}
+
+function dealById(dealId = '') {
+    return moduleState.deals.find((item) => item.id === text(dealId)) || null;
+}
+
+function customerDeals(customerId = '') {
+    return moduleState.deals
+        .filter((item) => text(item.customer_id) === text(customerId))
+        .sort((left, right) => text(right.updated_at).localeCompare(text(left.updated_at)));
+}
+
+function requirementDeal(requirementId = '') {
+    const requirement = requirementById(requirementId);
+    return requirement?.deal_id ? dealById(requirement.deal_id) : null;
+}
+
+function quoteDeal(instanceId = '') {
+    const instance = moduleState.instances.find((item) => item.id === text(instanceId));
+    return instance?.deal_id ? dealById(instance.deal_id) : null;
+}
+
+function activeDealIdFromState(explicitDealId = '') {
+    const fromParam = text(explicitDealId);
+    if (fromParam) return fromParam;
+    if (text(moduleState.dealLoadedId)) return text(moduleState.dealLoadedId);
+    if (text(moduleState.dealEditor?.id)) return text(moduleState.dealEditor.id);
+    if (text(moduleState.instanceEditor?.deal_id)) return text(moduleState.instanceEditor.deal_id);
+    if (text(moduleState.requirementEditor?.deal_id)) return text(moduleState.requirementEditor.deal_id);
+    const customerId = text(moduleState.customerLoadedId || moduleState.customerEditor?.id);
+    const deals = customerDeals(customerId);
+    if (deals.length === 1) return deals[0].id;
+    return '';
+}
+
+function stageRecordByKey(stageKey = '', records = moduleState.dealStageRecords) {
+    const key = normalizeDealStageKey(stageKey);
+    return (records || []).find((item) => normalizeDealStageKey(item.stage_key) === key) || null;
+}
+
+function ensureActiveStage(records = [], stageKey = '') {
+    const normalizedKey = normalizeDealStageKey(stageKey);
+    let sawActive = false;
+    return mergeDealStageRecords({ current_stage: normalizedKey }, records).map((record) => {
+        const next = createDealStageRecord(record);
+        if (next.stage_status === 'active' && next.stage_key === normalizedKey) {
+            sawActive = true;
+            return next;
+        }
+        if (next.stage_status === 'active' && next.stage_key !== normalizedKey) {
+            next.stage_status = 'pending';
+        }
+        return next;
+    }).map((record) => {
+        const next = createDealStageRecord(record);
+        if (!sawActive && next.stage_key === normalizedKey && next.stage_status !== 'completed') {
+            next.stage_status = 'active';
+            sawActive = true;
+        }
+        return next;
+    });
+}
+
+function nextStageKey(currentStageKey = '') {
+    const index = DEAL_STAGE_DEFINITIONS.findIndex((item) => item.key === normalizeDealStageKey(currentStageKey));
+    if (index < 0 || index >= DEAL_STAGE_DEFINITIONS.length - 1) return normalizeDealStageKey(currentStageKey);
+    return DEAL_STAGE_DEFINITIONS[index + 1].key;
+}
+
+function inferDealCurrentStage(records = [], fallback = 'requirement_capture') {
+    const merged = mergeDealStageRecords({ current_stage: fallback }, records);
+    const active = merged.find((record) => record.stage_status === 'active' || record.stage_status === 'blocked');
+    if (active) return active.stage_key;
+    const pending = merged.find((record) => record.stage_status !== 'completed');
+    if (pending) return pending.stage_key;
+    return 'support_active';
+}
+
+function touchDealStageRecords(records = [], deal = {}) {
+    const merged = mergeDealStageRecords(deal, records);
+    if (text(deal.customer_id)) {
+        const customerStage = stageRecordByKey('customer_profile', merged);
+        if (customerStage) customerStage.stage_status = 'completed';
+    }
+    const currentStage = inferDealCurrentStage(merged, deal.current_stage || 'requirement_capture');
+    return ensureActiveStage(merged, currentStage);
+}
+
+function stageJumpTarget(stageKey = '', deal = null) {
+    const stage = dealStageDefinition(stageKey);
+    const params = {};
+    const activeDeal = deal || dealById(activeDealIdFromState());
+    if (activeDeal?.id) params.deal = activeDeal.id;
+    if (stage.scope === 'customer' && activeDeal?.customer_id) params.customer = activeDeal.customer_id;
+    if (stage.scope === 'requirement' && activeDeal?.primary_requirement_id) params.requirement = activeDeal.primary_requirement_id;
+    if (stage.scope === 'quote' && activeDeal?.primary_instance_id) params.instance = activeDeal.primary_instance_id;
+    const url = adminPageUrl(stage.page, params);
+    return stage.anchor ? `${url}#${stage.anchor}` : url;
+}
+
+function setStageRecordMeta(stageKey = '', field = '', value = '') {
+    moduleState.dealStageRecords = moduleState.dealStageRecords.map((record) => {
+        if (normalizeDealStageKey(record.stage_key) !== normalizeDealStageKey(stageKey)) return record;
+        const next = createDealStageRecord(record);
+        next.meta = {
+            ...(next.meta || {}),
+            [field]: value,
+        };
+        return next;
+    });
+}
+
+function dealRequirements(dealId = '') {
+    return moduleState.requirements
+        .filter((item) => text(item.deal_id) === text(dealId))
+        .sort((left, right) => text(right.updated_at || right.created_at).localeCompare(text(left.updated_at || left.created_at)));
+}
+
+function dealQuotes(dealId = '') {
+    return moduleState.instances
+        .filter((item) => text(item.deal_id) === text(dealId))
+        .sort((left, right) => text(right.updated_at || right.created_at).localeCompare(text(left.updated_at || left.created_at)));
+}
+
+function dealCurrentRecords(deal = null) {
+    const activeDeal = deal || dealById(activeDealIdFromState());
+    if (!activeDeal?.id) return [];
+    const source = text(activeDeal.id) === text(moduleState.dealLoadedId) ? moduleState.dealStageRecords : [];
+    return touchDealStageRecords(source, activeDeal);
+}
+
+function dealStageAnchor(stageKey = '') {
+    return text(dealStageDefinition(stageKey).anchor);
+}
+
+function defaultStageForPage(page = '') {
+    const current = text(page);
+    if (current === 'quote-customers') return 'customer_profile';
+    if (current === 'quote-requirements') return 'requirement_capture';
+    if (current === 'quote-instances') return 'quote_draft';
+    if (current === 'quote-deals') return 'contract_signed';
+    return 'customer_profile';
+}
+
+function dealStatusTone(status = '') {
+    const normalized = normalizeDealStatus(status);
+    if (normalized === 'completed') return 'published';
+    if (normalized === 'paused') return 'warning';
+    if (normalized === 'lost' || normalized === 'cancelled') return 'archived';
+    return 'draft';
+}
+
+function dealStatusPill(status = '') {
+    return `<span class="ams-status-pill ams-status-${dealStatusTone(status)}">${esc(dealStatusLabel(status))}</span>`;
+}
+
+function dealStageStatusTone(status = '') {
+    const normalized = normalizeDealStageStatus(status);
+    if (normalized === 'completed') return 'published';
+    if (normalized === 'blocked') return 'archived';
+    if (normalized === 'active') return 'warning';
+    return 'draft';
+}
+
+function dealStageStatusPill(status = '') {
+    return `<span class="ams-status-pill ams-status-${dealStageStatusTone(status)}">${esc(dealStageStatusLabel(status))}</span>`;
+}
+
+function filteredDeals() {
+    const query = text(moduleState.dealSearch).toLowerCase();
+    return moduleState.deals
+        .filter((deal) => {
+            if (moduleState.dealStageFilter !== 'all' && normalizeDealStageKey(deal.current_stage) !== moduleState.dealStageFilter) return false;
+            if (moduleState.dealStatusFilter !== 'all' && normalizeDealStatus(deal.deal_status) !== moduleState.dealStatusFilter) return false;
+            if (!query) return true;
+            const customer = moduleState.customers.find((item) => item.id === deal.customer_id);
+            const requirement = requirementById(deal.primary_requirement_id);
+            const instance = moduleState.instances.find((item) => item.id === deal.primary_instance_id);
+            return [
+                deal.title,
+                deal.summary,
+                deal.next_action,
+                deal.owner_name,
+                deal.owner_email,
+                dealStatusLabel(deal.deal_status),
+                dealStageLabel(deal.current_stage),
+                customerDisplayName(customer || {}),
+                requirement ? requirementDisplayName(requirement) : '',
+                instance ? text(instance.customer_name || instance.public_slug) : '',
+            ].some((value) => text(value).toLowerCase().includes(query));
+        })
+        .sort((left, right) => text(right.updated_at || right.created_at).localeCompare(text(left.updated_at || left.created_at)));
+}
+
+function dealStageCount(stageKey = '') {
+    return moduleState.deals.filter((deal) => normalizeDealStageKey(deal.current_stage) === normalizeDealStageKey(stageKey) && normalizeDealStatus(deal.deal_status) === 'active').length;
+}
+
+function stageNavigationTarget(stageKey = '', deal = null) {
+    const activeDeal = deal || dealById(activeDealIdFromState());
+    const stage = dealStageDefinition(stageKey);
+    const disabled = !activeDeal?.id && stage.scope === 'deal';
+    return {
+        disabled,
+        href: disabled ? '' : stageJumpTarget(stage.key, activeDeal),
+    };
+}
+
+function salesPipelineMarkup(input, options = {}) {
+    const activeDeal = Object.prototype.hasOwnProperty.call(options, 'deal')
+        ? options.deal
+        : dealById(activeDealIdFromState(options.dealId));
+    const currentStage = normalizeDealStageKey(
+        options.currentStage
+        || activeDeal?.current_stage
+        || defaultStageForPage(text(options.page || readAdminPageParam('page') || '')),
+    );
+    const currentCustomer = activeDeal ? moduleState.customers.find((item) => item.id === activeDeal.customer_id) : null;
+    const currentRequirement = activeDeal ? requirementById(activeDeal.primary_requirement_id) : null;
+    const currentQuote = activeDeal ? moduleState.instances.find((item) => item.id === activeDeal.primary_instance_id) : null;
+    const records = activeDeal ? dealCurrentRecords(activeDeal) : [];
+    const summaryLabel = activeDeal?.id
+        ? `${text(activeDeal.title || customerDisplayName(currentCustomer || {}), '未命名商机')} · ${dealStageLabel(currentStage)}`
+        : '未绑定商机，先在客户或商机页选中一条销售链路。';
+    return `
+        <details class="ams-card ams-sales-pipeline" id="ams-sales-pipeline" ${moduleState.salesPipelineExpanded ? 'open' : ''}>
+            <summary class="ams-sales-pipeline-summary">
+                <div class="ams-sales-pipeline-summary-copy">
+                    <p class="ams-eyebrow">Sales Pipeline</p>
+                    <strong>${esc(summaryLabel)}</strong>
+                    <span>${activeDeal?.id
+                        ? `${esc(customerDisplayName(currentCustomer || {}))} · ${esc(text(activeDeal.next_action, '未设置下一动作'))}`
+                        : '点击展开后，可从客户建档一路跳到合同、物流、部署和运维阶段。'}</span>
+                </div>
+                <div class="ams-sales-pipeline-summary-meta">
+                    ${activeDeal?.id
+                        ? `
+                            <span>${dealStatusPill(activeDeal.deal_status)}</span>
+                            <span class="ams-sales-pipeline-summary-chip">${esc(currentRequirement ? requirementDisplayName(currentRequirement) : '未锁定需求')}</span>
+                            <span class="ams-sales-pipeline-summary-chip">${esc(currentQuote ? text(currentQuote.customer_name || currentQuote.public_slug, currentQuote.id) : '未锁定报价')}</span>
+                        `
+                        : `<span class="ams-sales-pipeline-summary-chip">点击查看</span>`}
+                </div>
+            </summary>
+            <div class="ams-sales-pipeline-track">
+                ${DEAL_STAGE_DEFINITIONS.map((stage) => {
+                    const jump = stageNavigationTarget(stage.key, activeDeal);
+                    const stageRecord = activeDeal
+                        ? stageRecordByKey(stage.key, records) || createDealStageRecord({ stage_key: stage.key, stage_status: stage.key === currentStage ? 'active' : 'pending' })
+                        : createDealStageRecord({ stage_key: stage.key, stage_status: stage.key === currentStage ? 'active' : 'pending' });
+                    const stageStatus = activeDeal ? normalizeDealStageStatus(stageRecord.stage_status) : stage.key === currentStage ? 'active' : 'pending';
+                    const className = stageStatus === 'completed'
+                        ? 'is-success'
+                        : stageStatus === 'active'
+                            ? 'is-active'
+                            : stageStatus === 'blocked'
+                                ? 'is-warning'
+                                : jump.disabled
+                                    ? 'is-muted'
+                                    : '';
+                    const badgeLabel = activeDeal?.id ? dealStageStatusLabel(stageStatus) : jump.disabled ? '需商机' : `${dealStageCount(stage.key)} 条`;
+                    const description = activeDeal?.id
+                        ? text(stageRecord.notes || stageMetaFields(stage.key).map((field) => text(stageRecord.meta?.[field.key])).find(Boolean) || '')
+                        : '';
+                    const body = `
+                        <div class="ams-sales-pipeline-stage-head">
+                            <span class="ams-customer-pipeline-icon"><i class="fa-solid ${esc(stage.icon)}"></i></span>
+                            <span class="ams-customer-pipeline-badge">${esc(badgeLabel)}</span>
+                        </div>
+                        <strong>${esc(stage.label)}</strong>
+                        <span>${esc(description || (stage.scope === 'deal' ? '进入交付与履约阶段记录合同、付款、排产和运维。' : '点击即可直达当前链路对应页面。'))}</span>
+                        <em>${esc(activeDeal?.id ? (text(stageRecord.completed_at) ? `完成于 ${fmtDate(stageRecord.completed_at)}` : `负责人 ${text(stageRecord.owner_name || stageRecord.owner_email, '未设置')}`) : (jump.disabled ? '先创建商机' : '打开列表'))}</em>
+                    `;
+                    if (jump.disabled) {
+                        return `<div class="ams-customer-pipeline-node ams-sales-pipeline-stage ${className}">${body}</div>`;
+                    }
+                    return `<a class="ams-customer-pipeline-node ams-sales-pipeline-stage is-link ${className}" href="${esc(jump.href)}">${body}</a>`;
+                }).join('')}
+            </div>
+        </details>
+    `;
+}
+
+function renderSalesPageFrame(input, title, sub, body, options = {}) {
+    input.setPageHeader(title, sub);
+    if (!isSalesConsole(input)) {
+        input.setContent(body);
+        return;
+    }
+    const activeDeal = Object.prototype.hasOwnProperty.call(options, 'deal')
+        ? options.deal
+        : dealById(activeDealIdFromState(options.dealId));
+    input.setContent(`
+        <div class="ams-sales-page">
+            ${salesPipelineMarkup(input, {
+                deal: activeDeal,
+                currentStage: options.currentStage,
+                page: options.page,
+            })}
+            <div class="ams-sales-page-body">
+                ${body}
+            </div>
+        </div>
+    `);
+}
+
+function bindSalesPageChrome(input) {
+    if (!isSalesConsole(input)) return;
+    const pipeline = document.getElementById('ams-sales-pipeline');
+    if (!pipeline || pipeline.dataset.bound === '1') return;
+    pipeline.dataset.bound = '1';
+    pipeline.addEventListener('toggle', () => {
+        moduleState.salesPipelineExpanded = pipeline.open;
+    });
+}
+
+function replaceStageRecord(stageKey = '', updater) {
+    const normalizedKey = normalizeDealStageKey(stageKey);
+    let changed = false;
+    const existingRecords = moduleState.dealStageRecords.length
+        ? moduleState.dealStageRecords
+        : mergeDealStageRecords(moduleState.dealEditor || {}, []);
+    moduleState.dealStageRecords = existingRecords.map((record) => {
+        if (normalizeDealStageKey(record.stage_key) !== normalizedKey) return createDealStageRecord(record);
+        changed = true;
+        const next = createDealStageRecord(record);
+        return typeof updater === 'function' ? createDealStageRecord(updater(next) || next) : next;
+    });
+    if (!changed) {
+        const seed = createDealStageRecord({
+            deal_id: moduleState.dealEditor?.id,
+            stage_key: normalizedKey,
+            owner_name: moduleState.dealEditor?.owner_name,
+            owner_email: moduleState.dealEditor?.owner_email,
+        });
+        const next = typeof updater === 'function' ? createDealStageRecord(updater(seed) || seed) : seed;
+        moduleState.dealStageRecords = [...moduleState.dealStageRecords, next];
+    }
+}
+
+function setDealStageStatus(stageKey = '', status = 'pending') {
+    const normalizedStatus = normalizeDealStageStatus(status);
+    const now = new Date().toISOString();
+    replaceStageRecord(stageKey, (record) => {
+        record.stage_status = normalizedStatus;
+        if (normalizedStatus === 'completed') {
+            record.completed_at = text(record.completed_at || now);
+        } else if (normalizedStatus === 'active') {
+            record.completed_at = text(record.completed_at);
+        } else if (normalizedStatus === 'pending') {
+            record.completed_at = '';
+        }
+        return record;
+    });
+    if (normalizedStatus === 'active') {
+        moduleState.dealEditor.current_stage = normalizeDealStageKey(stageKey);
+    } else if (normalizedStatus === 'completed') {
+        moduleState.dealEditor.current_stage = normalizeDealStageKey(nextStageKey(stageKey));
+        replaceStageRecord(nextStageKey(stageKey), (record) => {
+            if (record.stage_status !== 'completed') record.stage_status = 'active';
+            return record;
+        });
+    }
+    moduleState.dealStageRecords = touchDealStageRecords(moduleState.dealStageRecords, moduleState.dealEditor || {});
+}
+
+function applyDealStageProgress(completedStages = [], nextStage = '') {
+    const completed = new Set((completedStages || []).map((item) => normalizeDealStageKey(item)));
+    const activeStage = text(nextStage) ? normalizeDealStageKey(nextStage) : '';
+    const now = new Date().toISOString();
+    const base = moduleState.dealStageRecords.length
+        ? moduleState.dealStageRecords
+        : mergeDealStageRecords(moduleState.dealEditor || {}, []);
+    moduleState.dealStageRecords = base.map((record) => {
+        const next = createDealStageRecord(record);
+        if (completed.has(next.stage_key)) {
+            next.stage_status = 'completed';
+            next.completed_at = text(next.completed_at || now);
+        } else if (activeStage && next.stage_key === activeStage) {
+            if (next.stage_status !== 'completed') next.stage_status = 'active';
+        } else if (next.stage_status !== 'completed' && next.stage_status !== 'blocked') {
+            next.stage_status = 'pending';
+        }
+        return next;
+    });
+    if (activeStage) {
+        moduleState.dealEditor.current_stage = activeStage;
+        moduleState.dealStageRecords = ensureActiveStage(moduleState.dealStageRecords, activeStage);
+    }
 }
 
 function syncInstanceShareConfig(draft = {}, options = {}) {
@@ -923,6 +1521,7 @@ function createInstanceDraft(seed = {}) {
         brand_id: text(seed.brand_id || seed.brandId),
         product_id: text(seed.product_id || seed.productId),
         customer_id: text(seed.customer_id || seed.customerId),
+        deal_id: text(seed.deal_id || seed.dealId),
         requirement_id: text(seed.requirement_id || seed.requirementId),
         public_slug: text(seed.public_slug || seed.publicSlug),
         status: normalizedStatus === 'published' || normalizedStatus === 'archived' || normalizedStatus === 'voided' ? normalizedStatus : 'draft',
@@ -961,6 +1560,7 @@ moduleState.productEditor = createProductDraft();
 moduleState.productBrandDraft = createBrandDraft();
 moduleState.instanceEditor = createInstanceDraft();
 moduleState.requirementEditor = createRequirementDraft();
+moduleState.dealEditor = createDealDraft();
 
 function upsertLocalizedField(target, key, lang, value) {
     target[key] = normalizeLocalizedText(target[key]);
@@ -1059,7 +1659,7 @@ async function fetchCustomerRows() {
 async function fetchRequirementRows() {
     const { data, error } = await client
         .from(TABLE_REQUIREMENTS)
-        .select('id, customer_id, title, status, requirement_type, country, requester_company, requester_name, requester_email, requester_phone, public_slug, public_token, submitted_at, answers, notes, is_active, created_at, updated_at')
+        .select('id, customer_id, deal_id, title, status, requirement_type, country, requester_company, requester_name, requester_email, requester_phone, public_slug, public_token, submitted_at, answers, notes, is_active, created_at, updated_at')
         .eq('is_active', true)
         .order('updated_at', { ascending: false });
     if (error) throw error;
@@ -1080,6 +1680,51 @@ async function fetchRequirementEditor(requirementId) {
     moduleState.requirementEditor = createRequirementDraft(data);
     moduleState.requirementCreateMode = false;
     return moduleState.requirementEditor;
+}
+
+async function fetchDealRows() {
+    const { data, error } = await client
+        .from(TABLE_DEALS)
+        .select('id, customer_id, title, current_stage, deal_status, owner_name, owner_email, primary_requirement_id, primary_instance_id, summary, next_action, next_action_due_at, lost_reason, created_at, updated_at')
+        .order('updated_at', { ascending: false });
+    if (error) throw error;
+    moduleState.deals = Array.isArray(data) ? data.map((row) => createDealDraft(row)) : [];
+    return moduleState.deals;
+}
+
+async function fetchDealStageRecords(dealId) {
+    if (!dealId) {
+        moduleState.dealStageRecords = [];
+        return [];
+    }
+    const { data, error } = await client
+        .from(TABLE_DEAL_STAGE_RECORDS)
+        .select('*')
+        .eq('deal_id', dealId)
+        .order('created_at', { ascending: true });
+    if (error) throw error;
+    moduleState.dealStageRecords = mergeDealStageRecords(
+        moduleState.deals.find((item) => item.id === dealId) || moduleState.dealEditor || {},
+        Array.isArray(data) ? data.map((row) => createDealStageRecord(row)) : [],
+    );
+    return moduleState.dealStageRecords;
+}
+
+async function fetchDealEditor(dealId) {
+    if (!dealId) {
+        moduleState.dealLoadedId = '';
+        moduleState.dealEditor = createDealDraft();
+        moduleState.dealStageRecords = mergeDealStageRecords(moduleState.dealEditor, []);
+        moduleState.dealCreateMode = true;
+        return moduleState.dealEditor;
+    }
+    const { data, error } = await client.from(TABLE_DEALS).select('*').eq('id', dealId).single();
+    if (error) throw error;
+    moduleState.dealLoadedId = dealId;
+    moduleState.dealEditor = createDealDraft(data);
+    moduleState.dealCreateMode = false;
+    await fetchDealStageRecords(dealId);
+    return moduleState.dealEditor;
 }
 
 async function fetchProductRows() {
@@ -1129,7 +1774,7 @@ async function fetchProductEditor(productId) {
 async function fetchInstanceRows() {
     const { data, error } = await client
         .from(TABLE_INSTANCES)
-        .select('id, brand_id, product_id, customer_id, requirement_id, public_slug, status, last_active_status, archived_at, customer_name, receiver_name, receiver_email, customer_snapshot, share_config, default_lang, validity_hours, created_at, published_at, updated_at')
+        .select('id, brand_id, product_id, customer_id, deal_id, requirement_id, public_slug, status, last_active_status, archived_at, customer_name, receiver_name, receiver_email, customer_snapshot, share_config, default_lang, validity_hours, created_at, published_at, updated_at')
         .order('updated_at', { ascending: false });
     if (error) throw error;
     moduleState.instances = Array.isArray(data) ? data.map((row) => createInstanceDraft(row)) : [];
@@ -1680,6 +2325,106 @@ async function saveCustomerDraft(user, draft) {
     return moduleState.customerEditor;
 }
 
+async function saveDealStageRecords(user, dealId, records = moduleState.dealStageRecords, dealDraft = moduleState.dealEditor) {
+    if (!dealId) {
+        moduleState.dealStageRecords = [];
+        return [];
+    }
+    const baseDeal = createDealDraft({
+        ...(dealDraft || {}),
+        id: dealId,
+    });
+    const owner = currentSalesOwner(user);
+    const payload = touchDealStageRecords(records, baseDeal).map((record) => {
+        const next = createDealStageRecord({
+            ...record,
+            deal_id: dealId,
+            owner_name: text(record.owner_name, baseDeal.owner_name || owner.name),
+            owner_email: text(record.owner_email, baseDeal.owner_email || owner.email),
+        });
+        return {
+            deal_id: dealId,
+            stage_key: next.stage_key,
+            stage_status: next.stage_status,
+            planned_at: next.planned_at || null,
+            completed_at: next.completed_at || null,
+            owner_name: next.owner_name,
+            owner_email: next.owner_email,
+            notes: next.notes,
+            meta: next.meta && typeof next.meta === 'object' ? next.meta : {},
+            updated_by: user?.id || null,
+            created_by: user?.id || null,
+        };
+    });
+    const { data, error } = await client
+        .from(TABLE_DEAL_STAGE_RECORDS)
+        .upsert(payload, { onConflict: 'deal_id,stage_key' })
+        .select('*');
+    if (error) throw error;
+    moduleState.dealStageRecords = mergeDealStageRecords(
+        baseDeal,
+        Array.isArray(data) ? data.map((row) => createDealStageRecord(row)) : payload,
+    );
+    return moduleState.dealStageRecords;
+}
+
+async function saveDealDraft(user, draft, options = {}) {
+    const payload = createDealDraft(draft);
+    if (!payload.customer_id) throw new Error('商机必须绑定一个客户档案。');
+    const customer = moduleState.customers.find((item) => item.id === payload.customer_id) || moduleState.customerEditor;
+    const owner = currentSalesOwner(user);
+    const currentStage = normalizeDealStageKey(options.currentStage || payload.current_stage);
+    const nextDraft = createDealDraft({
+        ...payload,
+        current_stage: currentStage,
+        owner_name: text(payload.owner_name, owner.name),
+        owner_email: text(payload.owner_email, owner.email),
+        title: text(payload.title, `${customerDisplayName(customer || {})} / 销售项目`),
+    });
+    const stageRecords = touchDealStageRecords(options.stageRecords || moduleState.dealStageRecords, nextDraft);
+    nextDraft.current_stage = inferDealCurrentStage(stageRecords, currentStage);
+    const savePayload = {
+        customer_id: nextDraft.customer_id,
+        title: nextDraft.title,
+        current_stage: nextDraft.current_stage,
+        deal_status: normalizeDealStatus(nextDraft.deal_status),
+        owner_name: nextDraft.owner_name,
+        owner_email: nextDraft.owner_email,
+        primary_requirement_id: nextDraft.primary_requirement_id || null,
+        primary_instance_id: nextDraft.primary_instance_id || null,
+        summary: nextDraft.summary,
+        next_action: nextDraft.next_action,
+        next_action_due_at: nextDraft.next_action_due_at || null,
+        lost_reason: nextDraft.lost_reason,
+        updated_by: user?.id || null,
+    };
+    let saved = null;
+    if (nextDraft.id) {
+        const { data, error } = await client.from(TABLE_DEALS).update(savePayload).eq('id', nextDraft.id).select('*').single();
+        if (error) throw error;
+        saved = data;
+    } else {
+        const { data, error } = await client.from(TABLE_DEALS).insert({
+            ...savePayload,
+            created_by: user?.id || null,
+        }).select('*').single();
+        if (error) throw error;
+        saved = data;
+    }
+    await fetchDealRows();
+    moduleState.dealLoadedId = text(saved?.id);
+    moduleState.dealEditor = createDealDraft(saved);
+    moduleState.dealCreateMode = false;
+    moduleState.dealStageRecords = stageRecords.map((record) => createDealStageRecord({
+        ...record,
+        deal_id: saved.id,
+        owner_name: text(record.owner_name, moduleState.dealEditor.owner_name),
+        owner_email: text(record.owner_email, moduleState.dealEditor.owner_email),
+    }));
+    await saveDealStageRecords(user, saved.id, moduleState.dealStageRecords, moduleState.dealEditor);
+    return moduleState.dealEditor;
+}
+
 async function saveRequirementDraft(user, draft) {
     const payload = createRequirementDraft(draft);
     if (!payload.customer_id) throw new Error('需求获取单必须绑定一个客户档案。');
@@ -1688,6 +2433,7 @@ async function saveRequirementDraft(user, draft) {
     const publicToken = payload.public_token || createRequirementPublicToken();
     const savePayload = {
         customer_id: payload.customer_id,
+        deal_id: payload.deal_id || null,
         title: payload.title || `${customerDisplayName(customer || {})} / ${requirementTypeLabel(payload.requirement_type)}`,
         status: normalizeRequirementStatus(payload.status),
         requirement_type: payload.requirement_type,
@@ -1893,7 +2639,7 @@ async function restoreQuoteInstance(user, instanceId) {
     });
 }
 
-async function createInstanceFromProduct(user, productId) {
+async function createInstanceFromProduct(user, productId, options = {}) {
     const product = productId
         ? moduleState.productEditor?.id === productId
             ? createProductDraft(moduleState.productEditor)
@@ -1906,16 +2652,25 @@ async function createInstanceFromProduct(user, productId) {
 
     const brand = moduleState.brands.find((item) => item.id === product.brand_id);
     if (!brand?.id) throw new Error('未找到对应品牌。');
+    const dealId = text(options.dealId || activeDealIdFromState());
+    const deal = dealId ? dealById(dealId) : null;
+    const customer = deal?.customer_id ? moduleState.customers.find((item) => item.id === deal.customer_id) : null;
 
     const draft = createInstanceDraft({
         brand_id: brand.id,
         product_id: product.id,
+        customer_id: customer?.id || '',
+        deal_id: dealId,
         public_slug: createPublicSlug(brand.slug, product.slug),
         status: 'draft',
         last_active_status: 'draft',
-        customer_name: '',
-        receiver_name: '',
-        receiver_email: '',
+        customer_name: text(customer?.company_name),
+        receiver_name: text(customer?.contact_name),
+        receiver_email: text(customer?.email),
+        customer_phone: text(customer?.phone),
+        customer_country: text(customer?.country),
+        customer_notes: text(customer?.notes),
+        customer_snapshot: normalizeCustomerSnapshot(customer || {}),
         default_lang: product.default_lang,
         validity_hours: product.validity_hours,
         draft_rates: product.default_rates,
@@ -1940,19 +2695,20 @@ async function createInstanceFromProduct(user, productId) {
         .insert({
             brand_id: draft.brand_id,
             product_id: draft.product_id,
-            customer_id: null,
+            customer_id: draft.customer_id || null,
+            deal_id: draft.deal_id || null,
             requirement_id: null,
             public_slug: draft.public_slug,
             status: 'draft',
             last_active_status: 'draft',
-            customer_name: '',
-            receiver_name: '',
-            receiver_email: '',
-            customer_snapshot: {},
+            customer_name: draft.customer_name,
+            receiver_name: draft.receiver_name,
+            receiver_email: draft.receiver_email,
+            customer_snapshot: draft.customer_snapshot,
             default_lang: draft.default_lang,
             validity_hours: draft.validity_hours,
             draft_rates: draft.draft_rates,
-            share_config: {},
+            share_config: draft.share_config || {},
             brand_snapshot: draft.brand_snapshot,
             product_snapshot: draft.product_snapshot,
             section_config: draft.section_config,
@@ -1970,10 +2726,17 @@ async function createInstanceFromProduct(user, productId) {
         ...data,
         items: savedItems,
     });
+    if (dealId) {
+        await saveAndAdvanceDeal(user, {
+            id: dealId,
+            customer_id: customer?.id || moduleState.instanceEditor.customer_id,
+            primary_instance_id: moduleState.instanceEditor.id,
+        }, ['customer_profile', 'quote_draft'], 'quote_confirmed');
+    }
     return moduleState.instanceEditor;
 }
 
-async function createInstanceFromRequirement(user, requirementId, productId) {
+async function createInstanceFromRequirement(user, requirementId, productId, options = {}) {
     if (!requirementId) throw new Error('请先选择一份需求获取单。');
     const requirement = moduleState.requirementEditor?.id === requirementId
         ? createRequirementDraft(moduleState.requirementEditor)
@@ -1994,6 +2757,7 @@ async function createInstanceFromRequirement(user, requirementId, productId) {
 
     const customer = moduleState.customers.find((item) => item.id === requirement.customer_id);
     if (!customer?.id) throw new Error('未找到需求单绑定的客户档案。');
+    const dealId = text(requirement.deal_id || options.dealId || activeDealIdFromState());
 
     const notesBlock = [customer.notes, `需求获取摘要：${requirementSummaryLine(requirement)}`, text(requirement.answers?.extra_notes), requirement.notes]
         .map((entry) => text(entry))
@@ -2004,6 +2768,7 @@ async function createInstanceFromRequirement(user, requirementId, productId) {
         brand_id: brand.id,
         product_id: product.id,
         customer_id: customer.id,
+        deal_id: dealId,
         requirement_id: requirement.id,
         public_slug: createPublicSlug(brand.slug, product.slug),
         status: 'draft',
@@ -2044,6 +2809,7 @@ async function createInstanceFromRequirement(user, requirementId, productId) {
             brand_id: draft.brand_id,
             product_id: draft.product_id,
             customer_id: draft.customer_id || null,
+            deal_id: draft.deal_id || null,
             requirement_id: draft.requirement_id || null,
             public_slug: draft.public_slug,
             status: 'draft',
@@ -2073,6 +2839,14 @@ async function createInstanceFromRequirement(user, requirementId, productId) {
         ...data,
         items: savedItems,
     });
+    if (dealId) {
+        await saveAndAdvanceDeal(user, {
+            id: dealId,
+            customer_id: customer.id,
+            primary_requirement_id: requirement.id,
+            primary_instance_id: moduleState.instanceEditor.id,
+        }, ['customer_profile', 'requirement_capture', 'requirement_confirmed', 'quote_draft'], 'quote_confirmed');
+    }
     return moduleState.instanceEditor;
 }
 
@@ -2087,6 +2861,7 @@ async function saveInstanceDraft(user, draft) {
         brand_id: payload.brand_id,
         product_id: payload.product_id,
         customer_id: customerRelation.customer_id || null,
+        deal_id: payload.deal_id || null,
         requirement_id: payload.requirement_id || null,
         public_slug: payload.public_slug,
         status: 'draft',
@@ -2132,6 +2907,58 @@ async function saveInstanceDraft(user, draft) {
         items: savedItems,
     });
     return moduleState.instanceEditor;
+}
+
+async function saveAndAdvanceDeal(user, dealPatch = {}, completedStages = [], nextStage = '') {
+    const dealId = text(dealPatch.id || dealPatch.deal_id || activeDealIdFromState());
+    if (!dealId) throw new Error('当前动作必须绑定到一个商机。');
+    if (text(moduleState.dealLoadedId) !== dealId) {
+        await fetchDealEditor(dealId);
+    }
+    moduleState.dealEditor = createDealDraft({
+        ...moduleState.dealEditor,
+        ...dealPatch,
+        id: dealId,
+    });
+    moduleState.dealStageRecords = dealCurrentRecords(moduleState.dealEditor);
+    applyDealStageProgress(completedStages, nextStage || moduleState.dealEditor.current_stage);
+    return saveDealDraft(user, moduleState.dealEditor, {
+        stageRecords: moduleState.dealStageRecords,
+        currentStage: moduleState.dealEditor.current_stage,
+    });
+}
+
+async function confirmRequirementForDeal(user, requirementDraft) {
+    const savedRequirement = await saveRequirementDraft(user, {
+        ...requirementDraft,
+        status: normalizeRequirementStatus(requirementDraft?.status) === 'draft' ? 'reviewing' : requirementDraft?.status,
+    });
+    if (!savedRequirement.deal_id) throw new Error('请先把需求单绑定到一个商机，再确认需求。');
+    await saveAndAdvanceDeal(user, {
+        id: savedRequirement.deal_id,
+        customer_id: savedRequirement.customer_id,
+        primary_requirement_id: savedRequirement.id,
+    }, ['customer_profile', 'requirement_capture', 'requirement_confirmed'], 'quote_draft');
+    moduleState.requirementEditor = createRequirementDraft(savedRequirement);
+    return savedRequirement;
+}
+
+async function confirmQuoteForDeal(user, instanceDraft) {
+    const savedInstance = await saveInstanceDraft(user, instanceDraft);
+    if (!savedInstance.deal_id) throw new Error('请先把报价单绑定到一个商机，再确认报价。');
+    const completedStages = ['quote_draft', 'quote_confirmed'];
+    if (savedInstance.customer_id) completedStages.unshift('customer_profile');
+    if (savedInstance.requirement_id || moduleState.dealEditor?.primary_requirement_id) {
+        completedStages.splice(1, 0, 'requirement_capture', 'requirement_confirmed');
+    }
+    await saveAndAdvanceDeal(user, {
+        id: savedInstance.deal_id,
+        customer_id: savedInstance.customer_id || moduleState.dealEditor?.customer_id,
+        primary_requirement_id: savedInstance.requirement_id || moduleState.dealEditor?.primary_requirement_id,
+        primary_instance_id: savedInstance.id,
+    }, completedStages, 'contract_signed');
+    moduleState.instanceEditor = createInstanceDraft(savedInstance);
+    return savedInstance;
 }
 
 async function publishInstance(user, draft) {
@@ -2360,13 +3187,9 @@ function requirementSharePosterDataUrl(requirement = {}) {
 }
 
 function adminPageUrl(page, params = {}) {
-    const url = new URL('/article_management/index.html', window.location.origin);
-    url.searchParams.set('page', page);
-    Object.entries(params || {}).forEach(([key, value]) => {
-        const normalized = text(value);
-        if (normalized) url.searchParams.set(key, normalized);
+    return adminConsoleUrl(page, params, {
+        entryKind: detectAdminEntryKind(),
     });
-    return url.toString();
 }
 
 function readAdminPageParam(name) {
@@ -2397,8 +3220,17 @@ function previewQuoteUrl(instanceId) {
     return new URL(`/quote/view.html?preview=${encodeURIComponent(instanceId)}`, window.location.origin).toString();
 }
 
-function quoteEditorUrl(kind, id) {
-    return new URL(`/quote/editor.html?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(id)}`, window.location.origin).toString();
+function quoteEditorUrl(kind, id, options = {}) {
+    const params = quoteEditorContextParams({}, {
+        entryKind: options.entryKind || currentEntryKind(options.input),
+    });
+    params.set('kind', text(kind));
+    params.set('id', text(id));
+    const dealId = text(options.dealId || activeDealIdFromState());
+    if (dealId) params.set('deal', dealId);
+    const url = new URL('/quote/editor.html', window.location.origin);
+    url.search = params.toString();
+    return url.toString();
 }
 
 async function importLegacySeedData(user) {
@@ -2967,9 +3799,14 @@ function requirementById(requirementId = '') {
 }
 
 function instanceRequirementOptions(instance = {}) {
+    const dealId = text(instance.deal_id || activeDealIdFromState());
     const customerId = text(instance.customer_id);
     const linkedRequirement = requirementById(instance.requirement_id);
-    const rows = customerId ? customerRequirements(customerId) : [];
+    const rows = dealId
+        ? dealRequirements(dealId)
+        : customerId
+            ? customerRequirements(customerId)
+            : [];
     if (linkedRequirement?.id && !rows.some((item) => item.id === linkedRequirement.id)) {
         return [linkedRequirement, ...rows];
     }
@@ -3121,7 +3958,7 @@ function brandDefaultLinkContext(brandDraft = {}) {
 }
 
 async function ensureBaseData() {
-    await Promise.all([fetchBrandRows(), fetchProductRows(), fetchCustomerRows(), fetchRequirementRows(), fetchInstanceRows()]);
+    await Promise.all([fetchBrandRows(), fetchProductRows(), fetchCustomerRows(), fetchRequirementRows(), fetchInstanceRows(), fetchDealRows()]);
 }
 
 function isQuoteSetupMissing(error) {
@@ -3132,6 +3969,7 @@ function isQuoteSetupMissing(error) {
         message.includes('quote_product_media') ||
         message.includes('quote_requirements') ||
         message.includes('quote_instances') ||
+        message.includes('quote_deals') ||
         message.includes('admin_users') ||
         message.includes('infinite recursion') ||
         message.includes('relation') ||
@@ -3153,7 +3991,7 @@ function renderQuoteSetupRequired(input, error) {
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-database"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>执行 SQL 文件</strong>
-                        <span>请先在 Supabase SQL Editor 执行 <code>article_management/sql/006_quote_system.sql</code>；已有旧版库时，再补执行 <code>article_management/sql/008_quote_product_media.sql</code>、<code>article_management/sql/010_quote_customer_tracking.sql</code>、<code>article_management/sql/011_quote_send_ledger.sql</code>、<code>article_management/sql/012_quote_requirement_intake.sql</code>、<code>article_management/sql/013_quote_requirement_public_flow.sql</code>；如果当前错误是 <code>quote_customers.is_deleted does not exist</code>，再单独执行 <code>article_management/sql/015_quote_customer_soft_delete.sql</code>。</span>
+                        <span>请先在 Supabase SQL Editor 执行 <code>article_management/sql/006_quote_system.sql</code>；已有旧版库时，再补执行 <code>article_management/sql/008_quote_product_media.sql</code>、<code>article_management/sql/010_quote_customer_tracking.sql</code>、<code>article_management/sql/011_quote_send_ledger.sql</code>、<code>article_management/sql/012_quote_requirement_intake.sql</code>、<code>article_management/sql/013_quote_requirement_public_flow.sql</code>、<code>article_management/sql/017_sales_console_roles_and_deals.sql</code>；如果当前错误是 <code>quote_customers.is_deleted does not exist</code>，再单独执行 <code>article_management/sql/015_quote_customer_soft_delete.sql</code>。</span>
                     </div>
                 </div>
                 <div class="ams-quick-link ams-quick-link-static">
@@ -4045,6 +4883,7 @@ function renderInstanceList() {
         ? rows
               .map((quote) => {
                   const linkedRequirement = requirementById(quote.requirement_id);
+                  const linkedDeal = quoteDeal(quote.id);
                   const generatedAt = quote.published_at || quote.created_at || quote.updated_at;
                   const syncLabel = quote.published_at
                       ? `发布于 ${fmtDate(quote.published_at)}`
@@ -4061,6 +4900,7 @@ function renderInstanceList() {
                         <strong>${esc(quote.customer_name || productLabelById(quote.product_id) || quote.public_slug)}</strong>
                         <span>${esc(brandLabelById(quote.brand_id))} · ${esc(productLabelById(quote.product_id))}</span>
                         <span class="ams-quote-inline-submeta">${esc(relationshipLine)}</span>
+                        ${linkedDeal ? `<span class="ams-quote-inline-submeta">商机：${esc(text(linkedDeal.title, linkedDeal.id))} · ${esc(dealStageLabel(linkedDeal.current_stage))}</span>` : ''}
                         <em>${statusPill(quote.status)} <span class="ams-quote-inline-meta">${esc(syncLabel)}</span></em>
                     </button>
                     <div class="ams-quote-list-card-actions">
@@ -4105,6 +4945,7 @@ function renderCustomerList() {
               .map((customer) => {
                   const quoteSummary = summarizeCustomerQuotes(customer.id);
                   const requirementSummary = summarizeCustomerRequirements(customer.id);
+                  const deals = customerDeals(customer.id);
                   const isActive = text(moduleState.customerLoadedId || moduleState.customerEditor?.id) === text(customer.id);
                   const notePreview = text(customer.notes).replace(/\s+/g, ' ').trim();
                   return `
@@ -4114,8 +4955,9 @@ function renderCustomerList() {
                             <span>${esc(text(customer.contact_name || customer.email || customer.phone, '未填写联系人'))}</span>
                             <span class="ams-quote-inline-submeta">${esc(text(customer.company_name || customer.email || customer.phone || customer.country, '未填写联系信息'))}</span>
                             <span class="ams-quote-inline-submeta">${esc(notePreview ? `客户备注：${notePreview.slice(0, 42)}${notePreview.length > 42 ? '...' : ''}` : '客户备注：未填写')}</span>
+                            ${deals.length ? `<span class="ams-quote-inline-submeta">商机：${esc(text(deals[0].title, deals[0].id))}${deals.length > 1 ? ` 等 ${deals.length} 条` : ''}</span>` : ''}
                             <span class="ams-quote-inline-submeta">${esc(`更新时间：${fmtDate(customer.updated_at || customer.created_at)}`)}</span>
-                            <em>${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单 <span class="ams-quote-inline-meta">${quoteSummary.published_quotes} 已发布 / ${quoteSummary.archived_quotes} 已归档 / ${quoteSummary.voided_quotes} 已作废</span></em>
+                            <em>${deals.length} 条商机 / ${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单 <span class="ams-quote-inline-meta">${quoteSummary.published_quotes} 已发布 / ${quoteSummary.archived_quotes} 已归档 / ${quoteSummary.voided_quotes} 已作废</span></em>
                         </button>
                 <div class="ams-quote-list-card-actions">
                     ${
@@ -4158,6 +5000,7 @@ function renderRequirementList() {
               .map((requirement) => {
                   const customer = moduleState.customers.find((item) => item.id === requirement.customer_id);
                   const quoteSummary = summarizeRequirementQuotes(requirement.id);
+                  const linkedDeal = requirementDeal(requirement.id);
                   const contactLabel = text(requirement.requester_name || requirement.requester_email || requirement.requester_phone || customer?.contact_name, '未填写联系人');
                   return `
                     <article class="ams-customer-list-card-shell">
@@ -4165,6 +5008,7 @@ function renderRequirementList() {
                             <strong>${esc(requirementDisplayName(requirement))}</strong>
                             <span>${esc(text(requirement.requester_company || customerDisplayName(customer || {})))}</span>
                             <span class="ams-quote-inline-submeta">${esc(requirementSummaryLine(requirement) || '待补充需求摘要')}</span>
+                            ${linkedDeal ? `<span class="ams-quote-inline-submeta">商机：${esc(text(linkedDeal.title, linkedDeal.id))} · ${esc(dealStageLabel(linkedDeal.current_stage))}</span>` : ''}
                             <em>${requirementStatusPill(requirement.status)} <span class="ams-quote-inline-meta">${esc(contactLabel)} / ${esc(quoteSummary.total_quotes)} 份关联报价 / ${esc(fmtDate(requirement.submitted_at || requirement.updated_at))}</span></em>
                         </button>
                         ${quoteSummary.total_quotes
@@ -4175,6 +5019,31 @@ function renderRequirementList() {
               })
               .join('')
         : '<div class="ams-empty">当前没有需求获取单。</div>';
+}
+
+function renderDealList() {
+    const rows = filteredDeals();
+    return rows.length
+        ? rows
+              .map((deal) => {
+                  const customer = moduleState.customers.find((item) => item.id === deal.customer_id);
+                  const requirements = dealRequirements(deal.id);
+                  const quotes = dealQuotes(deal.id);
+                  const isActive = text(moduleState.dealLoadedId || moduleState.dealEditor?.id) === text(deal.id);
+                  return `
+                    <article class="ams-customer-list-card-shell ${isActive ? 'is-active' : ''}">
+                        <button class="ams-quote-list-card ${isActive ? 'is-active' : ''}" type="button" data-deal-edit="${esc(deal.id)}">
+                            <strong>${esc(text(deal.title, deal.id))}</strong>
+                            <span>${esc(customerDisplayName(customer || {}))}</span>
+                            <span class="ams-quote-inline-submeta">${esc(text(deal.summary || deal.next_action, '待补充商机摘要'))}</span>
+                            <span class="ams-quote-inline-submeta">${esc(`${dealStageLabel(deal.current_stage)} · ${dealStatusLabel(deal.deal_status)}`)}</span>
+                            <em>${dealStatusPill(deal.deal_status)} <span class="ams-quote-inline-meta">${esc(`${requirements.length} 份需求 / ${quotes.length} 份报价 / 更新于 ${fmtDate(deal.updated_at || deal.created_at)}`)}</span></em>
+                        </button>
+                    </article>
+                `;
+              })
+              .join('')
+        : '<div class="ams-empty">当前筛选下没有商机项目。</div>';
 }
 
 function requirementQuoteListMarkup(requirementId = '') {
@@ -5638,7 +6507,9 @@ function bindInstanceEditor(input) {
         const productId = document.getElementById('ams-quote-instance-product-select')?.value || '';
         await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
             try {
-                const instance = await createInstanceFromProduct(input.user, productId);
+                const instance = await createInstanceFromProduct(input.user, productId, {
+                    dealId: activeDealIdFromState(text(moduleState.instanceEditor?.deal_id)),
+                });
                 input.showToast('报价单草稿已生成。');
                 await fetchInstanceEditor(instance.id);
                 await renderQuoteInstancesPage(input);
@@ -5749,6 +6620,22 @@ function bindInstanceEditor(input) {
             return;
         }
         moduleState.instanceEditor.requirement_id = event.currentTarget.value || '';
+        const linkedRequirement = requirementById(moduleState.instanceEditor.requirement_id);
+        if (linkedRequirement?.deal_id && !text(moduleState.instanceEditor.deal_id)) {
+            moduleState.instanceEditor.deal_id = linkedRequirement.deal_id;
+        }
+        void renderQuoteInstancesPage(input);
+    });
+
+    document.getElementById('ams-quote-instance-deal-select')?.addEventListener('change', (event) => {
+        moduleState.instanceEditor.deal_id = event.currentTarget.value || '';
+        const deal = dealById(moduleState.instanceEditor.deal_id);
+        if (deal?.customer_id && !text(moduleState.instanceEditor.customer_id)) {
+            moduleState.instanceEditor.customer_id = deal.customer_id;
+        }
+        if (deal?.primary_requirement_id && !text(moduleState.instanceEditor.requirement_id)) {
+            moduleState.instanceEditor.requirement_id = deal.primary_requirement_id;
+        }
         void renderQuoteInstancesPage(input);
     });
 
@@ -5760,13 +6647,17 @@ function bindInstanceEditor(input) {
                 input.showToast('当前报价单还没有绑定需求单。', true);
                 return;
             }
-            window.location.assign(adminPageUrl('quote-requirements', { requirement: instance.requirement_id }));
+            window.location.assign(adminPageUrl('quote-requirements', {
+                requirement: instance.requirement_id,
+                deal: instance.deal_id,
+            }));
         });
     });
 
     content.querySelectorAll('[data-instance-field]').forEach((node) => {
+        const fieldName = node.dataset.instanceField || '';
         const apply = () => {
-            const field = node.dataset.instanceField;
+            const field = fieldName;
             if (!field) return;
             moduleState.instanceEditor[field] = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
             moduleState.instanceEditor.customer_snapshot = buildInstanceCustomerSnapshot(moduleState.instanceEditor);
@@ -5774,9 +6665,20 @@ function bindInstanceEditor(input) {
                 moduleState.instanceEditor.share_config = syncInstanceShareConfig(moduleState.instanceEditor);
                 syncInstanceSalesOwner(moduleState.instanceEditor, input.user);
             }
+            if (field === 'deal_id') {
+                const deal = dealById(moduleState.instanceEditor.deal_id);
+                if (deal?.customer_id && !text(moduleState.instanceEditor.customer_id)) {
+                    moduleState.instanceEditor.customer_id = deal.customer_id;
+                }
+            }
         };
         node.addEventListener('input', apply);
-        if (node.type === 'checkbox' || node.tagName === 'SELECT') node.addEventListener('change', apply);
+        if (node.type === 'checkbox' || node.tagName === 'SELECT') {
+            node.addEventListener('change', () => {
+                apply();
+                if (fieldName === 'deal_id') void renderQuoteInstancesPage(input);
+            });
+        }
     });
 
     content.querySelectorAll('[data-instance-share-field]').forEach((node) => {
@@ -6123,6 +7025,19 @@ function bindInstanceEditor(input) {
         });
     });
 
+    document.getElementById('ams-quote-instance-confirm')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '确认中...', async () => {
+            try {
+                const saved = await confirmQuoteForDeal(input.user, moduleState.instanceEditor);
+                input.showToast('报价已确认，已推进到合同阶段。');
+                await fetchInstanceEditor(saved.id);
+                await renderQuoteInstancesPage(input);
+            } catch (error) {
+                input.showToast(error.message || '确认报价失败。', true);
+            }
+        });
+    });
+
     const posterModal = document.getElementById('ams-quote-share-poster-modal');
     const posterImage = document.getElementById('ams-quote-share-poster-image');
     const posterDownload = document.getElementById('ams-quote-share-poster-download');
@@ -6387,6 +7302,23 @@ function bindCustomerEditor(input) {
         });
     });
 
+    content.querySelectorAll('[data-customer-create-deal]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            await input.withButtonBusy(event.currentTarget, '跳转中...', async () => {
+                try {
+                    let customerId = text(moduleState.customerEditor?.id);
+                    if (!customerId) {
+                        const saved = await saveCustomerDraft(input.user, moduleState.customerEditor);
+                        customerId = saved.id;
+                    }
+                    window.location.assign(adminPageUrl('quote-deals', { customer: customerId }));
+                } catch (error) {
+                    input.showToast(error.message || '打开商机页失败。', true);
+                }
+            });
+        });
+    });
+
     document.getElementById('ams-quote-customer-archive-current')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '归档中...', async () => {
             try {
@@ -6476,10 +7408,12 @@ function bindRequirementEditor(input) {
     });
 
     document.getElementById('ams-quote-requirement-new')?.addEventListener('click', () => {
-        const seededCustomer = moduleState.customers.find((item) => item.id === text(moduleState.requirementEditor?.customer_id || moduleState.customerLoadedId));
+        const seededDeal = dealById(activeDealIdFromState(text(moduleState.requirementEditor?.deal_id)));
+        const seededCustomer = moduleState.customers.find((item) => item.id === text(seededDeal?.customer_id || moduleState.requirementEditor?.customer_id || moduleState.customerLoadedId));
         moduleState.requirementLoadedId = '';
         moduleState.requirementEditor = createRequirementDraft({
-            customer_id: text(moduleState.requirementEditor?.customer_id || moduleState.customerLoadedId),
+            customer_id: text(seededDeal?.customer_id || moduleState.requirementEditor?.customer_id || moduleState.customerLoadedId),
+            deal_id: text(seededDeal?.id || moduleState.requirementEditor?.deal_id || activeDealIdFromState()),
             requester_company: seededCustomer?.company_name || '',
             requester_name: seededCustomer?.contact_name || '',
             requester_email: seededCustomer?.email || '',
@@ -6507,7 +7441,7 @@ function bindRequirementEditor(input) {
         const apply = () => {
             const field = node.dataset.requirementField;
             if (!field) return;
-            if (requirementIsLocked(moduleState.requirementEditor?.status) && field !== 'notes') return;
+            if (requirementIsLocked(moduleState.requirementEditor?.status) && !['notes', 'deal_id'].includes(field)) return;
             if (field === 'customer_id' && text(moduleState.requirementEditor?.id)) return;
             moduleState.requirementEditor[field] = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
             if (field === 'customer_id') {
@@ -6520,12 +7454,26 @@ function bindRequirementEditor(input) {
                     if (!hasTextValue(moduleState.requirementEditor.country)) moduleState.requirementEditor.country = text(customer.country);
                 }
             }
+            if (field === 'deal_id') {
+                const deal = dealById(moduleState.requirementEditor.deal_id);
+                if (deal?.customer_id) {
+                    moduleState.requirementEditor.customer_id = deal.customer_id;
+                    const customer = moduleState.customers.find((item) => item.id === deal.customer_id);
+                    if (customer) {
+                        moduleState.requirementEditor.requester_company = text(moduleState.requirementEditor.requester_company || customer.company_name);
+                        moduleState.requirementEditor.requester_name = text(moduleState.requirementEditor.requester_name || customer.contact_name);
+                        moduleState.requirementEditor.requester_email = text(moduleState.requirementEditor.requester_email || customer.email);
+                        moduleState.requirementEditor.requester_phone = text(moduleState.requirementEditor.requester_phone || customer.phone);
+                        moduleState.requirementEditor.country = text(moduleState.requirementEditor.country || customer.country);
+                    }
+                }
+            }
         };
         node.addEventListener('input', apply);
         if (node.type === 'checkbox' || node.tagName === 'SELECT') {
             node.addEventListener('change', () => {
                 apply();
-                if (node.dataset.requirementField === 'customer_id') void renderQuoteRequirementsPage(input);
+                if (['customer_id', 'deal_id'].includes(node.dataset.requirementField || '')) void renderQuoteRequirementsPage(input);
             });
         }
     });
@@ -6563,6 +7511,19 @@ function bindRequirementEditor(input) {
                 await renderQuoteRequirementsPage(input);
             } catch (error) {
                 input.showToast(error.message || '保存需求获取单失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-quote-requirement-confirm')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '确认中...', async () => {
+            try {
+                const saved = await confirmRequirementForDeal(input.user, moduleState.requirementEditor);
+                input.showToast('需求基线已确认。');
+                await fetchRequirementEditor(saved.id);
+                await renderQuoteRequirementsPage(input);
+            } catch (error) {
+                input.showToast(error.message || '确认需求失败。', true);
             }
         });
     });
@@ -6624,7 +7585,9 @@ function bindRequirementEditor(input) {
         await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
             try {
                 const savedRequirement = await saveRequirementDraft(input.user, moduleState.requirementEditor);
-                const instance = await createInstanceFromRequirement(input.user, savedRequirement.id, productId);
+                const instance = await createInstanceFromRequirement(input.user, savedRequirement.id, productId, {
+                    dealId: savedRequirement.deal_id || activeDealIdFromState(),
+                });
                 moduleState.requirementEditor = createRequirementDraft({
                     ...savedRequirement,
                     status: 'quoted',
@@ -6655,7 +7618,9 @@ function bindRequirementEditor(input) {
             await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
                 try {
                     const savedRequirement = await saveRequirementDraft(input.user, moduleState.requirementEditor);
-                    const instance = await createInstanceFromRequirement(input.user, savedRequirement.id, productId);
+                    const instance = await createInstanceFromRequirement(input.user, savedRequirement.id, productId, {
+                        dealId: savedRequirement.deal_id || activeDealIdFromState(),
+                    });
                     moduleState.requirementEditor = createRequirementDraft({
                         ...savedRequirement,
                         status: 'quoted',
@@ -6692,14 +7657,22 @@ function bindRequirementEditor(input) {
         button.addEventListener('click', () => {
             const requirementId = button.dataset.requirementOpenInstances;
             if (!requirementId) return;
-            window.location.assign(adminPageUrl('quote-instances', { requirement: requirementId }));
+            const requirement = requirementById(requirementId);
+            window.location.assign(adminPageUrl('quote-instances', {
+                requirement: requirementId,
+                deal: requirement?.deal_id,
+            }));
         });
     });
     content.querySelectorAll('[data-requirement-linked-instance]').forEach((select) => {
         select.addEventListener('change', (event) => {
             const instanceId = event.currentTarget.value || '';
             if (!instanceId) return;
-            window.location.assign(adminPageUrl('quote-instances', { instance: instanceId }));
+            const quote = moduleState.instances.find((item) => item.id === instanceId);
+            window.location.assign(adminPageUrl('quote-instances', {
+                instance: instanceId,
+                deal: quote?.deal_id,
+            }));
         });
     });
 }
@@ -6715,12 +7688,21 @@ export async function renderQuoteRequirementsPage(input) {
         throw error;
     }
 
+    const requestedDealId = readAdminPageParam('deal');
+    if (requestedDealId && moduleState.deals.some((item) => item.id === requestedDealId) && moduleState.dealLoadedId !== requestedDealId) {
+        await fetchDealEditor(requestedDealId);
+    }
     const requestedRequirementId = readAdminPageParam('requirement');
     if (requestedRequirementId) {
         if (moduleState.requirements.some((item) => item.id === requestedRequirementId) && moduleState.requirementLoadedId !== requestedRequirementId) {
             await fetchRequirementEditor(requestedRequirementId);
         }
         clearAdminPageParams('requirement');
+    } else if (requestedDealId && moduleState.dealEditor?.primary_requirement_id && moduleState.requirementLoadedId !== moduleState.dealEditor.primary_requirement_id) {
+        await fetchRequirementEditor(moduleState.dealEditor.primary_requirement_id);
+    } else if (requestedDealId && !moduleState.requirementLoadedId) {
+        const firstDealRequirement = dealRequirements(requestedDealId)[0];
+        if (firstDealRequirement?.id) await fetchRequirementEditor(firstDealRequirement.id);
     }
 
     if (!moduleState.requirementEditor) {
@@ -6734,16 +7716,35 @@ export async function renderQuoteRequirementsPage(input) {
         moduleState.requirementCreateMode = false;
     }
 
-    const requirement = moduleState.requirementEditor || createRequirementDraft();
+    let requirement = moduleState.requirementEditor || createRequirementDraft();
+    const currentDeal = dealById(activeDealIdFromState(text(requirement.deal_id || requestedDealId)));
+    if (currentDeal?.id && !text(requirement.deal_id)) {
+        requirement = createRequirementDraft({
+            ...requirement,
+            deal_id: currentDeal.id,
+            customer_id: text(requirement.customer_id || currentDeal.customer_id),
+        });
+        moduleState.requirementEditor = requirement;
+    }
     const activeRequirementId = text(moduleState.requirementLoadedId || requirement.id);
     const showRequirementEditor = Boolean(activeRequirementId || moduleState.requirementCreateMode);
     const answers = normalizeRequirementAnswers(requirement.answers);
     const currentCustomer = moduleState.customers.find((item) => item.id === requirement.customer_id) || null;
     const quoteSummary = requirement.id ? summarizeRequirementQuotes(requirement.id) : summarizeRequirementQuotes('');
+    const dealRecords = currentDeal ? dealCurrentRecords(currentDeal) : [];
+    const requirementConfirmed = currentDeal
+        ? normalizeDealStageStatus(stageRecordByKey('requirement_confirmed', dealRecords)?.stage_status) === 'completed'
+        : false;
+    const availableDeals = requirement.customer_id
+        ? customerDeals(requirement.customer_id)
+        : currentDeal?.customer_id
+            ? customerDeals(currentDeal.customer_id)
+            : [...moduleState.deals].sort((left, right) => text(right.updated_at || right.created_at).localeCompare(text(left.updated_at || left.created_at)));
     const requirementLink = requirement.id && requirement.public_slug && requirement.public_token
         ? requirementPublicUrl(requirement.public_slug, requirement.public_token)
         : '';
-    const canCreateQuote = requirementStatusReadyForQuote(requirement.status);
+    const canCreateQuote = requirementStatusReadyForQuote(requirement.status) && (!isSalesConsole(input) || !currentDeal?.id || requirementConfirmed);
+    const canConfirmRequirement = Boolean(requirement.customer_id && (requirement.deal_id || currentDeal?.id));
     const linkLocked = requirementIsLocked(requirement.status);
     const requirementLocked = requirementIsLocked(requirement.status);
     const requirementSubmitted = normalizeRequirementStatus(requirement.status) === 'submitted';
@@ -6753,8 +7754,11 @@ export async function renderQuoteRequirementsPage(input) {
     }
     const selectedRequirementProductId = moduleState.requirementProductSelection;
 
-    input.setPageHeader('报价系统 / 需求获取单', '先发客户公开需求链接，等客户提交后，再进入整理与报价流程。');
-    input.setContent(`
+    const requirementPageTitle = isSalesConsole(input) ? '销售需求 / 获取与确认' : '报价系统 / 需求获取单';
+    const requirementPageSub = isSalesConsole(input)
+        ? '先把客户原始需求锁成一条 deal 基线，再推进到报价。'
+        : '先发客户公开需求链接，等客户提交后，再进入整理与报价流程。';
+    renderSalesPageFrame(input, requirementPageTitle, requirementPageSub, `
         <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-instance-hero">
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">Requirement Intake</p>
@@ -6773,7 +7777,7 @@ export async function renderQuoteRequirementsPage(input) {
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>从需求生成报价单</strong>
-                        <span>${canCreateQuote ? '客户已提交，选择产品模板后，直接生成报价草稿并打开真实报价页。' : '只有客户正式提交后的需求单才能进入报价链路。当前需求还不能生成报价单。'}</span>
+                        <span>${canCreateQuote ? '客户已提交且已锁定需求基线，选择产品模板后可直接生成报价草稿。' : isSalesConsole(input) && currentDeal?.id && !requirementConfirmed ? '当前商机还没完成“确认需求”，请先锁定需求基线，再转入报价。' : '只有客户正式提交后的需求单才能进入报价链路。当前需求还不能生成报价单。'}</span>
                         <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
                             <select class="ams-select ams-quote-create-select" data-requirement-product-select>
                                 <option value="">请选择产品模板</option>
@@ -6811,6 +7815,9 @@ export async function renderQuoteRequirementsPage(input) {
                             <p>后台在这里做客户绑定、公开链接发放、提交状态确认和报价衔接，不直接代替客户填写问卷。</p>
                         </div>
                         <div class="ams-row-actions">
+                            ${isSalesConsole(input)
+                                ? `<button class="ams-btn ams-btn-warning" type="button" id="ams-quote-requirement-confirm" ${canConfirmRequirement ? '' : 'disabled'}>确认需求</button>`
+                                : ''}
                             ${requirement.id && quoteSummary.total_quotes
                                 ? `<button class="ams-btn ams-btn-muted" type="button" data-requirement-open-instances="${esc(requirement.id)}">查看报价单</button>`
                                 : ''
@@ -6857,8 +7864,14 @@ export async function renderQuoteRequirementsPage(input) {
                         </div>
                     </div>
                     <div class="ams-quote-meta-grid">
+                        ${isSalesConsole(input)
+                            ? `<div class="ams-summary-chip"><strong>所属商机</strong><span>${currentDeal?.id ? `<a class="ams-inline-link" href="${esc(adminPageUrl('quote-deals', { deal: currentDeal.id }))}">${esc(text(currentDeal.title, currentDeal.id))}</a>` : '未绑定'}</span></div>`
+                            : ''}
                         <div class="ams-summary-chip"><strong>绑定客户</strong><span>${esc(customerDisplayName(currentCustomer || {}))}</span></div>
                         <div class="ams-summary-chip"><strong>当前状态</strong><span>${esc(requirementStatusLabel(requirement.status))}</span></div>
+                        ${isSalesConsole(input) && currentDeal?.id
+                            ? `<div class="ams-summary-chip"><strong>商机阶段</strong><span>${esc(dealStageLabel(currentDeal.current_stage))}</span></div>`
+                            : ''}
                         <div class="ams-summary-chip ams-summary-chip-link">
                             <strong>公开链接</strong>
                             <span>${requirementLink ? `<a class="ams-inline-link" href="${esc(requirementLink)}" target="_blank" rel="noopener">${esc(requirementLink)}</a>` : esc('先保存后生成')}</span>
@@ -6871,6 +7884,18 @@ export async function renderQuoteRequirementsPage(input) {
                         <div class="ams-summary-chip"><strong>更新时间</strong><span>${esc(fmtDate(requirement.updated_at))}</span></div>
                     </div>
                     <div class="ams-site-field-grid ams-site-field-grid-wide">
+                        ${isSalesConsole(input)
+                            ? `
+                                <div class="ams-field">
+                                    <label>绑定商机</label>
+                                    <select class="ams-select" data-requirement-field="deal_id" ${normalizeRequirementStatus(requirement.status) === 'closed' ? 'disabled' : ''}>
+                                        <option value="">暂不绑定</option>
+                                        ${availableDeals.map((deal) => `<option value="${esc(deal.id)}" ${text(requirement.deal_id || currentDeal?.id) === deal.id ? 'selected' : ''}>${esc(text(deal.title, deal.id))} · ${esc(customerDisplayName(moduleState.customers.find((item) => item.id === deal.customer_id) || {}))}</option>`).join('')}
+                                    </select>
+                                    <div class="ams-field-help">${currentDeal?.id ? '当前页面已带商机上下文，确认需求后会直接推进这条业务链路。' : '销售入口里建议先绑定商机，再执行确认需求和转入报价。'}</div>
+                                </div>
+                            `
+                            : ''}
                         <div class="ams-field">
                             <label>绑定客户</label>
                             <select class="ams-select" data-requirement-field="customer_id" ${requirement.id || requirementLocked ? 'disabled' : ''}>
@@ -6997,7 +8022,7 @@ export async function renderQuoteRequirementsPage(input) {
                             </select>
                             <button class="ams-btn ams-btn-warning" type="button" id="ams-quote-requirement-create-instance" ${canCreateQuote ? '' : 'disabled'}>生成报价草稿并打开真实报价页</button>
                         </div>
-                        <div class="ams-field-help">${canCreateQuote ? '生成后会把客户信息、需求摘要和问卷备注自动带入报价单草稿。' : '当前还没收到客户正式提交，暂不允许生成报价。'}</div>
+                        <div class="ams-field-help">${canCreateQuote ? '生成后会把客户信息、需求摘要和问卷备注自动带入报价单草稿。' : isSalesConsole(input) && currentDeal?.id && !requirementConfirmed ? '当前 deal 尚未执行需求确认，所以先不开放报价创建。' : '当前还没收到客户正式提交，暂不允许生成报价。'}</div>
                     </section>
                     <section class="ams-quote-block">
                         <div class="ams-section-head"><div><h3>关联报价单</h3><p>这里聚合从当前需求单派生的全部报价草稿和已发布报价。</p></div></div>
@@ -7008,8 +8033,13 @@ export async function renderQuoteRequirementsPage(input) {
                 }
             </section>
         </section>
-    `);
+    `, {
+        deal: currentDeal,
+        currentStage: currentDeal?.current_stage || 'requirement_capture',
+        page: 'quote-requirements',
+    });
     bindRequirementEditor(input);
+    bindSalesPageChrome(input);
 }
 
 export async function renderQuoteInstancesPage(input) {
@@ -7023,6 +8053,10 @@ export async function renderQuoteInstancesPage(input) {
         throw error;
     }
 
+    const requestedDealId = readAdminPageParam('deal');
+    if (requestedDealId && moduleState.deals.some((item) => item.id === requestedDealId) && moduleState.dealLoadedId !== requestedDealId) {
+        await fetchDealEditor(requestedDealId);
+    }
     const requestedInstanceId = readAdminPageParam('instance');
     if (requestedInstanceId) {
         if (moduleState.instances.some((item) => item.id === requestedInstanceId) && moduleState.instanceLoadedId !== requestedInstanceId) {
@@ -7043,9 +8077,26 @@ export async function renderQuoteInstancesPage(input) {
             }
         }
         clearAdminPageParams('requirement');
+    } else if (requestedDealId && moduleState.dealEditor?.primary_instance_id && moduleState.instanceLoadedId !== moduleState.dealEditor.primary_instance_id) {
+        await fetchInstanceEditor(moduleState.dealEditor.primary_instance_id);
+    } else if (requestedDealId && !moduleState.instanceLoadedId) {
+        const firstDealQuote = dealQuotes(requestedDealId)[0];
+        if (firstDealQuote?.id) await fetchInstanceEditor(firstDealQuote.id);
     }
 
-    input.setPageHeader('报价系统 / 报价单管理', '从产品生成客户报价单草稿，编辑后发布，生成客户独立链接。');
+    const currentDeal = dealById(activeDealIdFromState(text(moduleState.instanceEditor?.deal_id || requestedDealId)));
+    if (currentDeal?.id && !text(moduleState.instanceEditor?.deal_id)) {
+        moduleState.instanceEditor = createInstanceDraft({
+            ...moduleState.instanceEditor,
+            deal_id: currentDeal.id,
+            customer_id: text(moduleState.instanceEditor?.customer_id || currentDeal.customer_id),
+            requirement_id: text(moduleState.instanceEditor?.requirement_id || currentDeal.primary_requirement_id),
+        });
+    }
+    const instancePageTitle = isSalesConsole(input) ? '销售报价 / 草稿与确认' : '报价系统 / 报价单管理';
+    const instancePageSub = isSalesConsole(input)
+        ? '围绕商机维护报价草稿、确认签约版本，并衔接合同执行。'
+        : '从产品生成客户报价单草稿，编辑后发布，生成客户独立链接。';
     const listMode = text(moduleState.instanceListMode, 'active');
     const archiveView = listMode === 'archived';
     const voidedView = listMode === 'voided';
@@ -7055,6 +8106,12 @@ export async function renderQuoteInstancesPage(input) {
     const linkedRequirement = requirementById(moduleState.instanceEditor?.requirement_id);
     const focusedRequirement = requirementById(moduleState.instanceRequirementFilter);
     const availableRequirements = instanceRequirementOptions(moduleState.instanceEditor);
+    const availableDeals = moduleState.instanceEditor?.customer_id
+        ? customerDeals(moduleState.instanceEditor.customer_id)
+        : currentDeal?.customer_id
+            ? customerDeals(currentDeal.customer_id)
+            : [...moduleState.deals].sort((left, right) => text(right.updated_at || right.created_at).localeCompare(text(left.updated_at || left.created_at)));
+    const canConfirmQuote = Boolean(moduleState.instanceEditor?.id && (moduleState.instanceEditor?.deal_id || currentDeal?.id));
     if ((archiveView || voidedView) && moduleState.instanceStatusFilter !== 'all') {
         moduleState.instanceStatusFilter = 'all';
     }
@@ -7063,7 +8120,7 @@ export async function renderQuoteInstancesPage(input) {
     }
     const pagination = instancePaginationState();
     const visibleCountLabel = pagination.totalItems;
-    input.setContent(`
+    renderSalesPageFrame(input, instancePageTitle, instancePageSub, `
         <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-instance-hero">
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">Quote Instances</p>
@@ -7146,6 +8203,9 @@ export async function renderQuoteInstancesPage(input) {
                         </div>
                         <div class="ams-row-actions">
                             <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-preview">预览报价单</button>
+                            ${isSalesConsole(input)
+                                ? `<button class="ams-btn ams-btn-warning" type="button" id="ams-quote-instance-confirm" ${canConfirmQuote && !inactiveEditor ? '' : 'disabled'}>确认报价</button>`
+                                : ''}
                             <details class="ams-share-menu">
                                 <summary class="ams-btn ams-btn-muted">分享报价单</summary>
                                 <div class="ams-share-menu-panel">
@@ -7198,9 +8258,15 @@ export async function renderQuoteInstancesPage(input) {
                         <span>${inactiveEditor ? '当前这份报价单已退出主编辑流；如需继续改动，请先恢复，再进入可视化编辑。' : '点击后直接进入客户报价页本体，按最终展示效果编辑内容。'}</span>
                     </button>
                     <div class="ams-quote-meta-grid">
+                        ${isSalesConsole(input)
+                            ? `<div class="ams-summary-chip"><strong>所属商机</strong><span>${currentDeal?.id ? `<a class="ams-inline-link" href="${esc(adminPageUrl('quote-deals', { deal: currentDeal.id }))}">${esc(text(currentDeal.title, currentDeal.id))}</a>` : '未绑定'}</span></div>`
+                            : ''}
                         <div class="ams-summary-chip"><strong>状态</strong><span>${statusPill(moduleState.instanceEditor.status)}</span></div>
                         <div class="ams-summary-chip"><strong>客户档案</strong><span>${esc(customerDisplayName(moduleState.customers.find((item) => item.id === moduleState.instanceEditor.customer_id) || buildInstanceCustomerSnapshot(moduleState.instanceEditor)))}</span></div>
                         <div class="ams-summary-chip"><strong>需求单</strong><span>${esc(linkedRequirement ? requirementDisplayName(linkedRequirement) : '未绑定')}</span></div>
+                        ${isSalesConsole(input) && currentDeal?.id
+                            ? `<div class="ams-summary-chip"><strong>商机阶段</strong><span>${esc(dealStageLabel(currentDeal.current_stage))}</span></div>`
+                            : ''}
                         <div class="ams-summary-chip"><strong>公开 slug</strong><span>${esc(moduleState.instanceEditor.public_slug || '待生成')}</span></div>
                         <div class="ams-summary-chip"><strong>最近发布时间</strong><span>${esc(fmtDate(moduleState.instanceEditor.published_at))}</span></div>
                     </div>
@@ -7209,6 +8275,18 @@ export async function renderQuoteInstancesPage(input) {
                         '先确认客户、需求和主要联系人；这几个字段决定这张报价单在整条链路里的归属。',
                         `
                             <div class="ams-site-field-grid ams-site-field-grid-wide">
+                                ${isSalesConsole(input)
+                                    ? `
+                                        <div class="ams-field">
+                                            <label>绑定商机</label>
+                                            <select class="ams-select" id="ams-quote-instance-deal-select">
+                                                <option value="">暂不绑定</option>
+                                                ${availableDeals.map((deal) => `<option value="${esc(deal.id)}" ${text(moduleState.instanceEditor.deal_id || currentDeal?.id) === deal.id ? 'selected' : ''}>${esc(text(deal.title, deal.id))} · ${esc(customerDisplayName(moduleState.customers.find((item) => item.id === deal.customer_id) || {}))}</option>`).join('')}
+                                            </select>
+                                            <div class="ams-field-help">${currentDeal?.id ? '当前页带有商机上下文，确认报价后会推进到合同阶段。' : '建议先把报价草稿绑定到一条商机，再确认签约版本。'}</div>
+                                        </div>
+                                    `
+                                    : ''}
                                 <div class="ams-field">
                                     <label>客户档案</label>
                                     <select class="ams-select" id="ams-quote-instance-customer-select" ${text(moduleState.instanceEditor.customer_id) ? 'disabled' : ''}>
@@ -7269,8 +8347,13 @@ export async function renderQuoteInstancesPage(input) {
                 }
             </section>
         </section>
-    `);
+    `, {
+        deal: currentDeal,
+        currentStage: currentDeal?.current_stage || 'quote_draft',
+        page: 'quote-instances',
+    });
     bindInstanceEditor(input);
+    bindSalesPageChrome(input);
 }
 
 export async function renderQuoteCustomersPage(input) {
@@ -7284,12 +8367,18 @@ export async function renderQuoteCustomersPage(input) {
         throw error;
     }
 
+    const requestedDealId = readAdminPageParam('deal');
+    if (requestedDealId && moduleState.deals.some((item) => item.id === requestedDealId) && moduleState.dealLoadedId !== requestedDealId) {
+        await fetchDealEditor(requestedDealId);
+    }
     const requestedCustomerId = readAdminPageParam('customer');
     if (requestedCustomerId) {
         if (moduleState.customers.some((item) => item.id === requestedCustomerId) && moduleState.customerLoadedId !== requestedCustomerId) {
             await fetchCustomerEditor(requestedCustomerId);
         }
         clearAdminPageParams('customer');
+    } else if (requestedDealId && moduleState.dealEditor?.customer_id && moduleState.customerLoadedId !== moduleState.dealEditor.customer_id) {
+        await fetchCustomerEditor(moduleState.dealEditor.customer_id);
     }
 
     if (!moduleState.customerEditor) {
@@ -7306,6 +8395,8 @@ export async function renderQuoteCustomersPage(input) {
     }
     const listMode = moduleState.customerListMode || 'active';
     const activeCustomerId = text(moduleState.customerLoadedId || moduleState.customerEditor?.id);
+    const currentDeal = dealById(activeDealIdFromState(requestedDealId));
+    const activeCustomerDeals = activeCustomerId ? customerDeals(activeCustomerId) : [];
     const quoteSummary = activeCustomerId ? summarizeCustomerQuotes(activeCustomerId) : summarizeCustomerQuotes('');
     const requirementSummary = activeCustomerId ? summarizeCustomerRequirements(activeCustomerId) : summarizeCustomerRequirements('');
     const requirementLinkTarget = activeCustomerId
@@ -7319,8 +8410,11 @@ export async function renderQuoteCustomersPage(input) {
     const requirementChipValue = requirementLink
         ? `<a class="ams-inline-link" href="${esc(requirementLink)}" target="_blank" rel="noopener">${esc(requirementLink)}</a>`
         : esc(requirementSummary.total_requirements);
-    input.setPageHeader('报价系统 / 客户跟踪', '按客户查看关联报价单、浏览记录、分享动作，并维护客户主档信息。');
-    input.setContent(`
+    const customerPageTitle = isSalesConsole(input) ? '销售客户 / 建档与跟进' : '报价系统 / 客户跟踪';
+    const customerPageSub = isSalesConsole(input)
+        ? '先建客户主档，再拆分多条独立商机推进需求、报价与履约。'
+        : '按客户查看关联报价单、浏览记录、分享动作，并维护客户主档信息。';
+    renderSalesPageFrame(input, customerPageTitle, customerPageSub, `
         <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-instance-hero">
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">Quote Customers</p>
@@ -7335,6 +8429,17 @@ export async function renderQuoteCustomersPage(input) {
                         <span>先建立长期客户主档，再复用公司、联系人和联系方式到后续需求与报价流程。</span>
                     </div>
                 </button>
+                ${isSalesConsole(input)
+                    ? `
+                        <button class="ams-quick-link" type="button" data-customer-create-deal>
+                            <div class="ams-quick-link-icon"><i class="fa-solid fa-diagram-project"></i></div>
+                            <div class="ams-quick-link-body">
+                                <strong>新建商机</strong>
+                                <span>从当前客户主档直接开一条独立销售链路，后续需求、报价、合同和履约都按 deal 推进。</span>
+                            </div>
+                        </button>
+                    `
+                    : ''}
                 <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
                     <div class="ams-quick-link-body">
@@ -7344,7 +8449,7 @@ export async function renderQuoteCustomersPage(input) {
                 </div>
             </div>
         </section>
-        ${customerPipelineMarkup(activeCustomerId)}
+        ${isSalesConsole(input) ? '' : customerPipelineMarkup(activeCustomerId)}
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
                 <div class="ams-section-head">
@@ -7380,11 +8485,13 @@ export async function renderQuoteCustomersPage(input) {
                             <p>客户主档是后台关系视图；报价单内的 <code>customer_snapshot</code> 仍用于保留发布时的业务历史。</p>
                         </div>
                         <div class="ams-row-actions">
+                            ${isSalesConsole(input) ? `<button class="ams-btn ams-btn-warning" type="button" data-customer-create-deal ${activeCustomerId || moduleState.customerCreateMode ? '' : 'disabled="disabled"'}>新建商机</button>` : ''}
                             <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-save">保存客户档案</button>
                         </div>
                     </div>
                     <div class="ams-quote-meta-grid">
                         <div class="ams-summary-chip"><strong>客户名称</strong><span>${esc(customerDisplayName(moduleState.customerEditor || {}))}</span></div>
+                        ${isSalesConsole(input) ? `<div class="ams-summary-chip"><strong>关联商机</strong><span>${esc(activeCustomerDeals.length)}</span></div>` : ''}
                         <div class="ams-summary-chip"><strong>关联需求单</strong><span>${requirementChipValue}</span></div>
                         <div class="ams-summary-chip"><strong>关联报价单</strong><span>${esc(quoteSummary.total_quotes)}</span></div>
                         <div class="ams-summary-chip"><strong>创建时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.created_at))}</span></div>
@@ -7401,6 +8508,16 @@ export async function renderQuoteCustomersPage(input) {
                         <label>客户备注</label>
                         <textarea class="ams-textarea" rows="4" data-customer-field="notes" placeholder="记录客户来源、偏好、跟进节奏、分享要求或内部备注。">${esc(moduleState.customerEditor?.notes)}</textarea>
                     </div>
+                    ${isSalesConsole(input) && activeCustomerDeals.length
+                        ? `
+                            <section class="ams-quote-block">
+                                <div class="ams-section-head"><div><h3>客户商机</h3><p>同一客户可以同时推进多条独立销售链路。</p></div></div>
+                                <div class="ams-sales-inline-list">
+                                    ${activeCustomerDeals.map((deal) => `<a class="ams-inline-link-card" href="${esc(adminPageUrl('quote-deals', { deal: deal.id }))}"><strong>${esc(text(deal.title, deal.id))}</strong><span>${esc(`${dealStageLabel(deal.current_stage)} · ${dealStatusLabel(deal.deal_status)}`)}</span></a>`).join('')}
+                                </div>
+                            </section>
+                        `
+                        : ''}
                     ${customerInsightsMarkup()}
                 `
                         : '<div class="ams-empty">先从左侧选择一个客户，或点击上方“新建客户档案”。</div>'
@@ -7408,6 +8525,433 @@ export async function renderQuoteCustomersPage(input) {
             </section>
         </section>
         ${customerRelationshipGraphMarkup(activeCustomerId)}
-    `);
+    `, {
+        deal: currentDeal,
+        currentStage: currentDeal?.current_stage || 'customer_profile',
+        page: 'quote-customers',
+    });
     bindCustomerEditor(input);
+    bindSalesPageChrome(input);
+}
+
+function dealStageCardMarkup(stage, record = {}) {
+    const anchor = dealStageAnchor(stage.key);
+    const stageRecord = createDealStageRecord(record);
+    const metaFields = stageMetaFields(stage.key);
+    return `
+        <article class="ams-card ams-deal-stage-card" id="${esc(anchor || stage.key)}">
+            <div class="ams-section-head">
+                <div>
+                    <h3>${esc(stage.label)}</h3>
+                    <p>${esc(stage.scope === 'deal' ? '在这里记录执行信息、付款节点和交付结果。' : '前半段流程在客户 / 需求 / 报价页完成，这里只补充推进状态与备注。')}</p>
+                </div>
+                <div class="ams-row-actions">
+                    ${dealStageStatusPill(stageRecord.stage_status)}
+                    <button class="ams-btn ams-btn-muted" type="button" data-deal-stage-activate="${esc(stage.key)}">设为进行中</button>
+                    <button class="ams-btn ams-btn-primary" type="button" data-deal-stage-complete="${esc(stage.key)}">标记完成</button>
+                </div>
+            </div>
+            <div class="ams-site-field-grid ams-site-field-grid-wide">
+                <div class="ams-field">
+                    <label>阶段状态</label>
+                    <select class="ams-select" data-deal-stage-field="stage_status" data-stage-key="${esc(stage.key)}">
+                        ${selectOptionsMarkup(DEAL_STAGE_STATUS_OPTIONS, stageRecord.stage_status)}
+                    </select>
+                </div>
+                <div class="ams-field">
+                    <label>计划时间</label>
+                    <input class="ams-input" type="datetime-local" data-deal-stage-field="planned_at" data-stage-key="${esc(stage.key)}" value="${esc(datetimeLocalValue(stageRecord.planned_at))}">
+                </div>
+                <div class="ams-field">
+                    <label>完成时间</label>
+                    <input class="ams-input" type="datetime-local" data-deal-stage-field="completed_at" data-stage-key="${esc(stage.key)}" value="${esc(datetimeLocalValue(stageRecord.completed_at))}">
+                </div>
+                <div class="ams-field">
+                    <label>负责人</label>
+                    <input class="ams-input" data-deal-stage-field="owner_name" data-stage-key="${esc(stage.key)}" value="${esc(stageRecord.owner_name)}" placeholder="当前销售 / 交付负责人">
+                </div>
+            </div>
+            ${metaFields.length
+                ? `
+                    <div class="ams-site-field-grid ams-site-field-grid-wide">
+                        ${metaFields.map((field) => `
+                            <div class="ams-field">
+                                <label>${esc(field.label)}</label>
+                                <input class="ams-input" type="${esc(field.type || 'text')}" data-deal-stage-meta="${esc(field.key)}" data-stage-key="${esc(stage.key)}" value="${esc(text(stageRecord.meta?.[field.key]))}" placeholder="${esc(field.placeholder || '')}">
+                            </div>
+                        `).join('')}
+                    </div>
+                `
+                : ''}
+            <div class="ams-field">
+                <label>阶段备注</label>
+                <textarea class="ams-textarea" rows="3" data-deal-stage-field="notes" data-stage-key="${esc(stage.key)}" placeholder="记录阶段结论、异常、下一步协作事项。">${esc(stageRecord.notes)}</textarea>
+            </div>
+        </article>
+    `;
+}
+
+function datetimeLocalValue(value = '') {
+    const current = text(value);
+    if (!current) return '';
+    const parsed = new Date(current);
+    if (Number.isNaN(parsed.getTime())) return '';
+    const pad = (input) => String(input).padStart(2, '0');
+    return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
+}
+
+function parseDateTimeLocal(value = '') {
+    const current = text(value);
+    if (!current) return '';
+    const parsed = new Date(current);
+    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
+}
+
+function bindDealEditor(input) {
+    const content = document.getElementById('ams-content');
+    if (!content) return;
+    hydrateCustomSelects(content);
+
+    document.getElementById('ams-quote-deal-search')?.addEventListener('input', (event) => {
+        moduleState.dealSearch = event.currentTarget.value || '';
+        void renderQuoteDealsPage(input);
+    });
+    document.getElementById('ams-quote-deal-stage-filter')?.addEventListener('change', (event) => {
+        moduleState.dealStageFilter = event.currentTarget.value || 'all';
+        void renderQuoteDealsPage(input);
+    });
+    document.getElementById('ams-quote-deal-status-filter')?.addEventListener('change', (event) => {
+        moduleState.dealStatusFilter = event.currentTarget.value || 'all';
+        void renderQuoteDealsPage(input);
+    });
+    document.getElementById('ams-quote-deal-new')?.addEventListener('click', () => {
+        const owner = currentSalesOwner(input.user);
+        const seededCustomerId = text(readAdminPageParam('customer') || moduleState.customerLoadedId || moduleState.customerEditor?.id || moduleState.dealEditor?.customer_id);
+        moduleState.dealLoadedId = '';
+        moduleState.dealEditor = createDealDraft({
+            customer_id: seededCustomerId,
+            owner_name: owner.name,
+            owner_email: owner.email,
+            current_stage: seededCustomerId ? 'requirement_capture' : 'customer_profile',
+        });
+        moduleState.dealStageRecords = mergeDealStageRecords(moduleState.dealEditor, []);
+        moduleState.dealCreateMode = true;
+        void renderQuoteDealsPage(input);
+    });
+    content.querySelectorAll('[data-deal-edit]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                await withQuoteBusy('正在加载商机...', async () => {
+                    await fetchDealEditor(button.dataset.dealEdit);
+                    await renderQuoteDealsPage(input);
+                }, button, '正在读取商机详情、阶段记录以及关联需求 / 报价。');
+            } catch (error) {
+                input.showToast(error.message || '加载商机失败。', true);
+            }
+        });
+    });
+    content.querySelectorAll('[data-deal-field]').forEach((node) => {
+        const field = node.dataset.dealField || '';
+        const apply = () => {
+            if (!field) return;
+            moduleState.dealEditor[field] = field === 'next_action_due_at' ? parseDateTimeLocal(node.value) : node.value;
+            if (field === 'customer_id') {
+                const customer = moduleState.customers.find((item) => item.id === text(node.value));
+                if (customer && !text(moduleState.dealEditor.title)) {
+                    moduleState.dealEditor.title = `${customerDisplayName(customer)} / 销售项目`;
+                }
+                moduleState.dealStageRecords = touchDealStageRecords(moduleState.dealStageRecords, moduleState.dealEditor);
+            }
+        };
+        node.addEventListener('input', apply);
+        if (node.tagName === 'SELECT') {
+            node.addEventListener('change', () => {
+                apply();
+                if (field === 'customer_id') void renderQuoteDealsPage(input);
+            });
+        }
+    });
+    content.querySelectorAll('[data-deal-stage-field]').forEach((node) => {
+        const stageKey = node.dataset.stageKey || '';
+        const field = node.dataset.dealStageField || '';
+        const apply = () => {
+            replaceStageRecord(stageKey, (record) => {
+                if (field === 'stage_status') {
+                    record.stage_status = normalizeDealStageStatus(node.value);
+                    if (record.stage_status === 'completed' && !record.completed_at) record.completed_at = new Date().toISOString();
+                } else if (field === 'planned_at' || field === 'completed_at') {
+                    record[field] = parseDateTimeLocal(node.value);
+                } else {
+                    record[field] = node.value;
+                }
+                return record;
+            });
+            if (field === 'stage_status') {
+                moduleState.dealEditor.current_stage = inferDealCurrentStage(moduleState.dealStageRecords, moduleState.dealEditor.current_stage);
+            }
+        };
+        node.addEventListener('input', apply);
+        node.addEventListener('change', () => {
+            apply();
+            if (field === 'stage_status') void renderQuoteDealsPage(input);
+        });
+    });
+    content.querySelectorAll('[data-deal-stage-meta]').forEach((node) => {
+        node.addEventListener('input', () => {
+            setStageRecordMeta(node.dataset.stageKey, node.dataset.dealStageMeta, node.value);
+        });
+        node.addEventListener('change', () => {
+            setStageRecordMeta(node.dataset.stageKey, node.dataset.dealStageMeta, node.value);
+        });
+    });
+    content.querySelectorAll('[data-deal-stage-complete]').forEach((button) => {
+        button.addEventListener('click', () => {
+            setDealStageStatus(button.dataset.dealStageComplete, 'completed');
+            void renderQuoteDealsPage(input);
+        });
+    });
+    content.querySelectorAll('[data-deal-stage-activate]').forEach((button) => {
+        button.addEventListener('click', () => {
+            setDealStageStatus(button.dataset.dealStageActivate, 'active');
+            void renderQuoteDealsPage(input);
+        });
+    });
+    document.getElementById('ams-quote-deal-save')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
+            try {
+                const saved = await saveDealDraft(input.user, moduleState.dealEditor, {
+                    stageRecords: moduleState.dealStageRecords,
+                });
+                input.showToast('商机已保存。');
+                await fetchDealEditor(saved.id);
+                await renderQuoteDealsPage(input);
+            } catch (error) {
+                input.showToast(error.message || '保存商机失败。', true);
+            }
+        });
+    });
+}
+
+export async function renderQuoteDealsPage(input) {
+    try {
+        await ensureBaseData();
+    } catch (error) {
+        if (isQuoteSetupMissing(error)) {
+            renderQuoteSetupRequired(input, error);
+            return;
+        }
+        throw error;
+    }
+
+    const requestedDealId = readAdminPageParam('deal');
+    if (requestedDealId && moduleState.deals.some((item) => item.id === requestedDealId) && moduleState.dealLoadedId !== requestedDealId) {
+        await fetchDealEditor(requestedDealId);
+    }
+    const requestedCustomerId = readAdminPageParam('customer');
+    if (!requestedDealId && requestedCustomerId) {
+        const owner = currentSalesOwner(input.user);
+        moduleState.dealLoadedId = '';
+        moduleState.dealEditor = createDealDraft({
+            customer_id: requestedCustomerId,
+            owner_name: owner.name,
+            owner_email: owner.email,
+            current_stage: 'requirement_capture',
+        });
+        moduleState.dealStageRecords = mergeDealStageRecords(moduleState.dealEditor, []);
+        moduleState.dealCreateMode = true;
+        clearAdminPageParams('customer');
+    }
+    if (!moduleState.dealEditor) {
+        const firstDeal = filteredDeals()[0] || moduleState.deals[0] || null;
+        if (firstDeal?.id) await fetchDealEditor(firstDeal.id);
+        else {
+            const owner = currentSalesOwner(input.user);
+            moduleState.dealEditor = createDealDraft({
+                owner_name: owner.name,
+                owner_email: owner.email,
+                current_stage: 'customer_profile',
+            });
+            moduleState.dealStageRecords = mergeDealStageRecords(moduleState.dealEditor, []);
+            moduleState.dealCreateMode = true;
+        }
+    }
+    const deal = moduleState.dealEditor || createDealDraft();
+    const activeDealId = text(moduleState.dealLoadedId || deal.id);
+    const currentCustomer = moduleState.customers.find((item) => item.id === deal.customer_id) || null;
+    const requirements = activeDealId ? dealRequirements(activeDealId) : [];
+    const quotes = activeDealId ? dealQuotes(activeDealId) : [];
+    moduleState.dealStageRecords = touchDealStageRecords(moduleState.dealStageRecords, deal);
+
+    renderSalesPageFrame(input, '销售商机 / 项目推进', '围绕单条商机推进合同、付款、排产、物流、部署和运维支持。', `
+        <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-instance-hero">
+            <div class="ams-hero-copy">
+                <p class="ams-eyebrow">Deal Board</p>
+                <h2>一条商机就是一条完整销售链路。</h2>
+                <p class="ams-hero-text">客户可以同时挂多条独立商机。需求、报价只绑定到 deal，合同到运维的执行状态也在这里持续沉淀。</p>
+            </div>
+            <div class="ams-quick-actions ams-quote-instance-quick-actions">
+                <button class="ams-quick-link" type="button" id="ams-quote-deal-new">
+                    <div class="ams-quick-link-icon"><i class="fa-solid fa-diagram-project"></i></div>
+                    <div class="ams-quick-link-body">
+                        <strong>新建商机</strong>
+                        <span>从客户主档开始拆一条独立销售链路，后续需求、报价、合同、物流都挂在这里。</span>
+                    </div>
+                </button>
+            </div>
+        </section>
+        <section class="ams-quote-layout">
+            <aside class="ams-card ams-quote-list-panel">
+                <div class="ams-section-head"><div><h3>商机列表</h3><p>共 ${filteredDeals().length} 条商机</p></div></div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field">
+                        <label>搜索商机</label>
+                        <input id="ams-quote-deal-search" class="ams-input" value="${esc(moduleState.dealSearch)}" placeholder="搜索客户 / 商机标题 / 负责人 / 下一动作">
+                    </div>
+                    <div class="ams-field">
+                        <label>阶段筛选</label>
+                        <select id="ams-quote-deal-stage-filter" class="ams-select">
+                            <option value="all" ${moduleState.dealStageFilter === 'all' ? 'selected' : ''}>全部阶段</option>
+                            ${DEAL_STAGE_DEFINITIONS.map((stage) => `<option value="${esc(stage.key)}" ${moduleState.dealStageFilter === stage.key ? 'selected' : ''}>${esc(stage.label)}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="ams-field">
+                        <label>状态筛选</label>
+                        <select id="ams-quote-deal-status-filter" class="ams-select">
+                            <option value="all" ${moduleState.dealStatusFilter === 'all' ? 'selected' : ''}>全部状态</option>
+                            ${selectOptionsMarkup(DEAL_STATUS_OPTIONS, moduleState.dealStatusFilter)}
+                        </select>
+                    </div>
+                </div>
+                <div class="ams-quote-list">${renderDealList()}</div>
+            </aside>
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${activeDealId ? '编辑商机项目' : '新建商机项目'}</h3>
+                        <p>客户、主需求、主报价和后半段交付阶段都在这里统一管理。</p>
+                    </div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-deal-save">保存商机</button>
+                    </div>
+                </div>
+                <div class="ams-quote-meta-grid">
+                    <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(currentCustomer || {}))}</span></div>
+                    <div class="ams-summary-chip"><strong>当前阶段</strong><span>${esc(dealStageLabel(deal.current_stage))}</span></div>
+                    <div class="ams-summary-chip"><strong>商机状态</strong><span>${dealStatusPill(deal.deal_status)}</span></div>
+                    <div class="ams-summary-chip"><strong>需求单</strong><span>${esc(requirements.length)}</span></div>
+                    <div class="ams-summary-chip"><strong>报价单</strong><span>${esc(quotes.length)}</span></div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field">
+                        <label>绑定客户</label>
+                        <select class="ams-select" data-deal-field="customer_id">
+                            <option value="">请选择客户档案</option>
+                            ${moduleState.customers.filter((item) => item.is_active !== false && !item.is_deleted).map((customer) => `<option value="${esc(customer.id)}" ${deal.customer_id === customer.id ? 'selected' : ''}>${esc(customerDisplayName(customer))}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="ams-field"><label>商机标题</label><input class="ams-input" data-deal-field="title" value="${esc(deal.title)}" placeholder="例如：俄罗斯 5MW 矿电一体化项目"></div>
+                    <div class="ams-field">
+                        <label>商机状态</label>
+                        <select class="ams-select" data-deal-field="deal_status">${selectOptionsMarkup(DEAL_STATUS_OPTIONS, deal.deal_status)}</select>
+                    </div>
+                    <div class="ams-field"><label>负责人</label><input class="ams-input" data-deal-field="owner_name" value="${esc(deal.owner_name)}" placeholder="当前销售"></div>
+                    <div class="ams-field"><label>负责人邮箱</label><input class="ams-input" data-deal-field="owner_email" value="${esc(deal.owner_email)}" placeholder="sales@gasgx.com"></div>
+                    <div class="ams-field"><label>下一动作截止</label><input class="ams-input" type="datetime-local" data-deal-field="next_action_due_at" value="${esc(datetimeLocalValue(deal.next_action_due_at))}"></div>
+                </div>
+                <div class="ams-field">
+                    <label>商机摘要</label>
+                    <textarea class="ams-textarea" rows="3" data-deal-field="summary" placeholder="记录项目背景、采购范围、主要决策条件。">${esc(deal.summary)}</textarea>
+                </div>
+                <div class="ams-field">
+                    <label>下一动作</label>
+                    <textarea class="ams-textarea" rows="2" data-deal-field="next_action" placeholder="记录下一步必须推进的动作和责任人。">${esc(deal.next_action)}</textarea>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field">
+                        <label>主需求单</label>
+                        <select class="ams-select" data-deal-field="primary_requirement_id">
+                            <option value="">未锁定</option>
+                            ${(deal.customer_id ? customerRequirements(deal.customer_id) : []).map((requirement) => `<option value="${esc(requirement.id)}" ${deal.primary_requirement_id === requirement.id ? 'selected' : ''}>${esc(requirementDisplayName(requirement))}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="ams-field">
+                        <label>主报价单</label>
+                        <select class="ams-select" data-deal-field="primary_instance_id">
+                            <option value="">未锁定</option>
+                            ${(deal.customer_id ? customerQuotes(deal.customer_id) : []).map((instance) => `<option value="${esc(instance.id)}" ${deal.primary_instance_id === instance.id ? 'selected' : ''}>${esc(text(instance.customer_name || instance.public_slug, instance.id))}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="ams-field">
+                        <label>丢单 / 取消原因</label>
+                        <input class="ams-input" data-deal-field="lost_reason" value="${esc(deal.lost_reason)}" placeholder="如暂停 / 丢单 / 取消，请记录原因">
+                    </div>
+                </div>
+                <section class="ams-quote-block">
+                    <div class="ams-section-head"><div><h3>阶段执行卡片</h3><p>从合同到运维的执行信息全部落在这里；前半段也可补充负责人和备注。</p></div></div>
+                    <div class="ams-deal-stage-grid">
+                        ${DEAL_STAGE_DEFINITIONS.map((stage) => dealStageCardMarkup(stage, stageRecordByKey(stage.key, moduleState.dealStageRecords))).join('')}
+                    </div>
+                </section>
+            </section>
+        </section>
+    `, {
+        deal,
+        currentStage: deal.current_stage || 'contract_signed',
+        page: 'quote-deals',
+    });
+    bindDealEditor(input);
+    bindSalesPageChrome(input);
+}
+
+export async function renderQuoteSalesDashboardPage(input) {
+    try {
+        await ensureBaseData();
+    } catch (error) {
+        if (isQuoteSetupMissing(error)) {
+            renderQuoteSetupRequired(input, error);
+            return;
+        }
+        throw error;
+    }
+
+    const activeDeals = moduleState.deals.filter((deal) => ['active', 'paused'].includes(normalizeDealStatus(deal.deal_status)));
+    const upcomingDeals = [...activeDeals]
+        .filter((deal) => text(deal.next_action) || text(deal.next_action_due_at))
+        .sort((left, right) => text(left.next_action_due_at || left.updated_at).localeCompare(text(right.next_action_due_at || right.updated_at)))
+        .slice(0, 6);
+
+    renderSalesPageFrame(input, '销售总览', '查看当前销售链路分布、待办动作和项目推进压力。', `
+        <section class="ams-dashboard-overview">
+            <div class="ams-dashboard-kpis">
+                <article class="ams-card ams-kpi-card"><h3>推进中商机</h3><div class="ams-kpi">${esc(activeDeals.filter((deal) => normalizeDealStatus(deal.deal_status) === 'active').length)}</div><div class="ams-kpi-sub">正在推进的主业务链路</div></article>
+                <article class="ams-card ams-kpi-card"><h3>需求待确认</h3><div class="ams-kpi">${esc(dealStageCount('requirement_confirmed'))}</div><div class="ams-kpi-sub">还没锁定报价基线的商机</div></article>
+                <article class="ams-card ams-kpi-card"><h3>报价待确认</h3><div class="ams-kpi">${esc(dealStageCount('quote_confirmed'))}</div><div class="ams-kpi-sub">已出草稿，待客户确认</div></article>
+                <article class="ams-card ams-kpi-card"><h3>交付执行中</h3><div class="ams-kpi">${esc(DEAL_STAGE_DEFINITIONS.filter((stage) => stage.scope === 'deal').reduce((sum, stage) => sum + dealStageCount(stage.key), 0))}</div><div class="ams-kpi-sub">合同到运维阶段中的商机</div></article>
+            </div>
+        </section>
+        <section class="ams-card">
+            <div class="ams-section-head"><div><h3>阶段分布</h3><p>点击阶段后可直接进入对应流程页。</p></div></div>
+            <div class="ams-sales-stage-overview">
+                ${DEAL_STAGE_DEFINITIONS.map((stage) => `
+                    <a class="ams-sales-stage-overview-card" href="${esc(stageNavigationTarget(stage.key).disabled ? adminPageUrl(stage.page) : stageJumpTarget(stage.key))}">
+                        <strong>${esc(stage.label)}</strong>
+                        <span>${esc(`${dealStageCount(stage.key)} 条商机`)}</span>
+                    </a>
+                `).join('')}
+            </div>
+        </section>
+        <section class="ams-card">
+            <div class="ams-section-head"><div><h3>近期待办</h3><p>按下一动作时间排序，优先清理卡住的 deal。</p></div></div>
+            <div class="ams-sales-inline-list">
+                ${upcomingDeals.length
+                    ? upcomingDeals.map((deal) => `<a class="ams-inline-link-card" href="${esc(adminPageUrl('quote-deals', { deal: deal.id }))}"><strong>${esc(text(deal.title, deal.id))}</strong><span>${esc(`${text(deal.next_action, '未设置下一动作')} · ${fmtDate(deal.next_action_due_at || deal.updated_at)}`)}</span></a>`).join('')
+                    : '<div class="ams-empty">当前没有待办中的商机动作。</div>'}
+            </div>
+        </section>
+    `, {
+        deal: null,
+        currentStage: 'customer_profile',
+        page: 'dashboard',
+    });
+    bindSalesPageChrome(input);
 }

@@ -1115,18 +1115,24 @@ function renderApp() {
                     <span>${esc(localize('我已确认以上需求信息准确无误，并理解它将直接影响最终报价。'))}</span>
                 </label>
             `}
+            <div class="requirement-submit-autosave">
+                <strong>自动保存</strong>
+                <span id="requirement-autosave-status">${esc(locked ? '客户已提交，当前公开页为只读状态。' : text(state.autoSaveMessage, '正在等待填写...'))}</span>
+                <em>最近同步：<span id="requirement-autosave-time">${esc(fmtDate(state.lastAutoSavedAt || requirement.updated_at))}</span></em>
+            </div>
             <div class="requirement-submit-actions">
                 <button id="requirement-submit" type="button" class="btn-glow px-5 py-3 inline-flex items-center gap-2" ${buttonDisabled ? 'disabled' : ''}>
                     <i class="fa-solid ${locked ? 'fa-lock' : 'fa-paper-plane'}"></i>
-                    <span>${esc(localize(locked ? '已提交' : (state.submitting ? '提交中...' : '提交需求单')))}</span>
+                    <span>${esc(locked ? '已提交' : (state.submitting ? '提交中...' : '提交需求单'))}</span>
                 </button>
-                <div id="requirement-submit-status" class="requirement-submit-status">${locked ? `${esc(localize('已提交'))} · ${esc(fmtDate(requirement.submitted_at))}` : esc(localize(state.submitConfirmed ? '提交后公开需求页会自动锁定。' : '请先勾选最终确认，再提交需求单。')))}</div>
+                <div id="requirement-submit-status" class="requirement-submit-status">${locked ? ('已提交 / ' + esc(fmtDate(requirement.submitted_at))) : esc(state.submitConfirmed ? '提交后公开需求页会自动锁定。' : '请先勾选最终确认，再提交需求单。')}</div>
             </div>
         </section>
         </div>
     `;
 
     bindEvents();
+    updateAutoSaveIndicators();
 }
 
 function bindEvents() {

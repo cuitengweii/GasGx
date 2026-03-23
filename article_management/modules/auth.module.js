@@ -1,6 +1,30 @@
 import { ADMIN_EMAILS, SUPABASE_KEY, SUPABASE_URL, client } from './supabase.client.js?v=20260321admin01';
+import { ADMIN_ENTRY_KIND, SALES_ENTRY_KIND, adminConsolePath, detectAdminEntryKind, normalizeEntryKind } from './admin-entry.module.js';
 
 const ADMIN_USERS_TABLE = 'admin_users';
+
+export const ADMIN_ROLE_SALES = 'sales';
+export const ADMIN_ROLE_EDITOR = 'editor';
+export const ADMIN_ROLE_ADMIN = 'admin';
+export const ADMIN_ROLE_SUPER_ADMIN = 'super_admin';
+
+export function normalizeAdminRole(value = '') {
+    const role = String(value || '').trim().toLowerCase();
+    if (role === ADMIN_ROLE_SALES) return ADMIN_ROLE_SALES;
+    if (role === ADMIN_ROLE_EDITOR) return ADMIN_ROLE_EDITOR;
+    if (role === ADMIN_ROLE_SUPER_ADMIN) return ADMIN_ROLE_SUPER_ADMIN;
+    return ADMIN_ROLE_ADMIN;
+}
+
+export function canAccessConsoleEntry(adminRow = null, entryKind = ADMIN_ENTRY_KIND) {
+    const role = normalizeAdminRole(adminRow?.role);
+    const targetEntry = normalizeEntryKind(entryKind);
+    if (!adminRow || adminRow.is_active === false) return false;
+    if (targetEntry === SALES_ENTRY_KIND) {
+        return role === ADMIN_ROLE_SALES || role === ADMIN_ROLE_ADMIN || role === ADMIN_ROLE_SUPER_ADMIN;
+    }
+    return role === ADMIN_ROLE_EDITOR || role === ADMIN_ROLE_ADMIN || role === ADMIN_ROLE_SUPER_ADMIN;
+}
 
 const adminDirectoryCache = {
     rows: null,
@@ -17,7 +41,7 @@ function normalizeAdminRow(row = {}) {
         id: row.id || '',
         email: normalizeEmail(row.email),
         full_name: String(row.full_name || '').trim(),
-        role: String(row.role || 'admin').trim() || 'admin',
+        role: normalizeAdminRole(row.role),
         is_active: row.is_active !== false,
         created_at: row.created_at || '',
         updated_at: row.updated_at || '',
@@ -43,7 +67,8 @@ function shouldFallbackToStatic(error) {
 
 function getRecoveryRedirectUrl() {
     if (typeof window === 'undefined' || !window.location) return undefined;
-    return `${window.location.origin}/article_management/index.html?mode=reset-password`;
+    const entryKind = detectAdminEntryKind(window.location);
+    return `${window.location.origin}${adminConsolePath(entryKind)}?mode=reset-password`;
 }
 
 function createProvisionClient() {
@@ -215,7 +240,7 @@ export async function saveAdminUserEntry({ id = '', email, full_name = '', role 
     const payload = {
         email: normalizedEmail,
         full_name: String(full_name || '').trim(),
-        role: String(role || 'admin').trim() || 'admin',
+        role: normalizeAdminRole(role),
         is_active: is_active !== false,
         updated_by: actorId || null,
     };
