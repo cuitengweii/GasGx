@@ -37,7 +37,7 @@ import {
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
 import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260321admin01';
-import { renderQuoteBrandsPage, renderQuoteCustomersPage, renderQuoteInstancesPage, renderQuoteProductsPage } from './quote-system.module.js?v=20260323quote19';
+import { renderQuoteBrandsPage, renderQuoteCustomersPage, renderQuoteInstancesPage, renderQuoteProductsPage, renderQuoteRequirementsPage } from './quote-system.module.js?v=20260323quote26';
 import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260321site08';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js?v=20260321admin01';
 
@@ -130,6 +130,7 @@ const ADMIN_PAGE_IDS = new Set([
     'admin-security',
     'quote-brands',
     'quote-customers',
+    'quote-requirements',
     'quote-products',
     'quote-instances',
     'articles',
@@ -1022,6 +1023,7 @@ function renderShell() {
                     ${navGroup('Quotes', [
                         navButton('quote-brands', '品牌管理', 'fa-layer-group'),
                         navButton('quote-customers', '客户洞察', 'fa-address-book'),
+                        navButton('quote-requirements', '需求获取单', 'fa-clipboard-list'),
                         navButton('quote-products', '产品模板', 'fa-cubes'),
                         navButton('quote-instances', '报价单管理', 'fa-file-invoice-dollar'),
                     ])}
@@ -2894,6 +2896,14 @@ async function renderPage() {
             rerender: () => renderPage(),
         });
         else if (state.page === 'quote-customers') await renderQuoteCustomersPage({
+            user: state.user,
+            setPageHeader,
+            setContent,
+            showToast,
+            withButtonBusy,
+            rerender: () => renderPage(),
+        });
+        else if (state.page === 'quote-requirements') await renderQuoteRequirementsPage({
             user: state.user,
             setPageHeader,
             setContent,

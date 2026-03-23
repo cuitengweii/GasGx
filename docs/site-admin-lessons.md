@@ -86,3 +86,27 @@ How to detect earlier:
 How to prevent recurrence:
 - Keep instance-only layout classes scoped to quote-instance pages.
 - For shared admin primitives, prefer neutral container names and page-specific modifier classes so new surfaces do not inherit hidden-state contracts accidentally.
+
+## Lesson 6: Requirement workflow semantics must be settled before deepening the admin UI
+
+Error symptom:
+- A requirement page was built first as an internal admin intake worksheet, but that model did not match the real business handoff the user expected.
+- The user actually needed a public customer-facing requirement link between early chat and quote generation.
+
+Root cause:
+- “需求单” was initially interpreted as an internal CRM stage instead of a customer-submitted public form stage.
+- The entity shape was roughly correct, but the workflow role was wrong.
+
+How to detect earlier:
+- For pipeline-style business entities, confirm who fills the record, where the record lives, and what event locks the record for downstream work.
+- “客户需求单” should immediately trigger a check for:
+  - internal-only
+  - external/public
+  - versioned or mutable after submission
+
+How to prevent recurrence:
+- Before extending a new workflow entity, define the actor and handoff model first:
+  - who creates it
+  - who edits it
+  - what counts as final submission
+  - what downstream action becomes allowed only after that submission

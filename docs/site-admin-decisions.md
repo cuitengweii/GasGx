@@ -133,3 +133,15 @@
 - Product-template persistence should not fail solely because `public_title` is empty while the operator has already provided a meaningful `product_code` or `slug`.
 - Save flow now derives a fallback title from `product_code` first, then `slug`, before enforcing the "at least one product title" invariant.
 - This keeps the data contract intact while removing a UI-only hidden-field blocker from template bootstrap flows.
+
+### Decision 18: Requirement intake is a public customer link, not an admin-only worksheet
+
+- The requirement object represents a customer-facing public submission step inside the quote pipeline.
+- Admin creates and manages the link, but the primary answer collection should happen on a unique public URL sent to the customer.
+- The admin requirement page therefore acts as workflow orchestration, not as the main operator-authored source of customer demand.
+
+### Decision 19: Quotes can only be generated from submitted requirements
+
+- Requirement rows in `draft` state are considered invitation / waiting-link state, not confirmed demand.
+- Quote generation is allowed only once the requirement reaches `submitted` or later business states.
+- This keeps downstream quote, follow-up, and publication activity anchored to one explicit customer-submitted demand baseline.

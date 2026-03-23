@@ -158,3 +158,35 @@ News footer 若未取到统一站点壳配置：
 
 - Quote-instance-only panel styles are no longer assumed to be safe for brand and product management surfaces.
 - Brand/product admin editors now require their own visibility rules so product bootstrap flows are not hidden by instance-editor CSS contracts.
+
+## 2026-03-23 public requirement architecture update
+
+### Requirement intake layers
+
+- Admin requirement workflow shell:
+  - `article_management/modules/quote-system.module.js`
+  - creates/binds requirement drafts, issues public links, tracks submission state, and spawns quote drafts from submitted requirements
+- Public customer requirement runtime:
+  - `quote/requirement.html`
+  - `shared/quote-system/quote-requirement.module.js`
+  - renders the external customer-facing intake form for one unique requirement link
+- Shared styling layer:
+  - `shared/quote-system/quote-system.css`
+  - now styles quote viewing, real editing, and customer requirement intake with one visual system
+
+### Data and access boundary
+
+- `quote_requirements` now needs both admin-side row access and public-link access semantics.
+- Public access is not handled through direct anon table reads; it is mediated by RPC functions keyed by:
+  - `public_slug`
+  - `public_token`
+- Requirement lifecycle now sits structurally between customer master and quote instance:
+  - `quote_customers`
+  - `quote_requirements`
+  - `quote_instances`
+
+### Workflow boundary
+
+- Requirement collection and quote authoring are now separate runtimes.
+- Admin no longer serves as the primary requirement-entry UI for customer answers; it serves as the orchestration shell around customer submission.
+- Quote generation is gated behind submitted requirement state so the pipeline keeps one explicit handoff point from customer demand capture into pricing work.

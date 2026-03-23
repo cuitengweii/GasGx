@@ -244,3 +244,93 @@
 1. Generalize the public-template library into an explicit template-family model so future brands are not hard-coded around only `vman` and `minerpower`.
 2. Decide whether brand default-link source-of-truth needs structured metadata beyond `default_quote_slug`, such as picker source instance id vs manual override marker.
 3. Continue collapsing lower visual-editor copy controls into a more explicit top-level property-panel workflow so publish-copy, rates, and section editing each have a clearer home.
+
+## 2026-03-23 requirement intake update
+
+### Latest milestone
+
+- Quote System admin now includes a dedicated `需求获取单` page that sits between customer master data and quote instances.
+- Requirement intake records can now bind to a customer first, collect mostly multiple-choice answers, and then generate a quote draft already linked to both `customer_id` and `requirement_id`.
+- The first miner-oriented questionnaire pass now covers mainstream BTC miner brands, cooling mode, hashrate band, single-machine power band, quantity band, and site/power constraints.
+
+### Effective behaviors
+
+- Operators can open `报价系统 / 需求获取单` from the admin sidebar and work on requirement capture separately from quote editing.
+- Requirement records are designed as light intake forms: most fields are select or multi-select, while free-text is limited to a short customer note and an internal note.
+- The miner-brand preset currently includes:
+  - `Bitmain / ANTMINER`
+  - `MicroBT / WhatsMiner`
+  - `Canaan / Avalon Miner`
+  - `Bitdeer / SEALMINER`
+  - `Auradine / Teraflux`
+  - plus `其他 / 待确认`
+- Creating a quote from a requirement now carries over the bound customer, requirement summary, and questionnaire notes into the quote draft before the operator continues in the real quote editor.
+
+### Solved in this thread
+
+- Added `article_management/sql/012_quote_requirement_intake.sql` for the new `quote_requirements` table and `quote_instances.requirement_id`.
+- Added admin navigation and page rendering for `quote-requirements`.
+- Added requirement save/load flow, requirement-to-quote generation flow, and quote linkage display inside admin.
+- Added choice-grid styling so multi-select brand/cooling/certification inputs render as readable cards instead of raw checkbox rows.
+- Bumped admin cache versions so the new requirement page, styles, and quote-system module load reliably after deployment.
+
+### Unfinished
+
+- The database migration still needs to be executed in Supabase before production admins can actually persist requirement records.
+- Requirement intake is currently admin-only; there is not yet a customer-facing lightweight form or external intake link.
+- Quote admin and quote runtime now understand `requirement_id`, but customer analytics and follow-up workflow are still centered on quotes rather than requirement stages.
+- The miner questionnaire is still a first-pass schema; it does not yet branch into deeper product-specific question trees for air-cooled vs liquid-cooled miners or detailed electrical/site engineering intake.
+
+### Next Step
+
+1. Execute `article_management/sql/012_quote_requirement_intake.sql` in Supabase and verify admin create/save/generate flows with a real logged-in operator session.
+2. Surface requirement linkage inside quote-instance management and customer pages so operators can jump between `客户 -> 需求单 -> 报价单` without relying only on the new requirement page.
+3. Decide whether the next stage should be a customer-facing intake form, or a richer internal requirement workflow with stage ownership, follow-up date, and recommendation status.
+
+## 2026-03-23 public requirement workflow update
+
+### Latest milestone
+
+- Requirement intake has been redefined from an admin-only worksheet into a customer-facing public-link flow.
+- Added `quote/requirement.html` plus `shared/quote-system/quote-requirement.module.js` so each requirement can be opened as a unique public form URL.
+- Added `article_management/sql/013_quote_requirement_public_flow.sql` to extend `quote_requirements` with public access fields, customer-side submission state, and anon-safe RPC entry points.
+
+### Effective behaviors
+
+- Admin requirement management now acts as the workflow shell:
+  - bind customer
+  - save requirement draft
+  - copy or open the public requirement link
+  - wait for customer submission
+  - generate quote only after submission
+- Public requirement links now use `req + token` instead of exposing the raw table directly.
+- Customer submission is designed to lock the public form into read-only state once status reaches `submitted` or later.
+- Requirement cards and editor metadata now surface:
+  - public link state
+  - requester company/contact fields
+  - submitted timestamp
+  - quote-generation readiness
+
+### Solved in this thread
+
+- Added admin-side requirement public-link controls and moved requirement-page messaging from “internal intake sheet” to “public link issuance + review”.
+- Added customer-facing requirement page UI with mostly select / multi-select inputs for miner brand, cooling, hashrate, power, quantity, site constraints, and certifications.
+- Restricted quote generation from requirements to submitted-or-later states so quotes are not spawned from unconfirmed demand.
+- Added shared requirement-page styling to `shared/quote-system/quote-system.css` and bumped admin/static cache versions.
+
+### Unfinished
+
+- `013_quote_requirement_public_flow.sql` still needs to be executed in Supabase before the public form can read/write production data.
+- Requirement versioning is still single-record-per-round; there is not yet a formal “change request / v2 requirement” model after submission.
+- Public requirement intake is currently a single Chinese-first form; there is not yet a multilingual requirement runtime matching the quote viewer’s CN / EN / RU toggle model.
+
+### Next Step
+
+1. Execute `article_management/sql/013_quote_requirement_public_flow.sql` in Supabase.
+2. Verify the live sequence end to end with a real admin session and a real public link:
+   - customer master
+   - requirement draft
+   - public submission
+   - admin review
+   - quote draft generation
+3. Decide whether submitted requirements should stay immutable forever, or whether the next round should create a follow-up requirement record/version instead of editing the same row.

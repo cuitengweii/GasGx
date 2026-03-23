@@ -503,6 +503,21 @@ textarea {
     accent-color: var(--ams-green);
 }
 
+.ams-choice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px 14px;
+    margin-top: 10px;
+}
+
+.ams-choice-grid .ams-social-toggle {
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(93, 214, 44, 0.18);
+    background: rgba(16, 32, 12, 0.58);
+}
+
 .ams-kpi {
     margin-top: 10px;
     font-size: 30px;
@@ -2953,6 +2968,30 @@ textarea {
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+}
+
+.ams-status-pill.ams-status-draft {
+    border-color: rgba(245, 158, 11, 0.35);
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.08);
+}
+
+.ams-status-pill.ams-status-warning {
+    border-color: rgba(250, 204, 21, 0.42);
+    color: #fde68a;
+    background: rgba(234, 179, 8, 0.12);
+}
+
+.ams-status-pill.ams-status-published {
+    border-color: rgba(93, 214, 44, 0.38);
+    color: var(--ams-green);
+    background: rgba(93, 214, 44, 0.1);
+}
+
+.ams-status-pill.ams-status-archived {
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.08);
 }
 
 .ams-status-pill.is-ok {

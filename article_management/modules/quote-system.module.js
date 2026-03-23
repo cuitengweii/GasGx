@@ -39,6 +39,7 @@ const TABLE_PRODUCTS = 'quote_products';
 const TABLE_PRODUCT_ITEMS = 'quote_product_items';
 const TABLE_PRODUCT_MEDIA = 'quote_product_media';
 const TABLE_CUSTOMERS = 'quote_customers';
+const TABLE_REQUIREMENTS = 'quote_requirements';
 const TABLE_INSTANCES = 'quote_instances';
 const TABLE_INSTANCE_ITEMS = 'quote_instance_items';
 const TABLE_INSTANCE_EVENTS = 'quote_instance_events';
@@ -49,6 +50,7 @@ const moduleState = {
     brands: [],
     products: [],
     customers: [],
+    requirements: [],
     instances: [],
     baseTemplates: [],
     brandEditor: null,
@@ -59,16 +61,22 @@ const moduleState = {
     instanceEventSummary: null,
     instanceSends: [],
     customerEditor: null,
+    requirementEditor: null,
     customerEvents: [],
     customerSends: [],
     productLoadedId: '',
     instanceLoadedId: '',
     customerLoadedId: '',
+    requirementLoadedId: '',
     customerSearch: '',
+    requirementSearch: '',
+    requirementProductSelection: '',
+    requirementStatusFilter: 'all',
     customerCreateMode: false,
     brandDisplayNameTouched: false,
     brandDefaultLinkTouched: false,
     productBrandFilter: 'all',
+    productArchiveView: false,
     instanceBrandFilter: 'all',
     instanceStatusFilter: 'all',
     instanceArchiveView: false,
@@ -102,6 +110,124 @@ const PUBLIC_TEMPLATE_LIBRARY = Object.freeze({
     },
 });
 
+const REQUIREMENT_STATUS_OPTIONS = Object.freeze([
+    { value: 'draft', label: '待客户提交' },
+    { value: 'submitted', label: '客户已提交' },
+    { value: 'reviewing', label: '内部评估中' },
+    { value: 'quoted', label: '已转报价' },
+    { value: 'closed', label: '已关闭' },
+]);
+
+const REQUIREMENT_TYPE_OPTIONS = Object.freeze([
+    { value: 'integrated_mining_power', label: '矿机 + 供电一体化' },
+    { value: 'miner_only', label: '仅矿机需求' },
+    { value: 'power_only', label: '仅供电 / 发电需求' },
+    { value: 'unclear', label: '需求待推荐' },
+]);
+
+const REQUIREMENT_SELECT_OPTIONS = Object.freeze({
+    deployment_mode: [
+        { value: 'new_site', label: '新建站点' },
+        { value: 'existing_site_upgrade', label: '已有站点扩容' },
+        { value: 'mobile_container', label: '移动 / 集装箱方案' },
+        { value: 'unknown', label: '待确认' },
+    ],
+    miner_hashrate_band: [
+        { value: 'under_150t', label: '150T 以下' },
+        { value: '150t_200t', label: '150T - 200T' },
+        { value: '200t_300t', label: '200T - 300T' },
+        { value: 'over_300t', label: '300T 以上' },
+        { value: 'need_recommendation', label: '待推荐' },
+    ],
+    miner_power_band: [
+        { value: 'under_3kw', label: '3kW 以下' },
+        { value: '3kw_4kw', label: '3kW - 4kW' },
+        { value: '4kw_5_5kw', label: '4kW - 5.5kW' },
+        { value: 'over_5_5kw', label: '5.5kW 以上' },
+        { value: 'need_recommendation', label: '待推荐' },
+    ],
+    miner_quantity_band: [
+        { value: '1_10', label: '1 - 10 台' },
+        { value: '10_50', label: '10 - 50 台' },
+        { value: '50_200', label: '50 - 200 台' },
+        { value: '200_plus', label: '200 台以上' },
+        { value: 'unknown', label: '待确认' },
+    ],
+    power_capacity_band: [
+        { value: 'under_100kw', label: '100kW 以下' },
+        { value: '100_500kw', label: '100kW - 500kW' },
+        { value: '500kw_1mw', label: '500kW - 1MW' },
+        { value: '1mw_5mw', label: '1MW - 5MW' },
+        { value: 'over_5mw', label: '5MW 以上' },
+        { value: 'unknown', label: '待确认' },
+    ],
+    voltage_frequency: [
+        { value: '400v_50hz', label: '400V / 50Hz' },
+        { value: '415v_50hz', label: '415V / 50Hz' },
+        { value: '480v_60hz', label: '480V / 60Hz' },
+        { value: 'custom', label: '其他 / 待确认' },
+    ],
+    container_preference: [
+        { value: 'integrated_container', label: '整柜一体化' },
+        { value: 'rack_only', label: '仅机架 / 机位' },
+        { value: 'site_buildout', label: '场站部署' },
+        { value: 'need_recommendation', label: '待推荐' },
+    ],
+    silent_requirement: [
+        { value: 'standard', label: '常规即可' },
+        { value: 'low_noise', label: '低噪要求' },
+        { value: 'ultra_low_noise', label: '极低噪要求' },
+        { value: 'unknown', label: '待确认' },
+    ],
+    budget_band: [
+        { value: 'need_recommendation', label: '先看推荐方案' },
+        { value: 'under_100k_usd', label: '10 万 USD 以下' },
+        { value: '100k_500k_usd', label: '10 - 50 万 USD' },
+        { value: '500k_2m_usd', label: '50 - 200 万 USD' },
+        { value: 'over_2m_usd', label: '200 万 USD 以上' },
+    ],
+    timeline_band: [
+        { value: 'urgent', label: '尽快' },
+        { value: 'within_1_month', label: '1 个月内' },
+        { value: '1_3_months', label: '1 - 3 个月' },
+        { value: '3_6_months', label: '3 - 6 个月' },
+        { value: 'unknown', label: '待确认' },
+    ],
+    source_channel: [
+        { value: 'whatsapp', label: 'WhatsApp' },
+        { value: 'wechat', label: '微信' },
+        { value: 'email', label: '邮箱' },
+        { value: 'phone', label: '电话 / 会议' },
+        { value: 'website', label: '官网线索' },
+        { value: 'referral', label: '转介绍' },
+        { value: 'other', label: '其他' },
+    ],
+});
+
+const REQUIREMENT_MULTI_OPTIONS = Object.freeze({
+    miner_brands: [
+        { value: 'bitmain', label: 'Bitmain / ANTMINER（比特大陆）' },
+        { value: 'microbt', label: 'MicroBT / WhatsMiner（比特微）' },
+        { value: 'canaan', label: 'Canaan / Avalon Miner（嘉楠）' },
+        { value: 'bitdeer', label: 'Bitdeer / SEALMINER（比特小鹿）' },
+        { value: 'auradine', label: 'Auradine / Teraflux' },
+        { value: 'other', label: '其他 / 待确认' },
+    ],
+    miner_cooling: [
+        { value: 'air', label: '风冷矿机' },
+        { value: 'liquid', label: '液冷矿机' },
+        { value: 'hydro', label: '水冷 / 浸没式' },
+        { value: 'unknown', label: '待推荐' },
+    ],
+    certification_needs: [
+        { value: 'ce', label: 'CE' },
+        { value: 'eac', label: 'EAC' },
+        { value: 'ul', label: 'UL' },
+        { value: 'grid_sync', label: '并网 / 电力接口合规' },
+        { value: 'none', label: '暂无明确要求' },
+    ],
+});
+
 function esc(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -132,6 +258,45 @@ function text(value, fallback = '') {
 
 function hasTextValue(value) {
     return Boolean(text(value));
+}
+
+function normalizeRequirementStatus(value = '') {
+    const normalized = text(value).toLowerCase();
+    if (normalized === 'intake') return 'draft';
+    return REQUIREMENT_STATUS_OPTIONS.some((item) => item.value === normalized) ? normalized : 'draft';
+}
+
+function requirementStatusReadyForQuote(status = '') {
+    return ['submitted', 'reviewing', 'quoted'].includes(normalizeRequirementStatus(status));
+}
+
+function requirementIsLocked(status = '') {
+    return ['submitted', 'reviewing', 'quoted', 'closed'].includes(normalizeRequirementStatus(status));
+}
+
+function randomAlphaNumeric(length = 10) {
+    const size = Math.max(6, Number(length) || 10);
+    const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789';
+    if (window.crypto?.getRandomValues) {
+        const bytes = new Uint8Array(size);
+        window.crypto.getRandomValues(bytes);
+        return Array.from(bytes, (value) => alphabet[value % alphabet.length]).join('');
+    }
+    return Array.from({ length: size }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
+}
+
+function createRequirementPublicSlug(draft = {}) {
+    const customer = moduleState.customers.find((item) => item.id === text(draft.customer_id));
+    const companyPart = normalizeSlugPart(
+        draft.requester_company || customer?.company_name || customer?.customer_name || draft.title || 'requirement',
+        'requirement'
+    );
+    const typePart = normalizeSlugPart(draft.requirement_type || 'draft', 'draft');
+    return `req-${companyPart}-${typePart}-${randomAlphaNumeric(6)}`;
+}
+
+function createRequirementPublicToken() {
+    return randomAlphaNumeric(16);
 }
 
 function normalizeCustomerSnapshot(value = {}) {
@@ -172,6 +337,94 @@ function createCustomerRecord(seed = {}) {
 
 function createCustomerDraft(seed = {}) {
     return createCustomerRecord(seed);
+}
+
+function normalizeStringList(value) {
+    if (Array.isArray(value)) return Array.from(new Set(value.map((item) => text(item)).filter(Boolean)));
+    if (typeof value === 'string') {
+        const trimmed = text(value);
+        if (!trimmed) return [];
+        if (trimmed.startsWith('[')) {
+            try {
+                const parsed = JSON.parse(trimmed);
+                return normalizeStringList(parsed);
+            } catch (_error) {
+                return [trimmed];
+            }
+        }
+        return [trimmed];
+    }
+    return [];
+}
+
+function normalizeRequirementAnswers(value = {}) {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    return {
+        deployment_mode: text(source.deployment_mode || 'new_site'),
+        miner_brands: normalizeStringList(source.miner_brands),
+        miner_cooling: normalizeStringList(source.miner_cooling),
+        miner_hashrate_band: text(source.miner_hashrate_band || 'need_recommendation'),
+        miner_power_band: text(source.miner_power_band || 'need_recommendation'),
+        miner_quantity_band: text(source.miner_quantity_band || 'unknown'),
+        power_capacity_band: text(source.power_capacity_band || 'unknown'),
+        voltage_frequency: text(source.voltage_frequency || 'custom'),
+        container_preference: text(source.container_preference || 'need_recommendation'),
+        silent_requirement: text(source.silent_requirement || 'unknown'),
+        budget_band: text(source.budget_band || 'need_recommendation'),
+        timeline_band: text(source.timeline_band || 'unknown'),
+        certification_needs: normalizeStringList(source.certification_needs),
+        source_channel: text(source.source_channel || 'other'),
+        extra_notes: text(source.extra_notes),
+    };
+}
+
+function createRequirementDraft(seed = {}) {
+    return {
+        id: text(seed.id),
+        customer_id: text(seed.customer_id || seed.customerId),
+        title: text(seed.title),
+        status: normalizeRequirementStatus(seed.status),
+        requirement_type: REQUIREMENT_TYPE_OPTIONS.some((item) => item.value === text(seed.requirement_type || seed.requirementType))
+            ? text(seed.requirement_type || seed.requirementType)
+            : 'integrated_mining_power',
+        country: text(seed.country),
+        requester_company: text(seed.requester_company || seed.requesterCompany),
+        requester_name: text(seed.requester_name || seed.requesterName),
+        requester_email: text(seed.requester_email || seed.requesterEmail),
+        requester_phone: text(seed.requester_phone || seed.requesterPhone),
+        public_slug: text(seed.public_slug || seed.publicSlug),
+        public_token: text(seed.public_token || seed.publicToken),
+        submitted_at: text(seed.submitted_at || seed.submittedAt),
+        answers: normalizeRequirementAnswers(seed.answers),
+        notes: text(seed.notes),
+        is_active: seed.is_active !== false,
+        created_at: text(seed.created_at || seed.createdAt),
+        updated_at: text(seed.updated_at || seed.updatedAt),
+    };
+}
+
+function optionLabel(options = [], value = '') {
+    return options.find((item) => item.value === text(value))?.label || text(value, '--');
+}
+
+function requirementTypeLabel(value = '') {
+    return optionLabel(REQUIREMENT_TYPE_OPTIONS, value);
+}
+
+function requirementStatusLabel(value = '') {
+    return optionLabel(REQUIREMENT_STATUS_OPTIONS, value);
+}
+
+function multiOptionLabels(options = [], values = []) {
+    const list = normalizeStringList(values);
+    return list.map((value) => optionLabel(options, value)).filter(Boolean);
+}
+
+function requirementDisplayName(requirement = {}) {
+    const customer = moduleState.customers.find((item) => item.id === text(requirement.customer_id));
+    const base = text(requirement.title);
+    if (base) return base;
+    return `${customerDisplayName(customer || {})} / ${requirementTypeLabel(requirement.requirement_type || 'integrated_mining_power')}`;
 }
 
 function customerDisplayName(customer = {}) {
@@ -382,8 +635,29 @@ function summarizeCustomerQuotes(customerId = '') {
     });
 }
 
+function summarizeCustomerRequirements(customerId = '') {
+    return moduleState.requirements.reduce((summary, requirement) => {
+        if (text(requirement.customer_id) !== text(customerId)) return summary;
+        summary.total_requirements += 1;
+        if (normalizeRequirementStatus(requirement.status) === 'quoted') summary.quoted_requirements += 1;
+        else if (normalizeRequirementStatus(requirement.status) === 'closed') summary.closed_requirements += 1;
+        else summary.open_requirements += 1;
+        if (!summary.last_requirement_updated_at || text(requirement.updated_at) > summary.last_requirement_updated_at) {
+            summary.last_requirement_updated_at = text(requirement.updated_at);
+        }
+        return summary;
+    }, {
+        total_requirements: 0,
+        open_requirements: 0,
+        quoted_requirements: 0,
+        closed_requirements: 0,
+        last_requirement_updated_at: '',
+    });
+}
+
 function summarizeCustomerActivity(customerId = '', events = []) {
     const quoteSummary = summarizeCustomerQuotes(customerId);
+    const requirementSummary = summarizeCustomerRequirements(customerId);
     const eventSummary = summarizeInstanceEvents(events);
     const viewerEmails = new Set();
     let logged_in_views = 0;
@@ -402,6 +676,7 @@ function summarizeCustomerActivity(customerId = '', events = []) {
 
     return {
         ...quoteSummary,
+        ...requirementSummary,
         ...eventSummary,
         logged_in_views,
         anonymous_views,
@@ -575,6 +850,7 @@ function createInstanceDraft(seed = {}) {
         brand_id: text(seed.brand_id || seed.brandId),
         product_id: text(seed.product_id || seed.productId),
         customer_id: text(seed.customer_id || seed.customerId),
+        requirement_id: text(seed.requirement_id || seed.requirementId),
         public_slug: text(seed.public_slug || seed.publicSlug),
         status: normalizedStatus === 'published' || normalizedStatus === 'archived' ? normalizedStatus : 'draft',
         last_active_status: text(seed.last_active_status || seed.lastActiveStatus || 'draft') === 'published' ? 'published' : 'draft',
@@ -610,6 +886,7 @@ moduleState.brandEditor = createBrandDraft();
 moduleState.productEditor = createProductDraft();
 moduleState.productBrandDraft = createBrandDraft();
 moduleState.instanceEditor = createInstanceDraft();
+moduleState.requirementEditor = createRequirementDraft();
 
 function upsertLocalizedField(target, key, lang, value) {
     target[key] = normalizeLocalizedText(target[key]);
@@ -706,6 +983,30 @@ async function fetchCustomerRows() {
     return moduleState.customers;
 }
 
+async function fetchRequirementRows() {
+    const { data, error } = await client
+        .from(TABLE_REQUIREMENTS)
+        .select('id, customer_id, title, status, requirement_type, country, requester_company, requester_name, requester_email, requester_phone, public_slug, public_token, submitted_at, answers, notes, is_active, created_at, updated_at')
+        .eq('is_active', true)
+        .order('updated_at', { ascending: false });
+    if (error) throw error;
+    moduleState.requirements = Array.isArray(data) ? data.map((row) => createRequirementDraft(row)) : [];
+    return moduleState.requirements;
+}
+
+async function fetchRequirementEditor(requirementId) {
+    if (!requirementId) {
+        moduleState.requirementLoadedId = '';
+        moduleState.requirementEditor = createRequirementDraft();
+        return moduleState.requirementEditor;
+    }
+    const { data, error } = await client.from(TABLE_REQUIREMENTS).select('*').eq('id', requirementId).single();
+    if (error) throw error;
+    moduleState.requirementLoadedId = requirementId;
+    moduleState.requirementEditor = createRequirementDraft(data);
+    return moduleState.requirementEditor;
+}
+
 async function fetchProductRows() {
     const { data, error } = await client
         .from(TABLE_PRODUCTS)
@@ -751,7 +1052,7 @@ async function fetchProductEditor(productId) {
 async function fetchInstanceRows() {
     const { data, error } = await client
         .from(TABLE_INSTANCES)
-        .select('id, brand_id, product_id, customer_id, public_slug, status, last_active_status, archived_at, customer_name, receiver_name, receiver_email, customer_snapshot, share_config, default_lang, validity_hours, published_at, updated_at')
+        .select('id, brand_id, product_id, customer_id, requirement_id, public_slug, status, last_active_status, archived_at, customer_name, receiver_name, receiver_email, customer_snapshot, share_config, default_lang, validity_hours, published_at, updated_at')
         .order('updated_at', { ascending: false });
     if (error) throw error;
     moduleState.instances = Array.isArray(data) ? data.map((row) => createInstanceDraft(row)) : [];
@@ -1197,6 +1498,68 @@ async function saveProductDraft(user, draft) {
     return moduleState.productEditor;
 }
 
+async function archiveProductTemplate(user, productId) {
+    if (!productId) throw new Error('请先选择一个产品模板。');
+    const current = moduleState.products.find((item) => item.id === productId) || moduleState.productEditor;
+    const { data, error } = await client
+        .from(TABLE_PRODUCTS)
+        .update({
+            is_active: false,
+            updated_by: user?.id || null,
+        })
+        .eq('id', productId)
+        .select('*')
+        .single();
+    if (error) throw error;
+    await fetchProductRows();
+    if (moduleState.productEditor?.id === data.id) {
+        moduleState.productLoadedId = data.id;
+        moduleState.productEditor = createProductDraft({
+            ...(current || {}),
+            ...data,
+            items: moduleState.productEditor.items,
+            media_gallery: moduleState.productEditor.media_gallery,
+        });
+    }
+    return createProductDraft({
+        ...(current || {}),
+        ...data,
+        items: moduleState.productEditor?.id === data.id ? moduleState.productEditor.items : [],
+        media_gallery: moduleState.productEditor?.id === data.id ? moduleState.productEditor.media_gallery : [],
+    });
+}
+
+async function restoreProductTemplate(user, productId) {
+    if (!productId) throw new Error('请先选择一个产品模板。');
+    const current = moduleState.products.find((item) => item.id === productId) || moduleState.productEditor;
+    const { data, error } = await client
+        .from(TABLE_PRODUCTS)
+        .update({
+            is_active: true,
+            updated_by: user?.id || null,
+        })
+        .eq('id', productId)
+        .select('*')
+        .single();
+    if (error) throw error;
+    await fetchProductRows();
+    if (moduleState.productEditor?.id === data.id) {
+        moduleState.productLoadedId = data.id;
+        moduleState.productEditor = createProductDraft({
+            ...(current || {}),
+            ...data,
+            items: moduleState.productEditor.items,
+            media_gallery: moduleState.productEditor.media_gallery,
+        });
+    }
+    return createProductDraft({
+        ...(current || {}),
+        ...data,
+        items: moduleState.productEditor?.id === data.id ? moduleState.productEditor.items : [],
+        media_gallery: moduleState.productEditor?.id === data.id ? moduleState.productEditor.media_gallery : [],
+    });
+}
+
 async function saveCustomerDraft(user, draft) {
     const payload = createCustomerDraft(draft);
     if (!payload.company_name && !payload.contact_name && !payload.email) {
@@ -1233,6 +1596,51 @@ async function saveCustomerDraft(user, draft) {
     moduleState.customerEditor = createCustomerDraft(saved);
     moduleState.customerCreateMode = false;
     return moduleState.customerEditor;
+}
+
+async function saveRequirementDraft(user, draft) {
+    const payload = createRequirementDraft(draft);
+    if (!payload.customer_id) throw new Error('需求获取单必须绑定一个客户档案。');
+    const customer = moduleState.customers.find((item) => item.id === payload.customer_id) || moduleState.customerEditor;
+    const publicSlug = payload.public_slug || createRequirementPublicSlug(payload);
+    const publicToken = payload.public_token || createRequirementPublicToken();
+    const savePayload = {
+        customer_id: payload.customer_id,
+        title: payload.title || `${customerDisplayName(customer || {})} / ${requirementTypeLabel(payload.requirement_type)}`,
+        status: normalizeRequirementStatus(payload.status),
+        requirement_type: payload.requirement_type,
+        country: payload.country,
+        requester_company: payload.requester_company,
+        requester_name: payload.requester_name,
+        requester_email: payload.requester_email,
+        requester_phone: payload.requester_phone,
+        public_slug: publicSlug,
+        public_token: publicToken,
+        submitted_at: payload.submitted_at || null,
+        answers: normalizeRequirementAnswers(payload.answers),
+        notes: payload.notes,
+        is_active: payload.is_active !== false,
+        updated_by: user?.id || null,
+    };
+
+    let saved = null;
+    if (payload.id) {
+        const { data, error } = await client.from(TABLE_REQUIREMENTS).update(savePayload).eq('id', payload.id).select('*').single();
+        if (error) throw error;
+        saved = data;
+    } else {
+        const { data, error } = await client.from(TABLE_REQUIREMENTS).insert({
+            ...savePayload,
+            created_by: user?.id || null,
+        }).select('*').single();
+        if (error) throw error;
+        saved = data;
+    }
+
+    await fetchRequirementRows();
+    moduleState.requirementLoadedId = text(saved?.id);
+    moduleState.requirementEditor = createRequirementDraft(saved);
+    return moduleState.requirementEditor;
 }
 
 async function updateInstanceShareHistory(user, instanceId, entryId, patch = {}, options = {}) {
@@ -1411,6 +1819,7 @@ async function createInstanceFromProduct(user, productId) {
           ? createProductDraft(moduleState.productEditor)
           : null;
     if (!product?.id) throw new Error('请先选择一个产品模板。');
+    if (product.is_active === false) throw new Error('已删除的产品模板不能继续生成报价单，请先恢复。');
 
     const brand = moduleState.brands.find((item) => item.id === product.brand_id);
     if (!brand?.id) throw new Error('未找到对应品牌。');
@@ -1449,6 +1858,7 @@ async function createInstanceFromProduct(user, productId) {
             brand_id: draft.brand_id,
             product_id: draft.product_id,
             customer_id: null,
+            requirement_id: null,
             public_slug: draft.public_slug,
             status: 'draft',
             last_active_status: 'draft',
@@ -1480,6 +1890,109 @@ async function createInstanceFromProduct(user, productId) {
     return moduleState.instanceEditor;
 }
 
+async function createInstanceFromRequirement(user, requirementId, productId) {
+    if (!requirementId) throw new Error('请先选择一份需求获取单。');
+    const requirement = moduleState.requirementEditor?.id === requirementId
+        ? createRequirementDraft(moduleState.requirementEditor)
+        : await fetchRequirementEditor(requirementId);
+    if (!requirementStatusReadyForQuote(requirement.status)) {
+        throw new Error('请先把公开需求链接发给客户，并等待客户提交后再生成报价。');
+    }
+    const product = productId
+        ? moduleState.productEditor?.id === productId
+            ? createProductDraft(moduleState.productEditor)
+            : await fetchProductEditor(productId)
+        : null;
+    if (!product?.id) throw new Error('请先选择一个产品模板。');
+    if (product.is_active === false) throw new Error('已删除的产品模板不能继续生成报价单，请先恢复。');
+
+    const brand = moduleState.brands.find((item) => item.id === product.brand_id);
+    if (!brand?.id) throw new Error('未找到对应品牌。');
+
+    const customer = moduleState.customers.find((item) => item.id === requirement.customer_id);
+    if (!customer?.id) throw new Error('未找到需求单绑定的客户档案。');
+
+    const notesBlock = [customer.notes, `需求获取摘要：${requirementSummaryLine(requirement)}`, text(requirement.answers?.extra_notes), requirement.notes]
+        .map((entry) => text(entry))
+        .filter(Boolean)
+        .join('\n\n');
+
+    const draft = createInstanceDraft({
+        brand_id: brand.id,
+        product_id: product.id,
+        customer_id: customer.id,
+        requirement_id: requirement.id,
+        public_slug: createPublicSlug(brand.slug, product.slug),
+        status: 'draft',
+        last_active_status: 'draft',
+        customer_name: customer.company_name,
+        receiver_name: customer.contact_name,
+        receiver_email: customer.email,
+        customer_phone: customer.phone,
+        customer_country: requirement.country || customer.country,
+        customer_notes: notesBlock,
+        default_lang: product.default_lang,
+        validity_hours: product.validity_hours,
+        draft_rates: product.default_rates,
+        customer_snapshot: normalizeCustomerSnapshot({
+            ...customer,
+            country: requirement.country || customer.country,
+            notes: notesBlock,
+        }),
+        brand_snapshot: extractBrandSnapshot({
+            ...brand,
+            overview_title: expandLocalizedFromChinese(brand.overview_title),
+            footer_note: expandLocalizedFromChinese(brand.footer_note),
+        }),
+        product_snapshot: extractProductSnapshot({
+            ...product,
+            public_title: expandLocalizedFromChinese(product.public_title),
+            section_config: expandSectionConfigLocalized(product.section_config),
+            media_config: expandMediaConfig(product.media_config),
+            media_gallery: normalizeMediaGallery(product.media_gallery),
+        }),
+        section_config: expandSectionConfigLocalized(product.section_config),
+        items: product.items,
+    });
+
+    const { data, error } = await client
+        .from(TABLE_INSTANCES)
+        .insert({
+            brand_id: draft.brand_id,
+            product_id: draft.product_id,
+            customer_id: draft.customer_id || null,
+            requirement_id: draft.requirement_id || null,
+            public_slug: draft.public_slug,
+            status: 'draft',
+            last_active_status: 'draft',
+            customer_name: draft.customer_name,
+            receiver_name: draft.receiver_name,
+            receiver_email: draft.receiver_email,
+            customer_snapshot: draft.customer_snapshot,
+            default_lang: draft.default_lang,
+            validity_hours: draft.validity_hours,
+            draft_rates: draft.draft_rates,
+            share_config: {},
+            brand_snapshot: draft.brand_snapshot,
+            product_snapshot: draft.product_snapshot,
+            section_config: draft.section_config,
+            created_by: user?.id || null,
+            updated_by: user?.id || null,
+        })
+        .select('*')
+        .single();
+    if (error) throw error;
+
+    const savedItems = await persistItemRows(TABLE_INSTANCE_ITEMS, 'instance_id', data.id, draft.items);
+    await fetchInstanceRows();
+    moduleState.instanceLoadedId = data.id;
+    moduleState.instanceEditor = createInstanceDraft({
+        ...data,
+        items: savedItems,
+    });
+    return moduleState.instanceEditor;
+}
+
 async function saveInstanceDraft(user, draft) {
     const payload = createInstanceDraft(draft);
     if (!payload.brand_id || !payload.product_id) throw new Error('报价单必须绑定品牌和产品模板。');
@@ -1491,6 +2004,7 @@ async function saveInstanceDraft(user, draft) {
         brand_id: payload.brand_id,
         product_id: payload.product_id,
         customer_id: customerRelation.customer_id || null,
+        requirement_id: payload.requirement_id || null,
         public_slug: payload.public_slug,
         status: 'draft',
         last_active_status: 'draft',
@@ -1574,6 +2088,47 @@ async function publishInstance(user, draft) {
 
 function publicQuoteUrl(publicSlug) {
     return new URL(`/quote/view.html?quote=${encodeURIComponent(publicSlug)}`, window.location.origin).toString();
+}
+
+function requirementPublicUrl(publicSlug, publicToken) {
+    const url = new URL('/quote/requirement.html', window.location.origin);
+    if (text(publicSlug)) url.searchParams.set('req', text(publicSlug));
+    if (text(publicToken)) url.searchParams.set('token', text(publicToken));
+    return url.toString();
+}
+
+function adminPageUrl(page, params = {}) {
+    const url = new URL('/article_management/index.html', window.location.origin);
+    url.searchParams.set('page', page);
+    Object.entries(params || {}).forEach(([key, value]) => {
+        const normalized = text(value);
+        if (normalized) url.searchParams.set(key, normalized);
+    });
+    return url.toString();
+}
+
+function readAdminPageParam(name) {
+    try {
+        return text(new URL(window.location.href).searchParams.get(name));
+    } catch (_error) {
+        return '';
+    }
+}
+
+function clearAdminPageParams(...names) {
+    try {
+        const url = new URL(window.location.href);
+        let changed = false;
+        names.forEach((name) => {
+            if (url.searchParams.has(name)) {
+                url.searchParams.delete(name);
+                changed = true;
+            }
+        });
+        if (changed) window.history.replaceState({}, '', url);
+    } catch (_error) {
+        return;
+    }
 }
 
 function previewQuoteUrl(instanceId) {
@@ -1798,8 +2353,19 @@ async function buildLiveBaseTemplates() {
 }
 
 function filteredProducts() {
-    if (moduleState.productBrandFilter === 'all') return moduleState.products;
-    return moduleState.products.filter((item) => item.brand_id === moduleState.productBrandFilter);
+    return moduleState.products.filter((item) => {
+        if (moduleState.productBrandFilter !== 'all' && item.brand_id !== moduleState.productBrandFilter) return false;
+        if (moduleState.productArchiveView) return item.is_active === false;
+        return item.is_active !== false;
+    });
+}
+
+function archivedProductCount() {
+    return moduleState.products.filter((item) => item.is_active === false).length;
+}
+
+function activeProducts() {
+    return moduleState.products.filter((item) => item.is_active !== false);
 }
 
 function filteredInstances() {
@@ -1835,10 +2401,106 @@ function filteredCustomers() {
     });
 }
 
+function filteredRequirements() {
+    const query = text(moduleState.requirementSearch).toLowerCase();
+    return moduleState.requirements.filter((requirement) => {
+        if (moduleState.requirementStatusFilter !== 'all' && text(requirement.status) !== moduleState.requirementStatusFilter) return false;
+        if (!query) return true;
+        const customer = moduleState.customers.find((item) => item.id === requirement.customer_id);
+        const preview = requirementSummaryLine(requirement).toLowerCase();
+        return [
+            requirement.title,
+            requirement.country,
+            requirement.requester_company,
+            requirement.requester_name,
+            requirement.requester_email,
+            requirementTypeLabel(requirement.requirement_type),
+            customerDisplayName(customer || {}),
+            preview,
+        ].some((value) => text(value).toLowerCase().includes(query));
+    });
+}
+
+function requirementQuotes(requirementId = '') {
+    return moduleState.instances
+        .filter((item) => text(item.requirement_id) === text(requirementId))
+        .sort((left, right) => text(right.updated_at).localeCompare(text(left.updated_at)));
+}
+
+function summarizeRequirementQuotes(requirementId = '') {
+    return requirementQuotes(requirementId).reduce((summary, instance) => {
+        summary.total_quotes += 1;
+        if (instance.status === 'published') summary.published_quotes += 1;
+        else if (instance.status === 'archived') summary.archived_quotes += 1;
+        else summary.draft_quotes += 1;
+        return summary;
+    }, {
+        total_quotes: 0,
+        draft_quotes: 0,
+        published_quotes: 0,
+        archived_quotes: 0,
+    });
+}
+
 function customerQuotes(customerId = '') {
     return moduleState.instances
         .filter((item) => text(item.customer_id) === text(customerId))
         .sort((left, right) => text(right.updated_at).localeCompare(text(left.updated_at)));
+}
+
+function customerRequirements(customerId = '') {
+    return moduleState.requirements
+        .filter((item) => text(item.customer_id) === text(customerId))
+        .sort((left, right) => text(right.updated_at).localeCompare(text(left.updated_at)));
+}
+
+function requirementById(requirementId = '') {
+    return moduleState.requirements.find((item) => item.id === text(requirementId)) || null;
+}
+
+function instanceRequirementOptions(instance = {}) {
+    const customerId = text(instance.customer_id);
+    const linkedRequirement = requirementById(instance.requirement_id);
+    const rows = customerId ? customerRequirements(customerId) : [];
+    if (linkedRequirement?.id && !rows.some((item) => item.id === linkedRequirement.id)) {
+        return [linkedRequirement, ...rows];
+    }
+    return rows;
+}
+
+function requirementSummaryLine(requirement = {}) {
+    const answers = normalizeRequirementAnswers(requirement.answers);
+    const brandLabels = multiOptionLabels(REQUIREMENT_MULTI_OPTIONS.miner_brands, answers.miner_brands).slice(0, 2);
+    const coolingLabels = multiOptionLabels(REQUIREMENT_MULTI_OPTIONS.miner_cooling, answers.miner_cooling);
+    const pieces = [
+        requirementTypeLabel(requirement.requirement_type),
+        brandLabels.join(' / '),
+        coolingLabels.join(' / '),
+        optionLabel(REQUIREMENT_SELECT_OPTIONS.miner_hashrate_band, answers.miner_hashrate_band),
+        optionLabel(REQUIREMENT_SELECT_OPTIONS.miner_power_band, answers.miner_power_band),
+        optionLabel(REQUIREMENT_SELECT_OPTIONS.miner_quantity_band, answers.miner_quantity_band),
+        optionLabel(REQUIREMENT_SELECT_OPTIONS.power_capacity_band, answers.power_capacity_band),
+        text(requirement.country),
+    ].map((entry) => text(entry)).filter(Boolean);
+    return pieces.join(' · ');
+}
+
+function requirementCheckboxGroup(field, options = [], selectedValues = []) {
+    const selected = new Set(normalizeStringList(selectedValues));
+    return `
+        <div class="ams-choice-grid">
+            ${options.map((option) => `
+                <label class="ams-social-toggle">
+                    <input type="checkbox" data-requirement-check="${esc(field)}" value="${esc(option.value)}" ${selected.has(option.value) ? 'checked' : ''}>
+                    <span>${esc(option.label)}</span>
+                </label>
+            `).join('')}
+        </div>
+    `;
+}
+
+function selectOptionsMarkup(options = [], current = '') {
+    return options.map((option) => `<option value="${esc(option.value)}" ${text(current) === text(option.value) ? 'selected' : ''}>${esc(option.label)}</option>`).join('');
 }
 
 function brandLabelById(brandId) {
@@ -1915,7 +2577,7 @@ function brandDefaultLinkContext(brandDraft = {}) {
 }
 
 async function ensureBaseData() {
-    await Promise.all([fetchBrandRows(), fetchProductRows(), fetchCustomerRows(), fetchInstanceRows()]);
+    await Promise.all([fetchBrandRows(), fetchProductRows(), fetchCustomerRows(), fetchRequirementRows(), fetchInstanceRows()]);
 }
 
 function isQuoteSetupMissing(error) {
@@ -1924,6 +2586,7 @@ function isQuoteSetupMissing(error) {
         message.includes('quote_brands') ||
         message.includes('quote_products') ||
         message.includes('quote_product_media') ||
+        message.includes('quote_requirements') ||
         message.includes('quote_instances') ||
         message.includes('admin_users') ||
         message.includes('infinite recursion') ||
@@ -1946,7 +2609,7 @@ function renderQuoteSetupRequired(input, error) {
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-database"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>执行 SQL 文件</strong>
-                        <span>请先在 Supabase SQL Editor 执行 <code>article_management/sql/006_quote_system.sql</code>；已有旧版库时，再补执行 <code>article_management/sql/008_quote_product_media.sql</code>、<code>article_management/sql/010_quote_customer_tracking.sql</code> 和 <code>article_management/sql/011_quote_send_ledger.sql</code>。</span>
+                        <span>请先在 Supabase SQL Editor 执行 <code>article_management/sql/006_quote_system.sql</code>；已有旧版库时，再补执行 <code>article_management/sql/008_quote_product_media.sql</code>、<code>article_management/sql/010_quote_customer_tracking.sql</code>、<code>article_management/sql/011_quote_send_ledger.sql</code>、<code>article_management/sql/012_quote_requirement_intake.sql</code> 和 <code>article_management/sql/013_quote_requirement_public_flow.sql</code>。</span>
                     </div>
                 </div>
                 <div class="ams-quick-link ams-quick-link-static">
@@ -2549,6 +3212,20 @@ function productVisualEditorSurfaceMarkup(product, brandDraft = {}) {
                 <div class="ams-quote-visual-sections">
                     ${sections.map((section) => visualSectionEditorMarkup('product', section, normalized.items)).join('')}
                 </div>
+                <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
+                    <div class="ams-quick-link-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                    <div class="ams-quick-link-body">
+                        <strong>从需求生成报价单</strong>
+                        <span>${canCreateQuote ? '客户已提交，这里就是下一步入口。选择产品模板后，直接生成报价草稿并打开真实报价页。' : '只有客户正式提交后的需求单才能进入报价链路。当前需求还不能生成报价单。'}</span>
+                        <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
+                            <select class="ams-select ams-quote-create-select" data-requirement-product-select>
+                                <option value="">请选择产品模板</option>
+                                ${availableProducts.map((product) => `<option value="${esc(product.id)}" ${selectedRequirementProductId === product.id ? 'selected' : ''}>${esc(brandLabelById(product.brand_id))} / ${esc(pickLocalized(product.public_title, product.default_lang, product.slug))}</option>`).join('')}
+                            </select>
+                            <button class="ams-btn ams-btn-warning" type="button" data-requirement-create-instance ${canCreateQuote ? '' : 'disabled'}>生成报价草稿</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     `;
@@ -2793,17 +3470,48 @@ function renderProductList() {
         : '<div class="ams-empty">当前筛选下没有产品模板。</div>';
 }
 
+function renderProductListCards() {
+    const rows = filteredProducts();
+    return rows.length
+        ? rows
+              .map(
+                  (product) => `
+                <article class="ams-quote-list-card-shell ${product.id === moduleState.productEditor.id ? 'is-active' : ''}">
+                    <button class="ams-quote-list-card ${product.id === moduleState.productEditor.id ? 'is-active' : ''}" type="button" data-product-edit="${esc(product.id)}">
+                        <strong>${esc(pickLocalized(product.public_title, product.default_lang, product.slug))}</strong>
+                        <span>${esc(product.slug)} 路 ${esc(brandLabelById(product.brand_id))}</span>
+                        <em>${product.is_active === false ? '已删除' : '启用中'} 路 有效期 ${esc(product.validity_hours)} 小时</em>
+                    </button>
+                    <div class="ams-quote-list-card-actions">
+                        ${
+                            product.is_active === false
+                                ? `<button class="ams-btn ams-btn-muted" type="button" data-product-restore="${esc(product.id)}">恢复</button>`
+                                : `<button class="ams-btn ams-btn-danger" type="button" data-product-archive="${esc(product.id)}">删除</button>`
+                        }
+                    </div>
+                </article>
+            `,
+              )
+              .join('')
+        : '<div class="ams-empty">当前筛选下没有产品模板。</div>';
+}
+
 function renderInstanceList() {
     const rows = filteredInstances();
     return rows.length
         ? rows
-              .map(
-                  (quote) => `
+              .map((quote) => {
+                  const linkedRequirement = requirementById(quote.requirement_id);
+                  const relationshipLine = [
+                      customerDisplayName(quote.customer_snapshot || { company_name: quote.customer_name, contact_name: quote.receiver_name, email: quote.receiver_email }),
+                      linkedRequirement ? `需求：${requirementDisplayName(linkedRequirement)}` : '',
+                  ].filter(Boolean).join(' · ');
+                  return `
                 <article class="ams-quote-list-card-shell ${quote.id === moduleState.instanceEditor.id ? 'is-active' : ''}">
                     <button class="ams-quote-list-card ${quote.id === moduleState.instanceEditor.id ? 'is-active' : ''}" type="button" data-instance-edit="${esc(quote.id)}">
                         <strong>${esc(quote.customer_name || productLabelById(quote.product_id) || quote.public_slug)}</strong>
                         <span>${esc(brandLabelById(quote.brand_id))} · ${esc(productLabelById(quote.product_id))}</span>
-                        <span class="ams-quote-inline-submeta">${esc(customerDisplayName(quote.customer_snapshot || { company_name: quote.customer_name, contact_name: quote.receiver_name, email: quote.receiver_email }))}</span>
+                        <span class="ams-quote-inline-submeta">${esc(relationshipLine)}</span>
                         <em>${statusPill(quote.status)} <span class="ams-quote-inline-meta">${esc(quote.public_slug)}</span></em>
                     </button>
                     <div class="ams-quote-list-card-actions">
@@ -2814,8 +3522,8 @@ function renderInstanceList() {
                         }
                     </div>
                 </article>
-            `,
-              )
+            `;
+              })
               .join('')
         : '<div class="ams-empty">当前筛选下没有报价单。</div>';
 }
@@ -2826,19 +3534,75 @@ function renderCustomerList() {
         ? rows
               .map((customer) => {
                   const quoteSummary = summarizeCustomerQuotes(customer.id);
+                  const requirementSummary = summarizeCustomerRequirements(customer.id);
                   return `
                     <article class="ams-customer-list-card-shell">
                         <button class="ams-quote-list-card ${moduleState.customerLoadedId === customer.id ? 'active' : ''}" type="button" data-customer-edit="${esc(customer.id)}">
                             <strong>${esc(customerDisplayName(customer))}</strong>
                             <span>${esc(text(customer.contact_name || customer.email || customer.phone, '未填写联系人'))}</span>
                             <span class="ams-quote-inline-submeta">${esc(text(customer.email || customer.phone || customer.country, '未填写联系信息'))}</span>
-                            <em>${quoteSummary.total_quotes} 份报价单 <span class="ams-quote-inline-meta">${quoteSummary.published_quotes} 已发布 / ${quoteSummary.archived_quotes} 已归档</span></em>
+                            <em>${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单 <span class="ams-quote-inline-meta">${quoteSummary.published_quotes} 已发布 / ${quoteSummary.archived_quotes} 已归档</span></em>
                         </button>
                     </article>
                 `;
               })
               .join('')
         : '<div class="ams-empty">当前没有客户档案。</div>';
+}
+
+function requirementStatusPill(status = 'draft') {
+    const normalized = normalizeRequirementStatus(status);
+    const tone = normalized === 'quoted' ? 'published' : normalized === 'closed' ? 'archived' : normalized === 'submitted' ? 'warning' : 'draft';
+    return `<span class="ams-status-pill ams-status-${tone}">${esc(requirementStatusLabel(normalized))}</span>`;
+}
+
+function renderRequirementList() {
+    const rows = filteredRequirements();
+    return rows.length
+        ? rows
+              .map((requirement) => {
+                  const customer = moduleState.customers.find((item) => item.id === requirement.customer_id);
+                  const quoteSummary = summarizeRequirementQuotes(requirement.id);
+                  const contactLabel = text(requirement.requester_name || requirement.requester_email || requirement.requester_phone || customer?.contact_name, '未填写联系人');
+                  return `
+                    <article class="ams-customer-list-card-shell">
+                        <button class="ams-quote-list-card ${moduleState.requirementLoadedId === requirement.id ? 'active' : ''}" type="button" data-requirement-edit="${esc(requirement.id)}">
+                            <strong>${esc(requirementDisplayName(requirement))}</strong>
+                            <span>${esc(text(requirement.requester_company || customerDisplayName(customer || {})))}</span>
+                            <span class="ams-quote-inline-submeta">${esc(requirementSummaryLine(requirement) || '待补充需求摘要')}</span>
+                            <em>${requirementStatusPill(requirement.status)} <span class="ams-quote-inline-meta">${esc(contactLabel)} / ${esc(quoteSummary.total_quotes)} 份关联报价 / ${esc(fmtDate(requirement.submitted_at || requirement.updated_at))}</span></em>
+                        </button>
+                    </article>
+                `;
+              })
+              .join('')
+        : '<div class="ams-empty">当前没有需求获取单。</div>';
+}
+
+function requirementQuoteListMarkup(requirementId = '') {
+    const rows = requirementQuotes(requirementId);
+    return rows.length
+        ? rows
+              .map((quote) => `
+                    <article class="ams-customer-quote-row">
+                        <div class="ams-customer-quote-copy">
+                            <strong>${esc(quote.customer_name || productLabelById(quote.product_id) || quote.public_slug)}</strong>
+                            <span>${esc(brandLabelById(quote.brand_id))} · ${esc(productLabelById(quote.product_id))}</span>
+                            <span class="ams-quote-inline-submeta">${statusPill(quote.status)} <span class="ams-quote-inline-meta">${esc(quote.public_slug)}</span></span>
+                        </div>
+                        <div class="ams-customer-quote-meta">
+                            <time>${esc(fmtDate(quote.updated_at))}</time>
+                            <div class="ams-row-actions">
+                                <button class="ams-btn ams-btn-muted" type="button" data-requirement-quote-open="${esc(quote.id)}">后台查看</button>
+                                ${quote.status === 'published'
+                                    ? `<button class="ams-btn ams-btn-warning" type="button" data-requirement-quote-public="${esc(quote.public_slug)}">客户页</button>`
+                                    : ''}
+                            </div>
+                        </div>
+                    </article>
+                `)
+              .join('')
+        : '<div class="ams-empty">这份需求单还没有生成报价单。</div>';
 }
 
 function customerQuoteListMarkup(customerId = '') {
@@ -2865,6 +3629,32 @@ function customerQuoteListMarkup(customerId = '') {
                 `)
               .join('')
         : '<div class="ams-empty">这个客户还没有关联报价单。</div>';
+}
+
+function customerRequirementListMarkup(customerId = '') {
+    const rows = customerRequirements(customerId);
+    return rows.length
+        ? rows
+              .map((requirement) => {
+                  const quoteSummary = summarizeRequirementQuotes(requirement.id);
+                  return `
+                    <article class="ams-customer-quote-row">
+                        <div class="ams-customer-quote-copy">
+                            <strong>${esc(requirementDisplayName(requirement))}</strong>
+                            <span>${esc(requirementSummaryLine(requirement) || '待补充需求摘要')}</span>
+                            <span class="ams-quote-inline-submeta">${requirementStatusPill(requirement.status)} <span class="ams-quote-inline-meta">${esc(quoteSummary.total_quotes)} 份关联报价</span></span>
+                        </div>
+                        <div class="ams-customer-quote-meta">
+                            <time>${esc(fmtDate(requirement.updated_at))}</time>
+                            <div class="ams-row-actions">
+                                <button class="ams-btn ams-btn-muted" type="button" data-customer-requirement-open="${esc(requirement.id)}">查看需求单</button>
+                            </div>
+                        </div>
+                    </article>
+                `;
+              })
+              .join('')
+        : '<div class="ams-empty">这个客户还没有需求获取单。</div>';
 }
 
 function customerInsightsMarkup() {
@@ -2905,6 +3695,9 @@ function customerInsightsMarkup() {
                 </div>
             </div>
             <div class="ams-summary-row">
+                <span class="ams-summary-chip"><strong>关联需求单</strong><span>${esc(summary.total_requirements)}</span></span>
+                <span class="ams-summary-chip"><strong>待跟进需求</strong><span>${esc(summary.open_requirements)}</span></span>
+                <span class="ams-summary-chip"><strong>已转报价需求</strong><span>${esc(summary.quoted_requirements)}</span></span>
                 <span class="ams-summary-chip"><strong>关联报价单</strong><span>${esc(summary.total_quotes)}</span></span>
                 <span class="ams-summary-chip"><strong>草稿</strong><span>${esc(summary.draft_quotes)}</span></span>
                 <span class="ams-summary-chip"><strong>已发布</strong><span>${esc(summary.published_quotes)}</span></span>
@@ -2917,7 +3710,12 @@ function customerInsightsMarkup() {
                 <span class="ams-summary-chip"><strong>邮件触发</strong><span>${esc(summary.email_clicks)}</span></span>
                 <span class="ams-summary-chip"><strong>发送台账</strong><span>${esc(sendHistory.length)}</span></span>
                 <span class="ams-summary-chip"><strong>最近浏览</strong><span>${esc(fmtDate(summary.last_viewed_at))}</span></span>
+                <span class="ams-summary-chip"><strong>最近需求更新</strong><span>${esc(fmtDate(summary.last_requirement_updated_at))}</span></span>
                 <span class="ams-summary-chip"><strong>最近报价更新</strong><span>${esc(fmtDate(summary.last_quote_updated_at))}</span></span>
+            </div>
+            <div class="ams-quote-block">
+                <div class="ams-section-head"><div><h3>需求获取单</h3><p>这里列出这名客户当前绑定的全部需求单，用来衔接“客户 -> 需求 -> 报价”。</p></div></div>
+                <div class="ams-customer-quote-list">${customerRequirementListMarkup(customerId)}</div>
             </div>
             <div class="ams-quote-block">
                 <div class="ams-section-head"><div><h3>关联报价单</h3><p>这里列出这名客户当前关联的全部报价单实例。</p></div></div>
@@ -2942,6 +3740,7 @@ function instanceInsightsMarkup() {
     const currentCustomer = moduleState.instanceEditor.customer_id
         ? moduleState.customers.find((item) => item.id === moduleState.instanceEditor.customer_id)
         : null;
+    const linkedRequirement = requirementById(moduleState.instanceEditor.requirement_id);
     const sendHistory = instanceShareHistory();
     const shareSummary = shareConfigSummary(moduleState.instanceEditor.share_config, { sendCount: sendHistory.length });
     const sendLedgerNote = sendLedgerModeMarkup();
@@ -2974,6 +3773,7 @@ function instanceInsightsMarkup() {
             </div>
             <div class="ams-summary-row">
                 <span class="ams-summary-chip"><strong>客户档案</strong><span>${esc(customerDisplayName(currentCustomer || buildInstanceCustomerSnapshot(moduleState.instanceEditor)))}</span></span>
+                <span class="ams-summary-chip"><strong>关联需求单</strong><span>${esc(linkedRequirement ? requirementDisplayName(linkedRequirement) : '未绑定')}</span></span>
                 <span class="ams-summary-chip"><strong>分享联系人</strong><span>${esc(shareSummary.recipient)}</span></span>
                 <span class="ams-summary-chip"><strong>负责跟进</strong><span>${esc(shareSummary.owner)}</span></span>
                 <span class="ams-summary-chip"><strong>发送台账</strong><span>${esc(shareSummary.send_count)}</span></span>
@@ -3248,6 +4048,13 @@ function bindProductEditor(input) {
         });
     });
 
+    document.getElementById('ams-quote-product-archive-entry')?.addEventListener('click', () => {
+        moduleState.productArchiveView = !moduleState.productArchiveView;
+        void withQuoteBusy(moduleState.productArchiveView ? '正在切换到已删除模板...' : '正在返回模板主列表...', async () => {
+            await renderQuoteProductsPage(input);
+        });
+    });
+
     document.getElementById('ams-quote-product-new')?.addEventListener('click', () => {
         moduleState.productLoadedId = '';
         moduleState.productEditor = createProductDraft({
@@ -3278,6 +4085,60 @@ function bindProductEditor(input) {
                 }, button, '正在读取模板详情、配置项和图片库。');
             } catch (error) {
                 input.showToast(error.message || '加载产品模板失败。', true);
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-product-archive]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            if (!window.confirm('删除后会从默认模板列表中隐藏，但不会删除已生成的报价单。确定继续吗？')) return;
+            try {
+                await withQuoteBusy('正在删除产品模板...', async () => {
+                    await archiveProductTemplate(input.user, button.dataset.productArchive);
+                    await renderQuoteProductsPage(input);
+                }, button, '删除会隐藏模板入口，但不会影响已经生成的报价单快照。');
+                input.showToast('产品模板已删除。');
+            } catch (error) {
+                input.showToast(error.message || '删除产品模板失败。', true);
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-product-restore]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                await withQuoteBusy('正在恢复产品模板...', async () => {
+                    await restoreProductTemplate(input.user, button.dataset.productRestore);
+                    await renderQuoteProductsPage(input);
+                }, button, '恢复后模板会重新出现在主列表和报价单新建入口中。');
+                input.showToast('产品模板已恢复。');
+            } catch (error) {
+                input.showToast(error.message || '恢复产品模板失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-quote-product-archive-current')?.addEventListener('click', async (event) => {
+        if (!window.confirm('删除后会从默认模板列表中隐藏，但不会删除已生成的报价单。确定继续吗？')) return;
+        await input.withButtonBusy(event.currentTarget, '删除中...', async () => {
+            try {
+                await archiveProductTemplate(input.user, moduleState.productEditor.id);
+                input.showToast('产品模板已删除。');
+                await renderQuoteProductsPage(input);
+            } catch (error) {
+                input.showToast(error.message || '删除产品模板失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-quote-product-restore-current')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '恢复中...', async () => {
+            try {
+                await restoreProductTemplate(input.user, moduleState.productEditor.id);
+                input.showToast('产品模板已恢复。');
+                await renderQuoteProductsPage(input);
+            } catch (error) {
+                input.showToast(error.message || '恢复产品模板失败。', true);
             }
         });
     });
@@ -3575,6 +4436,8 @@ export async function renderQuoteProductsPage(input) {
         moduleState.productEditor.brand_id = moduleState.brands[0].id;
     }
     currentProductBrandDraft();
+    const archiveView = moduleState.productArchiveView === true;
+    const visibleProductCount = filteredProducts().length;
     input.setPageHeader('报价系统 / 产品模板', '在品牌下维护标准产品模板，定义主配置、选配、默认汇率和有效期。');
     input.setContent(`
         <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-product-hero">
@@ -3611,10 +4474,14 @@ export async function renderQuoteProductsPage(input) {
                 </div>
             </div>
         </section>
+        <div class="ams-inline-actions" style="margin: 0 0 16px;">
+            <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-product-archive-entry">${archiveView ? '返回主列表' : `已删除列表（${archivedProductCount()}）`}</button>
+            <span class="ams-field-help">${archiveView ? '这里只显示已删除模板，可恢复继续使用。' : '默认只显示有效模板，已删除模板收纳在单独列表。'}</span>
+        </div>
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
                 <div class="ams-section-head">
-                    <div><h3>模板列表</h3><p>品牌筛选后共 ${filteredProducts().length} 个模板</p></div>
+                    <div><h3>${archiveView ? '已删除模板' : '模板列表'}</h3><p>品牌筛选后共 ${visibleProductCount} 个模板</p></div>
                 </div>
                 <div class="ams-field">
                     <label>品牌筛选</label>
@@ -3623,7 +4490,7 @@ export async function renderQuoteProductsPage(input) {
                         ${moduleState.brands.map((brand) => `<option value="${esc(brand.id)}" ${moduleState.productBrandFilter === brand.id ? 'selected' : ''}>${esc(brand.display_name)}</option>`).join('')}
                     </select>
                 </div>
-                <div class="ams-quote-list">${renderProductList()}</div>
+                <div class="ams-quote-list">${renderProductListCards()}</div>
             </aside>
             <section class="ams-card ams-quote-editor-panel ams-product-editor-panel">
                 <div class="ams-section-head">
@@ -3637,6 +4504,20 @@ export async function renderQuoteProductsPage(input) {
                         <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-product-save">保存模板</button>
                     </div>
                 </div>
+                ${
+                    moduleState.productEditor.id
+                        ? `
+                    <div class="ams-inline-actions">
+                        ${
+                            moduleState.productEditor.is_active === false
+                                ? '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-product-restore-current">恢复模板</button>'
+                                : '<button class="ams-btn ams-btn-danger" type="button" id="ams-quote-product-archive-current">删除模板</button>'
+                        }
+                        <span class="ams-field-help">${moduleState.productEditor.is_active === false ? '已删除模板默认不再出现在主列表和新建报价入口。' : '删除只会隐藏模板入口，不会删除已生成报价单。'}</span>
+                    </div>
+                `
+                        : ''
+                }
                 <div class="ams-direct-entry-banner">
                     <strong>真实模板页入口</strong>
                     <span>${moduleState.productEditor.id ? '点击上面的“打开真实模板页”，会进入原报价模板页面本体进行编辑。' : '先保存或选择一个已存在模板，再打开真实模板页。'}</span>
@@ -3763,7 +4644,14 @@ function bindInstanceEditor(input) {
     document.getElementById('ams-quote-instance-customer-select')?.addEventListener('change', (event) => {
         const customerId = event.currentTarget.value || '';
         moduleState.instanceEditor.customer_id = customerId;
-        if (!customerId) return;
+        const availableRequirements = instanceRequirementOptions(moduleState.instanceEditor);
+        if (!availableRequirements.some((item) => item.id === moduleState.instanceEditor.requirement_id)) {
+            moduleState.instanceEditor.requirement_id = '';
+        }
+        if (!customerId) {
+            void renderQuoteInstancesPage(input);
+            return;
+        }
         const customer = moduleState.customers.find((item) => item.id === customerId);
         if (!customer) return;
         moduleState.instanceEditor.customer_name = customer.company_name;
@@ -3775,6 +4663,19 @@ function bindInstanceEditor(input) {
         moduleState.instanceEditor.customer_snapshot = normalizeCustomerSnapshot(customer);
         moduleState.instanceEditor.share_config = syncInstanceShareConfig(moduleState.instanceEditor, { forceRecipient: true, forceNotes: true });
         void renderQuoteInstancesPage(input);
+    });
+
+    document.getElementById('ams-quote-instance-requirement-select')?.addEventListener('change', (event) => {
+        moduleState.instanceEditor.requirement_id = event.currentTarget.value || '';
+        void renderQuoteInstancesPage(input);
+    });
+
+    document.getElementById('ams-quote-instance-open-requirement')?.addEventListener('click', () => {
+        if (!moduleState.instanceEditor.requirement_id) {
+            input.showToast('当前报价单还没有绑定需求单。', true);
+            return;
+        }
+        window.location.assign(adminPageUrl('quote-requirements', { requirement: moduleState.instanceEditor.requirement_id }));
     });
 
     content.querySelectorAll('[data-instance-field]').forEach((node) => {
@@ -4216,6 +5117,445 @@ function bindCustomerEditor(input) {
             window.open(publicQuoteUrl(publicSlug), '_blank', 'noopener');
         });
     });
+
+    document.querySelectorAll('[data-customer-requirement-open]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const requirementId = button.dataset.customerRequirementOpen;
+            if (!requirementId) return;
+            window.location.assign(adminPageUrl('quote-requirements', { requirement: requirementId }));
+        });
+    });
+}
+
+function bindRequirementEditor(input) {
+    const content = document.getElementById('ams-content');
+    if (!content) return;
+
+    document.getElementById('ams-quote-requirement-search')?.addEventListener('input', (event) => {
+        moduleState.requirementSearch = event.currentTarget.value || '';
+        void renderQuoteRequirementsPage(input);
+    });
+
+    document.getElementById('ams-quote-requirement-status-filter')?.addEventListener('change', (event) => {
+        moduleState.requirementStatusFilter = event.currentTarget.value || 'all';
+        void renderQuoteRequirementsPage(input);
+    });
+
+    document.getElementById('ams-quote-requirement-new')?.addEventListener('click', () => {
+        const seededCustomer = moduleState.customers.find((item) => item.id === text(moduleState.requirementEditor?.customer_id || moduleState.customerLoadedId));
+        moduleState.requirementLoadedId = '';
+        moduleState.requirementEditor = createRequirementDraft({
+            customer_id: text(moduleState.requirementEditor?.customer_id || moduleState.customerLoadedId),
+            requester_company: seededCustomer?.company_name || '',
+            requester_name: seededCustomer?.contact_name || '',
+            requester_email: seededCustomer?.email || '',
+            requester_phone: seededCustomer?.phone || '',
+            country: seededCustomer?.country || '',
+        });
+        void renderQuoteRequirementsPage(input);
+    });
+
+    document.querySelectorAll('[data-requirement-edit]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            try {
+                await withQuoteBusy('正在加载需求获取单...', async () => {
+                    await fetchRequirementEditor(button.dataset.requirementEdit);
+                    await renderQuoteRequirementsPage(input);
+                }, button, '正在读取需求问卷、客户绑定和关联报价单。');
+            } catch (error) {
+                input.showToast(error.message || '加载需求获取单失败。', true);
+            }
+        });
+    });
+
+    content.querySelectorAll('[data-requirement-field]').forEach((node) => {
+        const apply = () => {
+            const field = node.dataset.requirementField;
+            if (!field) return;
+            moduleState.requirementEditor[field] = node.type === 'checkbox' ? Boolean(node.checked) : node.value;
+            if (field === 'customer_id') {
+                const customer = moduleState.customers.find((item) => item.id === text(moduleState.requirementEditor.customer_id));
+                if (customer) {
+                    if (!hasTextValue(moduleState.requirementEditor.requester_company)) moduleState.requirementEditor.requester_company = text(customer.company_name || customer.customer_name);
+                    if (!hasTextValue(moduleState.requirementEditor.requester_name)) moduleState.requirementEditor.requester_name = text(customer.contact_name);
+                    if (!hasTextValue(moduleState.requirementEditor.requester_email)) moduleState.requirementEditor.requester_email = text(customer.email);
+                    if (!hasTextValue(moduleState.requirementEditor.requester_phone)) moduleState.requirementEditor.requester_phone = text(customer.phone);
+                    if (!hasTextValue(moduleState.requirementEditor.country)) moduleState.requirementEditor.country = text(customer.country);
+                }
+            }
+        };
+        node.addEventListener('input', apply);
+        if (node.type === 'checkbox' || node.tagName === 'SELECT') {
+            node.addEventListener('change', () => {
+                apply();
+                if (node.dataset.requirementField === 'customer_id') void renderQuoteRequirementsPage(input);
+            });
+        }
+    });
+
+    content.querySelectorAll('[data-requirement-answer]').forEach((node) => {
+        const apply = () => {
+            const field = node.dataset.requirementAnswer;
+            if (!field) return;
+            moduleState.requirementEditor.answers[field] = node.value;
+        };
+        node.addEventListener('input', apply);
+        if (node.type === 'checkbox' || node.tagName === 'SELECT') node.addEventListener('change', apply);
+    });
+
+    content.querySelectorAll('[data-requirement-check]').forEach((node) => {
+        const apply = () => {
+            const field = node.dataset.requirementCheck;
+            if (!field) return;
+            const checked = [...content.querySelectorAll(`[data-requirement-check="${field}"]`)]
+                .filter((item) => item.checked)
+                .map((item) => item.value);
+            moduleState.requirementEditor.answers[field] = checked;
+        };
+        node.addEventListener('change', apply);
+    });
+
+    document.getElementById('ams-quote-requirement-save')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
+            try {
+                const saved = await saveRequirementDraft(input.user, moduleState.requirementEditor);
+                input.showToast('需求获取单已保存。');
+                await fetchRequirementEditor(saved.id);
+                await renderQuoteRequirementsPage(input);
+            } catch (error) {
+                input.showToast(error.message || '保存需求获取单失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-quote-requirement-copy-link')?.addEventListener('click', async () => {
+        if (!moduleState.requirementEditor?.public_slug || !moduleState.requirementEditor?.public_token) {
+            input.showToast('请先保存需求单，再复制客户需求链接。', true);
+            return;
+        }
+        const url = requirementPublicUrl(moduleState.requirementEditor.public_slug, moduleState.requirementEditor.public_token);
+        try {
+            await navigator.clipboard.writeText(url);
+            input.showToast('客户需求链接已复制。');
+        } catch (_error) {
+            input.showToast(url, false);
+        }
+    });
+
+    document.getElementById('ams-quote-requirement-open-link')?.addEventListener('click', () => {
+        if (!moduleState.requirementEditor?.public_slug || !moduleState.requirementEditor?.public_token) {
+            input.showToast('请先保存需求单，再打开公开需求页。', true);
+            return;
+        }
+        window.open(requirementPublicUrl(moduleState.requirementEditor.public_slug, moduleState.requirementEditor.public_token), '_blank', 'noopener');
+    });
+
+    document.getElementById('ams-quote-requirement-create-instance')?.addEventListener('click', async (event) => {
+        const productId = document.getElementById('ams-quote-requirement-product-select')?.value || '';
+        await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
+            try {
+                const savedRequirement = await saveRequirementDraft(input.user, moduleState.requirementEditor);
+                const instance = await createInstanceFromRequirement(input.user, savedRequirement.id, productId);
+                moduleState.requirementEditor = createRequirementDraft({
+                    ...savedRequirement,
+                    status: 'quoted',
+                });
+                await saveRequirementDraft(input.user, moduleState.requirementEditor);
+                input.showToast('已从需求获取单生成报价草稿。');
+                await fetchRequirementEditor(savedRequirement.id);
+                await renderQuoteRequirementsPage(input);
+                window.open(quoteEditorUrl('instance', instance.id), '_blank', 'noopener');
+            } catch (error) {
+                input.showToast(error.message || '从需求获取单生成报价失败。', true);
+            }
+        });
+    });
+
+    content.querySelectorAll('[data-requirement-product-select]').forEach((node) => {
+        node.addEventListener('change', () => {
+            moduleState.requirementProductSelection = node.value || '';
+            content.querySelectorAll('[data-requirement-product-select]').forEach((selectNode) => {
+                if (selectNode !== node) selectNode.value = moduleState.requirementProductSelection;
+            });
+        });
+    });
+
+    content.querySelectorAll('[data-requirement-create-instance]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            const productId = moduleState.requirementProductSelection || '';
+            await input.withButtonBusy(event.currentTarget, '鐢熸垚涓?..', async () => {
+                try {
+                    const savedRequirement = await saveRequirementDraft(input.user, moduleState.requirementEditor);
+                    const instance = await createInstanceFromRequirement(input.user, savedRequirement.id, productId);
+                    moduleState.requirementEditor = createRequirementDraft({
+                        ...savedRequirement,
+                        status: 'quoted',
+                    });
+                    await saveRequirementDraft(input.user, moduleState.requirementEditor);
+                    input.showToast('宸蹭粠闇€姹傝幏鍙栧崟鐢熸垚鎶ヤ环鑽夌銆?);
+                    await fetchRequirementEditor(savedRequirement.id);
+                    await renderQuoteRequirementsPage(input);
+                    window.open(quoteEditorUrl('instance', instance.id), '_blank', 'noopener');
+                } catch (error) {
+                    input.showToast(error.message || '浠庨渶姹傝幏鍙栧崟鐢熸垚鎶ヤ环澶辫触銆?, true);
+                }
+            });
+        });
+    });
+
+    document.querySelectorAll('[data-requirement-quote-open]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const instanceId = button.dataset.requirementQuoteOpen;
+            if (!instanceId) return;
+            window.open(quoteEditorUrl('instance', instanceId), '_blank', 'noopener');
+        });
+    });
+
+    document.querySelectorAll('[data-requirement-quote-public]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const publicSlug = button.dataset.requirementQuotePublic;
+            if (!publicSlug) return;
+            window.open(publicQuoteUrl(publicSlug), '_blank', 'noopener');
+        });
+    });
+}
+
+export async function renderQuoteRequirementsPage(input) {
+    try {
+        await ensureBaseData();
+    } catch (error) {
+        if (isQuoteSetupMissing(error)) {
+            renderQuoteSetupRequired(input, error);
+            return;
+        }
+        throw error;
+    }
+
+    const requestedRequirementId = readAdminPageParam('requirement');
+    if (requestedRequirementId) {
+        if (moduleState.requirements.some((item) => item.id === requestedRequirementId) && moduleState.requirementLoadedId !== requestedRequirementId) {
+            await fetchRequirementEditor(requestedRequirementId);
+        }
+        clearAdminPageParams('requirement');
+    }
+
+    if (!moduleState.requirementEditor) {
+        moduleState.requirementEditor = createRequirementDraft();
+    }
+
+    const currentRequirementExists = moduleState.requirementLoadedId && moduleState.requirements.some((item) => item.id === moduleState.requirementLoadedId);
+    if (moduleState.requirementLoadedId && !currentRequirementExists) {
+        moduleState.requirementLoadedId = '';
+        moduleState.requirementEditor = createRequirementDraft();
+    }
+    if (!moduleState.requirementLoadedId && !moduleState.requirementEditor?.id && moduleState.requirements[0]?.id) {
+        await fetchRequirementEditor(moduleState.requirements[0].id);
+    }
+
+    const requirement = moduleState.requirementEditor || createRequirementDraft();
+    const answers = normalizeRequirementAnswers(requirement.answers);
+    const currentCustomer = moduleState.customers.find((item) => item.id === requirement.customer_id) || null;
+    const quoteSummary = requirement.id ? summarizeRequirementQuotes(requirement.id) : summarizeRequirementQuotes('');
+    const requirementLink = requirement.id && requirement.public_slug && requirement.public_token
+        ? requirementPublicUrl(requirement.public_slug, requirement.public_token)
+        : '';
+    const canCreateQuote = requirementStatusReadyForQuote(requirement.status);
+    const linkLocked = requirementIsLocked(requirement.status);
+    const availableProducts = activeProducts();
+    if (!availableProducts.some((product) => product.id === moduleState.requirementProductSelection)) {
+        moduleState.requirementProductSelection = availableProducts[0]?.id || '';
+    }
+    const selectedRequirementProductId = moduleState.requirementProductSelection;
+
+    input.setPageHeader('报价系统 / 需求获取单', '先发客户公开需求链接，等客户提交后，再进入整理与报价流程。');
+    input.setContent(`
+        <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-instance-hero">
+            <div class="ams-hero-copy">
+                <p class="ams-eyebrow">Requirement Intake</p>
+                <h2>先发公开需求链接，再整理报价。</h2>
+                <p class="ams-hero-text">这里的需求单不是内部代填表，而是客户公开填写的唯一链接。你先绑定客户、保存需求单，再把链接发给客户；客户提交后，这一轮需求就成为后续报价的基线。</p>
+            </div>
+            <div class="ams-quick-actions ams-quote-instance-quick-actions">
+                <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
+                    <div class="ams-quick-link-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+                    <div class="ams-quick-link-body">
+                        <strong>客户公开需求链接</strong>
+                        <span>客户侧表单默认用下拉、多选和少量补充字段，尽量少写字。先确认矿机品牌、风冷 / 液冷、单机算力、单机功耗、数量和供电规模，再进入正式报价。</span>
+                        <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
+                            <input id="ams-quote-requirement-search" class="ams-input ams-quote-create-select" value="${esc(moduleState.requirementSearch)}" placeholder="搜索客户 / 国家 / 需求标题 / 联系人 / 品牌偏好">
+                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-requirement-new">新建需求单</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="ams-quote-layout">
+            <aside class="ams-card ams-quote-list-panel">
+                <div class="ams-section-head"><div><h3>需求单列表</h3><p>共 ${filteredRequirements().length} 份需求单</p></div></div>
+                <div class="ams-field">
+                    <label>状态筛选</label>
+                    <select id="ams-quote-requirement-status-filter" class="ams-select">
+                        <option value="all" ${moduleState.requirementStatusFilter === 'all' ? 'selected' : ''}>全部状态</option>
+                        ${selectOptionsMarkup(REQUIREMENT_STATUS_OPTIONS, moduleState.requirementStatusFilter)}
+                    </select>
+                </div>
+                <div class="ams-quote-list">${renderRequirementList()}</div>
+            </aside>
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${requirement.id ? '编辑需求获取单' : '新建需求获取单'}</h3>
+                        <p>后台在这里做客户绑定、公开链接发放、提交状态确认和报价衔接，不直接代替客户填写问卷。</p>
+                    </div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-requirement-save">保存需求单</button>
+                    </div>
+                </div>
+                <div class="ams-quote-meta-grid">
+                    <div class="ams-summary-chip"><strong>绑定客户</strong><span>${esc(customerDisplayName(currentCustomer || {}))}</span></div>
+                    <div class="ams-summary-chip"><strong>当前状态</strong><span>${esc(requirementStatusLabel(requirement.status))}</span></div>
+                    <div class="ams-summary-chip"><strong>公开链接</strong><span>${esc(requirementLink || '先保存后生成')}</span></div>
+                    <div class="ams-summary-chip"><strong>客户提交时间</strong><span>${esc(fmtDate(requirement.submitted_at))}</span></div>
+                    <div class="ams-summary-chip"><strong>关联报价</strong><span>${esc(quoteSummary.total_quotes)}</span></div>
+                    <div class="ams-summary-chip"><strong>更新时间</strong><span>${esc(fmtDate(requirement.updated_at))}</span></div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field">
+                        <label>绑定客户</label>
+                        <select class="ams-select" data-requirement-field="customer_id">
+                            <option value="">请选择客户档案</option>
+                            ${moduleState.customers.map((customer) => `<option value="${esc(customer.id)}" ${requirement.customer_id === customer.id ? 'selected' : ''}>${esc(customerDisplayName(customer))}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="ams-field"><label>需求标题</label><input class="ams-input" data-requirement-field="title" value="${esc(requirement.title)}" placeholder="例如：俄罗斯 200 台液冷矿机一体化需求"></div>
+                    <div class="ams-field">
+                        <label>状态</label>
+                        <select class="ams-select" data-requirement-field="status">${selectOptionsMarkup(REQUIREMENT_STATUS_OPTIONS, requirement.status)}</select>
+                    </div>
+                    <div class="ams-field">
+                        <label>需求类型</label>
+                        <select class="ams-select" data-requirement-field="requirement_type">${selectOptionsMarkup(REQUIREMENT_TYPE_OPTIONS, requirement.requirement_type)}</select>
+                    </div>
+                    <div class="ams-field"><label>国家 / 地区</label><input class="ams-input" data-requirement-field="country" value="${esc(requirement.country)}" placeholder="Russia"></div>
+                    <div class="ams-field"><label>客户公司</label><input class="ams-input" data-requirement-field="requester_company" value="${esc(requirement.requester_company)}" placeholder="Demo Mining"></div>
+                    <div class="ams-field"><label>联系人</label><input class="ams-input" data-requirement-field="requester_name" value="${esc(requirement.requester_name)}" placeholder="Allen"></div>
+                    <div class="ams-field"><label>邮箱</label><input class="ams-input" data-requirement-field="requester_email" value="${esc(requirement.requester_email)}" placeholder="customer@example.com"></div>
+                    <div class="ams-field"><label>WhatsApp / 电话</label><input class="ams-input" data-requirement-field="requester_phone" value="${esc(requirement.requester_phone)}" placeholder="+7 000 000 0000"></div>
+                    <div class="ams-field">
+                        <label>线索来源</label>
+                        <select class="ams-select" data-requirement-answer="source_channel">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.source_channel, answers.source_channel)}</select>
+                    </div>
+                </div>
+                <section class="ams-quote-block">
+                    <div class="ams-section-head"><div><h3>客户公开链接</h3><p>先保存需求单，再把唯一链接发给客户填写。客户提交后，公开页会自动锁定。</p></div></div>
+                    <div class="ams-site-field-grid ams-site-field-grid-wide">
+                        <div class="ams-field">
+                            <label>公开需求链接</label>
+                            <input class="ams-input" value="${esc(requirementLink)}" readonly placeholder="先保存需求单后生成唯一链接">
+                            <div class="ams-field-help">${requirement.id ? '链接已经绑定到当前需求单和客户，可直接发送。' : '先保存需求单，系统才会生成唯一 req/token。'}</div>
+                        </div>
+                        <div class="ams-field">
+                            <label>链接状态</label>
+                            <div class="ams-field-help ams-quote-ledger-note ${linkLocked ? '' : 'is-warning'}">
+                                ${linkLocked ? '客户已提交，公开需求页现在是锁定只读状态。' : '客户尚未提交，公开需求页仍可继续填写。'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-requirement-copy-link" ${requirementLink ? '' : 'disabled'}>复制客户需求链接</button>
+                        <button class="ams-btn ams-btn-warning" type="button" id="ams-quote-requirement-open-link" ${requirementLink ? '' : 'disabled'}>打开公开需求页</button>
+                    </div>
+                </section>
+                <section class="ams-quote-block">
+                    <div class="ams-section-head"><div><h3>客户问卷内容</h3><p>后台这里主要用于查看和必要时预置默认值；正式基线以客户公开提交为准。</p></div></div>
+                    <div class="ams-site-field-grid ams-site-field-grid-wide">
+                        <div class="ams-field">
+                            <label>部署方式</label>
+                            <select class="ams-select" data-requirement-answer="deployment_mode">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.deployment_mode, answers.deployment_mode)}</select>
+                        </div>
+                        <div class="ams-field">
+                            <label>单机算力范围</label>
+                            <select class="ams-select" data-requirement-answer="miner_hashrate_band">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_hashrate_band, answers.miner_hashrate_band)}</select>
+                        </div>
+                        <div class="ams-field">
+                            <label>单机功耗范围</label>
+                            <select class="ams-select" data-requirement-answer="miner_power_band">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_power_band, answers.miner_power_band)}</select>
+                        </div>
+                        <div class="ams-field">
+                            <label>矿机数量范围</label>
+                            <select class="ams-select" data-requirement-answer="miner_quantity_band">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_quantity_band, answers.miner_quantity_band)}</select>
+                        </div>
+                        <div class="ams-field">
+                            <label>电压 / 频率</label>
+                            <select class="ams-select" data-requirement-answer="voltage_frequency">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.voltage_frequency, answers.voltage_frequency)}</select>
+                        </div>
+                    </div>
+                    <div class="ams-field">
+                        <label>矿机品牌</label>
+                        ${requirementCheckboxGroup('miner_brands', REQUIREMENT_MULTI_OPTIONS.miner_brands, answers.miner_brands)}
+                        <div class="ams-field-help">可多选；若客户暂时不确定，保留“其他 / 待确认”即可。</div>
+                    </div>
+                    <div class="ams-field">
+                        <label>矿机冷却方式</label>
+                        ${requirementCheckboxGroup('miner_cooling', REQUIREMENT_MULTI_OPTIONS.miner_cooling, answers.miner_cooling)}
+                    </div>
+                </section>
+                <section class="ams-quote-block">
+                    <div class="ams-section-head"><div><h3>交付与现场条件</h3><p>继续用少量选择题确认约束条件，避免后续报价依据反复变化。</p></div></div>
+                    <div class="ams-site-field-grid ams-site-field-grid-wide">
+                        <div class="ams-field">
+                            <label>供电规模</label>
+                            <select class="ams-select" data-requirement-answer="power_capacity_band">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.power_capacity_band, answers.power_capacity_band)}</select>
+                        </div>
+                        <div class="ams-field">
+                            <label>部署偏好</label>
+                            <select class="ams-select" data-requirement-answer="container_preference">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.container_preference, answers.container_preference)}</select>
+                        </div>
+                        <div class="ams-field">
+                            <label>噪音要求</label>
+                            <select class="ams-select" data-requirement-answer="silent_requirement">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.silent_requirement, answers.silent_requirement)}</select>
+                        </div>
+                        <div class="ams-field">
+                            <label>预算区间</label>
+                            <select class="ams-select" data-requirement-answer="budget_band">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.budget_band, answers.budget_band)}</select>
+                        </div>
+                        <div class="ams-field">
+                            <label>期望周期</label>
+                            <select class="ams-select" data-requirement-answer="timeline_band">${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.timeline_band, answers.timeline_band)}</select>
+                        </div>
+                    </div>
+                    <div class="ams-field">
+                        <label>认证 / 合规要求</label>
+                        ${requirementCheckboxGroup('certification_needs', REQUIREMENT_MULTI_OPTIONS.certification_needs, answers.certification_needs)}
+                    </div>
+                </section>
+                <div class="ams-field">
+                    <label>客户补充</label>
+                    <textarea class="ams-textarea" rows="3" data-requirement-answer="extra_notes" placeholder="只保留必须记录的额外说明，例如特殊站点条件、付款方式、指定矿机型号。">${esc(answers.extra_notes)}</textarea>
+                </div>
+                <div class="ams-field">
+                    <label>内部备注</label>
+                    <textarea class="ams-textarea" rows="3" data-requirement-field="notes" placeholder="记录内部判断、下一步动作和推荐方向。">${esc(requirement.notes)}</textarea>
+                </div>
+                <section class="ams-quote-block">
+                    <div class="ams-section-head"><div><h3>生成报价</h3><p>只有客户已提交后的需求单才能进入报价链路，避免报价依据反复变化。</p></div></div>
+                    <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
+                        <select id="ams-quote-requirement-product-select" class="ams-select ams-quote-create-select" data-requirement-product-select>
+                            <option value="">请选择产品模板</option>
+                            ${availableProducts.map((product) => `<option value="${esc(product.id)}" ${selectedRequirementProductId === product.id ? 'selected' : ''}>${esc(brandLabelById(product.brand_id))} / ${esc(pickLocalized(product.public_title, product.default_lang, product.slug))}</option>`).join('')}
+                        </select>
+                        <button class="ams-btn ams-btn-warning" type="button" id="ams-quote-requirement-create-instance" ${canCreateQuote ? '' : 'disabled'}>生成报价草稿并打开真实报价页</button>
+                    </div>
+                    <div class="ams-field-help">${canCreateQuote ? '生成后会把客户信息、需求摘要和问卷备注自动带入报价单草稿。' : '当前还没收到客户正式提交，暂不允许生成报价。'}</div>
+                </section>
+                <section class="ams-quote-block">
+                    <div class="ams-section-head"><div><h3>关联报价单</h3><p>这里聚合从当前需求单派生的全部报价草稿和已发布报价。</p></div></div>
+                    <div class="ams-customer-quote-list">${requirement.id ? requirementQuoteListMarkup(requirement.id) : '<div class="ams-empty">先保存需求单，再生成对应报价。</div>'}</div>
+                </section>
+            </section>
+        </section>
+    `);
+    bindRequirementEditor(input);
 }
 
 export async function renderQuoteInstancesPage(input) {
@@ -4228,8 +5568,19 @@ export async function renderQuoteInstancesPage(input) {
         }
         throw error;
     }
+
+    const requestedInstanceId = readAdminPageParam('instance');
+    if (requestedInstanceId) {
+        if (moduleState.instances.some((item) => item.id === requestedInstanceId) && moduleState.instanceLoadedId !== requestedInstanceId) {
+            await fetchInstanceEditor(requestedInstanceId);
+        }
+        clearAdminPageParams('instance');
+    }
+
     input.setPageHeader('报价系统 / 报价单管理', '从产品模板生成客户报价单草稿，编辑后发布，生成客户独立链接。');
     const archiveView = moduleState.instanceArchiveView === true;
+    const linkedRequirement = requirementById(moduleState.instanceEditor?.requirement_id);
+    const availableRequirements = instanceRequirementOptions(moduleState.instanceEditor);
     if (!archiveView && moduleState.instanceStatusFilter === 'archived') {
         moduleState.instanceStatusFilter = 'all';
     }
@@ -4251,7 +5602,7 @@ export async function renderQuoteInstancesPage(input) {
                         <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
                             <select id="ams-quote-instance-product-select" class="ams-select ams-quote-create-select">
                                 <option value="">请选择产品模板</option>
-                                ${moduleState.products.map((product) => `<option value="${esc(product.id)}">${esc(brandLabelById(product.brand_id))} / ${esc(pickLocalized(product.public_title, product.default_lang, product.slug))}</option>`).join('')}
+                                ${activeProducts().map((product) => `<option value="${esc(product.id)}">${esc(brandLabelById(product.brand_id))} / ${esc(pickLocalized(product.public_title, product.default_lang, product.slug))}</option>`).join('')}
                             </select>
                             <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-instance-create-from-product">生成草稿</button>
                         </div>
@@ -4306,14 +5657,13 @@ export async function renderQuoteInstancesPage(input) {
                 <div class="ams-section-head">
                     <div>
                         <h3>${moduleState.instanceEditor.id ? '编辑报价单' : '选择一份报价单'}</h3>
-                        <p>客户页只读取已发布快照。草稿变更只有再次发布后才会生效。</p>
+                        <p>这里主要做报价单基础管理；具体文案、价格和发布动作请进入真实报价页处理。</p>
                     </div>
                     <div class="ams-row-actions">
                         <button class="ams-btn ams-btn-warning" type="button" id="ams-open-instance-visual-editor" ${moduleState.instanceEditor.id ? '' : 'disabled'}>打开真实报价页</button>
                         <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-preview">预览客户页</button>
                         <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-copy-link">复制客户链接</button>
                         <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-instance-save">保存草稿</button>
-                        <button class="ams-btn ams-btn-warning" type="button" id="ams-quote-instance-publish">发布</button>
                     </div>
                 </div>
                 <div class="ams-direct-entry-banner">
@@ -4326,6 +5676,7 @@ export async function renderQuoteInstancesPage(input) {
                     <div class="ams-quote-meta-grid">
                         <div class="ams-summary-chip"><strong>状态</strong><span>${statusPill(moduleState.instanceEditor.status)}</span></div>
                         <div class="ams-summary-chip"><strong>客户档案</strong><span>${esc(customerDisplayName(moduleState.customers.find((item) => item.id === moduleState.instanceEditor.customer_id) || buildInstanceCustomerSnapshot(moduleState.instanceEditor)))}</span></div>
+                        <div class="ams-summary-chip"><strong>需求单</strong><span>${esc(linkedRequirement ? requirementDisplayName(linkedRequirement) : '未绑定')}</span></div>
                         <div class="ams-summary-chip"><strong>公开链接</strong><span>${esc(publicQuoteUrl(moduleState.instanceEditor.public_slug))}</span></div>
                         <div class="ams-summary-chip"><strong>预览链接</strong><span>${esc(previewQuoteUrl(moduleState.instanceEditor.id))}</span></div>
                         <div class="ams-summary-chip"><strong>最近发布时间</strong><span>${esc(fmtDate(moduleState.instanceEditor.published_at))}</span></div>
@@ -4340,12 +5691,23 @@ export async function renderQuoteInstancesPage(input) {
                                 ${moduleState.customers.map((customer) => `<option value="${esc(customer.id)}" ${moduleState.instanceEditor.customer_id === customer.id ? 'selected' : ''}>${esc(customerDisplayName(customer))}${customer.email ? ` · ${esc(customer.email)}` : ''}</option>`).join('')}
                             </select>
                         </div>
+                        <div class="ams-field">
+                            <label>关联需求单</label>
+                            <select class="ams-select" id="ams-quote-instance-requirement-select">
+                                <option value="">未绑定需求单</option>
+                                ${availableRequirements.map((requirement) => `<option value="${esc(requirement.id)}" ${moduleState.instanceEditor.requirement_id === requirement.id ? 'selected' : ''}>${esc(requirementDisplayName(requirement))}</option>`).join('')}
+                            </select>
+                            <div class="ams-field-help">${moduleState.instanceEditor.customer_id ? '优先显示当前客户名下需求单。' : '先绑定客户后，这里会收窄到该客户对应需求单。'}</div>
+                        </div>
                         <div class="ams-field"><label>客户公司</label><input class="ams-input" data-instance-field="customer_name" value="${esc(moduleState.instanceEditor.customer_name)}" placeholder="Demo Customer"></div>
                         <div class="ams-field"><label>联系人</label><input class="ams-input" data-instance-field="receiver_name" value="${esc(moduleState.instanceEditor.receiver_name)}" placeholder="Receiver"></div>
                         <div class="ams-field"><label>客户邮箱</label><input class="ams-input" data-instance-field="receiver_email" value="${esc(moduleState.instanceEditor.receiver_email)}" placeholder="customer@example.com"></div>
                         <div class="ams-field"><label>客户电话</label><input class="ams-input" data-instance-field="customer_phone" value="${esc(moduleState.instanceEditor.customer_phone)}" placeholder="+7 000 000 0000"></div>
                         <div class="ams-field"><label>国家/地区</label><input class="ams-input" data-instance-field="customer_country" value="${esc(moduleState.instanceEditor.customer_country)}" placeholder="Russia"></div>
                         <div class="ams-field"><label>有效期（小时）</label><input class="ams-input" type="number" min="1" step="1" data-instance-field="validity_hours" value="${esc(moduleState.instanceEditor.validity_hours)}"></div>
+                    </div>
+                    <div class="ams-inline-actions ams-inline-actions-compact">
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-quote-instance-open-requirement" ${linkedRequirement ? '' : 'disabled'}>打开关联需求单</button>
                     </div>
                     <div class="ams-field">
                         <label>客户备注</label>
@@ -4418,6 +5780,14 @@ export async function renderQuoteCustomersPage(input) {
         throw error;
     }
 
+    const requestedCustomerId = readAdminPageParam('customer');
+    if (requestedCustomerId) {
+        if (moduleState.customers.some((item) => item.id === requestedCustomerId) && moduleState.customerLoadedId !== requestedCustomerId) {
+            await fetchCustomerEditor(requestedCustomerId);
+        }
+        clearAdminPageParams('customer');
+    }
+
     if (!moduleState.customerEditor) {
         moduleState.customerEditor = createCustomerDraft();
     }
@@ -4436,6 +5806,7 @@ export async function renderQuoteCustomersPage(input) {
 
     const activeCustomerId = text(moduleState.customerLoadedId || moduleState.customerEditor?.id);
     const quoteSummary = activeCustomerId ? summarizeCustomerQuotes(activeCustomerId) : summarizeCustomerQuotes('');
+    const requirementSummary = activeCustomerId ? summarizeCustomerRequirements(activeCustomerId) : summarizeCustomerRequirements('');
     input.setPageHeader('报价系统 / 客户洞察', '按客户查看关联报价单、浏览记录、分享动作，并维护客户主档信息。');
     input.setContent(`
         <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-instance-hero">
@@ -4475,6 +5846,7 @@ export async function renderQuoteCustomersPage(input) {
                 </div>
                 <div class="ams-quote-meta-grid">
                     <div class="ams-summary-chip"><strong>客户名称</strong><span>${esc(customerDisplayName(moduleState.customerEditor || {}))}</span></div>
+                    <div class="ams-summary-chip"><strong>关联需求单</strong><span>${esc(requirementSummary.total_requirements)}</span></div>
                     <div class="ams-summary-chip"><strong>关联报价单</strong><span>${esc(quoteSummary.total_quotes)}</span></div>
                     <div class="ams-summary-chip"><strong>创建时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.created_at))}</span></div>
                     <div class="ams-summary-chip"><strong>更新时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.updated_at))}</span></div>
