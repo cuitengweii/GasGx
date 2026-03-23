@@ -2915,7 +2915,7 @@ export async function renderQuoteBrandsPage(input) {
                 <div class="ams-section-head"><div><h3>品牌列表</h3><p>共 ${moduleState.brands.length} 个品牌</p></div></div>
                 <div class="ams-quote-list">${renderBrandList()}</div>
             </aside>
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+            <section class="ams-card ams-quote-editor-panel ams-brand-editor-panel">
                 <div class="ams-section-head">
                     <div>
                         <h3>${moduleState.brandEditor.id ? '编辑品牌' : '新建品牌'}</h3>
@@ -3359,7 +3359,7 @@ export async function renderQuoteProductsPage(input) {
                 </div>
                 <div class="ams-quote-list">${renderProductList()}</div>
             </aside>
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+            <section class="ams-card ams-quote-editor-panel ams-product-editor-panel">
                 <div class="ams-section-head">
                     <div>
                         <h3>${moduleState.productEditor.id ? '编辑产品模板' : '新建产品模板'}</h3>
@@ -4002,7 +4002,7 @@ export async function renderQuoteInstancesPage(input) {
                 </div>
                 <div class="ams-quote-list">${renderInstanceList()}</div>
             </aside>
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+            <section class="ams-card ams-quote-editor-panel ams-customer-editor-panel">
                 <div class="ams-section-head">
                     <div>
                         <h3>${moduleState.instanceEditor.id ? '编辑报价单' : '选择一份报价单'}</h3>
