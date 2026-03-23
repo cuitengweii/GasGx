@@ -206,6 +206,8 @@
 - Quote product-template admin now exposes a reusable public template library based on the real `vman` and `minerpower` product data instead of relying on a brittle legacy bootstrap path.
 - Brand management now exposes a dedicated default-link editor block so operators can see and edit the brand-level outbound quote slug without hunting through lower form sections.
 - Product-template save now falls back to `product_code` or `slug` when `public_title` is still empty, so copy-template flows no longer fail on a hidden "at least one product title" validation path.
+- Product-template admin now surfaces the customer-facing product title, page-header copy, and footer copy in a dedicated upper-half "publish copy" panel instead of burying them inside the lower visual editor.
+- Brand default-link management now supports a published-quote picker with optional manual slug override, while still persisting a single effective `default_quote_slug`.
 
 ### Effective behaviors
 
@@ -214,6 +216,9 @@
   - `MinerPower`: integrated miner-power-container template family
 - Copying a public template into the current brand now preserves the target brand identity and generates a safe product slug for the destination brand instead of reusing the source brand identity.
 - The product-template page hero and import controls were compacted so template selection no longer consumes most of the screen above the actual editor.
+- Product-template editing now starts with supplier / sender metadata plus localized publish-copy fields, so operators can confirm the customer-visible title and brand copy before touching rates or line items.
+- The product visual editor header now acts as a summary card for publish-copy state, while the editable localized fields live in the dedicated upper copy panel.
+- Brand default-link editing now defaults to a brand-scoped published quote selection, and only falls back to a typed slug when operators explicitly use manual override.
 - Brand short-name edits now sync the display name during the same edit session unless the operator explicitly diverges the display name.
 - The dedicated brand default-link panel is forced visible even under older shared panel CSS rules that previously hid non-instance editor blocks.
 - Product-template and brand editor panes are no longer hidden by quote-instance-only layout CSS classes.
@@ -225,15 +230,17 @@
 - Added a visible default-link editor for brands and corrected the CSS conflict that originally hid it after deployment.
 - Fixed copy-template follow-up editing by removing instance-only hidden-panel CSS from brand/product admin pages.
 - Removed the save blocker where product templates required a hidden localized title field by auto-deriving `public_title` from `product_code` or `slug`.
+- Moved product-template publish-copy inputs to the top of the editor, including `public_title`, shared brand `overview_title`, and shared brand `footer_note`.
+- Replaced the brand default-link free-text flow with a published-quote picker plus manual override, including an explicit "current effective slug" summary.
 
 ### Unfinished
 
 - The public template library still assumes only two canonical families; there is not yet a first-class "template family" entity or tagging model in the database.
-- The brand default-link editor is still a free-text slug field, not yet a picker tied to published quote instances or product templates.
-- Product-template editing still has hidden localized content areas lower in the page; the UI now saves safely, but the title/source fields are not yet surfaced clearly enough for operators.
+- The published-quote picker still stores only the final effective slug; the admin schema does not yet preserve whether the slug came from picker selection or manual override as separate metadata.
+- Product-template publish-copy editing is now surfaced near the top, but the remaining UI copy field groups are still split between the publish-copy panel and the lower visual editor rather than a full property-panel architecture.
 
 ### Next Step
 
-1. Surface product title and key localized fields near the top of the product-template form so operators can see what customer-facing text will be published.
-2. Convert the brand default-link editor from free-text slug entry into a picker with optional manual override, sourced from the brand's published quote instances.
-3. Generalize the public-template library into an explicit template-family model so future brands are not hard-coded around only `vman` and `minerpower`.
+1. Generalize the public-template library into an explicit template-family model so future brands are not hard-coded around only `vman` and `minerpower`.
+2. Decide whether brand default-link source-of-truth needs structured metadata beyond `default_quote_slug`, such as picker source instance id vs manual override marker.
+3. Continue collapsing lower visual-editor copy controls into a more explicit top-level property-panel workflow so publish-copy, rates, and section editing each have a clearer home.

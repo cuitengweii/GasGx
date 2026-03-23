@@ -65,11 +65,13 @@ const moduleState = {
     instanceLoadedId: '',
     customerLoadedId: '',
     customerSearch: '',
+    customerCreateMode: false,
     brandDisplayNameTouched: false,
     brandDefaultLinkTouched: false,
     productBrandFilter: 'all',
     instanceBrandFilter: 'all',
     instanceStatusFilter: 'all',
+    instanceArchiveView: false,
 };
 
 const quoteBusyState = {
@@ -89,12 +91,12 @@ const SEND_STATUS_ORDER = {
 
 const PUBLIC_TEMPLATE_LIBRARY = Object.freeze({
     vman: {
-        label: 'VMAN / 独立发电模板',
+        label: 'VMAN / 独立发电产品模板',
         hint: '独立燃气发电机组模板，适合标准发电产品线。',
         order: 10,
     },
     minerpower: {
-        label: 'MinerPower / 一体化产品模板',
+        label: 'MinerPower / 一体化产品模版',
         hint: '矿电一体和集装箱模板，适合整机集成产品线。',
         order: 20,
     },
@@ -853,6 +855,7 @@ async function fetchCustomerEditor(customerId) {
         moduleState.customerEditor = createCustomerDraft();
         moduleState.customerEvents = [];
         moduleState.customerSends = [];
+        moduleState.customerCreateMode = true;
         return moduleState.customerEditor;
     }
     const { data, error } = await client.from(TABLE_CUSTOMERS).select('*').eq('id', customerId).single();
@@ -863,6 +866,7 @@ async function fetchCustomerEditor(customerId) {
     ]);
     moduleState.customerLoadedId = customerId;
     moduleState.customerEditor = createCustomerDraft(data);
+    moduleState.customerCreateMode = false;
     return moduleState.customerEditor;
 }
 
@@ -1227,6 +1231,7 @@ async function saveCustomerDraft(user, draft) {
     await fetchCustomerRows();
     moduleState.customerLoadedId = text(saved?.id);
     moduleState.customerEditor = createCustomerDraft(saved);
+    moduleState.customerCreateMode = false;
     return moduleState.customerEditor;
 }
 
@@ -1800,9 +1805,15 @@ function filteredProducts() {
 function filteredInstances() {
     return moduleState.instances.filter((item) => {
         if (moduleState.instanceBrandFilter !== 'all' && item.brand_id !== moduleState.instanceBrandFilter) return false;
+        if (moduleState.instanceArchiveView) return item.status === 'archived';
+        if (item.status === 'archived') return false;
         if (moduleState.instanceStatusFilter !== 'all' && item.status !== moduleState.instanceStatusFilter) return false;
         return true;
     });
+}
+
+function archivedInstanceCount() {
+    return moduleState.instances.filter((item) => item.status === 'archived').length;
 }
 
 function filteredCustomers() {
@@ -1866,6 +1877,41 @@ function currentProductBrandDraft() {
 function productLabelById(productId) {
     const product = moduleState.products.find((item) => item.id === productId);
     return pickLocalized(product?.public_title, product?.default_lang || DEFAULT_LANG, '--');
+}
+
+function publishedBrandInstances(brandId = '') {
+    return moduleState.instances
+        .filter((item) => text(item.brand_id) === text(brandId) && text(item.status) === 'published' && text(item.public_slug))
+        .sort((left, right) => {
+            const rightStamp = text(right.published_at || right.updated_at);
+            const leftStamp = text(left.published_at || left.updated_at);
+            return rightStamp.localeCompare(leftStamp);
+        });
+}
+
+function publishedBrandInstanceLabel(instance = {}) {
+    const productTitle = text(productLabelById(instance.product_id), 'Untitled product');
+    const customerLabel = text(instance.customer_name || instance.receiver_name || instance.receiver_email, 'Unnamed quote');
+    return `${productTitle} · ${customerLabel} · ${text(instance.public_slug)}`;
+}
+
+function brandDefaultLinkContext(brandDraft = {}) {
+    const published = publishedBrandInstances(brandDraft.id);
+    const current = text(brandDraft.default_quote_slug);
+    const matched = published.find((item) => text(item.public_slug) === current) || null;
+    const pickerValue = matched ? current : text(published[0]?.public_slug);
+    const selectedInstance = matched || published.find((item) => text(item.public_slug) === pickerValue) || null;
+    const overrideValue = current && !matched ? current : '';
+    const effectiveSlug = text(current || pickerValue);
+    const effectiveMode = overrideValue ? '手动覆盖' : effectiveSlug ? '已发布报价' : '未设置';
+    return {
+        published,
+        pickerValue,
+        overrideValue,
+        selectedInstance,
+        effectiveSlug,
+        effectiveMode,
+    };
 }
 
 async function ensureBaseData() {
@@ -2251,6 +2297,121 @@ function quoteUiTextMarkup(prefix, uiText = {}) {
     `;
 }
 
+function productBrandLocalizedFieldGroup(field, label, value = {}) {
+    const localized = normalizeLocalizedText(value);
+    return `
+        <div class="ams-quote-field-card">
+            <div class="ams-quote-field-card-head">
+                <strong>${esc(label)}</strong>
+                <span>品牌共享文案</span>
+            </div>
+            <div class="ams-field">
+                <label>中文</label>
+                <textarea class="ams-textarea ams-quote-textarea" data-product-brand-i18n="${esc(field)}" data-lang="zh">${esc(localized.zh || '')}</textarea>
+                <div class="ams-field-help">EN / RU 留空时会沿用中文内容。</div>
+            </div>
+            <details class="ams-locale-details">
+                <summary>可选：多语言覆盖</summary>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    ${['en', 'ru']
+                        .map(
+                            (lang) => `
+                                <div class="ams-field">
+                                    <label>${lang.toUpperCase()}</label>
+                                    <textarea class="ams-textarea ams-quote-textarea" data-product-brand-i18n="${esc(field)}" data-lang="${esc(lang)}">${esc(localized[lang] || '')}</textarea>
+                                </div>
+                            `,
+                        )
+                        .join('')}
+                </div>
+            </details>
+        </div>
+    `;
+}
+
+function productPublishCopyPanelMarkup(product, brandDraft = {}) {
+    const normalized = createProductDraft(product);
+    const brand = createBrandDraft(brandDraft);
+    return `
+        <section class="ams-quote-block ams-quote-product-copy-panel">
+            <div class="ams-section-head">
+                <div>
+                    <h3>发布文案</h3>
+                    <p>先把客户会直接看到的标题、页头和品牌落款处理完，再往下维护汇率、配置区块和明细行。</p>
+                </div>
+            </div>
+            <div class="ams-site-field-grid ams-site-field-grid-wide">
+                <div class="ams-field">
+                    <label>供应商</label>
+                    <input class="ams-input" data-product-brand-field="supplier_name" value="${esc(brand.supplier_name)}" placeholder="VMAN Engineering">
+                </div>
+                <div class="ams-field">
+                    <label>发件邮箱</label>
+                    <input class="ams-input" data-product-brand-field="sender_email" value="${esc(brand.sender_email)}" placeholder="sales@example.com">
+                </div>
+                <div class="ams-field">
+                    <label>邮件主题署名</label>
+                    <input class="ams-input" data-product-brand-field="subject_name" value="${esc(brand.subject_name)}" placeholder="VMAN Engineering">
+                </div>
+            </div>
+            <div class="ams-quote-product-copy-grid">
+                ${localizedFieldGroup('product:public_title', '产品标题', normalized.public_title)}
+                ${productBrandLocalizedFieldGroup('overview_title', '页面页头标题', brand.overview_title)}
+                ${productBrandLocalizedFieldGroup('footer_note', '页脚说明', brand.footer_note)}
+            </div>
+        </section>
+    `;
+}
+
+function brandDefaultLinkPanelMarkup(brandDraft = {}) {
+    const context = brandDefaultLinkContext(brandDraft);
+    const selectedHint = context.selectedInstance
+        ? `${publishedBrandInstanceLabel(context.selectedInstance)} · 发布于 ${fmtDate(context.selectedInstance.published_at || context.selectedInstance.updated_at)}`
+        : context.published.length
+            ? '请选择一个已发布报价作为品牌默认入口。'
+            : '当前品牌还没有已发布报价，可先手动覆盖。';
+    return `
+        <div class="ams-quote-block ams-brand-default-link-panel">
+            <div class="ams-section-head">
+                <div>
+                    <h3>默认链接</h3>
+                    <p>优先从当前品牌的已发布报价中选择默认入口；如需特殊跳转，可再手动覆盖 slug。</p>
+                </div>
+                <div class="ams-row-actions">
+                    <button class="ams-btn ams-btn-muted" type="button" id="ams-brand-default-link-autofill" ${context.published.length ? '' : 'disabled'}>带入最新已发布</button>
+                    <button class="ams-btn ams-btn-muted" type="button" id="ams-brand-default-link-clear-override">清除覆盖</button>
+                </div>
+            </div>
+            <div class="ams-brand-default-link-row">
+                <div class="ams-field">
+                    <label>已发布报价</label>
+                    <select class="ams-select" data-brand-default-picker ${context.published.length ? '' : 'disabled'}>
+                        <option value="">${context.published.length ? '请选择已发布报价' : '当前品牌暂无已发布报价'}</option>
+                        ${context.published
+                            .map(
+                                (instance) => `
+                                    <option value="${esc(instance.public_slug)}" ${context.pickerValue === text(instance.public_slug) ? 'selected' : ''}>${esc(publishedBrandInstanceLabel(instance))}</option>
+                                `,
+                            )
+                            .join('')}
+                    </select>
+                    <div class="ams-field-help" data-brand-default-picker-hint>${esc(selectedHint)}</div>
+                </div>
+                <div class="ams-field">
+                    <label>手动覆盖 slug</label>
+                    <input class="ams-input" data-brand-default-override value="${esc(context.overrideValue)}" placeholder="${esc(context.pickerValue || 'quote-public-slug')}">
+                    <div class="ams-field-help">留空时跟随上面的已发布报价；填写后优先使用这里。</div>
+                </div>
+                <div class="ams-brand-default-link-meta">
+                    <strong>当前生效</strong>
+                    <span data-brand-default-effective>${esc(context.effectiveSlug || '--')}</span>
+                    <small class="ams-brand-default-link-status" data-brand-default-mode>${esc(context.effectiveMode)}</small>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function productVisualEditorMarkup(product, brandDraft = {}) {
     const normalized = createProductDraft(product);
     const brand = createBrandDraft(brandDraft);
@@ -2319,6 +2480,69 @@ function productVisualEditorMarkup(product, brandDraft = {}) {
                         <div class="ams-field">
                             <label>页脚说明</label>
                             <textarea class="ams-textarea ams-quote-textarea" rows="4" data-product-brand-i18n="footer_note" data-lang="zh">${esc(brand.footer_note?.zh || '')}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="ams-quote-visual-sections">
+                    ${sections.map((section) => visualSectionEditorMarkup('product', section, normalized.items)).join('')}
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function productVisualEditorSurfaceMarkup(product, brandDraft = {}) {
+    const normalized = createProductDraft(product);
+    const brand = createBrandDraft(brandDraft);
+    const rates = normalizeRates(normalized.default_rates);
+    const sections = normalizeSectionConfig(normalized.section_config);
+    const overviewTitle = pickLocalized(brand.overview_title, DEFAULT_LANG, '未设置页头标题');
+    const productTitle = pickLocalized(normalized.public_title, normalized.default_lang, normalized.product_code || normalized.slug || '未设置产品标题');
+    const footerNote = pickLocalized(brand.footer_note, DEFAULT_LANG, '未设置页脚说明');
+    return `
+        <section class="ams-quote-visual-shell ams-instance-visual-shell" id="ams-product-visual-editor">
+            <div class="ams-quote-visual-stage">
+                <div class="ams-quote-visual-header">
+                    <div class="ams-quote-visual-title-panel ams-quote-visual-title-panel-static">
+                        <span class="ams-quote-visual-kicker">已发布页头摘要</span>
+                        <strong class="ams-quote-visual-preview-title">${esc(overviewTitle)}</strong>
+                        <div class="ams-quote-visual-preview-meta">
+                            <div class="ams-quote-visual-preview-chip">
+                                <strong>产品标题</strong>
+                                <span>${esc(productTitle)}</span>
+                            </div>
+                            <div class="ams-quote-visual-preview-chip">
+                                <strong>供应商</strong>
+                                <span>${esc(text(brand.supplier_name, '--'))}</span>
+                            </div>
+                            <div class="ams-quote-visual-preview-chip">
+                                <strong>发件邮箱</strong>
+                                <span>${esc(text(brand.sender_email, '--'))}</span>
+                            </div>
+                            <div class="ams-quote-visual-preview-chip">
+                                <strong>页脚说明</strong>
+                                <span>${esc(footerNote)}</span>
+                            </div>
+                        </div>
+                        <div class="ams-field-help">标题、多语言页头和品牌落款已前置到上方“发布文案”面板。</div>
+                        ${quoteUiTextMarkup('product', normalized.ui_text)}
+                    </div>
+                    <div class="ams-quote-visual-rates-card">
+                        <div class="ams-quote-visual-rates-head">
+                            <strong>默认汇率</strong>
+                            <span>直接改这里，生成报价单时会自动带入。</span>
+                        </div>
+                        <div class="ams-quote-visual-rates-grid">
+                            ${Object.entries(rates)
+                                .map(
+                                    ([code, value]) => `
+                                        <label class="ams-quote-rate-chip">
+                                            <span>${esc(code)}</span>
+                                            <input class="ams-input ams-quote-rate-input" type="number" step="0.0001" min="0" data-rate-prefix="product" data-rate-code="${esc(code)}" value="${esc(value)}">
+                                        </label>
+                                    `,
+                                )
+                                .join('')}
                         </div>
                     </div>
                 </div>
@@ -2774,8 +2998,16 @@ function instanceInsightsMarkup() {
 function bindBrandEditor(input) {
     const content = document.getElementById('ams-content');
     if (!content) return;
+    const legacyDefaultLinkPanel = content.querySelector('.ams-brand-default-link-panel');
+    if (legacyDefaultLinkPanel) {
+        legacyDefaultLinkPanel.outerHTML = brandDefaultLinkPanelMarkup(moduleState.brandEditor);
+    }
     const displayNameField = () => content.querySelector('[data-brand-field="display_name"]');
-    const defaultLinkField = () => content.querySelector('[data-brand-field="default_quote_slug"]');
+    const defaultLinkPicker = () => content.querySelector('[data-brand-default-picker]');
+    const defaultLinkOverride = () => content.querySelector('[data-brand-default-override]');
+    const defaultLinkHint = () => content.querySelector('[data-brand-default-picker-hint]');
+    const defaultLinkEffective = () => content.querySelector('[data-brand-default-effective]');
+    const defaultLinkMode = () => content.querySelector('[data-brand-default-mode]');
     const syncDisplayNameFromBrandName = (value) => {
         moduleState.brandEditor.display_name = text(value);
         const displayNode = displayNameField();
@@ -2783,15 +3015,32 @@ function bindBrandEditor(input) {
             displayNode.value = moduleState.brandEditor.display_name;
         }
     };
+    const applyBrandDefaultLinkValue = () => {
+        const pickerValue = text(defaultLinkPicker()?.value);
+        const overrideValue = text(defaultLinkOverride()?.value);
+        const selectedInstance = publishedBrandInstances(moduleState.brandEditor.id).find((item) => text(item.public_slug) === pickerValue) || null;
+        const effectiveSlug = text(overrideValue || pickerValue);
+        const pickerHint = selectedInstance
+            ? `${publishedBrandInstanceLabel(selectedInstance)} · 发布于 ${fmtDate(selectedInstance.published_at || selectedInstance.updated_at)}`
+            : pickerValue
+                ? `已选择 ${pickerValue}`
+                : '当前品牌还没有已发布报价，可先手动覆盖。';
+        moduleState.brandEditor.default_quote_slug = effectiveSlug;
+        if (defaultLinkHint()) defaultLinkHint().textContent = pickerHint;
+        if (defaultLinkEffective()) defaultLinkEffective().textContent = effectiveSlug || '--';
+        if (defaultLinkMode()) defaultLinkMode().textContent = overrideValue ? '手动覆盖' : effectiveSlug ? '已发布报价' : '未设置';
+    };
     const syncDefaultLinkField = (force = false) => {
         if (moduleState.brandDefaultLinkTouched && !force) return;
         const candidate = latestPublishedQuoteSlugForBrand(moduleState.brandEditor.id);
-        if (!candidate && !force) return;
-        moduleState.brandEditor.default_quote_slug = candidate;
-        const defaultNode = defaultLinkField();
-        if (defaultNode && defaultNode.value !== moduleState.brandEditor.default_quote_slug) {
-            defaultNode.value = moduleState.brandEditor.default_quote_slug;
+        if (!candidate && !force) {
+            applyBrandDefaultLinkValue();
+            return;
         }
+        if (defaultLinkPicker()) defaultLinkPicker().value = candidate;
+        if (defaultLinkOverride()) defaultLinkOverride().value = '';
+        moduleState.brandEditor.default_quote_slug = candidate;
+        applyBrandDefaultLinkValue();
     };
 
     syncDefaultLinkField(false);
@@ -2811,8 +3060,6 @@ function bindBrandEditor(input) {
             moduleState.brandEditor[field] = nextValue;
             if (field === 'display_name') {
                 moduleState.brandDisplayNameTouched = text(nextValue) !== text(moduleState.brandEditor.brand_name);
-            } else if (field === 'default_quote_slug') {
-                moduleState.brandDefaultLinkTouched = true;
             }
         });
         if (node.type === 'checkbox') {
@@ -2831,6 +3078,16 @@ function bindBrandEditor(input) {
             if (!key || !lang) return;
             upsertLocalizedField(moduleState.brandEditor, key, lang, node.value);
         });
+    });
+
+    defaultLinkPicker()?.addEventListener('change', () => {
+        moduleState.brandDefaultLinkTouched = true;
+        applyBrandDefaultLinkValue();
+    });
+
+    defaultLinkOverride()?.addEventListener('input', () => {
+        moduleState.brandDefaultLinkTouched = true;
+        applyBrandDefaultLinkValue();
     });
 
     document.getElementById('ams-quote-brand-new')?.addEventListener('click', () => {
@@ -2855,6 +3112,12 @@ function bindBrandEditor(input) {
     document.getElementById('ams-brand-default-link-autofill')?.addEventListener('click', () => {
         moduleState.brandDefaultLinkTouched = false;
         syncDefaultLinkField(true);
+    });
+
+    document.getElementById('ams-brand-default-link-clear-override')?.addEventListener('click', () => {
+        if (defaultLinkOverride()) defaultLinkOverride().value = '';
+        moduleState.brandDefaultLinkTouched = true;
+        applyBrandDefaultLinkValue();
     });
 
     document.getElementById('ams-quote-brand-save')?.addEventListener('click', async (event) => {
@@ -3398,7 +3661,8 @@ export async function renderQuoteProductsPage(input) {
                     <div class="ams-field"><label>排序</label><input class="ams-input" type="number" min="0" step="10" data-product-field="sort_order" value="${esc(moduleState.productEditor.sort_order)}"></div>
                     <div class="ams-field"><label class="ams-social-toggle"><input type="checkbox" data-product-field="is_active" ${moduleState.productEditor.is_active ? 'checked' : ''}><span>启用模板</span></label></div>
                 </div>
-                ${productVisualEditorMarkup(moduleState.productEditor, currentProductBrandDraft())}
+                ${productPublishCopyPanelMarkup(moduleState.productEditor, currentProductBrandDraft())}
+                ${productVisualEditorSurfaceMarkup(moduleState.productEditor, currentProductBrandDraft())}
                 ${mediaLibraryMarkup('product', moduleState.productEditor.media_config, moduleState.productEditor.media_gallery, {
                     uploadLabel: '上传产品图片',
                 })}
@@ -3423,6 +3687,13 @@ function bindInstanceEditor(input) {
     document.getElementById('ams-quote-instance-brand-filter')?.addEventListener('change', (event) => {
         moduleState.instanceBrandFilter = event.currentTarget.value || 'all';
         void withQuoteBusy('正在刷新报价单列表...', async () => {
+            await renderQuoteInstancesPage(input);
+        });
+    });
+    document.getElementById('ams-quote-instance-archive-entry')?.addEventListener('click', () => {
+        moduleState.instanceArchiveView = !moduleState.instanceArchiveView;
+        moduleState.instanceStatusFilter = 'all';
+        void withQuoteBusy(moduleState.instanceArchiveView ? '正在打开归档报价单...' : '正在返回报价单列表...', async () => {
             await renderQuoteInstancesPage(input);
         });
     });
@@ -3889,6 +4160,8 @@ function bindCustomerEditor(input) {
         moduleState.customerLoadedId = '';
         moduleState.customerEditor = createCustomerDraft();
         moduleState.customerEvents = [];
+        moduleState.customerSends = [];
+        moduleState.customerCreateMode = true;
         void renderQuoteCustomersPage(input);
     });
 
@@ -3956,6 +4229,12 @@ export async function renderQuoteInstancesPage(input) {
         throw error;
     }
     input.setPageHeader('报价系统 / 报价单管理', '从产品模板生成客户报价单草稿，编辑后发布，生成客户独立链接。');
+    const archiveView = moduleState.instanceArchiveView === true;
+    if (!archiveView && moduleState.instanceStatusFilter === 'archived') {
+        moduleState.instanceStatusFilter = 'all';
+    }
+    const visibleInstances = filteredInstances();
+    const visibleCountLabel = visibleInstances.length;
     input.setContent(`
         <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-instance-hero">
             <div class="ams-hero-copy">
@@ -3984,7 +4263,12 @@ export async function renderQuoteInstancesPage(input) {
         </section>
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
-                <div class="ams-section-head"><div><h3>报价单列表</h3><p>共 ${filteredInstances().length} 份报价单</p></div></div>
+                <div class="ams-section-head">
+                    <div><h3>${archiveView ? '归档报价单' : '报价单列表'}</h3><p>共 ${visibleCountLabel} 份${archiveView ? '归档报价单' : '报价单'}</p></div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ${archiveView ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-instance-archive-entry">${archiveView ? '返回主列表' : `归档列表（${archivedInstanceCount()}）`}</button>
+                    </div>
+                </div>
                 <div class="ams-site-field-grid ams-site-field-grid-wide">
                     <div class="ams-field">
                         <label>品牌筛选</label>
@@ -3993,15 +4277,28 @@ export async function renderQuoteInstancesPage(input) {
                             ${moduleState.brands.map((brand) => `<option value="${esc(brand.id)}" ${moduleState.instanceBrandFilter === brand.id ? 'selected' : ''}>${esc(brand.display_name)}</option>`).join('')}
                         </select>
                     </div>
-                    <div class="ams-field">
-                        <label>状态筛选</label>
-                        <select id="ams-quote-instance-status-filter" class="ams-select">
-                            <option value="all" ${moduleState.instanceStatusFilter === 'all' ? 'selected' : ''}>全部状态</option>
-                            <option value="draft" ${moduleState.instanceStatusFilter === 'draft' ? 'selected' : ''}>草稿</option>
-                            <option value="published" ${moduleState.instanceStatusFilter === 'published' ? 'selected' : ''}>已发布</option>
-                            <option value="archived" ${moduleState.instanceStatusFilter === 'archived' ? 'selected' : ''}>已归档</option>
-                        </select>
-                    </div>
+                    ${
+                        archiveView
+                            ? `
+                        <div class="ams-field">
+                            <label>当前列表</label>
+                            <div class="ams-brand-default-link-meta">
+                                <strong>筛选范围</strong>
+                                <span>仅显示已归档报价单</span>
+                            </div>
+                        </div>
+                    `
+                            : `
+                        <div class="ams-field">
+                            <label>状态筛选</label>
+                            <select id="ams-quote-instance-status-filter" class="ams-select">
+                                <option value="all" ${moduleState.instanceStatusFilter === 'all' ? 'selected' : ''}>全部状态</option>
+                                <option value="draft" ${moduleState.instanceStatusFilter === 'draft' ? 'selected' : ''}>草稿</option>
+                                <option value="published" ${moduleState.instanceStatusFilter === 'published' ? 'selected' : ''}>已发布</option>
+                            </select>
+                        </div>
+                    `
+                    }
                 </div>
                 <div class="ams-quote-list">${renderInstanceList()}</div>
             </aside>
@@ -4130,8 +4427,10 @@ export async function renderQuoteCustomersPage(input) {
         moduleState.customerLoadedId = '';
         moduleState.customerEditor = createCustomerDraft();
         moduleState.customerEvents = [];
+        moduleState.customerSends = [];
+        moduleState.customerCreateMode = true;
     }
-    if (!moduleState.customerLoadedId && !moduleState.customerEditor?.id && moduleState.customers[0]?.id) {
+    if (!moduleState.customerCreateMode && !moduleState.customerLoadedId && !moduleState.customerEditor?.id && moduleState.customers[0]?.id) {
         await fetchCustomerEditor(moduleState.customers[0].id);
     }
 
@@ -4155,8 +4454,6 @@ export async function renderQuoteCustomersPage(input) {
                             <input id="ams-quote-customer-search" class="ams-input ams-quote-create-select" value="${esc(moduleState.customerSearch)}" placeholder="搜索公司 / 联系人 / 邮箱 / 电话">
                             <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-new">新建客户档案</button>
                         </div>
-                        <div class="ams-field-help ams-quote-create-hint">已执行 <code>010_quote_customer_tracking.sql</code> 和 <code>011_quote_send_ledger.sql</code> 后，这里会读取 <code>quote_customers</code>、<code>quote_instance_events</code> 和 <code>quote_instance_sends</code>。</div>
-                        <div class="ams-field-help ams-quote-create-hint">This page reads <code>quote_customers</code>, <code>quote_instance_events</code>, and <code>quote_instance_sends</code>.</div>
                     </div>
                 </div>
             </div>

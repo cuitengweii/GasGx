@@ -1491,7 +1491,7 @@ textarea {
 
 .ams-brand-default-link-row {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.6fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.95fr) minmax(220px, 0.55fr);
     gap: 12px;
     align-items: end;
 }
@@ -1516,6 +1516,24 @@ textarea {
 .ams-brand-default-link-meta span {
     font-size: 13px;
     word-break: break-word;
+}
+
+.ams-brand-default-link-status {
+    color: #9dc88b;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.ams-quote-product-copy-panel {
+    display: grid;
+    gap: 14px;
+}
+
+.ams-quote-product-copy-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
 }
 
 .ams-quote-instance-quick-actions {
@@ -2378,11 +2396,51 @@ textarea {
     padding: 16px;
 }
 
+.ams-quote-visual-title-panel-static {
+    display: grid;
+    gap: 14px;
+}
+
 .ams-quote-visual-meta-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     margin: 12px 0 14px;
+}
+
+.ams-quote-visual-preview-title {
+    color: #fff;
+    font-size: clamp(24px, 2.8vw, 34px);
+    line-height: 1.12;
+}
+
+.ams-quote-visual-preview-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.ams-quote-visual-preview-chip {
+    display: grid;
+    gap: 5px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(93, 214, 44, 0.12);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ams-quote-visual-preview-chip strong {
+    color: var(--ams-green);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.ams-quote-visual-preview-chip span {
+    color: #eef5ea;
+    font-size: 13px;
+    line-height: 1.55;
+    word-break: break-word;
 }
 
 .ams-quote-visual-product-title {
@@ -2774,6 +2832,12 @@ textarea {
     }
 
     .ams-quote-product-hero .ams-quote-template-loader-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .ams-brand-default-link-row,
+    .ams-quote-product-copy-grid,
+    .ams-quote-visual-preview-meta {
         grid-template-columns: 1fr;
     }
 
