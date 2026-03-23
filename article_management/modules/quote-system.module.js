@@ -1118,6 +1118,9 @@ async function saveProductDraft(user, draft) {
     const payload = createProductDraft(draft);
     if (!payload.brand_id) throw new Error('请选择所属品牌。');
     if (!payload.slug) throw new Error('产品 slug 不能为空。');
+    if (!pickLocalized(payload.public_title, payload.default_lang)) {
+        payload.public_title = normalizeLocalizedText(payload.product_code || payload.slug || '', payload.product_code || payload.slug || '');
+    }
     if (!pickLocalized(payload.public_title, payload.default_lang)) throw new Error('请至少填写一个产品标题。');
 
     const linkedBrandDraft = currentProductBrandDraft();
