@@ -29,7 +29,7 @@ import {
     renderQuotePipelinePage,
     renderQuoteProductsPage,
     renderQuoteSalesDashboardPage,
-} from './quote-system.module.js?v=20260324quote33';
+} from './quote-system.module.js?v=20260325quote35';
 
 const root = document.getElementById('ams-root');
 const toastNode = document.getElementById('ams-toast');
@@ -161,7 +161,8 @@ function normalizeQuoteCustomerFlowUi() {
     const noteTextarea = content.querySelector('[data-sales-flow-requirement-answer="communication_note_draft"]');
     const noteField = noteTextarea?.closest('.ams-field');
     const saveButton = content.querySelector('#ams-sales-flow-requirement-save');
-    if (noteField && saveButton && !content.querySelector('#ams-sales-flow-requirement-save-note-clone')) {
+    const noteSubmitButton = content.querySelector('#ams-sales-flow-requirement-note-submit');
+    if (!noteSubmitButton && noteField && saveButton && !content.querySelector('#ams-sales-flow-requirement-save-note-clone')) {
         const actionBar = document.createElement('div');
         actionBar.className = 'ams-inline-actions ams-inline-actions-end ams-sales-note-submit';
         const clone = saveButton.cloneNode(true);
@@ -212,11 +213,12 @@ function normalizeQuoteCustomerFlowUi() {
         if (!hasVisibleButton) topActions.remove();
     }
 
-    const userBadge = document.querySelector('.ams-user > span');
+    const userBadge = document.querySelector('[data-shell-user-badge]');
     const modeBanner = content.querySelector('.ams-sales-mode-banner.is-detail');
     if (userBadge && modeBanner && !modeBanner.querySelector('.ams-sales-inline-user')) {
-        const clone = userBadge.cloneNode(true);
-        clone.classList.add('ams-sales-inline-user');
+        const clone = document.createElement('span');
+        clone.className = 'ams-sales-inline-user';
+        clone.innerHTML = userBadge.querySelector('.ams-sidebar-user-main')?.innerHTML || userBadge.innerHTML;
         modeBanner.appendChild(clone);
     }
 }
@@ -409,20 +411,31 @@ function renderShell() {
                     </div>
                     ${adminNav}
                 </nav>
+                <div class="ams-sidebar-footer">
+                    <details class="ams-sidebar-user-menu">
+                        <summary class="ams-sidebar-user-badge" data-shell-user-badge>
+                            <span class="ams-sidebar-user-main"><i class="fa-solid fa-user"></i> <strong>${displayName}</strong></span>
+                            <i class="fa-solid fa-chevron-up ams-sidebar-user-caret"></i>
+                        </summary>
+                        <div class="ams-sidebar-user-panel">
+                            <div class="ams-sidebar-user-panel-head">
+                                <span class="ams-sidebar-user-panel-kicker">Account</span>
+                                <strong>${displayName}</strong>
+                            </div>
+                            <button id="ams-open-security" class="ams-sidebar-user-item" type="button">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <span>账号安全</span>
+                            </button>
+                            ${canOpenAdmin ? `<a class="ams-sidebar-user-item" href="${esc(adminConsoleUrl('dashboard', {}, { entryKind: ADMIN_ENTRY_KIND }))}"><i class="fa-solid fa-up-right-from-square"></i><span>进入主站后台</span></a>` : ''}
+                            <button id="ams-signout" class="ams-sidebar-user-item is-danger" type="button">
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                                <span>退出登录</span>
+                            </button>
+                        </div>
+                    </details>
+                </div>
             </aside>
             <main class="ams-main">
-                <header class="ams-header">
-                    <div>
-                        <h1 id="ams-page-title">GasGx Sales</h1>
-                        <p id="ams-page-sub">围绕客户建档到运维支持的单线销售后台。</p>
-                    </div>
-                    <div class="ams-user">
-                        <button id="ams-open-security" class="ams-btn ams-btn-muted" type="button">账号安全</button>
-                        ${canOpenAdmin ? `<a class="ams-btn ams-btn-muted" href="${esc(adminConsoleUrl('dashboard', {}, { entryKind: ADMIN_ENTRY_KIND }))}">进入主站后台</a>` : ''}
-                        <span><i class="fa-solid fa-user"></i> <strong>${displayName}</strong></span>
-                        <button id="ams-signout" class="ams-btn ams-btn-muted" type="button">退出登录</button>
-                    </div>
-                </header>
                 <section id="ams-content" class="ams-content"><div class="ams-empty">加载中...</div></section>
             </main>
         </div>

@@ -52,6 +52,8 @@ const TABLE_INSTANCE_EVENTS = 'quote_instance_events';
 const TABLE_INSTANCE_SENDS = 'quote_instance_sends';
 const TABLE_DEALS = 'quote_deals';
 const TABLE_DEAL_STAGE_RECORDS = 'quote_deal_stage_records';
+const TABLE_CUSTOMER_ACTIVITIES = 'quote_customer_activities';
+const TABLE_ACTIVITY_READS = 'quote_activity_reads';
 const STORAGE_BUCKET_PRODUCT_MEDIA = 'quote-product-media';
 
 const moduleState = {
@@ -73,7 +75,16 @@ const moduleState = {
     requirementEditor: null,
     dealEditor: null,
     customerEvents: [],
+    customerActivities: [],
+    customerActivityFilter: 'all',
+    recentActivities: [],
+    activityReadMap: {},
+    unreadStageActivityMap: {},
+    unreadCustomerActivityMap: {},
+    unreadStageCustomerActivityMap: {},
+    activityThrottleMap: {},
     customerSends: [],
+    customerArchiveExpandedMap: {},
     dealStageRecords: [],
     productLoadedId: '',
     instanceLoadedId: '',
@@ -96,6 +107,8 @@ const moduleState = {
     productCreateMode: false,
     brandDisplayNameTouched: false,
     brandDefaultLinkTouched: false,
+    brandLegacyRepairAttempted: false,
+    productLegacyRepairAttempted: false,
     brandArchiveView: false,
     productBrandFilter: 'all',
     productArchiveView: false,
@@ -112,6 +125,14 @@ const moduleState = {
 const quoteBusyState = {
     depth: 0,
 };
+
+const SALES_ACTIVITY_LIMIT = 800;
+
+const SALES_ACTIVITY_ACTOR_LABELS = Object.freeze({
+    customer: '客户',
+    sales: '销售',
+    system: '系统',
+});
 
 const SEND_STATUS_ORDER = {
     recorded: 0,
@@ -154,6 +175,177 @@ const DEAL_STAGE_STATUS_OPTIONS = Object.freeze([
     { value: 'completed', label: '已完成' },
     { value: 'blocked', label: '阻塞' },
 ]);
+
+function salesActivityReader(inputUser = null) {
+    const email = text(inputUser?.email).trim().toLowerCase();
+    const fallbackUserId = text(inputUser?.id).trim();
+    return {
+        userId: fallbackUserId || email || 'sales-console',
+        email: email || fallbackUserId || 'sales-console',
+    };
+}
+
+function createSalesActivityRecord(row = {}) {
+    return {
+        id: text(row.id),
+        customer_id: text(row.customer_id),
+        deal_id: text(row.deal_id),
+        requirement_id: text(row.requirement_id),
+        instance_id: text(row.instance_id),
+        stage_key: text(row.stage_key),
+        actor_type: text(row.actor_type, 'system'),
+        actor_id: text(row.actor_id),
+        actor_label: text(row.actor_label),
+        activity_type: text(row.activity_type),
+        entity_type: text(row.entity_type),
+        entity_id: text(row.entity_id),
+        page_key: text(row.page_key),
+        action_label: text(row.action_label),
+        detail_json: row.detail_json && typeof row.detail_json === 'object' ? row.detail_json : {},
+        occurred_at: text(row.occurred_at || row.created_at),
+        source: text(row.source, 'activity'),
+    };
+}
+
+function inferSalesActivityStageKey(payload = {}) {
+    const direct = normalizeDealStageKey(payload.stage_key || payload.stageKey);
+    if (direct) return direct;
+    const dealId = text(payload.deal_id || payload.dealId);
+    if (dealId) {
+        const deal = dealById(dealId);
+        if (deal?.id) return normalizeDealStageKey(deal.current_stage);
+    }
+    const requirementId = text(payload.requirement_id || payload.requirementId);
+    if (requirementId) {
+        const requirement = requirementById(requirementId);
+        if (requirement?.deal_id) {
+            const deal = dealById(requirement.deal_id);
+            if (deal?.id) return normalizeDealStageKey(deal.current_stage);
+        }
+        return normalizeRequirementStatus(requirement?.status) === 'submitted' ? 'requirement_confirmed' : 'requirement_capture';
+    }
+    const instanceId = text(payload.instance_id || payload.instanceId);
+    if (instanceId) {
+        const instance = instanceById(instanceId);
+        if (instance?.deal_id) {
+            const deal = dealById(instance.deal_id);
+            if (deal?.id) return normalizeDealStageKey(deal.current_stage);
+        }
+        return text(payload.activity_type || payload.activityType) === 'quote_generated' ? 'quote_draft' : 'quote_confirmed';
+    }
+    if (text(payload.entity_type || payload.entityType) === 'customer') return 'customer_profile';
+    return '';
+}
+
+function salesActorLabel(actorType = '', actorLabel = '') {
+    return text(actorLabel) || SALES_ACTIVITY_ACTOR_LABELS[text(actorType, 'system')] || '系统';
+}
+
+function legacyEventActivityType(eventType = '') {
+    const key = text(eventType);
+    if (key === 'share_link_generated') return 'button_click';
+    if (key === 'email_clicked') return 'button_click';
+    return 'page_view';
+}
+
+function legacyEventToSalesActivity(event = {}) {
+    const instance = instanceById(event.instance_id);
+    return createSalesActivityRecord({
+        id: `legacy:${text(event.id || `${event.instance_id}:${event.created_at}:${event.event_type}`)}`,
+        customer_id: text(event.customer_id || instance?.customer_id),
+        deal_id: text(instance?.deal_id),
+        requirement_id: text(instance?.requirement_id),
+        instance_id: text(event.instance_id),
+        stage_key: inferSalesActivityStageKey({
+            instance_id: event.instance_id,
+            activity_type: legacyEventActivityType(event.event_type),
+        }),
+        actor_type: text(event.viewer_user_id || event.viewer_email) ? 'sales' : 'customer',
+        actor_id: text(event.viewer_user_id),
+        actor_label: text(event.viewer_email || event.viewer_label),
+        activity_type: legacyEventActivityType(event.event_type),
+        entity_type: 'quote_instance',
+        entity_id: text(event.instance_id),
+        page_key: 'quote-view',
+        action_label: eventTypeLabel(event.event_type),
+        detail_json: {
+            access_mode: text(event.access_mode),
+            legacy_event_type: text(event.event_type),
+            viewer_label: text(event.viewer_label),
+        },
+        occurred_at: text(event.created_at),
+        source: 'legacy-event',
+    });
+}
+
+async function appendSalesActivity(payload = {}) {
+    const customerId = text(payload.customer_id || payload.customerId);
+    const actionLabel = text(payload.action_label || payload.actionLabel);
+    const actorType = text(payload.actor_type || payload.actorType, 'system');
+    const entityType = text(payload.entity_type || payload.entityType);
+    const activityType = text(payload.activity_type || payload.activityType);
+    if (!customerId || !actionLabel || !entityType) return null;
+    if (activityType === 'page_view') {
+        const throttleKey = [customerId, text(payload.deal_id || payload.dealId), text(payload.page_key || payload.pageKey), text(payload.stage_key || payload.stageKey)].join(':');
+        const nowMs = Date.now();
+        if (safeNumber(moduleState.activityThrottleMap[throttleKey], 0) > nowMs - 15000) return null;
+        moduleState.activityThrottleMap[throttleKey] = nowMs;
+    }
+    const row = {
+        customer_id: customerId,
+        deal_id: text(payload.deal_id || payload.dealId) || null,
+        requirement_id: text(payload.requirement_id || payload.requirementId) || null,
+        instance_id: text(payload.instance_id || payload.instanceId) || null,
+        stage_key: inferSalesActivityStageKey(payload) || null,
+        actor_type: actorType,
+        actor_id: text(payload.actor_id || payload.actorId) || null,
+        actor_label: salesActorLabel(actorType, payload.actor_label || payload.actorLabel),
+        activity_type: activityType,
+        entity_type: entityType,
+        entity_id: text(payload.entity_id || payload.entityId) || null,
+        page_key: text(payload.page_key || payload.pageKey) || null,
+        action_label: actionLabel,
+        detail_json: payload.detail_json && typeof payload.detail_json === 'object' ? payload.detail_json : {},
+        occurred_at: text(payload.occurred_at || payload.occurredAt) || new Date().toISOString(),
+    };
+    try {
+        const { data, error } = await client.from(TABLE_CUSTOMER_ACTIVITIES).insert(row).select('*').single();
+        if (error) throw error;
+        return createSalesActivityRecord(data || row);
+    } catch (_error) {
+        return null;
+    }
+}
+
+async function appendSalesActivities(payloads = []) {
+    const rows = payloads
+        .map((entry) => ({
+            customer_id: text(entry.customer_id || entry.customerId),
+            deal_id: text(entry.deal_id || entry.dealId) || null,
+            requirement_id: text(entry.requirement_id || entry.requirementId) || null,
+            instance_id: text(entry.instance_id || entry.instanceId) || null,
+            stage_key: inferSalesActivityStageKey(entry) || null,
+            actor_type: text(entry.actor_type || entry.actorType, 'system'),
+            actor_id: text(entry.actor_id || entry.actorId) || null,
+            actor_label: salesActorLabel(text(entry.actor_type || entry.actorType, 'system'), entry.actor_label || entry.actorLabel),
+            activity_type: text(entry.activity_type || entry.activityType),
+            entity_type: text(entry.entity_type || entry.entityType),
+            entity_id: text(entry.entity_id || entry.entityId) || null,
+            page_key: text(entry.page_key || entry.pageKey) || null,
+            action_label: text(entry.action_label || entry.actionLabel),
+            detail_json: entry.detail_json && typeof entry.detail_json === 'object' ? entry.detail_json : {},
+            occurred_at: text(entry.occurred_at || entry.occurredAt) || new Date().toISOString(),
+        }))
+        .filter((entry) => entry.customer_id && entry.action_label && entry.entity_type && entry.activity_type);
+    if (!rows.length) return [];
+    try {
+        const { data, error } = await client.from(TABLE_CUSTOMER_ACTIVITIES).insert(rows).select('*');
+        if (error) throw error;
+        return Array.isArray(data) ? data.map((item) => createSalesActivityRecord(item)) : [];
+    } catch (_error) {
+        return [];
+    }
+}
 
 const PUBLIC_TEMPLATE_LIBRARY = Object.freeze({
     vman: {
@@ -762,6 +954,10 @@ function dealById(dealId = '') {
     return moduleState.deals.find((item) => item.id === text(dealId)) || null;
 }
 
+function instanceById(instanceId = '') {
+    return moduleState.instances.find((item) => item.id === text(instanceId)) || null;
+}
+
 function customerDeals(customerId = '') {
     return moduleState.deals
         .filter((item) => text(item.customer_id) === text(customerId))
@@ -1133,7 +1329,7 @@ function salesPipelineMarkup(input, options = {}) {
 }
 
 function renderSalesPageFrame(input, title, sub, body, options = {}) {
-    input.setPageHeader(title, sub);
+    input.setPageHeader(options.hidePageHeader ? '' : title, options.hidePageHeader ? '' : sub);
     if (!isSalesConsole(input)) {
         input.setContent(body);
         return;
@@ -1733,6 +1929,54 @@ moduleState.instanceEditor = createInstanceDraft();
 moduleState.requirementEditor = createRequirementDraft();
 moduleState.dealEditor = createDealDraft();
 
+const BRAND_EDITOR_DRAFT_STORAGE_KEY = 'gasgx.quote.brand-editor-draft.v1';
+
+function persistBrandEditorDraftState() {
+    if (typeof window === 'undefined' || !window.sessionStorage) return;
+    try {
+        const draft = createBrandDraft(moduleState.brandEditor || {});
+        const hasDraft = moduleState.brandCreateMode === true || Boolean(text(draft.id || draft.slug || draft.display_name || draft.brand_name));
+        if (!hasDraft) {
+            window.sessionStorage.removeItem(BRAND_EDITOR_DRAFT_STORAGE_KEY);
+            return;
+        }
+        window.sessionStorage.setItem(BRAND_EDITOR_DRAFT_STORAGE_KEY, JSON.stringify({
+            brandEditor: draft,
+            brandCreateMode: moduleState.brandCreateMode === true,
+            brandDisplayNameTouched: moduleState.brandDisplayNameTouched === true,
+            brandDefaultLinkTouched: moduleState.brandDefaultLinkTouched === true,
+        }));
+    } catch (error) {
+        // ignore storage failures
+    }
+}
+
+function restoreBrandEditorDraftState() {
+    if (typeof window === 'undefined' || !window.sessionStorage) return false;
+    try {
+        const raw = window.sessionStorage.getItem(BRAND_EDITOR_DRAFT_STORAGE_KEY);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw);
+        if (!parsed?.brandEditor) return false;
+        moduleState.brandEditor = createBrandDraft(parsed.brandEditor);
+        moduleState.brandCreateMode = parsed.brandCreateMode === true;
+        moduleState.brandDisplayNameTouched = parsed.brandDisplayNameTouched === true;
+        moduleState.brandDefaultLinkTouched = parsed.brandDefaultLinkTouched === true;
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+function clearBrandEditorDraftState() {
+    if (typeof window === 'undefined' || !window.sessionStorage) return;
+    try {
+        window.sessionStorage.removeItem(BRAND_EDITOR_DRAFT_STORAGE_KEY);
+    } catch (error) {
+        // ignore storage failures
+    }
+}
+
 function upsertLocalizedField(target, key, lang, value) {
     target[key] = normalizeLocalizedText(target[key]);
     target[key][lang] = text(value);
@@ -1923,6 +2167,21 @@ async function fetchProductMediaRows(productId) {
     return Array.isArray(data) ? data.map((row) => normalizeQuoteMediaItem(row)) : [];
 }
 
+async function fetchFullProductDraft(productId, seed = {}) {
+    if (!productId) return createProductDraft(seed);
+    const [itemsResult, mediaRows] = await Promise.all([
+        client.from(TABLE_PRODUCT_ITEMS).select('*').eq('product_id', productId).order('sort_order', { ascending: true }),
+        fetchProductMediaRows(productId),
+    ]);
+    if (itemsResult.error) throw itemsResult.error;
+    return createProductDraft({
+        ...seed,
+        id: productId,
+        items: itemsResult.data || [],
+        media_gallery: mediaRows,
+    });
+}
+
 async function fetchProductEditor(productId) {
     if (!productId) {
         moduleState.productLoadedId = '';
@@ -1933,17 +2192,8 @@ async function fetchProductEditor(productId) {
     }
     const { data, error } = await client.from(TABLE_PRODUCTS).select('*').eq('id', productId).single();
     if (error) throw error;
-    const [itemsResult, mediaRows] = await Promise.all([
-        client.from(TABLE_PRODUCT_ITEMS).select('*').eq('product_id', productId).order('sort_order', { ascending: true }),
-        fetchProductMediaRows(productId),
-    ]);
-    if (itemsResult.error) throw itemsResult.error;
     moduleState.productLoadedId = productId;
-    moduleState.productEditor = createProductDraft({
-        ...data,
-        items: itemsResult.data || [],
-        media_gallery: mediaRows,
-    });
+    moduleState.productEditor = await fetchFullProductDraft(productId, data);
     moduleState.productCreateMode = false;
     syncProductBrandDraft(moduleState.productEditor.brand_id);
     return moduleState.productEditor;
@@ -2023,6 +2273,168 @@ async function fetchCustomerSendLedger(customerId) {
     if (error) throw error;
     moduleState.customerSends = Array.isArray(data) ? data.map((row) => createSendLedgerRecord(row)) : [];
     return moduleState.customerSends;
+}
+
+async function fetchRecentSalesActivities() {
+    try {
+        const { data, error } = await client
+            .from(TABLE_CUSTOMER_ACTIVITIES)
+            .select('*')
+            .order('occurred_at', { ascending: false })
+            .limit(SALES_ACTIVITY_LIMIT);
+        if (error) throw error;
+        moduleState.recentActivities = Array.isArray(data) ? data.map((row) => createSalesActivityRecord(row)) : [];
+        return moduleState.recentActivities;
+    } catch (_error) {
+        moduleState.recentActivities = [];
+        return [];
+    }
+}
+
+async function fetchActivityReadsForUser(inputUser = null, activityIds = []) {
+    const reader = salesActivityReader(inputUser);
+    if (!activityIds.length) {
+        moduleState.activityReadMap = {};
+        return moduleState.activityReadMap;
+    }
+    try {
+        const { data, error } = await client
+            .from(TABLE_ACTIVITY_READS)
+            .select('activity_id,reader_email,reader_user_id,read_at')
+            .eq('reader_email', reader.email)
+            .in('activity_id', activityIds);
+        if (error) throw error;
+        moduleState.activityReadMap = Object.fromEntries(
+            (Array.isArray(data) ? data : []).map((row) => [text(row.activity_id), text(row.read_at || new Date().toISOString())]),
+        );
+        return moduleState.activityReadMap;
+    } catch (_error) {
+        moduleState.activityReadMap = {};
+        return {};
+    }
+}
+
+function activityIsRead(activity = {}) {
+    return Boolean(moduleState.activityReadMap[text(activity.id)]);
+}
+
+function recomputeUnreadActivityMaps() {
+    const stageMap = {};
+    const customerMap = {};
+    const stageCustomerMap = {};
+    (Array.isArray(moduleState.recentActivities) ? moduleState.recentActivities : []).forEach((activity) => {
+        if (!activity?.id || activityIsRead(activity)) return;
+        const stageKey = normalizeDealStageKey(activity.stage_key);
+        if (stageKey) stageMap[stageKey] = true;
+        const customerId = text(activity.customer_id);
+        if (customerId) customerMap[customerId] = true;
+        if (stageKey && customerId) stageCustomerMap[`${stageKey}:${customerId}`] = true;
+    });
+    moduleState.unreadStageActivityMap = stageMap;
+    moduleState.unreadCustomerActivityMap = customerMap;
+    moduleState.unreadStageCustomerActivityMap = stageCustomerMap;
+    return {
+        stageMap,
+        customerMap,
+        stageCustomerMap,
+    };
+}
+
+function stageHasUnreadActivity(stageKey = '') {
+    return Boolean(moduleState.unreadStageActivityMap[normalizeDealStageKey(stageKey)]);
+}
+
+function customerHasUnreadActivity(customerId = '') {
+    return Boolean(moduleState.unreadCustomerActivityMap[text(customerId)]);
+}
+
+function customerHasUnreadActivityInStage(customerId = '', stageKey = '') {
+    const customer = text(customerId);
+    const stage = normalizeDealStageKey(stageKey);
+    if (!customer || !stage) return customerHasUnreadActivity(customer);
+    return Boolean(moduleState.unreadStageCustomerActivityMap[`${stage}:${customer}`]);
+}
+
+async function fetchUnreadStageActivitySummary(reader = null) {
+    const activities = await fetchRecentSalesActivities();
+    await fetchActivityReadsForUser(reader, activities.map((item) => item.id).filter(Boolean));
+    return recomputeUnreadActivityMaps().stageMap;
+}
+
+function visibleStageCustomerIds(stageKey = '', input = null) {
+    const key = normalizeDealStageKey(stageKey);
+    if (key === 'customer_profile') {
+        return filteredCustomers().map((item) => text(item.id)).filter(Boolean);
+    }
+    return visibleStageDeals(key, input).map((deal) => text(deal.customer_id)).filter(Boolean);
+}
+
+async function fetchUnreadCustomerActivitySummary(stageKey = '', reader = null, input = null) {
+    const key = normalizeDealStageKey(stageKey);
+    await fetchUnreadStageActivitySummary(reader);
+    const visibleIds = new Set(visibleStageCustomerIds(stageKey, input));
+    return Object.fromEntries(
+        Object.entries(moduleState.unreadStageCustomerActivityMap)
+            .filter(([entry]) => entry.startsWith(`${key}:`))
+            .map(([entry]) => [entry.split(':')[1], true])
+            .filter(([customerId]) => visibleIds.has(customerId)),
+    );
+}
+
+function customerActivityTimelineRows(customerId = '') {
+    const activityRows = (Array.isArray(moduleState.customerActivities) ? moduleState.customerActivities : []).map((item) => createSalesActivityRecord(item));
+    const legacyRows = (Array.isArray(moduleState.customerEvents) ? moduleState.customerEvents : [])
+        .map((item) => legacyEventToSalesActivity(item))
+        .filter((item) => text(item.customer_id) === text(customerId));
+    const seen = new Set(activityRows.map((item) => [text(item.instance_id), text(item.occurred_at), text(item.action_label)].join(':')));
+    return [...activityRows, ...legacyRows.filter((item) => !seen.has([text(item.instance_id), text(item.occurred_at), text(item.action_label)].join(':')))]
+        .sort((left, right) => text(right.occurred_at).localeCompare(text(left.occurred_at)));
+}
+
+async function fetchCustomerActivityTimeline(customerId = '', reader = null) {
+    if (!customerId) {
+        moduleState.customerActivities = [];
+        return [];
+    }
+    try {
+        const { data, error } = await client
+            .from(TABLE_CUSTOMER_ACTIVITIES)
+            .select('*')
+            .eq('customer_id', customerId)
+            .order('occurred_at', { ascending: false })
+            .limit(200);
+        if (error) throw error;
+        moduleState.customerActivities = Array.isArray(data) ? data.map((row) => createSalesActivityRecord(row)) : [];
+        await fetchActivityReadsForUser(reader, moduleState.customerActivities.map((item) => item.id).filter(Boolean));
+        return customerActivityTimelineRows(customerId);
+    } catch (_error) {
+        moduleState.customerActivities = [];
+        return customerActivityTimelineRows(customerId);
+    }
+}
+
+async function markCustomerActivitiesRead(customerId = '', reader = null, visibleActivityIds = []) {
+    const nextIds = visibleActivityIds.filter((item) => text(item) && !String(item).startsWith('legacy:'));
+    if (!customerId || !nextIds.length) return;
+    const currentReader = salesActivityReader(reader);
+    try {
+        const now = new Date().toISOString();
+        await client.from(TABLE_ACTIVITY_READS).upsert(
+            nextIds.map((activityId) => ({
+                activity_id: activityId,
+                reader_user_id: currentReader.userId,
+                reader_email: currentReader.email,
+                read_at: now,
+            })),
+            { onConflict: 'activity_id,reader_email' },
+        );
+        nextIds.forEach((activityId) => {
+            moduleState.activityReadMap[text(activityId)] = now;
+        });
+        recomputeUnreadActivityMaps();
+    } catch (_error) {
+        return;
+    }
 }
 
 async function fetchInstanceEditor(instanceId) {
@@ -2464,8 +2876,25 @@ async function restoreProductTemplate(user, productId) {
     });
 }
 
+function summarizeFieldChanges(previous = {}, next = {}, fields = []) {
+    return fields
+        .map((field) => {
+            const before = text(previous?.[field]);
+            const after = text(next?.[field]);
+            if (before === after) return null;
+            return {
+                field,
+                label: field,
+                before,
+                after,
+            };
+        })
+        .filter(Boolean);
+}
+
 async function saveCustomerDraft(user, draft) {
     const payload = createCustomerDraft(draft);
+    const previous = payload.id ? moduleState.customers.find((item) => item.id === payload.id) || {} : {};
     if (!payload.company_name && !payload.contact_name && !payload.email) {
         throw new Error('请至少填写客户公司、联系人或邮箱中的一项。');
     }
@@ -2500,6 +2929,25 @@ async function saveCustomerDraft(user, draft) {
     moduleState.customerLoadedId = text(saved?.id);
     moduleState.customerEditor = createCustomerDraft(saved);
     moduleState.customerCreateMode = false;
+    const fieldChanges = summarizeFieldChanges(previous, saved, ['company_name', 'contact_name', 'email', 'phone', 'country', 'notes']);
+    await appendSalesActivity({
+        customer_id: saved.id,
+        actor_type: 'sales',
+        actor_id: user?.id,
+        actor_label: user?.email || user?.id || 'sales',
+        activity_type: payload.id ? (fieldChanges.length ? 'field_change' : 'status_change') : 'button_click',
+        entity_type: 'customer',
+        entity_id: saved.id,
+        page_key: 'quote-customers',
+        action_label: payload.id ? '更新客户档案' : '创建客户档案',
+        stage_key: 'customer_profile',
+        detail_json: {
+            fields: fieldChanges,
+            summary: payload.id ? '客户主档已保存' : '客户主档已创建',
+            is_deleted: saved.is_deleted === true,
+            is_active: saved.is_active !== false,
+        },
+    });
     return moduleState.customerEditor;
 }
 
@@ -2548,6 +2996,7 @@ async function saveDealStageRecords(user, dealId, records = moduleState.dealStag
 
 async function saveDealDraft(user, draft, options = {}) {
     const payload = createDealDraft(draft);
+    const previous = payload.id ? dealById(payload.id) || {} : {};
     if (!payload.customer_id) throw new Error('销售流程必须绑定一个客户档案。');
     const customer = moduleState.customers.find((item) => item.id === payload.customer_id) || moduleState.customerEditor;
     const owner = currentSalesOwner(user);
@@ -2603,11 +3052,30 @@ async function saveDealDraft(user, draft, options = {}) {
         owner_email: text(record.owner_email, moduleState.dealEditor.owner_email),
     }));
     await saveDealStageRecords(user, saved.id, moduleState.dealStageRecords, moduleState.dealEditor);
+    const fieldChanges = summarizeFieldChanges(previous, saved, ['title', 'current_stage', 'deal_status', 'next_action', 'next_action_due_at', 'owner_name', 'owner_email', 'summary']);
+    await appendSalesActivity({
+        customer_id: saved.customer_id,
+        deal_id: saved.id,
+        actor_type: 'sales',
+        actor_id: user?.id,
+        actor_label: user?.email || user?.id || 'sales',
+        activity_type: payload.id ? (fieldChanges.some((item) => item.field === 'current_stage') ? 'status_change' : 'field_change') : 'button_click',
+        entity_type: 'deal',
+        entity_id: saved.id,
+        page_key: 'quote-deals',
+        action_label: payload.id ? '更新销售流程' : '创建销售流程',
+        stage_key: saved.current_stage,
+        detail_json: {
+            fields: fieldChanges,
+            summary: text(saved.next_action || saved.summary),
+        },
+    });
     return moduleState.dealEditor;
 }
 
 async function saveRequirementDraft(user, draft) {
     const payload = createRequirementDraft(draft);
+    const previous = payload.id ? requirementById(payload.id) || {} : {};
     if (!payload.customer_id) throw new Error('需求获取单必须绑定一个客户档案。');
     const customer = moduleState.customers.find((item) => item.id === payload.customer_id) || moduleState.customerEditor;
     const publicSlug = payload.public_slug || createRequirementPublicSlug(payload);
@@ -2649,6 +3117,25 @@ async function saveRequirementDraft(user, draft) {
     await fetchRequirementRows();
     moduleState.requirementLoadedId = text(saved?.id);
     moduleState.requirementEditor = createRequirementDraft(saved);
+    const fieldChanges = summarizeFieldChanges(previous, saved, ['title', 'status', 'requester_company', 'requester_name', 'requester_email', 'requester_phone', 'country', 'notes']);
+    await appendSalesActivity({
+        customer_id: saved.customer_id,
+        deal_id: saved.deal_id,
+        requirement_id: saved.id,
+        actor_type: 'sales',
+        actor_id: user?.id,
+        actor_label: user?.email || user?.id || 'sales',
+        activity_type: payload.id ? (fieldChanges.some((item) => item.field === 'status') ? 'status_change' : 'field_change') : 'button_click',
+        entity_type: 'requirement',
+        entity_id: saved.id,
+        page_key: 'quote-requirements',
+        action_label: payload.id ? '更新需求单' : '创建需求单',
+        stage_key: normalizeRequirementStatus(saved.status) === 'submitted' ? 'requirement_confirmed' : 'requirement_capture',
+        detail_json: {
+            fields: fieldChanges,
+            summary: requirementSummaryLine(saved),
+        },
+    });
     return moduleState.requirementEditor;
 }
 
@@ -2914,6 +3401,25 @@ async function createInstanceFromProduct(user, productId, options = {}) {
             primary_instance_id: moduleState.instanceEditor.id,
         }, ['customer_profile'], 'quote_draft');
     }
+    await appendSalesActivity({
+        customer_id: moduleState.instanceEditor.customer_id,
+        deal_id: moduleState.instanceEditor.deal_id,
+        instance_id: moduleState.instanceEditor.id,
+        actor_type: 'system',
+        actor_id: user?.id,
+        actor_label: user?.email || 'system',
+        activity_type: 'quote_generated',
+        entity_type: 'quote_instance',
+        entity_id: moduleState.instanceEditor.id,
+        page_key: 'quote-instances',
+        stage_key: 'quote_draft',
+        action_label: '从产品模板生成报价草稿',
+        detail_json: {
+            product_id: moduleState.instanceEditor.product_id,
+            brand_id: moduleState.instanceEditor.brand_id,
+            summary: productLabelById(moduleState.instanceEditor.product_id),
+        },
+    });
     return moduleState.instanceEditor;
 }
 
@@ -3028,11 +3534,32 @@ async function createInstanceFromRequirement(user, requirementId, productId, opt
             primary_instance_id: moduleState.instanceEditor.id,
         }, ['customer_profile', 'requirement_capture', 'requirement_confirmed'], 'quote_draft');
     }
+    await appendSalesActivity({
+        customer_id: moduleState.instanceEditor.customer_id,
+        deal_id: moduleState.instanceEditor.deal_id,
+        requirement_id: requirement.id,
+        instance_id: moduleState.instanceEditor.id,
+        actor_type: 'system',
+        actor_id: user?.id,
+        actor_label: user?.email || 'system',
+        activity_type: 'quote_generated',
+        entity_type: 'quote_instance',
+        entity_id: moduleState.instanceEditor.id,
+        page_key: 'quote-instances',
+        stage_key: 'quote_draft',
+        action_label: '从需求单生成报价草稿',
+        detail_json: {
+            requirement_id: requirement.id,
+            product_id: moduleState.instanceEditor.product_id,
+            summary: requirementSummaryLine(requirement),
+        },
+    });
     return moduleState.instanceEditor;
 }
 
 async function saveInstanceDraft(user, draft) {
     const payload = createInstanceDraft(draft);
+    const previous = payload.id ? instanceById(payload.id) || {} : {};
     if (!payload.brand_id || !payload.product_id) throw new Error('报价单必须绑定品牌和产品模板。');
     if (!payload.public_slug) throw new Error('请填写公开链接 slug。');
     if (!pickLocalized(payload.product_snapshot.public_title, payload.default_lang)) throw new Error('请至少填写一个产品标题。');
@@ -3087,6 +3614,26 @@ async function saveInstanceDraft(user, draft) {
         ...data,
         items: savedItems,
     });
+    const fieldChanges = summarizeFieldChanges(previous, data, ['public_slug', 'customer_name', 'receiver_name', 'receiver_email', 'default_lang', 'validity_hours', 'status']);
+    await appendSalesActivity({
+        customer_id: customerRelation.customer_id || previous.customer_id,
+        deal_id: data.deal_id,
+        requirement_id: data.requirement_id,
+        instance_id: data.id,
+        actor_type: 'sales',
+        actor_id: user?.id,
+        actor_label: user?.email || user?.id || 'sales',
+        activity_type: payload.id ? 'field_change' : 'button_click',
+        entity_type: 'quote_instance',
+        entity_id: data.id,
+        page_key: 'quote-instances',
+        stage_key: inferSalesActivityStageKey({ instance_id: data.id }),
+        action_label: payload.id ? '保存报价草稿' : '创建报价草稿',
+        detail_json: {
+            fields: fieldChanges,
+            summary: text(data.public_slug),
+        },
+    });
     return moduleState.instanceEditor;
 }
 
@@ -3103,10 +3650,30 @@ async function saveAndAdvanceDeal(user, dealPatch = {}, completedStages = [], ne
     });
     moduleState.dealStageRecords = dealCurrentRecords(moduleState.dealEditor);
     applyDealStageProgress(completedStages, nextStage || moduleState.dealEditor.current_stage);
-    return saveDealDraft(user, moduleState.dealEditor, {
+    const saved = await saveDealDraft(user, moduleState.dealEditor, {
         stageRecords: moduleState.dealStageRecords,
         currentStage: moduleState.dealEditor.current_stage,
     });
+    if (nextStage) {
+        await appendSalesActivity({
+            customer_id: saved.customer_id,
+            deal_id: saved.id,
+            actor_type: 'system',
+            actor_id: user?.id,
+            actor_label: user?.email || 'system',
+            activity_type: 'stage_advanced',
+            entity_type: 'deal_stage',
+            entity_id: nextStage,
+            page_key: 'quote-customer-flow',
+            stage_key: nextStage,
+            action_label: `销售流程推进到${dealStageLabel(nextStage)}`,
+            detail_json: {
+                completed_stages: completedStages,
+                next_stage: nextStage,
+            },
+        });
+    }
+    return saved;
 }
 
 async function confirmRequirementForDeal(user, requirementDraft) {
@@ -3149,6 +3716,25 @@ async function confirmQuoteForDeal(user, instanceDraft) {
         primary_instance_id: savedInstance.id,
     }, completedStages, 'contract_signed');
     moduleState.instanceEditor = createInstanceDraft(savedInstance);
+    await appendSalesActivity({
+        customer_id: savedInstance.customer_id,
+        deal_id: savedInstance.deal_id,
+        requirement_id: savedInstance.requirement_id,
+        instance_id: savedInstance.id,
+        actor_type: 'sales',
+        actor_id: user?.id,
+        actor_label: user?.email || user?.id || 'sales',
+        activity_type: 'status_change',
+        entity_type: 'quote_instance',
+        entity_id: savedInstance.id,
+        page_key: 'quote-customer-flow',
+        stage_key: 'quote_confirmed',
+        action_label: '确认报价并转入签约合同',
+        detail_json: {
+            next_stage: 'contract_signed',
+            summary: text(savedInstance.public_slug),
+        },
+    });
     return savedInstance;
 }
 
@@ -3699,6 +4285,87 @@ async function importLegacySeedData(user) {
     await Promise.all([fetchBrandRows(), fetchProductRows(), fetchInstanceRows()]);
 }
 
+function legacyBrandSeedKey(brand = {}) {
+    const current = createBrandDraft(brand);
+    const signature = [
+        current.slug,
+        current.brand_name,
+        current.display_name,
+        current.supplier_name,
+        current.subject_name,
+        current.sender_email,
+        current.share_signing_secret,
+        current.share_unlock_prefix,
+        current.overview_title?.zh,
+        current.footer_note?.zh,
+    ].map((entry) => text(entry).toLowerCase()).join(' ');
+    if (text(current.slug).toLowerCase() === 'vman' || signature.includes('vman')) return 'vman';
+    if (text(current.slug).toLowerCase() === 'minerpower' || text(current.slug).toLowerCase() === 'gasgx' || signature.includes('minerpower')) return 'minerpower';
+    return '';
+}
+
+function brandNeedsLegacySeedRepair(brand = {}, seedBrand = {}) {
+    const current = createBrandDraft(brand);
+    const target = createBrandDraft(seedBrand);
+    return [
+        'slug',
+        'brand_name',
+        'display_name',
+        'supplier_name',
+        'sender_email',
+        'subject_name',
+        'share_signing_secret',
+        'share_unlock_prefix',
+    ].some((field) => text(current[field]) !== text(target[field]))
+        || text(current.overview_title?.zh) !== text(target.overview_title?.zh)
+        || text(current.footer_note?.zh) !== text(target.footer_note?.zh);
+}
+
+async function repairLegacyBrandRecords(user) {
+    if (moduleState.brandLegacyRepairAttempted) return false;
+    moduleState.brandLegacyRepairAttempted = true;
+    if (!user?.id) return false;
+
+    const currentEditor = createBrandDraft(moduleState.brandEditor || {});
+    const currentCreateMode = moduleState.brandCreateMode === true;
+    const currentDisplayTouched = moduleState.brandDisplayNameTouched === true;
+    const currentDefaultTouched = moduleState.brandDefaultLinkTouched === true;
+    const legacyPages = await ensureLegacyQuotePagesLoaded('/shared/quote-system/quote-pages.js');
+    const legacyBundles = convertLegacyPagesToSeedPayloads(legacyPages);
+    const legacyBrandMap = new Map(legacyBundles.map((bundle) => [text(bundle?.brand?.slug).toLowerCase(), bundle?.brand]));
+    let repairedAny = false;
+
+    for (const brand of moduleState.brands) {
+        const seedKey = legacyBrandSeedKey(brand);
+        const seedBrand = legacyBrandMap.get(seedKey);
+        if (!seedBrand || !brandNeedsLegacySeedRepair(brand, seedBrand)) continue;
+        await saveBrandDraft(user, {
+            ...seedBrand,
+            id: brand.id,
+            default_quote_slug: text(brand.default_quote_slug),
+            is_active: brand.is_active !== false,
+        });
+        repairedAny = true;
+    }
+
+    if (!repairedAny) return false;
+
+    await fetchBrandRows();
+    if (currentCreateMode) {
+        moduleState.brandEditor = currentEditor;
+    } else if (currentEditor.id) {
+        const refreshed = moduleState.brands.find((item) => text(item.id) === text(currentEditor.id));
+        moduleState.brandEditor = createBrandDraft(refreshed || currentEditor);
+    } else {
+        moduleState.brandEditor = createBrandDraft();
+    }
+    moduleState.brandCreateMode = currentCreateMode;
+    moduleState.brandDisplayNameTouched = currentDisplayTouched;
+    moduleState.brandDefaultLinkTouched = currentDefaultTouched;
+    persistBrandEditorDraftState();
+    return true;
+}
+
 async function ensureBaseTemplates() {
     const liveTemplates = await buildLiveBaseTemplates();
     const legacyPages = await ensureLegacyQuotePagesLoaded('/shared/quote-system/quote-pages.js');
@@ -3782,25 +4449,35 @@ function applyBaseTemplateToProductEditor(templateKey = '') {
     const [brandKey, productKey] = String(templateKey || '').split(':');
     const templateGroup = moduleState.baseTemplates.find((entry) => entry.key === brandKey);
     const templateProduct = templateGroup?.products.find((entry) => entry.product.slug === productKey);
-    if (!templateGroup || !templateProduct) throw new Error('未找到对应的基础模板。');
+    if (!templateGroup || !templateProduct) throw new Error('\u672a\u627e\u5230\u5bf9\u5e94\u7684\u57fa\u7840\u6a21\u677f\u3002');
 
+    const currentProduct = createProductDraft(moduleState.productEditor || {});
     const currentBrandId =
-        text(moduleState.productEditor?.brand_id) ||
+        text(currentProduct.brand_id) ||
         (moduleState.productBrandFilter !== 'all' ? text(moduleState.productBrandFilter) : '') ||
         text(moduleState.brands[0]?.id);
+    const hasSelectedProduct = Boolean(text(currentProduct.id));
+    const nextSlug = hasSelectedProduct
+        ? text(currentProduct.slug || buildTemplateProductSlug(currentBrandId, templateProduct.product.slug))
+        : buildTemplateProductSlug(currentBrandId, templateProduct.product.slug);
 
-    moduleState.productLoadedId = '';
+    moduleState.productLoadedId = hasSelectedProduct ? currentProduct.id : '';
     moduleState.productEditor = createProductDraft({
         ...templateProduct.product,
-        id: '',
+        id: hasSelectedProduct ? currentProduct.id : '',
         brand_id: currentBrandId,
-        slug: buildTemplateProductSlug(currentBrandId, templateProduct.product.slug),
-        product_code: templateProduct.product.product_code,
+        slug: nextSlug,
+        product_code: text(currentProduct.product_code || templateProduct.product.product_code || templateProduct.product.slug),
+        sort_order: hasSelectedProduct ? safeNumber(currentProduct.sort_order, templateProduct.product.sort_order) : templateProduct.product.sort_order,
+        is_active: hasSelectedProduct ? currentProduct.is_active !== false : templateProduct.product.is_active !== false,
         items: templateProduct.product.items,
         media_gallery: templateProduct.product.media_gallery,
     });
-    moduleState.productCreateMode = true;
-    syncProductBrandDraft(currentBrandId);
+    moduleState.productCreateMode = !hasSelectedProduct;
+    moduleState.productBrandDraft = mergeTemplateBrandIntoProductBrandDraft(
+        syncProductBrandDraft(currentBrandId),
+        templateGroup.brand,
+    );
 }
 
 function templateLibraryMeta(brandSlug = '') {
@@ -3813,6 +4490,27 @@ function normalizeSlugPart(value = '', fallback = 'template') {
         .replace(/[^a-z0-9-]+/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-+|-+$/g, '') || fallback;
+}
+
+function mergeTemplateBrandIntoProductBrandDraft(currentBrand = {}, templateBrand = {}) {
+    const target = createBrandDraft(currentBrand);
+    const source = createBrandDraft(templateBrand);
+    return createBrandDraft({
+        ...target,
+        supplier_name: target.supplier_name || source.supplier_name,
+        sender_email: target.sender_email || source.sender_email,
+        subject_name: target.subject_name || source.subject_name,
+        overview_title: {
+            zh: target.overview_title?.zh || source.overview_title?.zh || '',
+            en: target.overview_title?.en || source.overview_title?.en || target.overview_title?.zh || source.overview_title?.zh || '',
+            ru: target.overview_title?.ru || source.overview_title?.ru || target.overview_title?.zh || source.overview_title?.zh || '',
+        },
+        footer_note: {
+            zh: target.footer_note?.zh || source.footer_note?.zh || '',
+            en: target.footer_note?.en || source.footer_note?.en || target.footer_note?.zh || source.footer_note?.zh || '',
+            ru: target.footer_note?.ru || source.footer_note?.ru || target.footer_note?.zh || source.footer_note?.zh || '',
+        },
+    });
 }
 
 function buildTemplateProductSlug(targetBrandId = '', sourceSlug = '') {
@@ -4273,27 +4971,20 @@ function selectOptionsMarkup(options = [], current = '') {
     return options.map((option) => `<option value="${esc(option.value)}" ${text(current) === text(option.value) ? 'selected' : ''}>${esc(option.label)}</option>`).join('');
 }
 
-function legacyTemplateBrandAlias(brand = {}) {
-    const slug = text(brand?.slug || brand?.brand_slug || brand?.brandSlug || brandSlugById(brand?.id)).toLowerCase();
-    return LEGACY_TEMPLATE_BRAND_ALIASES[slug] || null;
+function legacyTemplateBrandAlias() {
+    return null;
 }
 
-function hasLegacyTemplateBrandToken(value = '') {
-    return /vman|minerpower/i.test(text(value));
+function hasLegacyTemplateBrandToken() {
+    return false;
 }
 
-function displayBrandFieldValue(value = '', brand = {}, field = 'display_name') {
-    const raw = text(value);
-    const alias = legacyTemplateBrandAlias(brand);
-    if (!alias || !hasLegacyTemplateBrandToken(raw)) return raw;
-    return text(alias[field] || alias.display_name || raw, raw);
+function displayBrandFieldValue(value = '') {
+    return text(value);
 }
 
-function displayBrandSlugValue(value = '', brand = {}) {
-    const raw = text(value);
-    const alias = legacyTemplateBrandAlias(brand);
-    if (!alias || !hasLegacyTemplateBrandToken(raw)) return raw;
-    return raw.replace(/vman|minerpower/gi, alias.slug);
+function displayBrandSlugValue(value = '') {
+    return text(value);
 }
 
 function displayBrandDraft(brand = {}) {
@@ -4395,6 +5086,8 @@ function isQuoteSetupMissing(error) {
         message.includes('quote_requirements') ||
         message.includes('quote_instances') ||
         message.includes('quote_deals') ||
+        message.includes('quote_customer_activities') ||
+        message.includes('quote_activity_reads') ||
         message.includes('admin_users') ||
         message.includes('infinite recursion') ||
         message.includes('relation') ||
@@ -4416,7 +5109,7 @@ function renderQuoteSetupRequired(input, error) {
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-database"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>执行 SQL 文件</strong>
-                        <span>请先在 Supabase SQL Editor 执行 <code>article_management/sql/006_quote_system.sql</code>；已有旧版库时，再补执行 <code>article_management/sql/008_quote_product_media.sql</code>、<code>article_management/sql/010_quote_customer_tracking.sql</code>、<code>article_management/sql/011_quote_send_ledger.sql</code>、<code>article_management/sql/012_quote_requirement_intake.sql</code>、<code>article_management/sql/013_quote_requirement_public_flow.sql</code>、<code>article_management/sql/017_sales_console_roles_and_deals.sql</code>、<code>article_management/sql/018_quote_deals_archive_fields.sql</code>；如果当前错误是 <code>quote_customers.is_deleted does not exist</code>，再单独执行 <code>article_management/sql/015_quote_customer_soft_delete.sql</code>。</span>
+                        <span>请先在 Supabase SQL Editor 执行 <code>article_management/sql/006_quote_system.sql</code>；已有旧版库时，再补执行 <code>article_management/sql/008_quote_product_media.sql</code>、<code>article_management/sql/010_quote_customer_tracking.sql</code>、<code>article_management/sql/011_quote_send_ledger.sql</code>、<code>article_management/sql/012_quote_requirement_intake.sql</code>、<code>article_management/sql/013_quote_requirement_public_flow.sql</code>、<code>article_management/sql/017_sales_console_roles_and_deals.sql</code>、<code>article_management/sql/018_quote_deals_archive_fields.sql</code>、<code>article_management/sql/021_quote_customer_activities.sql</code>；如果当前错误是 <code>quote_customers.is_deleted does not exist</code>，再单独执行 <code>article_management/sql/015_quote_customer_soft_delete.sql</code>。</span>
                     </div>
                 </div>
                 <div class="ams-quick-link ams-quick-link-static">
@@ -4470,6 +5163,25 @@ function localizedFieldGroup(idPrefix, label, value = {}, options = {}) {
                         .join('')}
                 </div>
             </details>
+        </div>
+    `;
+}
+
+function brandLocalizedFieldGroup(idPrefix, label, value = {}, options = {}) {
+    const localized = normalizeLocalizedText(value);
+    const placeholders = options.placeholders || {};
+    const effective = options.forceEmpty ? {} : localized;
+    return `
+        <div class="ams-quote-field-card">
+            <div class="ams-quote-field-card-head">
+                <strong>${esc(label)}</strong>
+                <span>默认中文录入</span>
+            </div>
+            <div class="ams-field">
+                <label>中文</label>
+                <textarea class="ams-textarea ams-quote-textarea" data-i18n-prefix="${esc(idPrefix)}" data-lang="zh" placeholder="${esc(placeholders.zh || '')}">${esc(effective.zh || '')}</textarea>
+                <div class="ams-field-help">最终多语言内容在报价可视化编辑中处理，这里只维护中文基线。</div>
+            </div>
         </div>
     `;
 }
@@ -4544,6 +5256,58 @@ function accessModeLabel(accessMode = '') {
     if (key === 'preview') return '后台预览';
     if (key === 'admin') return '管理员';
     return '公开链接';
+}
+
+function salesActivityTypeLabel(activityType = '') {
+    const key = text(activityType);
+    if (key === 'field_change') return '字段修改';
+    if (key === 'status_change') return '状态变化';
+    if (key === 'stage_advanced') return '节点推进';
+    if (key === 'quote_generated') return '生成报价';
+    if (key === 'public_link_opened') return '打开公开入口';
+    if (key === 'button_click') return '关键动作';
+    return '页面访问';
+}
+
+function salesActivityStageLabel(stageKey = '') {
+    return stageKey ? dealStageLabel(stageKey) : '未归类节点';
+}
+
+function salesActivityDetailLine(activity = {}) {
+    const detail = activity.detail_json && typeof activity.detail_json === 'object' ? activity.detail_json : {};
+    if (Array.isArray(detail.fields) && detail.fields.length) {
+        return detail.fields
+            .slice(0, 3)
+            .map((field) => `${text(field.label || field.field)}: ${text(field.before, '空')} -> ${text(field.after, '空')}`)
+            .join('；');
+    }
+    if (text(detail.summary)) return text(detail.summary);
+    if (text(detail.button)) return `按钮：${text(detail.button)}`;
+    if (text(detail.access_mode)) return `访问方式：${accessModeLabel(detail.access_mode)}`;
+    return '';
+}
+
+function salesActivityTimelineItemMarkup(activity = {}) {
+    const detailLine = salesActivityDetailLine(activity);
+    const stageLabel = salesActivityStageLabel(activity.stage_key);
+    const actorLabel = salesActorLabel(activity.actor_type, activity.actor_label);
+    return `
+        <article class="ams-sales-activity-item">
+            <div class="ams-sales-activity-main">
+                <div class="ams-sales-activity-head">
+                    <strong>${esc(text(activity.action_label, salesActivityTypeLabel(activity.activity_type)))}</strong>
+                    <span class="ams-sales-activity-pill is-${esc(text(activity.actor_type, 'system'))}">${esc(actorLabel)}</span>
+                    <span class="ams-sales-activity-stage">${esc(stageLabel)}</span>
+                </div>
+                <div class="ams-sales-activity-meta">
+                    <span>${esc(text(activity.page_key || activity.entity_type, 'sales'))}</span>
+                    <span>${esc(salesActivityTypeLabel(activity.activity_type))}</span>
+                    ${detailLine ? `<span>${esc(detailLine)}</span>` : ''}
+                </div>
+            </div>
+            <time>${esc(fmtDate(activity.occurred_at))}</time>
+        </article>
+    `;
 }
 
 function itemTableMarkup(prefix, sectionKey, items = []) {
@@ -4782,23 +5546,8 @@ function productBrandLocalizedFieldGroup(field, label, value = {}, options = {})
             <div class="ams-field">
                 <label>中文</label>
                 <textarea class="ams-textarea ams-quote-textarea" data-product-brand-i18n="${esc(field)}" data-lang="zh" placeholder="${esc(placeholders.zh || '')}">${esc(effective.zh || '')}</textarea>
-                <div class="ams-field-help">EN / RU 留空时会沿用中文内容。</div>
+                <div class="ams-field-help">最终多语言内容在报价可视化编辑中处理，这里只维护中文基线。</div>
             </div>
-            <details class="ams-locale-details">
-                <summary>可选：多语言覆盖</summary>
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    ${['en', 'ru']
-                        .map(
-                            (lang) => `
-                                <div class="ams-field">
-                                    <label>${lang.toUpperCase()}</label>
-                                    <textarea class="ams-textarea ams-quote-textarea" data-product-brand-i18n="${esc(field)}" data-lang="${esc(lang)}" placeholder="${esc(placeholders[lang] || '')}">${esc(effective[lang] || '')}</textarea>
-                                </div>
-                            `,
-                        )
-                        .join('')}
-                </div>
-            </details>
         </div>
     `;
 }
@@ -4808,7 +5557,7 @@ function productPublishCopyPanelMarkup(product, brandDraft = {}) {
     const brand = createBrandDraft(brandDraft);
     const copyPlaceholders = {
         productTitle: {
-            zh: '填写客户看到的产品名称，例如：P1200GF 独立发电系统',
+            zh: '客户页面看到的产品名称，例如：Magie AIO-500L 液冷版 500kW',
             en: 'Customer-facing product title in English.',
             ru: 'Customer-facing product title in Russian.',
         },
@@ -4834,8 +5583,6 @@ function productPublishCopyPanelMarkup(product, brandDraft = {}) {
             <div class="ams-field-help">供应商、发件邮箱、邮件署名继承品牌默认信息，无需在模板中重复维护。</div>
             <div class="ams-quote-product-copy-grid">
                 ${localizedFieldGroup('product:public_title', '产品标题', normalized.public_title, { placeholders: copyPlaceholders.productTitle, forceEmpty: true })}
-                ${productBrandLocalizedFieldGroup('overview_title', '页面页头标题', brand.overview_title, { placeholders: copyPlaceholders.overviewTitle, forceEmpty: true })}
-                ${productBrandLocalizedFieldGroup('footer_note', '页脚说明', brand.footer_note, { placeholders: copyPlaceholders.footerNote, forceEmpty: true })}
             </div>
         </section>
     `;
@@ -4843,47 +5590,22 @@ function productPublishCopyPanelMarkup(product, brandDraft = {}) {
 
 function brandDefaultLinkPanelMarkup(brandDraft = {}) {
     const context = brandDefaultLinkContext(brandDraft);
-    const selectedHint = context.selectedInstance
-        ? `${publishedBrandInstanceLabel(context.selectedInstance)} · 发布于 ${fmtDate(context.selectedInstance.published_at || context.selectedInstance.updated_at)}`
-        : context.published.length
-            ? '请选择一个已发布报价作为品牌默认入口。'
-            : '当前品牌还没有已发布报价，可先手动覆盖。';
     return `
         <div class="ams-quote-block ams-brand-default-link-panel">
             <div class="ams-section-head">
                 <div>
                     <h3>默认链接</h3>
-                    <p>优先从当前品牌的已发布报价中选择默认入口；如需特殊跳转，可再手动覆盖 slug。</p>
+                    <p>左侧绿色“默认链接”读这里。默认可直接填 slug，需要时再一键带入最新已发布报价。</p>
                 </div>
                 <div class="ams-row-actions">
                     <button class="ams-btn ams-btn-muted" type="button" id="ams-brand-default-link-autofill" ${context.published.length ? '' : 'disabled'}>带入最新已发布</button>
-                    <button class="ams-btn ams-btn-muted" type="button" id="ams-brand-default-link-clear-override">清除覆盖</button>
                 </div>
             </div>
             <div class="ams-brand-default-link-row">
                 <div class="ams-field">
-                    <label>已发布报价</label>
-                    <select class="ams-select" data-brand-default-picker ${context.published.length ? '' : 'disabled'}>
-                        <option value="">${context.published.length ? '请选择已发布报价' : '当前品牌暂无已发布报价'}</option>
-                        ${context.published
-                            .map(
-                                (instance) => `
-                                    <option value="${esc(instance.public_slug)}" ${context.pickerValue === text(instance.public_slug) ? 'selected' : ''}>${esc(publishedBrandInstanceLabel(instance))}</option>
-                                `,
-                            )
-                            .join('')}
-                    </select>
-                    <div class="ams-field-help" data-brand-default-picker-hint>${esc(selectedHint)}</div>
-                </div>
-                <div class="ams-field">
-                    <label>手动覆盖 slug</label>
-                    <input class="ams-input" data-brand-default-override value="${esc(context.overrideValue)}" placeholder="${esc(context.pickerValue || 'quote-public-slug')}">
-                    <div class="ams-field-help">留空时跟随上面的已发布报价；填写后优先使用这里。</div>
-                </div>
-                <div class="ams-brand-default-link-meta">
-                    <strong>当前生效</strong>
-                    <span data-brand-default-effective>${esc(context.effectiveSlug || '--')}</span>
-                    <small class="ams-brand-default-link-status" data-brand-default-mode>${esc(context.effectiveMode)}</small>
+                    <label>默认链接 slug</label>
+                    <input class="ams-input" data-brand-field="default_quote_slug" value="${esc(context.effectiveSlug)}" placeholder="${esc(context.pickerValue || 'quote-public-slug')}">
+                    <div class="ams-field-help">${context.published.length ? '不填时可点右侧按钮自动带入最近已发布报价。' : '当前品牌还没有已发布报价，请直接手填。'}</div>
                 </div>
             </div>
         </div>
@@ -5139,7 +5861,7 @@ function mediaLibraryMarkup(prefix, mediaConfig = createMediaConfig(), mediaGall
         options.description ||
         (prefix === 'instance'
             ? '这里维护的是当前产品的公共图片库。上传、替换、删除和排序后，当前报价单会同步最新图片快照。'
-            : '每个品牌 / 产品维护独立图片库。客户页可选择展示在产品上方或下方，并切换为轮播图或纵向铺图。');
+            : '每个品牌 / 产品维护独立图片库。客户页默认在报价表格下方以纵向铺图展示，最终样式在可视化编辑端确认。');
 
     return `
         <section class="ams-quote-block ${esc(extraClass)}">
@@ -5154,20 +5876,6 @@ function mediaLibraryMarkup(prefix, mediaConfig = createMediaConfig(), mediaGall
                     <input type="checkbox" data-media-config-prefix="${esc(prefix)}" data-media-config-field="enabled" ${config.enabled ? 'checked' : ''} ${editable ? '' : 'disabled'}>
                     <span>在客户页显示产品图片</span>
                 </label>
-                <div class="ams-media-toolbar-group">
-                    <label>展示位置</label>
-                    <select class="ams-select" data-media-config-prefix="${esc(prefix)}" data-media-config-field="position" ${editable ? '' : 'disabled'}>
-                        <option value="${MEDIA_POSITIONS.ABOVE}" ${config.position === MEDIA_POSITIONS.ABOVE ? 'selected' : ''}>产品标题下方</option>
-                        <option value="${MEDIA_POSITIONS.BELOW}" ${config.position === MEDIA_POSITIONS.BELOW ? 'selected' : ''}>报价表格下方</option>
-                    </select>
-                </div>
-                <div class="ams-media-toolbar-group">
-                    <label>展示样式</label>
-                    <select class="ams-select" data-media-config-prefix="${esc(prefix)}" data-media-config-field="layout" ${editable ? '' : 'disabled'}>
-                        <option value="${MEDIA_LAYOUTS.CAROUSEL}" ${config.layout === MEDIA_LAYOUTS.CAROUSEL ? 'selected' : ''}>轮播图</option>
-                        <option value="${MEDIA_LAYOUTS.STACK}" ${config.layout === MEDIA_LAYOUTS.STACK ? 'selected' : ''}>纵向铺图</option>
-                    </select>
-                </div>
                 ${
                     editable
                         ? `
@@ -5179,7 +5887,7 @@ function mediaLibraryMarkup(prefix, mediaConfig = createMediaConfig(), mediaGall
                         : ''
                 }
             </div>
-            <div class="ams-field-help ams-media-toolbar-help">图片为空时客户页不会显示该图片区块；轮播图适合少量重点图，纵向铺图适合设备细节和安装示意。</div>
+            <div class="ams-field-help ams-media-toolbar-help">图片为空时客户页不会显示该图片区块；后续可在可视化编辑端再确认最终展示方式，默认为报价表格下方纵向铺图。</div>
             ${
                 gallery.length
                     ? `
@@ -5523,14 +6231,15 @@ function salesCustomerStageStripMarkup(customerId = '') {
                     deal?.id
                     && ['completed', 'active', 'blocked'].includes(stageStatus),
                 );
-                const tone = stageStatus === 'completed'
-                    ? 'is-completed'
-                    : stageStatus === 'active'
-                        ? 'is-active'
-                        : stageStatus === 'blocked'
-                            ? 'is-warning'
+                  const tone = stageStatus === 'completed'
+                      ? (count > 0 ? 'is-completed' : 'is-muted')
+                      : stageStatus === 'active'
+                          ? 'is-active'
+                          : stageStatus === 'blocked'
+                              ? 'is-warning'
                             : 'is-muted';
                 const body = `
+                    ${count > 0 ? '<span class="ams-sales-customer-stage-pin" aria-hidden="true">📌</span>' : ''}
                     <strong>${esc(stage.shortLabel || stage.label)}</strong>
                     <span>${esc(count)}</span>
                 `;
@@ -5552,22 +6261,32 @@ function renderSalesCustomerArchiveList() {
                 const quoteSummary = summarizeCustomerQuotes(customer.id);
                 const requirementSummary = summarizeCustomerRequirements(customer.id);
                 const notePreview = text(customer.notes).replace(/\s+/g, ' ').trim();
+                const expanded = moduleState.customerArchiveExpandedMap[text(customer.id)] === true;
                 return `
-                    <article class="ams-sales-customer-card">
-                        <div class="ams-sales-customer-card-main">
-                            <div class="ams-sales-customer-card-copy">
-                                <strong>${esc(customerDisplayName(customer))}</strong>
-                                <div class="ams-sales-customer-card-meta">
-                                    <span><strong>联系人</strong><em>${esc(text(customer.contact_name, '未填写'))}</em></span>
-                                    <span><strong>客户公司</strong><em>${esc(text(customer.company_name, '未填写'))}</em></span>
-                                    <span><strong>电话 / 邮箱</strong><em>${esc(text(customer.phone || customer.email, '未填写'))}</em></span>
-                                    <span><strong>客户备注</strong><em>${esc(notePreview ? `${notePreview.slice(0, 72)}${notePreview.length > 72 ? '...' : ''}` : '未填写')}</em></span>
-                                    <span><strong>统计</strong><em>${esc(`${deals.length} 条销售流程 / ${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单`)}</em></span>
-                                    <span><strong>更新时间</strong><em>${esc(fmtDate(customer.updated_at || customer.created_at))}</em></span>
+                        <article class="ams-sales-customer-card">
+                            <div class="ams-sales-customer-card-main">
+                                <div class="ams-sales-customer-card-copy">
+                                    <div class="ams-sales-customer-card-head">
+                                        <div class="ams-sales-customer-card-title">
+                                            <strong>${esc(customerDisplayName(customer))}</strong>
+                                            <button class="ams-sales-customer-expand" type="button" data-customer-expand="${esc(customer.id)}" aria-expanded="${expanded ? 'true' : 'false'}" aria-label="${expanded ? '收起客户信息' : '展开客户信息'}">
+                                                <i class="fa-solid fa-chevron-${expanded ? 'up' : 'down'}"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    ${expanded ? `
+                                        <div class="ams-sales-customer-card-meta is-compact">
+                                            <span><strong>联系人</strong><em>${esc(text(customer.contact_name, '未填写'))}</em></span>
+                                            <span><strong>客户公司</strong><em>${esc(text(customer.company_name, '未填写'))}</em></span>
+                                            <span><strong>电话 / 邮箱</strong><em>${esc(text(customer.phone || customer.email, '未填写'))}</em></span>
+                                            <span><strong>更新时间</strong><em>${esc(fmtDate(customer.updated_at || customer.created_at))}</em></span>
+                                            <span class="is-wide"><strong>统计</strong><em>${esc(`${deals.length} 条销售流程 / ${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单`)}</em></span>
+                                            <span class="is-wide"><strong>客户备注</strong><em>${esc(notePreview ? `${notePreview.slice(0, 96)}${notePreview.length > 96 ? '...' : ''}` : '未填写')}</em></span>
+                                        </div>
+                                    ` : ''}
                                 </div>
-                            </div>
-                            <div class="ams-sales-customer-card-actions">
-                                ${customer.is_deleted
+                                <div class="ams-sales-customer-card-actions">
+                                  ${customer.is_deleted
                                     ? `<button class="ams-btn ams-btn-muted" type="button" data-customer-restore="${esc(customer.id)}">恢复</button>`
                                     : customer.is_active === false
                                         ? `
@@ -6075,6 +6794,30 @@ function customerInsightsMarkup() {
     `;
 }
 
+function customerActivityTimelinePanelMarkup(customerId = '') {
+    const filter = text(moduleState.customerActivityFilter, 'all');
+    const rows = customerActivityTimelineRows(customerId)
+        .filter((item) => filter === 'all' ? true : text(item.actor_type) === filter);
+    return `
+        <section class="ams-card ams-sales-activity-panel">
+            <div class="ams-section-head">
+                <div>
+                    <h3>用户行为轨迹</h3>
+                    <p>记录客户、销售和系统在这条客户销售链路上的关键动作。</p>
+                </div>
+                <div class="ams-row-actions">
+                    ${['all', 'customer', 'sales', 'system'].map((actorType) => `
+                        <button class="ams-btn ${filter === actorType ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" data-customer-activity-filter="${esc(actorType)}">${esc(actorType === 'all' ? '全部' : SALES_ACTIVITY_ACTOR_LABELS[actorType])}</button>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="ams-sales-activity-list">
+                ${rows.length ? rows.map((item) => salesActivityTimelineItemMarkup(item)).join('') : '<div class="ams-empty">当前客户还没有可展示的销售活动。</div>'}
+            </div>
+        </section>
+    `;
+}
+
 function instanceInsightsMarkup() {
     if (!moduleState.instanceEditor?.id) return '';
     const summary = moduleState.instanceEventSummary || emptyInstanceEventSummary();
@@ -6177,12 +6920,15 @@ function bindBrandEditor(input) {
     }
     hydrateCustomSelects(content);
     const displayNameField = () => content.querySelector('[data-brand-field="display_name"]');
-    const defaultLinkPicker = () => content.querySelector('[data-brand-default-picker]');
-    const defaultLinkOverride = () => content.querySelector('[data-brand-default-override]');
-    const defaultLinkHint = () => content.querySelector('[data-brand-default-picker-hint]');
-    const defaultLinkEffective = () => content.querySelector('[data-brand-default-effective]');
-    const defaultLinkMode = () => content.querySelector('[data-brand-default-mode]');
+    const defaultLinkField = () => content.querySelector('[data-brand-field="default_quote_slug"]');
     const shareSecretField = () => content.querySelector('[data-brand-field="share_signing_secret"]');
+    const updateBrandColorPreview = (field, value) => {
+        const color = text(value);
+        const swatch = content.querySelector(`[data-brand-color-preview=\"${field}\"]`);
+        const valueNode = content.querySelector(`[data-brand-color-value=\"${field}\"]`);
+        if (swatch) swatch.style.background = color || 'transparent';
+        if (valueNode) valueNode.textContent = color || '--';
+    };
     const syncDisplayNameFromBrandName = (value) => {
         moduleState.brandEditor.display_name = text(value);
         const displayNode = displayNameField();
@@ -6190,32 +6936,12 @@ function bindBrandEditor(input) {
             displayNode.value = moduleState.brandEditor.display_name;
         }
     };
-    const applyBrandDefaultLinkValue = () => {
-        const pickerValue = text(defaultLinkPicker()?.value);
-        const overrideValue = text(defaultLinkOverride()?.value);
-        const selectedInstance = publishedBrandInstances(moduleState.brandEditor.id).find((item) => text(item.public_slug) === pickerValue) || null;
-        const effectiveSlug = text(overrideValue || pickerValue);
-        const pickerHint = selectedInstance
-            ? `${publishedBrandInstanceLabel(selectedInstance)} · 发布于 ${fmtDate(selectedInstance.published_at || selectedInstance.updated_at)}`
-            : pickerValue
-                ? `已选择 ${pickerValue}`
-                : '当前品牌还没有已发布报价，可先手动覆盖。';
-        moduleState.brandEditor.default_quote_slug = effectiveSlug;
-        if (defaultLinkHint()) defaultLinkHint().textContent = pickerHint;
-        if (defaultLinkEffective()) defaultLinkEffective().textContent = effectiveSlug || '--';
-        if (defaultLinkMode()) defaultLinkMode().textContent = overrideValue ? '手动覆盖' : effectiveSlug ? '已发布报价' : '未设置';
-    };
     const syncDefaultLinkField = (force = false) => {
         if (moduleState.brandDefaultLinkTouched && !force) return;
         const candidate = latestPublishedQuoteSlugForBrand(moduleState.brandEditor.id);
-        if (!candidate && !force) {
-            applyBrandDefaultLinkValue();
-            return;
-        }
-        if (defaultLinkPicker()) defaultLinkPicker().value = candidate;
-        if (defaultLinkOverride()) defaultLinkOverride().value = '';
+        if (!candidate && !force) return;
         moduleState.brandEditor.default_quote_slug = candidate;
-        applyBrandDefaultLinkValue();
+        if (defaultLinkField()) defaultLinkField().value = candidate;
     };
 
     syncDefaultLinkField(false);
@@ -6224,6 +6950,8 @@ function bindBrandEditor(input) {
         moduleState.brandEditor.share_signing_secret = nextSecret;
         if (shareSecretField()) shareSecretField().value = nextSecret;
     }
+    updateBrandColorPreview('theme_primary', moduleState.brandEditor.theme_primary);
+    updateBrandColorPreview('theme_dark', moduleState.brandEditor.theme_dark);
 
     content.querySelectorAll('[data-brand-field]').forEach((node) => {
         node.addEventListener('input', () => {
@@ -6235,18 +6963,24 @@ function bindBrandEditor(input) {
                 if (!moduleState.brandDisplayNameTouched) {
                     syncDisplayNameFromBrandName(nextValue);
                 }
+                persistBrandEditorDraftState();
                 return;
             }
             moduleState.brandEditor[field] = nextValue;
+            if (field === 'theme_primary' || field === 'theme_dark') {
+                updateBrandColorPreview(field, nextValue);
+            }
             if (field === 'display_name') {
                 moduleState.brandDisplayNameTouched = text(nextValue) !== text(moduleState.brandEditor.brand_name);
             }
+            persistBrandEditorDraftState();
         });
         if (node.type === 'checkbox') {
             node.addEventListener('change', () => {
                 const field = node.dataset.brandField;
                 if (!field) return;
                 moduleState.brandEditor[field] = Boolean(node.checked);
+                persistBrandEditorDraftState();
             });
         }
     });
@@ -6271,17 +7005,8 @@ function bindBrandEditor(input) {
             const lang = node.dataset.lang;
             if (!key || !lang) return;
             upsertLocalizedField(moduleState.brandEditor, key, lang, node.value);
+            persistBrandEditorDraftState();
         });
-    });
-
-    defaultLinkPicker()?.addEventListener('change', () => {
-        moduleState.brandDefaultLinkTouched = true;
-        applyBrandDefaultLinkValue();
-    });
-
-    defaultLinkOverride()?.addEventListener('input', () => {
-        moduleState.brandDefaultLinkTouched = true;
-        applyBrandDefaultLinkValue();
     });
 
     document.getElementById('ams-quote-brand-new')?.addEventListener('click', () => {
@@ -6289,6 +7014,7 @@ function bindBrandEditor(input) {
         moduleState.brandDisplayNameTouched = false;
         moduleState.brandDefaultLinkTouched = false;
         moduleState.brandCreateMode = true;
+        persistBrandEditorDraftState();
         void renderQuoteBrandsPage(input);
     });
 
@@ -6301,6 +7027,7 @@ function bindBrandEditor(input) {
             moduleState.brandDisplayNameTouched = false;
             moduleState.brandDefaultLinkTouched = false;
             moduleState.brandCreateMode = false;
+            persistBrandEditorDraftState();
             void renderQuoteBrandsPage(input);
         });
     });
@@ -6318,6 +7045,7 @@ function bindBrandEditor(input) {
         moduleState.brandDisplayNameTouched = false;
         moduleState.brandDefaultLinkTouched = false;
         moduleState.brandCreateMode = false;
+        persistBrandEditorDraftState();
         void renderQuoteBrandsPage(input);
     });
 
@@ -6328,6 +7056,7 @@ function bindBrandEditor(input) {
                     ...moduleState.brandEditor,
                     is_active: false,
                 });
+                clearBrandEditorDraftState();
                 input.showToast('品牌已归档。');
                 await renderQuoteBrandsPage(input);
             } catch (error) {
@@ -6343,6 +7072,7 @@ function bindBrandEditor(input) {
                     ...moduleState.brandEditor,
                     is_active: true,
                 });
+                clearBrandEditorDraftState();
                 input.showToast('品牌已恢复。');
                 moduleState.brandArchiveView = false;
                 await renderQuoteBrandsPage(input);
@@ -6355,18 +7085,14 @@ function bindBrandEditor(input) {
     document.getElementById('ams-brand-default-link-autofill')?.addEventListener('click', () => {
         moduleState.brandDefaultLinkTouched = false;
         syncDefaultLinkField(true);
-    });
-
-    document.getElementById('ams-brand-default-link-clear-override')?.addEventListener('click', () => {
-        if (defaultLinkOverride()) defaultLinkOverride().value = '';
-        moduleState.brandDefaultLinkTouched = true;
-        applyBrandDefaultLinkValue();
+        persistBrandEditorDraftState();
     });
 
     document.getElementById('ams-quote-brand-save')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
             try {
                 await saveBrandDraft(input.user, moduleState.brandEditor);
+                clearBrandEditorDraftState();
                 moduleState.brandDisplayNameTouched = false;
                 moduleState.brandDefaultLinkTouched = false;
                 input.showToast('品牌已保存。');
@@ -6380,6 +7106,7 @@ function bindBrandEditor(input) {
     document.getElementById('ams-quote-import-legacy')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '导入中...', async () => {
             try {
+                clearBrandEditorDraftState();
                 await importLegacySeedData(input.user);
                 input.showToast('两套示例模板已导入。');
                 await renderQuoteBrandsPage(input);
@@ -6391,8 +7118,10 @@ function bindBrandEditor(input) {
 }
 
 export async function renderQuoteBrandsPage(input) {
+    restoreBrandEditorDraftState();
     try {
         await ensureBaseData();
+        await repairLegacyBrandRecords(input.user);
     } catch (error) {
         if (isQuoteSetupMissing(error)) {
             renderQuoteSetupRequired(input, error);
@@ -6478,7 +7207,7 @@ export async function renderQuoteBrandsPage(input) {
                 </div>
                 ${
                     moduleState.brandEditor.id
-                        ? `<div class="ams-field-help" style="margin: 6px 0 12px;">${moduleState.brandEditor.is_active === false ? '已归档品牌默认不再出现在主列表、模板选择和报价入口。' : '归档后品牌会从默认列表和新建入口中隐藏，但历史数据仍保留。'}</div>`
+                        ? `<div class="ams-field-help" style="margin: 6px 0 12px;">${moduleState.brandEditor.is_active === false ? '\u5df2\u5f52\u6863\u54c1\u724c\u9ed8\u8ba4\u4e0d\u518d\u51fa\u73b0\u5728\u4e3b\u5217\u8868\u3001\u6a21\u677f\u9009\u62e9\u548c\u62a5\u4ef7\u5165\u53e3\u3002' : '\u5f52\u6863\u540e\u54c1\u724c\u4f1a\u4ece\u9ed8\u8ba4\u5217\u8868\u548c\u65b0\u5efa\u5165\u53e3\u4e2d\u9690\u85cf\uff0c\u4f46\u5386\u53f2\u6570\u636e\u4ecd\u4fdd\u7559\u3002'}</div>`
                         : ''
                 }
                 <div class="ams-site-field-grid ams-site-field-grid-wide">
@@ -6488,8 +7217,8 @@ export async function renderQuoteBrandsPage(input) {
                     <div class="ams-field"><label>供应商</label><input class="ams-input" data-brand-field="supplier_name" value="${esc(brandEditorView.supplier_name)}" placeholder="${esc(brandFieldPlaceholders.supplier_name)}"></div>
                     <div class="ams-field"><label>发件邮箱</label><input class="ams-input" data-brand-field="sender_email" value="${esc(moduleState.brandEditor.sender_email)}" placeholder="${esc(brandFieldPlaceholders.sender_email)}"></div>
                     <div class="ams-field"><label>邮件主题署名</label><input class="ams-input" data-brand-field="subject_name" value="${esc(brandEditorView.subject_name)}" placeholder="${esc(brandFieldPlaceholders.subject_name)}"></div>
-                    <div class="ams-field"><label>主题绿</label><input class="ams-input" type="color" data-brand-field="theme_primary" value="${esc(moduleState.brandEditor.theme_primary)}"></div>
-                    <div class="ams-field"><label>深绿底</label><input class="ams-input" type="color" data-brand-field="theme_dark" value="${esc(moduleState.brandEditor.theme_dark)}"></div>
+                    <div class="ams-field"><label>\u4e3b\u9898\u7eff</label><div class="ams-inline-actions ams-inline-actions-compact"><input class="ams-input" type="color" data-brand-field="theme_primary" value="${esc(moduleState.brandEditor.theme_primary)}"><span data-brand-color-preview="theme_primary" aria-hidden="true" style="width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:${esc(moduleState.brandEditor.theme_primary)};box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);"></span><span class="ams-field-help" data-brand-color-value="theme_primary">${esc(moduleState.brandEditor.theme_primary)}</span></div></div>
+                    <div class="ams-field"><label>\u6df1\u7eff\u5e95</label><div class="ams-inline-actions ams-inline-actions-compact"><input class="ams-input" type="color" data-brand-field="theme_dark" value="${esc(moduleState.brandEditor.theme_dark)}"><span data-brand-color-preview="theme_dark" aria-hidden="true" style="width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:${esc(moduleState.brandEditor.theme_dark)};box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);"></span><span class="ams-field-help" data-brand-color-value="theme_dark">${esc(moduleState.brandEditor.theme_dark)}</span></div></div>
                     <div class="ams-field">
                         <label>分享签名密钥</label>
                         <input class="ams-input" data-brand-field="share_signing_secret" value="${esc(moduleState.brandEditor.share_signing_secret)}" readonly spellcheck="false" autocomplete="off">
@@ -6501,31 +7230,9 @@ export async function renderQuoteBrandsPage(input) {
                     <div class="ams-field"><label>分享本地前缀</label><input class="ams-input" data-brand-field="share_unlock_prefix" value="${esc(moduleState.brandEditor.share_unlock_prefix)}" placeholder="${esc(brandFieldPlaceholders.share_unlock_prefix)}"></div>
                     <div class="ams-field"><label class="ams-social-toggle"><input type="checkbox" data-brand-field="is_active" ${moduleState.brandEditor.is_active ? 'checked' : ''}><span>启用品牌</span></label></div>
                 </div>
-                ${salesConsole
-                    ? ''
-                    : `
-                        <div class="ams-quote-block ams-brand-default-link-panel">
-                            <div class="ams-section-head">
-                                <div>
-                                    <h3>默认链接</h3>
-                                    <p>左侧绿色“默认链接”显示这里。会优先带入该品牌最近已发布报价单的 slug，你也可以手动自定义。</p>
-                                </div>
-                                <div class="ams-row-actions"><button class="ams-btn ams-btn-muted" type="button" id="ams-brand-default-link-autofill">自动带入已发布报价</button></div>
-                            </div>
-                            <div class="ams-brand-default-link-row">
-                                <div class="ams-field">
-                                    <label>默认链接 slug</label>
-                                    <input class="ams-input" data-brand-field="default_quote_slug" value="${esc(displayedDefaultQuoteSlug)}" placeholder="${esc(brandFieldPlaceholders.default_quote_slug)}">
-                                </div>
-                                <div class="ams-brand-default-link-meta">
-                                    <strong>当前显示</strong>
-                                    <span>${esc(displayedDefaultQuoteSlug || '--')}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `}
-                ${localizedFieldGroup('brand:overview_title', '页面总标题', moduleState.brandEditor.overview_title, { placeholders: brandFieldPlaceholders.overview_title })}
-                ${localizedFieldGroup('brand:footer_note', '页脚说明', moduleState.brandEditor.footer_note, { placeholders: brandFieldPlaceholders.footer_note })}
+                ${brandDefaultLinkPanelMarkup(moduleState.brandEditor)}
+${brandLocalizedFieldGroup('brand:overview_title', '页面总标题', moduleState.brandEditor.overview_title, { placeholders: brandFieldPlaceholders.overview_title })}
+${brandLocalizedFieldGroup('brand:footer_note', '页脚说明', moduleState.brandEditor.footer_note, { placeholders: brandFieldPlaceholders.footer_note })}
             </section>
                     `
                     : `
@@ -6578,6 +7285,14 @@ function bindProductEditor(input) {
         } catch (error) {
             input.showToast(error.message || '载入基础模板失败。', true);
         }
+    });
+
+    document.getElementById('ams-open-product-visual-editor')?.addEventListener('click', () => {
+        if (!moduleState.productEditor?.id) {
+            input.showToast('Save the product before opening visual editor.', true);
+            return;
+        }
+        window.open(quoteEditorUrl('product', moduleState.productEditor.id), '_blank', 'noopener');
     });
 
     document.querySelectorAll('[data-product-edit]').forEach((button) => {
@@ -7015,6 +7730,7 @@ export async function renderQuoteProductsPage(input) {
                                         : '<button class="ams-btn ams-btn-danger" type="button" id="ams-quote-product-archive-current">删除产品</button>'
                                     : ''
                             }
+                            <button class="ams-btn ams-btn-muted" type="button" id="ams-open-product-visual-editor" ${product.id ? '' : 'disabled'}>Visual Editor</button>
                             ${salesConsole ? '' : '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-product-create-instance">从产品生成报价单</button>'}
                             <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-product-save">保存产品</button>
                         </div>
@@ -7038,16 +7754,10 @@ export async function renderQuoteProductsPage(input) {
                                 ${moduleState.brands.map((brand) => `<option value="${esc(brand.id)}" ${product.brand_id === brand.id ? 'selected' : ''}>${esc(brand.display_name)}</option>`).join('')}
                             </select>
                         </div>
-                        <div class="ams-field"><label>产品 slug</label><input class="ams-input" data-product-field="slug" value="" placeholder="用于链接与识别的唯一 slug，例如 p1200gf"></div>
-                        <div class="ams-field"><label>产品代码</label><input class="ams-input" data-product-field="product_code" value="" placeholder="客户看到的产品代号，例如 P1200GF"></div>
-                        <div class="ams-field">
-                            <label>默认语言</label>
-                            <select class="ams-select" data-product-field="default_lang">
-                                ${SUPPORTED_LANGS.map((lang) => `<option value="${lang}" ${product.default_lang === lang ? 'selected' : ''}>${lang.toUpperCase()}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="ams-field"><label>有效期（小时）</label><input class="ams-input" type="number" min="1" step="1" data-product-field="validity_hours" value="" placeholder="报价有效期（小时），例如 72"></div>
-                        <div class="ams-field"><label>排序</label><input class="ams-input" type="number" min="0" step="10" data-product-field="sort_order" value="" placeholder="列表排序，数值越小越靠前"></div>
+                        <div class="ams-field"><label>链接标识</label><input class="ams-input" data-product-field="slug" value="${esc(product.slug)}" placeholder="仅用于链接与系统识别，例如 magie-aio-500l"></div>
+                        <div class="ams-field"><label>产品型号</label><input class="ams-input" data-product-field="product_code" value="${esc(product.product_code)}" placeholder="产品型号/代号，例如 AIO-500L、P1200GF"></div>
+                        <div class="ams-field"><label>有效期（小时）</label><input class="ams-input" type="number" min="1" step="1" data-product-field="validity_hours" value="${esc(product.validity_hours)}" placeholder="报价有效期（小时），例如 72"></div>
+                        <div class="ams-field"><label>排序</label><input class="ams-input" type="number" min="0" step="10" data-product-field="sort_order" value="${esc(product.sort_order)}" placeholder="列表排序，数值越小越靠前"></div>
                     </div>
                     ${productPublishCopyPanelMarkup(product, currentProductBrandDraft())}
                     ${productVisualEditorSurfaceMarkup(product, currentProductBrandDraft())}
@@ -7763,6 +8473,14 @@ function bindCustomerEditor(input) {
         moduleState.customerSends = [];
         moduleState.customerCreateMode = true;
         void renderQuoteCustomersPage(input);
+    });
+
+    document.querySelectorAll('[data-customer-expand]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const customerId = text(button.dataset.customerExpand);
+            moduleState.customerArchiveExpandedMap[customerId] = moduleState.customerArchiveExpandedMap[customerId] !== true;
+            void renderQuoteCustomersPage(input);
+        });
     });
 
     document.querySelectorAll('[data-customer-edit]').forEach((button) => {
@@ -8999,6 +9717,7 @@ export async function renderQuoteInstancesPage(input) {
 export async function renderQuoteCustomersPage(input) {
     try {
         await ensureBaseData();
+        await fetchUnreadCustomerActivitySummary('customer_profile', input.user, input);
     } catch (error) {
         if (isQuoteSetupMissing(error)) {
             renderQuoteSetupRequired(input, error);
@@ -9055,6 +9774,24 @@ export async function renderQuoteCustomersPage(input) {
     const customerPageSub = salesConsole
         ? '先保存客户档案，系统会自动生成客户需求链接；后续按流水线等待客户提交并继续推进。'
         : '按客户查看关联报价单、浏览记录、分享动作，并维护客户主档信息。';
+    if (activeCustomerId) {
+        await appendSalesActivity({
+            customer_id: activeCustomerId,
+            deal_id: currentDeal?.id,
+            actor_type: 'sales',
+            actor_id: input.user?.id,
+            actor_label: input.user?.email || input.user?.id || 'sales',
+            activity_type: 'page_view',
+            entity_type: 'customer',
+            entity_id: activeCustomerId,
+            page_key: 'quote-customers',
+            stage_key: 'customer_profile',
+            action_label: '进入客户档案页',
+            detail_json: {
+                summary: customerDisplayName(moduleState.customerEditor || {}),
+            },
+        });
+    }
     const showSalesCustomerList = !(salesConsole && moduleState.customerCreateMode && !activeCustomerId);
     const customerListSwitchActions = salesConsole
         ? `
@@ -9088,7 +9825,7 @@ export async function renderQuoteCustomersPage(input) {
                     </div>
                 ` : ''}
                 <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>客户公司</label><input class="ams-input" data-customer-field="company_name" value="${esc(moduleState.customerEditor?.company_name)}" placeholder="Demo Customer"></div>
+                    <div class="ams-field"><label>客户公司/客户名称</label><input class="ams-input" data-customer-field="company_name" value="${esc(moduleState.customerEditor?.company_name)}" placeholder="Demo Customer"></div>
                     <div class="ams-field"><label>联系人</label><input class="ams-input" data-customer-field="contact_name" value="${esc(moduleState.customerEditor?.contact_name)}" placeholder="Receiver"></div>
                     <div class="ams-field"><label>客户邮箱</label><input class="ams-input" data-customer-field="email" value="${esc(moduleState.customerEditor?.email)}" placeholder="customer@example.com"></div>
                     <div class="ams-field"><label>客户电话</label><input class="ams-input" data-customer-field="phone" value="${esc(moduleState.customerEditor?.phone)}" placeholder="+7 000 000 0000"></div>
@@ -9153,7 +9890,7 @@ export async function renderQuoteCustomersPage(input) {
                         <div class="ams-summary-chip"><strong>更新时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.updated_at))}</span></div>
                     </div>
                     <div class="ams-site-field-grid ams-site-field-grid-wide">
-                        <div class="ams-field"><label>客户公司</label><input class="ams-input" data-customer-field="company_name" value="${esc(moduleState.customerEditor?.company_name)}" placeholder="Demo Customer"></div>
+                        <div class="ams-field"><label>客户公司/客户名称</label><input class="ams-input" data-customer-field="company_name" value="${esc(moduleState.customerEditor?.company_name)}" placeholder="Demo Customer"></div>
                         <div class="ams-field"><label>联系人</label><input class="ams-input" data-customer-field="contact_name" value="${esc(moduleState.customerEditor?.contact_name)}" placeholder="Receiver"></div>
                         <div class="ams-field"><label>客户邮箱</label><input class="ams-input" data-customer-field="email" value="${esc(moduleState.customerEditor?.email)}" placeholder="customer@example.com"></div>
                         <div class="ams-field"><label>客户电话</label><input class="ams-input" data-customer-field="phone" value="${esc(moduleState.customerEditor?.phone)}" placeholder="+7 000 000 0000"></div>
@@ -9186,6 +9923,7 @@ export async function renderQuoteCustomersPage(input) {
         currentStage: 'customer_profile',
         page: 'quote-customers',
         pipelineMode: 'overview',
+        hidePageHeader: salesConsole,
     });
     bindCustomerEditor(input);
     bindSalesPageChrome(input);
@@ -9576,19 +10314,35 @@ function stagePageSub(stageKey = '') {
     return `总流水线模式：${stage.label} 节点只处理当前阶段事项，不在中途新开销售线。`;
 }
 
-function salesOverviewStageRows() {
+function salesOverviewStageGuideLanes() {
     return [
         {
-            direction: 'forward',
-            stages: DEAL_STAGE_DEFINITIONS.slice(0, 5),
+            key: 'lane-intake',
+            phase: '第一阶段',
+            title: '客户与需求',
+            summary: '从客户建档到需求锁定，先把意向和边界确认清楚。',
+            stages: DEAL_STAGE_DEFINITIONS.slice(0, 3),
         },
         {
-            direction: 'backward',
-            stages: DEAL_STAGE_DEFINITIONS.slice(5, 9),
+            key: 'lane-quote',
+            phase: '第二阶段',
+            title: '报价与签约',
+            summary: '形成报价草稿、确认报价，并推进到合同签署。',
+            stages: DEAL_STAGE_DEFINITIONS.slice(3, 6),
         },
         {
-            direction: 'forward',
-            stages: DEAL_STAGE_DEFINITIONS.slice(9),
+            key: 'lane-delivery',
+            phase: '第三阶段',
+            title: '交付执行',
+            summary: '围绕定金、排产、验收和尾款，控制交付节奏。',
+            stages: DEAL_STAGE_DEFINITIONS.slice(6, 10),
+        },
+        {
+            key: 'lane-service',
+            phase: '第四阶段',
+            title: '物流与服务',
+            summary: '物流到场、部署交付，再进入长期运维支持。',
+            stages: DEAL_STAGE_DEFINITIONS.slice(10),
         },
     ];
 }
@@ -9691,6 +10445,7 @@ function pipelineListCardMarkup(stageKey = '', deal = {}, options = {}) {
     const customer = moduleState.customers.find((item) => item.id === deal.customer_id);
     const selected = text(options.selectedDealId) === text(deal.id);
     const customerFlow = options.customerFlow === true;
+    const unread = customerHasUnreadActivityInStage(deal.customer_id, stageKey);
     const stageUrl = customerFlow
         ? customerFlowStageUrl(stageKey, deal, deal.customer_id)
         : adminPageUrl('quote-pipeline', { stage: normalizeDealStageKey(stageKey), deal: deal.id });
@@ -9707,7 +10462,8 @@ function pipelineListCardMarkup(stageKey = '', deal = {}, options = {}) {
     const statusMeta = normalizeDealStatus(deal.deal_status) === 'active' ? '' : ` · ${dealStatusLabel(deal.deal_status)}`;
     return `
         <article class="ams-customer-list-card-shell ${selected ? 'is-active' : ''}">
-            <button class="ams-quote-list-card ${selected ? 'is-active' : ''}" type="button" data-sales-stage-select="${esc(stageUrl)}">
+            <button class="ams-quote-list-card ${selected ? 'is-active' : ''} ${unread ? 'has-activity-dot' : ''}" type="button" data-sales-stage-select="${esc(stageUrl)}">
+                ${unread ? '<span class="ams-activity-dot" aria-hidden="true"></span>' : ''}
                 <strong>${esc(primaryLabel)}</strong>
                 <span>${esc(secondaryLabel)}</span>
                 <span class="ams-quote-inline-submeta">${esc(text(deal.summary || deal.next_action, '待补充阶段说明'))}</span>
@@ -9781,27 +10537,7 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
                         <p>${normalizeDealStageKey(stageKey) === 'requirement_capture' ? '等待客户提交需求，并在这里查看填写进度、补充内部摘要，以及对外分享带有 GasGx 品牌说明的客户需求入口。' : '复核需求信息并锁定报价基线。'}</p>
                 </div>
                 <div class="ams-row-actions">
-                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-requirement-save">保存</button>
-                    ${requirementLink ? `<button class="ams-btn ams-btn-muted ${unreadCustomerUpdate ? 'has-alert-dot' : ''}" type="button" id="ams-sales-flow-requirement-open-link">查看客户需求${unreadCustomerUpdate ? '<span class="ams-btn-alert-dot" aria-hidden="true"></span>' : ''}</button>` : ''}
-                    <details class="ams-share-menu">
-                        <summary class="ams-btn ams-btn-muted" ${requirementLink ? '' : 'aria-disabled="true"'}>
-                            分享
-                        </summary>
-                        <div class="ams-share-menu-panel">
-                            <div class="ams-share-menu-copy">
-                                <strong>对外发送客户需求入口</strong>
-                                <span>复制时会带上填写目的说明、自动保存进度说明，以及 GasGx 品牌介绍；二维码海报适合微信、邮件或群转发。</span>
-                            </div>
-                            <button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-link" ${requirementLink ? '' : 'disabled'}>
-                                <i class="fa-solid fa-link"></i>
-                                <span>复制链接</span>
-                            </button>
-                            <button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-poster" ${requirementLink ? '' : 'disabled'}>
-                                <i class="fa-solid fa-qrcode"></i>
-                                <span>生成二维码海报</span>
-                            </button>
-                        </div>
-                    </details>
+                    <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-requirement-save">保存</button>
                     ${normalizeDealStageKey(stageKey) === 'requirement_confirmed' ? `<button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-requirement-confirm" ${canConfirm ? '' : 'disabled'}>确认需求</button>` : ''}
                 </div>
             </div>
@@ -9828,7 +10564,7 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
                 <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(customer))}</span></div>
                 <div class="ams-summary-chip"><strong>销售线</strong><span>${esc(text(deal?.title, '--'))}</span></div>
                 <div class="ams-summary-chip"><strong>状态</strong><span>${requirementStatusPill(requirement.status)}</span></div>
-                <div class="ams-summary-chip"><strong>公开链接</strong><span>${requirementLink ? `<a class="ams-inline-link" href="${esc(requirementLink)}" target="_blank" rel="noopener">打开客户表单</a>` : '保存后生成'}</span></div>
+                <div class="ams-summary-chip ams-summary-chip-link"><strong>公开链接</strong><span>${requirementLink ? `<a class="ams-inline-link" href="${esc(requirementLink)}" target="_blank" rel="noopener">打开客户表单</a>` : '保存后生成'}</span><small>对外发送时会自动带上填写目的说明、自动保存进度说明和 GasGx 品牌介绍。</small><div class="ams-summary-chip-actions"><button class="ams-btn ams-btn-muted ${unreadCustomerUpdate ? 'has-alert-dot' : ''}" type="button" id="ams-sales-flow-requirement-open-link" ${requirementLink ? '' : 'disabled'}>打开客户表单${unreadCustomerUpdate ? '<span class="ams-btn-alert-dot" aria-hidden="true"></span>' : ''}</button><button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-requirement-share-link" ${requirementLink ? '' : 'disabled'}>复制链接</button><button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-requirement-share-poster" ${requirementLink ? '' : 'disabled'}>二维码海报</button></div></div>
             </div>
             <div class="ams-site-field-grid ams-site-field-grid-wide">
                 <div class="ams-field"><label>客户填写进度说明</label><input class="ams-input" value="${esc(normalizeDealStageKey(stageKey) === 'requirement_capture' ? '当前阶段只等待客户填写，客户基础信息与需求详情以公开需求页实际提交内容为准。' : '当前阶段请基于客户已提交的真实需求内容进行确认。')}" disabled></div>
@@ -9836,6 +10572,9 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
             <div class="ams-field">
                 <label>销售沟通备注</label>
                 <textarea class="ams-textarea" rows="4" data-sales-flow-requirement-answer="communication_note_draft" placeholder="记录客户在微信、电话、邮件等私下沟通里的新增信息；每次保存都会追加一条沟通记录。">${esc(answers.communication_note_draft)}</textarea>
+                <div class="ams-sales-note-submit">
+                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-requirement-note-submit">提交备注</button>
+                </div>
             </div>
             <details class="ams-fold-card">
                 <summary class="ams-fold-summary">
@@ -9941,7 +10680,7 @@ function quoteFlowMarkup(stageKey = '', deal = null, instance = {}) {
                     </div>
                     ${isQuoteConfirmed ? `
                         <div class="ams-row-actions">
-                            <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-quote-save">保存确认信息</button>
+                            <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-quote-save">保存确认信息</button>
                             <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-instance-confirm" ${canConfirm ? '' : 'disabled'}>确认报价并进入签约合同</button>
                         </div>
                     ` : ''}
@@ -10004,7 +10743,7 @@ function contractStageMarkup(stage = {}, deal = null, record = {}) {
                         <p>向客户递送合同、记录客户返修意见，合同确认无误后归档到这里，再推进到定金付款。</p>
                     </div>
                     <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存合同信息</button>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存合同信息</button>
                         <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认合同并进入定金付款</button>
                     </div>
                 </div>
@@ -10050,7 +10789,7 @@ function depositStageMarkup(stage = {}, deal = null, record = {}) {
                         <p>跟进客户定金支付、核对电子回单或付款证明，确认到账后推进到排产安排。</p>
                     </div>
                     <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存付款跟进</button>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存付款跟进</button>
                         <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认定金到账并进入排产</button>
                     </div>
                 </div>
@@ -10083,7 +10822,7 @@ function productionStageMarkup(stage = {}, deal = null, record = {}) {
                         <p>按生产流程更新集装箱、发电机、矿箱模块等环节状态，记录工期和是否延误，并保留通知客户的方式。</p>
                     </div>
                     <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存排产进度</button>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存排产进度</button>
                         <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">通知客户验收并进入出厂验收</button>
                     </div>
                 </div>
@@ -10127,7 +10866,7 @@ function factoryAcceptanceStageMarkup(stage = {}, deal = null, record = {}) {
                         <p>支持上传纸质验收单图片，或发给客户线上验收确认入口。客户完成验收后，再推进到尾款确认。</p>
                     </div>
                     <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存验收信息</button>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存验收信息</button>
                         <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认验收完成并进入尾款确认</button>
                     </div>
                 </div>
@@ -10167,7 +10906,7 @@ function balanceStageMarkup(stage = {}, deal = null, record = {}) {
                         <p>确认客户尾款金额、到账结果和尾款回单。尾款确认后，销售线推进到物流运输。</p>
                     </div>
                     <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存尾款信息</button>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存尾款信息</button>
                         <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认尾款并进入物流运输</button>
                     </div>
                 </div>
@@ -10200,7 +10939,7 @@ function shippingStageMarkup(stage = {}, deal = null, record = {}) {
                         <p>记录承运商、运单号和到货预估，并保留发运通知客户的方式。物流确认后进入到场部署。</p>
                     </div>
                     <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存物流信息</button>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存物流信息</button>
                         <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认发运并进入到场部署</button>
                     </div>
                 </div>
@@ -10235,7 +10974,7 @@ function deploymentStageMarkup(stage = {}, deal = null, record = {}) {
                         <p>跟踪现场条件、部署时间和部署结论。部署完成后进入运维支持。</p>
                     </div>
                     <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存部署信息</button>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存部署信息</button>
                         <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认部署完成并进入运维支持</button>
                     </div>
                 </div>
@@ -10268,7 +11007,7 @@ function supportStageMarkup(stage = {}, deal = null, record = {}) {
                         <p>进入长期运维支持阶段，记录质保到期、支持负责人和客户服务渠道。完成后整条销售线可结案。</p>
                     </div>
                     <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存运维信息</button>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存运维信息</button>
                         <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">完成运维归档</button>
                     </div>
                 </div>
@@ -10316,7 +11055,7 @@ function executionStageFlowMarkup(stage = {}, deal = null) {
                         <p>当前页面只处理 ${esc(stage.label)} 节点内容，不混放其他阶段入口。</p>
                     </div>
                     <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存阶段</button>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存阶段</button>
                         <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">标记完成并进入下一节点</button>
                     </div>
                 </div>
@@ -10392,6 +11131,13 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
         button.addEventListener('click', () => {
             const href = button.dataset.salesStageSelect;
             if (href) window.location.assign(href);
+        });
+    });
+
+    document.querySelectorAll('[data-customer-activity-filter]').forEach((button) => {
+        button.addEventListener('click', () => {
+            moduleState.customerActivityFilter = button.dataset.customerActivityFilter || 'all';
+            void input.rerender();
         });
     });
 
@@ -10477,22 +11223,35 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
     document.getElementById('ams-sales-flow-requirement-save')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
             const answers = normalizeRequirementAnswers(moduleState.requirementEditor.answers);
-            const noteDraft = text(answers.communication_note_draft);
-            if (noteDraft) {
-                answers.communication_notes = [
-                    {
-                        note: noteDraft,
-                        created_at: new Date().toISOString(),
-                        author: text(input.user?.email || input.user?.id, 'sales'),
-                    },
-                    ...(answers.communication_notes || []),
-                ];
-                answers.communication_note_draft = '';
-                moduleState.requirementEditor.answers = answers;
-            }
+            moduleState.requirementEditor.answers = answers;
             const saved = await saveRequirementDraft(input.user, moduleState.requirementEditor);
             moduleState.requirementEditor = createRequirementDraft(saved);
-            input.showToast(noteDraft ? '需求与沟通备注已保存。' : '需求已保存。');
+            input.showToast('需求已保存。');
+            await input.rerender();
+        });
+    });
+
+    document.getElementById('ams-sales-flow-requirement-note-submit')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '提交中...', async () => {
+            const answers = normalizeRequirementAnswers(moduleState.requirementEditor.answers);
+            const noteDraft = text(answers.communication_note_draft);
+            if (!noteDraft) {
+                input.showToast('请先填写沟通备注。', true);
+                return;
+            }
+            answers.communication_notes = [
+                {
+                    note: noteDraft,
+                    created_at: new Date().toISOString(),
+                    author: text(input.user?.email || input.user?.id, 'sales'),
+                },
+                ...(answers.communication_notes || []),
+            ];
+            answers.communication_note_draft = '';
+            moduleState.requirementEditor.answers = answers;
+            const saved = await saveRequirementDraft(input.user, moduleState.requirementEditor);
+            moduleState.requirementEditor = createRequirementDraft(saved);
+            input.showToast('沟通备注已提交。');
             await input.rerender();
         });
     });
@@ -10763,6 +11522,7 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
 export async function renderQuotePipelinePage(input) {
     try {
         await ensureBaseData();
+        await fetchUnreadCustomerActivitySummary(currentSalesStageParam('requirement_capture'), input.user, input);
     } catch (error) {
         if (isQuoteSetupMissing(error)) {
             renderQuoteSetupRequired(input, error);
@@ -10785,9 +11545,29 @@ export async function renderQuotePipelinePage(input) {
     if (dealStageDefinition(stageKey).scope === 'quote') await ensureInstanceEditorForDeal(activeDeal);
     moduleState.dealEditor = activeDeal ? createDealDraft(moduleState.dealEditor || activeDeal) : createDealDraft();
     moduleState.dealStageRecords = activeDeal ? dealCurrentRecords(moduleState.dealEditor) : [];
+    if (activeDeal?.customer_id) {
+        await appendSalesActivity({
+            customer_id: activeDeal.customer_id,
+            deal_id: activeDeal.id,
+            requirement_id: moduleState.requirementEditor?.id,
+            instance_id: moduleState.instanceEditor?.id,
+            actor_type: 'sales',
+            actor_id: input.user?.id,
+            actor_label: input.user?.email || input.user?.id || 'sales',
+            activity_type: 'page_view',
+            entity_type: 'deal',
+            entity_id: activeDeal.id,
+            page_key: 'quote-pipeline',
+            stage_key: stageKey,
+            action_label: `进入阶段总览 · ${dealStageLabel(stageKey)}`,
+            detail_json: {
+                summary: text(activeDeal.title),
+            },
+        });
+    }
 
     renderSalesPageFrame(input, stagePageTitle(stageKey), stagePageSub(stageKey), `
-        <section class="ams-quote-layout">
+        <section class="ams-quote-layout ams-sales-stage-layout">
             <aside class="ams-card ams-quote-list-panel">
                 <div class="ams-section-head"><div><h3>总览模式 · ${esc(dealStageLabel(stageKey))} 列表</h3><p>当前阶段共 ${stageDeals.length} 条销售线，点击后可进入独立客户流水线。</p></div></div>
                 <div class="ams-field">
@@ -10813,6 +11593,7 @@ export async function renderQuotePipelinePage(input) {
 export async function renderQuoteCustomerFlowPage(input) {
     try {
         await ensureBaseData();
+        await fetchUnreadStageActivitySummary(input.user);
     } catch (error) {
         if (isQuoteSetupMissing(error)) {
             renderQuoteSetupRequired(input, error);
@@ -10854,18 +11635,42 @@ export async function renderQuoteCustomerFlowPage(input) {
     if (dealStageDefinition(stageKey).scope === 'quote') await ensureInstanceEditorForDeal(activeDeal);
     moduleState.dealEditor = activeDeal ? createDealDraft(moduleState.dealEditor || activeDeal) : createDealDraft();
     moduleState.dealStageRecords = activeDeal ? dealCurrentRecords(moduleState.dealEditor) : [];
-
     const customerLabel = flowCustomerLabel(moduleState.customerEditor || {}, activeDeal);
+    const timeline = await fetchCustomerActivityTimeline(customerId, input.user);
+    await markCustomerActivitiesRead(customerId, input.user, timeline.map((item) => item.id));
+    await fetchUnreadStageActivitySummary(input.user);
+    await appendSalesActivity({
+        customer_id: customerId,
+        deal_id: activeDeal?.id,
+        requirement_id: moduleState.requirementEditor?.id,
+        instance_id: moduleState.instanceEditor?.id,
+        actor_type: 'sales',
+        actor_id: input.user?.id,
+        actor_label: input.user?.email || input.user?.id || 'sales',
+        activity_type: 'page_view',
+        entity_type: 'deal',
+        entity_id: activeDeal?.id || customerId,
+        page_key: 'quote-customer-flow',
+        stage_key: stageKey,
+        action_label: `进入客户流水线 · ${dealStageLabel(stageKey)}`,
+        detail_json: {
+            summary: customerLabel,
+        },
+    });
+
     const stageLabel = dealStageLabel(stageKey);
     renderSalesPageFrame(input, `独立客户流水线 · ${stageLabel}`, `客户模式：${customerLabel} · 围绕单个客户回看已完成节点，并继续推进当前节点。`, `
-        <section class="ams-quote-layout">
+        <section class="ams-quote-layout ams-sales-stage-layout">
             <aside class="ams-card ams-quote-list-panel">
                 <div class="ams-section-head"><div><h3>客户模式 · 当前客户销售流程</h3><p>${esc(customerLabel)} · 这里只显示这位客户自己的流程。</p></div></div>
                 <div class="ams-quote-list">
                     ${deals.length ? deals.map((deal) => pipelineListCardMarkup(stageKey, deal, { selectedDealId: activeDeal?.id, customerFlow: true })).join('') : '<div class="ams-empty">这个客户还没有销售流程。</div>'}
                 </div>
             </aside>
-            ${salesStageDetailMarkup(stageKey, activeDeal, moduleState.customerEditor || createCustomerDraft(), input)}
+            <div class="ams-sales-flow-detail-stack">
+                ${salesStageDetailMarkup(stageKey, activeDeal, moduleState.customerEditor || createCustomerDraft(), input)}
+                ${customerActivityTimelinePanelMarkup(customerId)}
+            </div>
         </section>
     `, {
         deal: activeDeal,
@@ -10881,6 +11686,7 @@ export async function renderQuoteCustomerFlowPage(input) {
 export async function renderQuoteSalesDashboardPage(input) {
     try {
         await ensureBaseData();
+        await fetchUnreadStageActivitySummary(input.user);
     } catch (error) {
         if (isQuoteSetupMissing(error)) {
             renderQuoteSetupRequired(input, error);
@@ -10895,44 +11701,73 @@ export async function renderQuoteSalesDashboardPage(input) {
         .filter((deal) => text(deal.next_action) || text(deal.next_action_due_at))
         .sort((left, right) => text(left.next_action_due_at || left.updated_at).localeCompare(text(right.next_action_due_at || right.updated_at)))
         .slice(0, 6);
+    const dashboardCustomerId = text(upcomingDeals[0]?.customer_id || activeDeals[0]?.customer_id);
+    if (dashboardCustomerId) {
+        await appendSalesActivity({
+            customer_id: dashboardCustomerId,
+            deal_id: text(upcomingDeals[0]?.id || activeDeals[0]?.id),
+            actor_type: 'sales',
+            actor_id: input.user?.id,
+            actor_label: input.user?.email || input.user?.id || 'sales',
+            activity_type: 'page_view',
+            entity_type: 'deal',
+            entity_id: text(upcomingDeals[0]?.id || activeDeals[0]?.id || dashboardCustomerId),
+            page_key: 'sales-dashboard',
+            stage_key: 'customer_profile',
+            action_label: '进入销售总览',
+            detail_json: {
+                summary: '查看销售总览',
+            },
+        });
+    }
 
     renderSalesPageFrame(input, '销售总览', '查看当前销售链路分布、待办动作和项目推进压力。', `
-        <section class="ams-dashboard-overview">
-            <div class="ams-dashboard-kpis">
-                <article class="ams-card ams-kpi-card"><h3>推进中流程</h3><div class="ams-kpi">${esc(activeDeals.filter((deal) => normalizeDealStatus(deal.deal_status) === 'active').length)}</div><div class="ams-kpi-sub">正在推进的销售流程</div></article>
-                <article class="ams-card ams-kpi-card"><h3>需求待确认</h3><div class="ams-kpi">${esc(dealStageCount('requirement_confirmed', input))}</div><div class="ams-kpi-sub">还没锁定报价基线的流程</div></article>
-                <article class="ams-card ams-kpi-card"><h3>报价待确认</h3><div class="ams-kpi">${esc(dealStageCount('quote_confirmed', input))}</div><div class="ams-kpi-sub">已出草稿，待客户确认</div></article>
-                <article class="ams-card ams-kpi-card"><h3>交付执行中</h3><div class="ams-kpi">${esc(DEAL_STAGE_DEFINITIONS.filter((stage) => stage.scope === 'deal').reduce((sum, stage) => sum + dealStageCount(stage.key, input), 0))}</div><div class="ams-kpi-sub">合同到运维阶段中的流程</div></article>
+        <section class="ams-card ams-dashboard-stage-panel">
+            <div class="ams-section-head">
+                <div>
+                    <span class="ams-section-kicker">Pipeline guide</span>
+                    <h3>阶段分布</h3>
+                    <p>先用这里判断当前流程位于哪一段，再点击进入对应阶段页处理。</p>
+                </div>
             </div>
-        </section>
-        <section class="ams-card">
-            <div class="ams-section-head"><div><h3>阶段分布</h3><p>点击阶段后可直接进入对应流程页。</p></div></div>
-            <div class="ams-sales-stage-ribbon">
-                ${salesOverviewStageRows().map((row, rowIndex, rows) => {
-                    const stages = row.direction === 'backward' ? [...row.stages].reverse() : row.stages;
-                    const turn = rowIndex < rows.length - 1
-                        ? `<span class="ams-sales-stage-ribbon-turn is-${row.direction === 'forward' ? 'right' : 'left'}" aria-hidden="true"></span>`
-                        : '';
-                    return `
-                    <div class="ams-sales-stage-ribbon-row is-${row.direction}">
-                        ${stages.map((stage, stageIndex) => `
-                            <a class="ams-sales-stage-ribbon-card" href="${esc(stage.key === 'customer_profile' ? adminPageUrl('quote-customers') : adminPageUrl('quote-pipeline', { stage: stage.key }))}">
-                                <span class="ams-sales-stage-ribbon-index">${esc(stageOrderIndex(stage.key) + 1)}</span>
-                                <div class="ams-sales-stage-ribbon-copy">
-                                    <strong>${esc(stage.label)}</strong>
-                                    <span>${esc(stage.key === 'customer_profile' ? `${salesStageCount(stage.key, input)} 个客户` : `${salesStageCount(stage.key, input)} 条销售线`)}</span>
+            <div class="ams-sales-stage-guide">
+                ${salesOverviewStageGuideLanes().map((lane) => `
+                    <article class="ams-sales-stage-guide-lane">
+                        <div class="ams-sales-stage-guide-head">
+                            <div>
+                                <div class="ams-sales-stage-guide-title">
+                                    <span class="ams-sales-stage-guide-phase">${esc(lane.phase)}</span>
+                                    <strong>${esc(lane.title)}</strong>
                                 </div>
-                            </a>
-                            ${stageIndex < stages.length - 1 ? `<span class="ams-sales-stage-ribbon-link is-${row.direction}" aria-hidden="true"></span>` : ''}
-                        `).join('')}
-                        ${turn}
-                    </div>
-                `;
-                }).join('')}
+                                <p>${esc(lane.summary)}</p>
+                            </div>
+                            <span class="ams-sales-stage-guide-range">${esc(`${stageOrderIndex(lane.stages[0].key) + 1}-${stageOrderIndex(lane.stages[lane.stages.length - 1].key) + 1}`)}</span>
+                        </div>
+                        <div class="ams-sales-stage-guide-track">
+                            ${lane.stages.map((stage, stageIndex) => `
+                                <a class="ams-sales-stage-guide-card ${stageHasUnreadActivity(stage.key) ? 'has-activity-dot' : ''}" href="${esc(stage.key === 'customer_profile' ? adminPageUrl('quote-customers') : adminPageUrl('quote-pipeline', { stage: stage.key }))}">
+                                    ${stageHasUnreadActivity(stage.key) ? '<span class="ams-activity-dot" aria-hidden="true"></span>' : ''}
+                                    <span class="ams-sales-stage-guide-index">${esc(stageOrderIndex(stage.key) + 1)}</span>
+                                    <div class="ams-sales-stage-guide-copy">
+                                        <strong>${esc(stage.label)}</strong>
+                                        <span>${esc(stage.key === 'customer_profile' ? `${salesStageCount(stage.key, input)} 个客户` : `${salesStageCount(stage.key, input)} 条销售线`)}</span>
+                                    </div>
+                                </a>
+                                ${stageIndex < lane.stages.length - 1 ? '<span class="ams-sales-stage-guide-sep" aria-hidden="true"></span>' : ''}
+                            `).join('')}
+                        </div>
+                    </article>
+                `).join('')}
             </div>
         </section>
-        <section class="ams-card">
-            <div class="ams-section-head"><div><h3>近期待办</h3><p>按下一动作时间排序，优先清理卡住的 deal。</p></div></div>
+        <section class="ams-card ams-dashboard-todo-panel">
+            <div class="ams-section-head">
+                <div>
+                    <span class="ams-section-kicker">Action queue</span>
+                    <h3>近期待办</h3>
+                    <p>按下一动作时间排序，优先清理卡住的 deal。</p>
+                </div>
+            </div>
             <div class="ams-sales-inline-list">
                 ${upcomingDeals.length
                     ? upcomingDeals.map((deal) => `<a class="ams-inline-link-card" href="${esc(customerFlowStageUrl(deal.current_stage, deal, deal.customer_id))}"><strong>${esc(text(deal.title, deal.id))}</strong><span>${esc(`${text(deal.next_action, '未设置下一动作')} · ${fmtDate(deal.next_action_due_at || deal.updated_at)}`)}</span></a>`).join('')

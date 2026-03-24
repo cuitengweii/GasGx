@@ -11,6 +11,8 @@ import {
     updateCurrentPassword,
 } from './auth.module.js?v=20260321admin01';
 
+let adminUsersCreatePanelExpanded = false;
+
 function esc(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -28,25 +30,25 @@ function fmtDate(value) {
 
 function roleLabel(value) {
     const role = String(value || ADMIN_ROLE_ADMIN).trim();
-    if (role === ADMIN_ROLE_SUPER_ADMIN) return '超级管理员';
-    if (role === ADMIN_ROLE_EDITOR) return '内容编辑';
-    if (role === ADMIN_ROLE_SALES) return '销售';
-    return '管理员';
+    if (role === ADMIN_ROLE_SUPER_ADMIN) return '\u8d85\u7ea7\u7ba1\u7406\u5458';
+    if (role === ADMIN_ROLE_EDITOR) return '\u5185\u5bb9\u7f16\u8f91';
+    if (role === ADMIN_ROLE_SALES) return '\u9500\u552e';
+    return '\u7ba1\u7406\u5458';
 }
 
 function allowedRoleEntries(input = null) {
     if (input?.entryKind === 'sales') {
         return [
-            { value: ADMIN_ROLE_SUPER_ADMIN, label: '超级管理员' },
-            { value: ADMIN_ROLE_ADMIN, label: '管理员' },
-            { value: ADMIN_ROLE_SALES, label: '销售' },
+            { value: ADMIN_ROLE_SUPER_ADMIN, label: '\u8d85\u7ea7\u7ba1\u7406\u5458' },
+            { value: ADMIN_ROLE_ADMIN, label: '\u7ba1\u7406\u5458' },
+            { value: ADMIN_ROLE_SALES, label: '\u9500\u552e' },
         ];
     }
     return [
-        { value: ADMIN_ROLE_SUPER_ADMIN, label: '超级管理员' },
-        { value: ADMIN_ROLE_ADMIN, label: '管理员' },
-        { value: ADMIN_ROLE_SALES, label: '销售' },
-        { value: ADMIN_ROLE_EDITOR, label: '内容编辑' },
+        { value: ADMIN_ROLE_SUPER_ADMIN, label: '\u8d85\u7ea7\u7ba1\u7406\u5458' },
+        { value: ADMIN_ROLE_ADMIN, label: '\u7ba1\u7406\u5458' },
+        { value: ADMIN_ROLE_SALES, label: '\u9500\u552e' },
+        { value: ADMIN_ROLE_EDITOR, label: '\u5185\u5bb9\u7f16\u8f91' },
     ];
 }
 
@@ -67,10 +69,10 @@ export async function renderAdminUsersPage(input) {
     const { user, setPageHeader, setContent, showToast, withButtonBusy } = input;
     const salesConsole = input?.entryKind === 'sales';
     setPageHeader(
-        '人员管理',
+        '\u4eba\u5458\u7ba1\u7406',
         salesConsole
-            ? '仅管理员可维护销售后台账号、启停状态和角色分配。'
-            : '管理后台人员名单、角色权限、账号开通和密码找回。',
+            ? '\u4ec5\u7ba1\u7406\u53ef\u7ef4\u62a4\u9500\u552e\u540e\u53f0\u8d26\u53f7\u3001\u542f\u505c\u72b6\u6001\u548c\u89d2\u8272\u5206\u914d\u3002'
+            : '\u7ba1\u7406\u540e\u53f0\u4eba\u5458\u540d\u5355\u3001\u89d2\u8272\u6743\u9650\u3001\u8d26\u53f7\u5f00\u901a\u548c\u5bc6\u7801\u627e\u56de\u3002',
     );
 
     let rows = [];
@@ -85,64 +87,67 @@ export async function renderAdminUsersPage(input) {
         <section class="ams-card">
             <div class="ams-section-head">
                 <div>
-                    <h3>新增后台人员</h3>
-                    <p>${salesConsole ? '销售后台默认新增销售账号；如需管理员权限，可在这里直接分配。' : '先把人员加入后台 allowlist；如需直接开通账号，可同时填写初始密码创建 Supabase Auth 账号。'}</p>
+                    <h3>\u540e\u53f0\u4eba\u5458\u5217\u8868</h3>
+                    <p>\u9ed8\u8ba4\u5c55\u793a\u5f53\u524d\u540e\u53f0\u4eba\u5458\uff0c\u9700\u8981\u65f6\u518d\u5c55\u5f00\u65b0\u589e\u533a\u57df\u3002</p>
                 </div>
                 <div class="ams-row-actions">
-                    <button class="ams-btn ams-btn-muted" type="button" id="ams-admin-users-refresh">刷新名单</button>
+                    <button class="ams-btn ams-btn-primary" type="button" id="ams-admin-users-toggle-create">${adminUsersCreatePanelExpanded ? '\u6536\u8d77\u65b0\u589e' : '\u65b0\u589e\u4eba\u5458'}</button>
+                    <button class="ams-btn ams-btn-muted" type="button" id="ams-admin-users-refresh">\u5237\u65b0\u540d\u5355</button>
                 </div>
             </div>
-            <div class="ams-site-field-grid ams-site-field-grid-wide">
-                <div class="ams-field">
-                    <label>邮箱</label>
-                    <input id="ams-admin-create-email" class="ams-input" type="email" placeholder="sales@gasgx.com">
+            <div id="ams-admin-create-panel" ${adminUsersCreatePanelExpanded ? '' : 'hidden'}>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field">
+                        <label>\u90ae\u7bb1</label>
+                        <input id="ams-admin-create-email" class="ams-input" type="email" placeholder="sales@gasgx.com">
+                    </div>
+                    <div class="ams-field">
+                        <label>\u59d3\u540d</label>
+                        <input id="ams-admin-create-name" class="ams-input" type="text" placeholder="\u9500\u552e\u8d1f\u8d23\u4eba">
+                    </div>
+                    <div class="ams-field">
+                        <label>\u89d2\u8272</label>
+                        <select id="ams-admin-create-role" class="ams-select">${roleOptions(defaultRoleValue(input), input)}</select>
+                    </div>
+                    <div class="ams-field">
+                        <label>\u521d\u59cb\u5bc6\u7801</label>
+                        <input id="ams-admin-create-password" class="ams-input" type="password" placeholder="\u81f3\u5c11 8 \u4f4d">
+                    </div>
                 </div>
-                <div class="ams-field">
-                    <label>姓名</label>
-                    <input id="ams-admin-create-name" class="ams-input" type="text" placeholder="销售负责人">
+                <div class="ams-inline-actions">
+                    <label class="ams-social-toggle">
+                        <input id="ams-admin-create-active" type="checkbox" checked>
+                        <span>\u52a0\u5165\u540e\u53f0\u5141\u8bb8\u540d\u5355</span>
+                    </label>
+                    <label class="ams-social-toggle">
+                        <input id="ams-admin-create-account" type="checkbox" checked>
+                        <span>\u540c\u6b65\u521b\u5efa\u767b\u5f55\u8d26\u53f7</span>
+                    </label>
+                    <button class="ams-btn ams-btn-primary" type="button" id="ams-admin-create-submit">\u6dfb\u52a0\u4eba\u5458</button>
                 </div>
-                <div class="ams-field">
-                    <label>角色</label>
-                    <select id="ams-admin-create-role" class="ams-select">${roleOptions(defaultRoleValue(input), input)}</select>
-                </div>
-                <div class="ams-field">
-                    <label>初始密码</label>
-                    <input id="ams-admin-create-password" class="ams-input" type="password" placeholder="至少 8 位">
-                </div>
+                <p class="ams-footnote">\u5982\u679c\u53ea\u52a0\u5165\u540d\u5355\u3001\u4e0d\u521b\u5efa\u8d26\u53f7\uff0c\u5219\u8be5\u90ae\u7bb1\u5fc5\u987b\u5148\u5b58\u5728\u4e8e Supabase Auth \u4e2d\uff0c\u4e4b\u540e\u624d\u80fd\u4f7f\u7528\u201c\u5fd8\u8bb0\u5bc6\u7801\u201d\u627e\u56de\u3002</p>
             </div>
-            <div class="ams-inline-actions">
-                <label class="ams-social-toggle">
-                    <input id="ams-admin-create-active" type="checkbox" checked>
-                    <span>加入后台允许名单</span>
-                </label>
-                <label class="ams-social-toggle">
-                    <input id="ams-admin-create-account" type="checkbox" checked>
-                    <span>同步创建登录账号</span>
-                </label>
-                <button class="ams-btn ams-btn-primary" type="button" id="ams-admin-create-submit">添加人员</button>
-            </div>
-            <p class="ams-footnote">如果只加入名单、不创建账号，则该邮箱必须先存在于 Supabase Auth 中，之后才能使用“忘记密码”找回。</p>
         </section>
         <section class="ams-card">
             <div class="ams-section-head">
                 <div>
-                    <h3>后台人员列表</h3>
-                    <p>当前登录人：${esc(getDisplayName(user))}</p>
+                    <h3>\u540e\u53f0\u4eba\u5458\u5217\u8868</h3>
+                    <p>\u5728\u8fd9\u91cc\u76f4\u63a5\u7ef4\u62a4\u540e\u53f0\u4eba\u5458\u3001\u89d2\u8272\u3001\u542f\u505c\u72b6\u6001\u4e0e\u5bc6\u7801\u91cd\u7f6e\u3002</p>
                 </div>
             </div>
             ${
                 loadError
-                    ? `<div class="ams-empty">人员表当前不可用：${esc(loadError.message || '未知错误')}。请先执行 SQL：article_management/sql/005_admin_users.sql。</div>`
+                    ? `<div class="ams-empty">\u4eba\u5458\u8868\u5f53\u524d\u4e0d\u53ef\u7528\uff1a${esc(loadError.message || '\u672a\u77e5\u9519\u8bef')}\u3002\u8bf7\u5148\u6267\u884c SQL\uff1aarticle_management/sql/005_admin_users.sql\u3002</div>`
                     : `<div class="ams-table-wrap">
                         <table class="ams-table ams-admin-users-table">
                             <thead>
                                 <tr>
-                                    <th>邮箱</th>
-                                    <th>姓名</th>
-                                    <th>角色</th>
-                                    <th>状态</th>
-                                    <th>更新时间</th>
-                                    <th class="ams-col-actions">操作</th>
+                                    <th>\u90ae\u7bb1</th>
+                                    <th>\u59d3\u540d</th>
+                                    <th>\u89d2\u8272</th>
+                                    <th>\u72b6\u6001</th>
+                                    <th>\u66f4\u65b0\u65f6\u95f4</th>
+                                    <th class="ams-col-actions">\u64cd\u4f5c</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -155,28 +160,28 @@ export async function renderAdminUsersPage(input) {
                                             <td>
                                                 <div class="ams-article-cell">
                                                     <strong>${esc(row.email)}</strong>
-                                                    <span class="ams-footnote">${row.email === String(user?.email || '').trim().toLowerCase() ? '当前登录账号' : '--'}</span>
+                                                    <span class="ams-footnote">${row.email === String(user?.email || '').trim().toLowerCase() ? '\u5f53\u524d\u767b\u5f55\u8d26\u53f7' : '--'}</span>
                                                 </div>
                                             </td>
-                                            <td><input class="ams-input" data-admin-name="${esc(row.id)}" value="${esc(row.full_name || '')}" placeholder="姓名"></td>
+                                            <td><input class="ams-input" data-admin-name="${esc(row.id)}" value="${esc(row.full_name || '')}" placeholder="\u59d3\u540d"></td>
                                             <td>
-                                                <select class="ams-select" data-admin-role="${esc(row.id)}" aria-label="角色">
+                                                <select class="ams-select" data-admin-role="${esc(row.id)}" aria-label="\u89d2\u8272">
                                                     ${roleOptions(row.role, input)}
                                                 </select>
                                                 <div class="ams-footnote">${esc(roleLabel(row.role))}</div>
                                             </td>
-                                            <td><label class="ams-social-toggle"><input type="checkbox" data-admin-active="${esc(row.id)}" ${row.is_active !== false ? 'checked' : ''}><span>${row.is_active !== false ? '启用' : '停用'}</span></label></td>
+                                            <td><label class="ams-social-toggle"><input type="checkbox" data-admin-active="${esc(row.id)}" ${row.is_active !== false ? 'checked' : ''}><span>${row.is_active !== false ? '\u542f\u7528' : '\u505c\u7528'}</span></label></td>
                                             <td>${esc(fmtDate(row.updated_at || row.created_at))}</td>
                                             <td class="ams-col-actions">
                                                 <div class="ams-row-actions">
-                                                    <button class="ams-btn ams-btn-primary" type="button" data-admin-save="${esc(row.id)}">保存</button>
-                                                    <button class="ams-btn ams-btn-muted" type="button" data-admin-reset="${esc(row.email)}">发送重置邮件</button>
+                                                    <button class="ams-btn ams-btn-primary" type="button" data-admin-save="${esc(row.id)}">\u4fdd\u5b58</button>
+                                                    <button class="ams-btn ams-btn-muted" type="button" data-admin-reset="${esc(row.email)}">\u53d1\u9001\u91cd\u7f6e\u90ae\u4ef6</button>
                                                 </div>
                                             </td>
                                         </tr>`,
                                               )
                                               .join('')
-                                        : '<tr><td colspan="6"><div class="ams-empty">当前还没有后台人员记录。</div></td></tr>'
+                                        : '<tr><td colspan="6"><div class="ams-empty">\u5f53\u524d\u8fd8\u6ca1\u6709\u540e\u53f0\u4eba\u5458\u8bb0\u5f55\u3002</div></td></tr>'
                                 }
                             </tbody>
                         </table>
@@ -184,6 +189,11 @@ export async function renderAdminUsersPage(input) {
             }
         </section>
     `);
+
+    document.getElementById('ams-admin-users-toggle-create')?.addEventListener('click', async () => {
+        adminUsersCreatePanelExpanded = !adminUsersCreatePanelExpanded;
+        await renderAdminUsersPage(input);
+    });
 
     document.getElementById('ams-admin-users-refresh')?.addEventListener('click', async () => {
         await renderAdminUsersPage(input);
@@ -197,7 +207,7 @@ export async function renderAdminUsersPage(input) {
         const isActive = Boolean(document.getElementById('ams-admin-create-active')?.checked);
         const createAccount = Boolean(document.getElementById('ams-admin-create-account')?.checked);
 
-        await withButtonBusy(event.currentTarget, '提交中...', async () => {
+        await withButtonBusy(event.currentTarget, '\u63d0\u4ea4\u4e2d...', async () => {
             try {
                 if (createAccount) {
                     await provisionAdminUserAccount({ email, password, fullName });
@@ -211,10 +221,11 @@ export async function renderAdminUsersPage(input) {
                     },
                     user?.id || null,
                 );
-                showToast(createAccount ? '后台人员已添加，并已创建登录账号。' : '后台人员已加入允许名单。');
+                adminUsersCreatePanelExpanded = false;
+                showToast(createAccount ? '\u540e\u53f0\u4eba\u5458\u5df2\u6dfb\u52a0\uff0c\u5e76\u5df2\u521b\u5efa\u767b\u5f55\u8d26\u53f7\u3002' : '\u540e\u53f0\u4eba\u5458\u5df2\u52a0\u5165\u5141\u8bb8\u540d\u5355\u3002');
                 await renderAdminUsersPage(input);
             } catch (error) {
-                showToast(error.message || '新增后台人员失败。', true);
+                showToast(error.message || '\u65b0\u589e\u540e\u53f0\u4eba\u5458\u5931\u8d25\u3002', true);
             }
         });
     });
@@ -228,7 +239,7 @@ export async function renderAdminUsersPage(input) {
             const role = document.querySelector(`[data-admin-role="${id}"]`)?.value || defaultRoleValue(input);
             const isActive = Boolean(document.querySelector(`[data-admin-active="${id}"]`)?.checked);
 
-            await withButtonBusy(button, '保存中...', async () => {
+            await withButtonBusy(button, '\u4fdd\u5b58\u4e2d...', async () => {
                 try {
                     await saveAdminUserEntry(
                         {
@@ -240,10 +251,10 @@ export async function renderAdminUsersPage(input) {
                         },
                         user?.id || null,
                     );
-                    showToast('人员信息已更新。');
+                    showToast('\u4eba\u5458\u4fe1\u606f\u5df2\u66f4\u65b0\u3002');
                     await renderAdminUsersPage(input);
                 } catch (error) {
-                    showToast(error.message || '保存人员信息失败。', true);
+                    showToast(error.message || '\u4fdd\u5b58\u4eba\u5458\u4fe1\u606f\u5931\u8d25\u3002', true);
                 }
             });
         });
@@ -254,12 +265,12 @@ export async function renderAdminUsersPage(input) {
             const email = String(button.dataset.adminReset || '').trim();
             if (!email) return;
 
-            await withButtonBusy(button, '发送中...', async () => {
+            await withButtonBusy(button, '\u53d1\u9001\u4e2d...', async () => {
                 try {
                     await sendPasswordResetEmail(email);
-                    showToast(`已向 ${email} 发送重置密码邮件。`);
+                    showToast(`\u5df2\u5411 ${email} \u53d1\u9001\u91cd\u7f6e\u5bc6\u7801\u90ae\u4ef6\u3002`);
                 } catch (error) {
-                    showToast(error.message || '发送重置密码邮件失败。', true);
+                    showToast(error.message || '\u53d1\u9001\u91cd\u7f6e\u5bc6\u7801\u90ae\u4ef6\u5931\u8d25\u3002', true);
                 }
             });
         });
@@ -269,23 +280,23 @@ export async function renderAdminUsersPage(input) {
 export async function renderAdminSecurityPage(input) {
     const { user, setPageHeader, setContent, showToast, withButtonBusy } = input;
     const email = String(user?.email || '').trim();
-    setPageHeader('账号安全', '修改当前账号密码，或重新发送密码重置邮件。');
+    setPageHeader('\u8d26\u53f7\u5b89\u5168', '\u4fee\u6539\u5f53\u524d\u8d26\u53f7\u5bc6\u7801\uff0c\u6216\u91cd\u65b0\u53d1\u9001\u5bc6\u7801\u91cd\u7f6e\u90ae\u4ef6\u3002');
 
     setContent(`
         <section class="ams-card">
             <div class="ams-section-head">
                 <div>
-                    <h3>当前账号</h3>
-                    <p>邮箱：${esc(email || '--')}</p>
+                    <h3>\u5f53\u524d\u8d26\u53f7</h3>
+                    <p>\u90ae\u7bb1\uff1a${esc(email || '--')}</p>
                 </div>
             </div>
             <div class="ams-site-field-grid">
                 <div class="ams-field">
-                    <label>显示名称</label>
+                    <label>\u663e\u793a\u540d\u79f0</label>
                     <input class="ams-input" value="${esc(getDisplayName(user))}" disabled>
                 </div>
                 <div class="ams-field">
-                    <label>登录邮箱</label>
+                    <label>\u767b\u5f55\u90ae\u7bb1</label>
                     <input class="ams-input" value="${esc(email || '')}" disabled>
                 </div>
             </div>
@@ -293,24 +304,24 @@ export async function renderAdminSecurityPage(input) {
         <section class="ams-card">
             <div class="ams-section-head">
                 <div>
-                    <h3>修改密码</h3>
-                    <p>当前已登录时可直接更新密码，无需再输入旧密码。</p>
+                    <h3>\u4fee\u6539\u5bc6\u7801</h3>
+                    <p>\u5f53\u524d\u5df2\u767b\u5f55\u65f6\u53ef\u76f4\u63a5\u66f4\u65b0\u5bc6\u7801\uff0c\u65e0\u9700\u518d\u8f93\u5165\u65e7\u5bc6\u7801\u3002</p>
                 </div>
             </div>
             <form id="ams-security-password-form" class="ams-form">
                 <div class="ams-site-field-grid">
                     <div class="ams-field">
-                        <label>新密码</label>
-                        <input id="ams-security-password" class="ams-input" type="password" placeholder="至少 8 位">
+                        <label>\u65b0\u5bc6\u7801</label>
+                        <input id="ams-security-password" class="ams-input" type="password" placeholder="\u81f3\u5c11 8 \u4f4d">
                     </div>
                     <div class="ams-field">
-                        <label>确认新密码</label>
-                        <input id="ams-security-password-confirm" class="ams-input" type="password" placeholder="再次输入新密码">
+                        <label>\u786e\u8ba4\u65b0\u5bc6\u7801</label>
+                        <input id="ams-security-password-confirm" class="ams-input" type="password" placeholder="\u518d\u6b21\u8f93\u5165\u65b0\u5bc6\u7801">
                     </div>
                 </div>
                 <div class="ams-inline-actions">
-                    <button class="ams-btn ams-btn-primary" type="submit">更新密码</button>
-                    <button class="ams-btn ams-btn-muted" type="button" id="ams-security-reset-mail">发送重置邮件</button>
+                    <button class="ams-btn ams-btn-primary" type="submit">\u66f4\u65b0\u5bc6\u7801</button>
+                    <button class="ams-btn ams-btn-muted" type="button" id="ams-security-reset-mail">\u53d1\u9001\u91cd\u7f6e\u90ae\u4ef6</button>
                 </div>
             </form>
         </section>
@@ -322,28 +333,28 @@ export async function renderAdminSecurityPage(input) {
         const confirmPassword = document.getElementById('ams-security-password-confirm')?.value || '';
         const submitButton = event.submitter || event.currentTarget?.querySelector('button[type="submit"]');
 
-        await withButtonBusy(submitButton, '更新中...', async () => {
+        await withButtonBusy(submitButton, '\u66f4\u65b0\u4e2d...', async () => {
             try {
-                if (nextPassword !== confirmPassword) throw new Error('两次输入的新密码不一致。');
+                if (nextPassword !== confirmPassword) throw new Error('\u4e24\u6b21\u8f93\u5165\u7684\u65b0\u5bc6\u7801\u4e0d\u4e00\u81f4\u3002');
                 await updateCurrentPassword(nextPassword);
-                showToast('密码已更新。');
+                showToast('\u5bc6\u7801\u5df2\u66f4\u65b0\u3002');
                 const passwordInput = document.getElementById('ams-security-password');
                 const confirmInput = document.getElementById('ams-security-password-confirm');
                 if (passwordInput) passwordInput.value = '';
                 if (confirmInput) confirmInput.value = '';
             } catch (error) {
-                showToast(error.message || '修改密码失败。', true);
+                showToast(error.message || '\u4fee\u6539\u5bc6\u7801\u5931\u8d25\u3002', true);
             }
         });
     });
 
     document.getElementById('ams-security-reset-mail')?.addEventListener('click', async (event) => {
-        await withButtonBusy(event.currentTarget, '发送中...', async () => {
+        await withButtonBusy(event.currentTarget, '\u53d1\u9001\u4e2d...', async () => {
             try {
                 await sendPasswordResetEmail(email);
-                showToast('重置密码邮件已发送。');
+                showToast('\u91cd\u7f6e\u5bc6\u7801\u90ae\u4ef6\u5df2\u53d1\u9001\u3002');
             } catch (error) {
-                showToast(error.message || '发送重置密码邮件失败。', true);
+                showToast(error.message || '\u53d1\u9001\u91cd\u7f6e\u5bc6\u7801\u90ae\u4ef6\u5931\u8d25\u3002', true);
             }
         });
     });

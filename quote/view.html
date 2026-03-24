@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="../shared/ui/main-auth.shared.js"></script>
-    <link rel="stylesheet" href="../shared/quote-system/quote-system.css?v=20260324quote14">
+    <link rel="stylesheet" href="../shared/quote-system/quote-system.css?v=20260325quote15">
 </head>
 <body class="antialiased pb-10 md:pb-20 access-resolved">
     <div id="access-gate-overlay" class="access-gate-overlay hidden">
@@ -100,26 +100,11 @@
         <div id="export-area" style="background-color: var(--bg-card);">
             <div class="quote-head-shell border-b border-[var(--border-color)] pb-6 md:pb-8 mb-8 md:mb-10 flex flex-col xl:flex-row justify-between items-start gap-6">
                 <div class="quote-head-main w-full xl:flex-1 xl:pr-8 overflow-hidden">
-                    <div class="doc-title-row flex items-start md:items-center justify-between gap-4 mb-4 md:mb-8 w-full">
+                    <div class="doc-title-row flex items-start md:items-center gap-4 mb-4 md:mb-8 w-full">
                         <h1 class="text-xl md:text-3xl font-bold tracking-wide text-[var(--gas-green-light)] leading-snug break-words flex-1 m-0" id="f-title"></h1>
-                        <button id="btn-send" type="button" class="doc-send-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center flex-shrink-0 mt-1 md:mt-0" title="调用邮件应用">
-                            <i class="fa-solid fa-paper-plane mr-1.5 text-[var(--text-body)]"></i> <span id="btn-text-send" class="text-[var(--text-body)]">发送</span>
-                        </button>
                     </div>
 
                     <div class="doc-meta-grid grid grid-cols-1 md:grid-cols-2 gap-x-8 md:gap-x-12 gap-y-4 md:gap-y-5 text-sm md:text-[15px]">
-                        <div id="view-meta-supplier" class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-supplier">供应商：</span>
-                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
-                                <span id="val-supplier" class="font-semibold text-white whitespace-nowrap outline-none w-full text-left block"></span>
-                            </div>
-                        </div>
-                        <div id="view-meta-sender" class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-sender">发件人：</span>
-                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
-                                <span id="val-sender" class="text-[var(--gas-green-light)] whitespace-nowrap outline-none w-full text-left block"></span>
-                            </div>
-                        </div>
                         <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
                             <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-validity">报价有效期：</span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
@@ -267,6 +252,6 @@
         </div>
     </div>
 
-    <script type="module" src="../shared/quote-system/quote-runtime.module.js?v=20260324share06"></script>
+    <script type="module" src="../shared/quote-system/quote-runtime.module.js?v=20260325share07"></script>
 </body>
 </html>

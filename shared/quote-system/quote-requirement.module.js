@@ -1,5 +1,6 @@
 const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+const TABLE_CUSTOMER_ACTIVITIES = 'quote_customer_activities';
 
 const REQUIREMENT_TYPE_OPTIONS = Object.freeze([
     { value: '', label: '???????' },
@@ -365,9 +366,9 @@ const COUNTRY_LABEL_ALIASES = Object.freeze({
     Laos: 'LA',
     Micronesia: 'FM',
     Moldova: 'MD',
-    North Korea: 'KP',
+    'North Korea': 'KP',
     Russia: 'RU',
-    South Korea: 'KR',
+    'South Korea': 'KR',
     Syria: 'SY',
     Taiwan: 'TW',
     Turkey: 'TR',
@@ -462,6 +463,7 @@ const state = {
     autoSaveError: false,
     lastAutoSavedAt: '',
     lastSavedSignature: '',
+    lastChangedField: '',
     autoSaveBound: false,
     validationErrors: {},
 };
@@ -718,6 +720,39 @@ function normalizeRequirement(row = {}) {
     };
 }
 
+function requirementStageKey(status = '') {
+    const normalized = text(status, 'draft');
+    if (normalized === 'submitted' || normalized === 'reviewing') return 'requirement_confirmed';
+    if (normalized === 'quoted') return 'quote_preparing';
+    if (normalized === 'closed') return 'closed_lost';
+    return 'requirement_capture';
+}
+
+async function logRequirementActivity(activityType, actionLabel, detail = {}) {
+    const requirement = state.requirement;
+    if (!requirement?.customer_id || !requirement?.id) return;
+    const supabase = getClient();
+    if (!supabase) return;
+
+    try {
+        await supabase.from(TABLE_CUSTOMER_ACTIVITIES).insert({
+            customer_id: requirement.customer_id,
+            requirement_id: requirement.id,
+            stage_key: requirementStageKey(requirement.status),
+            actor_type: 'customer',
+            actor_label: text(requirement.requester_name || requirement.requester_company || 'Customer'),
+            activity_type: text(activityType),
+            entity_type: 'requirement',
+            entity_id: requirement.id,
+            page_key: 'quote-requirements',
+            action_label: text(actionLabel),
+            detail_json: detail && typeof detail === 'object' ? detail : {},
+        });
+    } catch (_error) {
+        // Best-effort logging for public requirement interactions.
+    }
+}
+
 function requirementDraftStorageKey() {
     const req = text(params.get('req'));
     const token = text(params.get('token'));
@@ -813,6 +848,7 @@ function updateAutoSaveIndicators() {
 
 function queueRequirementAutoSave(options = {}) {
     if (!state.requirement || isLocked(state.requirement.status) || state.submitting) return;
+    state.lastChangedField = text(options.field);
     writeRequirementDraft(state.requirement);
     state.autoSavePending = true;
     state.autoSaveError = false;
@@ -859,6 +895,17 @@ async function saveRequirementDraftToServer(force = false) {
         state.lastAutoSavedAt = text(state.requirement?.updated_at || new Date().toISOString());
         state.autoSavePending = false;
         state.autoSaveMessage = localize('已自动保存，后台可实时查看最新填写进度。');
+        if (state.lastChangedField) {
+            const answers = normalizeAnswers(state.requirement.answers);
+            const latestValue = state.lastChangedField in state.requirement
+                ? state.requirement[state.lastChangedField]
+                : answers[state.lastChangedField];
+            await logRequirementActivity('field_change', '客户修改需求表', {
+                field: state.lastChangedField,
+                value: latestValue ?? null,
+            });
+            state.lastChangedField = '';
+        }
         writeRequirementDraft(state.requirement);
     } catch (_error) {
         state.autoSavePending = true;
@@ -1451,7 +1498,7 @@ function bindEvents() {
             requirement[field] = node.value;
             updateFieldValidation(field);
             syncFieldValidationUI(field);
-            queueRequirementAutoSave();
+            queueRequirementAutoSave({ field });
         });
         node.addEventListener('blur', () => {
             const field = node.dataset.field;
@@ -1466,7 +1513,7 @@ function bindEvents() {
                 requirement[field] = node.value;
                 updateFieldValidation(field);
                 syncFieldValidationUI(field);
-                queueRequirementAutoSave();
+                queueRequirementAutoSave({ field });
             });
         }
     });
@@ -1482,7 +1529,7 @@ function bindEvents() {
             }
             updateFieldValidation(field);
             syncFieldValidationUI(field);
-            queueRequirementAutoSave();
+            queueRequirementAutoSave({ field });
         };
         node.addEventListener('input', apply);
         if (node.tagName === 'SELECT') {
@@ -1499,7 +1546,7 @@ function bindEvents() {
                 .map((item) => item.value);
             updateFieldValidation(field);
             syncFieldValidationUI(field);
-            queueRequirementAutoSave();
+            queueRequirementAutoSave({ field });
             if (field === 'miner_brands') {
                 renderApp();
             }
@@ -1569,6 +1616,10 @@ async function fetchRequirement() {
         : state.autoSavePending
             ? localize('检测到未同步草稿，正在恢复并同步...')
             : localize('已与后台同步。');
+    await logRequirementActivity('public_link_opened', '客户打开需求表', {
+        status: text(state.requirement.status),
+        title: text(state.requirement.title),
+    });
 }
 
 async function submitCurrentRequirement() {
@@ -1636,6 +1687,10 @@ async function submitCurrentRequirement() {
         if (error) throw error;
 
         await fetchRequirement();
+        await logRequirementActivity('status_change', '客户提交需求表', {
+            status: text(state.requirement?.status),
+            title: text(state.requirement?.title),
+        });
         state.submitting = false;
         renderApp();
     } catch (error) {

@@ -22,6 +22,7 @@ const RATE_API_URL = 'https://open.er-api.com/v6/latest/CNY';
 const TABLE_INSTANCES = 'quote_instances';
 const TABLE_INSTANCE_EVENTS = 'quote_instance_events';
 const TABLE_INSTANCE_SENDS = 'quote_instance_sends';
+const TABLE_CUSTOMER_ACTIVITIES = 'quote_customer_activities';
 
 const dict = {
     zh: {
@@ -1596,6 +1597,39 @@ async function logQuoteEvent(eventType, options = {}) {
             locale: text(state.currentLang, DEFAULT_LANG),
             metadata: options.metadata && typeof options.metadata === 'object' ? options.metadata : {},
         });
+        const customerId = text(state.snapshot?.quote?.customerId);
+        if (customerId) {
+            const activityType = eventType === 'share_opened'
+                ? 'public_link_opened'
+                : eventType === 'share_link_generated' || eventType === 'email_clicked' || eventType === 'passcode_unlocked'
+                    ? 'button_click'
+                    : 'page_view';
+            const actionLabel = eventType === 'share_link_generated'
+                ? '生成报价分享链接'
+                : eventType === 'email_clicked'
+                    ? '点击邮件发送'
+                    : eventType === 'preview_opened'
+                        ? '后台打开报价预览'
+                        : eventType === 'passcode_unlocked'
+                            ? '客户完成提取码验证'
+                            : eventType === 'share_opened'
+                                ? '客户打开报价链接'
+                                : '客户查看报价';
+            await supabase.from(TABLE_CUSTOMER_ACTIVITIES).insert({
+                customer_id: customerId,
+                instance_id: instanceId,
+                stage_key: 'quote_preparing',
+                actor_type: state.isAdmin ? 'sales' : 'customer',
+                actor_id: state.adminUser?.id || null,
+                actor_label: text(state.adminUser?.email || (state.isAdmin ? 'Sales' : 'Customer')),
+                activity_type: activityType,
+                entity_type: 'quote_instance',
+                entity_id: instanceId,
+                page_key: 'quote-instances',
+                action_label: actionLabel,
+                detail_json: options.metadata && typeof options.metadata === 'object' ? options.metadata : {},
+            });
+        }
     } catch (_error) {
         // Event logging is best-effort and must not block customer access.
     }
@@ -2007,6 +2041,30 @@ async function submitEmbeddedPublicConfirmation() {
                 ru: `Подтверждение报价已提交。Следующий этап: ${text(row?.next_stage, 'contract_signed')}.`,
             }),
         };
+        try {
+            const customerId = text(state.snapshot?.quote?.customerId);
+            const instanceId = text(state.snapshot?.quote?.id);
+            if (customerId && instanceId) {
+                await client.from(TABLE_CUSTOMER_ACTIVITIES).insert({
+                    customer_id: customerId,
+                    instance_id: instanceId,
+                    stage_key: 'quote_confirmed',
+                    actor_type: 'customer',
+                    actor_label: 'Customer',
+                    activity_type: 'status_change',
+                    entity_type: 'quote_instance',
+                    entity_id: instanceId,
+                    page_key: 'quote-instances',
+                    action_label: '客户确认报价',
+                    detail_json: {
+                        next_stage: text(row?.next_stage, 'contract_signed'),
+                        note: text(confirmation.note),
+                    },
+                });
+            }
+        } catch (_error) {
+            // Best-effort timeline logging only.
+        }
         renderAll();
     } catch (error) {
         state.publicConfirmation.submitting = false;

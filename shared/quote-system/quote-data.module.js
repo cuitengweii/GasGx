@@ -219,7 +219,7 @@ export function createMediaConfig(seed = {}) {
     return {
         enabled: seed?.enabled === true,
         position: seed?.position === MEDIA_POSITIONS.ABOVE ? MEDIA_POSITIONS.ABOVE : MEDIA_POSITIONS.BELOW,
-        layout: seed?.layout === MEDIA_LAYOUTS.STACK ? MEDIA_LAYOUTS.STACK : MEDIA_LAYOUTS.CAROUSEL,
+        layout: seed?.layout === MEDIA_LAYOUTS.CAROUSEL ? MEDIA_LAYOUTS.CAROUSEL : MEDIA_LAYOUTS.STACK,
     };
 }
 
