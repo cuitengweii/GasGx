@@ -345,6 +345,16 @@ const state = {
     isMobileMenuOpen: false,
     clockTimer: null,
     galleryIndex: 0,
+    publicConfirmation: {
+        loading: false,
+        payload: null,
+        error: '',
+        submitting: false,
+        submitted: false,
+        confirmed: false,
+        note: '',
+        result: null,
+    },
 };
 
 function localeCopy(options = {}) {
@@ -353,6 +363,18 @@ function localeCopy(options = {}) {
 
 function byId(id) {
     return document.getElementById(id);
+}
+
+function publicConfirmationParams() {
+    return {
+        stage: text(params.get('confirm_stage')),
+        token: text(params.get('confirm_token')),
+    };
+}
+
+function hasEmbeddedQuoteConfirmation() {
+    const next = publicConfirmationParams();
+    return Boolean(next.stage && next.token);
 }
 
 function esc(value) {
@@ -897,6 +919,7 @@ function renderContent() {
     const mediaBlock = renderProductMediaBlock(snapshot);
     const mediaAbove = mediaState.enabled && mediaState.config.position === MEDIA_POSITIONS.ABOVE ? mediaBlock : '';
     const mediaBelow = mediaState.enabled && mediaState.config.position !== MEDIA_POSITIONS.ABOVE ? mediaBlock : '';
+    const confirmationPanel = quoteConfirmationPanelMarkup();
 
     (snapshot.product.sections || []).forEach((section) => {
         const subtotal = sectionSubtotal(section);
@@ -965,9 +988,19 @@ function renderContent() {
             </div>
             ${mediaBelow}
         </div>
+        ${confirmationPanel}
     `;
     bindScrollableTables(container);
     bindProductMediaControls();
+    byId('quote-confirm-checkbox')?.addEventListener('change', (event) => {
+        state.publicConfirmation.confirmed = Boolean(event.currentTarget.checked);
+    });
+    byId('quote-confirm-note')?.addEventListener('input', (event) => {
+        state.publicConfirmation.note = event.currentTarget.value || '';
+    });
+    byId('quote-confirm-submit')?.addEventListener('click', () => {
+        void submitEmbeddedPublicConfirmation();
+    });
 }
 
 function renderAll() {
@@ -1816,6 +1849,187 @@ function deriveShareTarget() {
     return null;
 }
 
+async function fetchEmbeddedPublicConfirmation() {
+    if (!hasEmbeddedQuoteConfirmation()) {
+        state.publicConfirmation = {
+            loading: false,
+            payload: null,
+            error: '',
+            submitting: false,
+            submitted: false,
+            confirmed: false,
+            note: '',
+            result: null,
+        };
+        return;
+    }
+    const client = getClient();
+    if (!client) return;
+    const next = publicConfirmationParams();
+    state.publicConfirmation.loading = true;
+    state.publicConfirmation.error = '';
+    state.publicConfirmation.result = null;
+    try {
+        const { data, error } = await client.rpc('get_public_quote_stage_confirmation', {
+            stage_slug: next.stage,
+            stage_token: next.token,
+        });
+        if (error) throw error;
+        const row = Array.isArray(data) ? data[0] : null;
+        if (!row || text(row.stage_key) !== 'quote_confirmed') {
+            throw new Error('The quote confirmation request is no longer available.');
+        }
+        if (text(state.route?.quoteSlug) && text(row.quote_public_slug) && text(row.quote_public_slug) !== text(state.route.quoteSlug)) {
+            throw new Error('This confirmation request does not match the current quote page.');
+        }
+        state.publicConfirmation.payload = row;
+        state.publicConfirmation.error = '';
+        state.publicConfirmation.submitted = Boolean(text(row.stage_status) === 'completed' || row.completed_at);
+        state.publicConfirmation.confirmed = state.publicConfirmation.submitted;
+        state.publicConfirmation.note = '';
+        state.publicConfirmation.result = state.publicConfirmation.submitted
+            ? {
+                error: false,
+                message: localeCopy({
+                    zh: '这份报价确认单已经提交，无需重复操作。',
+                    en: 'This quote confirmation has already been submitted.',
+                    ru: 'Это подтверждение报价已提交。',
+                }),
+            }
+            : null;
+    } catch (error) {
+        state.publicConfirmation.payload = null;
+        state.publicConfirmation.error = text(error?.message, 'Failed to load quote confirmation.');
+    } finally {
+        state.publicConfirmation.loading = false;
+    }
+}
+
+function quoteConfirmationPanelMarkup() {
+    if (!hasEmbeddedQuoteConfirmation()) return '';
+    const confirmation = state.publicConfirmation || {};
+    if (confirmation.loading) {
+        return `
+            <section class="quote-confirm-card">
+                <div class="quote-confirm-card__head">
+                    <div>
+                        <div class="quote-confirm-card__kicker">QUOTE CONFIRM</div>
+                        <h3>正在加载报价确认</h3>
+                        <p>正在检查这份报价是否需要客户确认，请稍候。</p>
+                    </div>
+                </div>
+            </section>
+        `;
+    }
+    if (confirmation.error) {
+        return `
+            <section class="quote-confirm-card is-muted">
+                <div class="quote-confirm-card__head">
+                    <div>
+                        <div class="quote-confirm-card__kicker">QUOTE CONFIRM</div>
+                        <h3>报价确认入口不可用</h3>
+                        <p>${esc(confirmation.error)}</p>
+                    </div>
+                </div>
+            </section>
+        `;
+    }
+    const payload = confirmation.payload || {};
+    const terms = text(payload.meta?.quote_terms);
+    return `
+        <section class="quote-confirm-card ${confirmation.submitted ? 'is-success' : ''}">
+            <div class="quote-confirm-card__head">
+                <div>
+                    <div class="quote-confirm-card__kicker">QUOTE CONFIRM</div>
+                    <h3>确认当前报价并进入合同阶段</h3>
+                    <p>请在看完这份报价后，直接在这里确认。提交后 GasGx 会自动把流程推进到签约合同，并保留完整确认记录。</p>
+                </div>
+                <div class="quote-confirm-card__badge">${confirmation.submitted ? '已提交' : '待确认'}</div>
+            </div>
+            ${terms ? `
+                <div class="quote-confirm-card__terms">
+                    <strong>本次确认条款</strong>
+                    <p>${esc(terms)}</p>
+                </div>
+            ` : ''}
+            <label class="quote-confirm-card__checkbox ${confirmation.submitted ? 'is-disabled' : ''}">
+                <input id="quote-confirm-checkbox" type="checkbox" ${confirmation.confirmed ? 'checked' : ''} ${confirmation.submitted ? 'disabled' : ''}>
+                <span>我已确认当前报价版本、商务条款、交付范围与说明，可进入合同阶段。</span>
+            </label>
+            <label class="quote-confirm-card__field">
+                <span>客户确认备注</span>
+                <textarea id="quote-confirm-note" class="share-input" rows="4" placeholder="如需补充备注、说明最终确认条件或额外要求，请写在这里。" ${confirmation.submitted ? 'disabled' : ''}>${esc(confirmation.note || '')}</textarea>
+            </label>
+            <div class="quote-confirm-card__foot">
+                <div class="quote-confirm-card__hint">
+                    <strong>提交结果会同步到后台</strong>
+                    <p>销售可立即在确认报价节点看到这次客户确认，并继续进入合同处理。</p>
+                </div>
+                <button id="quote-confirm-submit" type="button" class="btn-glow px-5 py-3 inline-flex items-center gap-2" ${confirmation.submitting || confirmation.submitted ? 'disabled' : ''}>
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>${confirmation.submitted ? '已提交' : confirmation.submitting ? '提交中...' : '提交报价确认'}</span>
+                </button>
+            </div>
+            <div class="quote-confirm-card__status ${confirmation.result?.error ? 'is-error' : ''}">${esc(text(confirmation.result?.message))}</div>
+        </section>
+    `;
+}
+
+async function submitEmbeddedPublicConfirmation() {
+    const confirmation = state.publicConfirmation || {};
+    const next = publicConfirmationParams();
+    if (!confirmation.payload || !next.stage || !next.token) return;
+    if (!confirmation.confirmed) {
+        state.publicConfirmation.result = {
+            error: true,
+            message: localeCopy({
+                zh: '请先勾选确认，再提交报价确认。',
+                en: 'Check the confirmation box before submitting.',
+                ru: 'Сначала отметьте подтверждение.',
+            }),
+        };
+        renderAll();
+        byId('quote-confirm-checkbox')?.focus();
+        return;
+    }
+    state.publicConfirmation.submitting = true;
+    state.publicConfirmation.result = null;
+    renderAll();
+    try {
+        const client = getClient();
+        if (!client) throw new Error('Supabase client is unavailable.');
+        const { data, error } = await client.rpc('submit_public_quote_stage_confirmation', {
+            stage_slug: next.stage,
+            stage_token: next.token,
+            payload: {
+                note: text(confirmation.note),
+                stage_key: 'quote_confirmed',
+            },
+        });
+        if (error) throw error;
+        const row = Array.isArray(data) ? data[0] : null;
+        state.publicConfirmation.submitting = false;
+        state.publicConfirmation.submitted = true;
+        state.publicConfirmation.confirmed = true;
+        state.publicConfirmation.result = {
+            error: false,
+            message: localeCopy({
+                zh: `报价确认已提交，GasGx 将自动进入下一阶段：${text(row?.next_stage, 'contract_signed')}。`,
+                en: `Quote confirmation submitted. GasGx will continue to the next stage: ${text(row?.next_stage, 'contract_signed')}.`,
+                ru: `Подтверждение报价已提交。Следующий этап: ${text(row?.next_stage, 'contract_signed')}.`,
+            }),
+        };
+        renderAll();
+    } catch (error) {
+        state.publicConfirmation.submitting = false;
+        state.publicConfirmation.result = {
+            error: true,
+            message: text(error?.message, 'Failed to submit quote confirmation.'),
+        };
+        renderAll();
+    }
+}
+
 function applySnapshot(snapshot) {
     state.snapshot = snapshot;
     state.galleryIndex = 0;
@@ -1913,6 +2127,8 @@ async function handlePasscodeSubmit() {
         state.pendingSharedAccess = null;
         closeAccessOverlay();
         applySnapshot(pending.snapshot);
+        await fetchEmbeddedPublicConfirmation();
+        renderAll();
         void logQuoteEvent('passcode_unlocked', {
             accessMode: 'share',
             shareToken: state.route?.token,
@@ -1970,6 +2186,8 @@ async function resolveRouteSnapshot() {
         }
         closeAccessOverlay();
         applySnapshot(snapshot);
+        await fetchEmbeddedPublicConfirmation();
+        renderAll();
         void logQuoteEvent('preview_opened', {
             accessMode: 'preview',
             metadata: {
@@ -1992,6 +2210,8 @@ async function resolveRouteSnapshot() {
             state.sharePayload = result.payload;
             closeAccessOverlay();
             applySnapshot(result.snapshot);
+            await fetchEmbeddedPublicConfirmation();
+            renderAll();
             void logQuoteEvent('share_opened', {
                 accessMode: 'share',
                 shareToken: state.route.token,
@@ -2057,6 +2277,8 @@ async function resolveRouteSnapshot() {
         }
         closeAccessOverlay();
         applySnapshot(snapshot);
+        await fetchEmbeddedPublicConfirmation();
+        renderAll();
         void logQuoteEvent('quote_viewed', {
             accessMode: state.isAdmin ? 'admin' : 'quote',
             metadata: {
@@ -2079,6 +2301,8 @@ async function resolveRouteSnapshot() {
     }
     closeAccessOverlay();
     applySnapshot(snapshot);
+    await fetchEmbeddedPublicConfirmation();
+    renderAll();
     void logQuoteEvent('quote_viewed', {
         accessMode: state.isAdmin ? 'admin' : 'quote',
         metadata: {

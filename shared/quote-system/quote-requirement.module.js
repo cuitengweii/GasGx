@@ -396,6 +396,7 @@ const state = {
     requirement: null,
     error: '',
     loading: true,
+    locale: 'zh',
     submitting: false,
     submitConfirmed: false,
     autoSaveTimer: 0,
@@ -407,15 +408,17 @@ const state = {
     lastAutoSavedAt: '',
     lastSavedSignature: '',
     autoSaveBound: false,
+    validationErrors: {},
 };
 
 const params = new URL(window.location.href).searchParams;
 const SUPPORTED_LOCALES = ['zh', 'en', 'ru'];
-const LOCALE = (() => {
-    const raw = text(params.get('lang')).toLowerCase();
+function resolveLocale(rawValue = '') {
+    const raw = text(rawValue || params.get('lang')).toLowerCase();
     if (SUPPORTED_LOCALES.includes(raw)) return raw;
     return 'zh';
-})();
+}
+state.locale = resolveLocale();
 
 const LABEL_MAP = Object.freeze({
     '矿机与供电需求收集': { en: 'Mining & Power Requirement Intake', ru: 'Сбор потребностей по майнингу и электропитанию' },
@@ -578,13 +581,21 @@ const LABEL_MAP = Object.freeze({
     '仅供电 / 发电需求': { en: 'Power / generation only', ru: 'Только электропитание / генерация' },
     '需要方案推荐': { en: 'Need recommendation', ru: 'Нужна рекомендация' },
     'Other': { en: 'Other', ru: 'Другое' },
+    '客户公司不能为空。': { en: 'Company is required.', ru: 'Укажите компанию.' },
+    '联系人不能为空。': { en: 'Contact name is required.', ru: 'Укажите контактное лицо.' },
+    '请输入有效的邮箱地址。': { en: 'Enter a valid email address.', ru: 'Введите корректный email.' },
+    '联系渠道不能为空。': { en: 'Select a contact channel.', ru: 'Выберите канал связи.' },
+    '账号或电话至少填写 5 个字符。': { en: 'Handle or phone must be at least 5 characters.', ru: 'Аккаунт или телефон должен содержать не менее 5 символов.' },
+    '请选择国家 / 地区。': { en: 'Select a country or region.', ru: 'Выберите страну или регион.' },
+    '请先补全并修正联系人信息。': { en: 'Please complete and correct the contact details first.', ru: 'Сначала заполните и исправьте контактные данные.' },
+    '语言': { en: 'Language', ru: 'Язык' },
 });
 
 function localize(value) {
     const raw = text(value);
-    if (!raw || LOCALE === 'zh') return raw;
+    if (!raw || state.locale === 'zh') return raw;
     const mapped = LABEL_MAP[raw];
-    return mapped?.[LOCALE] || mapped?.en || raw;
+    return mapped?.[state.locale] || mapped?.en || raw;
 }
 
 function text(value, fallback = '') {
@@ -898,6 +909,209 @@ function fmtDate(value) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
+function requirementPageUrl(locale = state.locale) {
+    const url = new URL(window.location.href);
+    if (locale === 'zh') url.searchParams.delete('lang');
+    else url.searchParams.set('lang', locale);
+    return url.toString();
+}
+
+function validateRequirementContactField(field, requirement = state.requirement) {
+    const current = requirement || {};
+    const answers = normalizeAnswers(current.answers);
+    if (field === 'requester_company' && !text(current.requester_company)) return localize('客户公司不能为空。');
+    if (field === 'requester_name' && !text(current.requester_name)) return localize('联系人不能为空。');
+    if (field === 'requester_email') {
+        const email = text(current.requester_email);
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return localize('请输入有效的邮箱地址。');
+    }
+    if (field === 'contact_channel' && !text(answers.contact_channel)) return localize('联系渠道不能为空。');
+    if (field === 'requester_phone') {
+        const handle = text(current.requester_phone);
+        if (handle.length < 5) return localize('账号或电话至少填写 5 个字符。');
+    }
+    if (field === 'country' && !text(current.country)) return localize('请选择国家 / 地区。');
+    return '';
+}
+
+function validateRequirementContactSection(requirement = state.requirement) {
+    const fields = ['requester_company', 'requester_name', 'requester_email', 'contact_channel', 'requester_phone', 'country'];
+    const nextErrors = {};
+    fields.forEach((field) => {
+        const error = validateRequirementContactField(field, requirement);
+        if (error) nextErrors[field] = error;
+    });
+    state.validationErrors = nextErrors;
+    return Object.keys(nextErrors).length === 0;
+}
+
+function updateFieldValidation(field) {
+    const error = validateRequirementField(field, state.requirement);
+    if (error) state.validationErrors[field] = error;
+    else delete state.validationErrors[field];
+}
+
+function fieldErrorMarkup(field) {
+    const error = text(state.validationErrors?.[field]);
+    return error ? `<small class="requirement-field-error">${esc(error)}</small>` : '';
+}
+
+const REQUIRED_FIELD_ORDER = [
+    'requester_company',
+    'requester_name',
+    'requester_email',
+    'contact_channel',
+    'requester_phone',
+    'country',
+    'requirement_type',
+    'deployment_mode',
+    'miner_hashrate_band',
+    'miner_power_band',
+    'miner_quantity_band',
+    'voltage_frequency',
+    'miner_brands',
+    'miner_cooling',
+    'power_capacity_band',
+    'container_preference',
+    'silent_requirement',
+    'budget_band',
+    'timeline_band',
+];
+
+const REQUIRED_FIELD_LABELS = {
+    requester_company: '客户公司',
+    requester_name: '联系人',
+    requester_email: '邮箱',
+    contact_channel: '联系渠道',
+    requester_phone: '账号 / 电话',
+    country: '国家 / 地区',
+    requirement_type: '需求类型',
+    deployment_mode: '部署模式',
+    miner_hashrate_band: '单机算力范围',
+    miner_power_band: '单机功耗范围',
+    miner_quantity_band: '矿机数量范围',
+    voltage_frequency: '电压 / 频率',
+    miner_brands: '矿机品牌',
+    miner_cooling: '矿机冷却方式',
+    power_capacity_band: '供电规模',
+    container_preference: '部署偏好',
+    silent_requirement: '噪音要求',
+    budget_band: '每 MW 预算',
+    timeline_band: '期望周期',
+};
+
+function requiredFieldLabel(field) {
+    return localize(REQUIRED_FIELD_LABELS[field] || field);
+}
+
+function validateRequirementField(field, requirement = state.requirement) {
+    if (['requester_company', 'requester_name', 'requester_email', 'contact_channel', 'requester_phone', 'country'].includes(field)) {
+        return validateRequirementContactField(field, requirement);
+    }
+
+    const answers = normalizeAnswers(requirement?.answers);
+    const selectFields = new Set([
+        'requirement_type',
+        'deployment_mode',
+        'miner_hashrate_band',
+        'miner_power_band',
+        'miner_quantity_band',
+        'voltage_frequency',
+        'power_capacity_band',
+        'container_preference',
+        'silent_requirement',
+        'budget_band',
+        'timeline_band',
+    ]);
+    if (selectFields.has(field)) {
+        const value = field === 'requirement_type' ? text(requirement?.requirement_type) : text(answers[field]);
+        if (!value) return localize(`请先选择${requiredFieldLabel(field)}。`);
+        return '';
+    }
+
+    if (field === 'miner_brands' && !answers.miner_brands?.length) {
+        return localize('请先选择矿机品牌。');
+    }
+    if (field === 'miner_cooling' && !answers.miner_cooling?.length) {
+        return localize('请先选择矿机冷却方式。');
+    }
+
+    return '';
+}
+
+function validateRequirementSubmission(requirement = state.requirement) {
+    const nextErrors = {};
+    REQUIRED_FIELD_ORDER.forEach((field) => {
+        const error = validateRequirementField(field, requirement);
+        if (error) nextErrors[field] = error;
+    });
+    state.validationErrors = nextErrors;
+    return Object.keys(nextErrors).length === 0;
+}
+
+function validationFieldSelector(field) {
+    if (field === 'contact_channel') return '[data-answer-field="contact_channel"]';
+    if (['deployment_mode', 'miner_hashrate_band', 'miner_power_band', 'miner_quantity_band', 'voltage_frequency', 'power_capacity_band', 'container_preference', 'silent_requirement', 'budget_band', 'timeline_band'].includes(field)) {
+        return `[data-answer-field="${field}"]`;
+    }
+    if (['miner_brands', 'miner_cooling'].includes(field)) {
+        return `[data-answer-check="${field}"]`;
+    }
+    return `[data-field="${field}"]`;
+}
+
+function syncFieldValidationUI(field) {
+    const wrapper = document.querySelector(`[data-required-field="${field}"]`);
+    if (!wrapper) return;
+    const error = text(state.validationErrors?.[field]);
+    wrapper.classList.toggle('is-invalid', !!error);
+    let errorNode = wrapper.querySelector('.requirement-field-error');
+    if (error) {
+        if (!errorNode) {
+            errorNode = document.createElement('small');
+            errorNode.className = 'requirement-field-error';
+            wrapper.appendChild(errorNode);
+        }
+        errorNode.textContent = error;
+    } else if (errorNode) {
+        errorNode.remove();
+    }
+}
+
+function focusValidationField(field) {
+    if (!field) return;
+    const target = document.querySelector(validationFieldSelector(field));
+    const wrapper = target?.closest('.requirement-field') || document.querySelector(`[data-required-field="${field}"]`);
+    if (!wrapper || !target) return;
+
+    wrapper.classList.add('is-attention');
+    wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.setTimeout(() => wrapper.classList.remove('is-attention'), 2200);
+    if (typeof target.focus === 'function') {
+        target.focus({ preventScroll: true });
+    }
+}
+
+function focusSubmitConfirm() {
+    const confirm = document.getElementById('requirement-submit-confirm');
+    const wrapper = confirm?.closest('.requirement-confirm');
+    if (wrapper) {
+        wrapper.classList.add('is-attention');
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.setTimeout(() => wrapper.classList.remove('is-attention'), 2200);
+    }
+    if (typeof confirm?.focus === 'function') {
+        confirm.focus({ preventScroll: true });
+    }
+}
+
+function setSubmitStatus(message, isError = false) {
+    const statusNode = document.getElementById('requirement-submit-status');
+    if (!statusNode) return;
+    statusNode.textContent = localize(message);
+    statusNode.classList.toggle('is-error', !!isError);
+}
+
 function root() {
     return document.getElementById('requirement-app');
 }
@@ -936,7 +1150,7 @@ function renderApp() {
     const requirement = state.requirement;
     const answers = normalizeAnswers(requirement.answers);
     const locked = isLocked(requirement.status);
-    const buttonDisabled = locked || state.submitting || !state.submitConfirmed;
+    const buttonDisabled = locked || state.submitting;
     const availableModels = minerModelOptionsFor(answers.miner_brands);
     const availableModelSet = new Set(availableModels.map((item) => item.value));
     const filteredModels = answers.miner_models.filter((item) => availableModelSet.has(item));
@@ -947,6 +1161,15 @@ function renderApp() {
     document.title = `${text(requirement.requester_company || requirement.title || localize('矿机与供电需求收集') || 'Requirement Intake')} | GasGx`;
     root().innerHTML = `
         <div class="requirement-page ${locked ? 'is-locked' : ''}">
+        <div class="requirement-toolbar">
+            <div class="requirement-lang-switch" aria-label="${esc(localize('语言'))}">
+                ${SUPPORTED_LOCALES.map((locale) => `
+                    <a class="requirement-lang-chip ${state.locale === locale ? 'is-active' : ''}" href="${esc(requirementPageUrl(locale))}">
+                        ${locale === 'zh' ? '中文' : locale.toUpperCase()}
+                    </a>
+                `).join('')}
+            </div>
+        </div>
         ${locked ? `
             <div class="requirement-watermark" aria-hidden="true">
                 ${Array.from({ length: 6 }).map(() => `
@@ -981,39 +1204,46 @@ function renderApp() {
                 </div>
             </div>
             <div class="requirement-grid">
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.requester_company ? 'is-invalid' : ''}" data-required-field="requester_company">
                     <span>${esc(localize('客户公司'))}</span>
                     <input class="share-input" data-field="requester_company" value="${esc(requirement.requester_company)}" placeholder="Demo Mining" ${locked ? 'disabled' : ''}>
+                    ${fieldErrorMarkup('requester_company')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.requester_name ? 'is-invalid' : ''}" data-required-field="requester_name">
                     <span>${esc(localize('联系人'))}</span>
                     <input class="share-input" data-field="requester_name" value="${esc(requirement.requester_name)}" placeholder="Allen" ${locked ? 'disabled' : ''}>
+                    ${fieldErrorMarkup('requester_name')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.requester_email ? 'is-invalid' : ''}" data-required-field="requester_email">
                     <span>${esc(localize('邮箱'))}</span>
                     <input class="share-input" data-field="requester_email" value="${esc(requirement.requester_email)}" placeholder="customer@example.com" ${locked ? 'disabled' : ''}>
+                    ${fieldErrorMarkup('requester_email')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.contact_channel ? 'is-invalid' : ''}" data-required-field="contact_channel">
                     <span>${esc(localize('联系渠道'))}</span>
                     <select class="share-select" data-answer-field="contact_channel" ${locked ? 'disabled' : ''}>
                         ${selectOptionsMarkup(CONTACT_CHANNEL_OPTIONS, answers.contact_channel || 'whatsapp')}
                     </select>
+                    ${fieldErrorMarkup('contact_channel')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.requester_phone ? 'is-invalid' : ''}" data-required-field="requester_phone">
                     <span>${esc(localize('账号 / 电话'))}</span>
                     <input class="share-input" data-field="requester_phone" value="${esc(requirement.requester_phone)}" placeholder="${esc(localize('填写账号或手机号'))}" ${locked ? 'disabled' : ''}>
+                    ${fieldErrorMarkup('requester_phone')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.country ? 'is-invalid' : ''}" data-required-field="country">
                     <span>${esc(localize('国家 / 地区'))}</span>
                     <select class="share-select" data-field="country" ${locked ? 'disabled' : ''}>
                         ${selectOptionsMarkup(COUNTRY_OPTIONS, requirement.country)}
                     </select>
+                    ${fieldErrorMarkup('country')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.requirement_type ? 'is-invalid' : ''}" data-required-field="requirement_type">
                     <span>${esc(localize('需求类型'))}</span>
                     <select class="share-select" data-field="requirement_type" ${locked ? 'disabled' : ''}>
                         ${selectOptionsMarkup(REQUIREMENT_TYPE_OPTIONS, requirement.requirement_type)}
                     </select>
+                    ${fieldErrorMarkup('requirement_type')}
                 </label>
             </div>
         </section>
@@ -1026,34 +1256,41 @@ function renderApp() {
                 </div>
             </div>
             <div class="requirement-grid">
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.deployment_mode ? 'is-invalid' : ''}" data-required-field="deployment_mode">
                     <span>${esc(localize('部署模式'))}</span>
                     <select class="share-select" data-answer-field="deployment_mode" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.deployment_mode, answers.deployment_mode)}</select>
+                    ${fieldErrorMarkup('deployment_mode')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.miner_hashrate_band ? 'is-invalid' : ''}" data-required-field="miner_hashrate_band">
                     <span>${esc(localize('单机算力范围'))}</span>
                     <select class="share-select" data-answer-field="miner_hashrate_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_hashrate_band, answers.miner_hashrate_band)}</select>
+                    ${fieldErrorMarkup('miner_hashrate_band')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.miner_power_band ? 'is-invalid' : ''}" data-required-field="miner_power_band">
                     <span>${esc(localize('单机功耗范围'))}</span>
                     <select class="share-select" data-answer-field="miner_power_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_power_band, answers.miner_power_band)}</select>
+                    ${fieldErrorMarkup('miner_power_band')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.miner_quantity_band ? 'is-invalid' : ''}" data-required-field="miner_quantity_band">
                     <span>${esc(localize('矿机数量范围'))}</span>
                     <select class="share-select" data-answer-field="miner_quantity_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_quantity_band, answers.miner_quantity_band)}</select>
+                    ${fieldErrorMarkup('miner_quantity_band')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.voltage_frequency ? 'is-invalid' : ''}" data-required-field="voltage_frequency">
                     <span>${esc(localize('电压 / 频率'))}</span>
                     <select class="share-select" data-answer-field="voltage_frequency" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.voltage_frequency, answers.voltage_frequency)}</select>
+                    ${fieldErrorMarkup('voltage_frequency')}
                 </label>
             </div>
-            <div class="requirement-field">
+            <div class="requirement-field ${state.validationErrors.miner_brands ? 'is-invalid' : ''}" data-required-field="miner_brands">
                 <span>${esc(localize('矿机品牌'))}</span>
                 ${choiceChipMarkup('miner_brands', REQUIREMENT_MULTI_OPTIONS.miner_brands, answers.miner_brands, locked)}
+                ${fieldErrorMarkup('miner_brands')}
             </div>
-            <div class="requirement-field">
+            <div class="requirement-field ${state.validationErrors.miner_cooling ? 'is-invalid' : ''}" data-required-field="miner_cooling">
                 <span>${esc(localize('矿机冷却方式'))}</span>
                 ${choiceChipMarkup('miner_cooling', REQUIREMENT_MULTI_OPTIONS.miner_cooling, answers.miner_cooling, locked)}
+                ${fieldErrorMarkup('miner_cooling')}
             </div>
             <div class="requirement-field">
                 <span>${esc(localize('推荐机型 (Top 10)'))}</span>
@@ -1069,25 +1306,30 @@ function renderApp() {
                 </div>
             </div>
             <div class="requirement-grid">
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.power_capacity_band ? 'is-invalid' : ''}" data-required-field="power_capacity_band">
                     <span>${esc(localize('供电规模'))}</span>
                     <select class="share-select" data-answer-field="power_capacity_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.power_capacity_band, answers.power_capacity_band)}</select>
+                    ${fieldErrorMarkup('power_capacity_band')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.container_preference ? 'is-invalid' : ''}" data-required-field="container_preference">
                     <span>${esc(localize('部署偏好'))}</span>
                     <select class="share-select" data-answer-field="container_preference" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.container_preference, answers.container_preference)}</select>
+                    ${fieldErrorMarkup('container_preference')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.silent_requirement ? 'is-invalid' : ''}" data-required-field="silent_requirement">
                     <span>${esc(localize('噪音要求'))}</span>
                     <select class="share-select" data-answer-field="silent_requirement" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.silent_requirement, answers.silent_requirement)}</select>
+                    ${fieldErrorMarkup('silent_requirement')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.budget_band ? 'is-invalid' : ''}" data-required-field="budget_band">
                     <span>${esc(localize('每 MW 预算'))}</span>
                     <select class="share-select" data-answer-field="budget_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.budget_band, answers.budget_band)}</select>
+                    ${fieldErrorMarkup('budget_band')}
                 </label>
-                <label class="requirement-field">
+                <label class="requirement-field ${state.validationErrors.timeline_band ? 'is-invalid' : ''}" data-required-field="timeline_band">
                     <span>${esc(localize('期望周期'))}</span>
                     <select class="share-select" data-answer-field="timeline_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.timeline_band, answers.timeline_band)}</select>
+                    ${fieldErrorMarkup('timeline_band')}
                 </label>
             </div>
             <div class="requirement-field">
@@ -1144,13 +1386,23 @@ function bindEvents() {
             const field = node.dataset.field;
             if (!field) return;
             requirement[field] = node.value;
+            updateFieldValidation(field);
+            syncFieldValidationUI(field);
             queueRequirementAutoSave();
+        });
+        node.addEventListener('blur', () => {
+            const field = node.dataset.field;
+            if (!field) return;
+            updateFieldValidation(field);
+            syncFieldValidationUI(field);
         });
         if (node.tagName === 'SELECT') {
             node.addEventListener('change', () => {
                 const field = node.dataset.field;
                 if (!field) return;
                 requirement[field] = node.value;
+                updateFieldValidation(field);
+                syncFieldValidationUI(field);
                 queueRequirementAutoSave();
             });
         }
@@ -1161,10 +1413,14 @@ function bindEvents() {
             const field = node.dataset.answerField;
             if (!field) return;
             requirement.answers[field] = node.value;
+            updateFieldValidation(field);
+            syncFieldValidationUI(field);
             queueRequirementAutoSave();
         };
         node.addEventListener('input', apply);
-        if (node.tagName === 'SELECT') node.addEventListener('change', apply);
+        if (node.tagName === 'SELECT') {
+            node.addEventListener('change', apply);
+        }
     });
 
     document.querySelectorAll('[data-answer-check]').forEach((node) => {
@@ -1174,6 +1430,8 @@ function bindEvents() {
             requirement.answers[field] = Array.from(document.querySelectorAll(`[data-answer-check="${field}"]`))
                 .filter((item) => item.checked)
                 .map((item) => item.value);
+            updateFieldValidation(field);
+            syncFieldValidationUI(field);
             queueRequirementAutoSave();
             if (field === 'miner_brands') {
                 renderApp();
@@ -1190,6 +1448,17 @@ function bindEvents() {
             statusNode.textContent = localize(state.submitConfirmed ? '提交后公开需求页会自动锁定。' : '请先勾选最终确认，再提交需求单。');
             statusNode.classList.remove('is-error');
         }
+    });
+
+    document.getElementById('requirement-submit-confirm')?.addEventListener('change', () => {
+        const submitButton = document.getElementById('requirement-submit');
+        if (submitButton) submitButton.disabled = !!state.submitting;
+        setSubmitStatus(
+            state.submitConfirmed
+                ? '提交后公开需求页会自动锁定。'
+                : '请先勾选最终确认，再提交需求单。',
+            false
+        );
     });
 
     document.getElementById('requirement-submit')?.addEventListener('click', () => {
@@ -1238,6 +1507,35 @@ async function fetchRequirement() {
 async function submitCurrentRequirement() {
     const supabase = getClient();
     if (!supabase || !state.requirement) return;
+
+    if (!validateRequirementSubmission(state.requirement)) {
+        renderApp();
+        const firstInvalidField = REQUIRED_FIELD_ORDER.find((field) => state.validationErrors[field]);
+        setSubmitStatus(
+            firstInvalidField
+                ? `请先补充或修正：${requiredFieldLabel(firstInvalidField)}。`
+                : '请先补全需求信息。',
+            true
+        );
+        window.requestAnimationFrame(() => focusValidationField(firstInvalidField));
+        return;
+    }
+
+    if (!state.submitConfirmed) {
+        setSubmitStatus('请先勾选最终确认，再提交需求单。', true);
+        window.requestAnimationFrame(() => focusSubmitConfirm());
+        return;
+    }
+
+    if (!validateRequirementContactSection(state.requirement)) {
+        renderApp();
+        const statusNode = document.getElementById('requirement-submit-status');
+        if (statusNode) {
+            statusNode.textContent = localize('请先补全并修正联系人信息。');
+            statusNode.classList.add('is-error');
+        }
+        return;
+    }
 
     if (!state.submitConfirmed) {
         const statusNode = document.getElementById('requirement-submit-status');
@@ -1288,7 +1586,7 @@ async function init() {
     try {
         state.loading = true;
         if (document?.documentElement) {
-            document.documentElement.lang = LOCALE === 'zh' ? 'zh-CN' : LOCALE;
+            document.documentElement.lang = state.locale === 'zh' ? 'zh-CN' : state.locale;
         }
         bindAutoSaveLifecycle();
         renderApp();

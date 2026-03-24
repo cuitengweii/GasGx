@@ -29,7 +29,7 @@ import {
     renderQuotePipelinePage,
     renderQuoteProductsPage,
     renderQuoteSalesDashboardPage,
-} from './quote-system.module.js?v=20260324quote32';
+} from './quote-system.module.js?v=20260324quote33';
 
 const root = document.getElementById('ams-root');
 const toastNode = document.getElementById('ams-toast');
@@ -161,6 +161,16 @@ function navButton(id, label, icon) {
     return `<button type="button" class="ams-nav-btn ${active}" data-page="${id}"><span><i class="fa-solid ${icon}"></i> ${label}</span><i class="fa-solid fa-angle-right"></i></button>`;
 }
 
+function bindShellEvents() {
+    bindShellEvents();
+}
+
+function updateShellState() {
+    document.querySelectorAll('.ams-nav-btn').forEach((button) => {
+        button.classList.toggle('active', navIsActive(button.dataset.page || ''));
+    });
+}
+
 function renderLogin() {
     const authView = ['forgot', 'reset'].includes(state.authView) ? state.authView : 'login';
     const isResetView = authView === 'reset';
@@ -287,6 +297,10 @@ function renderLogin() {
 }
 
 function renderShell() {
+    if (root.querySelector('.ams-app-sales')) {
+        updateShellState();
+        return;
+    }
     const displayName = esc(getDisplayName(state.user, state.adminAccess?.row || null));
     const row = state.adminAccess?.row || null;
     const canOpenAdmin = canAccessConsoleEntry(row, ADMIN_ENTRY_KIND);

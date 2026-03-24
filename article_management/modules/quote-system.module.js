@@ -512,6 +512,53 @@ function stageMetaFields(stageKey = '') {
     return [];
 }
 
+function stageMetaValue(record = {}, key = '', fallback = '') {
+    return text(record?.meta?.[key], fallback);
+}
+
+function normalizeStageCommunicationLogs(value) {
+    if (!Array.isArray(value)) return [];
+    return value
+        .map((item) => ({
+            note: text(item?.note),
+            created_at: text(item?.created_at || item?.createdAt),
+            author: text(item?.author),
+        }))
+        .filter((item) => item.note);
+}
+
+function stageCommunicationLogs(record = {}) {
+    return normalizeStageCommunicationLogs(record?.meta?.communication_logs);
+}
+
+function appendStageCommunicationLog(stageKey = '', note = '', author = '') {
+    const message = text(note);
+    if (!message) return;
+    replaceStageRecord(stageKey, (record) => {
+        const logs = stageCommunicationLogs(record);
+        record.meta = {
+            ...(record.meta || {}),
+            communication_logs: [
+                {
+                    note: message,
+                    created_at: new Date().toISOString(),
+                    author: text(author, '销售沟通'),
+                },
+                ...logs,
+            ],
+            communication_note_draft: '',
+        };
+        return record;
+    });
+}
+
+function flushStageCommunicationDraft(stageKey = '', author = '') {
+    const record = stageRecordByKey(stageKey, moduleState.dealStageRecords);
+    const draft = text(record?.meta?.communication_note_draft);
+    if (!draft) return;
+    appendStageCommunicationLog(stageKey, draft, author);
+}
+
 function createDealDraft(seed = {}) {
     return {
         id: text(seed.id),
@@ -590,6 +637,15 @@ function normalizeStringList(value) {
 
 function normalizeRequirementAnswers(value = {}) {
     const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const communicationNotes = Array.isArray(source.communication_notes)
+        ? source.communication_notes
+            .map((item) => ({
+                note: text(item?.note),
+                created_at: text(item?.created_at || item?.createdAt),
+                author: text(item?.author),
+            }))
+            .filter((item) => item.note)
+        : [];
     return {
         deployment_mode: text(source.deployment_mode || 'new_site'),
         miner_brands: normalizeStringList(source.miner_brands),
@@ -606,6 +662,8 @@ function normalizeRequirementAnswers(value = {}) {
         certification_needs: normalizeStringList(source.certification_needs),
         source_channel: text(source.source_channel || 'other'),
         extra_notes: text(source.extra_notes),
+        communication_notes: communicationNotes,
+        communication_note_draft: text(source.communication_note_draft),
     };
 }
 
@@ -767,6 +825,30 @@ function nextStageKey(currentStageKey = '') {
     return DEAL_STAGE_DEFINITIONS[index + 1].key;
 }
 
+function stageOrderIndex(stageKey = '') {
+    return DEAL_STAGE_DEFINITIONS.findIndex((item) => item.key === normalizeDealStageKey(stageKey));
+}
+
+function primaryRequirementForDeal(deal = {}) {
+    const explicit = text(deal.primary_requirement_id)
+        ? requirementById(deal.primary_requirement_id)
+        : null;
+    if (explicit) return explicit;
+    return dealRequirements(deal.id)[0] || null;
+}
+
+function syncDealProgressFromRequirements(deal = {}) {
+    const currentStage = normalizeDealStageKey(deal.current_stage);
+    const requirement = primaryRequirementForDeal(deal);
+    const requirementStatus = normalizeRequirementStatus(requirement?.status);
+    if (!['submitted', 'reviewing', 'quoted', 'closed'].includes(requirementStatus)) return createDealDraft(deal);
+    if (stageOrderIndex(currentStage) > stageOrderIndex('requirement_capture')) return createDealDraft(deal);
+    return createDealDraft({
+        ...deal,
+        current_stage: 'requirement_confirmed',
+    });
+}
+
 function inferDealCurrentStage(records = [], fallback = 'requirement_capture') {
     const merged = mergeDealStageRecords({ current_stage: fallback }, records);
     const active = merged.find((record) => record.stage_status === 'active' || record.stage_status === 'blocked');
@@ -817,7 +899,7 @@ function dealQuotes(dealId = '') {
 }
 
 function dealCurrentRecords(deal = null) {
-    const activeDeal = deal || dealById(activeDealIdFromState());
+    const activeDeal = syncDealProgressFromRequirements(deal || dealById(activeDealIdFromState()));
     if (!activeDeal?.id) return [];
     const source = text(activeDeal.id) === text(moduleState.dealLoadedId) ? moduleState.dealStageRecords : [];
     return touchDealStageRecords(source, activeDeal);
@@ -876,9 +958,17 @@ function isDealArchived(deal = {}) {
     return deal?.is_archived === true;
 }
 
+function isCustomerPipelineVisible(customerId = '') {
+    const customer = moduleState.customers.find((item) => item.id === text(customerId));
+    if (!customer) return false;
+    return customer.is_active !== false && !customer.is_deleted;
+}
+
 function isDealPipelineVisible(deal = {}) {
     const status = normalizeDealStatus(deal?.deal_status);
-    return !isDealArchived(deal) && !['lost', 'cancelled', 'completed'].includes(status);
+    return isCustomerPipelineVisible(deal?.customer_id)
+        && !isDealArchived(deal)
+        && !['lost', 'cancelled', 'completed'].includes(status);
 }
 
 function visibleDealsForInput(input = null, options = {}) {
@@ -889,6 +979,7 @@ function visibleDealsForInput(input = null, options = {}) {
         const email = text(input?.user?.email).toLowerCase();
         rows = rows.filter((deal) => text(deal.owner_email).toLowerCase() === email);
     }
+    rows = rows.filter((deal) => isCustomerPipelineVisible(deal.customer_id));
     if (!includeArchived) rows = rows.filter((deal) => !isDealArchived(deal));
     if (!includeClosed) rows = rows.filter((deal) => isDealPipelineVisible(deal));
     return rows;
@@ -978,35 +1069,14 @@ function salesPipelineMarkup(input, options = {}) {
         || defaultStageForPage(text(options.page || readAdminPageParam('page') || '')),
     );
     const currentCustomer = activeDeal ? moduleState.customers.find((item) => item.id === activeDeal.customer_id) : null;
-    const currentRequirement = activeDeal ? requirementById(activeDeal.primary_requirement_id) : null;
-    const currentQuote = activeDeal ? moduleState.instances.find((item) => item.id === activeDeal.primary_instance_id) : null;
     const records = activeDeal ? dealCurrentRecords(activeDeal) : [];
-    const summaryLabel = pipelineMode === 'detail' && activeDeal?.id
-        ? `${text(activeDeal.title || customerDisplayName(currentCustomer || {}), '未命名商机')} · ${dealStageLabel(currentStage)}`
-        : `总流水线 · ${dealStageLabel(currentStage)}`;
-    const summaryText = pipelineMode === 'detail' && activeDeal?.id
-        ? `${esc(customerDisplayName(currentCustomer || {}))} · ${esc(text(activeDeal.next_action, '未设置下一动作'))}`
-        : `点击展开后，可按阶段查看当前卡在各节点的销售线。当前节点 ${salesStageCount(currentStage, input)} 条。`;
     return `
-        <details class="ams-card ams-sales-pipeline" id="ams-sales-pipeline" ${moduleState.salesPipelineExpanded ? 'open' : ''}>
-            <summary class="ams-sales-pipeline-summary">
-                <div class="ams-sales-pipeline-summary-copy">
-                    <p class="ams-eyebrow">Sales Pipeline</p>
-                    <strong>${esc(summaryLabel)}</strong>
-                    <span>${summaryText}</span>
-                </div>
-                <div class="ams-sales-pipeline-summary-meta">
-                    ${pipelineMode === 'detail' && activeDeal?.id
-                        ? `
-                            <span>${dealStatusPill(activeDeal.deal_status)}</span>
-                            <span class="ams-sales-pipeline-summary-chip">${esc(currentRequirement ? requirementDisplayName(currentRequirement) : '未锁定需求')}</span>
-                            <span class="ams-sales-pipeline-summary-chip">${esc(currentQuote ? text(currentQuote.customer_name || currentQuote.public_slug, currentQuote.id) : '未锁定报价')}</span>
-                        `
-                        : `<span class="ams-sales-pipeline-summary-chip">${esc(`当前节点 ${salesStageCount(currentStage, input)} 条`)}</span>`}
-                </div>
-            </summary>
+        <section class="ams-card ams-sales-pipeline" id="ams-sales-pipeline">
+            <div class="ams-sales-pipeline-summary">
+                <p class="ams-eyebrow">Sales Pipeline</p>
+            </div>
             <div class="ams-sales-pipeline-track">
-                ${DEAL_STAGE_DEFINITIONS.map((stage) => {
+                ${DEAL_STAGE_DEFINITIONS.map((stage, index) => {
                     const jump = stageNavigationTarget(stage.key, activeDeal, {
                         mode: pipelineMode,
                         page: options.page,
@@ -1018,45 +1088,47 @@ function salesPipelineMarkup(input, options = {}) {
                     const stageStatus = pipelineMode === 'detail' && activeDeal
                         ? normalizeDealStageStatus(stageRecord.stage_status)
                         : stage.key === currentStage ? 'active' : 'pending';
+                    const isPendingLocked = pipelineMode === 'detail' && activeDeal?.id && stageStatus === 'pending';
+                    const isDisabled = Boolean(jump.disabled || isPendingLocked);
                     const className = stageStatus === 'completed'
                         ? 'is-success'
                         : stageStatus === 'active'
                             ? 'is-active'
                             : stageStatus === 'blocked'
                                 ? 'is-warning'
-                                : jump.disabled
+                                : isDisabled
                                     ? 'is-muted'
                                     : '';
                     const badgeLabel = pipelineMode === 'detail' && activeDeal?.id
                         ? dealStageStatusLabel(stageStatus)
-                        : jump.disabled
+                        : isDisabled
                             ? '需销售线'
                             : `${salesStageCount(stage.key, input)} 条`;
                     const description = pipelineMode === 'detail' && activeDeal?.id
-                        ? text(stageRecord.notes || stageMetaFields(stage.key).map((field) => text(stageRecord.meta?.[field.key])).find(Boolean) || '')
+                        ? dealStageStatusLabel(stageStatus)
                         : stage.key === 'customer_profile'
-                            ? '客户建档入口，只允许新建客户和新建销售线。'
-                            : '点击即可进入这个阶段的总流水线列表。';
+                            ? '建档入口'
+                            : '阶段列表';
                     const body = `
                         <div class="ams-sales-pipeline-stage-head">
-                            <span class="ams-customer-pipeline-icon"><i class="fa-solid ${esc(stage.icon)}"></i></span>
+                            <span class="ams-customer-pipeline-icon">${esc(index + 1)}</span>
                             <span class="ams-customer-pipeline-badge">${esc(badgeLabel)}</span>
                         </div>
                         <strong>${esc(stage.label)}</strong>
-                        <span>${esc(description || (stage.scope === 'deal' ? '进入交付与履约阶段记录合同、付款、排产和运维。' : '点击即可直达当前链路对应页面。'))}</span>
+                        <span>${esc(description)}</span>
                         <em>${esc(
                             pipelineMode === 'detail' && activeDeal?.id
                                 ? (text(stageRecord.completed_at) ? `完成于 ${fmtDate(stageRecord.completed_at)}` : `负责人 ${text(stageRecord.owner_name || stageRecord.owner_email, '未设置')}`)
-                                : (jump.disabled ? '先创建销售线' : (stage.key === 'customer_profile' ? '打开客户档案' : '打开列表'))
+                                : (isDisabled ? '先创建销售线' : (stage.key === 'customer_profile' ? '打开客户档案' : '打开列表'))
                         )}</em>
                     `;
-                    if (jump.disabled) {
+                    if (isDisabled) {
                         return `<div class="ams-customer-pipeline-node ams-sales-pipeline-stage ${className}">${body}</div>`;
                     }
                     return `<a class="ams-customer-pipeline-node ams-sales-pipeline-stage is-link ${className}" href="${esc(jump.href)}">${body}</a>`;
                 }).join('')}
             </div>
-        </details>
+        </section>
     `;
 }
 
@@ -1070,6 +1142,23 @@ function renderSalesPageFrame(input, title, sub, body, options = {}) {
     const activeDeal = Object.prototype.hasOwnProperty.call(options, 'deal')
         ? options.deal
         : dealById(activeDealIdFromState(options.dealId));
+    const modeMarkup = options.pipelineMode === 'detail'
+        ? `
+            <section class="ams-sales-mode-banner is-detail">
+                <span class="ams-sales-mode-badge">客户流水线模式</span>
+                <strong>当前正在处理单个客户 / 单条销售流程</strong>
+                <span>左侧只显示这位客户自己的流程，顶部可回看已完成节点并继续推进当前节点。</span>
+            </section>
+        `
+        : options.pipelineMode === 'overview'
+          ? `
+            <section class="ams-sales-mode-banner is-overview">
+                <span class="ams-sales-mode-badge">总流水线模式</span>
+                <strong>当前正在查看全局阶段列表</strong>
+                <span>左侧是当前节点下全部待处理销售线，适合统一筛选、归档和进入单客户流程。</span>
+            </section>
+          `
+          : '';
     input.setContent(`
         <div class="ams-sales-page">
             ${showPipeline ? salesPipelineMarkup(input, {
@@ -1080,6 +1169,7 @@ function renderSalesPageFrame(input, title, sub, body, options = {}) {
                 customerId: options.customerId,
             }) : ''}
             <div class="ams-sales-page-body">
+                ${modeMarkup}
                 ${body}
             </div>
         </div>
@@ -1088,12 +1178,7 @@ function renderSalesPageFrame(input, title, sub, body, options = {}) {
 
 function bindSalesPageChrome(input) {
     if (!isSalesConsole(input)) return;
-    const pipeline = document.getElementById('ams-sales-pipeline');
-    if (!pipeline || pipeline.dataset.bound === '1') return;
-    pipeline.dataset.bound = '1';
-    pipeline.addEventListener('toggle', () => {
-        moduleState.salesPipelineExpanded = pipeline.open;
-    });
+    return;
 }
 
 function replaceStageRecord(stageKey = '', updater) {
@@ -1750,6 +1835,13 @@ async function fetchRequirementRows() {
         .order('updated_at', { ascending: false });
     if (error) throw error;
     moduleState.requirements = Array.isArray(data) ? data.map((row) => createRequirementDraft(row)) : [];
+    if (moduleState.deals.length) {
+        moduleState.deals = moduleState.deals.map((deal) => syncDealProgressFromRequirements(deal));
+        if (text(moduleState.dealLoadedId)) {
+            const activeDeal = moduleState.deals.find((item) => item.id === text(moduleState.dealLoadedId));
+            if (activeDeal) moduleState.dealEditor = createDealDraft(activeDeal);
+        }
+    }
     return moduleState.requirements;
 }
 
@@ -1774,7 +1866,7 @@ async function fetchDealRows() {
         .select('id, customer_id, title, current_stage, deal_status, is_archived, archived_at, archived_by, owner_name, owner_email, primary_requirement_id, primary_instance_id, summary, next_action, next_action_due_at, lost_reason, created_at, updated_at')
         .order('updated_at', { ascending: false });
     if (error) throw error;
-    moduleState.deals = Array.isArray(data) ? data.map((row) => createDealDraft(row)) : [];
+    moduleState.deals = Array.isArray(data) ? data.map((row) => syncDealProgressFromRequirements(createDealDraft(row))) : [];
     return moduleState.deals;
 }
 
@@ -2456,7 +2548,7 @@ async function saveDealStageRecords(user, dealId, records = moduleState.dealStag
 
 async function saveDealDraft(user, draft, options = {}) {
     const payload = createDealDraft(draft);
-    if (!payload.customer_id) throw new Error('商机必须绑定一个客户档案。');
+    if (!payload.customer_id) throw new Error('销售流程必须绑定一个客户档案。');
     const customer = moduleState.customers.find((item) => item.id === payload.customer_id) || moduleState.customerEditor;
     const owner = currentSalesOwner(user);
     const currentStage = normalizeDealStageKey(options.currentStage || payload.current_stage);
@@ -2465,7 +2557,7 @@ async function saveDealDraft(user, draft, options = {}) {
         current_stage: currentStage,
         owner_name: text(payload.owner_name, owner.name),
         owner_email: text(payload.owner_email, owner.email),
-        title: text(payload.title, `${customerDisplayName(customer || {})} / 销售项目`),
+        title: text(payload.title, `${customerDisplayName(customer || {})} / 销售流程`),
     });
     const stageRecords = touchDealStageRecords(options.stageRecords || moduleState.dealStageRecords, nextDraft);
     nextDraft.current_stage = inferDealCurrentStage(stageRecords, currentStage);
@@ -2820,7 +2912,7 @@ async function createInstanceFromProduct(user, productId, options = {}) {
             id: dealId,
             customer_id: customer?.id || moduleState.instanceEditor.customer_id,
             primary_instance_id: moduleState.instanceEditor.id,
-        }, ['customer_profile', 'quote_draft'], 'quote_confirmed');
+        }, ['customer_profile'], 'quote_draft');
     }
     return moduleState.instanceEditor;
 }
@@ -2934,7 +3026,7 @@ async function createInstanceFromRequirement(user, requirementId, productId, opt
             customer_id: customer.id,
             primary_requirement_id: requirement.id,
             primary_instance_id: moduleState.instanceEditor.id,
-        }, ['customer_profile', 'requirement_capture', 'requirement_confirmed', 'quote_draft'], 'quote_confirmed');
+        }, ['customer_profile', 'requirement_capture', 'requirement_confirmed'], 'quote_draft');
     }
     return moduleState.instanceEditor;
 }
@@ -3040,6 +3132,16 @@ async function confirmQuoteForDeal(user, instanceDraft) {
     if (savedInstance.requirement_id || moduleState.dealEditor?.primary_requirement_id) {
         completedStages.splice(1, 0, 'requirement_capture', 'requirement_confirmed');
     }
+    const quoteTerms = stageMetaValue(stageRecordByKey('quote_confirmed', moduleState.dealStageRecords), 'quote_terms');
+    if (quoteTerms) {
+        replaceStageRecord('contract_signed', (record) => {
+            record.meta = {
+                ...(record.meta || {}),
+                quote_terms: quoteTerms,
+            };
+            return record;
+        });
+    }
     await saveAndAdvanceDeal(user, {
         id: savedInstance.deal_id,
         customer_id: savedInstance.customer_id || moduleState.dealEditor?.customer_id,
@@ -3085,8 +3187,11 @@ async function publishInstance(user, draft) {
     return moduleState.instanceEditor;
 }
 
-function publicQuoteUrl(publicSlug) {
-    return new URL(`/quote/view.html?quote=${encodeURIComponent(publicSlug)}`, window.location.origin).toString();
+function publicQuoteUrl(publicSlug, options = {}) {
+    const url = new URL(`/quote/view.html?quote=${encodeURIComponent(publicSlug)}`, window.location.origin);
+    if (text(options.confirmStage)) url.searchParams.set('confirm_stage', text(options.confirmStage));
+    if (text(options.confirmToken)) url.searchParams.set('confirm_token', text(options.confirmToken));
+    return url.toString();
 }
 
 function quoteSharePrimaryBrandLine(instance = {}) {
@@ -3196,6 +3301,217 @@ function requirementPublicUrl(publicSlug, publicToken) {
     if (text(publicSlug)) url.searchParams.set('req', text(publicSlug));
     if (text(publicToken)) url.searchParams.set('token', text(publicToken));
     return url.toString();
+}
+
+const PUBLIC_STAGE_CONFIRMATION_CONFIG = Object.freeze({
+    quote_confirmed: {
+        title: '客户报价确认单',
+        description: '客户确认当前报价版本、商务条款和交付边界后，这条销售线自动进入签约合同。',
+    },
+    contract_signed: {
+        title: '客户合同确认单',
+        description: '客户确认合同最终版本并回传后，这条销售线自动进入定金付款。',
+    },
+    factory_accepted: {
+        title: '客户验收确认单',
+        description: '客户完成线上验收确认或纸质单回传后，这条销售线自动进入尾款确认。',
+    },
+});
+
+function publicStageConfirmationConfig(stageKey = '') {
+    return PUBLIC_STAGE_CONFIRMATION_CONFIG[normalizeDealStageKey(stageKey)] || null;
+}
+
+function stageSupportsPublicConfirmation(stageKey = '') {
+    return Boolean(publicStageConfirmationConfig(stageKey));
+}
+
+function randomHex(bytes = 8) {
+    const buffer = new Uint8Array(bytes);
+    window.crypto.getRandomValues(buffer);
+    return Array.from(buffer, (value) => value.toString(16).padStart(2, '0')).join('');
+}
+
+let salesConfirmDialogNode = null;
+let salesConfirmDialogResolver = null;
+
+function ensureSalesConfirmDialog() {
+    if (salesConfirmDialogNode) return salesConfirmDialogNode;
+    const node = document.createElement('div');
+    node.className = 'ams-confirm-dialog';
+    node.hidden = true;
+    node.innerHTML = `
+        <div class="ams-confirm-dialog-backdrop" data-sales-confirm-close></div>
+        <div class="ams-confirm-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="ams-confirm-dialog-title">
+            <div class="ams-confirm-dialog-head">
+                <span class="ams-confirm-dialog-badge">Confirm</span>
+                <h3 id="ams-confirm-dialog-title"></h3>
+                <p id="ams-confirm-dialog-message"></p>
+            </div>
+            <div class="ams-confirm-dialog-actions">
+                <button class="ams-btn ams-btn-muted" type="button" data-sales-confirm-cancel>取消</button>
+                <button class="ams-btn ams-btn-danger" type="button" data-sales-confirm-submit>确认继续</button>
+            </div>
+        </div>
+    `;
+    const close = (result) => {
+        node.hidden = true;
+        const resolver = salesConfirmDialogResolver;
+        salesConfirmDialogResolver = null;
+        if (resolver) resolver(Boolean(result));
+    };
+    node.querySelectorAll('[data-sales-confirm-close], [data-sales-confirm-cancel]').forEach((button) => {
+        button.addEventListener('click', () => close(false));
+    });
+    node.querySelector('[data-sales-confirm-submit]')?.addEventListener('click', () => close(true));
+    document.body.appendChild(node);
+    salesConfirmDialogNode = node;
+    return node;
+}
+
+async function confirmSalesAction({
+    title = '请确认操作',
+    message = '这个操作会影响当前销售流程，请确认后继续。',
+    confirmLabel = '确认继续',
+    danger = true,
+} = {}) {
+    const node = ensureSalesConfirmDialog();
+    node.querySelector('#ams-confirm-dialog-title').textContent = title;
+    node.querySelector('#ams-confirm-dialog-message').textContent = message;
+    const submit = node.querySelector('[data-sales-confirm-submit]');
+    if (submit) {
+        submit.textContent = confirmLabel;
+        submit.className = `ams-btn ${danger ? 'ams-btn-danger' : 'ams-btn-warning'}`;
+    }
+    node.hidden = false;
+    return new Promise((resolve) => {
+        salesConfirmDialogResolver = resolve;
+    });
+}
+
+function stageConfirmationPublicUrl(publicSlug = '', publicToken = '') {
+    const url = new URL('/quote/confirmation.html', window.location.origin);
+    if (text(publicSlug)) url.searchParams.set('stage', text(publicSlug));
+    if (text(publicToken)) url.searchParams.set('token', text(publicToken));
+    return url.toString();
+}
+
+function stageCustomerFacingUrl(stageKey = '', record = {}, deal = null) {
+    const quoteLine = primaryInstanceForDeal(deal);
+    if (normalizeDealStageKey(stageKey) === 'quote_confirmed' && text(quoteLine?.public_slug)) {
+        return publicQuoteUrl(quoteLine.public_slug, {
+            confirmStage: record.public_slug,
+            confirmToken: record.public_token,
+        });
+    }
+    return stageConfirmationPublicUrl(record.public_slug, record.public_token);
+}
+
+function stageConfirmationCopyText(stageKey = '', record = {}, deal = null) {
+    const config = publicStageConfirmationConfig(stageKey);
+    const url = stageCustomerFacingUrl(stageKey, record, deal);
+    const customer = moduleState.customers.find((item) => item.id === deal?.customer_id) || {};
+    const customerLine = text(customerDisplayName(customer), text(deal?.title, '尊敬的客户'));
+    const quoteLine = primaryInstanceForDeal(deal);
+    return [
+        `${customerLine}，您好：`,
+        '',
+        `${config?.title || '客户确认入口'}`,
+        config?.description || '',
+        `销售流程：${text(deal?.title, '--')}`,
+        normalizeDealStageKey(stageKey) === 'quote_confirmed'
+            ? '请直接打开下方报价单链接，在报价页面底部完成最终确认。'
+            : quoteLine?.public_slug
+                ? `关联报价：${publicQuoteUrl(quoteLine.public_slug)}`
+                : '',
+        '',
+        '请打开下方入口完成确认：',
+        url,
+        '',
+        'GasGx 将基于您提交的确认结果推进下一阶段，并保留完整的流程记录与沟通溯源。',
+    ].filter(Boolean).join('\n');
+}
+
+async function ensurePublicStageConfirmationLink(user, stageKey = '', deal = null) {
+    const normalizedStageKey = normalizeDealStageKey(stageKey);
+    if (!stageSupportsPublicConfirmation(normalizedStageKey)) {
+        throw new Error('当前节点不支持公开确认入口。');
+    }
+    const activeDeal = deal || moduleState.dealEditor || {};
+    const dealId = text(activeDeal.id || activeDealIdFromState());
+    if (!dealId) throw new Error('缺少销售线 ID。');
+    if (text(moduleState.dealLoadedId) !== dealId) await fetchDealEditor(dealId);
+    let record = stageRecordByKey(normalizedStageKey, moduleState.dealStageRecords);
+    if (!record) {
+        record = createDealStageRecord({
+            deal_id: dealId,
+            stage_key: normalizedStageKey,
+            stage_status: normalizeDealStageKey(moduleState.dealEditor?.current_stage) === normalizedStageKey ? 'active' : 'pending',
+        });
+        replaceStageRecord(normalizedStageKey, () => record);
+    }
+    const nextSlug = text(record.public_slug) || `stage-${normalizedStageKey.replace(/_/g, '-')}-${text(record.id).slice(0, 8) || dealId.slice(0, 8)}`;
+    const nextToken = text(record.public_token) || randomHex(8);
+    const stagePayload = {
+        deal_id: dealId,
+        stage_key: normalizedStageKey,
+        stage_status: normalizeDealStageKey(moduleState.dealEditor?.current_stage) === normalizedStageKey ? 'active' : 'pending',
+        owner_name: text(moduleState.dealEditor?.owner_name),
+        owner_email: text(moduleState.dealEditor?.owner_email),
+        notes: text(record.notes),
+        meta: deepClone(record.meta || {}),
+        public_slug: nextSlug,
+        public_token: nextToken,
+    };
+    const result = await client
+        .from(TABLE_DEAL_STAGE_RECORDS)
+        .upsert(stagePayload, { onConflict: 'deal_id,stage_key' })
+        .select('*');
+    const { data, error } = result;
+    if (error) throw error;
+    moduleState.dealStageRecords = mergeDealStageRecords(moduleState.dealEditor || {}, data || moduleState.dealStageRecords);
+    const saved = stageRecordByKey(normalizedStageKey, mergeDealStageRecords(moduleState.dealEditor || {}, data || [])) || {
+        ...record,
+        public_slug: nextSlug,
+        public_token: nextToken,
+    };
+    return {
+        ...saved,
+        public_slug: nextSlug,
+        public_token: nextToken,
+        public_url: stageConfirmationPublicUrl(nextSlug, nextToken),
+    };
+}
+
+function requirementSeenStorageKey(requirementId = '') {
+    return `gasgx-sales-requirement-seen:${text(requirementId)}`;
+}
+
+function requirementLatestCustomerActivityAt(requirement = {}) {
+    return text(requirement.submitted_at || requirement.updated_at || '');
+}
+
+function requirementHasUnreadCustomerUpdate(requirement = {}) {
+    const requirementId = text(requirement.id);
+    const latestAt = requirementLatestCustomerActivityAt(requirement);
+    if (!requirementId || !latestAt) return false;
+    try {
+        const seenAt = text(window.localStorage.getItem(requirementSeenStorageKey(requirementId)));
+        return !seenAt || latestAt > seenAt;
+    } catch {
+        return false;
+    }
+}
+
+function markRequirementCustomerUpdateSeen(requirement = {}) {
+    const requirementId = text(requirement.id);
+    const latestAt = requirementLatestCustomerActivityAt(requirement);
+    if (!requirementId || !latestAt) return;
+    try {
+        window.localStorage.setItem(requirementSeenStorageKey(requirementId), latestAt);
+    } catch {
+        return;
+    }
 }
 
 function requirementLinkCopyText({ url = '', customerName = '', title = '' } = {}) {
@@ -5044,9 +5360,9 @@ function renderCustomerList() {
                             <span>${esc(text(customer.contact_name || customer.email || customer.phone, '未填写联系人'))}</span>
                             <span class="ams-quote-inline-submeta">${esc(text(customer.company_name || customer.email || customer.phone || customer.country, '未填写联系信息'))}</span>
                             <span class="ams-quote-inline-submeta">${esc(notePreview ? `客户备注：${notePreview.slice(0, 42)}${notePreview.length > 42 ? '...' : ''}` : '客户备注：未填写')}</span>
-                            ${deals.length ? `<span class="ams-quote-inline-submeta">商机：${esc(text(deals[0].title, deals[0].id))}${deals.length > 1 ? ` 等 ${deals.length} 条` : ''}</span>` : ''}
+                            ${deals.length ? `<span class="ams-quote-inline-submeta">销售流程：${esc(text(deals[0].title, deals[0].id))}${deals.length > 1 ? ` 等 ${deals.length} 条` : ''}</span>` : ''}
                             <span class="ams-quote-inline-submeta">${esc(`更新时间：${fmtDate(customer.updated_at || customer.created_at)}`)}</span>
-                            <em>${deals.length} 条商机 / ${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单 <span class="ams-quote-inline-meta">${quoteSummary.published_quotes} 已发布 / ${quoteSummary.archived_quotes} 已归档 / ${quoteSummary.voided_quotes} 已作废</span></em>
+                            <em>${deals.length} 条销售流程 / ${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单 <span class="ams-quote-inline-meta">${quoteSummary.published_quotes} 已发布 / ${quoteSummary.archived_quotes} 已归档 / ${quoteSummary.voided_quotes} 已作废</span></em>
                         </button>
                 <div class="ams-quote-list-card-actions">
                     ${
@@ -5067,6 +5383,188 @@ function renderCustomerList() {
         `;
               })
               .join('')
+        : `<div class="ams-empty">${
+            moduleState.customerListMode === 'deleted'
+                ? '当前没有已作废客户。'
+                : moduleState.customerListMode === 'archived'
+                    ? '当前没有已归档客户。'
+                    : '当前没有有效客户档案。'
+        }</div>`;
+}
+
+function customerActivePipelineDeals(customerId = '') {
+    return customerDeals(customerId).filter((deal) => !isDealArchived(deal));
+}
+
+function customerStageCounts(customerId = '') {
+    const counts = new Map(DEAL_STAGE_DEFINITIONS.map((stage) => [stage.key, 0]));
+    customerActivePipelineDeals(customerId).forEach((deal) => {
+        const key = normalizeDealStageKey(deal.current_stage);
+        counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    return counts;
+}
+
+function customerPrimaryFlowTarget(customerId = '') {
+    const deal = customerActivePipelineDeals(customerId)[0] || customerDeals(customerId)[0] || null;
+    if (!deal?.id) return '';
+    return customerFlowStageUrl(deal.current_stage, deal, customerId);
+}
+
+function customerPrimaryRequirement(customerId = '') {
+    const deals = customerActivePipelineDeals(customerId);
+    for (const deal of deals) {
+        const requirement = dealRequirements(deal.id)[0] || null;
+        if (requirement?.public_slug && requirement?.public_token) return requirement;
+    }
+    return customerRequirements(customerId).find((item) => item.public_slug && item.public_token) || null;
+}
+
+function customerRequirementLink(customerId = '') {
+    const requirement = customerPrimaryRequirement(customerId);
+    if (!requirement?.public_slug || !requirement?.public_token) return '';
+    return requirementPublicUrl(requirement.public_slug, requirement.public_token);
+}
+
+async function ensureCustomerRequirementFlow(user, customer) {
+    const customerId = text(customer?.id);
+    if (!customerId) throw new Error('请先保存客户档案。');
+
+    let deal = customerActivePipelineDeals(customerId)[0] || customerDeals(customerId)[0] || null;
+    if (!deal?.id) {
+        const owner = currentSalesOwner(user);
+        deal = await saveDealDraft(user, {
+            customer_id: customerId,
+            current_stage: 'requirement_capture',
+            owner_name: owner.name,
+            owner_email: owner.email,
+            title: `${customerDisplayName(customer || {})} / 获取需求`,
+        }, {
+            currentStage: 'requirement_capture',
+            stageRecords: [],
+        });
+    }
+
+    let requirement = dealRequirements(deal.id)[0] || null;
+    if (!requirement?.id) {
+        requirement = await saveRequirementDraft(user, {
+            customer_id: customerId,
+            deal_id: deal.id,
+            title: `${customerDisplayName(customer || {})} / ${requirementTypeLabel('integrated_mining_power')}`,
+            requester_company: customer?.company_name || '',
+            requester_name: customer?.contact_name || '',
+            requester_email: customer?.email || '',
+            requester_phone: customer?.phone || '',
+            country: customer?.country || '',
+            notes: customer?.notes || '',
+        });
+        deal = await saveDealDraft(user, {
+            ...deal,
+            primary_requirement_id: requirement.id,
+            current_stage: 'requirement_capture',
+        }, {
+            currentStage: 'requirement_capture',
+            stageRecords: dealCurrentRecords(deal),
+        });
+    } else if (text(deal.primary_requirement_id) !== text(requirement.id)) {
+        deal = await saveDealDraft(user, {
+            ...deal,
+            primary_requirement_id: requirement.id,
+        }, {
+            currentStage: deal.current_stage,
+            stageRecords: dealCurrentRecords(deal),
+        });
+    }
+
+    return {
+        deal: createDealDraft(deal),
+        requirement: createRequirementDraft(requirement),
+        link: requirementPublicUrl(requirement.public_slug, requirement.public_token),
+    };
+}
+
+function salesCustomerStageStripMarkup(customerId = '') {
+    const stageCounts = customerStageCounts(customerId);
+    const deal = customerActivePipelineDeals(customerId)[0] || customerDeals(customerId)[0] || null;
+    const dealRecords = deal ? dealCurrentRecords(deal) : [];
+    return `
+        <div class="ams-sales-customer-stage-strip">
+            ${DEAL_STAGE_DEFINITIONS.map((stage) => {
+                const count = stageCounts.get(stage.key) || 0;
+                const stageRecord = deal
+                    ? stageRecordByKey(stage.key, dealRecords) || createDealStageRecord({
+                        deal_id: deal.id,
+                        stage_key: stage.key,
+                        stage_status: normalizeDealStageKey(deal.current_stage) === stage.key ? 'active' : 'pending',
+                    })
+                    : createDealStageRecord({ stage_key: stage.key, stage_status: 'pending' });
+                const stageStatus = normalizeDealStageStatus(stageRecord.stage_status);
+                const clickable = Boolean(
+                    deal?.id
+                    && ['completed', 'active', 'blocked'].includes(stageStatus),
+                );
+                const tone = stageStatus === 'completed'
+                    ? 'is-completed'
+                    : stageStatus === 'active'
+                        ? 'is-active'
+                        : stageStatus === 'blocked'
+                            ? 'is-warning'
+                            : 'is-muted';
+                const body = `
+                    <strong>${esc(stage.shortLabel || stage.label)}</strong>
+                    <span>${esc(count)}</span>
+                `;
+                if (!clickable) {
+                    return `<div class="ams-sales-customer-stage-chip ${tone}">${body}</div>`;
+                }
+                return `<a class="ams-sales-customer-stage-chip is-link ${tone}" href="${esc(customerFlowStageUrl(stage.key, deal, customerId))}">${body}</a>`;
+            }).join('')}
+        </div>
+    `;
+}
+
+function renderSalesCustomerArchiveList() {
+    const rows = filteredCustomers();
+    return rows.length
+        ? rows
+            .map((customer) => {
+                const deals = customerActivePipelineDeals(customer.id);
+                const quoteSummary = summarizeCustomerQuotes(customer.id);
+                const requirementSummary = summarizeCustomerRequirements(customer.id);
+                const notePreview = text(customer.notes).replace(/\s+/g, ' ').trim();
+                return `
+                    <article class="ams-sales-customer-card">
+                        <div class="ams-sales-customer-card-main">
+                            <div class="ams-sales-customer-card-copy">
+                                <strong>${esc(customerDisplayName(customer))}</strong>
+                                <div class="ams-sales-customer-card-meta">
+                                    <span><strong>联系人</strong><em>${esc(text(customer.contact_name, '未填写'))}</em></span>
+                                    <span><strong>客户公司</strong><em>${esc(text(customer.company_name, '未填写'))}</em></span>
+                                    <span><strong>电话 / 邮箱</strong><em>${esc(text(customer.phone || customer.email, '未填写'))}</em></span>
+                                    <span><strong>客户备注</strong><em>${esc(notePreview ? `${notePreview.slice(0, 72)}${notePreview.length > 72 ? '...' : ''}` : '未填写')}</em></span>
+                                    <span><strong>统计</strong><em>${esc(`${deals.length} 条销售流程 / ${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单`)}</em></span>
+                                    <span><strong>更新时间</strong><em>${esc(fmtDate(customer.updated_at || customer.created_at))}</em></span>
+                                </div>
+                            </div>
+                            <div class="ams-sales-customer-card-actions">
+                                ${customer.is_deleted
+                                    ? `<button class="ams-btn ams-btn-muted" type="button" data-customer-restore="${esc(customer.id)}">恢复</button>`
+                                    : customer.is_active === false
+                                        ? `
+                                            <button class="ams-btn ams-btn-muted" type="button" data-customer-restore="${esc(customer.id)}">恢复</button>
+                                            <button class="ams-btn ams-btn-danger" type="button" data-customer-delete="${esc(customer.id)}">作废</button>
+                                        `
+                                        : `
+                                            <button class="ams-btn ams-btn-muted" type="button" data-customer-archive="${esc(customer.id)}">归档</button>
+                                            <button class="ams-btn ams-btn-danger" type="button" data-customer-delete="${esc(customer.id)}">作废</button>
+                                        `}
+                            </div>
+                        </div>
+                        ${salesCustomerStageStripMarkup(customer.id)}
+                    </article>
+                `;
+            })
+            .join('')
         : `<div class="ams-empty">${
             moduleState.customerListMode === 'deleted'
                 ? '当前没有已作废客户。'
@@ -7208,19 +7706,13 @@ function bindCustomerEditor(input) {
     const switchCustomerListMode = (mode) => {
         moduleState.customerListMode = mode;
         if (mode === 'archived') {
-            const archived = moduleState.customers.find((item) => item.is_active === false && !item.is_deleted);
-            if (archived) {
-                moduleState.customerLoadedId = archived.id;
-                moduleState.customerEditor = createCustomerDraft(archived);
-                moduleState.customerCreateMode = false;
-            }
+            moduleState.customerLoadedId = '';
+            moduleState.customerEditor = createCustomerDraft();
+            moduleState.customerCreateMode = false;
         } else if (mode === 'deleted') {
-            const deleted = moduleState.customers.find((item) => item.is_deleted);
-            if (deleted) {
-                moduleState.customerLoadedId = deleted.id;
-                moduleState.customerEditor = createCustomerDraft(deleted);
-                moduleState.customerCreateMode = false;
-            }
+            moduleState.customerLoadedId = '';
+            moduleState.customerEditor = createCustomerDraft();
+            moduleState.customerCreateMode = false;
         } else if (moduleState.customerEditor?.is_active === false || moduleState.customerEditor?.is_deleted) {
             const active = moduleState.customers.find((item) => item.is_active !== false && !item.is_deleted);
             moduleState.customerLoadedId = text(active?.id);
@@ -7268,6 +7760,12 @@ function bindCustomerEditor(input) {
 
     document.querySelectorAll('[data-customer-archive]').forEach((button) => {
         button.addEventListener('click', async () => {
+            const confirmed = await confirmSalesAction({
+                title: '确认归档这个客户？',
+                message: '归档后客户会从默认客户列表隐藏，但历史需求、报价和流程记录仍会保留。',
+                confirmLabel: '确认归档',
+            });
+            if (!confirmed) return;
             try {
                 await withQuoteBusy('正在归档客户...', async () => {
                     const saved = await saveCustomerDraft(input.user, {
@@ -7290,7 +7788,12 @@ function bindCustomerEditor(input) {
 
     document.querySelectorAll('[data-customer-delete]').forEach((button) => {
         button.addEventListener('click', async () => {
-            if (!window.confirm('作废后客户会进入作废列表，默认不再出现在主列表和归档列表中。确定继续吗？')) return;
+            const confirmed = await confirmSalesAction({
+                title: '确认作废这个客户？',
+                message: '作废后客户会进入作废列表，默认不再出现在主列表和归档列表中。',
+                confirmLabel: '确认作废',
+            });
+            if (!confirmed) return;
             try {
                 await withQuoteBusy('正在作废客户...', async () => {
                     const saved = await saveCustomerDraft(input.user, {
@@ -7298,6 +7801,10 @@ function bindCustomerEditor(input) {
                         is_active: false,
                         is_deleted: true,
                     });
+                    moduleState.customerListMode = 'deleted';
+                    moduleState.customerLoadedId = '';
+                    moduleState.customerEditor = createCustomerDraft();
+                    moduleState.customerCreateMode = false;
                     await Promise.all([
                         fetchCustomerAnalytics(saved.id),
                         fetchCustomerSendLedger(saved.id),
@@ -7388,8 +7895,28 @@ function bindCustomerEditor(input) {
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
             try {
                 const saved = await saveCustomerDraft(input.user, moduleState.customerEditor);
-                await fetchCustomerAnalytics(saved.id);
-                input.showToast('客户档案已保存。');
+                moduleState.customerEditor = createCustomerDraft(saved);
+                moduleState.customerLoadedId = saved.id;
+                await Promise.all([
+                    fetchCustomerAnalytics(saved.id),
+                    fetchCustomerSendLedger(saved.id),
+                ]);
+                if (isSalesConsole(input)) {
+                    const flow = await ensureCustomerRequirementFlow(input.user, saved);
+                    if (flow?.deal?.id) moduleState.dealLoadedId = flow.deal.id;
+                    if (flow?.requirement?.id) moduleState.requirementLoadedId = flow.requirement.id;
+                    input.showToast('客户档案已保存，已自动生成客户需求链接。');
+                    if (flow?.deal?.id) {
+                        window.location.assign(adminPageUrl('quote-customer-flow', {
+                            customer: saved.id,
+                            deal: flow.deal.id,
+                            stage: 'requirement_capture',
+                        }));
+                        return;
+                    }
+                } else {
+                    input.showToast('客户档案已保存。');
+                }
                 await renderQuoteCustomersPage(input);
             } catch (error) {
                 input.showToast(error.message || '保存客户档案失败。', true);
@@ -7397,37 +7924,19 @@ function bindCustomerEditor(input) {
         });
     });
 
-    content.querySelectorAll('[data-customer-create-deal]').forEach((button) => {
-        button.addEventListener('click', async (event) => {
-            await input.withButtonBusy(event.currentTarget, '创建中...', async () => {
-                try {
-                    let customerId = text(moduleState.customerEditor?.id);
-                    if (!customerId) {
-                        const savedCustomer = await saveCustomerDraft(input.user, moduleState.customerEditor);
-                        moduleState.customerEditor = createCustomerDraft(savedCustomer);
-                        customerId = savedCustomer.id;
-                    }
-                    const owner = currentSalesOwner(input.user);
-                    const createdDeal = await saveDealDraft(input.user, {
-                        customer_id: customerId,
-                        current_stage: 'requirement_capture',
-                        owner_name: owner.name,
-                        owner_email: owner.email,
-                    }, {
-                        currentStage: 'requirement_capture',
-                        stageRecords: [],
-                    });
-                    input.showToast('销售线已创建。');
-                    window.location.assign(adminPageUrl('quote-customer-flow', {
-                        customer: customerId,
-                        deal: createdDeal.id,
-                        stage: 'requirement_capture',
-                    }));
-                } catch (error) {
-                    input.showToast(error.message || '创建销售线失败。', true);
-                }
-            });
-        });
+    document.getElementById('ams-customer-copy-requirement-link')?.addEventListener('click', async () => {
+        const customerId = text(moduleState.customerLoadedId || moduleState.customerEditor?.id);
+        const link = customerRequirementLink(customerId);
+        if (!link) {
+            input.showToast('请先保存客户档案，再生成客户需求链接。', true);
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(link);
+            input.showToast('客户需求链接已复制。');
+        } catch (_error) {
+            input.showToast(link, false);
+        }
     });
 
     document.getElementById('ams-quote-customer-archive-current')?.addEventListener('click', async (event) => {
@@ -8524,14 +9033,61 @@ export async function renderQuoteCustomersPage(input) {
         : esc(requirementSummary.total_requirements);
     const customerPageTitle = salesConsole ? '客户档案' : '报价系统 / 客户跟踪';
     const customerPageSub = salesConsole
-        ? '先建客户主档，再拆分多条独立商机推进需求、报价与履约。'
+        ? '先保存客户档案，系统会自动生成客户需求链接；后续按流水线等待客户提交并继续推进。'
         : '按客户查看关联报价单、浏览记录、分享动作，并维护客户主档信息。';
+    const showSalesCustomerList = !(salesConsole && moduleState.customerCreateMode && !activeCustomerId);
+    const customerListSwitchActions = salesConsole
+        ? `
+            <div class="ams-row-actions">
+                <button class="ams-btn ${listMode === 'archived' ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-archive-entry">${listMode === 'archived' ? '返回主列表' : `归档列表（${archivedCustomerCount()}）`}</button>
+                <button class="ams-btn ${listMode === 'deleted' ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-delete-entry">${listMode === 'deleted' ? '返回主列表' : `作废列表（${deletedCustomerCount()}）`}</button>
+            </div>
+        `
+        : '';
+    const showSalesCustomerEditor = listMode === 'active' && (activeCustomerId || moduleState.customerCreateMode);
+    const salesCustomerEditorMarkup = showSalesCustomerEditor
+        ? `
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${activeCustomerId ? '编辑客户档案' : '新建客户档案'}</h3>
+                        <p>客户主档是后台关系视图；报价单内的 <code>customer_snapshot</code> 仍用于保留发布时的业务历史。</p>
+                    </div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-save">${salesConsole ? '保存并生成客户需求链接' : '保存客户档案'}</button>
+                    </div>
+                </div>
+                ${activeCustomerId ? `
+                    <div class="ams-quote-meta-grid">
+                        <div class="ams-summary-chip"><strong>客户名称</strong><span>${esc(customerDisplayName(moduleState.customerEditor || {}))}</span></div>
+                        ${salesConsole ? `<div class="ams-summary-chip"><strong>关联销售流程</strong><span>${esc(activeCustomerDeals.length)}</span></div>` : ''}
+                        <div class="ams-summary-chip"><strong>关联需求单</strong><span>${requirementChipValue}</span></div>
+                        <div class="ams-summary-chip"><strong>关联报价单</strong><span>${esc(quoteSummary.total_quotes)}</span></div>
+                        <div class="ams-summary-chip"><strong>创建时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.created_at))}</span></div>
+                        <div class="ams-summary-chip"><strong>更新时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.updated_at))}</span></div>
+                    </div>
+                ` : ''}
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field"><label>客户公司</label><input class="ams-input" data-customer-field="company_name" value="${esc(moduleState.customerEditor?.company_name)}" placeholder="Demo Customer"></div>
+                    <div class="ams-field"><label>联系人</label><input class="ams-input" data-customer-field="contact_name" value="${esc(moduleState.customerEditor?.contact_name)}" placeholder="Receiver"></div>
+                    <div class="ams-field"><label>客户邮箱</label><input class="ams-input" data-customer-field="email" value="${esc(moduleState.customerEditor?.email)}" placeholder="customer@example.com"></div>
+                    <div class="ams-field"><label>客户电话</label><input class="ams-input" data-customer-field="phone" value="${esc(moduleState.customerEditor?.phone)}" placeholder="+7 000 000 0000"></div>
+                    <div class="ams-field"><label>国家/地区</label><input class="ams-input" data-customer-field="country" value="${esc(moduleState.customerEditor?.country)}" placeholder="Russia"></div>
+                </div>
+                <div class="ams-field">
+                    <label>客户备注</label>
+                    <textarea class="ams-textarea" rows="4" data-customer-field="notes" placeholder="记录客户来源、偏好、跟进节奏、分享要求或内部备注。">${esc(moduleState.customerEditor?.notes)}</textarea>
+                </div>
+            </section>
+        `
+        : '';
+
     renderSalesPageFrame(input, customerPageTitle, customerPageSub, `
         <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-instance-hero">
             <div class="ams-hero-copy">
                 <p class="ams-eyebrow">${salesConsole ? 'Customer Archive' : 'Quote Customers'}</p>
-                <h2>${salesConsole ? '所有销售线都从客户建档开始。' : '客户是报价系统里的主业务对象。'}</h2>
-                <p class="ams-hero-text">${salesConsole ? '客户档案页只做第一节点的事情：维护客户主档、查看当前客户下的销售线，并从这里新开销售线。' : '这里按客户聚合相关报价单、访问时间线和分享行为。报价单继续保留自己的客户快照，客户主档则作为后台的长期关系入口。'}</p>
+                <h2>${salesConsole ? '所有销售流程都从客户建档开始。' : '客户是报价系统里的主业务对象。'}</h2>
+                <p class="ams-hero-text">${salesConsole ? '客户档案页只做第一节点的事情：维护客户主档、查看当前客户下的销售流程，并从这里开始新的销售流程。' : '这里按客户聚合相关报价单、访问时间线和分享行为。报价单继续保留自己的客户快照，客户主档则作为后台的长期关系入口。'}</p>
             </div>
             <div class="ams-quick-actions ams-quote-instance-quick-actions">
                 <button class="ams-quick-link" type="button" id="ams-quote-customer-new">
@@ -8541,53 +9097,21 @@ export async function renderQuoteCustomersPage(input) {
                         <span>先建立长期客户主档，再复用公司、联系人和联系方式到后续需求与报价流程。</span>
                     </div>
                 </button>
-                ${salesConsole
-                    ? `
-                        <button class="ams-quick-link" type="button" data-customer-create-deal>
-                            <div class="ams-quick-link-icon"><i class="fa-solid fa-diagram-project"></i></div>
-                            <div class="ams-quick-link-body">
-                                <strong>新建商机</strong>
-                                <span>从当前客户主档直接开一条独立销售链路，后续需求、报价、合同和履约都按 deal 推进。</span>
-                            </div>
-                        </button>
-                    `
-                    : ''}
-                <div class="ams-quick-link ams-quick-link-static ams-quote-create-panel">
-                    <div class="ams-quick-link-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-                    <div class="ams-quick-link-body">
-                        <strong>客户主档检索</strong>
-                        <span>客户主档用于复用公司、联系人、邮箱、电话和备注；每份报价单发布时仍然保留自己的客户快照。</span>
-                    </div>
-                </div>
+                ${customerListSwitchActions}
             </div>
         </section>
         ${salesConsole ? '' : customerPipelineMarkup(activeCustomerId)}
-        <section class="ams-quote-layout">
-            <aside class="ams-card ams-quote-list-panel">
-                <div class="ams-section-head">
-                    <div>
-                        <h3>${listMode === 'deleted' ? '已作废客户' : listMode === 'archived' ? '已归档客户' : '客户列表'}</h3>
-                        <p>共 ${filteredCustomers().length} 个${listMode === 'deleted' ? '已作废客户' : listMode === 'archived' ? '归档客户' : '活跃客户'}</p>
-                    </div>
-                    <div class="ams-row-actions">
-                        <button class="ams-btn ${listMode === 'archived' ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-archive-entry">${listMode === 'archived' ? '返回主列表' : `归档列表（${archivedCustomerCount()}）`}</button>
-                        <button class="ams-btn ${listMode === 'deleted' ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-delete-entry">${listMode === 'deleted' ? '返回主列表' : `作废列表（${deletedCustomerCount()}）`}</button>
-                    </div>
-                </div>
-                <div class="ams-field-help" style="margin: 0 0 12px;">${
-                    listMode === 'deleted'
-                        ? '这里只显示已作废客户，可按需恢复。'
-                        : listMode === 'archived'
-                            ? '这里只显示已归档客户，可恢复继续使用。'
-                            : '默认只显示有效客户，已归档和已作废客户收纳在单独列表。'
-                }</div>
+        ${salesConsole ? salesCustomerEditorMarkup : ''}
+        ${showSalesCustomerList ? `
+        <section class="${salesConsole ? '' : 'ams-quote-layout'}">
+            <aside class="ams-card ${salesConsole ? 'ams-sales-customer-archive-panel' : 'ams-quote-list-panel'}">
                 <div class="ams-field">
                     <label>搜索客户</label>
                     <input id="ams-quote-customer-search" class="ams-input" value="${esc(moduleState.customerSearch)}" placeholder="搜索公司 / 联系人 / 邮箱 / 电话">
                 </div>
-                <div class="ams-quote-list">${renderCustomerList()}</div>
+                <div class="ams-quote-list ${salesConsole ? 'ams-sales-customer-archive-list' : ''}">${salesConsole ? renderSalesCustomerArchiveList() : renderCustomerList()}</div>
             </aside>
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+            ${salesConsole ? '' : `<section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
                 ${
                     activeCustomerId || moduleState.customerCreateMode
                         ? `
@@ -8597,13 +9121,12 @@ export async function renderQuoteCustomersPage(input) {
                             <p>客户主档是后台关系视图；报价单内的 <code>customer_snapshot</code> 仍用于保留发布时的业务历史。</p>
                         </div>
                         <div class="ams-row-actions">
-                            ${salesConsole ? `<button class="ams-btn ams-btn-warning" type="button" data-customer-create-deal ${activeCustomerId || moduleState.customerCreateMode ? '' : 'disabled="disabled"'}>新建商机</button>` : ''}
-                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-save">保存客户档案</button>
+                            <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-save">${salesConsole ? '保存并生成客户需求链接' : '保存客户档案'}</button>
                         </div>
                     </div>
                     <div class="ams-quote-meta-grid">
                         <div class="ams-summary-chip"><strong>客户名称</strong><span>${esc(customerDisplayName(moduleState.customerEditor || {}))}</span></div>
-                        ${salesConsole ? `<div class="ams-summary-chip"><strong>关联商机</strong><span>${esc(activeCustomerDeals.length)}</span></div>` : ''}
+                        ${salesConsole ? `<div class="ams-summary-chip"><strong>关联销售流程</strong><span>${esc(activeCustomerDeals.length)}</span></div>` : ''}
                         <div class="ams-summary-chip"><strong>关联需求单</strong><span>${requirementChipValue}</span></div>
                         <div class="ams-summary-chip"><strong>关联报价单</strong><span>${esc(quoteSummary.total_quotes)}</span></div>
                         <div class="ams-summary-chip"><strong>创建时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.created_at))}</span></div>
@@ -8623,7 +9146,7 @@ export async function renderQuoteCustomersPage(input) {
                     ${salesConsole && activeCustomerDeals.length
                         ? `
                             <section class="ams-quote-block">
-                                <div class="ams-section-head"><div><h3>客户销售线</h3><p>同一客户可以同时推进多条独立销售线，点击后进入独立客户流水线。</p></div></div>
+                                <div class="ams-section-head"><div><h3>客户销售流程</h3><p>同一客户可以同时推进多条独立销售流程，点击后进入这个客户自己的流水线。</p></div></div>
                                 <div class="ams-sales-inline-list">
                                     ${activeCustomerDeals.map((deal) => `<a class="ams-inline-link-card" href="${esc(customerFlowStageUrl(deal.current_stage, deal, activeCustomerId))}"><strong>${esc(text(deal.title, deal.id))}</strong><span>${esc(`${dealStageLabel(deal.current_stage)} · ${dealStatusLabel(deal.deal_status)}`)}</span></a>`).join('')}
                                 </div>
@@ -8634,8 +9157,9 @@ export async function renderQuoteCustomersPage(input) {
                 `
                         : '<div class="ams-empty">先从左侧选择一个客户，或点击上方“新建客户档案”。</div>'
                 }
-            </section>
+            </section>`}
         </section>
+        ` : ''}
         ${salesConsole ? '' : customerRelationshipGraphMarkup(activeCustomerId)}
     `, {
         deal: salesConsole ? null : currentDeal,
@@ -9022,14 +9546,31 @@ function currentSalesStageParam(fallback = 'requirement_capture') {
 
 function stagePageTitle(stageKey = '') {
     const stage = dealStageDefinition(stageKey);
-    if (stage.key === 'customer_profile') return '客户建档';
-    return `总流水线 / ${stage.label}`;
+    if (stage.key === 'customer_profile') return '总流水线 · 客户建档';
+    return `总流水线 · ${stage.label}`;
 }
 
 function stagePageSub(stageKey = '') {
     const stage = dealStageDefinition(stageKey);
-    if (stage.key === 'customer_profile') return '客户建档是第一节点，先建立客户，再从客户档案创建销售线。';
-    return `${stage.label} 节点只处理当前阶段事项，不在中途新开销售线。`;
+    if (stage.key === 'customer_profile') return '总流水线模式：客户建档是第一节点，先建立客户，再从客户档案创建销售线。';
+    return `总流水线模式：${stage.label} 节点只处理当前阶段事项，不在中途新开销售线。`;
+}
+
+function salesOverviewStageRows() {
+    return [
+        {
+            direction: 'forward',
+            stages: DEAL_STAGE_DEFINITIONS.slice(0, 5),
+        },
+        {
+            direction: 'backward',
+            stages: DEAL_STAGE_DEFINITIONS.slice(5, 9),
+        },
+        {
+            direction: 'forward',
+            stages: DEAL_STAGE_DEFINITIONS.slice(9),
+        },
+    ];
 }
 
 function visibleStageDeals(stageKey = '', input = null, options = {}) {
@@ -9134,20 +9675,29 @@ function pipelineListCardMarkup(stageKey = '', deal = {}, options = {}) {
         ? customerFlowStageUrl(stageKey, deal, deal.customer_id)
         : adminPageUrl('quote-pipeline', { stage: normalizeDealStageKey(stageKey), deal: deal.id });
     const flowUrl = customerFlowStageUrl(stageKey, deal, deal.customer_id);
+    const primaryLabel = customerFlow
+        ? text(deal.title, '未命名流程')
+        : text(customerDisplayName(customer || {}), text(deal.title, '未命名客户'));
+    const secondaryLabel = customerFlow
+        ? `${dealStageLabel(deal.current_stage)} · ${dealStatusLabel(deal.deal_status)}`
+        : text(deal.title, '未命名流程');
+    const currentStageLabel = dealStageLabel(deal.current_stage);
+    const currentStageTone = normalizeDealStageKey(deal.current_stage) === normalizeDealStageKey(stageKey) ? 'warning' : 'draft';
+    const stagePill = `<span class="ams-status-pill ams-status-${currentStageTone}">${esc(currentStageLabel)}</span>`;
+    const statusMeta = normalizeDealStatus(deal.deal_status) === 'active' ? '' : ` · ${dealStatusLabel(deal.deal_status)}`;
     return `
         <article class="ams-customer-list-card-shell ${selected ? 'is-active' : ''}">
             <button class="ams-quote-list-card ${selected ? 'is-active' : ''}" type="button" data-sales-stage-select="${esc(stageUrl)}">
-                <strong>${esc(customerDisplayName(customer || {}))}</strong>
-                <span>${esc(text(deal.title, '未命名销售线'))}</span>
+                <strong>${esc(primaryLabel)}</strong>
+                <span>${esc(secondaryLabel)}</span>
                 <span class="ams-quote-inline-submeta">${esc(text(deal.summary || deal.next_action, '待补充阶段说明'))}</span>
-                <em>${dealStatusPill(deal.deal_status)} <span class="ams-quote-inline-meta">${esc(`${dealStageLabel(deal.current_stage)} · 更新于 ${fmtDate(deal.updated_at || deal.created_at)}`)}</span></em>
+                <em>${stagePill} <span class="ams-quote-inline-meta">${esc(`${currentStageLabel}${statusMeta} · 更新于 ${fmtDate(deal.updated_at || deal.created_at)}`)}</span></em>
             </button>
             ${
                 customerFlow
                     ? ''
                     : `
                         <div class="ams-quote-list-card-actions">
-                            <a class="ams-btn ams-btn-muted" href="${esc(flowUrl)}">客户流水线</a>
                             <button class="ams-btn ams-btn-muted" type="button" data-sales-stage-archive="${esc(deal.id)}">归档</button>
                             <button class="ams-btn ams-btn-danger" type="button" data-sales-stage-void="${esc(deal.id)}">作废</button>
                         </div>
@@ -9158,15 +9708,16 @@ function pipelineListCardMarkup(stageKey = '', deal = {}, options = {}) {
 }
 
 function customerProfileFlowMarkup(customer = {}, deals = [], activeDeal = null) {
+    const customerLabel = text(customerDisplayName(customer || {}), text(activeDeal?.title, '当前客户'));
     return `
         <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
             <div class="ams-section-head">
                 <div>
-                    <h3>${esc(customerDisplayName(customer || {}))}</h3>
+                    <h3>${esc(customerLabel)}</h3>
                     <p>当前客户流水线的第一节点，只维护客户主档信息，不在这里处理需求、报价和履约详情。</p>
                 </div>
                 <div class="ams-row-actions">
-                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-customer-save">保存客户档案</button>
+                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-customer-save">保存并进入获取需求</button>
                 </div>
             </div>
             <div class="ams-quote-meta-grid">
@@ -9195,17 +9746,59 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
     const requirementLink = requirement.id && requirement.public_slug && requirement.public_token
         ? requirementPublicUrl(requirement.public_slug, requirement.public_token)
         : '';
+    const answers = normalizeRequirementAnswers(requirement.answers);
+    const communicationNotes = answers.communication_notes || [];
+    const unreadCustomerUpdate = requirementHasUnreadCustomerUpdate(requirement);
     const canConfirm = normalizeDealStageKey(stageKey) === 'requirement_confirmed' && Boolean(text(requirement.customer_id) && text(requirement.deal_id || deal?.id));
     return `
         <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
             <div class="ams-section-head">
                 <div>
                     <h3>${esc(dealStageLabel(stageKey))}</h3>
-                    <p>${normalizeDealStageKey(stageKey) === 'requirement_capture' ? '录入并保存当前销售线的原始需求。' : '复核需求信息并锁定报价基线。'}</p>
+                        <p>${normalizeDealStageKey(stageKey) === 'requirement_capture' ? '等待客户提交需求，并在这里查看填写进度、补充内部摘要，以及对外分享带有 GasGx 品牌说明的客户需求入口。' : '复核需求信息并锁定报价基线。'}</p>
                 </div>
                 <div class="ams-row-actions">
-                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-requirement-save">保存需求</button>
+                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-requirement-save">保存</button>
+                    ${requirementLink ? `<button class="ams-btn ams-btn-muted ${unreadCustomerUpdate ? 'has-alert-dot' : ''}" type="button" id="ams-sales-flow-requirement-open-link">查看客户需求${unreadCustomerUpdate ? '<span class="ams-btn-alert-dot" aria-hidden="true"></span>' : ''}</button>` : ''}
+                    <details class="ams-share-menu">
+                        <summary class="ams-btn ams-btn-muted" ${requirementLink ? '' : 'aria-disabled="true"'}>
+                            分享
+                        </summary>
+                        <div class="ams-share-menu-panel">
+                            <div class="ams-share-menu-copy">
+                                <strong>对外发送客户需求入口</strong>
+                                <span>复制时会带上填写目的说明、自动保存进度说明，以及 GasGx 品牌介绍；二维码海报适合微信、邮件或群转发。</span>
+                            </div>
+                            <button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-link" ${requirementLink ? '' : 'disabled'}>
+                                <i class="fa-solid fa-link"></i>
+                                <span>复制链接</span>
+                            </button>
+                            <button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-poster" ${requirementLink ? '' : 'disabled'}>
+                                <i class="fa-solid fa-qrcode"></i>
+                                <span>生成二维码海报</span>
+                            </button>
+                        </div>
+                    </details>
                     ${normalizeDealStageKey(stageKey) === 'requirement_confirmed' ? `<button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-requirement-confirm" ${canConfirm ? '' : 'disabled'}>确认需求</button>` : ''}
+                </div>
+            </div>
+            <div class="ams-share-poster-modal" id="ams-sales-flow-requirement-share-poster-modal" hidden>
+                <div class="ams-share-poster-backdrop" data-sales-flow-requirement-share-poster-close></div>
+                <div class="ams-share-poster-dialog">
+                    <div class="ams-share-poster-head">
+                        <div>
+                            <strong>客户需求二维码海报</strong>
+                            <span>适合微信、邮件或群转发，已包含填写目的说明、自动保存进度说明和 GasGx 品牌宣传。</span>
+                        </div>
+                        <button class="ams-btn ams-btn-muted" type="button" data-sales-flow-requirement-share-poster-close>关闭</button>
+                    </div>
+                    <div class="ams-share-poster-stage">
+                        <img class="ams-share-poster-image" id="ams-sales-flow-requirement-share-poster-image" alt="客户需求二维码海报">
+                    </div>
+                    <div class="ams-row-actions">
+                        <a class="ams-btn ams-btn-primary" id="ams-sales-flow-requirement-share-poster-download" download="gasgx-customer-requirement-share-poster.svg">下载海报</a>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-requirement-share-poster-copy">复制分享文案</button>
+                    </div>
                 </div>
             </div>
             <div class="ams-quote-meta-grid">
@@ -9215,26 +9808,82 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
                 <div class="ams-summary-chip"><strong>公开链接</strong><span>${requirementLink ? `<a class="ams-inline-link" href="${esc(requirementLink)}" target="_blank" rel="noopener">打开客户表单</a>` : '保存后生成'}</span></div>
             </div>
             <div class="ams-site-field-grid ams-site-field-grid-wide">
-                <div class="ams-field"><label>需求标题</label><input class="ams-input" data-sales-flow-requirement-field="title" value="${esc(requirement.title)}" placeholder="本轮需求标题"></div>
-                <div class="ams-field">
-                    <label>需求类型</label>
-                    <select class="ams-select" data-sales-flow-requirement-field="requirement_type">
-                        ${selectOptionsMarkup(REQUIREMENT_TYPE_OPTIONS, requirement.requirement_type)}
-                    </select>
+                <div class="ams-field"><label>客户填写进度说明</label><input class="ams-input" value="${esc(normalizeDealStageKey(stageKey) === 'requirement_capture' ? '当前阶段只等待客户填写，客户基础信息与需求详情以公开需求页实际提交内容为准。' : '当前阶段请基于客户已提交的真实需求内容进行确认。')}" disabled></div>
+            </div>
+            <div class="ams-field">
+                <label>销售沟通备注</label>
+                <textarea class="ams-textarea" rows="4" data-sales-flow-requirement-answer="communication_note_draft" placeholder="记录客户在微信、电话、邮件等私下沟通里的新增信息；每次保存都会追加一条沟通记录。">${esc(answers.communication_note_draft)}</textarea>
+            </div>
+            <details class="ams-fold-card">
+                <summary class="ams-fold-summary">
+                    <span>沟通备注列表</span>
+                    <em>${esc(communicationNotes.length)} 条</em>
+                </summary>
+                <div class="ams-fold-body">
+                    ${communicationNotes.length
+                        ? communicationNotes.map((item) => `
+                            <article class="ams-note-log-item">
+                                <strong>${esc(text(item.author, '销售备注'))}</strong>
+                                <time>${esc(fmtDate(item.created_at))}</time>
+                                <p>${esc(item.note)}</p>
+                            </article>
+                        `).join('')
+                        : '<div class="ams-empty">当前还没有沟通备注记录。</div>'}
                 </div>
-                <div class="ams-field"><label>国家 / 地区</label><input class="ams-input" data-sales-flow-requirement-field="country" value="${esc(requirement.country)}" placeholder="国家 / 地区"></div>
-                <div class="ams-field"><label>客户公司</label><input class="ams-input" data-sales-flow-requirement-field="requester_company" value="${esc(requirement.requester_company)}" placeholder="${esc(customerDisplayName(customer))}"></div>
-                <div class="ams-field"><label>联系人</label><input class="ams-input" data-sales-flow-requirement-field="requester_name" value="${esc(requirement.requester_name)}" placeholder="联系人"></div>
-                <div class="ams-field"><label>联系邮箱</label><input class="ams-input" data-sales-flow-requirement-field="requester_email" value="${esc(requirement.requester_email)}" placeholder="customer@example.com"></div>
-                <div class="ams-field"><label>联系电话</label><input class="ams-input" data-sales-flow-requirement-field="requester_phone" value="${esc(requirement.requester_phone)}" placeholder="+86"></div>
+            </details>
+        </section>
+    `;
+}
+
+function stageCommunicationSectionMarkup(stageKey = '', record = {}, options = {}) {
+    const logs = stageCommunicationLogs(record);
+    const title = text(options.title, '沟通记录');
+    const help = text(options.help, '记录这个节点里与客户沟通、内部确认、修改原因和关键结论。每次保存都会追加一条历史。');
+    return `
+        <section class="ams-card ams-stage-log-card">
+            <div class="ams-section-head">
+                <div>
+                    <h3>${esc(title)}</h3>
+                    <p>${esc(help)}</p>
+                </div>
             </div>
             <div class="ams-field">
-                <label>需求备注</label>
-                <textarea class="ams-textarea" rows="4" data-sales-flow-requirement-field="notes" placeholder="记录原始需求、重点参数、客户特别说明。">${esc(requirement.notes)}</textarea>
+                <label>新增沟通备注</label>
+                <textarea class="ams-textarea" rows="3" data-sales-flow-stage-meta="communication_note_draft" placeholder="记录本次和客户沟通的要点、变更原因、承诺事项或内部判断。">${esc(stageMetaValue(record, 'communication_note_draft'))}</textarea>
+            </div>
+            <details class="ams-fold-card" ${logs.length ? '' : 'open'}>
+                <summary class="ams-fold-summary">
+                    <span>沟通记录列表</span>
+                    <em>${esc(logs.length)} 条</em>
+                </summary>
+                <div class="ams-fold-body">
+                    ${logs.length
+                        ? logs.map((item) => `
+                            <article class="ams-note-log-item">
+                                <strong>${esc(text(item.author, '销售沟通'))}</strong>
+                                <time>${esc(fmtDate(item.created_at))}</time>
+                                <p>${esc(item.note)}</p>
+                            </article>
+                        `).join('')
+                        : '<div class="ams-empty">当前节点还没有沟通记录。</div>'}
+                </div>
+            </details>
+        </section>
+    `;
+}
+
+function quoteTermsCardMarkup(record = {}) {
+    return `
+        <section class="ams-card ams-stage-log-card">
+            <div class="ams-section-head">
+                <div>
+                    <h3>确认条款</h3>
+                    <p>在客户确认报价前，把首付款比例、交付周期、服务边界和其他关键条款写清楚，并同步进入后续签约合同节点。</p>
+                </div>
             </div>
             <div class="ams-field">
-                <label>补充摘要</label>
-                <textarea class="ams-textarea" rows="4" data-sales-flow-requirement-answer="extra_notes" placeholder="补充内部整理后的需求摘要。">${esc(normalizeRequirementAnswers(requirement.answers).extra_notes)}</textarea>
+                <label>报价确认条款</label>
+                <textarea class="ams-textarea" rows="6" data-sales-flow-stage-meta="quote_terms" placeholder="示例：30% 定金后排产；预计 45 天交付；尾款在出厂验收后支付；质保 12 个月。">${esc(stageMetaValue(record, 'quote_terms'))}</textarea>
             </div>
         </section>
     `;
@@ -9246,43 +9895,347 @@ function quoteFlowMarkup(stageKey = '', deal = null, instance = {}) {
         moduleState.pipelineProductSelection = instance.product_id || products[0]?.id || '';
     }
     const brand = moduleState.brands.find((item) => item.id === text(instance.brand_id));
+    const record = stageRecordByKey(stageKey, moduleState.dealStageRecords) || createDealStageRecord({
+        deal_id: deal?.id,
+        stage_key: stageKey,
+        stage_status: normalizeDealStageKey(deal?.current_stage) === normalizeDealStageKey(stageKey) ? 'active' : 'pending',
+    });
     const canConfirm = normalizeDealStageKey(stageKey) === 'quote_confirmed' && Boolean(text(instance.id) && text(instance.deal_id || deal?.id));
     return `
-        <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
-            <div class="ams-section-head">
-                <div>
-                    <h3>${esc(dealStageLabel(stageKey))}</h3>
-                    <p>${normalizeDealStageKey(stageKey) === 'quote_draft' ? '选择产品模板生成草稿，正文继续沿用现有报价编辑器。' : '核对当前报价版本后锁定为客户确认版本。'}</p>
-                </div>
+        <div class="ams-stage-detail-stack">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${esc(dealStageLabel(stageKey))}</h3>
+                        <p>${normalizeDealStageKey(stageKey) === 'quote_draft'
+                            ? '这里负责生成报价草稿、打开可视化编辑器，并持续记录客户对报价内容的修改意见。'
+                            : '这里负责锁定客户最终认可版本。确认后直接进入签约合同，并把条款带入合同节点。'}</p>
+                    </div>
                 <div class="ams-row-actions">
-                    ${instance.id ? `<button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-instance-open">打开报价编辑器</button>` : ''}
-                    ${normalizeDealStageKey(stageKey) === 'quote_confirmed' ? `<button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-instance-confirm" ${canConfirm ? '' : 'disabled'}>确认报价</button>` : ''}
+                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-quote-save">${normalizeDealStageKey(stageKey) === 'quote_confirmed' ? '保存确认信息' : '保存报价信息'}</button>
+                    ${normalizeDealStageKey(stageKey) === 'quote_draft' && instance.id ? `<button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-instance-open">打开可视化报价编辑器</button>` : ''}
+                    ${normalizeDealStageKey(stageKey) === 'quote_confirmed' ? `<button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-open-public-confirmation">打开客户报价确认单</button>` : ''}
+                    ${normalizeDealStageKey(stageKey) === 'quote_confirmed' ? `<button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-copy-public-confirmation">复制确认链接</button>` : ''}
+                    ${normalizeDealStageKey(stageKey) === 'quote_confirmed' ? `<button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-instance-confirm" ${canConfirm ? '' : 'disabled'}>确认报价并进入签约合同</button>` : ''}
                 </div>
             </div>
-            <div class="ams-quote-meta-grid">
-                <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(moduleState.customers.find((item) => item.id === deal?.customer_id) || {}))}</span></div>
-                <div class="ams-summary-chip"><strong>销售线</strong><span>${esc(text(deal?.title, '--'))}</span></div>
-                <div class="ams-summary-chip"><strong>品牌</strong><span>${esc(text(brand?.brand_name || brand?.display_name, '--'))}</span></div>
-                <div class="ams-summary-chip"><strong>产品</strong><span>${esc(text(productLabelById(instance.product_id), '--'))}</span></div>
-                <div class="ams-summary-chip"><strong>报价状态</strong><span>${statusPill(instance.status || 'draft')}</span></div>
-            </div>
-            ${
-                instance.id
-                    ? `<div class="ams-field-help">当前报价草稿：${esc(text(instance.customer_name || instance.public_slug, instance.id))}</div>`
-                    : `
-                        <div class="ams-field">
-                            <label>产品模板</label>
-                            <select class="ams-select" id="ams-sales-flow-instance-product">
-                                <option value="">请选择产品模板</option>
-                                ${products.map((product) => `<option value="${esc(product.id)}" ${moduleState.pipelineProductSelection === product.id ? 'selected' : ''}>${esc(productLabelById(product.id))}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="ams-row-actions">
-                            <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-instance-create" ${normalizeDealStageKey(stageKey) === 'quote_draft' ? '' : 'disabled'}>生成报价草稿</button>
-                        </div>
-                    `
-            }
-        </section>
+                <div class="ams-quote-meta-grid">
+                    <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(moduleState.customers.find((item) => item.id === deal?.customer_id) || {}))}</span></div>
+                    <div class="ams-summary-chip"><strong>销售线</strong><span>${esc(text(deal?.title, '--'))}</span></div>
+                    <div class="ams-summary-chip"><strong>品牌</strong><span>${esc(text(brand?.brand_name || brand?.display_name, '--'))}</span></div>
+                    <div class="ams-summary-chip"><strong>产品</strong><span>${esc(text(productLabelById(instance.product_id), '--'))}</span></div>
+                    <div class="ams-summary-chip"><strong>报价状态</strong><span>${statusPill(instance.status || 'draft')}</span></div>
+                </div>
+                ${
+                    instance.id
+                        ? `<div class="ams-field-help">当前报价草稿：${esc(text(instance.customer_name || instance.public_slug, instance.id))}。这里的所有条款调整和客户反馈都应写入下面的沟通记录，确保后续签约可追溯。</div>`
+                        : `
+                            <div class="ams-field">
+                                <label>产品模板</label>
+                                <select class="ams-select" id="ams-sales-flow-instance-product">
+                                    <option value="">请选择产品模板</option>
+                                    ${products.map((product) => `<option value="${esc(product.id)}" ${moduleState.pipelineProductSelection === product.id ? 'selected' : ''}>${esc(productLabelById(product.id))}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="ams-row-actions">
+                                <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-instance-create" ${normalizeDealStageKey(stageKey) === 'quote_draft' ? '' : 'disabled'}>生成报价单</button>
+                            </div>
+                        `
+                }
+            </section>
+            ${normalizeDealStageKey(stageKey) === 'quote_confirmed' ? quoteTermsCardMarkup(record) : ''}
+            ${stageCommunicationSectionMarkup(stageKey, record, {
+                title: '报价沟通记录',
+                help: '把客户对报价内容、价格、条款、交付周期的每次反馈和修改要求都记在这里，便于后续签约与溯源。',
+            })}
+        </div>
+    `;
+}
+
+function contractStageMarkup(stage = {}, deal = null, record = {}) {
+    return `
+        <div class="ams-stage-detail-stack">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${esc(stage.label)}</h3>
+                        <p>向客户递送合同、记录客户返修意见，合同确认无误后归档到这里，再推进到定金付款。</p>
+                    </div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存合同信息</button>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-open-public-confirmation">打开客户合同确认单</button>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-copy-public-confirmation">复制确认链接</button>
+                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认合同并进入定金付款</button>
+                    </div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field"><label>合同编号</label><input class="ams-input" data-sales-flow-stage-meta="contract_number" value="${esc(stageMetaValue(record, 'contract_number'))}" placeholder="CT-2026-001"></div>
+                    <div class="ams-field"><label>签约日期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="contract_date" value="${esc(stageMetaValue(record, 'contract_date'))}"></div>
+                    <div class="ams-field"><label>合同金额</label><input class="ams-input" type="number" step="0.01" data-sales-flow-stage-meta="contract_amount" value="${esc(stageMetaValue(record, 'contract_amount'))}" placeholder="0"></div>
+                    <div class="ams-field"><label>币种</label><input class="ams-input" data-sales-flow-stage-meta="contract_currency" value="${esc(stageMetaValue(record, 'contract_currency', 'USD'))}" placeholder="USD"></div>
+                    <div class="ams-field"><label>合同归档链接</label><input class="ams-input" data-sales-flow-stage-meta="contract_link" value="${esc(stageMetaValue(record, 'contract_link'))}" placeholder="https://..."></div>
+                    <div class="ams-field"><label>客户确认结果</label><input class="ams-input" data-sales-flow-stage-meta="contract_review_result" value="${esc(stageMetaValue(record, 'contract_review_result'))}" placeholder="已确认 / 待修订 / 补充条款"></div>
+                </div>
+                <div class="ams-field">
+                    <label>从确认报价继承的商务条款</label>
+                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="quote_terms" placeholder="这里承接确认报价节点中的首付款、交付周期、服务边界和其他约定。">${esc(stageMetaValue(record, 'quote_terms'))}</textarea>
+                </div>
+                <div class="ams-field">
+                    <label>合同归档说明</label>
+                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="contract_archive_note" placeholder="记录客户最终回传的合同版本、修改点摘要、归档位置和内部确认结论。">${esc(stageMetaValue(record, 'contract_archive_note'))}</textarea>
+                </div>
+            </section>
+            ${stageCommunicationSectionMarkup(stage.key, record, {
+                title: '合同沟通记录',
+                help: '记录合同条款往返修改、客户问题、法务确认和最终归档依据。',
+            })}
+        </div>
+    `;
+}
+
+function depositStageMarkup(stage = {}, deal = null, record = {}) {
+    return `
+        <div class="ams-stage-detail-stack">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${esc(stage.label)}</h3>
+                        <p>跟进客户定金支付、核对电子回单或付款证明，确认到账后推进到排产安排。</p>
+                    </div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存付款跟进</button>
+                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认定金到账并进入排产</button>
+                    </div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field"><label>应收定金</label><input class="ams-input" type="number" step="0.01" data-sales-flow-stage-meta="deposit_expected" value="${esc(stageMetaValue(record, 'deposit_expected'))}" placeholder="0"></div>
+                    <div class="ams-field"><label>实收定金</label><input class="ams-input" type="number" step="0.01" data-sales-flow-stage-meta="deposit_received" value="${esc(stageMetaValue(record, 'deposit_received'))}" placeholder="0"></div>
+                    <div class="ams-field"><label>到账日期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="deposit_received_at" value="${esc(stageMetaValue(record, 'deposit_received_at'))}"></div>
+                    <div class="ams-field"><label>付款凭证链接 / 回单号</label><input class="ams-input" data-sales-flow-stage-meta="deposit_reference" value="${esc(stageMetaValue(record, 'deposit_reference'))}" placeholder="银行回单链接 / 流水号 / 图片地址"></div>
+                </div>
+                <div class="ams-field">
+                    <label>到账核对说明</label>
+                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="deposit_review_note" placeholder="记录客户打款渠道、到账异常、催款结果和核对结论。">${esc(stageMetaValue(record, 'deposit_review_note'))}</textarea>
+                </div>
+            </section>
+            ${stageCommunicationSectionMarkup(stage.key, record, {
+                title: '定金沟通记录',
+                help: '记录催款、付款证明回传、到账确认和异常处理过程。',
+            })}
+        </div>
+    `;
+}
+
+function productionStageMarkup(stage = {}, deal = null, record = {}) {
+    return `
+        <div class="ams-stage-detail-stack">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${esc(stage.label)}</h3>
+                        <p>按生产流程更新集装箱、发电机、矿箱模块等环节状态，记录工期和是否延误，并保留通知客户的方式。</p>
+                    </div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存排产进度</button>
+                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">通知客户验收并进入出厂验收</button>
+                    </div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field"><label>工厂 / 产线</label><input class="ams-input" data-sales-flow-stage-meta="factory_name" value="${esc(stageMetaValue(record, 'factory_name'))}" placeholder="Factory A"></div>
+                    <div class="ams-field"><label>批次</label><input class="ams-input" data-sales-flow-stage-meta="production_batch" value="${esc(stageMetaValue(record, 'production_batch'))}" placeholder="Batch-01"></div>
+                    <div class="ams-field"><label>开始时间</label><input class="ams-input" type="date" data-sales-flow-stage-meta="production_start_at" value="${esc(stageMetaValue(record, 'production_start_at'))}"></div>
+                    <div class="ams-field"><label>预计完工</label><input class="ams-input" type="date" data-sales-flow-stage-meta="production_eta" value="${esc(stageMetaValue(record, 'production_eta'))}"></div>
+                    <div class="ams-field"><label>工期状态</label><input class="ams-input" data-sales-flow-stage-meta="production_schedule_status" value="${esc(stageMetaValue(record, 'production_schedule_status'))}" placeholder="正常 / 延误 / 风险"></div>
+                    <div class="ams-field"><label>延误说明</label><input class="ams-input" data-sales-flow-stage-meta="production_delay_reason" value="${esc(stageMetaValue(record, 'production_delay_reason'))}" placeholder="如有延误，请写明原因"></div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field"><label>集装箱模块</label><input class="ams-input" data-sales-flow-stage-meta="module_container_status" value="${esc(stageMetaValue(record, 'module_container_status'))}" placeholder="待下料 / 生产中 / 完成"></div>
+                    <div class="ams-field"><label>发电机模块</label><input class="ams-input" data-sales-flow-stage-meta="module_generator_status" value="${esc(stageMetaValue(record, 'module_generator_status'))}" placeholder="待采购 / 安装中 / 完成"></div>
+                    <div class="ams-field"><label>矿箱模块</label><input class="ams-input" data-sales-flow-stage-meta="module_mining_box_status" value="${esc(stageMetaValue(record, 'module_mining_box_status'))}" placeholder="待装配 / 调试中 / 完成"></div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field"><label>通知客户方式</label><input class="ams-input" data-sales-flow-stage-meta="customer_notify_channels" value="${esc(stageMetaValue(record, 'customer_notify_channels', '邮箱 / WhatsApp'))}" placeholder="邮箱 / WhatsApp / 电话"></div>
+                    <div class="ams-field"><label>通知客户邮箱</label><input class="ams-input" data-sales-flow-stage-meta="customer_notify_email" value="${esc(stageMetaValue(record, 'customer_notify_email'))}" placeholder="customer@example.com"></div>
+                </div>
+                <div class="ams-field">
+                    <label>排产与验收通知说明</label>
+                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="production_notice_note" placeholder="记录工期结论、延期原因、发给客户的邮件/通知摘要，以及何时邀请客户验收。">${esc(stageMetaValue(record, 'production_notice_note'))}</textarea>
+                </div>
+            </section>
+            ${stageCommunicationSectionMarkup(stage.key, record, {
+                title: '排产沟通记录',
+                help: '记录排产确认、工期变化、延期说明、发给客户的通知和验收预约。',
+            })}
+        </div>
+    `;
+}
+
+function factoryAcceptanceStageMarkup(stage = {}, deal = null, record = {}) {
+    return `
+        <div class="ams-stage-detail-stack">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${esc(stage.label)}</h3>
+                        <p>支持上传纸质验收单图片，或发给客户线上验收确认入口。客户完成验收后，再推进到尾款确认。</p>
+                    </div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存验收信息</button>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-open-public-confirmation">打开线上验收确认单</button>
+                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-copy-public-confirmation">复制确认链接</button>
+                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认验收完成并进入尾款确认</button>
+                    </div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field"><label>验收日期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="fat_date" value="${esc(stageMetaValue(record, 'fat_date'))}"></div>
+                    <div class="ams-field"><label>验收结果</label><input class="ams-input" data-sales-flow-stage-meta="fat_result" value="${esc(stageMetaValue(record, 'fat_result'))}" placeholder="通过 / 待整改"></div>
+                    <div class="ams-field"><label>纸质验收单图片链接</label><input class="ams-input" data-sales-flow-stage-meta="acceptance_image_link" value="${esc(stageMetaValue(record, 'acceptance_image_link'))}" placeholder="https://..."></div>
+                    <div class="ams-field"><label>线上验收确认链接</label><input class="ams-input" data-sales-flow-stage-meta="acceptance_form_link" value="${esc(stageMetaValue(record, 'acceptance_form_link'))}" placeholder="https://..."></div>
+                </div>
+                <div class="ams-field">
+                    <label>验收摘要</label>
+                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="fat_summary" placeholder="记录客户现场验收结论、遗留问题和是否允许进入尾款确认。">${esc(stageMetaValue(record, 'fat_summary'))}</textarea>
+                </div>
+            </section>
+            ${stageCommunicationSectionMarkup(stage.key, record, {
+                title: '验收沟通记录',
+                help: '记录客户验收安排、纸质单回传、线上确认单进度和整改结论。',
+            })}
+        </div>
+    `;
+}
+
+function balanceStageMarkup(stage = {}, deal = null, record = {}) {
+    return `
+        <div class="ams-stage-detail-stack">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${esc(stage.label)}</h3>
+                        <p>确认客户尾款金额、到账结果和尾款回单。尾款确认后，销售线推进到物流运输。</p>
+                    </div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存尾款信息</button>
+                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认尾款并进入物流运输</button>
+                    </div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field"><label>应收尾款</label><input class="ams-input" type="number" step="0.01" data-sales-flow-stage-meta="balance_expected" value="${esc(stageMetaValue(record, 'balance_expected'))}" placeholder="0"></div>
+                    <div class="ams-field"><label>确认金额</label><input class="ams-input" type="number" step="0.01" data-sales-flow-stage-meta="balance_confirmed_amount" value="${esc(stageMetaValue(record, 'balance_confirmed_amount'))}" placeholder="0"></div>
+                    <div class="ams-field"><label>确认日期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="balance_confirmed_at" value="${esc(stageMetaValue(record, 'balance_confirmed_at'))}"></div>
+                    <div class="ams-field"><label>尾款凭证</label><input class="ams-input" data-sales-flow-stage-meta="balance_reference" value="${esc(stageMetaValue(record, 'balance_reference'))}" placeholder="银行回单链接 / 流水号"></div>
+                </div>
+                <div class="ams-field">
+                    <label>尾款确认说明</label>
+                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="balance_note" placeholder="记录尾款催收、客户确认、到账异常和财务核对结果。">${esc(stageMetaValue(record, 'balance_note'))}</textarea>
+                </div>
+            </section>
+            ${stageCommunicationSectionMarkup(stage.key, record, {
+                title: '尾款沟通记录',
+                help: '记录尾款催收、客户确认、付款凭证和异常处理过程。',
+            })}
+        </div>
+    `;
+}
+
+function shippingStageMarkup(stage = {}, deal = null, record = {}) {
+    return `
+        <div class="ams-stage-detail-stack">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${esc(stage.label)}</h3>
+                        <p>记录承运商、运单号和到货预估，并保留发运通知客户的方式。物流确认后进入到场部署。</p>
+                    </div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存物流信息</button>
+                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认发运并进入到场部署</button>
+                    </div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field"><label>承运商</label><input class="ams-input" data-sales-flow-stage-meta="shipping_carrier" value="${esc(stageMetaValue(record, 'shipping_carrier'))}" placeholder="海运代理 / 物流公司"></div>
+                    <div class="ams-field"><label>运单号</label><input class="ams-input" data-sales-flow-stage-meta="shipping_tracking_no" value="${esc(stageMetaValue(record, 'shipping_tracking_no'))}" placeholder="Tracking No."></div>
+                    <div class="ams-field"><label>发运时间</label><input class="ams-input" type="date" data-sales-flow-stage-meta="shipping_departed_at" value="${esc(stageMetaValue(record, 'shipping_departed_at'))}"></div>
+                    <div class="ams-field"><label>预计到达</label><input class="ams-input" type="date" data-sales-flow-stage-meta="shipping_eta" value="${esc(stageMetaValue(record, 'shipping_eta'))}"></div>
+                    <div class="ams-field"><label>通知客户方式</label><input class="ams-input" data-sales-flow-stage-meta="shipping_notify_channels" value="${esc(stageMetaValue(record, 'shipping_notify_channels', '邮箱 / WhatsApp'))}" placeholder="邮箱 / WhatsApp / 电话"></div>
+                    <div class="ams-field"><label>通知摘要</label><input class="ams-input" data-sales-flow-stage-meta="shipping_notice_summary" value="${esc(stageMetaValue(record, 'shipping_notice_summary'))}" placeholder="已发送发运通知 / 待通知"></div>
+                </div>
+                <div class="ams-field">
+                    <label>物流说明</label>
+                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="shipping_note" placeholder="记录发运方式、客户通知、在途异常和预计到场安排。">${esc(stageMetaValue(record, 'shipping_note'))}</textarea>
+                </div>
+            </section>
+            ${stageCommunicationSectionMarkup(stage.key, record, {
+                title: '物流沟通记录',
+                help: '记录发运通知、运输异常、清关问题和预计到场协调。',
+            })}
+        </div>
+    `;
+}
+
+function deploymentStageMarkup(stage = {}, deal = null, record = {}) {
+    return `
+        <div class="ams-stage-detail-stack">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${esc(stage.label)}</h3>
+                        <p>跟踪现场条件、部署时间和部署结论。部署完成后进入运维支持。</p>
+                    </div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存部署信息</button>
+                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认部署完成并进入运维支持</button>
+                    </div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field"><label>现场条件</label><input class="ams-input" data-sales-flow-stage-meta="deployment_site_ready" value="${esc(stageMetaValue(record, 'deployment_site_ready'))}" placeholder="电力已就绪 / 场地待补充"></div>
+                    <div class="ams-field"><label>部署日期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="deployment_date" value="${esc(stageMetaValue(record, 'deployment_date'))}"></div>
+                    <div class="ams-field"><label>部署结果</label><input class="ams-input" data-sales-flow-stage-meta="deployment_result" value="${esc(stageMetaValue(record, 'deployment_result'))}" placeholder="已上线 / 待复检"></div>
+                    <div class="ams-field"><label>现场负责人</label><input class="ams-input" data-sales-flow-stage-meta="deployment_contact" value="${esc(stageMetaValue(record, 'deployment_contact'))}" placeholder="现场联系人"></div>
+                </div>
+                <div class="ams-field">
+                    <label>部署说明</label>
+                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="deployment_note" placeholder="记录部署过程、上线结果、客户现场反馈和遗留事项。">${esc(stageMetaValue(record, 'deployment_note'))}</textarea>
+                </div>
+            </section>
+            ${stageCommunicationSectionMarkup(stage.key, record, {
+                title: '部署沟通记录',
+                help: '记录现场准备、部署窗口、客户反馈和上线后的遗留问题。',
+            })}
+        </div>
+    `;
+}
+
+function supportStageMarkup(stage = {}, deal = null, record = {}) {
+    return `
+        <div class="ams-stage-detail-stack">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${esc(stage.label)}</h3>
+                        <p>进入长期运维支持阶段，记录质保到期、支持负责人和客户服务渠道。完成后整条销售线可结案。</p>
+                    </div>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存运维信息</button>
+                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">完成运维归档</button>
+                    </div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field"><label>质保到期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="support_warranty_until" value="${esc(stageMetaValue(record, 'support_warranty_until'))}"></div>
+                    <div class="ams-field"><label>支持负责人</label><input class="ams-input" data-sales-flow-stage-meta="support_owner" value="${esc(stageMetaValue(record, 'support_owner'))}" placeholder="Support Owner"></div>
+                    <div class="ams-field"><label>支持渠道</label><input class="ams-input" data-sales-flow-stage-meta="support_channel" value="${esc(stageMetaValue(record, 'support_channel'))}" placeholder="WhatsApp / 邮箱 / 工单"></div>
+                    <div class="ams-field"><label>服务状态</label><input class="ams-input" data-sales-flow-stage-meta="support_status" value="${esc(stageMetaValue(record, 'support_status'))}" placeholder="正常服务 / 待回访 / 已结案"></div>
+                </div>
+                <div class="ams-field">
+                    <label>运维说明</label>
+                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="support_note" placeholder="记录运维交接、质保范围、客户后续问题和最终结案说明。">${esc(stageMetaValue(record, 'support_note'))}</textarea>
+                </div>
+            </section>
+            ${stageCommunicationSectionMarkup(stage.key, record, {
+                title: '运维沟通记录',
+                help: '记录售后沟通、质保范围、问题回访和最终结案依据。',
+            })}
+        </div>
     `;
 }
 
@@ -9294,44 +10247,55 @@ function executionStageFlowMarkup(stage = {}, deal = null) {
         owner_name: deal?.owner_name,
         owner_email: deal?.owner_email,
     });
+    if (stage.key === 'contract_signed') return contractStageMarkup(stage, deal, record);
+    if (stage.key === 'deposit_paid') return depositStageMarkup(stage, deal, record);
+    if (stage.key === 'production_scheduled') return productionStageMarkup(stage, deal, record);
+    if (stage.key === 'factory_accepted') return factoryAcceptanceStageMarkup(stage, deal, record);
+    if (stage.key === 'balance_confirmed') return balanceStageMarkup(stage, deal, record);
+    if (stage.key === 'shipping_in_transit') return shippingStageMarkup(stage, deal, record);
+    if (stage.key === 'deployment_completed') return deploymentStageMarkup(stage, deal, record);
+    if (stage.key === 'support_active') return supportStageMarkup(stage, deal, record);
     return `
-        <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
-            <div class="ams-section-head">
-                <div>
-                    <h3>${esc(stage.label)}</h3>
-                    <p>当前页面只处理 ${esc(stage.label)} 节点内容，不混放其他阶段入口。</p>
-                </div>
-                <div class="ams-row-actions">
-                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存阶段</button>
-                    <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">标记完成</button>
-                </div>
-            </div>
-            <div class="ams-quote-meta-grid">
-                <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(moduleState.customers.find((item) => item.id === deal?.customer_id) || {}))}</span></div>
-                <div class="ams-summary-chip"><strong>销售线</strong><span>${esc(text(deal?.title, '--'))}</span></div>
-                <div class="ams-summary-chip"><strong>阶段状态</strong><span>${dealStageStatusPill(record.stage_status)}</span></div>
-                <div class="ams-summary-chip"><strong>负责人</strong><span>${esc(text(record.owner_name || record.owner_email, '未设置'))}</span></div>
-            </div>
-            <div class="ams-site-field-grid ams-site-field-grid-wide">
-                <div class="ams-field"><label>阶段状态</label><select class="ams-select" data-sales-flow-stage-field="stage_status">${selectOptionsMarkup(DEAL_STAGE_STATUS_OPTIONS, record.stage_status)}</select></div>
-                <div class="ams-field"><label>计划时间</label><input class="ams-input" type="datetime-local" data-sales-flow-stage-field="planned_at" value="${esc(datetimeLocalValue(record.planned_at))}"></div>
-                <div class="ams-field"><label>完成时间</label><input class="ams-input" type="datetime-local" data-sales-flow-stage-field="completed_at" value="${esc(datetimeLocalValue(record.completed_at))}"></div>
-                <div class="ams-field"><label>负责人</label><input class="ams-input" data-sales-flow-stage-field="owner_name" value="${esc(record.owner_name)}" placeholder="负责人"></div>
-                <div class="ams-field"><label>负责人邮箱</label><input class="ams-input" data-sales-flow-stage-field="owner_email" value="${esc(record.owner_email)}" placeholder="负责人邮箱"></div>
-            </div>
-            <div class="ams-site-field-grid ams-site-field-grid-wide">
-                ${stageMetaFields(stage.key).map((field) => `
-                    <div class="ams-field">
-                        <label>${esc(field.label)}</label>
-                        <input class="ams-input" ${field.type === 'number' ? 'type="number" step="0.01"' : field.type === 'date' ? 'type="date"' : 'type="text"'} data-sales-flow-stage-meta="${esc(field.key)}" value="${esc(text(record.meta?.[field.key]))}" placeholder="${esc(field.placeholder || '')}">
+        <div class="ams-stage-detail-stack">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>${esc(stage.label)}</h3>
+                        <p>当前页面只处理 ${esc(stage.label)} 节点内容，不混放其他阶段入口。</p>
                     </div>
-                `).join('')}
-            </div>
-            <div class="ams-field">
-                <label>阶段备注</label>
-                <textarea class="ams-textarea" rows="4" data-sales-flow-stage-field="notes" placeholder="记录当前节点的说明、异常、结论和下一步。">${esc(record.notes)}</textarea>
-            </div>
-        </section>
+                    <div class="ams-row-actions">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存阶段</button>
+                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">标记完成并进入下一节点</button>
+                    </div>
+                </div>
+                <div class="ams-quote-meta-grid">
+                    <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(moduleState.customers.find((item) => item.id === deal?.customer_id) || {}))}</span></div>
+                    <div class="ams-summary-chip"><strong>销售线</strong><span>${esc(text(deal?.title, '--'))}</span></div>
+                    <div class="ams-summary-chip"><strong>阶段状态</strong><span>${dealStageStatusPill(record.stage_status)}</span></div>
+                    <div class="ams-summary-chip"><strong>负责人</strong><span>${esc(text(record.owner_name || record.owner_email, '未设置'))}</span></div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    <div class="ams-field"><label>阶段状态</label><select class="ams-select" data-sales-flow-stage-field="stage_status">${selectOptionsMarkup(DEAL_STAGE_STATUS_OPTIONS, record.stage_status)}</select></div>
+                    <div class="ams-field"><label>计划时间</label><input class="ams-input" type="datetime-local" data-sales-flow-stage-field="planned_at" value="${esc(datetimeLocalValue(record.planned_at))}"></div>
+                    <div class="ams-field"><label>完成时间</label><input class="ams-input" type="datetime-local" data-sales-flow-stage-field="completed_at" value="${esc(datetimeLocalValue(record.completed_at))}"></div>
+                    <div class="ams-field"><label>负责人</label><input class="ams-input" data-sales-flow-stage-field="owner_name" value="${esc(record.owner_name)}" placeholder="负责人"></div>
+                    <div class="ams-field"><label>负责人邮箱</label><input class="ams-input" data-sales-flow-stage-field="owner_email" value="${esc(record.owner_email)}" placeholder="负责人邮箱"></div>
+                </div>
+                <div class="ams-site-field-grid ams-site-field-grid-wide">
+                    ${stageMetaFields(stage.key).map((field) => `
+                        <div class="ams-field">
+                            <label>${esc(field.label)}</label>
+                            <input class="ams-input" ${field.type === 'number' ? 'type="number" step="0.01"' : field.type === 'date' ? 'type="date"' : 'type="text"'} data-sales-flow-stage-meta="${esc(field.key)}" value="${esc(text(record.meta?.[field.key]))}" placeholder="${esc(field.placeholder || '')}">
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="ams-field">
+                    <label>阶段备注</label>
+                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-field="notes" placeholder="记录当前节点的说明、异常、结论和下一步。">${esc(record.notes)}</textarea>
+                </div>
+            </section>
+            ${stageCommunicationSectionMarkup(stage.key, record)}
+        </div>
     `;
 }
 
@@ -9344,6 +10308,10 @@ function salesStageDetailMarkup(stageKey = '', deal = null, customer = {}, input
     if (stage.scope === 'requirement') return requirementFlowMarkup(stage.key, deal, moduleState.requirementEditor || createRequirementDraft());
     if (stage.scope === 'quote') return quoteFlowMarkup(stage.key, deal, moduleState.instanceEditor || createInstanceDraft());
     return executionStageFlowMarkup(stage, deal);
+}
+
+function flowCustomerLabel(customer = {}, deal = null) {
+    return text(customerDisplayName(customer || {}), text(deal?.title, '当前客户'));
 }
 
 async function updateDealLifecycle(input, dealId, patch = {}) {
@@ -9375,6 +10343,12 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
     if (!customerFlow) {
         document.querySelectorAll('[data-sales-stage-archive]').forEach((button) => {
             button.addEventListener('click', async (event) => {
+                const confirmed = await confirmSalesAction({
+                    title: '确认归档这条销售流程？',
+                    message: '归档后它会从默认推进列表中隐藏，但历史记录仍会保留。',
+                    confirmLabel: '确认归档',
+                });
+                if (!confirmed) return;
                 await input.withButtonBusy(event.currentTarget, '归档中...', async () => {
                     await updateDealLifecycle(input, button.dataset.salesStageArchive, {
                         is_archived: true,
@@ -9388,6 +10362,12 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
         });
         document.querySelectorAll('[data-sales-stage-void]').forEach((button) => {
             button.addEventListener('click', async (event) => {
+                const confirmed = await confirmSalesAction({
+                    title: '确认作废这条销售流程？',
+                    message: '作废后这条销售流程会退出主推进链，只保留历史痕迹用于追溯。',
+                    confirmLabel: '确认作废',
+                });
+                if (!confirmed) return;
                 await input.withButtonBusy(event.currentTarget, '作废中...', async () => {
                     await updateDealLifecycle(input, button.dataset.salesStageVoid, {
                         deal_status: 'cancelled',
@@ -9411,8 +10391,11 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
             const saved = await saveCustomerDraft(input.user, moduleState.customerEditor);
             moduleState.customerEditor = createCustomerDraft(saved);
-            input.showToast('客户档案已保存。');
-            await input.rerender();
+            const flow = await ensureCustomerRequirementFlow(input.user, saved);
+            input.showToast('客户档案已保存，正在进入获取需求。');
+            window.location.assign(customerFlow
+                ? customerFlowStageUrl('requirement_capture', flow?.deal || deal, saved.id)
+                : adminPageUrl('quote-pipeline', { stage: 'requirement_capture', customer: saved.id, deal: flow?.deal?.id }));
         });
     });
 
@@ -9438,14 +10421,102 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
 
     document.getElementById('ams-sales-flow-requirement-save')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
+            const answers = normalizeRequirementAnswers(moduleState.requirementEditor.answers);
+            const noteDraft = text(answers.communication_note_draft);
+            if (noteDraft) {
+                answers.communication_notes = [
+                    {
+                        note: noteDraft,
+                        created_at: new Date().toISOString(),
+                        author: text(input.user?.email || input.user?.id, 'sales'),
+                    },
+                    ...(answers.communication_notes || []),
+                ];
+                answers.communication_note_draft = '';
+                moduleState.requirementEditor.answers = answers;
+            }
             const saved = await saveRequirementDraft(input.user, moduleState.requirementEditor);
             moduleState.requirementEditor = createRequirementDraft(saved);
-            input.showToast('需求已保存。');
+            input.showToast(noteDraft ? '需求与沟通备注已保存。' : '需求已保存。');
             await input.rerender();
         });
     });
 
+    document.getElementById('ams-sales-flow-requirement-open-link')?.addEventListener('click', () => {
+        const requirement = createRequirementDraft(moduleState.requirementEditor);
+        if (!requirement.public_slug || !requirement.public_token) {
+            input.showToast('请先保存需求，再生成客户需求链接。', true);
+            return;
+        }
+        markRequirementCustomerUpdateSeen(requirement);
+        document.getElementById('ams-sales-flow-requirement-open-link')?.classList.remove('has-alert-dot');
+        document.querySelector('#ams-sales-flow-requirement-open-link .ams-btn-alert-dot')?.remove();
+        window.open(requirementPublicUrl(requirement.public_slug, requirement.public_token), '_blank', 'noopener');
+    });
+
+    const salesFlowRequirementShareMenu = document.querySelector('.ams-share-menu');
+    const salesFlowRequirementPosterModal = document.getElementById('ams-sales-flow-requirement-share-poster-modal');
+    const salesFlowRequirementPosterImage = document.getElementById('ams-sales-flow-requirement-share-poster-image');
+    const salesFlowRequirementPosterDownload = document.getElementById('ams-sales-flow-requirement-share-poster-download');
+    const closeSalesFlowRequirementPosterModal = () => {
+        if (salesFlowRequirementPosterModal) salesFlowRequirementPosterModal.hidden = true;
+    };
+
+    document.getElementById('ams-sales-flow-requirement-share-link')?.addEventListener('click', async () => {
+        const requirement = createRequirementDraft(moduleState.requirementEditor);
+        if (!requirement.public_slug || !requirement.public_token) {
+            input.showToast('请先保存需求，再生成客户需求链接。', true);
+            return;
+        }
+        const payload = requirementShareCopyText(requirement);
+        try {
+            await navigator.clipboard.writeText(payload);
+            input.showToast('客户需求分享文案已复制。');
+        } catch (_error) {
+            input.showToast(payload, false);
+        }
+        if (salesFlowRequirementShareMenu) salesFlowRequirementShareMenu.removeAttribute('open');
+    });
+
+    document.getElementById('ams-sales-flow-requirement-share-poster')?.addEventListener('click', () => {
+        const requirement = createRequirementDraft(moduleState.requirementEditor);
+        if (!requirement.public_slug || !requirement.public_token) {
+            input.showToast('请先保存需求，再生成客户需求链接。', true);
+            return;
+        }
+        const posterUrl = requirementSharePosterDataUrl(requirement);
+        if (salesFlowRequirementPosterImage) salesFlowRequirementPosterImage.setAttribute('src', posterUrl);
+        if (salesFlowRequirementPosterDownload) salesFlowRequirementPosterDownload.setAttribute('href', posterUrl);
+        if (salesFlowRequirementPosterModal) salesFlowRequirementPosterModal.hidden = false;
+        if (salesFlowRequirementShareMenu) salesFlowRequirementShareMenu.removeAttribute('open');
+    });
+
+    document.getElementById('ams-sales-flow-requirement-share-poster-copy')?.addEventListener('click', async () => {
+        const requirement = createRequirementDraft(moduleState.requirementEditor);
+        if (!requirement.public_slug || !requirement.public_token) {
+            input.showToast('请先保存需求，再生成客户需求链接。', true);
+            return;
+        }
+        const payload = requirementShareCopyText(requirement);
+        try {
+            await navigator.clipboard.writeText(payload);
+            input.showToast('海报分享文案已复制。');
+        } catch (_error) {
+            input.showToast(payload, false);
+        }
+    });
+    salesFlowRequirementPosterModal?.querySelectorAll('[data-sales-flow-requirement-share-poster-close]').forEach((node) => {
+        node.addEventListener('click', closeSalesFlowRequirementPosterModal);
+    });
+
     document.getElementById('ams-sales-flow-requirement-confirm')?.addEventListener('click', async (event) => {
+        const confirmed = await confirmSalesAction({
+            title: '确认需求并进入报价？',
+            message: '确认后当前需求会被锁定为报价基线，后续将直接进入转入报价节点。',
+            confirmLabel: '确认需求',
+            danger: false,
+        });
+        if (!confirmed) return;
         await input.withButtonBusy(event.currentTarget, '确认中...', async () => {
             const saved = await confirmRequirementForDeal(input.user, moduleState.requirementEditor);
             input.showToast('需求已确认。');
@@ -9467,7 +10538,9 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
             const instance = await createInstanceFromProduct(input.user, productId, { dealId: deal.id });
             await fetchInstanceEditor(instance.id);
             input.showToast('报价草稿已生成。');
-            await input.rerender();
+            window.location.assign(customerFlow
+                ? customerFlowStageUrl('quote_draft', dealById(instance.deal_id), customerId)
+                : adminPageUrl('quote-pipeline', { stage: 'quote_draft', deal: instance.deal_id }));
         });
     });
 
@@ -9476,8 +10549,56 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
         window.open(quoteEditorUrl('instance', moduleState.instanceEditor.id), '_blank', 'noopener');
     });
 
+    document.getElementById('ams-sales-flow-stage-open-public-confirmation')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
+            const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
+            const stageRecord = await ensurePublicStageConfirmationLink(input.user, stageKey, activeDeal);
+            window.open(stageCustomerFacingUrl(stageKey, stageRecord, activeDeal), '_blank', 'noopener');
+            input.showToast('客户确认入口已打开。');
+        });
+    });
+
+    document.getElementById('ams-sales-flow-stage-copy-public-confirmation')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '复制中...', async () => {
+            const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
+            const stageRecord = await ensurePublicStageConfirmationLink(input.user, stageKey, activeDeal);
+            const payload = stageConfirmationCopyText(stageKey, stageRecord, activeDeal);
+            try {
+                await navigator.clipboard.writeText(payload);
+                input.showToast('客户确认链接已复制。');
+            } catch (_error) {
+                input.showToast(payload, false);
+            }
+        });
+    });
+
+    document.getElementById('ams-sales-flow-quote-save')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
+            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
+            if (moduleState.instanceEditor?.id) {
+                await saveInstanceDraft(input.user, moduleState.instanceEditor);
+            }
+            if (moduleState.dealEditor?.id) {
+                await saveDealDraft(input.user, moduleState.dealEditor, {
+                    stageRecords: moduleState.dealStageRecords,
+                    currentStage: stageKey,
+                });
+            }
+            input.showToast('报价节点已保存。');
+            await input.rerender();
+        });
+    });
+
     document.getElementById('ams-sales-flow-instance-confirm')?.addEventListener('click', async (event) => {
+        const confirmed = await confirmSalesAction({
+            title: '确认报价并推进到签约合同？',
+            message: '确认后当前报价版本会被锁定为正式商务基线，并自动进入签约合同节点。',
+            confirmLabel: '确认报价',
+            danger: false,
+        });
+        if (!confirmed) return;
         await input.withButtonBusy(event.currentTarget, '确认中...', async () => {
+            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
             const saved = await confirmQuoteForDeal(input.user, moduleState.instanceEditor);
             input.showToast('报价已确认。');
             window.location.assign(customerFlow
@@ -9508,6 +10629,7 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
 
     document.getElementById('ams-sales-flow-stage-save')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
+            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
             const saved = await saveDealDraft(input.user, moduleState.dealEditor, {
                 stageRecords: moduleState.dealStageRecords,
                 currentStage: stageKey,
@@ -9519,8 +10641,18 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
     });
 
     document.getElementById('ams-sales-flow-stage-complete')?.addEventListener('click', async (event) => {
+        const finalStage = normalizeDealStageKey(stageKey) === 'support_active';
+        const confirmed = await confirmSalesAction({
+            title: finalStage ? '确认完成整条销售流程？' : `确认完成${dealStageLabel(stageKey)}并进入下一节点？`,
+            message: finalStage
+                ? '完成后这条销售流程会进入已完成状态，不再继续往后推进。'
+                : '推进后当前节点会被标记为已完成，并自动进入下一节点。',
+            confirmLabel: finalStage ? '确认完成' : '确认推进',
+            danger: !finalStage,
+        });
+        if (!confirmed) return;
         await input.withButtonBusy(event.currentTarget, '推进中...', async () => {
-            const finalStage = normalizeDealStageKey(stageKey) === 'support_active';
+            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
             const saved = await saveAndAdvanceDeal(input.user, {
                 id: moduleState.dealEditor?.id,
                 deal_status: finalStage ? 'completed' : moduleState.dealEditor?.deal_status,
@@ -9562,7 +10694,7 @@ export async function renderQuotePipelinePage(input) {
     renderSalesPageFrame(input, stagePageTitle(stageKey), stagePageSub(stageKey), `
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
-                <div class="ams-section-head"><div><h3>${esc(dealStageLabel(stageKey))} 列表</h3><p>共 ${stageDeals.length} 条销售线</p></div></div>
+                <div class="ams-section-head"><div><h3>总览模式 · ${esc(dealStageLabel(stageKey))} 列表</h3><p>当前阶段共 ${stageDeals.length} 条销售线，点击后可进入独立客户流水线。</p></div></div>
                 <div class="ams-field">
                     <label>搜索销售线</label>
                     <input id="ams-sales-stage-search" class="ams-input" value="${esc(moduleState.dealSearch)}" placeholder="搜索客户 / 销售线标题 / 负责人 / 下一动作">
@@ -9613,18 +10745,29 @@ export async function renderQuoteCustomerFlowPage(input) {
     await ensureCustomerEditorForSalesFlow(customerId);
     const deals = customerFlowDeals(customerId, input);
     const activeDeal = deals.find((deal) => deal.id === requestedDealId) || deals[0] || null;
+    if (
+        activeDeal
+        && stageOrderIndex(activeDeal.current_stage) > stageOrderIndex(stageKey)
+        && stageOrderIndex(stageKey) >= 0
+    ) {
+        window.history.replaceState({}, '', customerFlowStageUrl(activeDeal.current_stage, activeDeal, customerId));
+        await renderQuoteCustomerFlowPage(input);
+        return;
+    }
     if (activeDeal?.id && moduleState.dealLoadedId !== activeDeal.id) await fetchDealEditor(activeDeal.id);
     if (dealStageDefinition(stageKey).scope === 'requirement') await ensureRequirementEditorForDeal(activeDeal);
     if (dealStageDefinition(stageKey).scope === 'quote') await ensureInstanceEditorForDeal(activeDeal);
     moduleState.dealEditor = activeDeal ? createDealDraft(moduleState.dealEditor || activeDeal) : createDealDraft();
     moduleState.dealStageRecords = activeDeal ? dealCurrentRecords(moduleState.dealEditor) : [];
 
-    renderSalesPageFrame(input, `客户流水线 / ${customerDisplayName(moduleState.customerEditor || {})}`, '围绕单个客户回看已完成节点，并继续推进当前节点。', `
+    const customerLabel = flowCustomerLabel(moduleState.customerEditor || {}, activeDeal);
+    const stageLabel = dealStageLabel(stageKey);
+    renderSalesPageFrame(input, `独立客户流水线 · ${stageLabel}`, `客户模式：${customerLabel} · 围绕单个客户回看已完成节点，并继续推进当前节点。`, `
         <section class="ams-quote-layout">
             <aside class="ams-card ams-quote-list-panel">
-                <div class="ams-section-head"><div><h3>当前客户销售线</h3><p>${esc(customerDisplayName(moduleState.customerEditor || {}))}</p></div></div>
+                <div class="ams-section-head"><div><h3>客户模式 · 当前客户销售流程</h3><p>${esc(customerLabel)} · 这里只显示这位客户自己的流程。</p></div></div>
                 <div class="ams-quote-list">
-                    ${deals.length ? deals.map((deal) => pipelineListCardMarkup(stageKey, deal, { selectedDealId: activeDeal?.id, customerFlow: true })).join('') : '<div class="ams-empty">这个客户还没有销售线。</div>'}
+                    ${deals.length ? deals.map((deal) => pipelineListCardMarkup(stageKey, deal, { selectedDealId: activeDeal?.id, customerFlow: true })).join('') : '<div class="ams-empty">这个客户还没有销售流程。</div>'}
                 </div>
             </aside>
             ${salesStageDetailMarkup(stageKey, activeDeal, moduleState.customerEditor || createCustomerDraft(), input)}
@@ -9661,21 +10804,36 @@ export async function renderQuoteSalesDashboardPage(input) {
     renderSalesPageFrame(input, '销售总览', '查看当前销售链路分布、待办动作和项目推进压力。', `
         <section class="ams-dashboard-overview">
             <div class="ams-dashboard-kpis">
-                <article class="ams-card ams-kpi-card"><h3>推进中商机</h3><div class="ams-kpi">${esc(activeDeals.filter((deal) => normalizeDealStatus(deal.deal_status) === 'active').length)}</div><div class="ams-kpi-sub">正在推进的主业务链路</div></article>
-                <article class="ams-card ams-kpi-card"><h3>需求待确认</h3><div class="ams-kpi">${esc(dealStageCount('requirement_confirmed', input))}</div><div class="ams-kpi-sub">还没锁定报价基线的商机</div></article>
+                <article class="ams-card ams-kpi-card"><h3>推进中流程</h3><div class="ams-kpi">${esc(activeDeals.filter((deal) => normalizeDealStatus(deal.deal_status) === 'active').length)}</div><div class="ams-kpi-sub">正在推进的销售流程</div></article>
+                <article class="ams-card ams-kpi-card"><h3>需求待确认</h3><div class="ams-kpi">${esc(dealStageCount('requirement_confirmed', input))}</div><div class="ams-kpi-sub">还没锁定报价基线的流程</div></article>
                 <article class="ams-card ams-kpi-card"><h3>报价待确认</h3><div class="ams-kpi">${esc(dealStageCount('quote_confirmed', input))}</div><div class="ams-kpi-sub">已出草稿，待客户确认</div></article>
-                <article class="ams-card ams-kpi-card"><h3>交付执行中</h3><div class="ams-kpi">${esc(DEAL_STAGE_DEFINITIONS.filter((stage) => stage.scope === 'deal').reduce((sum, stage) => sum + dealStageCount(stage.key, input), 0))}</div><div class="ams-kpi-sub">合同到运维阶段中的商机</div></article>
+                <article class="ams-card ams-kpi-card"><h3>交付执行中</h3><div class="ams-kpi">${esc(DEAL_STAGE_DEFINITIONS.filter((stage) => stage.scope === 'deal').reduce((sum, stage) => sum + dealStageCount(stage.key, input), 0))}</div><div class="ams-kpi-sub">合同到运维阶段中的流程</div></article>
             </div>
         </section>
         <section class="ams-card">
             <div class="ams-section-head"><div><h3>阶段分布</h3><p>点击阶段后可直接进入对应流程页。</p></div></div>
-            <div class="ams-sales-stage-overview">
-                ${DEAL_STAGE_DEFINITIONS.map((stage) => `
-                    <a class="ams-sales-stage-overview-card" href="${esc(stage.key === 'customer_profile' ? adminPageUrl('quote-customers') : adminPageUrl('quote-pipeline', { stage: stage.key }))}">
-                        <strong>${esc(stage.label)}</strong>
-                        <span>${esc(stage.key === 'customer_profile' ? `${salesStageCount(stage.key, input)} 个客户` : `${salesStageCount(stage.key, input)} 条销售线`)}</span>
-                    </a>
-                `).join('')}
+            <div class="ams-sales-stage-ribbon">
+                ${salesOverviewStageRows().map((row, rowIndex, rows) => {
+                    const stages = row.direction === 'backward' ? [...row.stages].reverse() : row.stages;
+                    const turn = rowIndex < rows.length - 1
+                        ? `<span class="ams-sales-stage-ribbon-turn is-${row.direction === 'forward' ? 'right' : 'left'}" aria-hidden="true"></span>`
+                        : '';
+                    return `
+                    <div class="ams-sales-stage-ribbon-row is-${row.direction}">
+                        ${stages.map((stage, stageIndex) => `
+                            <a class="ams-sales-stage-ribbon-card" href="${esc(stage.key === 'customer_profile' ? adminPageUrl('quote-customers') : adminPageUrl('quote-pipeline', { stage: stage.key }))}">
+                                <span class="ams-sales-stage-ribbon-index">${esc(stageOrderIndex(stage.key) + 1)}</span>
+                                <div class="ams-sales-stage-ribbon-copy">
+                                    <strong>${esc(stage.label)}</strong>
+                                    <span>${esc(stage.key === 'customer_profile' ? `${salesStageCount(stage.key, input)} 个客户` : `${salesStageCount(stage.key, input)} 条销售线`)}</span>
+                                </div>
+                            </a>
+                            ${stageIndex < stages.length - 1 ? `<span class="ams-sales-stage-ribbon-link is-${row.direction}" aria-hidden="true"></span>` : ''}
+                        `).join('')}
+                        ${turn}
+                    </div>
+                `;
+                }).join('')}
             </div>
         </section>
         <section class="ams-card">
@@ -9683,7 +10841,7 @@ export async function renderQuoteSalesDashboardPage(input) {
             <div class="ams-sales-inline-list">
                 ${upcomingDeals.length
                     ? upcomingDeals.map((deal) => `<a class="ams-inline-link-card" href="${esc(customerFlowStageUrl(deal.current_stage, deal, deal.customer_id))}"><strong>${esc(text(deal.title, deal.id))}</strong><span>${esc(`${text(deal.next_action, '未设置下一动作')} · ${fmtDate(deal.next_action_due_at || deal.updated_at)}`)}</span></a>`).join('')
-                    : '<div class="ams-empty">当前没有待办中的商机动作。</div>'}
+                    : '<div class="ams-empty">当前没有待办中的销售流程动作。</div>'}
             </div>
         </section>
     `, {
