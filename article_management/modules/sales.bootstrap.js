@@ -1,4 +1,6 @@
 import {
+    ADMIN_ROLE_ADMIN,
+    ADMIN_ROLE_SUPER_ADMIN,
     clearPasswordRecoveryUrl,
     canAccessConsoleEntry,
     getAdminUserAccess,
@@ -17,22 +19,39 @@ import {
     adminConsoleUrl,
 } from './admin-entry.module.js';
 import {
+    renderAdminSecurityPage,
+    renderAdminUsersPage,
+} from './admin-users.module.js?v=20260324sales02';
+import {
+    renderQuoteBrandsPage,
+    renderQuoteCustomerFlowPage,
     renderQuoteCustomersPage,
-    renderQuoteDealsPage,
-    renderQuoteInstancesPage,
-    renderQuoteRequirementsPage,
+    renderQuotePipelinePage,
+    renderQuoteProductsPage,
     renderQuoteSalesDashboardPage,
-} from './quote-system.module.js?v=20260324quote31';
+} from './quote-system.module.js?v=20260324quote32';
 
 const root = document.getElementById('ams-root');
 const toastNode = document.getElementById('ams-toast');
+
 const SALES_PAGE_IDS = new Set([
     'dashboard',
     'quote-customers',
-    'quote-deals',
-    'quote-requirements',
-    'quote-instances',
+    'quote-pipeline',
+    'quote-customer-flow',
+    'quote-brands',
+    'quote-products',
+    'admin-users',
+    'admin-security',
 ]);
+
+const ADMIN_ONLY_PAGES = new Set([
+    'quote-brands',
+    'quote-products',
+    'admin-users',
+]);
+
+const FLOW_CONTEXT_KEYS = ['stage', 'customer', 'deal', 'requirement', 'instance'];
 
 const state = {
     session: null,
@@ -67,11 +86,14 @@ function pageFromUrl() {
     }
 }
 
-function syncPageToUrl() {
+function syncPageToUrl(options = {}) {
     try {
         const url = new URL(window.location.href);
         if (state.page && state.page !== 'dashboard') url.searchParams.set('page', state.page);
         else url.searchParams.delete('page');
+        if (options.clearFlowParams) {
+            FLOW_CONTEXT_KEYS.forEach((key) => url.searchParams.delete(key));
+        }
         window.history.replaceState({}, '', url);
     } catch {
         return;
@@ -94,8 +116,8 @@ async function withButtonBusy(button, busyText, task) {
         return;
     }
     if (button.dataset.loading === '1') return;
-    const prevText = button.textContent || '';
-    const prevDisabled = button.disabled;
+    const previousText = button.textContent || '';
+    const previousDisabled = button.disabled;
     button.dataset.loading = '1';
     button.disabled = true;
     button.classList.add('is-loading');
@@ -106,8 +128,8 @@ async function withButtonBusy(button, busyText, task) {
         button.classList.remove('is-loading');
         delete button.dataset.loading;
         if (button.isConnected) {
-            button.disabled = prevDisabled;
-            button.textContent = prevText;
+            button.disabled = previousDisabled;
+            button.textContent = previousText;
         }
     }
 }
@@ -124,15 +146,30 @@ function setContent(html) {
     if (content) content.innerHTML = html;
 }
 
+function isMaintenanceAdmin() {
+    const role = text(state.adminAccess?.row?.role).toLowerCase();
+    return role === ADMIN_ROLE_ADMIN || role === ADMIN_ROLE_SUPER_ADMIN;
+}
+
+function navIsActive(id) {
+    if (state.page === id) return true;
+    return id === 'quote-customers' && ['quote-pipeline', 'quote-customer-flow'].includes(state.page);
+}
+
+function navButton(id, label, icon) {
+    const active = navIsActive(id) ? 'active' : '';
+    return `<button type="button" class="ams-nav-btn ${active}" data-page="${id}"><span><i class="fa-solid ${icon}"></i> ${label}</span><i class="fa-solid fa-angle-right"></i></button>`;
+}
+
 function renderLogin() {
-    const authView = state.authView === 'forgot' || state.authView === 'reset' ? state.authView : 'login';
+    const authView = ['forgot', 'reset'].includes(state.authView) ? state.authView : 'login';
     const isResetView = authView === 'reset';
     const isForgotView = authView === 'forgot';
     root.innerHTML = `
         <section class="ams-auth-shell ams-auth-shell-sales">
             <div class="ams-auth-card">
                 <h1 class="ams-logo">GasGx <span>Sales</span></h1>
-                <p class="ams-subtitle">销售工作台 · 面向销售与管理员的独立入口</p>
+                <p class="ams-subtitle">独立销售入口，面向销售与管理员的专用后台。</p>
                 ${
                     isResetView
                         ? `
@@ -172,9 +209,9 @@ function renderLogin() {
                                     </div>
                                     <div class="ams-field">
                                         <label>密码</label>
-                                        <input id="ams-login-password" class="ams-input" type="password" placeholder="••••••••" required>
+                                        <input id="ams-login-password" class="ams-input" type="password" placeholder="请输入密码" required>
                                     </div>
-                                    <button class="ams-btn ams-btn-primary" type="submit">登录销售工作台</button>
+                                    <button class="ams-btn ams-btn-primary" type="submit">登录销售后台</button>
                                 </form>
                                 <div class="ams-auth-links">
                                     <button class="ams-btn ams-btn-link" type="button" data-auth-view="forgot">忘记密码</button>
@@ -223,7 +260,7 @@ function renderLogin() {
                 await sendPasswordResetEmail(email);
                 showToast('重置密码邮件已发送。');
             } catch (error) {
-                showToast(error.message || '发送重置密码邮件失败。', true);
+                showToast(error.message || '发送重置邮件失败。', true);
             }
         });
     });
@@ -249,15 +286,23 @@ function renderLogin() {
     });
 }
 
-function navButton(id, label, icon) {
-    const active = state.page === id ? 'active' : '';
-    return `<button type="button" class="ams-nav-btn ${active}" data-page="${id}"><span><i class="fa-solid ${icon}"></i> ${label}</span><i class="fa-solid fa-angle-right"></i></button>`;
-}
-
 function renderShell() {
     const displayName = esc(getDisplayName(state.user, state.adminAccess?.row || null));
     const row = state.adminAccess?.row || null;
     const canOpenAdmin = canAccessConsoleEntry(row, ADMIN_ENTRY_KIND);
+    const adminNav = isMaintenanceAdmin()
+        ? `
+            <div class="ams-nav-group">
+                <div class="ams-nav-group-label">Maintenance</div>
+                <div class="ams-nav-group-items">
+                    ${navButton('quote-brands', '品牌列表', 'fa-layer-group')}
+                    ${navButton('quote-products', '产品列表', 'fa-cubes')}
+                    ${navButton('admin-users', '人员管理', 'fa-users')}
+                </div>
+            </div>
+        `
+        : '';
+
     root.innerHTML = `
         <div class="ams-app ams-app-sales">
             <aside class="ams-sidebar">
@@ -270,21 +315,20 @@ function renderShell() {
                         <div class="ams-nav-group-label">Sales</div>
                         <div class="ams-nav-group-items">
                             ${navButton('dashboard', '销售总览', 'fa-chart-line')}
-                            ${navButton('quote-customers', '客户', 'fa-address-book')}
-                            ${navButton('quote-deals', '商机项目', 'fa-diagram-project')}
-                            ${navButton('quote-requirements', '需求', 'fa-clipboard-list')}
-                            ${navButton('quote-instances', '报价', 'fa-file-invoice-dollar')}
+                            ${navButton('quote-customers', '客户档案', 'fa-address-book')}
                         </div>
                     </div>
+                    ${adminNav}
                 </nav>
             </aside>
             <main class="ams-main">
                 <header class="ams-header">
                     <div>
-                        <h1 id="ams-page-title">GasGx 销售工作台</h1>
-                        <p id="ams-page-sub">独立维护客户、商机、需求、报价与履约链路</p>
+                        <h1 id="ams-page-title">GasGx Sales</h1>
+                        <p id="ams-page-sub">围绕客户建档到运维支持的单线销售后台。</p>
                     </div>
                     <div class="ams-user">
+                        <button id="ams-open-security" class="ams-btn ams-btn-muted" type="button">账号安全</button>
                         ${canOpenAdmin ? `<a class="ams-btn ams-btn-muted" href="${esc(adminConsoleUrl('dashboard', {}, { entryKind: ADMIN_ENTRY_KIND }))}">进入主站后台</a>` : ''}
                         <span><i class="fa-solid fa-user"></i> <strong>${displayName}</strong></span>
                         <button id="ams-signout" class="ams-btn ams-btn-muted" type="button">退出登录</button>
@@ -295,6 +339,12 @@ function renderShell() {
         </div>
     `;
 
+    document.getElementById('ams-open-security')?.addEventListener('click', () => {
+        state.page = 'admin-security';
+        syncPageToUrl({ clearFlowParams: true });
+        void renderPage();
+    });
+
     document.getElementById('ams-signout')?.addEventListener('click', async (event) => {
         await withButtonBusy(event.currentTarget, '退出中...', async () => {
             try {
@@ -304,10 +354,11 @@ function renderShell() {
             }
         });
     });
+
     document.querySelectorAll('.ams-nav-btn').forEach((button) => {
         button.addEventListener('click', () => {
             state.page = button.dataset.page || 'dashboard';
-            syncPageToUrl();
+            syncPageToUrl({ clearFlowParams: true });
             void renderPage();
         });
     });
@@ -320,9 +371,9 @@ function renderEntryDenied() {
         <section class="ams-auth-shell ams-auth-shell-sales">
             <div class="ams-auth-card">
                 <h1 class="ams-logo">GasGx <span>Sales</span></h1>
-                <p class="ams-subtitle">当前账号没有销售工作台权限。</p>
+                <p class="ams-subtitle">当前账号没有销售后台权限。</p>
                 <div class="ams-auth-links">
-                    ${canOpenAdmin ? `<a class="ams-btn ams-btn-primary" href="${esc(adminConsoleUrl('dashboard', {}, { entryKind: ADMIN_ENTRY_KIND }))}">前往主站后台</a>` : ''}
+                    ${canOpenAdmin ? `<a class="ams-btn ams-btn-primary" href="${esc(adminConsoleUrl('dashboard', {}, { entryKind: ADMIN_ENTRY_KIND }))}">进入主站后台</a>` : ''}
                     <button class="ams-btn ams-btn-muted" type="button" id="ams-entry-signout">退出登录</button>
                 </div>
             </div>
@@ -344,6 +395,18 @@ async function refreshAdminAccess(forceRefresh = false) {
     return state.entryAllowed;
 }
 
+function normalizeAccessiblePage() {
+    if (!SALES_PAGE_IDS.has(state.page)) {
+        state.page = 'dashboard';
+        syncPageToUrl({ clearFlowParams: true });
+        return;
+    }
+    if (ADMIN_ONLY_PAGES.has(state.page) && !isMaintenanceAdmin()) {
+        state.page = 'dashboard';
+        syncPageToUrl({ clearFlowParams: true });
+    }
+}
+
 async function renderPage() {
     if (!state.user) {
         state.authView = isPasswordRecoveryMode() ? 'reset' : 'login';
@@ -361,23 +424,30 @@ async function renderPage() {
         return;
     }
 
+    normalizeAccessiblePage();
     renderShell();
     syncPageToUrl();
+
     try {
         const pageInput = {
             user: state.user,
             entryKind: SALES_ENTRY_KIND,
+            adminRow: state.adminAccess?.row || null,
             setPageHeader,
             setContent,
             showToast,
             withButtonBusy,
             rerender: () => renderPage(),
         };
+
         if (state.page === 'dashboard') await renderQuoteSalesDashboardPage(pageInput);
         else if (state.page === 'quote-customers') await renderQuoteCustomersPage(pageInput);
-        else if (state.page === 'quote-deals') await renderQuoteDealsPage(pageInput);
-        else if (state.page === 'quote-requirements') await renderQuoteRequirementsPage(pageInput);
-        else if (state.page === 'quote-instances') await renderQuoteInstancesPage(pageInput);
+        else if (state.page === 'quote-pipeline') await renderQuotePipelinePage(pageInput);
+        else if (state.page === 'quote-customer-flow') await renderQuoteCustomerFlowPage(pageInput);
+        else if (state.page === 'quote-brands') await renderQuoteBrandsPage(pageInput);
+        else if (state.page === 'quote-products') await renderQuoteProductsPage(pageInput);
+        else if (state.page === 'admin-users') await renderAdminUsersPage(pageInput);
+        else if (state.page === 'admin-security') await renderAdminSecurityPage(pageInput);
         else setContent('<div class="ams-empty">未知页面。</div>');
     } catch (error) {
         console.error(error);
@@ -400,6 +470,7 @@ async function boot() {
             state.authView = 'login';
             await renderPage();
         }
+
         onAuthStateChange(async (_event, nextSession) => {
             state.session = nextSession;
             state.user = nextSession?.user || null;

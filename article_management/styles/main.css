@@ -686,12 +686,14 @@ textarea {
 
 .ams-main {
     padding: 20px 24px 28px;
+    min-width: 0;
 }
 
 .ams-main > .ams-header,
 .ams-main > .ams-content {
     width: min(100%, 1460px);
     margin-inline: auto;
+    min-width: 0;
 }
 
 .ams-header {
@@ -739,6 +741,7 @@ textarea {
     min-height: 72vh;
     padding: 18px;
     position: relative;
+    min-width: 0;
 }
 
 .ams-content.is-busy {
@@ -2700,16 +2703,20 @@ textarea {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    min-width: 0;
 }
 
 .ams-sales-page-body {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    min-width: 0;
 }
 
 .ams-sales-pipeline {
     overflow: hidden;
+    width: 100%;
+    min-width: 0;
 }
 
 .ams-sales-pipeline > summary {
@@ -2728,12 +2735,15 @@ textarea {
     gap: 18px;
     padding: 18px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    min-width: 0;
 }
 
 .ams-sales-pipeline-summary-copy {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 .ams-sales-pipeline-summary-copy strong {
@@ -2753,6 +2763,8 @@ textarea {
     align-items: center;
     justify-content: flex-end;
     gap: 10px;
+    min-width: 0;
+    flex: 0 1 auto;
 }
 
 .ams-sales-pipeline-summary-chip {
@@ -2773,7 +2785,10 @@ textarea {
     grid-auto-columns: minmax(210px, 1fr);
     gap: 18px;
     overflow-x: auto;
+    overflow-y: hidden;
     padding: 18px 20px 20px;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .ams-sales-pipeline-stage {

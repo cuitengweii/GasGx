@@ -34,20 +34,44 @@ function roleLabel(value) {
     return '管理员';
 }
 
-function roleOptions(selected = ADMIN_ROLE_ADMIN) {
+function allowedRoleEntries(input = null) {
+    if (input?.entryKind === 'sales') {
+        return [
+            { value: ADMIN_ROLE_SUPER_ADMIN, label: '超级管理员' },
+            { value: ADMIN_ROLE_ADMIN, label: '管理员' },
+            { value: ADMIN_ROLE_SALES, label: '销售' },
+        ];
+    }
     return [
         { value: ADMIN_ROLE_SUPER_ADMIN, label: '超级管理员' },
         { value: ADMIN_ROLE_ADMIN, label: '管理员' },
         { value: ADMIN_ROLE_SALES, label: '销售' },
         { value: ADMIN_ROLE_EDITOR, label: '内容编辑' },
-    ]
-        .map((item) => `<option value="${item.value}" ${item.value === selected ? 'selected' : ''}>${item.label}</option>`)
+    ];
+}
+
+function defaultRoleValue(input = null) {
+    return input?.entryKind === 'sales' ? ADMIN_ROLE_SALES : ADMIN_ROLE_ADMIN;
+}
+
+function roleOptions(selected = ADMIN_ROLE_ADMIN, input = null) {
+    const allowed = allowedRoleEntries(input);
+    const fallback = selected || defaultRoleValue(input);
+    const resolved = allowed.some((item) => item.value === fallback) ? fallback : defaultRoleValue(input);
+    return allowed
+        .map((item) => `<option value="${item.value}" ${item.value === resolved ? 'selected' : ''}>${item.label}</option>`)
         .join('');
 }
 
 export async function renderAdminUsersPage(input) {
     const { user, setPageHeader, setContent, showToast, withButtonBusy } = input;
-    setPageHeader('人员管理', '管理后台人员名单、角色权限、账号开通和密码找回。');
+    const salesConsole = input?.entryKind === 'sales';
+    setPageHeader(
+        '人员管理',
+        salesConsole
+            ? '仅管理员可维护销售后台账号、启停状态和角色分配。'
+            : '管理后台人员名单、角色权限、账号开通和密码找回。',
+    );
 
     let rows = [];
     let loadError = null;
@@ -62,7 +86,7 @@ export async function renderAdminUsersPage(input) {
             <div class="ams-section-head">
                 <div>
                     <h3>新增后台人员</h3>
-                    <p>先把人员加入后台 allowlist；如需直接开通账号，可同时填写初始密码创建 Supabase Auth 账号。</p>
+                    <p>${salesConsole ? '销售后台默认新增销售账号；如需管理员权限，可在这里直接分配。' : '先把人员加入后台 allowlist；如需直接开通账号，可同时填写初始密码创建 Supabase Auth 账号。'}</p>
                 </div>
                 <div class="ams-row-actions">
                     <button class="ams-btn ams-btn-muted" type="button" id="ams-admin-users-refresh">刷新名单</button>
@@ -71,15 +95,15 @@ export async function renderAdminUsersPage(input) {
             <div class="ams-site-field-grid ams-site-field-grid-wide">
                 <div class="ams-field">
                     <label>邮箱</label>
-                    <input id="ams-admin-create-email" class="ams-input" type="email" placeholder="admin@gasgx.com">
+                    <input id="ams-admin-create-email" class="ams-input" type="email" placeholder="sales@gasgx.com">
                 </div>
                 <div class="ams-field">
                     <label>姓名</label>
-                    <input id="ams-admin-create-name" class="ams-input" type="text" placeholder="运营负责人">
+                    <input id="ams-admin-create-name" class="ams-input" type="text" placeholder="销售负责人">
                 </div>
                 <div class="ams-field">
                     <label>角色</label>
-                    <select id="ams-admin-create-role" class="ams-select">${roleOptions(ADMIN_ROLE_ADMIN)}</select>
+                    <select id="ams-admin-create-role" class="ams-select">${roleOptions(defaultRoleValue(input), input)}</select>
                 </div>
                 <div class="ams-field">
                     <label>初始密码</label>
@@ -97,7 +121,7 @@ export async function renderAdminUsersPage(input) {
                 </label>
                 <button class="ams-btn ams-btn-primary" type="button" id="ams-admin-create-submit">添加人员</button>
             </div>
-            <p class="ams-footnote">如果只加入名单、不创建账号，则该邮箱必须先在 Supabase Auth 中存在，之后才能使用“忘记密码”找回。</p>
+            <p class="ams-footnote">如果只加入名单、不创建账号，则该邮箱必须先存在于 Supabase Auth 中，之后才能使用“忘记密码”找回。</p>
         </section>
         <section class="ams-card">
             <div class="ams-section-head">
@@ -137,7 +161,7 @@ export async function renderAdminUsersPage(input) {
                                             <td><input class="ams-input" data-admin-name="${esc(row.id)}" value="${esc(row.full_name || '')}" placeholder="姓名"></td>
                                             <td>
                                                 <select class="ams-select" data-admin-role="${esc(row.id)}" aria-label="角色">
-                                                    ${roleOptions(row.role)}
+                                                    ${roleOptions(row.role, input)}
                                                 </select>
                                                 <div class="ams-footnote">${esc(roleLabel(row.role))}</div>
                                             </td>
@@ -168,7 +192,7 @@ export async function renderAdminUsersPage(input) {
     document.getElementById('ams-admin-create-submit')?.addEventListener('click', async (event) => {
         const email = document.getElementById('ams-admin-create-email')?.value || '';
         const fullName = document.getElementById('ams-admin-create-name')?.value || '';
-        const role = document.getElementById('ams-admin-create-role')?.value || ADMIN_ROLE_ADMIN;
+        const role = document.getElementById('ams-admin-create-role')?.value || defaultRoleValue(input);
         const password = document.getElementById('ams-admin-create-password')?.value || '';
         const isActive = Boolean(document.getElementById('ams-admin-create-active')?.checked);
         const createAccount = Boolean(document.getElementById('ams-admin-create-account')?.checked);
@@ -201,7 +225,7 @@ export async function renderAdminUsersPage(input) {
             const row = rows.find((item) => item.id === id);
             if (!row) return;
             const fullName = document.querySelector(`[data-admin-name="${id}"]`)?.value || '';
-            const role = document.querySelector(`[data-admin-role="${id}"]`)?.value || ADMIN_ROLE_ADMIN;
+            const role = document.querySelector(`[data-admin-role="${id}"]`)?.value || defaultRoleValue(input);
             const isActive = Boolean(document.querySelector(`[data-admin-active="${id}"]`)?.checked);
 
             await withButtonBusy(button, '保存中...', async () => {
@@ -245,7 +269,7 @@ export async function renderAdminUsersPage(input) {
 export async function renderAdminSecurityPage(input) {
     const { user, setPageHeader, setContent, showToast, withButtonBusy } = input;
     const email = String(user?.email || '').trim();
-    setPageHeader('账号安全', '修改当前管理员密码，或重新发送密码重置邮件。');
+    setPageHeader('账号安全', '修改当前账号密码，或重新发送密码重置邮件。');
 
     setContent(`
         <section class="ams-card">
@@ -270,7 +294,7 @@ export async function renderAdminSecurityPage(input) {
             <div class="ams-section-head">
                 <div>
                     <h3>修改密码</h3>
-                    <p>当前已登录时可直接修改密码，无需再输入旧密码。</p>
+                    <p>当前已登录时可直接更新密码，无需再输入旧密码。</p>
                 </div>
             </div>
             <form id="ams-security-password-form" class="ams-form">
