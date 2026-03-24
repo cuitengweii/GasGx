@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="../shared/ui/main-auth.shared.js"></script>
-    <link rel="stylesheet" href="../shared/quote-system/quote-system.css?v=20260323quote13">
+    <link rel="stylesheet" href="../shared/quote-system/quote-system.css?v=20260324quote14">
 </head>
 <body class="antialiased pb-10 md:pb-20 access-resolved">
     <div id="access-gate-overlay" class="access-gate-overlay hidden">
@@ -59,12 +59,12 @@
     <div id="toolbar" class="fixed top-0 left-0 right-0 z-50 px-3 md:px-8 py-3 md:py-4 flex justify-between items-center border-b backdrop-blur-md" style="background-color: rgba(10, 14, 20, 0.85); border-color: var(--border-color);">
         <div class="toolbar-brand flex items-center space-x-2 md:space-x-4">
             <div id="toolbar-brand-name" class="text-[var(--gas-green-light)] text-xl md:text-3xl font-black tracking-tight flex whitespace-nowrap items-center flex-shrink-0">
-                <span>GASGX</span> <span class="text-[var(--gas-green-light)] font-bold ml-1 md:ml-2">RFQ SYS</span>
+                <span>GasGx Quotation System</span>
             </div>
         </div>
 
         <div class="toolbar-actions flex items-center space-x-2 md:space-x-4 text-xs md:text-sm">
-            <button id="btn-auth" type="button" class="toolbar-auth-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center justify-center gap-2" title="Login">
+            <button id="btn-auth" type="button" hidden class="toolbar-auth-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center justify-center gap-2" title="Login">
                 <i id="icon-auth" class="fa-solid fa-user-lock"></i>
                 <span id="btn-text-auth" class="toolbar-auth-text">Login</span>
             </button>
@@ -108,13 +108,13 @@
                     </div>
 
                     <div class="doc-meta-grid grid grid-cols-1 md:grid-cols-2 gap-x-8 md:gap-x-12 gap-y-4 md:gap-y-5 text-sm md:text-[15px]">
-                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                        <div id="view-meta-supplier" class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
                             <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-supplier">供应商：</span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span id="val-supplier" class="font-semibold text-white whitespace-nowrap outline-none w-full text-left block"></span>
                             </div>
                         </div>
-                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                        <div id="view-meta-sender" class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
                             <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-sender">发件人：</span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span id="val-sender" class="text-[var(--gas-green-light)] whitespace-nowrap outline-none w-full text-left block"></span>
@@ -267,6 +267,6 @@
         </div>
     </div>
 
-    <script type="module" src="../shared/quote-system/quote-runtime.module.js?v=20260323share05"></script>
+    <script type="module" src="../shared/quote-system/quote-runtime.module.js?v=20260324share06"></script>
 </body>
 </html>

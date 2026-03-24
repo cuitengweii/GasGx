@@ -3432,6 +3432,26 @@ function stageConfirmationCopyText(stageKey = '', record = {}, deal = null) {
     ].filter(Boolean).join('\n');
 }
 
+function stagePublicEntryChipMarkup(stageKey = '', record = {}, deal = null, options = {}) {
+    if (!stageSupportsPublicConfirmation(stageKey)) return '';
+    const openLabel = text(options.openLabel, '打开客户确认入口');
+    const copyLabel = text(options.copyLabel, '复制确认链接');
+    const summary = text(options.summary, '对外发送时会自动带上本节点的确认说明、流程指引以及 GasGx 品牌说明。');
+    const hasLink = Boolean(text(record?.public_slug) && text(record?.public_token));
+    const href = hasLink ? stageCustomerFacingUrl(stageKey, record, deal) : '';
+    return `
+        <div class="ams-summary-chip ams-summary-chip-link">
+            <strong>公开入口</strong>
+            <span>${hasLink ? `<a class="ams-inline-link" href="${esc(href)}" target="_blank" rel="noopener">${esc(href)}</a>` : esc('保存后生成公开确认入口')}</span>
+            <small>${esc(summary)}</small>
+            <div class="ams-summary-chip-actions">
+                <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-open-public-confirmation">${esc(openLabel)}</button>
+                <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-copy-public-confirmation">${esc(copyLabel)}</button>
+            </div>
+        </div>
+    `;
+}
+
 async function ensurePublicStageConfirmationLink(user, stageKey = '', deal = null) {
     const normalizedStageKey = normalizeDealStageKey(stageKey);
     if (!stageSupportsPublicConfirmation(normalizedStageKey)) {
@@ -9749,7 +9769,10 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
     const answers = normalizeRequirementAnswers(requirement.answers);
     const communicationNotes = answers.communication_notes || [];
     const unreadCustomerUpdate = requirementHasUnreadCustomerUpdate(requirement);
-    const canConfirm = normalizeDealStageKey(stageKey) === 'requirement_confirmed' && Boolean(text(requirement.customer_id) && text(requirement.deal_id || deal?.id));
+    const requirementLocked = requirementIsLocked(requirement.status);
+    const canConfirm = normalizeDealStageKey(stageKey) === 'requirement_confirmed'
+        && !requirementLocked
+        && Boolean(text(requirement.customer_id) && text(requirement.deal_id || deal?.id));
     return `
         <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
             <div class="ams-section-head">
@@ -9850,6 +9873,9 @@ function stageCommunicationSectionMarkup(stageKey = '', record = {}, options = {
             <div class="ams-field">
                 <label>新增沟通备注</label>
                 <textarea class="ams-textarea" rows="3" data-sales-flow-stage-meta="communication_note_draft" placeholder="记录本次和客户沟通的要点、变更原因、承诺事项或内部判断。">${esc(stageMetaValue(record, 'communication_note_draft'))}</textarea>
+                <div class="ams-sales-note-submit">
+                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-note-submit">提交备注</button>
+                </div>
             </div>
             <details class="ams-fold-card" ${logs.length ? '' : 'open'}>
                 <summary class="ams-fold-summary">
@@ -9901,30 +9927,46 @@ function quoteFlowMarkup(stageKey = '', deal = null, instance = {}) {
         stage_status: normalizeDealStageKey(deal?.current_stage) === normalizeDealStageKey(stageKey) ? 'active' : 'pending',
     });
     const canConfirm = normalizeDealStageKey(stageKey) === 'quote_confirmed' && Boolean(text(instance.id) && text(instance.deal_id || deal?.id));
+    const isQuoteDraft = normalizeDealStageKey(stageKey) === 'quote_draft';
+    const isQuoteConfirmed = normalizeDealStageKey(stageKey) === 'quote_confirmed';
     return `
         <div class="ams-stage-detail-stack">
             <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
                 <div class="ams-section-head">
                     <div>
                         <h3>${esc(dealStageLabel(stageKey))}</h3>
-                        <p>${normalizeDealStageKey(stageKey) === 'quote_draft'
+                        <p>${isQuoteDraft
                             ? '这里负责生成报价草稿、打开可视化编辑器，并持续记录客户对报价内容的修改意见。'
                             : '这里负责锁定客户最终认可版本。确认后直接进入签约合同，并把条款带入合同节点。'}</p>
                     </div>
-                <div class="ams-row-actions">
-                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-quote-save">${normalizeDealStageKey(stageKey) === 'quote_confirmed' ? '保存确认信息' : '保存报价信息'}</button>
-                    ${normalizeDealStageKey(stageKey) === 'quote_draft' && instance.id ? `<button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-instance-open">打开可视化报价编辑器</button>` : ''}
-                    ${normalizeDealStageKey(stageKey) === 'quote_confirmed' ? `<button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-open-public-confirmation">打开客户报价确认单</button>` : ''}
-                    ${normalizeDealStageKey(stageKey) === 'quote_confirmed' ? `<button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-copy-public-confirmation">复制确认链接</button>` : ''}
-                    ${normalizeDealStageKey(stageKey) === 'quote_confirmed' ? `<button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-instance-confirm" ${canConfirm ? '' : 'disabled'}>确认报价并进入签约合同</button>` : ''}
+                    ${isQuoteConfirmed ? `
+                        <div class="ams-row-actions">
+                            <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-quote-save">保存确认信息</button>
+                            <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-instance-confirm" ${canConfirm ? '' : 'disabled'}>确认报价并进入签约合同</button>
+                        </div>
+                    ` : ''}
                 </div>
-            </div>
                 <div class="ams-quote-meta-grid">
                     <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(moduleState.customers.find((item) => item.id === deal?.customer_id) || {}))}</span></div>
                     <div class="ams-summary-chip"><strong>销售线</strong><span>${esc(text(deal?.title, '--'))}</span></div>
                     <div class="ams-summary-chip"><strong>品牌</strong><span>${esc(text(brand?.brand_name || brand?.display_name, '--'))}</span></div>
                     <div class="ams-summary-chip"><strong>产品</strong><span>${esc(text(productLabelById(instance.product_id), '--'))}</span></div>
                     <div class="ams-summary-chip"><strong>报价状态</strong><span>${statusPill(instance.status || 'draft')}</span></div>
+                    ${isQuoteDraft && instance.id ? `
+                        <div class="ams-summary-chip ams-summary-chip-link">
+                            <strong>报价入口</strong>
+                            <span>已发布报价可在这里直接进入编辑，或复制对外报价链接用于微信、邮件和群转发。</span>
+                            <div class="ams-summary-chip-actions">
+                                <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-instance-open-inline">打开可视化报价编辑器</button>
+                                <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-instance-copy-link">复制报价链接</button>
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${isQuoteConfirmed ? stagePublicEntryChipMarkup(stageKey, record, deal, {
+                        openLabel: '打开客户报价确认单',
+                        copyLabel: '复制确认链接',
+                        summary: '对外发送时会自动带上报价确认说明、当前销售线信息以及 GasGx 品牌说明。',
+                    }) : ''}
                 </div>
                 ${
                     instance.id
@@ -9943,7 +9985,7 @@ function quoteFlowMarkup(stageKey = '', deal = null, instance = {}) {
                         `
                 }
             </section>
-            ${normalizeDealStageKey(stageKey) === 'quote_confirmed' ? quoteTermsCardMarkup(record) : ''}
+            ${isQuoteConfirmed ? quoteTermsCardMarkup(record) : ''}
             ${stageCommunicationSectionMarkup(stageKey, record, {
                 title: '报价沟通记录',
                 help: '把客户对报价内容、价格、条款、交付周期的每次反馈和修改要求都记在这里，便于后续签约与溯源。',
@@ -9963,10 +10005,15 @@ function contractStageMarkup(stage = {}, deal = null, record = {}) {
                     </div>
                     <div class="ams-row-actions">
                         <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存合同信息</button>
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-open-public-confirmation">打开客户合同确认单</button>
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-copy-public-confirmation">复制确认链接</button>
                         <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认合同并进入定金付款</button>
                     </div>
+                </div>
+                <div class="ams-quote-meta-grid">
+                    ${stagePublicEntryChipMarkup(stage.key, record, deal, {
+                        openLabel: '打开客户合同确认单',
+                        copyLabel: '复制确认链接',
+                        summary: '合同确认入口会带上合同确认说明、流程节点说明以及 GasGx 品牌信息。',
+                    })}
                 </div>
                 <div class="ams-site-field-grid ams-site-field-grid-wide">
                     <div class="ams-field"><label>合同编号</label><input class="ams-input" data-sales-flow-stage-meta="contract_number" value="${esc(stageMetaValue(record, 'contract_number'))}" placeholder="CT-2026-001"></div>
@@ -10081,10 +10128,15 @@ function factoryAcceptanceStageMarkup(stage = {}, deal = null, record = {}) {
                     </div>
                     <div class="ams-row-actions">
                         <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-save">保存验收信息</button>
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-open-public-confirmation">打开线上验收确认单</button>
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-copy-public-confirmation">复制确认链接</button>
                         <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认验收完成并进入尾款确认</button>
                     </div>
+                </div>
+                <div class="ams-quote-meta-grid">
+                    ${stagePublicEntryChipMarkup(stage.key, record, deal, {
+                        openLabel: '打开线上验收确认单',
+                        copyLabel: '复制确认链接',
+                        summary: '验收确认入口会带上验收说明、结果回传指引以及 GasGx 品牌信息。',
+                    })}
                 </div>
                 <div class="ams-site-field-grid ams-site-field-grid-wide">
                     <div class="ams-field"><label>验收日期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="fat_date" value="${esc(stageMetaValue(record, 'fat_date'))}"></div>
@@ -10328,6 +10380,9 @@ async function updateDealLifecycle(input, dealId, patch = {}) {
 }
 
 function bindSalesStageListActions(input, stageKey = '', customerId = '', customerFlow = false) {
+    const content = document.getElementById('ams-content');
+    if (content) hydrateCustomSelects(content);
+
     document.getElementById('ams-sales-stage-search')?.addEventListener('input', (event) => {
         moduleState.dealSearch = event.currentTarget.value || '';
         void input.rerender();
@@ -10544,9 +10599,28 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
         });
     });
 
-    document.getElementById('ams-sales-flow-instance-open')?.addEventListener('click', () => {
-        if (!moduleState.instanceEditor?.id) return;
-        window.open(quoteEditorUrl('instance', moduleState.instanceEditor.id), '_blank', 'noopener');
+    ['ams-sales-flow-instance-open', 'ams-sales-flow-instance-open-inline'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('click', () => {
+            if (!moduleState.instanceEditor?.id) return;
+            window.open(quoteEditorUrl('instance', moduleState.instanceEditor.id), '_blank', 'noopener');
+        });
+    });
+
+    document.getElementById('ams-sales-flow-instance-copy-link')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '复制中...', async () => {
+            const instance = moduleState.instanceEditor;
+            if (!instance?.public_slug) {
+                input.showToast('请先发布报价，再复制对外报价链接。', true);
+                return;
+            }
+            const payload = quoteShareCopyText(instance);
+            try {
+                await navigator.clipboard.writeText(payload);
+                input.showToast('报价链接和对外说明已复制。');
+            } catch (_error) {
+                input.showToast(payload, false);
+            }
+        });
     });
 
     document.getElementById('ams-sales-flow-stage-open-public-confirmation')?.addEventListener('click', async (event) => {
@@ -10585,6 +10659,27 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
                 });
             }
             input.showToast('报价节点已保存。');
+            await input.rerender();
+        });
+    });
+
+    document.getElementById('ams-sales-flow-stage-note-submit')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '提交中...', async () => {
+            const record = stageRecordByKey(stageKey, moduleState.dealStageRecords);
+            const noteDraft = text(record?.meta?.communication_note_draft);
+            if (!noteDraft) {
+                input.showToast('请先填写沟通备注。', true);
+                return;
+            }
+            appendStageCommunicationLog(stageKey, noteDraft, input.user?.email || input.user?.id || '销售沟通');
+            if (moduleState.dealEditor?.id) {
+                const saved = await saveDealDraft(input.user, moduleState.dealEditor, {
+                    stageRecords: moduleState.dealStageRecords,
+                    currentStage: stageKey,
+                });
+                await fetchDealEditor(saved.id);
+            }
+            input.showToast('沟通备注已提交。');
             await input.rerender();
         });
     });

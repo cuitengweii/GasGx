@@ -7,13 +7,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../shared/quote-system/quote-system.css?v=20260323quote13">
+    <link rel="stylesheet" href="../shared/quote-system/quote-system.css?v=20260324quote14">
 </head>
 <body class="antialiased pb-10 md:pb-20 access-resolved quote-editor-mode">
     <div id="toolbar" class="fixed top-0 left-0 right-0 z-50 px-3 md:px-8 py-3 md:py-4 flex justify-between items-center border-b backdrop-blur-md" style="background-color: rgba(10, 14, 20, 0.85); border-color: var(--border-color);">
         <div class="toolbar-brand flex items-center space-x-2 md:space-x-4">
             <div id="toolbar-brand-name" class="text-[var(--gas-green-light)] text-xl md:text-3xl font-black tracking-tight flex whitespace-nowrap items-center flex-shrink-0">
-                <span>GASGX</span> <span class="text-[var(--gas-green-light)] font-bold ml-1 md:ml-2">RFQ SYS</span>
+                <span>GasGx Quotation System</span>
             </div>
         </div>
 
@@ -39,13 +39,11 @@
         <div class="quote-editor-bar__actions">
             <div id="instance-toolbar-actions" class="contents" hidden>
                 <button id="btn-preview-instance" type="button" class="btn-outline px-3 py-2">预览客户页</button>
-                <button id="btn-copy-public-link" type="button" class="btn-outline px-3 py-2">复制客户链接</button>
-                <button id="btn-publish-instance" type="button" class="btn-outline px-3 py-2">发布报价</button>
             </div>
             <button id="btn-add-main-row" type="button" class="btn-outline px-3 py-2">主配置新增行</button>
             <button id="btn-add-optional-row" type="button" class="btn-outline px-3 py-2">选配新增行</button>
-            <button id="btn-auto-translate" type="button" class="btn-outline px-3 py-2">自动生成 EN / RU</button>
-            <button id="btn-save-editor" type="button" class="btn-glow px-4 py-2.5">保存</button>
+            <button id="btn-save-editor" type="button" class="btn-outline px-4 py-2.5">保存草稿</button>
+            <button id="btn-publish-instance" type="button" hidden class="btn-glow px-4 py-2.5">发布报价</button>
         </div>
     </div>
 
@@ -68,20 +66,20 @@
                         <h1 class="text-xl md:text-3xl font-bold tracking-wide text-[var(--gas-green-light)] leading-snug break-words flex-1 m-0">
                             <span id="edit-overview-title" class="quote-editable" contenteditable="true"></span>
                         </h1>
-                        <button type="button" class="doc-send-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center flex-shrink-0 mt-1 md:mt-0">
+                        <button id="btn-send-editor" type="button" class="doc-send-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center flex-shrink-0 mt-1 md:mt-0">
                             <i class="fa-solid fa-paper-plane mr-1.5 text-[var(--text-body)]"></i>
                             <span id="edit-send-label" class="quote-editable" contenteditable="true"></span>
                         </button>
                     </div>
 
                     <div class="doc-meta-grid grid grid-cols-1 md:grid-cols-2 gap-x-8 md:gap-x-12 gap-y-4 md:gap-y-5 text-sm md:text-[15px]">
-                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                        <div id="edit-meta-supplier" class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
                             <span id="edit-supplier-label" class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap quote-editable" contenteditable="true"></span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span id="edit-supplier-value" class="font-semibold text-white whitespace-nowrap outline-none w-full text-left block quote-editable" contenteditable="true"></span>
                             </div>
                         </div>
-                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
+                        <div id="edit-meta-sender" class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
                             <span id="edit-sender-label" class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap quote-editable" contenteditable="true"></span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
                                 <span id="edit-sender-value" class="text-[var(--gas-green-light)] whitespace-nowrap outline-none w-full text-left block quote-editable" contenteditable="true"></span>
@@ -136,7 +134,6 @@
         <i class="fa-solid fa-arrow-up text-sm"></i>
     </button>
 
-    <button id="btn-save-editor-floating" type="button" class="btn-glow fixed right-4 bottom-20 z-40 px-4 py-3 rounded-full shadow-[0_14px_32px_rgba(93,214,44,0.28)]">保存</button>
-    <script type="module" src="../shared/quote-system/quote-editor.module.js?v=20260323editor07"></script>
+    <script type="module" src="../shared/quote-system/quote-editor.module.js?v=20260324editor08"></script>
 </body>
 </html>

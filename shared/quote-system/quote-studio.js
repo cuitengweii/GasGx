@@ -177,7 +177,7 @@
     byId('lbl-company').innerText = dict[state.lang].company;
     byId('lbl-product').innerText = dict[state.lang].product;
     byId('lbl-language').innerText = dict[state.lang].language;
-    byId('rate-status').innerHTML = `<i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i>${dict[state.lang].onlineRates}`;
+    byId('rate-status').innerHTML = `<i class="fa-solid fa-money-bill-transfer text-[var(--gas-green-light)] mr-1.5"></i>${dict[state.lang].onlineRates}`;
     byId('refresh-rates-text').innerText = dict[state.lang].refreshRates;
 
     const studioPanel = byId('studio-panel');

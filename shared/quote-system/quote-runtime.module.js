@@ -614,7 +614,7 @@ function updateRateStatus(mode = 'online') {
         node.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-yellow-500 mr-1.5"></i>${esc(t('ratesFallback'))}`;
         return;
     }
-    node.innerHTML = `<i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i>${esc(t('ratesOnline'))}`;
+    node.innerHTML = `<i class="fa-solid fa-money-bill-transfer text-[var(--gas-green-light)] mr-1.5"></i>${esc(t('ratesOnline'))}`;
 }
 
 function renderRateDetail() {
@@ -676,24 +676,15 @@ function renderViewContextBanner() {
 }
 
 function renderToolbar() {
-    const brand = state.snapshot?.brand || {};
-    const brandLabel = text(brand.brand_name || brand.display_name, t('unknownBrand'));
     const node = byId('toolbar-brand-name');
     if (!node) return;
-    node.innerHTML = `<span>${esc(brandLabel)}</span> <span class="text-[var(--gas-green-light)] font-bold ml-1 md:ml-2">RFQ SYS</span>`;
+    node.textContent = 'GasGx Quotation System';
 }
 
 function renderAuthButton() {
     const button = byId('btn-auth');
-    const label = byId('btn-text-auth');
-    const icon = byId('icon-auth');
-    if (!button || !label || !icon) return;
-    const signedIn = state.isLoggedIn === true;
-    const displayName = userDisplayName(state.adminUser);
-    label.textContent = signedIn ? (isMobileViewport() ? t('authAccount') : displayName || t('authAccount')) : t('authLogin');
-    button.title = signedIn ? t('authAccount') : t('authLogin');
-    button.classList.toggle('is-signed-in', signedIn);
-    icon.className = `fa-solid ${signedIn ? 'fa-user-check' : 'fa-user-lock'}`;
+    if (!button) return;
+    button.hidden = true;
 }
 
 function renderLangButtons() {
@@ -719,18 +710,15 @@ function renderStaticText() {
     renderViewContextBanner();
 
     const overviewTitle = pickDisplayText(snapshot.brand.overview_title, pickDisplayText(snapshot.product.public_title, snapshot.product.product_code));
-    const supplier = text(snapshot.brand.supplier_name || snapshot.brand.display_name, t('unknownBrand'));
-    const sender = text(snapshot.brand.sender_email, '');
     const receiver = text(snapshot.quote.receiver_email || snapshot.quote.receiver_name || snapshot.quote.customer_name, '');
 
     byId('f-title').textContent = overviewTitle;
-    byId('lbl-supplier').textContent = uiText('supplier_label', 'supplier');
-    byId('lbl-sender').textContent = uiText('sender_label', 'sender');
     byId('lbl-receiver').textContent = uiText('receiver_label', 'receiver');
     byId('lbl-validity').textContent = uiText('validity_label', 'validity');
     byId('lbl-update').innerHTML = `<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>${esc(t('update'))}`;
-    byId('val-supplier').textContent = supplier;
-    byId('val-sender').textContent = sender;
+    byId('view-meta-supplier')?.setAttribute('hidden', 'hidden');
+    byId('view-meta-sender')?.setAttribute('hidden', 'hidden');
+    byId('btn-send')?.setAttribute('hidden', 'hidden');
     byId('val-receiver').textContent = receiver;
     byId('val-receiver').setAttribute('data-placeholder', uiText('receiver_placeholder', 'receiverPlaceholder'));
     byId('footer-note').innerHTML = pickDisplayText(snapshot.brand.footer_note, '');

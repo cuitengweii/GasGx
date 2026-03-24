@@ -135,15 +135,90 @@ async function withButtonBusy(button, busyText, task) {
 }
 
 function setPageHeader(title, sub) {
+    const compactCustomerFlow = state.page === 'quote-customer-flow';
     const titleNode = document.getElementById('ams-page-title');
     const subNode = document.getElementById('ams-page-sub');
-    if (titleNode) titleNode.textContent = title;
-    if (subNode) subNode.textContent = sub;
+    if (titleNode) titleNode.textContent = compactCustomerFlow ? '' : title;
+    if (subNode) subNode.textContent = compactCustomerFlow ? '' : sub;
 }
 
 function setContent(html) {
     const content = document.getElementById('ams-content');
     if (content) content.innerHTML = html;
+    normalizeQuoteCustomerFlowUi();
+}
+
+function normalizeQuoteCustomerFlowUi() {
+    const compactCustomerFlow = state.page === 'quote-customer-flow';
+    document.body.classList.toggle('ams-customer-flow-focus', compactCustomerFlow);
+    if (!compactCustomerFlow) return;
+    const content = document.getElementById('ams-content');
+    if (!content) return;
+
+    content.querySelector('.ams-quote-list-panel')?.remove();
+    content.querySelector('.ams-quote-layout')?.classList.add('ams-quote-layout-single');
+
+    const noteTextarea = content.querySelector('[data-sales-flow-requirement-answer="communication_note_draft"]');
+    const noteField = noteTextarea?.closest('.ams-field');
+    const saveButton = content.querySelector('#ams-sales-flow-requirement-save');
+    if (noteField && saveButton && !content.querySelector('#ams-sales-flow-requirement-save-note-clone')) {
+        const actionBar = document.createElement('div');
+        actionBar.className = 'ams-inline-actions ams-inline-actions-end ams-sales-note-submit';
+        const clone = saveButton.cloneNode(true);
+        clone.id = 'ams-sales-flow-requirement-save-note-clone';
+        clone.textContent = '\u8bb0\u5f55\u5907\u6ce8';
+        clone.addEventListener('click', () => saveButton.click());
+        actionBar.appendChild(clone);
+        noteField.appendChild(actionBar);
+        saveButton.hidden = true;
+    }
+
+    const detailCard = noteField?.closest('.ams-instance-editor-panel');
+    const topActions = detailCard?.querySelector('.ams-section-head .ams-row-actions');
+    const topOpenButton = detailCard?.querySelector('#ams-sales-flow-requirement-open-link');
+    const shareMenu = detailCard?.querySelector('.ams-share-menu');
+    if (topOpenButton && shareMenu && noteField && !content.querySelector('.ams-sales-public-link-block')) {
+        const shareLinkButton = shareMenu.querySelector('#ams-sales-flow-requirement-share-link');
+        const sharePosterButton = shareMenu.querySelector('#ams-sales-flow-requirement-share-poster');
+        const linkAnchor = detailCard.querySelector('.ams-summary-chip a');
+        const publicBlock = document.createElement('section');
+        publicBlock.className = 'ams-quote-block ams-sales-public-link-block';
+        publicBlock.innerHTML = `
+            <div class="ams-section-head">
+                <div>
+                    <h3>\u516c\u5f00\u94fe\u63a5</h3>
+                    <p>\u5ba2\u6237\u8868\u5355\u5165\u53e3\u3001\u5206\u4eab\u94fe\u63a5\u548c\u4e8c\u7ef4\u7801\u6d77\u62a5\u7edf\u4e00\u6536\u5728\u8fd9\u91cc\u3002</p>
+                </div>
+            </div>
+            <div class="ams-site-field-grid ams-site-field-grid-wide">
+                <div class="ams-field">
+                    <label>\u5ba2\u6237\u516c\u5f00\u5165\u53e3</label>
+                    <input class="ams-input" value="${linkAnchor?.getAttribute('href') || ''}" readonly placeholder="\u5148\u4fdd\u5b58\u540e\u751f\u6210">
+                </div>
+            </div>
+            <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact"></div>
+        `;
+        const actions = publicBlock.querySelector('.ams-inline-actions');
+        if (shareLinkButton) actions.appendChild(shareLinkButton);
+        if (sharePosterButton) actions.appendChild(sharePosterButton);
+        topOpenButton.textContent = '\u6253\u5f00\u5ba2\u6237\u8868\u5355';
+        actions.appendChild(topOpenButton);
+        noteField.parentElement?.insertBefore(publicBlock, noteField);
+        shareMenu.remove();
+    }
+
+    if (topActions) {
+        const hasVisibleButton = Array.from(topActions.children).some((node) => !node.hidden);
+        if (!hasVisibleButton) topActions.remove();
+    }
+
+    const userBadge = document.querySelector('.ams-user > span');
+    const modeBanner = content.querySelector('.ams-sales-mode-banner.is-detail');
+    if (userBadge && modeBanner && !modeBanner.querySelector('.ams-sales-inline-user')) {
+        const clone = userBadge.cloneNode(true);
+        clone.classList.add('ams-sales-inline-user');
+        modeBanner.appendChild(clone);
+    }
 }
 
 function isMaintenanceAdmin() {

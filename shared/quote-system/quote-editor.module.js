@@ -254,7 +254,7 @@ function clearTranslationDirty() {
 }
 
 function updateSaveButtons(label = '保存', disabled = false) {
-    ['btn-save-editor', 'btn-save-editor-floating'].forEach((id) => {
+    ['btn-save-editor'].forEach((id) => {
         const node = byId(id);
         if (!node) return;
         node.disabled = disabled;
@@ -266,6 +266,29 @@ function cancelAutoSave() {
     if (!state.autoSaveTimer) return;
     window.clearTimeout(state.autoSaveTimer);
     state.autoSaveTimer = 0;
+}
+
+function publishedInstanceActionMode() {
+    if (state.kind !== 'instance') return 'publish';
+    if (state.instance?.status !== 'published') return 'publish';
+    return state.hasUnsavedChanges ? 'update' : 'copy';
+}
+
+function pipelineReturnUrl() {
+    const backHref = byId('btn-back-admin')?.getAttribute('href') || '';
+    const params = new URLSearchParams(window.location.search || '');
+    const entryKind = normalizeEntryKind(params.get('admin_entry') || ADMIN_ENTRY_KIND);
+    const dealId = text(params.get('deal'));
+    if (entryKind === SALES_ENTRY_KIND && dealId) {
+        const url = new URL(adminConsolePath(entryKind), window.location.origin);
+        url.searchParams.set('page', 'quote-pipeline');
+        url.searchParams.set('stage', 'quote_draft');
+        url.searchParams.set('deal', dealId);
+        url.searchParams.set('admin_entry', entryKind);
+        return url.toString();
+    }
+    if (backHref) return new URL(backHref, window.location.origin).toString();
+    return new URL(adminConsolePath(entryKind), window.location.origin).toString();
 }
 
 function scheduleAutoSave(delayMs = AUTO_SAVE_DELAY_MS) {
@@ -408,6 +431,31 @@ function localizedValue(value = {}) {
 
 function uiText(key, fallback = '') {
     return localizedValue(state.product?.ui_text?.[key]) || fallback || t(key);
+}
+
+function configuredEditorLangs() {
+    const source = state.kind === 'instance'
+        ? state.instance?.share_config?.enabled_langs
+        : state.product?.ui_text?.enabled_langs;
+    const values = Array.isArray(source) ? source.map((item) => text(item)).filter((item) => SUPPORTED_LANGS.includes(item)) : [];
+    if (values.length) return [...new Set(values)];
+    const fallback = state.kind === 'instance' ? state.instance?.default_lang : state.product?.default_lang;
+    return [SUPPORTED_LANGS.includes(text(fallback)) ? text(fallback) : DEFAULT_LANG];
+}
+
+function updateConfiguredEditorLangs(nextLangs = []) {
+    const langs = [...new Set(nextLangs.map((item) => text(item)).filter((item) => SUPPORTED_LANGS.includes(item)))];
+    const safeLangs = langs.length ? langs : [DEFAULT_LANG];
+    if (state.kind === 'instance') {
+        state.instance.share_config = state.instance.share_config && typeof state.instance.share_config === 'object' ? { ...state.instance.share_config } : {};
+        state.instance.share_config.enabled_langs = safeLangs;
+        if (!safeLangs.includes(state.instance.default_lang)) state.instance.default_lang = safeLangs[0];
+    } else {
+        state.product.ui_text = state.product.ui_text && typeof state.product.ui_text === 'object' ? { ...state.product.ui_text } : {};
+        state.product.ui_text.enabled_langs = safeLangs;
+        if (!safeLangs.includes(state.product.default_lang)) state.product.default_lang = safeLangs[0];
+    }
+    if (!safeLangs.includes(state.currentLang)) state.currentLang = safeLangs[0];
 }
 
 function setLocalizedValue(target, field, value) {
@@ -662,21 +710,25 @@ function renderLangButtons() {
 }
 
 function renderToolbarBrand() {
-    const shortName = text(state.brand?.brand_name || state.brand?.display_name || 'GASGX');
-    byId('toolbar-brand-name').innerHTML = `<span>${esc(shortName)}</span> <span class="text-[var(--gas-green-light)] font-bold ml-1 md:ml-2">RFQ SYS</span>`;
+    byId('toolbar-brand-name').textContent = 'GasGx Quotation System';
 }
 
 function renderSettings() {
     const root = byId('editor-settings-fields');
     if (!root) return;
     const validityHours = state.kind === 'product' ? state.product.validity_hours : state.instance.validity_hours;
-    const defaultLang = state.kind === 'product' ? state.product.default_lang : state.instance.default_lang;
+    const enabledLangs = configuredEditorLangs();
     root.innerHTML = `
         <label class="quote-editor-setting">
             <span>${esc(t('defaultLang'))}</span>
-            <select data-setting-field="default_lang">
-                ${SUPPORTED_LANGS.map((lang) => `<option value="${lang}" ${defaultLang === lang ? 'selected' : ''}>${lang.toUpperCase()}</option>`).join('')}
-            </select>
+            <div class="quote-editor-lang-group">
+                ${SUPPORTED_LANGS.map((lang) => `
+                    <label class="quote-editor-lang-chip ${enabledLangs.includes(lang) ? 'is-active' : ''}">
+                        <input type="checkbox" data-setting-lang="${esc(lang)}" ${enabledLangs.includes(lang) ? 'checked' : ''}>
+                        <span>${lang.toUpperCase()}</span>
+                    </label>
+                `).join('')}
+            </div>
         </label>
         <label class="quote-editor-setting">
             <span>${esc(t('validityHours'))}</span>
@@ -707,14 +759,6 @@ function renderSettings() {
                 <span>${esc(t('receiverName'))}</span>
                 <input type="text" data-setting-field="receiver_name" value="${esc(state.instance.receiver_name)}">
             </label>
-            <label class="quote-editor-setting">
-                <span>${esc(t('receiverEmail'))}</span>
-                <input type="email" data-setting-field="receiver_email" value="${esc(state.instance.receiver_email)}">
-            </label>
-            <label class="quote-editor-setting">
-                <span>${esc(t('publicSlug'))}</span>
-                <input type="text" data-setting-field="public_slug" value="${esc(state.instance.public_slug)}">
-            </label>
         `
                 : ''
         }
@@ -723,6 +767,14 @@ function renderSettings() {
     root.querySelectorAll('[data-setting-field]').forEach((node) => {
         node.addEventListener('input', handleSettingChange);
         node.addEventListener('change', handleSettingChange);
+    });
+    root.querySelectorAll('[data-setting-lang]').forEach((node) => {
+        node.addEventListener('change', () => {
+            const nextLangs = [...root.querySelectorAll('[data-setting-lang]:checked')].map((input) => input.dataset.settingLang || '');
+            updateConfiguredEditorLangs(nextLangs);
+            renderAll();
+            markEditorDirty();
+        });
     });
 }
 
@@ -817,23 +869,27 @@ async function copyText(value) {
 function renderEditorActions() {
     const instanceActions = byId('instance-toolbar-actions');
     const previewButton = byId('btn-preview-instance');
-    const copyButton = byId('btn-copy-public-link');
     const publishButton = byId('btn-publish-instance');
     const saveButton = byId('btn-save-editor');
-    const floatingSaveButton = byId('btn-save-editor-floating');
-    const saveLabel = state.kind === 'product' ? '保存模板' : '保存草稿';
+    const saveLabel = state.kind === 'product' ? '\u4fdd\u5b58\u4ea7\u54c1\u6a21\u677f' : '\u4fdd\u5b58\u8349\u7a3f';
     updateSaveButtons(saveLabel, state.saveInFlight);
-    if (floatingSaveButton) floatingSaveButton.textContent = saveLabel;
     if (saveButton) saveButton.textContent = saveLabel;
-    if (!instanceActions || !previewButton || !copyButton || !publishButton) return;
+    if (!instanceActions || !previewButton || !publishButton) return;
     const isInstance = state.kind === 'instance';
     instanceActions.hidden = !isInstance;
+    publishButton.hidden = !isInstance;
     if (!isInstance) return;
     const hasId = Boolean(state.instance?.id);
-    const hasPublicSlug = Boolean(text(state.instance?.public_slug));
     previewButton.disabled = !hasId;
-    copyButton.disabled = !hasPublicSlug;
-    publishButton.textContent = state.instance?.status === 'published' ? '重新发布' : '发布报价';
+    const actionMode = publishedInstanceActionMode();
+    publishButton.disabled = actionMode === 'copy'
+        ? !Boolean(text(state.instance?.public_slug))
+        : !hasId || state.saveInFlight;
+    publishButton.textContent = actionMode === 'copy'
+        ? '\u590d\u5236\u5ba2\u6237\u94fe\u63a5'
+        : actionMode === 'update'
+            ? '\u66f4\u65b0\u62a5\u4ef7'
+            : '\u53d1\u5e03\u62a5\u4ef7';
 }
 
 function renderStaticText() {
@@ -845,11 +901,9 @@ function renderStaticText() {
     renderEditorActions();
 
     byId('edit-overview-title').textContent = localizedValue(state.brand.overview_title);
-    byId('edit-send-label').textContent = uiText('send_button', t('send'));
-    byId('edit-supplier-label').textContent = uiText('supplier_label', t('supplier'));
-    byId('edit-supplier-value').textContent = text(state.brand.supplier_name || state.brand.display_name);
-    byId('edit-sender-label').textContent = uiText('sender_label', t('sender'));
-    byId('edit-sender-value').textContent = text(state.brand.sender_email);
+    byId('btn-send-editor')?.setAttribute('hidden', 'hidden');
+    byId('edit-meta-supplier')?.setAttribute('hidden', 'hidden');
+    byId('edit-meta-sender')?.setAttribute('hidden', 'hidden');
     byId('edit-validity-label').textContent = uiText('validity_label', t('validity'));
     byId('edit-receiver-label').textContent = uiText('receiver_label', t('receiver'));
     byId('footer-note').textContent = localizedValue(state.brand.footer_note);
@@ -886,7 +940,7 @@ function updateRateStatus(mode = 'online') {
         node.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-yellow-500 mr-1.5"></i>${esc(t('rateFallback'))}`;
         return;
     }
-    node.innerHTML = `<i class="fa-solid fa-wifi text-[var(--gas-green-light)] mr-1.5"></i>${esc(t('rateOnline'))}`;
+    node.innerHTML = `<i class="fa-solid fa-money-bill-transfer text-[var(--gas-green-light)] mr-1.5"></i>${esc(t('rateOnline'))}`;
 }
 
 function parseMoneyInput(value) {
@@ -1751,59 +1805,51 @@ function bindGlobal() {
         renderAll();
         markEditorDirty();
     };
-    byId('btn-auto-translate').onclick = async () => {
-        renderStatus(localeCopy({
-            zh: '正在生成 EN / RU...',
-            en: 'Generating EN / RU...',
-            ru: 'Генерация EN / RU...',
-        }), 'warning');
-        const result = await runAutoTranslation(true);
-        if (result?.translated) markEditorDirty({ showStatus: false, delayMs: 600 });
-    };
+
     byId('btn-save-editor').onclick = () => {
         void handleSave({ source: 'manual' });
     };
-    byId('btn-save-editor-floating')?.addEventListener('click', () => {
-        void handleSave({ source: 'manual' });
-    });
+
     byId('btn-preview-instance')?.addEventListener('click', async () => {
         if (state.kind !== 'instance') return;
         if (!state.instance?.id) {
-            renderStatus('请先保存草稿，再打开客户预览。', 'warning');
+            renderStatus('\u8bf7\u5148\u4fdd\u5b58\u8349\u7a3f\uff0c\u518d\u9884\u89c8\u5ba2\u6237\u9875\u3002', 'warning');
             return;
         }
         await handleSave({ source: 'manual' });
         if (!state.instance?.id) return;
         window.open(previewQuoteUrl(state.instance.id), '_blank', 'noopener');
     });
-    byId('btn-copy-public-link')?.addEventListener('click', async () => {
-        if (state.kind !== 'instance') return;
-        const publicSlug = text(state.instance?.public_slug);
-        if (!publicSlug) {
-            renderStatus('请先填写公开链接 slug。', 'warning');
-            return;
-        }
-        try {
-            await copyText(publicQuoteUrl(publicSlug));
-            renderStatus('客户链接已复制。', 'success');
-        } catch (error) {
-            renderStatus(`复制失败。${error?.message || ''}`, 'error');
-        }
-    });
+
     byId('btn-publish-instance')?.addEventListener('click', async () => {
         if (state.kind !== 'instance') return;
+        const actionMode = publishedInstanceActionMode();
+        if (actionMode === 'copy') {
+            const publicSlug = text(state.instance?.public_slug);
+            if (!publicSlug) {
+                renderStatus('\u8bf7\u5148\u53d1\u5e03\u62a5\u4ef7\uff0c\u518d\u590d\u5236\u5ba2\u6237\u94fe\u63a5\u3002', 'warning');
+                return;
+            }
+            try {
+                await copyText(publicQuoteUrl(publicSlug));
+                renderStatus('\u5ba2\u6237\u94fe\u63a5\u5df2\u590d\u5236\u3002', 'success');
+            } catch (error) {
+                renderStatus(`\u590d\u5236\u5ba2\u6237\u94fe\u63a5\u5931\u8d25 ${error?.message || ''}`, 'error');
+            }
+            return;
+        }
         cancelAutoSave();
         if (state.saveInFlight) return;
         flushPendingEditorChanges();
         state.saveInFlight = true;
-        updateSaveButtons('保存草稿', true);
+        updateSaveButtons('\u4fdd\u5b58\u8349\u7a3f\u4e2d...', true);
         const publishButton = byId('btn-publish-instance');
-        const originalLabel = publishButton?.textContent || '发布报价';
+        const originalLabel = publishButton?.textContent || '\u53d1\u5e03\u62a5\u4ef7';
         if (publishButton) {
             publishButton.disabled = true;
-            publishButton.textContent = '发布中...';
+            publishButton.textContent = actionMode === 'update' ? '\u66f4\u65b0\u4e2d...' : '\u53d1\u5e03\u4e2d...';
         }
-        renderStatus('发布中...', 'warning');
+        renderStatus(actionMode === 'update' ? '\u6b63\u5728\u66f4\u65b0\u62a5\u4ef7...' : '\u6b63\u5728\u53d1\u5e03\u62a5\u4ef7...', 'warning');
         try {
             const auth = await client.auth.getUser();
             state.user = auth?.data?.user || null;
@@ -1814,21 +1860,25 @@ function bindGlobal() {
             renderAll();
             clearTranslationDirty();
             state.hasUnsavedChanges = false;
-            renderStatus('报价单已发布。', 'success');
+            renderStatus(actionMode === 'update' ? '\u62a5\u4ef7\u5df2\u66f4\u65b0\u3002' : '\u62a5\u4ef7\u5df2\u53d1\u5e03\u3002', 'success');
+            window.location.assign(pipelineReturnUrl());
+            return;
         } catch (error) {
             renderStatus(`${t('saveFailed')} ${error.message || ''}`, 'error');
         } finally {
             state.saveInFlight = false;
-            updateSaveButtons(state.kind === 'product' ? '保存模板' : '保存草稿', false);
+            updateSaveButtons('\u4fdd\u5b58\u8349\u7a3f', false);
             if (publishButton) {
                 publishButton.disabled = false;
                 publishButton.textContent = originalLabel;
             }
         }
     });
+
     byId('btn-refresh-rates').onclick = () => {
         void fetchRates(true);
     };
+
     byId('back-to-top').onclick = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -1842,7 +1892,7 @@ function bindGlobal() {
         event.preventDefault();
         event.returnValue = '';
     });
-    updateSaveButtons('保存', false);
+    updateSaveButtons('\u4fdd\u5b58\u8349\u7a3f', false);
 }
 
 async function init() {

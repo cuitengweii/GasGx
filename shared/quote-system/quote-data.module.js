@@ -32,6 +32,9 @@ export const PRODUCT_UI_TEXT_KEYS = Object.freeze([
     'share_button',
     'receiver_placeholder',
 ]);
+export const PRODUCT_UI_ARRAY_KEYS = Object.freeze([
+    'enabled_langs',
+]);
 
 const DEFAULT_SECTION_TITLES = Object.freeze({
     [SECTION_KEYS.MAIN]: {
@@ -72,10 +75,12 @@ export function createLocalizedText(seed = '') {
 }
 
 export function createProductUiText(seed = {}) {
-    return PRODUCT_UI_TEXT_KEYS.reduce((acc, key) => {
+    const base = PRODUCT_UI_TEXT_KEYS.reduce((acc, key) => {
         acc[key] = createLocalizedText(seed?.[key] || '');
         return acc;
     }, {});
+    base.enabled_langs = Array.isArray(seed?.enabled_langs) ? seed.enabled_langs.map((item) => text(item)).filter(Boolean) : [];
+    return base;
 }
 
 export function normalizeLocalizedText(value, fallback = '') {
@@ -94,6 +99,9 @@ export function normalizeProductUiText(value = {}) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return base;
     PRODUCT_UI_TEXT_KEYS.forEach((key) => {
         base[key] = normalizeLocalizedText(value?.[key] || '', '');
+    });
+    PRODUCT_UI_ARRAY_KEYS.forEach((key) => {
+        base[key] = Array.isArray(value?.[key]) ? value[key].map((item) => text(item)).filter(Boolean) : [];
     });
     return base;
 }

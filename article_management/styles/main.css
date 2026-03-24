@@ -455,6 +455,48 @@ textarea {
     color: #89e45a;
 }
 
+.ams-customer-flow-focus .ams-header > div:first-child {
+    display: none;
+}
+
+.ams-customer-flow-focus .ams-header {
+    justify-content: flex-end;
+}
+
+.ams-customer-flow-focus .ams-user > span {
+    display: none;
+}
+
+.ams-sales-inline-user {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    padding: 8px 12px;
+    border: 1px solid rgba(93, 214, 44, 0.24);
+    border-radius: 999px;
+    background: rgba(9, 18, 7, 0.48);
+    color: var(--ams-green);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.ams-sales-note-submit {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+.ams-sales-note-submit .ams-btn {
+    min-width: 104px;
+}
+
+.ams-sales-public-link-block {
+    margin-top: 16px;
+}
+
 .ams-share-poster-modal[hidden] {
     display: none;
 }
@@ -1218,6 +1260,22 @@ textarea {
     font-size: 10px;
 }
 
+.ams-inline-actions-end {
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.ams-quote-customer-list-switches {
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.ams-quote-customer-list-switches .ams-btn {
+    min-height: 34px;
+    padding: 7px 12px;
+    font-size: 11px;
+}
+
 .ams-article-cell {
     display: grid;
     grid-template-columns: 108px 1fr;
@@ -1735,6 +1793,12 @@ textarea {
     font-weight: 600;
 }
 
+.ams-summary-chip > small {
+    color: #97a08f;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
 .ams-summary-chip-link {
     display: grid;
     gap: 8px;
@@ -1929,7 +1993,7 @@ textarea {
 
 .ams-hero-card-compact .ams-quick-actions {
     grid-template-columns: 1fr;
-    gap: 0;
+    gap: 10px;
     align-self: start;
     position: relative;
     z-index: 12;
@@ -2023,7 +2087,7 @@ textarea {
     width: 100%;
     justify-self: stretch;
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 12px;
 }
 
 .ams-quote-product-hero .ams-quick-link {
@@ -3082,7 +3146,13 @@ textarea {
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 10px;
+    align-items: center;
+}
+
+.ams-sales-customer-card-actions .ams-btn {
+    min-height: 34px;
+    padding-inline: 12px;
 }
 
 .ams-sales-customer-card-meta {
@@ -3163,16 +3233,17 @@ textarea {
 }
 
 .ams-sales-customer-stage-chip.is-active {
-    border-color: rgba(101, 219, 53, 0.22);
-    background: rgba(101, 219, 53, 0.08);
+    border-color: rgba(247, 180, 46, 0.3);
+    background: rgba(247, 180, 46, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(247, 180, 46, 0.08);
 }
 
 .ams-sales-customer-stage-chip.is-active strong {
-    color: #eef9e8;
+    color: #ffe7ad;
 }
 
 .ams-sales-customer-stage-chip.is-active span {
-    color: var(--ams-green);
+    color: #ffd66f;
 }
 
 .ams-sales-customer-stage-chip.is-completed {

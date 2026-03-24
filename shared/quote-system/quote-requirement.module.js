@@ -2,10 +2,11 @@ const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.su
 const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
 
 const REQUIREMENT_TYPE_OPTIONS = Object.freeze([
-    { value: 'integrated_mining_power', label: '矿机 + 供电一体化' },
-    { value: 'miner_only', label: '仅矿机需求' },
-    { value: 'power_only', label: '仅供电 / 发电需求' },
-    { value: 'unclear', label: '需要方案推荐' },
+    { value: '', label: '???????' },
+    { value: 'integrated_mining_power', label: '???????????' },
+    { value: 'miner_only', label: '???????????' },
+    { value: 'power_only', label: '??????????' },
+    { value: 'unclear', label: '??????' },
 ]);
 
 const CONTACT_CHANNEL_OPTIONS = Object.freeze([
@@ -255,9 +256,6 @@ const REQUIREMENT_SELECT_OPTIONS = Object.freeze({
         { value: 'unknown', label: '待确认' },
     ],
     power_capacity_band: [
-        { value: 'under_100kw', label: '100kW 以下' },
-        { value: '100_500kw', label: '100kW - 500kW' },
-        { value: '500kw_1mw', label: '500kW - 1MW' },
         { value: '1mw_5mw', label: '1MW - 5MW' },
         { value: 'over_5mw', label: '5MW 以上' },
         { value: '10mw', label: '10MW' },
@@ -357,6 +355,27 @@ function minerBrandLabelMap() {
     return Object.fromEntries(REQUIREMENT_MULTI_OPTIONS.miner_brands.map((item) => [item.value, localize(item.label)]));
 }
 
+const COUNTRY_LABEL_ALIASES = Object.freeze({
+    Bolivia: 'BO',
+    Brunei: 'BN',
+    'Cape Verde': 'CV',
+    'Congo (Congo-Brazzaville)': 'CG',
+    Czechia: 'CZ',
+    Iran: 'IR',
+    Laos: 'LA',
+    Micronesia: 'FM',
+    Moldova: 'MD',
+    North Korea: 'KP',
+    Russia: 'RU',
+    South Korea: 'KR',
+    Syria: 'SY',
+    Taiwan: 'TW',
+    Turkey: 'TR',
+    'Vatican City': 'VA',
+    Venezuela: 'VE',
+    Vietnam: 'VN',
+});
+
 function minerModelOptionsFor(brands = []) {
     const selected = normalizeStringList(brands).filter((brand) => brand !== 'other');
     if (!selected.length) return [];
@@ -371,24 +390,60 @@ function minerModelOptionsFor(brands = []) {
     });
 }
 
+function localizedCountryOptions(locale = state?.locale || 'zh') {
+    const targetLocale = locale === 'zh' ? 'zh-CN' : locale === 'ru' ? 'ru-RU' : 'en-US';
+    let displayNames = null;
+    let reverseMap = null;
+    try {
+        displayNames = new Intl.DisplayNames([targetLocale], { type: 'region' });
+        reverseMap = new Map(
+            Intl.supportedValuesOf('region')
+                .map((code) => [new Intl.DisplayNames(['en-US'], { type: 'region' }).of(code), code])
+                .filter((entry) => entry[0] && entry[1]),
+        );
+    } catch (_error) {
+        return COUNTRY_OPTIONS;
+    }
+    return COUNTRY_OPTIONS.map((item) => {
+        if (!item.value) return { ...item };
+        const code = COUNTRY_LABEL_ALIASES[item.value] || reverseMap.get(item.value);
+        return {
+            ...item,
+            label: code ? (displayNames.of(code) || item.label) : item.label,
+        };
+    });
+}
+
 function minerModelChoiceMarkup(selectedValues = [], brands = [], disabled = false) {
     const options = minerModelOptionsFor(brands);
     if (!options.length) {
         return `<div class="requirement-empty-hint">${esc(localize('请先选择矿机品牌'))}</div>`;
     }
-    const selectedSet = new Set(normalizeStringList(selectedValues));
+    const selectedValue = normalizeStringList(selectedValues)[0] || '';
     return `
-        <div class="requirement-choice-grid is-detailed">
+        <select class="share-select" data-answer-field="miner_model" ${disabled ? 'disabled' : ''}>
+            <option value="">${esc(localize('璇烽€夋嫨鎺ㄨ崘鏈哄瀷'))}</option>
             ${options.map((item) => `
-                <label class="requirement-choice ${selectedSet.has(item.value) ? 'is-active' : ''} ${disabled ? 'is-disabled' : ''}">
-                    <input type="checkbox" data-answer-check="miner_models" value="${esc(item.value)}" ${selectedSet.has(item.value) ? 'checked' : ''} ${disabled ? 'disabled' : ''}>
-                    <span class="requirement-choice-detail">
-                        <strong>${esc(item.model)}</strong>
+                <option value="${esc(item.value)}" ${item.value === selectedValue ? 'selected' : ''}>
+                    ${esc(`${item.model} · ${item.brandLabel} · ${item.hashrate} · ${item.power}`)}
                         <small>${esc(item.brandLabel)} · ${esc(item.hashrate)} · ${esc(item.power)}</small>
-                    </span>
-                </label>
+                </option>
             `).join('')}
-        </div>
+        </select>
+    `;
+}
+
+function minerModelChoiceSelectMarkup(selectedValues = [], brands = [], disabled = false) {
+    const options = minerModelOptionsFor(brands);
+    const selectedValue = normalizeStringList(selectedValues)[0] || '';
+    if (!options.length) {
+        return `<div class="requirement-empty-hint">${esc(localize('请先选择矿机品牌'))}</div>`;
+    }
+    return `
+        <select class="share-select" data-answer-field="miner_model" ${disabled ? 'disabled' : ''}>
+            <option value="">${esc(localize('请选择推荐机型'))}</option>
+            ${options.map((item) => `<option value="${esc(item.value)}" ${item.value === selectedValue ? 'selected' : ''}>${esc(`${item.model} · ${item.brandLabel} · ${item.hashrate} · ${item.power}`)}</option>`).join('')}
+        </select>
     `;
 }
 
@@ -427,6 +482,7 @@ const LABEL_MAP = Object.freeze({
         ru: 'Пожалуйста, заполните выборы исходя из текущего плана закупки или развертывания. После отправки этот запрос станет базовой линией для расчета и дальнейшей работы.',
     },
     '需求类型': { en: 'Requirement Type', ru: 'Тип запроса' },
+    '请选择需求类型': { en: 'Select requirement type', ru: 'Выберите тип запроса' },
     '客户提交时间': { en: 'Submitted At', ru: 'Время отправки' },
     '说明': { en: 'Note', ru: 'Примечание' },
     '这份需求已经提交，目前为只读状态。': { en: 'This request has been submitted and is now read-only.', ru: 'Этот запрос отправлен и теперь доступен только для чтения.' },
@@ -450,8 +506,8 @@ const LABEL_MAP = Object.freeze({
         ru: 'Для первого шага используйте выборы, чтобы уменьшить свободный ввод.',
     },
     '部署模式': { en: 'Deployment Mode', ru: 'Режим развертывания' },
-    '单机算力范围': { en: 'Hashrate per Miner', ru: 'Хэшрейт на майнер' },
-    '单机功耗范围': { en: 'Power per Miner', ru: 'Потребление на майнер' },
+    '矿机算力范围': { en: 'Miner Hashrate Range', ru: 'Диапазон хэшрейта майнера' },
+    '矿机功耗范围': { en: 'Miner Power Range', ru: 'Диапазон энергопотребления майнера' },
     '矿机数量范围': { en: 'Miner Quantity', ru: 'Количество майнеров' },
     '电压 / 频率': { en: 'Voltage / Frequency', ru: 'Напряжение / Частота' },
     '矿机品牌': { en: 'Miner Brands', ru: 'Бренды майнеров' },
@@ -469,6 +525,7 @@ const LABEL_MAP = Object.freeze({
     '每 MW 预算': { en: 'Budget per MW', ru: 'Бюджет на МВт' },
     '期望周期': { en: 'Delivery Timeline', ru: 'Сроки поставки' },
     '认证 / 合规要求': { en: 'Compliance & Certifications', ru: 'Сертификация и соответствие' },
+    '请选择推荐机型': { en: 'Select recommended miner model', ru: 'Выберите рекомендованную модель майнера' },
     '补充说明': { en: 'Additional Notes', ru: 'Дополнительные требования' },
     '只填写必须说明的现场条件、指定机型或其他特殊要求。': {
         en: 'Only add required site constraints, requested models, or special requirements.',
@@ -649,7 +706,7 @@ function normalizeRequirement(row = {}) {
         customer_id: text(row.customer_id),
         title: text(row.title),
         status: text(row.status, 'draft'),
-        requirement_type: text(row.requirement_type, 'integrated_mining_power'),
+        requirement_type: text(row.requirement_type),
         country: text(row.country),
         requester_company: text(row.requester_company || row.customer_company),
         requester_name: text(row.requester_name || row.customer_contact),
@@ -671,7 +728,7 @@ function requirementDraftStorageKey() {
 function buildRequirementPayload(requirement = {}) {
     return {
         title: text(requirement.title),
-        requirement_type: text(requirement.requirement_type, 'integrated_mining_power'),
+        requirement_type: text(requirement.requirement_type),
         country: text(requirement.country),
         requester_company: text(requirement.requester_company),
         requester_name: text(requirement.requester_name),
@@ -867,6 +924,14 @@ function selectOptionsMarkup(options = [], selected = '') {
         .join('');
 }
 
+function localizedCountryOptionsMarkup(selected = '') {
+    return selectOptionsMarkup(localizedCountryOptions(state.locale), selected);
+}
+
+function requirementHeading(requirement = {}) {
+    return text(requirement.requester_company || requirement.requester_name || '', localize('矿机与供电需求收集'));
+}
+
 function choiceChipMarkup(field, options = [], selectedValues = [], disabled = false) {
     const selectedSet = new Set(normalizeStringList(selectedValues));
     return `
@@ -987,8 +1052,8 @@ const REQUIRED_FIELD_LABELS = {
     country: '国家 / 地区',
     requirement_type: '需求类型',
     deployment_mode: '部署模式',
-    miner_hashrate_band: '单机算力范围',
-    miner_power_band: '单机功耗范围',
+    miner_hashrate_band: '矿机算力范围',
+    miner_power_band: '矿机功耗范围',
     miner_quantity_band: '矿机数量范围',
     voltage_frequency: '电压 / 频率',
     miner_brands: '矿机品牌',
@@ -1158,7 +1223,7 @@ function renderApp() {
         requirement.answers.miner_models = filteredModels;
     }
 
-    document.title = `${text(requirement.requester_company || requirement.title || localize('矿机与供电需求收集') || 'Requirement Intake')} | GasGx`;
+    document.title = `${text(requirement.requester_company || requirement.requester_name || localize('矿机与供电需求收集') || 'Requirement Intake')} | GasGx`;
     root().innerHTML = `
         <div class="requirement-page ${locked ? 'is-locked' : ''}">
         <div class="requirement-toolbar">
@@ -1172,12 +1237,15 @@ function renderApp() {
         </div>
         ${locked ? `
             <div class="requirement-watermark" aria-hidden="true">
-                ${Array.from({ length: 6 }).map(() => `
+                ${Array.from({ length: 81 }).map(() => `
                     <span>
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M12 1.75c-2.76 0-5 2.24-5 5v3.25H5.5a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2V12a2 2 0 0 0-2-2H17V6.75c0-2.76-2.24-5-5-5Zm-3 5a3 3 0 1 1 6 0v3.25H9V6.75Zm3 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z"/>
-                        </svg>
-                        ${esc(localize('已存证不可修改'))}
+                        <b>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 1.75c-2.76 0-5 2.24-5 5v3.25H5.5a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2V12a2 2 0 0 0-2-2H17V6.75c0-2.76-2.24-5-5-5Zm-3 5a3 3 0 1 1 6 0v3.25H9V6.75Zm3 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z"/>
+                            </svg>
+                            ${esc(localize('???????'))}
+                        </b>
+                        <small>GasGx</small>
                     </span>
                 `).join('')}
             </div>
@@ -1185,12 +1253,11 @@ function renderApp() {
         <section class="requirement-hero">
             <div class="requirement-hero__copy">
                 <div class="requirement-hero__kicker">GASGX REQUIREMENT INTAKE</div>
-                <h1>${esc(requirement.title || localize('矿机与供电需求收集'))}</h1>
+                <h1>${esc(requirementHeading(requirement))}</h1>
                 <p>${esc(localize('请根据当前这一轮采购或部署计划填写下面的选择题。提交后，这份需求会作为后续报价、跟进和内部协作的统一基线。'))}</p>
             </div>
             <div class="requirement-hero__meta">
                 <div class="requirement-status-chip tone-${esc(statusTone(requirement.status))}">${esc(requirementStatusLabel(requirement.status))}</div>
-                <div class="requirement-hero__meta-line"><strong>${esc(localize('需求类型'))}</strong><span>${esc(optionLabel(REQUIREMENT_TYPE_OPTIONS, requirement.requirement_type))}</span></div>
                 <div class="requirement-hero__meta-line"><strong>${esc(localize('客户提交时间'))}</strong><span>${esc(fmtDate(requirement.submitted_at))}</span></div>
                 <div class="requirement-hero__meta-line"><strong>${esc(localize('说明'))}</strong><span>${esc(localize(locked ? '这份需求已经提交，目前为只读状态。' : '提交后将自动锁定，避免后续报价依据反复变化。'))}</span></div>
             </div>
@@ -1219,22 +1286,24 @@ function renderApp() {
                     <input class="share-input" data-field="requester_email" value="${esc(requirement.requester_email)}" placeholder="customer@example.com" ${locked ? 'disabled' : ''}>
                     ${fieldErrorMarkup('requester_email')}
                 </label>
-                <label class="requirement-field ${state.validationErrors.contact_channel ? 'is-invalid' : ''}" data-required-field="contact_channel">
-                    <span>${esc(localize('联系渠道'))}</span>
-                    <select class="share-select" data-answer-field="contact_channel" ${locked ? 'disabled' : ''}>
-                        ${selectOptionsMarkup(CONTACT_CHANNEL_OPTIONS, answers.contact_channel || 'whatsapp')}
-                    </select>
-                    ${fieldErrorMarkup('contact_channel')}
-                </label>
-                <label class="requirement-field ${state.validationErrors.requester_phone ? 'is-invalid' : ''}" data-required-field="requester_phone">
-                    <span>${esc(localize('账号 / 电话'))}</span>
-                    <input class="share-input" data-field="requester_phone" value="${esc(requirement.requester_phone)}" placeholder="${esc(localize('填写账号或手机号'))}" ${locked ? 'disabled' : ''}>
-                    ${fieldErrorMarkup('requester_phone')}
-                </label>
+                <div class="requirement-field-stack">
+                    <label class="requirement-field ${state.validationErrors.contact_channel ? 'is-invalid' : ''}" data-required-field="contact_channel">
+                        <span>${esc(localize('联系渠道'))}</span>
+                        <select class="share-select" data-answer-field="contact_channel" ${locked ? 'disabled' : ''}>
+                            ${selectOptionsMarkup(CONTACT_CHANNEL_OPTIONS, answers.contact_channel || 'whatsapp')}
+                        </select>
+                        ${fieldErrorMarkup('contact_channel')}
+                    </label>
+                    <label class="requirement-field ${state.validationErrors.requester_phone ? 'is-invalid' : ''}" data-required-field="requester_phone">
+                        <span>${esc(localize('账号 / 电话'))}</span>
+                        <input class="share-input" data-field="requester_phone" value="${esc(requirement.requester_phone)}" placeholder="${esc(localize('填写账号或手机号'))}" ${locked ? 'disabled' : ''}>
+                        ${fieldErrorMarkup('requester_phone')}
+                    </label>
+                </div>
                 <label class="requirement-field ${state.validationErrors.country ? 'is-invalid' : ''}" data-required-field="country">
                     <span>${esc(localize('国家 / 地区'))}</span>
                     <select class="share-select" data-field="country" ${locked ? 'disabled' : ''}>
-                        ${selectOptionsMarkup(COUNTRY_OPTIONS, requirement.country)}
+                        ${localizedCountryOptionsMarkup(requirement.country)}
                     </select>
                     ${fieldErrorMarkup('country')}
                 </label>
@@ -1262,12 +1331,12 @@ function renderApp() {
                     ${fieldErrorMarkup('deployment_mode')}
                 </label>
                 <label class="requirement-field ${state.validationErrors.miner_hashrate_band ? 'is-invalid' : ''}" data-required-field="miner_hashrate_band">
-                    <span>${esc(localize('单机算力范围'))}</span>
+                    <span>${esc(localize('矿机算力范围'))}</span>
                     <select class="share-select" data-answer-field="miner_hashrate_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_hashrate_band, answers.miner_hashrate_band)}</select>
                     ${fieldErrorMarkup('miner_hashrate_band')}
                 </label>
                 <label class="requirement-field ${state.validationErrors.miner_power_band ? 'is-invalid' : ''}" data-required-field="miner_power_band">
-                    <span>${esc(localize('单机功耗范围'))}</span>
+                    <span>${esc(localize('矿机功耗范围'))}</span>
                     <select class="share-select" data-answer-field="miner_power_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_power_band, answers.miner_power_band)}</select>
                     ${fieldErrorMarkup('miner_power_band')}
                 </label>
@@ -1294,7 +1363,7 @@ function renderApp() {
             </div>
             <div class="requirement-field">
                 <span>${esc(localize('推荐机型 (Top 10)'))}</span>
-                ${minerModelChoiceMarkup(filteredModels, answers.miner_brands, locked)}
+                ${minerModelChoiceSelectMarkup(filteredModels, answers.miner_brands, locked)}
             </div>
         </section>
 
@@ -1343,24 +1412,18 @@ function renderApp() {
         </section>
 
         <section class="requirement-card requirement-submit-card">
-            <div class="requirement-submit-copy">
-                <h2>${esc(localize(locked ? '这份需求已经提交' : '提交并锁定本轮需求'))}</h2>
-                <p>${esc(localize(locked ? '如果后续需求变化，请直接联系 GasGx 销售并重新开启新一轮需求单。' : '提交后，这份需求会作为后续报价、跟进和内部协作的统一基线。'))}</p>
-            </div>
-            ${locked ? '' : `
-                <div class="requirement-warning">
-                    <strong>${esc(localize('请最终确认'))}</strong>
-                    <p>${esc(localize('你的需求将直接决定后续的实际报价、配置推荐和交付评估。这个信息非常重要，请慎重填写后再提交。'))}</p>
+            <div class="requirement-submit-main">
+                ${locked ? '' : `
+                    <label class="requirement-confirm">
+                        <input id="requirement-submit-confirm" type="checkbox" ${state.submitConfirmed ? 'checked' : ''}>
+                        <span>${esc(localize('我已确认以上需求信息准确无误，并理解它将直接影响最终报价。'))}</span>
+                    </label>
+                `}
+                <div class="requirement-submit-autosave">
+                    <strong>自动保存</strong>
+                    <span id="requirement-autosave-status">${esc(locked ? '客户已提交，当前公开页为只读状态。' : text(state.autoSaveMessage, '正在等待填写...'))}</span>
+                    <em>最近同步：<span id="requirement-autosave-time">${esc(fmtDate(state.lastAutoSavedAt || requirement.updated_at))}</span></em>
                 </div>
-                <label class="requirement-confirm">
-                    <input id="requirement-submit-confirm" type="checkbox" ${state.submitConfirmed ? 'checked' : ''}>
-                    <span>${esc(localize('我已确认以上需求信息准确无误，并理解它将直接影响最终报价。'))}</span>
-                </label>
-            `}
-            <div class="requirement-submit-autosave">
-                <strong>自动保存</strong>
-                <span id="requirement-autosave-status">${esc(locked ? '客户已提交，当前公开页为只读状态。' : text(state.autoSaveMessage, '正在等待填写...'))}</span>
-                <em>最近同步：<span id="requirement-autosave-time">${esc(fmtDate(state.lastAutoSavedAt || requirement.updated_at))}</span></em>
             </div>
             <div class="requirement-submit-actions">
                 <button id="requirement-submit" type="button" class="btn-glow px-5 py-3 inline-flex items-center gap-2" ${buttonDisabled ? 'disabled' : ''}>
@@ -1412,7 +1475,11 @@ function bindEvents() {
         const apply = () => {
             const field = node.dataset.answerField;
             if (!field) return;
-            requirement.answers[field] = node.value;
+            if (field === 'miner_model') {
+                requirement.answers.miner_models = node.value ? [node.value] : [];
+            } else {
+                requirement.answers[field] = node.value;
+            }
             updateFieldValidation(field);
             syncFieldValidationUI(field);
             queueRequirementAutoSave();
