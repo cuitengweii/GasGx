@@ -3970,13 +3970,13 @@ textarea {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 30px;
-    padding: 0 12px;
+    min-height: 36px;
+    padding: 0 14px;
     border-radius: 999px;
     border: 1px solid rgba(255, 191, 72, 0.2);
     background: rgba(255, 191, 72, 0.1);
     color: #ffd37f;
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -3984,8 +3984,9 @@ textarea {
 
 .ams-sales-stage-guide-title strong {
     color: #fff8eb;
-    font-size: 22px;
-    line-height: 1.1;
+    font-size: 18px;
+    line-height: 1.15;
+    font-weight: 700;
 }
 
 .ams-sales-stage-guide-head p {

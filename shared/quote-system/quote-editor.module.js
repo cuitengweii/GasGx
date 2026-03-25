@@ -1575,13 +1575,21 @@ async function saveProduct(user) {
 
 async function saveInstance(user) {
     const currentStatus = text(state.instance.status || 'draft').toLowerCase();
-    const nextStatus = currentStatus === 'published' ? 'draft' : currentStatus === 'archived' ? 'draft' : 'draft';
+    const nextStatus = currentStatus === 'published'
+        ? 'published'
+        : currentStatus === 'archived'
+            ? 'draft'
+            : 'draft';
+    const nextLastActiveStatus = text(state.instance.last_active_status || currentStatus || 'draft').toLowerCase() === 'published'
+        || nextStatus === 'published'
+        ? 'published'
+        : 'draft';
     const payload = {
         brand_id: state.brand.id,
         product_id: state.instance.product_id || state.product.id,
         public_slug: text(state.instance.public_slug) || createPublicSlug(state.brand.slug, state.product.slug),
         status: nextStatus,
-        last_active_status: nextStatus,
+        last_active_status: nextLastActiveStatus,
         customer_name: state.instance.customer_name,
         receiver_name: state.instance.receiver_name,
         receiver_email: state.instance.receiver_email,

@@ -800,6 +800,7 @@ function renderStaticText() {
 
     const overviewTitle = pickDisplayText(snapshot.brand.overview_title, pickDisplayText(snapshot.product.public_title, snapshot.product.product_code));
     const receiver = text(snapshot.quote.receiver_email || snapshot.quote.receiver_name || snapshot.quote.customer_name, '');
+    const supplier = text(snapshot.brand.supplier_name || snapshot.brand.display_name || snapshot.brand.brand_name || 'GasGx');
 
     byId('f-title').textContent = overviewTitle;
     byId('lbl-receiver').textContent = uiText('receiver_label', 'receiver');
@@ -811,7 +812,7 @@ function renderStaticText() {
     byId('val-receiver').textContent = receiver;
     byId('val-receiver').setAttribute('data-placeholder', uiText('receiver_placeholder', 'receiverPlaceholder'));
     byId('footer-note').innerHTML = pickDisplayText(snapshot.brand.footer_note, '');
-    byId('btn-text-send').textContent = uiText('send_button', 'send');
+    byId('btn-text-send')?.replaceChildren(document.createTextNode(uiText('send_button', 'send')));
     byId('btn-text-share').textContent = isMobileViewport()
         ? (state.currentLang === 'zh' ? '分享' : 'Share')
         : uiText('share_button', 'share');
