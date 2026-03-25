@@ -190,3 +190,44 @@ News footer 若未取到统一站点壳配置：
 - Requirement collection and quote authoring are now separate runtimes.
 - Admin no longer serves as the primary requirement-entry UI for customer answers; it serves as the orchestration shell around customer submission.
 - Quote generation is gated behind submitted requirement state so the pipeline keeps one explicit handoff point from customer demand capture into pricing work.
+
+## 2026-03-25 sales customer-flow architecture update
+
+### Rendering boundary
+
+- `article_management/modules/quote-system.module.js` now owns customer-flow page structure and stage-detail rendering.
+- `article_management/modules/sales.bootstrap.js` is being reduced to shell-only responsibilities:
+  - entry loading
+  - page-mode classes
+  - shared sales-admin frame behavior
+- Business DOM ownership is no longer intended to be split across template render and bootstrap-time mutation.
+
+### Quote-stage rendering layers
+
+- Quote-stage routing now passes through explicit helper layers:
+  - `quoteStageRecord(...)`
+  - `quoteStageDetailRenderer(...)`
+  - `quoteDraftStageMarkup(...)`
+  - `quoteConfirmedStageMarkup(...)`
+- Shared quote-stage fragments such as base meta and share-poster modal markup were also split into helpers so draft and confirmed states can evolve independently.
+
+### Execution-stage rendering layers
+
+- Execution stages now share a three-level rendering stack:
+  - outer shell: `executionStageCardMarkup(...)`
+  - action strip: `executionStageActionsMarkup(...)`
+  - field primitives:
+    - `executionStageFieldMarkup(...)`
+    - `executionStageFieldGridMarkup(...)`
+    - `executionStageTextareaFieldMarkup(...)`
+- Stage-specific functions still exist, but they now mostly compose these shared helpers instead of duplicating container structure.
+
+### Event-layer transition state
+
+- The event layer now has three extracted binders:
+  - `bindSalesRequirementActions(...)`
+  - `bindSalesQuoteActions(...)`
+  - `bindSalesExecutionActions(...)`
+- The final architectural step is still pending:
+  - `bindSalesStageListActions(...)` must be reduced to a thin dispatcher that delegates to those helpers
+  - the old monolithic binding body has not yet been removed

@@ -334,3 +334,62 @@
    - admin review
    - quote draft generation
 3. Decide whether submitted requirements should stay immutable forever, or whether the next round should create a follow-up requirement record/version instead of editing the same row.
+
+## 2026-03-25 sales customer-flow refactor update
+
+### Latest milestone
+
+- Customer-flow layout ownership has been pulled back into `article_management/modules/quote-system.module.js` so the sales page no longer depends on bootstrap-time DOM surgery to become single-column.
+- Quote-stage rendering now goes through explicit helpers and stage dispatch:
+  - `quoteStageRecord(...)`
+  - `quoteStageDetailRenderer(...)`
+  - `quoteDraftStageMarkup(...)`
+  - `quoteConfirmedStageMarkup(...)`
+- Execution-stage rendering now shares one card/action/field helper stack:
+  - `executionStageCardMarkup(...)`
+  - `executionStageActionsMarkup(...)`
+  - `executionStageFieldMarkup(...)`
+  - `executionStageFieldGridMarkup(...)`
+  - `executionStageTextareaFieldMarkup(...)`
+
+### Effective behaviors
+
+- `sales.bootstrap.js` now behaves as a thin shell for the sales admin runtime; it should only handle entry wiring, shell state, and page-level mode toggles.
+- `quote-customer-flow` now renders as a single-column workflow view directly from the business module, instead of rendering a two-column view first and deleting one side later.
+- Execution stages now use one shared presentation contract for:
+  - card shell
+  - top actions
+  - field grid
+  - textarea blocks
+- Cache-busting query versions were bumped again in the sales entry so operators stop seeing stale bootstrap/module code after refactor changes.
+
+### Solved in this thread
+
+- Removed reliance on `sales.bootstrap.js` to delete or relocate customer-flow business DOM after render.
+- Normalized quote and execution stage detail pages into clearer renderer boundaries.
+- Recovered customer-flow controls that had appeared to "disappear" because template output and bootstrap-time DOM mutations were fighting each other.
+- Continued the event-layer extraction by introducing three scoped binder helpers:
+  - `bindSalesRequirementActions(...)`
+  - `bindSalesQuoteActions(...)`
+  - `bindSalesExecutionActions(...)`
+
+### Unfinished
+
+- `bindSalesStageListActions(...)` is still not fully collapsed into a pure dispatcher; the old monolithic event-binding body still exists alongside the newly extracted helper binders.
+- This means the event layer is in a safe but partial refactor state:
+  - helper extraction landed
+  - dispatcher cleanup is still pending
+- A final regression pass is still needed after the binder dispatcher cleanup to confirm:
+  - requirement flow
+  - quote draft flow
+  - quote confirmation flow
+  - execution-stage save/advance actions
+
+### Next Step
+
+1. Replace the remaining monolithic `bindSalesStageListActions(...)` body with thin dispatch calls to:
+   - `bindSalesRequirementActions(...)`
+   - `bindSalesQuoteActions(...)`
+   - `bindSalesExecutionActions(...)`
+2. Re-run end-to-end verification for customer-flow stages after the dispatcher cleanup.
+3. Keep `sales.bootstrap.js` limited to shell responsibilities and reject any new business-DOM mutation there.

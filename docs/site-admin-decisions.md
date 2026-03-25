@@ -145,3 +145,29 @@
 - Requirement rows in `draft` state are considered invitation / waiting-link state, not confirmed demand.
 - Quote generation is allowed only once the requirement reaches `submitted` or later business states.
 - This keeps downstream quote, follow-up, and publication activity anchored to one explicit customer-submitted demand baseline.
+
+## 2026-03-25 sales customer-flow decisions
+
+### Decision 20: Customer-flow business layout belongs to `quote-system.module.js`
+
+- The customer-flow page should be structurally rendered by the feature module that owns the workflow, not by `sales.bootstrap.js`.
+- `sales.bootstrap.js` may still control entry wiring or page-mode classes, but it should not delete side panels, relocate business buttons, or rebuild workflow sections after render.
+- This was finalized after repeated regressions where the template already contained the right controls, but bootstrap-time DOM manipulation removed or displaced them in live pages.
+
+### Decision 21: Execution-stage pages should share one shell/action/field rendering model
+
+- `contract`, `deposit`, `production`, `factory_acceptance`, `balance`, `shipping`, `deployment`, and `support` should no longer hand-roll full card shells independently.
+- The execution-stage family now follows one shared rendering model:
+  - shared card shell
+  - shared top action strip
+  - shared field-grid helpers
+  - shared textarea helper
+- Stage-specific files should only provide stage copy and stage-specific field definitions, so later business tweaks do not require editing multiple duplicated layouts.
+
+### Decision 22: Event-layer refactors should extract scoped binders before collapsing the root dispatcher
+
+- For large sales workflow binders, the safe order is:
+  1. extract scoped helpers with real bodies
+  2. verify the helpers are stable
+  3. replace the root binder with dispatch-only wiring
+- This order reduces the risk of breaking the workflow in one large patch while still lowering complexity over time.

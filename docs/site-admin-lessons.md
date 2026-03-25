@@ -110,3 +110,42 @@ How to prevent recurrence:
   - who edits it
   - what counts as final submission
   - what downstream action becomes allowed only after that submission
+
+## Lesson 7: Bootstrap-side DOM surgery plus browser cache creates false negatives during admin UI fixes
+
+Error symptom:
+- Controls existed in `quote-system.module.js` template output, but operators still saw them missing or misplaced on the live customer-flow page.
+- Refreshing the page sometimes appeared to do nothing even after the template had already been corrected.
+
+Root cause:
+- `sales.bootstrap.js` was still mutating customer-flow business DOM after render.
+- At the same time, stale cached bootstrap/module assets made the page continue to run old relocation/removal logic even after source fixes landed.
+
+How to detect earlier:
+- When a UI control is visibly present in template source but absent on screen, inspect post-render DOM mutations before assuming the template is still wrong.
+- Compare the loaded module version string in the page entry with the latest local edit before spending more time on business logic.
+
+How to prevent recurrence:
+- Keep business DOM ownership inside the feature module and leave bootstrap files to shell concerns only.
+- When untangling a DOM-mutation bug, pair the structural fix with an explicit cache-busting version bump so the browser cannot keep executing stale code.
+
+## Lesson 8: Large event-binder refactors should be finished in two explicit phases
+
+Error symptom:
+- Helper binders for requirement, quote, and execution actions were successfully extracted, but the root binder still retained the old monolithic body.
+- This left the codebase in a partial migration state that was safer than a broken rewrite, but still more complex than intended.
+
+Root cause:
+- The source function was too large to replace cleanly in one patch, and trying to collapse extraction plus dispatcher replacement at once increased patch fragility.
+
+How to detect earlier:
+- After extracting helpers from a large binder, explicitly verify whether the root function has actually become a dispatcher or still contains the original body.
+- Treat "helpers exist" and "dispatcher cleanup is complete" as two different checkpoints.
+
+How to prevent recurrence:
+- Use a staged refactor plan for oversized event functions:
+  1. extract helpers
+  2. verify helpers
+  3. replace root binder with dispatch-only wiring
+  4. run a full flow regression pass
+- Record the partial-state checkpoint in the state doc immediately so the next thread does not mistake helper extraction for a finished event-layer refactor.

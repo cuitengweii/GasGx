@@ -11273,6 +11273,51 @@ function quoteTermsCardMarkup(record = {}) {
     `;
 }
 
+function executionStageFieldMarkup(record = {}, field = {}) {
+    const {
+        key = '',
+        label = '',
+        type = 'text',
+        step = '',
+        placeholder = '',
+        defaultValue = '',
+    } = field;
+    const typeAttr = type === 'number'
+        ? `type="number"${step ? ` step="${esc(step)}"` : ' step="0.01"'}`
+        : type === 'date'
+            ? 'type="date"'
+            : 'type="text"';
+    return `
+        <div class="ams-field">
+            <label>${esc(label)}</label>
+            <input class="ams-input" ${typeAttr} data-sales-flow-stage-meta="${esc(key)}" value="${esc(stageMetaValue(record, key, defaultValue))}" placeholder="${esc(placeholder)}">
+        </div>
+    `;
+}
+
+function executionStageFieldGridMarkup(record = {}, fields = []) {
+    return `
+        <div class="ams-site-field-grid ams-site-field-grid-wide">
+            ${fields.map((field) => executionStageFieldMarkup(record, field)).join('')}
+        </div>
+    `;
+}
+
+function executionStageTextareaFieldMarkup(record = {}, field = {}) {
+    const {
+        key = '',
+        label = '',
+        rows = 4,
+        placeholder = '',
+    } = field;
+    return `
+        <div class="ams-field">
+            <label>${esc(label)}</label>
+            <textarea class="ams-textarea" rows="${esc(String(rows))}" data-sales-flow-stage-meta="${esc(key)}" placeholder="${esc(placeholder)}">${esc(stageMetaValue(record, key))}</textarea>
+        </div>
+    `;
+}
+
 function quoteStageRecord(stageKey = '', deal = null) {
     return stageRecordByKey(stageKey, moduleState.dealStageRecords) || createDealStageRecord({
         deal_id: deal?.id,
@@ -11452,41 +11497,37 @@ function quoteFlowMarkup(stageKey = '', deal = null, instance = {}) {
 function contractStageMarkup(stage = {}, deal = null, record = {}) {
     return `
         <div class="ams-stage-detail-stack">
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
-                <div class="ams-section-head">
-                    <div>
-                        <h3>${esc(stage.label)}</h3>
-                        <p>向客户递送合同、记录客户返修意见，合同确认无误后归档到这里，再推进到定金付款。</p>
+            ${executionStageCardMarkup(stage, {
+                intro: '向客户递送合同、记录客户返修意见，合同确认无误后归档到这里，再推进到定金付款。',
+                actionsMarkup: executionStageActionsMarkup('保存合同信息', '确认合同并进入定金付款'),
+                metaMarkup: `
+                    <div class="ams-quote-meta-grid">
+                        ${stagePublicEntryChipMarkup(stage.key, record, deal, {
+                            openLabel: '打开客户合同确认单',
+                            copyLabel: '复制确认链接',
+                            summary: '合同确认入口会带上合同确认说明、流程节点说明以及 GasGx 品牌信息。',
+                        })}
                     </div>
-                    <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存合同信息</button>
-                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认合同并进入定金付款</button>
+                `,
+                bodyMarkup: `
+                    <div class="ams-site-field-grid ams-site-field-grid-wide">
+                        <div class="ams-field"><label>合同编号</label><input class="ams-input" data-sales-flow-stage-meta="contract_number" value="${esc(stageMetaValue(record, 'contract_number'))}" placeholder="CT-2026-001"></div>
+                        <div class="ams-field"><label>签约日期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="contract_date" value="${esc(stageMetaValue(record, 'contract_date'))}"></div>
+                        <div class="ams-field"><label>合同金额</label><input class="ams-input" type="number" step="0.01" data-sales-flow-stage-meta="contract_amount" value="${esc(stageMetaValue(record, 'contract_amount'))}" placeholder="0"></div>
+                        <div class="ams-field"><label>币种</label><input class="ams-input" data-sales-flow-stage-meta="contract_currency" value="${esc(stageMetaValue(record, 'contract_currency', 'USD'))}" placeholder="USD"></div>
+                        <div class="ams-field"><label>合同归档链接</label><input class="ams-input" data-sales-flow-stage-meta="contract_link" value="${esc(stageMetaValue(record, 'contract_link'))}" placeholder="https://..."></div>
+                        <div class="ams-field"><label>客户确认结果</label><input class="ams-input" data-sales-flow-stage-meta="contract_review_result" value="${esc(stageMetaValue(record, 'contract_review_result'))}" placeholder="已确认 / 待修订 / 补充条款"></div>
                     </div>
-                </div>
-                <div class="ams-quote-meta-grid">
-                    ${stagePublicEntryChipMarkup(stage.key, record, deal, {
-                        openLabel: '打开客户合同确认单',
-                        copyLabel: '复制确认链接',
-                        summary: '合同确认入口会带上合同确认说明、流程节点说明以及 GasGx 品牌信息。',
-                    })}
-                </div>
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>合同编号</label><input class="ams-input" data-sales-flow-stage-meta="contract_number" value="${esc(stageMetaValue(record, 'contract_number'))}" placeholder="CT-2026-001"></div>
-                    <div class="ams-field"><label>签约日期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="contract_date" value="${esc(stageMetaValue(record, 'contract_date'))}"></div>
-                    <div class="ams-field"><label>合同金额</label><input class="ams-input" type="number" step="0.01" data-sales-flow-stage-meta="contract_amount" value="${esc(stageMetaValue(record, 'contract_amount'))}" placeholder="0"></div>
-                    <div class="ams-field"><label>币种</label><input class="ams-input" data-sales-flow-stage-meta="contract_currency" value="${esc(stageMetaValue(record, 'contract_currency', 'USD'))}" placeholder="USD"></div>
-                    <div class="ams-field"><label>合同归档链接</label><input class="ams-input" data-sales-flow-stage-meta="contract_link" value="${esc(stageMetaValue(record, 'contract_link'))}" placeholder="https://..."></div>
-                    <div class="ams-field"><label>客户确认结果</label><input class="ams-input" data-sales-flow-stage-meta="contract_review_result" value="${esc(stageMetaValue(record, 'contract_review_result'))}" placeholder="已确认 / 待修订 / 补充条款"></div>
-                </div>
-                <div class="ams-field">
-                    <label>从确认报价继承的商务条款</label>
-                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="quote_terms" placeholder="这里承接确认报价节点中的首付款、交付周期、服务边界和其他约定。">${esc(stageMetaValue(record, 'quote_terms'))}</textarea>
-                </div>
-                <div class="ams-field">
-                    <label>合同归档说明</label>
-                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="contract_archive_note" placeholder="记录客户最终回传的合同版本、修改点摘要、归档位置和内部确认结论。">${esc(stageMetaValue(record, 'contract_archive_note'))}</textarea>
-                </div>
-            </section>
+                    <div class="ams-field">
+                        <label>从确认报价继承的商务条款</label>
+                        <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="quote_terms" placeholder="这里承接确认报价节点中的首付款、交付周期、服务边界和其他约定。">${esc(stageMetaValue(record, 'quote_terms'))}</textarea>
+                    </div>
+                    <div class="ams-field">
+                        <label>合同归档说明</label>
+                        <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="contract_archive_note" placeholder="记录客户最终回传的合同版本、修改点摘要、归档位置和内部确认结论。">${esc(stageMetaValue(record, 'contract_archive_note'))}</textarea>
+                    </div>
+                `,
+            })}
             ${stageCommunicationSectionMarkup(stage.key, record, {
                 title: '合同沟通记录',
                 help: '记录合同条款往返修改、客户问题、法务确认和最终归档依据。',
@@ -11498,28 +11539,23 @@ function contractStageMarkup(stage = {}, deal = null, record = {}) {
 function depositStageMarkup(stage = {}, deal = null, record = {}) {
     return `
         <div class="ams-stage-detail-stack">
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
-                <div class="ams-section-head">
-                    <div>
-                        <h3>${esc(stage.label)}</h3>
-                        <p>跟进客户定金支付、核对电子回单或付款证明，确认到账后推进到排产安排。</p>
-                    </div>
-                    <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存付款跟进</button>
-                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认定金到账并进入排产</button>
-                    </div>
-                </div>
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>应收定金</label><input class="ams-input" type="number" step="0.01" data-sales-flow-stage-meta="deposit_expected" value="${esc(stageMetaValue(record, 'deposit_expected'))}" placeholder="0"></div>
-                    <div class="ams-field"><label>实收定金</label><input class="ams-input" type="number" step="0.01" data-sales-flow-stage-meta="deposit_received" value="${esc(stageMetaValue(record, 'deposit_received'))}" placeholder="0"></div>
-                    <div class="ams-field"><label>到账日期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="deposit_received_at" value="${esc(stageMetaValue(record, 'deposit_received_at'))}"></div>
-                    <div class="ams-field"><label>付款凭证链接 / 回单号</label><input class="ams-input" data-sales-flow-stage-meta="deposit_reference" value="${esc(stageMetaValue(record, 'deposit_reference'))}" placeholder="银行回单链接 / 流水号 / 图片地址"></div>
-                </div>
-                <div class="ams-field">
-                    <label>到账核对说明</label>
-                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="deposit_review_note" placeholder="记录客户打款渠道、到账异常、催款结果和核对结论。">${esc(stageMetaValue(record, 'deposit_review_note'))}</textarea>
-                </div>
-            </section>
+            ${executionStageCardMarkup(stage, {
+                intro: '跟进客户定金支付、核对电子回单或付款证明，确认到账后推进到排产安排。',
+                actionsMarkup: executionStageActionsMarkup('保存付款跟进', '确认定金到账并进入排产'),
+                bodyMarkup: `
+                    ${executionStageFieldGridMarkup(record, [
+                        { key: 'deposit_expected', label: '应收定金', type: 'number', placeholder: '0' },
+                        { key: 'deposit_received', label: '实收定金', type: 'number', placeholder: '0' },
+                        { key: 'deposit_received_at', label: '到账日期', type: 'date' },
+                        { key: 'deposit_reference', label: '付款凭证链接 / 回单号', placeholder: '银行回单链接 / 流水号 / 图片地址' },
+                    ])}
+                    ${executionStageTextareaFieldMarkup(record, {
+                        key: 'deposit_review_note',
+                        label: '到账核对说明',
+                        placeholder: '记录客户打款渠道、到账异常、催款结果和核对结论。',
+                    })}
+                `,
+            })}
             ${stageCommunicationSectionMarkup(stage.key, record, {
                 title: '定金沟通记录',
                 help: '记录催款、付款证明回传、到账确认和异常处理过程。',
@@ -11531,39 +11567,34 @@ function depositStageMarkup(stage = {}, deal = null, record = {}) {
 function productionStageMarkup(stage = {}, deal = null, record = {}) {
     return `
         <div class="ams-stage-detail-stack">
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
-                <div class="ams-section-head">
-                    <div>
-                        <h3>${esc(stage.label)}</h3>
-                        <p>按生产流程更新集装箱、发电机、矿箱模块等环节状态，记录工期和是否延误，并保留通知客户的方式。</p>
-                    </div>
-                    <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存排产进度</button>
-                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">通知客户验收并进入出厂验收</button>
-                    </div>
-                </div>
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>工厂 / 产线</label><input class="ams-input" data-sales-flow-stage-meta="factory_name" value="${esc(stageMetaValue(record, 'factory_name'))}" placeholder="Factory A"></div>
-                    <div class="ams-field"><label>批次</label><input class="ams-input" data-sales-flow-stage-meta="production_batch" value="${esc(stageMetaValue(record, 'production_batch'))}" placeholder="Batch-01"></div>
-                    <div class="ams-field"><label>开始时间</label><input class="ams-input" type="date" data-sales-flow-stage-meta="production_start_at" value="${esc(stageMetaValue(record, 'production_start_at'))}"></div>
-                    <div class="ams-field"><label>预计完工</label><input class="ams-input" type="date" data-sales-flow-stage-meta="production_eta" value="${esc(stageMetaValue(record, 'production_eta'))}"></div>
-                    <div class="ams-field"><label>工期状态</label><input class="ams-input" data-sales-flow-stage-meta="production_schedule_status" value="${esc(stageMetaValue(record, 'production_schedule_status'))}" placeholder="正常 / 延误 / 风险"></div>
-                    <div class="ams-field"><label>延误说明</label><input class="ams-input" data-sales-flow-stage-meta="production_delay_reason" value="${esc(stageMetaValue(record, 'production_delay_reason'))}" placeholder="如有延误，请写明原因"></div>
-                </div>
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>集装箱模块</label><input class="ams-input" data-sales-flow-stage-meta="module_container_status" value="${esc(stageMetaValue(record, 'module_container_status'))}" placeholder="待下料 / 生产中 / 完成"></div>
-                    <div class="ams-field"><label>发电机模块</label><input class="ams-input" data-sales-flow-stage-meta="module_generator_status" value="${esc(stageMetaValue(record, 'module_generator_status'))}" placeholder="待采购 / 安装中 / 完成"></div>
-                    <div class="ams-field"><label>矿箱模块</label><input class="ams-input" data-sales-flow-stage-meta="module_mining_box_status" value="${esc(stageMetaValue(record, 'module_mining_box_status'))}" placeholder="待装配 / 调试中 / 完成"></div>
-                </div>
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>通知客户方式</label><input class="ams-input" data-sales-flow-stage-meta="customer_notify_channels" value="${esc(stageMetaValue(record, 'customer_notify_channels', '邮箱 / WhatsApp'))}" placeholder="邮箱 / WhatsApp / 电话"></div>
-                    <div class="ams-field"><label>通知客户邮箱</label><input class="ams-input" data-sales-flow-stage-meta="customer_notify_email" value="${esc(stageMetaValue(record, 'customer_notify_email'))}" placeholder="customer@example.com"></div>
-                </div>
-                <div class="ams-field">
-                    <label>排产与验收通知说明</label>
-                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="production_notice_note" placeholder="记录工期结论、延期原因、发给客户的邮件/通知摘要，以及何时邀请客户验收。">${esc(stageMetaValue(record, 'production_notice_note'))}</textarea>
-                </div>
-            </section>
+            ${executionStageCardMarkup(stage, {
+                intro: '按生产流程更新集装箱、发电机、矿箱模块等环节状态，记录工期和是否延误，并保留通知客户的方式。',
+                actionsMarkup: executionStageActionsMarkup('保存排产进度', '通知客户验收并进入出厂验收'),
+                bodyMarkup: `
+                    ${executionStageFieldGridMarkup(record, [
+                        { key: 'factory_name', label: '工厂 / 产线', placeholder: 'Factory A' },
+                        { key: 'production_batch', label: '批次', placeholder: 'Batch-01' },
+                        { key: 'production_start_at', label: '开始时间', type: 'date' },
+                        { key: 'production_eta', label: '预计完工', type: 'date' },
+                        { key: 'production_schedule_status', label: '工期状态', placeholder: '正常 / 延误 / 风险' },
+                        { key: 'production_delay_reason', label: '延误说明', placeholder: '如有延误，请写明原因' },
+                    ])}
+                    ${executionStageFieldGridMarkup(record, [
+                        { key: 'module_container_status', label: '集装箱模块', placeholder: '待下料 / 生产中 / 完成' },
+                        { key: 'module_generator_status', label: '发电机模块', placeholder: '待采购 / 安装中 / 完成' },
+                        { key: 'module_mining_box_status', label: '矿箱模块', placeholder: '待装配 / 调试中 / 完成' },
+                    ])}
+                    ${executionStageFieldGridMarkup(record, [
+                        { key: 'customer_notify_channels', label: '通知客户方式', defaultValue: '邮箱 / WhatsApp', placeholder: '邮箱 / WhatsApp / 电话' },
+                        { key: 'customer_notify_email', label: '通知客户邮箱', placeholder: 'customer@example.com' },
+                    ])}
+                    ${executionStageTextareaFieldMarkup(record, {
+                        key: 'production_notice_note',
+                        label: '排产与验收通知说明',
+                        placeholder: '记录工期结论、延期原因、发给客户的邮件/通知摘要，以及何时邀请客户验收。',
+                    })}
+                `,
+            })}
             ${stageCommunicationSectionMarkup(stage.key, record, {
                 title: '排产沟通记录',
                 help: '记录排产确认、工期变化、延期说明、发给客户的通知和验收预约。',
@@ -11575,35 +11606,32 @@ function productionStageMarkup(stage = {}, deal = null, record = {}) {
 function factoryAcceptanceStageMarkup(stage = {}, deal = null, record = {}) {
     return `
         <div class="ams-stage-detail-stack">
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
-                <div class="ams-section-head">
-                    <div>
-                        <h3>${esc(stage.label)}</h3>
-                        <p>支持上传纸质验收单图片，或发给客户线上验收确认入口。客户完成验收后，再推进到尾款确认。</p>
+            ${executionStageCardMarkup(stage, {
+                intro: '支持上传纸质验收单图片，或发给客户线上验收确认入口。客户完成验收后，再推进到尾款确认。',
+                actionsMarkup: executionStageActionsMarkup('保存验收信息', '确认验收完成并进入尾款确认'),
+                metaMarkup: `
+                    <div class="ams-quote-meta-grid">
+                        ${stagePublicEntryChipMarkup(stage.key, record, deal, {
+                            openLabel: '打开线上验收确认单',
+                            copyLabel: '复制确认链接',
+                            summary: '验收确认入口会带上验收说明、结果回传指引以及 GasGx 品牌信息。',
+                        })}
                     </div>
-                    <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存验收信息</button>
-                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认验收完成并进入尾款确认</button>
-                    </div>
-                </div>
-                <div class="ams-quote-meta-grid">
-                    ${stagePublicEntryChipMarkup(stage.key, record, deal, {
-                        openLabel: '打开线上验收确认单',
-                        copyLabel: '复制确认链接',
-                        summary: '验收确认入口会带上验收说明、结果回传指引以及 GasGx 品牌信息。',
+                `,
+                bodyMarkup: `
+                    ${executionStageFieldGridMarkup(record, [
+                        { key: 'fat_date', label: '验收日期', type: 'date' },
+                        { key: 'fat_result', label: '验收结果', placeholder: '通过 / 待整改' },
+                        { key: 'acceptance_image_link', label: '纸质验收单图片链接', placeholder: 'https://...' },
+                        { key: 'acceptance_form_link', label: '线上验收确认链接', placeholder: 'https://...' },
+                    ])}
+                    ${executionStageTextareaFieldMarkup(record, {
+                        key: 'fat_summary',
+                        label: '验收摘要',
+                        placeholder: '记录客户现场验收结论、遗留问题和是否允许进入尾款确认。',
                     })}
-                </div>
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>验收日期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="fat_date" value="${esc(stageMetaValue(record, 'fat_date'))}"></div>
-                    <div class="ams-field"><label>验收结果</label><input class="ams-input" data-sales-flow-stage-meta="fat_result" value="${esc(stageMetaValue(record, 'fat_result'))}" placeholder="通过 / 待整改"></div>
-                    <div class="ams-field"><label>纸质验收单图片链接</label><input class="ams-input" data-sales-flow-stage-meta="acceptance_image_link" value="${esc(stageMetaValue(record, 'acceptance_image_link'))}" placeholder="https://..."></div>
-                    <div class="ams-field"><label>线上验收确认链接</label><input class="ams-input" data-sales-flow-stage-meta="acceptance_form_link" value="${esc(stageMetaValue(record, 'acceptance_form_link'))}" placeholder="https://..."></div>
-                </div>
-                <div class="ams-field">
-                    <label>验收摘要</label>
-                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="fat_summary" placeholder="记录客户现场验收结论、遗留问题和是否允许进入尾款确认。">${esc(stageMetaValue(record, 'fat_summary'))}</textarea>
-                </div>
-            </section>
+                `,
+            })}
             ${stageCommunicationSectionMarkup(stage.key, record, {
                 title: '验收沟通记录',
                 help: '记录客户验收安排、纸质单回传、线上确认单进度和整改结论。',
@@ -11615,28 +11643,23 @@ function factoryAcceptanceStageMarkup(stage = {}, deal = null, record = {}) {
 function balanceStageMarkup(stage = {}, deal = null, record = {}) {
     return `
         <div class="ams-stage-detail-stack">
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
-                <div class="ams-section-head">
-                    <div>
-                        <h3>${esc(stage.label)}</h3>
-                        <p>确认客户尾款金额、到账结果和尾款回单。尾款确认后，销售线推进到物流运输。</p>
-                    </div>
-                    <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存尾款信息</button>
-                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认尾款并进入物流运输</button>
-                    </div>
-                </div>
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>应收尾款</label><input class="ams-input" type="number" step="0.01" data-sales-flow-stage-meta="balance_expected" value="${esc(stageMetaValue(record, 'balance_expected'))}" placeholder="0"></div>
-                    <div class="ams-field"><label>确认金额</label><input class="ams-input" type="number" step="0.01" data-sales-flow-stage-meta="balance_confirmed_amount" value="${esc(stageMetaValue(record, 'balance_confirmed_amount'))}" placeholder="0"></div>
-                    <div class="ams-field"><label>确认日期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="balance_confirmed_at" value="${esc(stageMetaValue(record, 'balance_confirmed_at'))}"></div>
-                    <div class="ams-field"><label>尾款凭证</label><input class="ams-input" data-sales-flow-stage-meta="balance_reference" value="${esc(stageMetaValue(record, 'balance_reference'))}" placeholder="银行回单链接 / 流水号"></div>
-                </div>
-                <div class="ams-field">
-                    <label>尾款确认说明</label>
-                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="balance_note" placeholder="记录尾款催收、客户确认、到账异常和财务核对结果。">${esc(stageMetaValue(record, 'balance_note'))}</textarea>
-                </div>
-            </section>
+            ${executionStageCardMarkup(stage, {
+                intro: '确认客户尾款金额、到账结果和尾款回单。尾款确认后，销售线推进到物流运输。',
+                actionsMarkup: executionStageActionsMarkup('保存尾款信息', '确认尾款并进入物流运输'),
+                bodyMarkup: `
+                    ${executionStageFieldGridMarkup(record, [
+                        { key: 'balance_expected', label: '应收尾款', type: 'number', placeholder: '0' },
+                        { key: 'balance_confirmed_amount', label: '确认金额', type: 'number', placeholder: '0' },
+                        { key: 'balance_confirmed_at', label: '确认日期', type: 'date' },
+                        { key: 'balance_reference', label: '尾款凭证', placeholder: '银行回单链接 / 流水号' },
+                    ])}
+                    ${executionStageTextareaFieldMarkup(record, {
+                        key: 'balance_note',
+                        label: '尾款确认说明',
+                        placeholder: '记录尾款催收、客户确认、到账异常和财务核对结果。',
+                    })}
+                `,
+            })}
             ${stageCommunicationSectionMarkup(stage.key, record, {
                 title: '尾款沟通记录',
                 help: '记录尾款催收、客户确认、付款凭证和异常处理过程。',
@@ -11648,30 +11671,25 @@ function balanceStageMarkup(stage = {}, deal = null, record = {}) {
 function shippingStageMarkup(stage = {}, deal = null, record = {}) {
     return `
         <div class="ams-stage-detail-stack">
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
-                <div class="ams-section-head">
-                    <div>
-                        <h3>${esc(stage.label)}</h3>
-                        <p>记录承运商、运单号和到货预估，并保留发运通知客户的方式。物流确认后进入到场部署。</p>
-                    </div>
-                    <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存物流信息</button>
-                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认发运并进入到场部署</button>
-                    </div>
-                </div>
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>承运商</label><input class="ams-input" data-sales-flow-stage-meta="shipping_carrier" value="${esc(stageMetaValue(record, 'shipping_carrier'))}" placeholder="海运代理 / 物流公司"></div>
-                    <div class="ams-field"><label>运单号</label><input class="ams-input" data-sales-flow-stage-meta="shipping_tracking_no" value="${esc(stageMetaValue(record, 'shipping_tracking_no'))}" placeholder="Tracking No."></div>
-                    <div class="ams-field"><label>发运时间</label><input class="ams-input" type="date" data-sales-flow-stage-meta="shipping_departed_at" value="${esc(stageMetaValue(record, 'shipping_departed_at'))}"></div>
-                    <div class="ams-field"><label>预计到达</label><input class="ams-input" type="date" data-sales-flow-stage-meta="shipping_eta" value="${esc(stageMetaValue(record, 'shipping_eta'))}"></div>
-                    <div class="ams-field"><label>通知客户方式</label><input class="ams-input" data-sales-flow-stage-meta="shipping_notify_channels" value="${esc(stageMetaValue(record, 'shipping_notify_channels', '邮箱 / WhatsApp'))}" placeholder="邮箱 / WhatsApp / 电话"></div>
-                    <div class="ams-field"><label>通知摘要</label><input class="ams-input" data-sales-flow-stage-meta="shipping_notice_summary" value="${esc(stageMetaValue(record, 'shipping_notice_summary'))}" placeholder="已发送发运通知 / 待通知"></div>
-                </div>
-                <div class="ams-field">
-                    <label>物流说明</label>
-                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="shipping_note" placeholder="记录发运方式、客户通知、在途异常和预计到场安排。">${esc(stageMetaValue(record, 'shipping_note'))}</textarea>
-                </div>
-            </section>
+            ${executionStageCardMarkup(stage, {
+                intro: '记录承运商、运单号和到货预估，并保留发运通知客户的方式。物流确认后进入到场部署。',
+                actionsMarkup: executionStageActionsMarkup('保存物流信息', '确认发运并进入到场部署'),
+                bodyMarkup: `
+                    ${executionStageFieldGridMarkup(record, [
+                        { key: 'shipping_carrier', label: '承运商', placeholder: '海运代理 / 物流公司' },
+                        { key: 'shipping_tracking_no', label: '运单号', placeholder: 'Tracking No.' },
+                        { key: 'shipping_departed_at', label: '发运时间', type: 'date' },
+                        { key: 'shipping_eta', label: '预计到达', type: 'date' },
+                        { key: 'shipping_notify_channels', label: '通知客户方式', defaultValue: '邮箱 / WhatsApp', placeholder: '邮箱 / WhatsApp / 电话' },
+                        { key: 'shipping_notice_summary', label: '通知摘要', placeholder: '已发送发运通知 / 待通知' },
+                    ])}
+                    ${executionStageTextareaFieldMarkup(record, {
+                        key: 'shipping_note',
+                        label: '物流说明',
+                        placeholder: '记录发运方式、客户通知、在途异常和预计到场安排。',
+                    })}
+                `,
+            })}
             ${stageCommunicationSectionMarkup(stage.key, record, {
                 title: '物流沟通记录',
                 help: '记录发运通知、运输异常、清关问题和预计到场协调。',
@@ -11683,28 +11701,23 @@ function shippingStageMarkup(stage = {}, deal = null, record = {}) {
 function deploymentStageMarkup(stage = {}, deal = null, record = {}) {
     return `
         <div class="ams-stage-detail-stack">
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
-                <div class="ams-section-head">
-                    <div>
-                        <h3>${esc(stage.label)}</h3>
-                        <p>跟踪现场条件、部署时间和部署结论。部署完成后进入运维支持。</p>
-                    </div>
-                    <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存部署信息</button>
-                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">确认部署完成并进入运维支持</button>
-                    </div>
-                </div>
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>现场条件</label><input class="ams-input" data-sales-flow-stage-meta="deployment_site_ready" value="${esc(stageMetaValue(record, 'deployment_site_ready'))}" placeholder="电力已就绪 / 场地待补充"></div>
-                    <div class="ams-field"><label>部署日期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="deployment_date" value="${esc(stageMetaValue(record, 'deployment_date'))}"></div>
-                    <div class="ams-field"><label>部署结果</label><input class="ams-input" data-sales-flow-stage-meta="deployment_result" value="${esc(stageMetaValue(record, 'deployment_result'))}" placeholder="已上线 / 待复检"></div>
-                    <div class="ams-field"><label>现场负责人</label><input class="ams-input" data-sales-flow-stage-meta="deployment_contact" value="${esc(stageMetaValue(record, 'deployment_contact'))}" placeholder="现场联系人"></div>
-                </div>
-                <div class="ams-field">
-                    <label>部署说明</label>
-                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="deployment_note" placeholder="记录部署过程、上线结果、客户现场反馈和遗留事项。">${esc(stageMetaValue(record, 'deployment_note'))}</textarea>
-                </div>
-            </section>
+            ${executionStageCardMarkup(stage, {
+                intro: '跟踪现场条件、部署时间和部署结论。部署完成后进入运维支持。',
+                actionsMarkup: executionStageActionsMarkup('保存部署信息', '确认部署完成并进入运维支持'),
+                bodyMarkup: `
+                    ${executionStageFieldGridMarkup(record, [
+                        { key: 'deployment_site_ready', label: '现场条件', placeholder: '电力已就绪 / 场地待补充' },
+                        { key: 'deployment_date', label: '部署日期', type: 'date' },
+                        { key: 'deployment_result', label: '部署结果', placeholder: '已上线 / 待复检' },
+                        { key: 'deployment_contact', label: '现场负责人', placeholder: '现场联系人' },
+                    ])}
+                    ${executionStageTextareaFieldMarkup(record, {
+                        key: 'deployment_note',
+                        label: '部署说明',
+                        placeholder: '记录部署过程、上线结果、客户现场反馈和遗留事项。',
+                    })}
+                `,
+            })}
             ${stageCommunicationSectionMarkup(stage.key, record, {
                 title: '部署沟通记录',
                 help: '记录现场准备、部署窗口、客户反馈和上线后的遗留问题。',
@@ -11716,28 +11729,23 @@ function deploymentStageMarkup(stage = {}, deal = null, record = {}) {
 function supportStageMarkup(stage = {}, deal = null, record = {}) {
     return `
         <div class="ams-stage-detail-stack">
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
-                <div class="ams-section-head">
-                    <div>
-                        <h3>${esc(stage.label)}</h3>
-                        <p>进入长期运维支持阶段，记录质保到期、支持负责人和客户服务渠道。完成后整条销售线可结案。</p>
-                    </div>
-                    <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存运维信息</button>
-                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">完成运维归档</button>
-                    </div>
-                </div>
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>质保到期</label><input class="ams-input" type="date" data-sales-flow-stage-meta="support_warranty_until" value="${esc(stageMetaValue(record, 'support_warranty_until'))}"></div>
-                    <div class="ams-field"><label>支持负责人</label><input class="ams-input" data-sales-flow-stage-meta="support_owner" value="${esc(stageMetaValue(record, 'support_owner'))}" placeholder="Support Owner"></div>
-                    <div class="ams-field"><label>支持渠道</label><input class="ams-input" data-sales-flow-stage-meta="support_channel" value="${esc(stageMetaValue(record, 'support_channel'))}" placeholder="WhatsApp / 邮箱 / 工单"></div>
-                    <div class="ams-field"><label>服务状态</label><input class="ams-input" data-sales-flow-stage-meta="support_status" value="${esc(stageMetaValue(record, 'support_status'))}" placeholder="正常服务 / 待回访 / 已结案"></div>
-                </div>
-                <div class="ams-field">
-                    <label>运维说明</label>
-                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-meta="support_note" placeholder="记录运维交接、质保范围、客户后续问题和最终结案说明。">${esc(stageMetaValue(record, 'support_note'))}</textarea>
-                </div>
-            </section>
+            ${executionStageCardMarkup(stage, {
+                intro: '进入长期运维支持阶段，记录质保到期、支持负责人和客户服务渠道。完成后整条销售线可结案。',
+                actionsMarkup: executionStageActionsMarkup('保存运维信息', '完成运维归档'),
+                bodyMarkup: `
+                    ${executionStageFieldGridMarkup(record, [
+                        { key: 'support_warranty_until', label: '质保到期', type: 'date' },
+                        { key: 'support_owner', label: '支持负责人', placeholder: 'Support Owner' },
+                        { key: 'support_channel', label: '支持渠道', placeholder: 'WhatsApp / 邮箱 / 工单' },
+                        { key: 'support_status', label: '服务状态', placeholder: '正常服务 / 待回访 / 已结案' },
+                    ])}
+                    ${executionStageTextareaFieldMarkup(record, {
+                        key: 'support_note',
+                        label: '运维说明',
+                        placeholder: '记录运维交接、质保范围、客户后续问题和最终结案说明。',
+                    })}
+                `,
+            })}
             ${stageCommunicationSectionMarkup(stage.key, record, {
                 title: '运维沟通记录',
                 help: '记录售后沟通、质保范围、问题回访和最终结案依据。',
@@ -11770,49 +11778,74 @@ function executionStageRenderer(stage = {}) {
     return renderers[normalizeDealStageKey(stage.key)] || null;
 }
 
+function executionStageActionsMarkup(saveLabel = '保存阶段', completeLabel = '标记完成并进入下一节点') {
+    return `
+        <div class="ams-row-actions">
+            <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">${esc(saveLabel)}</button>
+            <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">${esc(completeLabel)}</button>
+        </div>
+    `;
+}
+
+function executionStageCardMarkup(stage = {}, options = {}) {
+    const {
+        intro = '',
+        actionsMarkup = '',
+        metaMarkup = '',
+        bodyMarkup = '',
+    } = options;
+    return `
+        <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+            <div class="ams-section-head">
+                <div>
+                    <h3>${esc(stage.label)}</h3>
+                    <p>${esc(intro)}</p>
+                </div>
+                ${actionsMarkup}
+            </div>
+            ${metaMarkup}
+            ${bodyMarkup}
+        </section>
+    `;
+}
+
 function executionStageFlowMarkup(stage = {}, deal = null) {
     const record = executionStageRecord(stage, deal);
     const renderer = executionStageRenderer(stage);
     if (renderer) return renderer(stage, deal, record);
     return `
         <div class="ams-stage-detail-stack">
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
-                <div class="ams-section-head">
-                    <div>
-                        <h3>${esc(stage.label)}</h3>
-                        <p>当前页面只处理 ${esc(stage.label)} 节点内容，不混放其他阶段入口。</p>
+            ${executionStageCardMarkup(stage, {
+                intro: `当前页面只处理 ${esc(stage.label)} 节点内容，不混放其他阶段入口。`,
+                actionsMarkup: executionStageActionsMarkup(),
+                metaMarkup: `
+                    <div class="ams-quote-meta-grid">
+                        <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(moduleState.customers.find((item) => item.id === deal?.customer_id) || {}))}</span></div>
+                        <div class="ams-summary-chip"><strong>销售线</strong><span>${esc(text(deal?.title, '--'))}</span></div>
+                        <div class="ams-summary-chip"><strong>阶段状态</strong><span>${dealStageStatusPill(record.stage_status)}</span></div>
+                        <div class="ams-summary-chip"><strong>负责人</strong><span>${esc(text(record.owner_name || record.owner_email, '未设置'))}</span></div>
                     </div>
-                    <div class="ams-row-actions">
-                        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">保存阶段</button>
-                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">标记完成并进入下一节点</button>
+                `,
+                bodyMarkup: `
+                    <div class="ams-site-field-grid ams-site-field-grid-wide">
+                        <div class="ams-field"><label>阶段状态</label><select class="ams-select" data-sales-flow-stage-field="stage_status">${selectOptionsMarkup(DEAL_STAGE_STATUS_OPTIONS, record.stage_status)}</select></div>
+                        <div class="ams-field"><label>计划时间</label><input class="ams-input" type="datetime-local" data-sales-flow-stage-field="planned_at" value="${esc(datetimeLocalValue(record.planned_at))}"></div>
+                        <div class="ams-field"><label>完成时间</label><input class="ams-input" type="datetime-local" data-sales-flow-stage-field="completed_at" value="${esc(datetimeLocalValue(record.completed_at))}"></div>
+                        <div class="ams-field"><label>负责人</label><input class="ams-input" data-sales-flow-stage-field="owner_name" value="${esc(record.owner_name)}" placeholder="负责人"></div>
+                        <div class="ams-field"><label>负责人邮箱</label><input class="ams-input" data-sales-flow-stage-field="owner_email" value="${esc(record.owner_email)}" placeholder="负责人邮箱"></div>
                     </div>
-                </div>
-                <div class="ams-quote-meta-grid">
-                    <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(moduleState.customers.find((item) => item.id === deal?.customer_id) || {}))}</span></div>
-                    <div class="ams-summary-chip"><strong>销售线</strong><span>${esc(text(deal?.title, '--'))}</span></div>
-                    <div class="ams-summary-chip"><strong>阶段状态</strong><span>${dealStageStatusPill(record.stage_status)}</span></div>
-                    <div class="ams-summary-chip"><strong>负责人</strong><span>${esc(text(record.owner_name || record.owner_email, '未设置'))}</span></div>
-                </div>
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>阶段状态</label><select class="ams-select" data-sales-flow-stage-field="stage_status">${selectOptionsMarkup(DEAL_STAGE_STATUS_OPTIONS, record.stage_status)}</select></div>
-                    <div class="ams-field"><label>计划时间</label><input class="ams-input" type="datetime-local" data-sales-flow-stage-field="planned_at" value="${esc(datetimeLocalValue(record.planned_at))}"></div>
-                    <div class="ams-field"><label>完成时间</label><input class="ams-input" type="datetime-local" data-sales-flow-stage-field="completed_at" value="${esc(datetimeLocalValue(record.completed_at))}"></div>
-                    <div class="ams-field"><label>负责人</label><input class="ams-input" data-sales-flow-stage-field="owner_name" value="${esc(record.owner_name)}" placeholder="负责人"></div>
-                    <div class="ams-field"><label>负责人邮箱</label><input class="ams-input" data-sales-flow-stage-field="owner_email" value="${esc(record.owner_email)}" placeholder="负责人邮箱"></div>
-                </div>
-                <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    ${stageMetaFields(stage.key).map((field) => `
-                        <div class="ams-field">
-                            <label>${esc(field.label)}</label>
-                            <input class="ams-input" ${field.type === 'number' ? 'type="number" step="0.01"' : field.type === 'date' ? 'type="date"' : 'type="text"'} data-sales-flow-stage-meta="${esc(field.key)}" value="${esc(text(record.meta?.[field.key]))}" placeholder="${esc(field.placeholder || '')}">
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="ams-field">
-                    <label>阶段备注</label>
-                    <textarea class="ams-textarea" rows="4" data-sales-flow-stage-field="notes" placeholder="记录当前节点的说明、异常、结论和下一步。">${esc(record.notes)}</textarea>
-                </div>
-            </section>
+                    ${executionStageFieldGridMarkup(record, stageMetaFields(stage.key).map((field) => ({
+                        key: field.key,
+                        label: field.label,
+                        type: field.type || 'text',
+                        placeholder: field.placeholder || '',
+                    })))}
+                    <div class="ams-field">
+                        <label>阶段备注</label>
+                        <textarea class="ams-textarea" rows="4" data-sales-flow-stage-field="notes" placeholder="记录当前节点的说明、异常、结论和下一步。">${esc(record.notes)}</textarea>
+                    </div>
+                `,
+            })}
             ${stageCommunicationSectionMarkup(stage.key, record)}
         </div>
     `;
@@ -11854,6 +11887,429 @@ async function updateDealLifecycle(input, dealId, patch = {}) {
     }, {
         stageRecords: moduleState.dealStageRecords,
         currentStage: patch.current_stage || moduleState.dealEditor?.current_stage,
+    });
+}
+
+function bindSalesRequirementActions(input, stageKey = '', customerId = '', customerFlow = false) {
+    document.querySelectorAll('[data-sales-flow-requirement-field]').forEach((node) => {
+        const apply = () => {
+            const field = node.dataset.salesFlowRequirementField || '';
+            if (!field) return;
+            moduleState.requirementEditor[field] = node.value;
+        };
+        node.addEventListener('input', apply);
+        if (node.tagName === 'SELECT') node.addEventListener('change', apply);
+    });
+
+    document.querySelectorAll('[data-sales-flow-requirement-answer]').forEach((node) => {
+        node.addEventListener('input', () => {
+            const field = node.dataset.salesFlowRequirementAnswer || '';
+            if (!field) return;
+            const answers = normalizeRequirementAnswers(moduleState.requirementEditor.answers);
+            answers[field] = node.value;
+            moduleState.requirementEditor.answers = answers;
+        });
+    });
+
+    document.getElementById('ams-sales-flow-requirement-save')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
+            const answers = normalizeRequirementAnswers(moduleState.requirementEditor.answers);
+            moduleState.requirementEditor.answers = answers;
+            const saved = await saveRequirementDraft(input.user, moduleState.requirementEditor);
+            moduleState.requirementEditor = createRequirementDraft(saved);
+            input.showToast('需求已保存。');
+            await input.rerender();
+        });
+    });
+
+    document.getElementById('ams-sales-flow-requirement-note-submit')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '提交中...', async () => {
+            const answers = normalizeRequirementAnswers(moduleState.requirementEditor.answers);
+            const noteDraft = text(answers.communication_note_draft);
+            if (!noteDraft) {
+                input.showToast('请先填写沟通备注。', true);
+                return;
+            }
+            answers.communication_notes = [
+                {
+                    note: noteDraft,
+                    created_at: new Date().toISOString(),
+                    author: text(input.user?.email || input.user?.id, 'sales'),
+                },
+                ...(answers.communication_notes || []),
+            ];
+            answers.communication_note_draft = '';
+            moduleState.requirementEditor.answers = answers;
+            const saved = await saveRequirementDraft(input.user, moduleState.requirementEditor);
+            moduleState.requirementEditor = createRequirementDraft(saved);
+            input.showToast('沟通备注已提交。');
+            await input.rerender();
+        });
+    });
+
+    document.getElementById('ams-sales-flow-requirement-open-link')?.addEventListener('click', () => {
+        const requirement = createRequirementDraft(moduleState.requirementEditor);
+        if (!requirement.public_slug || !requirement.public_token) {
+            input.showToast('请先保存需求，再生成客户需求链接。', true);
+            return;
+        }
+        markRequirementCustomerUpdateSeen(requirement);
+        document.getElementById('ams-sales-flow-requirement-open-link')?.classList.remove('has-alert-dot');
+        document.querySelector('#ams-sales-flow-requirement-open-link .ams-btn-alert-dot')?.remove();
+        window.open(requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true }), '_blank', 'noopener');
+    });
+
+    const salesFlowRequirementShareMenu = document.querySelector('.ams-sales-flow-requirement-share-menu');
+    const salesFlowRequirementPosterModal = document.getElementById('ams-sales-flow-requirement-share-poster-modal');
+    const salesFlowRequirementPosterImage = document.getElementById('ams-sales-flow-requirement-share-poster-image');
+    const salesFlowRequirementPosterDownload = document.getElementById('ams-sales-flow-requirement-share-poster-download');
+    const closeSalesFlowRequirementPosterModal = () => {
+        if (salesFlowRequirementPosterModal) salesFlowRequirementPosterModal.hidden = true;
+    };
+
+    document.getElementById('ams-sales-flow-requirement-share-link')?.addEventListener('click', async () => {
+        const requirement = createRequirementDraft(moduleState.requirementEditor);
+        if (!requirement.public_slug || !requirement.public_token) {
+            input.showToast('请先保存需求，再生成客户需求链接。', true);
+            return;
+        }
+        const payload = requirementShareCopyText(requirement);
+        try {
+            await navigator.clipboard.writeText(payload);
+            input.showToast('客户需求分享文案已复制。');
+        } catch (_error) {
+            input.showToast(payload, false);
+        }
+        if (salesFlowRequirementShareMenu) salesFlowRequirementShareMenu.removeAttribute('open');
+    });
+
+    document.getElementById('ams-sales-flow-requirement-share-poster')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
+            const requirement = createRequirementDraft(moduleState.requirementEditor);
+            if (!requirement.public_slug || !requirement.public_token) {
+                input.showToast('请先保存需求，再生成客户需求链接。', true);
+                return;
+            }
+            try {
+                const posterUrl = await requirementSharePosterDataUrl(requirement);
+                if (salesFlowRequirementPosterImage) salesFlowRequirementPosterImage.setAttribute('src', posterUrl);
+                if (salesFlowRequirementPosterDownload) salesFlowRequirementPosterDownload.setAttribute('href', posterUrl);
+                if (salesFlowRequirementPosterModal) salesFlowRequirementPosterModal.hidden = false;
+                if (salesFlowRequirementShareMenu) salesFlowRequirementShareMenu.removeAttribute('open');
+            } catch (error) {
+                input.showToast(error.message || '二维码海报生成失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-sales-flow-requirement-share-poster-copy')?.addEventListener('click', async () => {
+        const requirement = createRequirementDraft(moduleState.requirementEditor);
+        if (!requirement.public_slug || !requirement.public_token) {
+            input.showToast('请先保存需求，再生成客户需求链接。', true);
+            return;
+        }
+        const payload = requirementShareCopyText(requirement);
+        try {
+            await navigator.clipboard.writeText(payload);
+            input.showToast('海报分享文案已复制。');
+        } catch (_error) {
+            input.showToast(payload, false);
+        }
+    });
+    salesFlowRequirementPosterModal?.querySelectorAll('[data-sales-flow-requirement-share-poster-close]').forEach((node) => {
+        node.addEventListener('click', closeSalesFlowRequirementPosterModal);
+    });
+
+    document.getElementById('ams-sales-flow-requirement-confirm')?.addEventListener('click', async (event) => {
+        const confirmed = await confirmSalesAction({
+            title: '确认需求并进入报价？',
+            message: '确认后当前需求会被锁定为报价基线，后续将直接进入转入报价节点。',
+            confirmLabel: '确认需求',
+            danger: false,
+        });
+        if (!confirmed) return;
+        await input.withButtonBusy(event.currentTarget, '确认中...', async () => {
+            const saved = await confirmRequirementForDeal(input.user, moduleState.requirementEditor);
+            input.showToast('需求已确认。');
+            window.location.assign(customerFlow
+                ? customerFlowStageUrl('quote_draft', dealById(saved.deal_id), customerId)
+                : adminPageUrl('quote-pipeline', { stage: 'quote_draft', deal: saved.deal_id }));
+        });
+    });
+}
+
+function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFlow = false) {
+    document.getElementById('ams-sales-flow-instance-product')?.addEventListener('change', (event) => {
+        moduleState.pipelineProductSelection = event.currentTarget.value || '';
+    });
+
+    document.getElementById('ams-sales-flow-instance-create')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
+            const deal = dealById(readAdminPageParam('deal'));
+            const productId = moduleState.pipelineProductSelection || '';
+            if (!deal?.id) throw new Error('请先选中一条销售线。');
+            const instance = await createInstanceFromProduct(input.user, productId, { dealId: deal.id });
+            await fetchInstanceEditor(instance.id);
+            input.showToast('报价草稿已生成。');
+            window.location.assign(customerFlow
+                ? customerFlowStageUrl('quote_draft', dealById(instance.deal_id), customerId)
+                : adminPageUrl('quote-pipeline', { stage: 'quote_draft', deal: instance.deal_id }));
+        });
+    });
+
+    ['ams-sales-flow-instance-open', 'ams-sales-flow-instance-open-inline'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('click', () => {
+            if (!moduleState.instanceEditor?.id) return;
+            window.open(quoteEditorUrl('instance', moduleState.instanceEditor.id), '_blank', 'noopener');
+        });
+    });
+
+    document.getElementById('ams-sales-flow-instance-open-public')?.addEventListener('click', () => {
+        const instance = moduleState.instanceEditor;
+        if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
+            input.showToast('请先发布报价，再查看用户报价页。', true);
+            return;
+        }
+        window.open(publicQuoteUrl(instance.public_slug), '_blank', 'noopener');
+    });
+
+    const salesFlowQuoteShareMenu = document.querySelector('.ams-sales-flow-quote-share-menu');
+    salesFlowQuoteShareMenu?.querySelector('summary')?.addEventListener('click', (event) => {
+        const instance = moduleState.instanceEditor;
+        if (text(instance?.status) === 'published' && instance?.public_slug) return;
+        event.preventDefault();
+        input.showToast('请先发布报价，再分享报价。', true);
+    });
+    const salesFlowQuotePosterModal = document.getElementById('ams-sales-flow-quote-share-poster-modal');
+    const salesFlowQuotePosterImage = document.getElementById('ams-sales-flow-quote-share-poster-image');
+    const salesFlowQuotePosterDownload = document.getElementById('ams-sales-flow-quote-share-poster-download');
+    const closeSalesFlowQuotePosterModal = () => {
+        if (salesFlowQuotePosterModal) salesFlowQuotePosterModal.hidden = true;
+    };
+
+    document.getElementById('ams-sales-flow-instance-share-link')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '复制中...', async () => {
+            const instance = moduleState.instanceEditor;
+            if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
+                input.showToast('请先发布报价，再复制对外报价链接。', true);
+                return;
+            }
+            const payload = quoteShareCopyText(instance);
+            try {
+                await navigator.clipboard.writeText(payload);
+                input.showToast('报价链接和对外说明已复制。');
+            } catch (_error) {
+                input.showToast(payload, false);
+            }
+            if (salesFlowQuoteShareMenu) salesFlowQuoteShareMenu.removeAttribute('open');
+        });
+    });
+
+    document.getElementById('ams-sales-flow-instance-share-poster')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
+            const instance = moduleState.instanceEditor;
+            if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
+                input.showToast('请先发布报价，再分享二维码。', true);
+                return;
+            }
+            try {
+                const posterUrl = await quoteSharePosterDataUrl(instance);
+                if (salesFlowQuotePosterImage) salesFlowQuotePosterImage.setAttribute('src', posterUrl);
+                if (salesFlowQuotePosterDownload) salesFlowQuotePosterDownload.setAttribute('href', posterUrl);
+                if (salesFlowQuotePosterModal) salesFlowQuotePosterModal.hidden = false;
+                if (salesFlowQuoteShareMenu) salesFlowQuoteShareMenu.removeAttribute('open');
+            } catch (error) {
+                input.showToast(error.message || '二维码海报生成失败。', true);
+            }
+        });
+    });
+
+    document.getElementById('ams-sales-flow-quote-share-poster-copy-link')?.addEventListener('click', async () => {
+        const instance = moduleState.instanceEditor;
+        if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
+            input.showToast('请先发布报价，再复制分享说明。', true);
+            return;
+        }
+        const payload = quoteShareCopyText(instance);
+        try {
+            await navigator.clipboard.writeText(payload);
+            input.showToast('海报说明文案已复制。');
+        } catch (_error) {
+            input.showToast(payload, false);
+        }
+    });
+
+    salesFlowQuotePosterModal?.querySelectorAll('[data-sales-flow-quote-share-poster-close]').forEach((button) => {
+        button.addEventListener('click', closeSalesFlowQuotePosterModal);
+    });
+
+    document.querySelectorAll('[data-sales-flow-open-public-confirmation]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            const targetStageKey = normalizeDealStageKey(button.dataset.salesFlowOpenPublicConfirmation || stageKey);
+            const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
+            const existingRecord = stageRecordByKey(targetStageKey, moduleState.dealStageRecords);
+            const hasExistingLink = Boolean(text(existingRecord?.public_slug) && text(existingRecord?.public_token));
+            const popup = window.open('about:blank', '_blank');
+            await input.withButtonBusy(event.currentTarget, '打开中...', async () => {
+                try {
+                    const stageRecord = hasExistingLink
+                        ? existingRecord
+                        : await ensurePublicStageConfirmationLink(input.user, targetStageKey, activeDeal);
+                    const targetUrl = stageCustomerFacingUrl(targetStageKey, stageRecord, activeDeal);
+                    if (popup) {
+                        popup.location.replace(targetUrl);
+                        try { popup.opener = null; } catch (_error) { /* noop */ }
+                    } else {
+                        window.open(targetUrl, '_blank', 'noopener');
+                    }
+                    input.showToast('客户确认入口已打开。');
+                } catch (error) {
+                    popup?.close();
+                    throw error;
+                }
+            });
+        });
+    });
+
+    document.querySelectorAll('[data-sales-flow-copy-public-confirmation]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            const targetStageKey = normalizeDealStageKey(button.dataset.salesFlowCopyPublicConfirmation || stageKey);
+            const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
+            const existingRecord = stageRecordByKey(targetStageKey, moduleState.dealStageRecords);
+            const hasExistingLink = Boolean(text(existingRecord?.public_slug) && text(existingRecord?.public_token));
+            await input.withButtonBusy(event.currentTarget, hasExistingLink ? '复制中...' : '生成中...', async () => {
+                const stageRecord = hasExistingLink
+                    ? existingRecord
+                    : await ensurePublicStageConfirmationLink(input.user, targetStageKey, activeDeal);
+                const payload = stageConfirmationCopyText(targetStageKey, stageRecord, activeDeal);
+                try {
+                    await navigator.clipboard.writeText(payload);
+                    input.showToast(hasExistingLink ? '客户确认链接已复制。' : '客户确认链接已生成并复制。');
+                } catch (_error) {
+                    input.showToast(payload, false);
+                }
+            });
+        });
+    });
+
+    document.getElementById('ams-sales-flow-quote-save')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
+            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
+            if (moduleState.instanceEditor?.id) {
+                await saveInstanceDraft(input.user, moduleState.instanceEditor);
+            }
+            if (moduleState.dealEditor?.id) {
+                await saveDealDraft(input.user, moduleState.dealEditor, {
+                    stageRecords: moduleState.dealStageRecords,
+                    currentStage: stageKey,
+                });
+            }
+            input.showToast('报价节点已保存。');
+            await input.rerender();
+        });
+    });
+
+    document.getElementById('ams-sales-flow-instance-confirm')?.addEventListener('click', async (event) => {
+        const quoteConfirmedRecord = stageRecordByKey('quote_confirmed', moduleState.dealStageRecords);
+        if (!quoteConfirmationSubmitted(quoteConfirmedRecord)) {
+            input.showToast('客户还未提交报价确认，暂时不能推进到签约合同。', true);
+            return;
+        }
+        const confirmed = await confirmSalesAction({
+            title: '确认报价并推进到签约合同？',
+            message: '确认后当前报价版本会被锁定为正式商务基线，并自动进入签约合同节点。',
+            confirmLabel: '确认报价',
+            danger: false,
+        });
+        if (!confirmed) return;
+        await input.withButtonBusy(event.currentTarget, '确认中...', async () => {
+            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
+            const saved = await confirmQuoteForDeal(input.user, moduleState.instanceEditor);
+            input.showToast('报价已确认。');
+            window.location.assign(customerFlow
+                ? customerFlowStageUrl('contract_signed', dealById(saved.deal_id), customerId)
+                : adminPageUrl('quote-pipeline', { stage: 'contract_signed', deal: saved.deal_id }));
+        });
+    });
+}
+
+function bindSalesExecutionActions(input, stageKey = '', customerId = '', customerFlow = false) {
+    document.getElementById('ams-sales-flow-stage-note-submit')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '提交中...', async () => {
+            const record = stageRecordByKey(stageKey, moduleState.dealStageRecords);
+            const noteDraft = text(record?.meta?.communication_note_draft);
+            if (!noteDraft) {
+                input.showToast('请先填写沟通备注。', true);
+                return;
+            }
+            appendStageCommunicationLog(stageKey, noteDraft, input.user?.email || input.user?.id || '销售沟通');
+            if (moduleState.dealEditor?.id) {
+                const saved = await saveDealDraft(input.user, moduleState.dealEditor, {
+                    stageRecords: moduleState.dealStageRecords,
+                    currentStage: stageKey,
+                });
+                await fetchDealEditor(saved.id);
+            }
+            input.showToast('沟通备注已提交。');
+            await input.rerender();
+        });
+    });
+
+    document.querySelectorAll('[data-sales-flow-stage-field]').forEach((node) => {
+        const apply = () => {
+            const field = node.dataset.salesFlowStageField || '';
+            replaceStageRecord(stageKey, (record) => {
+                if (field === 'stage_status') record.stage_status = normalizeDealStageStatus(node.value);
+                else if (field === 'planned_at' || field === 'completed_at') record[field] = parseDateTimeLocal(node.value);
+                else record[field] = node.value;
+                return record;
+            });
+        };
+        node.addEventListener('input', apply);
+        if (node.tagName === 'SELECT') node.addEventListener('change', apply);
+    });
+
+    document.querySelectorAll('[data-sales-flow-stage-meta]').forEach((node) => {
+        node.addEventListener('input', () => {
+            setStageRecordMeta(stageKey, node.dataset.salesFlowStageMeta, node.value);
+        });
+    });
+
+    document.getElementById('ams-sales-flow-stage-save')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
+            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
+            const saved = await saveDealDraft(input.user, moduleState.dealEditor, {
+                stageRecords: moduleState.dealStageRecords,
+                currentStage: stageKey,
+            });
+            await fetchDealEditor(saved.id);
+            input.showToast('阶段已保存。');
+            await input.rerender();
+        });
+    });
+
+    document.getElementById('ams-sales-flow-stage-complete')?.addEventListener('click', async (event) => {
+        const finalStage = normalizeDealStageKey(stageKey) === 'support_active';
+        const confirmed = await confirmSalesAction({
+            title: finalStage ? '确认完成整条销售流程？' : `确认完成${dealStageLabel(stageKey)}并进入下一节点？`,
+            message: finalStage
+                ? '完成后这条销售流程会进入已完成状态，不再继续往后推进。'
+                : '推进后当前节点会被标记为已完成，并自动进入下一节点。',
+            confirmLabel: finalStage ? '确认完成' : '确认推进',
+            danger: !finalStage,
+        });
+        if (!confirmed) return;
+        await input.withButtonBusy(event.currentTarget, '推进中...', async () => {
+            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
+            const saved = await saveAndAdvanceDeal(input.user, {
+                id: moduleState.dealEditor?.id,
+                deal_status: finalStage ? 'completed' : moduleState.dealEditor?.deal_status,
+            }, [stageKey], finalStage ? 'support_active' : nextStageKey(stageKey));
+            input.showToast(finalStage ? '销售线已完成。' : '已推进到下一节点。');
+            window.location.assign(customerFlow
+                ? customerFlowStageUrl(finalStage ? 'support_active' : nextStageKey(stageKey), saved, customerId)
+                : adminPageUrl('quote-pipeline', { stage: finalStage ? 'support_active' : nextStageKey(stageKey), deal: saved.id }));
+        });
     });
 }
 
