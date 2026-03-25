@@ -986,6 +986,60 @@ function requirementStatusLabel(value = '') {
     return optionLabel(REQUIREMENT_STATUS_OPTIONS, value);
 }
 
+const REQUIREMENT_SUBMISSION_FIELD_LABELS = {
+    requester_company: '客户公司',
+    requester_name: '联系人',
+    requester_email: '邮箱',
+    contact_channel: '联系渠道',
+    requester_phone: '账号 / 电话',
+    country: '国家 / 地区',
+    requirement_type: '需求类型',
+    deployment_mode: '部署模式',
+    miner_hashrate_band: '矿机算力范围',
+    miner_power_band: '矿机功耗范围',
+    miner_quantity_band: '矿机数量范围',
+    voltage_frequency: '电压 / 频率',
+    miner_brands: '矿机品牌',
+    miner_cooling: '矿机冷却方式',
+    power_capacity_band: '供电规模',
+    container_preference: '部署偏好',
+    silent_requirement: '噪音要求',
+    budget_band: '每 MW 预算',
+    timeline_band: '期望周期',
+};
+
+function requirementSubmissionFieldLabel(field = '') {
+    return REQUIREMENT_SUBMISSION_FIELD_LABELS[text(field)] || text(field);
+}
+
+function requirementMissingSubmissionFields(requirement = {}) {
+    const answers = normalizeRequirementAnswers(requirement.answers);
+    const missing = [];
+    const pushMissing = (field, invalid) => {
+        if (invalid) missing.push(requirementSubmissionFieldLabel(field));
+    };
+    pushMissing('requester_company', !text(requirement.requester_company));
+    pushMissing('requester_name', !text(requirement.requester_name));
+    pushMissing('requester_email', !text(requirement.requester_email));
+    pushMissing('contact_channel', !text(answers.contact_channel));
+    pushMissing('requester_phone', text(requirement.requester_phone).length < 5);
+    pushMissing('country', !text(requirement.country));
+    pushMissing('requirement_type', !text(requirement.requirement_type));
+    pushMissing('deployment_mode', !text(answers.deployment_mode));
+    pushMissing('miner_hashrate_band', !text(answers.miner_hashrate_band));
+    pushMissing('miner_power_band', !text(answers.miner_power_band));
+    pushMissing('miner_quantity_band', !text(answers.miner_quantity_band));
+    pushMissing('voltage_frequency', !text(answers.voltage_frequency));
+    pushMissing('miner_brands', !Array.isArray(answers.miner_brands) || answers.miner_brands.length === 0);
+    pushMissing('miner_cooling', !Array.isArray(answers.miner_cooling) || answers.miner_cooling.length === 0);
+    pushMissing('power_capacity_band', !text(answers.power_capacity_band));
+    pushMissing('container_preference', !text(answers.container_preference));
+    pushMissing('silent_requirement', !text(answers.silent_requirement));
+    pushMissing('budget_band', !text(answers.budget_band));
+    pushMissing('timeline_band', !text(answers.timeline_band));
+    return missing;
+}
+
 function multiOptionLabels(options = [], values = []) {
     const list = normalizeStringList(values);
     return list.map((value) => optionLabel(options, value)).filter(Boolean);
@@ -1134,6 +1188,26 @@ function syncDealProgressFromRequirements(deal = {}) {
     });
 }
 
+function alignDealStageRecordsWithCurrentStage(records = [], deal = {}) {
+    const currentStage = normalizeDealStageKey(deal.current_stage);
+    const currentIndex = stageOrderIndex(currentStage);
+    if (currentIndex < 0) return mergeDealStageRecords(deal, records);
+    return mergeDealStageRecords(deal, records).map((record) => {
+        const next = createDealStageRecord(record);
+        const index = stageOrderIndex(next.stage_key);
+        if (index < 0) return next;
+        if (index < currentIndex && next.stage_status !== 'blocked') {
+            next.stage_status = 'completed';
+            next.completed_at = text(next.completed_at || deal.updated_at || new Date().toISOString());
+        } else if (index === currentIndex && next.stage_status !== 'completed') {
+            next.stage_status = 'active';
+        } else if (index > currentIndex && next.stage_status !== 'completed' && next.stage_status !== 'blocked') {
+            next.stage_status = 'pending';
+        }
+        return next;
+    });
+}
+
 function inferDealCurrentStage(records = [], fallback = 'requirement_capture') {
     const merged = mergeDealStageRecords({ current_stage: fallback }, records);
     const active = merged.find((record) => record.stage_status === 'active' || record.stage_status === 'blocked');
@@ -1144,7 +1218,7 @@ function inferDealCurrentStage(records = [], fallback = 'requirement_capture') {
 }
 
 function touchDealStageRecords(records = [], deal = {}) {
-    const merged = mergeDealStageRecords(deal, records);
+    const merged = alignDealStageRecordsWithCurrentStage(records, deal);
     if (text(deal.customer_id)) {
         const customerStage = stageRecordByKey('customer_profile', merged);
         if (customerStage) customerStage.stage_status = 'completed';
@@ -2189,6 +2263,17 @@ async function fetchRequirementEditor(requirementId) {
     if (error) throw error;
     moduleState.requirementLoadedId = requirementId;
     moduleState.requirementEditor = createRequirementDraft(data);
+    const nextRequirement = createRequirementDraft(data);
+    const nextRequirements = [...moduleState.requirements];
+    const existingIndex = nextRequirements.findIndex((item) => item.id === nextRequirement.id);
+    if (existingIndex >= 0) nextRequirements[existingIndex] = nextRequirement;
+    else nextRequirements.unshift(nextRequirement);
+    moduleState.requirements = nextRequirements;
+    moduleState.deals = moduleState.deals.map((deal) => syncDealProgressFromRequirements(deal));
+    if (moduleState.dealLoadedId) {
+        const syncedDeal = moduleState.deals.find((deal) => deal.id === moduleState.dealLoadedId);
+        if (syncedDeal) moduleState.dealEditor = createDealDraft(syncedDeal);
+    }
     moduleState.requirementCreateMode = false;
     return moduleState.requirementEditor;
 }
@@ -2848,7 +2933,7 @@ async function saveProductDraft(user, draft) {
     if (!pickLocalized(payload.public_title, payload.default_lang)) throw new Error('请至少填写一个产品标题。');
 
     const linkedBrandDraft = currentProductBrandDraft();
-    if (linkedBrandDraft?.id === payload.brand_id || linkedBrandDraft?.slug) {
+    if (linkedBrandDraft?.id && text(linkedBrandDraft.id) === text(payload.brand_id)) {
         const savedBrand = await saveBrandDraft(user, {
             ...linkedBrandDraft,
             id: linkedBrandDraft.id || payload.brand_id,
@@ -4498,7 +4583,7 @@ function legacyBrandSeedKey(brand = {}) {
         current.footer_note?.zh,
     ].map((entry) => text(entry).toLowerCase()).join(' ');
     if (text(current.slug).toLowerCase() === 'vman' || signature.includes('vman')) return 'vman';
-    if (text(current.slug).toLowerCase() === 'minerpower' || text(current.slug).toLowerCase() === 'gasgx' || signature.includes('minerpower')) return 'minerpower';
+    if (text(current.slug).toLowerCase() === 'minerpower' || signature.includes('minerpower')) return 'minerpower';
     return '';
 }
 
@@ -4519,6 +4604,18 @@ function brandNeedsLegacySeedRepair(brand = {}, seedBrand = {}) {
         || text(current.footer_note?.zh) !== text(target.footer_note?.zh);
 }
 
+function buildLegacyBrandRepairDraft(brand = {}, seedBrand = {}) {
+    const current = createBrandDraft(brand);
+    const target = createBrandDraft(seedBrand);
+    return {
+        ...target,
+        id: current.id,
+        slug: current.slug || target.slug,
+        default_quote_slug: text(current.default_quote_slug),
+        is_active: current.is_active !== false,
+    };
+}
+
 async function repairLegacyBrandRecords(user) {
     if (moduleState.brandLegacyRepairAttempted) return false;
     moduleState.brandLegacyRepairAttempted = true;
@@ -4537,12 +4634,7 @@ async function repairLegacyBrandRecords(user) {
         const seedKey = legacyBrandSeedKey(brand);
         const seedBrand = legacyBrandMap.get(seedKey);
         if (!seedBrand || !brandNeedsLegacySeedRepair(brand, seedBrand)) continue;
-        await saveBrandDraft(user, {
-            ...seedBrand,
-            id: brand.id,
-            default_quote_slug: text(brand.default_quote_slug),
-            is_active: brand.is_active !== false,
-        });
+        await saveBrandDraft(user, buildLegacyBrandRepairDraft(brand, seedBrand));
         repairedAny = true;
     }
 
@@ -4594,6 +4686,35 @@ function matchLegacyProductRecord(products = [], seedEntry = {}, index = 0) {
     return products[index] || null;
 }
 
+function buildLegacyProductRepairDraft(product = {}, seedEntry = {}, brandId = '', products = [], index = 0) {
+    const current = createProductDraft(product);
+    const target = createProductDraft({
+        ...(seedEntry.product || {}),
+        items: seedEntry.items || [],
+    });
+    const targetSlug = text(target.slug).toLowerCase();
+    const slugTakenByOther = products.some((item) =>
+        text(item.id) !== text(current.id)
+        && text(item.slug).toLowerCase() === targetSlug,
+    );
+    const targetCode = text(target.product_code).toLowerCase();
+    const codeTakenByOther = products.some((item) =>
+        text(item.id) !== text(current.id)
+        && text(item.product_code).toLowerCase() === targetCode,
+    );
+    return {
+        ...target,
+        id: current.id,
+        brand_id: brandId || current.brand_id || target.brand_id,
+        slug: slugTakenByOther ? current.slug : target.slug,
+        product_code: codeTakenByOther ? (current.product_code || current.slug) : target.product_code,
+        sort_order: current.sort_order || target.sort_order || (index + 1) * 10,
+        is_active: current.is_active !== false,
+        media_gallery: seedEntry.product?.media_gallery || current.media_gallery || [],
+        media_config: seedEntry.product?.media_config || current.media_config,
+    };
+}
+
 async function repairLegacyProductRecords(user) {
     if (moduleState.productLegacyRepairAttempted) return false;
     moduleState.productLegacyRepairAttempted = true;
@@ -4617,16 +4738,7 @@ async function repairLegacyProductRecords(user) {
                 if (!matched?.id) continue;
                 const fullProduct = await fetchFullProductDraft(matched.id, matched);
                 if (!productNeedsLegacySeedRepair(fullProduct, seedEntry)) continue;
-                await saveProductDraft(user, {
-                    ...seedEntry.product,
-                    id: matched.id,
-                    brand_id: brand.id,
-                    sort_order: matched.sort_order || seedEntry.product?.sort_order || (index + 1) * 10,
-                    is_active: matched.is_active !== false,
-                    items: seedEntry.items || [],
-                    media_gallery: seedEntry.product?.media_gallery || fullProduct.media_gallery || [],
-                    media_config: seedEntry.product?.media_config || fullProduct.media_config,
-                });
+                await saveProductDraft(user, buildLegacyProductRepairDraft(fullProduct, seedEntry, brand.id, brandProducts, index));
                 repairedAny = true;
             }
         }
@@ -6519,16 +6631,16 @@ function renderSalesCustomerArchiveList() {
                 return `
                         <article class="ams-sales-customer-card">
                             <div class="ams-sales-customer-card-main">
-                                <div class="ams-sales-customer-card-copy">
-                                    <div class="ams-sales-customer-card-head">
+                                <details class="ams-sales-customer-card-copy ams-sales-customer-disclosure" data-customer-expand-wrap="${esc(customer.id)}" ${expanded ? 'open' : ''}>
+                                    <summary class="ams-sales-customer-card-head" aria-label="${expanded ? '收起客户信息' : '展开客户信息'}">
                                         <div class="ams-sales-customer-card-title">
                                             <strong>${esc(customerDisplayName(customer))}</strong>
-                                            <button class="ams-sales-customer-expand" type="button" data-customer-expand="${esc(customer.id)}" aria-expanded="${expanded ? 'true' : 'false'}" aria-label="${expanded ? '收起客户信息' : '展开客户信息'}">
+                                            <span class="ams-sales-customer-expand" aria-hidden="true">
                                                 <i class="fa-solid fa-chevron-${expanded ? 'up' : 'down'}"></i>
-                                            </button>
+                                            </span>
                                         </div>
-                                    </div>
-                                    <div class="ams-sales-customer-card-meta is-compact" data-customer-expand-panel="${esc(customer.id)}" ${expanded ? '' : 'hidden'}>
+                                    </summary>
+                                    <div class="ams-sales-customer-card-meta is-compact" data-customer-expand-panel="${esc(customer.id)}">
                                         <span><strong>联系人</strong><em>${esc(text(customer.contact_name, '未填写'))}</em></span>
                                         <span><strong>客户公司</strong><em>${esc(text(customer.company_name, '未填写'))}</em></span>
                                         <span><strong>电话 / 邮箱</strong><em>${esc(text(customer.phone || customer.email, '未填写'))}</em></span>
@@ -6536,7 +6648,7 @@ function renderSalesCustomerArchiveList() {
                                         <span class="is-wide"><strong>统计</strong><em>${esc(`${deals.length} 条销售流程 / ${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单`)}</em></span>
                                         <span class="is-wide"><strong>客户备注</strong><em>${esc(notePreview ? `${notePreview.slice(0, 96)}${notePreview.length > 96 ? '...' : ''}` : '未填写')}</em></span>
                                     </div>
-                                </div>
+                                </details>
                                 <div class="ams-sales-customer-card-actions">
                                   ${customer.is_deleted
                                     ? `<button class="ams-btn ams-btn-muted" type="button" data-customer-restore="${esc(customer.id)}">恢复</button>`
@@ -7374,7 +7486,11 @@ export async function renderQuoteBrandsPage(input) {
     restoreBrandEditorDraftState();
     try {
         await ensureBaseData();
-        await repairLegacyBrandRecords(input.user);
+        try {
+            await repairLegacyBrandRecords(input.user);
+        } catch (error) {
+            console.error('repairLegacyBrandRecords failed on quote-brands page', error);
+        }
     } catch (error) {
         if (isQuoteSetupMissing(error)) {
             renderQuoteSetupRequired(input, error);
@@ -7876,8 +7992,16 @@ function bindProductEditor(input) {
 export async function renderQuoteProductsPage(input) {
     try {
         await ensureBaseData();
-        await repairLegacyBrandRecords(input.user);
-        await repairLegacyProductRecords(input.user);
+        try {
+            await repairLegacyBrandRecords(input.user);
+        } catch (error) {
+            console.error('repairLegacyBrandRecords failed on quote-products page', error);
+        }
+        try {
+            await repairLegacyProductRecords(input.user);
+        } catch (error) {
+            console.error('repairLegacyProductRecords failed on quote-products page', error);
+        }
         await ensureBaseTemplates();
     } catch (error) {
         if (isQuoteSetupMissing(error)) {
@@ -7996,7 +8120,7 @@ export async function renderQuoteProductsPage(input) {
                         <div class="ams-field"><label>排序</label><input class="ams-input" type="number" min="0" step="10" data-product-field="sort_order" value="${esc(product.sort_order)}" placeholder="列表排序，数值越小越靠前"></div>
                         <div class="ams-field">
                             <label>产品标题</label>
-                            <textarea class="ams-textarea ams-quote-textarea" data-i18n-prefix="product:public_title" data-lang="zh" placeholder="客户页面看到的产品名称，例如：Magie AIO-500L 液冷版 500kW">${esc(product.public_title?.zh || '')}</textarea>
+                            <input class="ams-input" data-i18n-prefix="product:public_title" data-lang="zh" value="${esc(product.public_title?.zh || '')}" placeholder="客户页面看到的产品名称，例如：Magie AIO-500L 液冷版 500kW">
                             <div class="ams-field-help">客户页面直接显示这里，默认只维护中文基线。</div>
                         </div>
                     </div>
@@ -8722,20 +8846,18 @@ function bindCustomerEditor(input) {
         void renderQuoteCustomersPage(input);
     });
 
-    document.querySelectorAll('[data-customer-expand]').forEach((button) => {
-        button.addEventListener('click', () => {
-            const customerId = text(button.dataset.customerExpand);
-            const nextExpanded = moduleState.customerArchiveExpandedMap[customerId] !== true;
-            moduleState.customerArchiveExpandedMap[customerId] = nextExpanded;
-            button.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
-            button.setAttribute('aria-label', nextExpanded ? '收起客户信息' : '展开客户信息');
-            const icon = button.querySelector('i');
+    document.querySelectorAll('[data-customer-expand-wrap]').forEach((disclosure) => {
+        disclosure.addEventListener('toggle', () => {
+            const customerId = text(disclosure.dataset.customerExpandWrap);
+            const expanded = disclosure.open === true;
+            moduleState.customerArchiveExpandedMap[customerId] = expanded;
+            const summary = disclosure.querySelector('.ams-sales-customer-card-head');
+            if (summary) summary.setAttribute('aria-label', expanded ? '收起客户信息' : '展开客户信息');
+            const icon = disclosure.querySelector('.ams-sales-customer-expand i');
             if (icon) {
-                icon.classList.toggle('fa-chevron-up', nextExpanded);
-                icon.classList.toggle('fa-chevron-down', !nextExpanded);
+                icon.classList.toggle('fa-chevron-up', expanded);
+                icon.classList.toggle('fa-chevron-down', !expanded);
             }
-            const panel = document.querySelector(`[data-customer-expand-panel="${customerId}"]`);
-            if (panel) panel.hidden = !nextExpanded;
         });
     });
 
@@ -10662,7 +10784,7 @@ async function ensureCustomerEditorForSalesFlow(customerId = '') {
     return moduleState.customerEditor || createCustomerDraft(moduleState.customers.find((item) => item.id === customerId) || {});
 }
 
-async function ensureRequirementEditorForDeal(deal = null) {
+async function ensureRequirementEditorForDeal(deal = null, user = null) {
     const activeDeal = deal || dealById(activeDealIdFromState());
     if (!activeDeal?.id) {
         moduleState.requirementLoadedId = '';
@@ -10671,12 +10793,31 @@ async function ensureRequirementEditorForDeal(deal = null) {
     }
     const requirementId = text(activeDeal.primary_requirement_id || dealRequirements(activeDeal.id)[0]?.id);
     if (requirementId) {
-        if (moduleState.requirementLoadedId !== requirementId) await fetchRequirementEditor(requirementId);
+        const existingDraft = createRequirementDraft(moduleState.requirementEditor || {});
+        await fetchRequirementEditor(requirementId);
+        const latestAnswers = normalizeRequirementAnswers(moduleState.requirementEditor?.answers);
+        const localAnswers = normalizeRequirementAnswers(existingDraft.answers);
         moduleState.requirementEditor = createRequirementDraft({
             ...moduleState.requirementEditor,
+            answers: {
+                ...latestAnswers,
+                communication_note_draft: text(localAnswers.communication_note_draft),
+            },
             deal_id: activeDeal.id,
             customer_id: activeDeal.customer_id,
         });
+        if (
+            requirementStatusReadyForQuote(moduleState.requirementEditor?.status)
+            && stageOrderIndex(activeDeal.current_stage) <= stageOrderIndex('requirement_capture')
+        ) {
+            await saveAndAdvanceDeal(user, {
+                id: activeDeal.id,
+                customer_id: activeDeal.customer_id,
+                primary_requirement_id: moduleState.requirementEditor.id,
+            }, ['customer_profile', 'requirement_capture'], 'requirement_confirmed');
+            const syncedDeal = dealById(activeDeal.id);
+            if (syncedDeal) moduleState.dealEditor = createDealDraft(syncedDeal);
+        }
         return moduleState.requirementEditor;
     }
     moduleState.requirementLoadedId = '';
@@ -10798,25 +10939,46 @@ function customerProfileFlowMarkup(customer = {}, deals = [], activeDeal = null)
 
 function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
     const customer = moduleState.customers.find((item) => item.id === text(requirement.customer_id || deal?.customer_id)) || {};
-    const requirementLink = requirement.id && requirement.public_slug && requirement.public_token
+    const customerRequirementLink = requirement.id && requirement.public_slug && requirement.public_token
         ? requirementPublicUrl(requirement.public_slug, requirement.public_token)
+        : '';
+    const readonlyRequirementLink = customerRequirementLink
+        ? requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true })
         : '';
     const answers = normalizeRequirementAnswers(requirement.answers);
     const communicationNotes = answers.communication_notes || [];
     const unreadCustomerUpdate = requirementHasUnreadCustomerUpdate(requirement);
+    const requirementStatus = normalizeRequirementStatus(requirement.status);
+    const requirementSubmitted = requirementStatusReadyForQuote(requirementStatus);
+    const missingFields = requirementSubmitted ? [] : requirementMissingSubmissionFields(requirement);
     const requirementLocked = requirementIsLocked(requirement.status);
     const canConfirm = normalizeDealStageKey(stageKey) === 'requirement_confirmed'
-        && !requirementLocked
+        && requirementStatusReadyForQuote(requirementStatus)
         && Boolean(text(requirement.customer_id) && text(requirement.deal_id || deal?.id));
+    const stageIntro = normalizeDealStageKey(stageKey) === 'requirement_capture'
+        ? (requirementSubmitted
+            ? '客户已经提交需求。这里改为只读回看客户提交内容，并转入“确认需求”阶段锁定报价基线。'
+            : '等待客户提交需求，并在这里查看填写进度、补充内部摘要，以及对外分享带有 GasGx 品牌说明的客户需求入口。')
+        : '复核需求信息并锁定报价基线。';
+    const requirementLinkLabel = requirementSubmitted ? '查看已提交需求' : '后台只读查看';
+    const requirementLinkHelp = requirementSubmitted
+        ? '客户已提交，当前公开需求页已锁定；销售侧应基于客户真实提交内容继续推进确认需求。'
+        : (missingFields.length
+            ? `客户尚未提交，当前仍缺少：${missingFields.slice(0, 5).join('、')}${missingFields.length > 5 ? ` 等 ${missingFields.length} 项` : ''}。`
+            : '客户尚未提交，请继续通过客户填写链接完成信息补充。');
+    const requirementProgressLabel = normalizeDealStageKey(stageKey) === 'requirement_capture'
+        ? (requirementSubmitted
+            ? '客户已完成提交，当前页只用于回看内容和补充内部沟通备注；下一步请进入确认需求。'
+            : '当前阶段只等待客户填写，客户基础信息与需求详情以公开需求页实际提交内容为准。')
+        : '当前阶段请基于客户已提交的真实需求内容进行确认。';
     return `
         <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
             <div class="ams-section-head">
                 <div>
                     <h3>${esc(dealStageLabel(stageKey))}</h3>
-                        <p>${normalizeDealStageKey(stageKey) === 'requirement_capture' ? '等待客户提交需求，并在这里查看填写进度、补充内部摘要，以及对外分享带有 GasGx 品牌说明的客户需求入口。' : '复核需求信息并锁定报价基线。'}</p>
+                        <p>${esc(stageIntro)}</p>
                 </div>
                 <div class="ams-row-actions">
-                    <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-requirement-save">保存</button>
                     ${normalizeDealStageKey(stageKey) === 'requirement_confirmed' ? `<button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-requirement-confirm" ${canConfirm ? '' : 'disabled'}>确认需求</button>` : ''}
                 </div>
             </div>
@@ -10843,10 +11005,10 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
                 <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(customer))}</span></div>
                 <div class="ams-summary-chip"><strong>销售线</strong><span>${esc(text(deal?.title, '--'))}</span></div>
                 <div class="ams-summary-chip"><strong>状态</strong><span>${requirementStatusPill(requirement.status)}</span></div>
-                <div class="ams-summary-chip ams-summary-chip-link"><strong>公开链接</strong><span>${requirementLink ? `<a class="ams-inline-link" href="${esc(requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true }))}" target="_blank" rel="noopener">查看客户需求</a>` : '保存后生成'}</span><small>对外发送时会自动带上填写目的说明、自动保存进度说明和 GasGx 品牌介绍。</small><div class="ams-summary-chip-actions"><button class="ams-btn ams-btn-muted ${unreadCustomerUpdate ? 'has-alert-dot' : ''}" type="button" id="ams-sales-flow-requirement-open-link" ${requirementLink ? '' : 'disabled'}>查看客户需求${unreadCustomerUpdate ? '<span class="ams-btn-alert-dot" aria-hidden="true"></span>' : ''}</button><details class="ams-share-menu ams-sales-flow-requirement-share-menu"><summary class="ams-btn ams-btn-primary" ${requirementLink ? '' : 'aria-disabled="true"'}>分享表单</summary><div class="ams-share-menu-panel"><div class="ams-share-menu-copy"><strong>选择分享方式</strong><span>对外发送时，系统会自动带上填写目的说明、自动保存进度说明和 GasGx 品牌介绍。</span></div><button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-link" ${requirementLink ? '' : 'disabled'}><i class="fa-solid fa-link"></i><span>分享链接</span></button><button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-poster" ${requirementLink ? '' : 'disabled'}><i class="fa-solid fa-qrcode"></i><span>分享二维码</span></button></div></details></div></div>
+                <div class="ams-summary-chip ams-summary-chip-link"><strong>客户填写链接</strong><span>${customerRequirementLink ? `<a class="ams-inline-link" href="${esc(customerRequirementLink)}" target="_blank" rel="noopener">打开客户填写页</a>` : '保存后生成'}</span><small>${esc(requirementLinkHelp)}</small><div class="ams-summary-chip-actions"><button class="ams-btn ams-btn-muted ${unreadCustomerUpdate ? 'has-alert-dot' : ''}" type="button" id="ams-sales-flow-requirement-open-link" ${readonlyRequirementLink ? '' : 'disabled'}>${esc(requirementLinkLabel)}${unreadCustomerUpdate ? '<span class="ams-btn-alert-dot" aria-hidden="true"></span>' : ''}</button><details class="ams-share-menu ams-sales-flow-requirement-share-menu"><summary class="ams-btn ams-btn-primary" ${customerRequirementLink ? '' : 'aria-disabled="true"'}>分享表单</summary><div class="ams-share-menu-panel"><div class="ams-share-menu-copy"><strong>选择分享方式</strong><span>对外发送时，系统会自动带上填写目的说明、自动保存进度说明和 GasGx 品牌介绍。</span></div><button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-link" ${customerRequirementLink ? '' : 'disabled'}><i class="fa-solid fa-link"></i><span>分享链接</span></button><button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-poster" ${customerRequirementLink ? '' : 'disabled'}><i class="fa-solid fa-qrcode"></i><span>分享二维码</span></button></div></details></div></div>
             </div>
             <div class="ams-site-field-grid ams-site-field-grid-wide">
-                <div class="ams-field"><label>客户填写进度说明</label><input class="ams-input" value="${esc(normalizeDealStageKey(stageKey) === 'requirement_capture' ? '当前阶段只等待客户填写，客户基础信息与需求详情以公开需求页实际提交内容为准。' : '当前阶段请基于客户已提交的真实需求内容进行确认。')}" disabled></div>
+                <div class="ams-field"><label>客户填写进度说明</label><input class="ams-input" value="${esc(requirementProgressLabel)}" disabled></div>
             </div>
             <div class="ams-field">
                 <label>销售沟通备注</label>
@@ -10947,6 +11109,7 @@ function quoteFlowMarkup(stageKey = '', deal = null, instance = {}) {
     const canConfirm = normalizeDealStageKey(stageKey) === 'quote_confirmed' && Boolean(text(instance.id) && text(instance.deal_id || deal?.id));
     const isQuoteDraft = normalizeDealStageKey(stageKey) === 'quote_draft';
     const isQuoteConfirmed = normalizeDealStageKey(stageKey) === 'quote_confirmed';
+    const quotePublished = text(instance.status) === 'published' && Boolean(text(instance.public_slug));
     return `
         <div class="ams-stage-detail-stack">
             <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
@@ -10973,12 +11136,14 @@ function quoteFlowMarkup(stageKey = '', deal = null, instance = {}) {
                       ${isQuoteDraft && instance.id ? `
                           <div class="ams-summary-chip ams-summary-chip-link">
                               <strong>报价入口</strong>
-                              <span>已发布报价可在这里直接进入编辑、查看客户视角报价页，或复制对外报价链接用于微信、邮件和群转发。</span>
+                              <span>${quotePublished
+                                  ? '已发布报价可在这里直接进入编辑、查看客户视角报价页，或复制对外报价链接用于微信、邮件和群转发。'
+                                  : '当前报价还未发布。请先发布报价，再查看用户报价或分享对外链接。'}</span>
                               <div class="ams-summary-chip-actions">
-                                  <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-instance-open-inline">打开可视化报价编辑器</button>
-                                  <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-instance-open-public">查看用户报价</button>
+                                  <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-instance-open-inline">打开可视化报价编辑器</button>
+                                  <button class="ams-btn ${quotePublished ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-sales-flow-instance-open-public" ${quotePublished ? '' : 'disabled'} aria-disabled="${quotePublished ? 'false' : 'true'}">查看用户报价</button>
                                   <details class="ams-share-menu ams-sales-flow-quote-share-menu">
-                                      <summary class="ams-btn ams-btn-primary" ${instance.public_slug ? '' : 'aria-disabled="true"'}>
+                                      <summary class="ams-btn ${quotePublished ? 'ams-btn-primary' : 'ams-btn-muted'}" ${quotePublished ? '' : 'aria-disabled="true"'}>
                                           分享报价
                                       </summary>
                                       <div class="ams-share-menu-panel">
@@ -10986,11 +11151,11 @@ function quoteFlowMarkup(stageKey = '', deal = null, instance = {}) {
                                               <strong>选择分享方式</strong>
                                               <span>对外发送时，系统会自动带上用途说明和 GasGx 品牌介绍。</span>
                                           </div>
-                                          <button class="ams-share-menu-item" type="button" id="ams-sales-flow-instance-share-link" ${instance.public_slug ? '' : 'disabled'}>
+                                          <button class="ams-share-menu-item" type="button" id="ams-sales-flow-instance-share-link" ${quotePublished ? '' : 'disabled'}>
                                               <i class="fa-solid fa-link"></i>
                                               <span>分享链接</span>
                                           </button>
-                                          <button class="ams-share-menu-item" type="button" id="ams-sales-flow-instance-share-poster" ${instance.public_slug ? '' : 'disabled'}>
+                                          <button class="ams-share-menu-item" type="button" id="ams-sales-flow-instance-share-poster" ${quotePublished ? '' : 'disabled'}>
                                               <i class="fa-solid fa-qrcode"></i>
                                               <span>分享二维码</span>
                                           </button>
@@ -11690,7 +11855,7 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
 
     document.getElementById('ams-sales-flow-instance-open-public')?.addEventListener('click', () => {
         const instance = moduleState.instanceEditor;
-        if (!instance?.public_slug) {
+        if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
             input.showToast('请先发布报价，再查看用户报价页。', true);
             return;
         }
@@ -11698,6 +11863,12 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
     });
 
     const salesFlowQuoteShareMenu = document.querySelector('.ams-sales-flow-quote-share-menu');
+    salesFlowQuoteShareMenu?.querySelector('summary')?.addEventListener('click', (event) => {
+        const instance = moduleState.instanceEditor;
+        if (text(instance?.status) === 'published' && instance?.public_slug) return;
+        event.preventDefault();
+        input.showToast('请先发布报价，再分享报价。', true);
+    });
     const salesFlowQuotePosterModal = document.getElementById('ams-sales-flow-quote-share-poster-modal');
     const salesFlowQuotePosterImage = document.getElementById('ams-sales-flow-quote-share-poster-image');
     const salesFlowQuotePosterDownload = document.getElementById('ams-sales-flow-quote-share-poster-download');
@@ -11708,7 +11879,7 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
     document.getElementById('ams-sales-flow-instance-share-link')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '复制中...', async () => {
             const instance = moduleState.instanceEditor;
-            if (!instance?.public_slug) {
+            if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
                 input.showToast('请先发布报价，再复制对外报价链接。', true);
                 return;
             }
@@ -11726,7 +11897,7 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
     document.getElementById('ams-sales-flow-instance-share-poster')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
             const instance = moduleState.instanceEditor;
-            if (!instance?.public_slug) {
+            if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
                 input.showToast('请先发布报价，再分享二维码。', true);
                 return;
             }
@@ -11744,7 +11915,7 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
 
     document.getElementById('ams-sales-flow-quote-share-poster-copy-link')?.addEventListener('click', async () => {
         const instance = moduleState.instanceEditor;
-        if (!instance?.public_slug) {
+        if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
             input.showToast('请先发布报价，再复制分享说明。', true);
             return;
         }
@@ -12021,14 +12192,24 @@ export async function renderQuoteCustomerFlowPage(input) {
         return;
     }
     if (activeDeal?.id && moduleState.dealLoadedId !== activeDeal.id) await fetchDealEditor(activeDeal.id);
-    if (dealStageDefinition(stageKey).scope === 'requirement') await ensureRequirementEditorForDeal(activeDeal);
-    if (dealStageDefinition(stageKey).scope === 'quote') await ensureInstanceEditorForDeal(activeDeal);
-    moduleState.dealEditor = activeDeal ? createDealDraft(moduleState.dealEditor || activeDeal) : createDealDraft();
-    moduleState.dealStageRecords = activeDeal ? dealCurrentRecords(moduleState.dealEditor) : [];
-    const customerLabel = flowCustomerLabel(moduleState.customerEditor || {}, activeDeal);
+    if (dealStageDefinition(stageKey).scope === 'requirement') await ensureRequirementEditorForDeal(activeDeal, input.user);
+    const syncedActiveDeal = activeDeal?.id ? (dealById(activeDeal.id) || activeDeal) : activeDeal;
+    if (
+        syncedActiveDeal
+        && stageOrderIndex(syncedActiveDeal.current_stage) > stageOrderIndex(stageKey)
+        && stageOrderIndex(stageKey) >= 0
+    ) {
+        window.history.replaceState({}, '', customerFlowStageUrl(syncedActiveDeal.current_stage, syncedActiveDeal, customerId));
+        await renderQuoteCustomerFlowPage(input);
+        return;
+    }
+    if (dealStageDefinition(stageKey).scope === 'quote') await ensureInstanceEditorForDeal(syncedActiveDeal);
+    moduleState.dealEditor = syncedActiveDeal ? createDealDraft(moduleState.dealEditor || syncedActiveDeal) : createDealDraft();
+    moduleState.dealStageRecords = syncedActiveDeal ? dealCurrentRecords(moduleState.dealEditor) : [];
+    const customerLabel = flowCustomerLabel(moduleState.customerEditor || {}, syncedActiveDeal);
     await appendSalesActivity({
         customer_id: customerId,
-        deal_id: activeDeal?.id,
+        deal_id: syncedActiveDeal?.id,
         requirement_id: moduleState.requirementEditor?.id,
         instance_id: moduleState.instanceEditor?.id,
         actor_type: 'sales',
@@ -12036,7 +12217,7 @@ export async function renderQuoteCustomerFlowPage(input) {
         actor_label: input.user?.email || input.user?.id || 'sales',
         activity_type: 'page_view',
         entity_type: 'deal',
-        entity_id: activeDeal?.id || customerId,
+        entity_id: syncedActiveDeal?.id || customerId,
         page_key: 'quote-customer-flow',
         stage_key: stageKey,
         action_label: `进入客户流水线 · ${dealStageLabel(stageKey)}`,
@@ -12054,16 +12235,16 @@ export async function renderQuoteCustomerFlowPage(input) {
             <aside class="ams-card ams-quote-list-panel">
                 <div class="ams-section-head"><div><h3>客户模式 · 当前客户销售流程</h3><p>${esc(customerLabel)} · 这里只显示这位客户自己的流程。</p></div></div>
                 <div class="ams-quote-list">
-                    ${deals.length ? deals.map((deal) => pipelineListCardMarkup(stageKey, deal, { selectedDealId: activeDeal?.id, customerFlow: true })).join('') : '<div class="ams-empty">这个客户还没有销售流程。</div>'}
+                    ${deals.length ? deals.map((deal) => pipelineListCardMarkup(stageKey, deal, { selectedDealId: syncedActiveDeal?.id, customerFlow: true })).join('') : '<div class="ams-empty">这个客户还没有销售流程。</div>'}
                 </div>
             </aside>
             <div class="ams-sales-flow-detail-stack">
-                ${salesStageDetailMarkup(stageKey, activeDeal, moduleState.customerEditor || createCustomerDraft(), input)}
+                ${salesStageDetailMarkup(stageKey, syncedActiveDeal, moduleState.customerEditor || createCustomerDraft(), input)}
                 ${customerActivityTimelinePanelMarkup(customerId)}
             </div>
         </section>
     `, {
-        deal: activeDeal,
+        deal: syncedActiveDeal,
         customerId,
         currentStage: stageKey,
         page: 'quote-customer-flow',

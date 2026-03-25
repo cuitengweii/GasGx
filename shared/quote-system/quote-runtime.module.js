@@ -656,6 +656,27 @@ function normalizeLang(value) {
     return SUPPORTED_LANGS.includes(text(value)) ? text(value) : DEFAULT_LANG;
 }
 
+function configuredRuntimeLangs(snapshot = state.snapshot) {
+    const quoteEnabled = snapshot?.quote?.shareConfig?.enabled_langs;
+    const productEnabled = snapshot?.product?.ui_text?.enabled_langs;
+    const source = Array.isArray(quoteEnabled) && quoteEnabled.length ? quoteEnabled : productEnabled;
+    const langs = Array.isArray(source)
+        ? [...new Set(source.map((item) => text(item)).filter((item) => SUPPORTED_LANGS.includes(item)))]
+        : [];
+    if (langs.length) return langs;
+    const fallback = normalizeLang(snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG);
+    return [fallback];
+}
+
+function resolveRuntimeLang(requested = '', snapshot = state.snapshot) {
+    const allowed = configuredRuntimeLangs(snapshot);
+    const normalizedRequested = normalizeLang(requested);
+    if (allowed.includes(normalizedRequested)) return normalizedRequested;
+    const fallback = normalizeLang(snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG);
+    if (allowed.includes(fallback)) return fallback;
+    return allowed[0] || DEFAULT_LANG;
+}
+
 function bodyReadonly(readonly) {
     document.body.classList.toggle('is-readonly', readonly);
 }
@@ -752,9 +773,13 @@ function renderAuthButton() {
 }
 
 function renderLangButtons() {
+    const enabledLangs = configuredRuntimeLangs();
     SUPPORTED_LANGS.forEach((lang) => {
         const button = byId(`btn-${lang}`);
         if (!button) return;
+        const enabled = enabledLangs.includes(lang);
+        button.hidden = !enabled;
+        if (!enabled) return;
         button.textContent = lang.toUpperCase();
         if (lang === state.currentLang) {
             button.className = 'px-2 md:px-4 py-1 md:py-1.5 rounded transition-all bg-[var(--gas-green-primary)] text-white font-semibold shadow-[0_0_8px_rgba(93,214,44,0.4)]';
@@ -2283,7 +2308,7 @@ function applySnapshot(snapshot) {
     state.snapshot = snapshot;
     prepareQuoteBehaviorTracking();
     state.galleryIndex = 0;
-    state.currentLang = normalizeLang(params.get('lang') || snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG);
+    state.currentLang = resolveRuntimeLang(params.get('lang') || snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG, snapshot);
     state.rates = normalizeRates(snapshot?.quote?.rates || snapshot?.product?.default_rates || DEFAULT_RATES);
     state.rateStatusMode = 'online';
     state.rateDetail = { message: '', tone: 'muted' };
@@ -2573,6 +2598,14 @@ async function resolveRouteSnapshot() {
 }
 
 function bindEvents() {
+    const switchRuntimeLanguage = (lang) => {
+        const nextLang = resolveRuntimeLang(lang);
+        if (nextLang === state.currentLang) return;
+        state.currentLang = nextLang;
+        renderAll();
+        renderClock();
+        syncShareExpiryUi();
+    };
     byId('btn-auth')?.addEventListener('click', () => {
         if (state.isLoggedIn) {
             window.location.href = getAuthConfig().accountUrl;
@@ -2580,24 +2613,9 @@ function bindEvents() {
         }
         redirectToSignIn();
     });
-    byId('btn-zh')?.addEventListener('click', () => {
-        state.currentLang = 'zh';
-        renderAll();
-        renderClock();
-        syncShareExpiryUi();
-    });
-    byId('btn-en')?.addEventListener('click', () => {
-        state.currentLang = 'en';
-        renderAll();
-        renderClock();
-        syncShareExpiryUi();
-    });
-    byId('btn-ru')?.addEventListener('click', () => {
-        state.currentLang = 'ru';
-        renderAll();
-        renderClock();
-        syncShareExpiryUi();
-    });
+    byId('btn-zh')?.addEventListener('click', () => switchRuntimeLanguage('zh'));
+    byId('btn-en')?.addEventListener('click', () => switchRuntimeLanguage('en'));
+    byId('btn-ru')?.addEventListener('click', () => switchRuntimeLanguage('ru'));
 
     byId('btn-refresh-rates')?.addEventListener('click', () => {
         void fetchRates(true);

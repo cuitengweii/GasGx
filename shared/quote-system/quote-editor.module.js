@@ -1877,6 +1877,8 @@ function bindGlobal() {
             renderAll();
             clearTranslationDirty();
             state.hasUnsavedChanges = false;
+            state.saveInFlight = false;
+            updateSaveButtons('\u4fdd\u5b58\u8349\u7a3f', false);
             renderStatus(actionMode === 'update' ? '\u62a5\u4ef7\u5df2\u66f4\u65b0\u3002' : '\u62a5\u4ef7\u5df2\u53d1\u5e03\u3002', 'success');
             window.location.assign(pipelineReturnUrl());
             return;

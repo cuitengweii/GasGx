@@ -84,12 +84,9 @@ export async function renderAdminUsersPage(input) {
     }
 
     setContent(`
-        <section class="ams-card">
-            <div class="ams-section-head">
-                <div>
-                    <h3>\u540e\u53f0\u4eba\u5458\u5217\u8868</h3>
-                    <p>\u9ed8\u8ba4\u5c55\u793a\u5f53\u524d\u540e\u53f0\u4eba\u5458\uff0c\u9700\u8981\u65f6\u518d\u5c55\u5f00\u65b0\u589e\u533a\u57df\u3002</p>
-                </div>
+        <section class="ams-card ams-admin-users-toolbar-card">
+            <div class="ams-section-head ams-section-head-compact ams-admin-users-toolbar-head">
+                <div></div>
                 <div class="ams-row-actions">
                     <button class="ams-btn ams-btn-primary" type="button" id="ams-admin-users-toggle-create">${adminUsersCreatePanelExpanded ? '\u6536\u8d77\u65b0\u589e' : '\u65b0\u589e\u4eba\u5458'}</button>
                     <button class="ams-btn ams-btn-muted" type="button" id="ams-admin-users-refresh">\u5237\u65b0\u540d\u5355</button>

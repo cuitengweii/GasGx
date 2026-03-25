@@ -1,4 +1,4 @@
-const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
+﻿const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
 const TABLE_CUSTOMER_ACTIVITIES = 'quote_customer_activities';
 
@@ -1174,6 +1174,12 @@ function requiredFieldLabel(field) {
     return localize(REQUIRED_FIELD_LABELS[field] || field);
 }
 
+function missingRequiredFieldLabels(requirement = state.requirement, fields = REQUIRED_FIELD_ORDER) {
+    return fields
+        .filter((field) => validateRequirementField(field, requirement))
+        .map((field) => requiredFieldLabel(field));
+}
+
 function validateRequirementField(field, requirement = state.requirement) {
     if (['requester_company', 'requester_name', 'requester_email', 'contact_channel', 'requester_phone', 'country'].includes(field)) {
         return validateRequirementContactField(field, requirement);
@@ -1704,9 +1710,12 @@ async function submitCurrentRequirement() {
     if (!validateRequirementSubmission(state.requirement)) {
         renderApp();
         const firstInvalidField = REQUIRED_FIELD_ORDER.find((field) => state.validationErrors[field]);
+        const missingLabels = missingRequiredFieldLabels(state.requirement);
         setSubmitStatus(
-            firstInvalidField
-                ? `请先补充或修正：${requiredFieldLabel(firstInvalidField)}。`
+            missingLabels.length
+                ? `请先补充或修正：${missingLabels.join('、')}。`
+                : firstInvalidField
+                    ? `请先补充或修正：${requiredFieldLabel(firstInvalidField)}。`
                 : '请先补全需求信息。',
             true
         );
@@ -1723,8 +1732,11 @@ async function submitCurrentRequirement() {
     if (!validateRequirementContactSection(state.requirement)) {
         renderApp();
         const statusNode = document.getElementById('requirement-submit-status');
+        const missingLabels = missingRequiredFieldLabels(state.requirement, ['requester_company', 'requester_name', 'requester_email', 'contact_channel', 'requester_phone', 'country']);
         if (statusNode) {
-            statusNode.textContent = localize('请先补全并修正联系人信息。');
+            statusNode.textContent = missingLabels.length
+                ? `请先补全联系人信息：${missingLabels.join('、')}。`
+                : localize('请先补全并修正联系人信息。');
             statusNode.classList.add('is-error');
         }
         return;

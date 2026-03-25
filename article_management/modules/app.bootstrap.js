@@ -242,7 +242,7 @@ async function withButtonBusy(button, busyText, task) {
     button.disabled = true;
     button.classList.add('is-loading');
     button.textContent = busyText || '处理中...';
-    const shouldShowBusyToast = /(\u4fdd\u5b58|\u66f4\u65b0|\u521b\u5efa|\u63d0\u4ea4|\u53d1\u5e03)/.test(String(busyText || ''));
+    const shouldShowBusyToast = /(\u4fdd\u5b58|\u66f4\u65b0|\u521b\u5efa|\u63d0\u4ea4|\u53d1\u5e03|\u786e\u8ba4|\u63a8\u8fdb|\u751f\u6210)/.test(String(busyText || ''));
     if (shouldShowBusyToast) {
         showToast(busyText || '处理中...', false, { prominent: true, busy: true, persist: true });
     }
