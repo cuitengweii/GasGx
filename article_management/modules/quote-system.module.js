@@ -4080,10 +4080,11 @@ async function quoteSharePosterDataUrl(instance = {}) {
     return posterDataUrlFromSvg(svg);
 }
 
-function requirementPublicUrl(publicSlug, publicToken) {
+function requirementPublicUrl(publicSlug, publicToken, options = {}) {
     const url = new URL('/quote/requirement.html', window.location.origin);
     if (text(publicSlug)) url.searchParams.set('req', text(publicSlug));
     if (text(publicToken)) url.searchParams.set('token', text(publicToken));
+    if (options.readonly) url.searchParams.set('mode', 'readonly');
     return url.toString();
 }
 
@@ -9146,7 +9147,7 @@ function bindRequirementEditor(input) {
             input.showToast('请先保存需求单，再打开公开需求页。', true);
             return;
         }
-        window.open(requirementPublicUrl(moduleState.requirementEditor.public_slug, moduleState.requirementEditor.public_token), '_blank', 'noopener');
+        window.open(requirementPublicUrl(moduleState.requirementEditor.public_slug, moduleState.requirementEditor.public_token, { readonly: true }), '_blank', 'noopener');
     });
     document.getElementById('ams-quote-requirement-open-link-inline')?.addEventListener('click', () => {
         document.getElementById('ams-quote-requirement-open-link')?.click();
@@ -10842,7 +10843,7 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
                 <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(customer))}</span></div>
                 <div class="ams-summary-chip"><strong>销售线</strong><span>${esc(text(deal?.title, '--'))}</span></div>
                 <div class="ams-summary-chip"><strong>状态</strong><span>${requirementStatusPill(requirement.status)}</span></div>
-                <div class="ams-summary-chip ams-summary-chip-link"><strong>公开链接</strong><span>${requirementLink ? `<a class="ams-inline-link" href="${esc(requirementLink)}" target="_blank" rel="noopener">查看客户需求</a>` : '保存后生成'}</span><small>对外发送时会自动带上填写目的说明、自动保存进度说明和 GasGx 品牌介绍。</small><div class="ams-summary-chip-actions"><button class="ams-btn ams-btn-muted ${unreadCustomerUpdate ? 'has-alert-dot' : ''}" type="button" id="ams-sales-flow-requirement-open-link" ${requirementLink ? '' : 'disabled'}>查看客户需求${unreadCustomerUpdate ? '<span class="ams-btn-alert-dot" aria-hidden="true"></span>' : ''}</button><details class="ams-share-menu ams-sales-flow-requirement-share-menu"><summary class="ams-btn ams-btn-primary" ${requirementLink ? '' : 'aria-disabled="true"'}>分享表单</summary><div class="ams-share-menu-panel"><div class="ams-share-menu-copy"><strong>选择分享方式</strong><span>对外发送时，系统会自动带上填写目的说明、自动保存进度说明和 GasGx 品牌介绍。</span></div><button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-link" ${requirementLink ? '' : 'disabled'}><i class="fa-solid fa-link"></i><span>分享链接</span></button><button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-poster" ${requirementLink ? '' : 'disabled'}><i class="fa-solid fa-qrcode"></i><span>分享二维码</span></button></div></details></div></div>
+                <div class="ams-summary-chip ams-summary-chip-link"><strong>公开链接</strong><span>${requirementLink ? `<a class="ams-inline-link" href="${esc(requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true }))}" target="_blank" rel="noopener">查看客户需求</a>` : '保存后生成'}</span><small>对外发送时会自动带上填写目的说明、自动保存进度说明和 GasGx 品牌介绍。</small><div class="ams-summary-chip-actions"><button class="ams-btn ams-btn-muted ${unreadCustomerUpdate ? 'has-alert-dot' : ''}" type="button" id="ams-sales-flow-requirement-open-link" ${requirementLink ? '' : 'disabled'}>查看客户需求${unreadCustomerUpdate ? '<span class="ams-btn-alert-dot" aria-hidden="true"></span>' : ''}</button><details class="ams-share-menu ams-sales-flow-requirement-share-menu"><summary class="ams-btn ams-btn-primary" ${requirementLink ? '' : 'aria-disabled="true"'}>分享表单</summary><div class="ams-share-menu-panel"><div class="ams-share-menu-copy"><strong>选择分享方式</strong><span>对外发送时，系统会自动带上填写目的说明、自动保存进度说明和 GasGx 品牌介绍。</span></div><button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-link" ${requirementLink ? '' : 'disabled'}><i class="fa-solid fa-link"></i><span>分享链接</span></button><button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-poster" ${requirementLink ? '' : 'disabled'}><i class="fa-solid fa-qrcode"></i><span>分享二维码</span></button></div></details></div></div>
             </div>
             <div class="ams-site-field-grid ams-site-field-grid-wide">
                 <div class="ams-field"><label>客户填写进度说明</label><input class="ams-input" value="${esc(normalizeDealStageKey(stageKey) === 'requirement_capture' ? '当前阶段只等待客户填写，客户基础信息与需求详情以公开需求页实际提交内容为准。' : '当前阶段请基于客户已提交的真实需求内容进行确认。')}" disabled></div>
@@ -11581,7 +11582,7 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
         markRequirementCustomerUpdateSeen(requirement);
         document.getElementById('ams-sales-flow-requirement-open-link')?.classList.remove('has-alert-dot');
         document.querySelector('#ams-sales-flow-requirement-open-link .ams-btn-alert-dot')?.remove();
-        window.open(requirementPublicUrl(requirement.public_slug, requirement.public_token), '_blank', 'noopener');
+        window.open(requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true }), '_blank', 'noopener');
     });
 
     const salesFlowRequirementShareMenu = document.querySelector('.ams-sales-flow-requirement-share-menu');

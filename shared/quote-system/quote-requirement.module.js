@@ -502,6 +502,7 @@ const state = {
     error: '',
     loading: true,
     locale: 'zh',
+    viewOnly: false,
     submitting: false,
     submitConfirmed: false,
     autoSaveTimer: 0,
@@ -519,6 +520,9 @@ const state = {
 
 const params = new URL(window.location.href).searchParams;
 const SUPPORTED_LOCALES = ['zh', 'en', 'ru'];
+function isViewOnlyAccess() {
+    return text(params.get('mode')).toLowerCase() === 'readonly';
+}
 function resolveLocale(rawValue = '') {
     const raw = text(rawValue || params.get('lang')).toLowerCase();
     if (SUPPORTED_LOCALES.includes(raw)) return raw;
@@ -876,7 +880,7 @@ function updateAutoSaveIndicators() {
     const statusNode = document.getElementById('requirement-autosave-status');
     const timeNode = document.getElementById('requirement-autosave-time');
     const submitNode = document.getElementById('requirement-submit-status');
-    const locked = isLocked(state.requirement?.status);
+    const locked = isReadOnlyMode(state.requirement);
     const statusText = locked
         ? localize('客户已提交，当前公开页为只读状态。')
         : text(state.autoSaveMessage, localize('正在等待填写...'));
@@ -896,7 +900,7 @@ function updateAutoSaveIndicators() {
 }
 
 function queueRequirementAutoSave(options = {}) {
-    if (!state.requirement || isLocked(state.requirement.status) || state.submitting) return;
+    if (!state.requirement || isReadOnlyMode(state.requirement) || state.submitting) return;
     state.lastChangedField = text(options.field);
     writeRequirementDraft(state.requirement);
     state.autoSavePending = true;
@@ -915,7 +919,7 @@ function queueRequirementAutoSave(options = {}) {
 
 async function saveRequirementDraftToServer(force = false) {
     const supabase = getClient();
-    if (!supabase || !state.requirement || isLocked(state.requirement.status)) return;
+    if (!supabase || !state.requirement || isReadOnlyMode(state.requirement)) return;
     const payload = buildRequirementPayload(state.requirement);
     const signature = requirementPayloadSignature(payload);
     if (!force && !state.autoSavePending && signature === state.lastSavedSignature) return;
@@ -974,13 +978,13 @@ function bindAutoSaveLifecycle() {
     if (state.autoSaveBound) return;
     state.autoSaveBound = true;
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden' && state.requirement && !isLocked(state.requirement.status)) {
+        if (document.visibilityState === 'hidden' && state.requirement && !isReadOnlyMode(state.requirement)) {
             writeRequirementDraft(state.requirement);
             void saveRequirementDraftToServer(true);
         }
     });
     window.addEventListener('beforeunload', () => {
-        if (state.requirement && !isLocked(state.requirement.status)) {
+        if (state.requirement && !isReadOnlyMode(state.requirement)) {
             writeRequirementDraft(state.requirement);
         }
     });
@@ -1063,6 +1067,10 @@ function statusTone(status = '') {
 
 function isLocked(status = '') {
     return ['submitted', 'reviewing', 'quoted', 'closed'].includes(text(status, 'draft'));
+}
+
+function isReadOnlyMode(requirement = state.requirement) {
+    return !!state.viewOnly || isLocked(requirement?.status);
 }
 
 function fmtDate(value) {

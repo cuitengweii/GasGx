@@ -1083,6 +1083,7 @@ function renderAll() {
     if (!state.snapshot) return;
     applyTheme(state.snapshot.brand);
     renderStaticText();
+    flushQuoteSectionDwell();
     renderContent();
     renderRateLine();
     updateRateStatus(state.rateStatusMode || 'online');
@@ -1714,7 +1715,7 @@ async function logQuoteEvent(eventType, options = {}) {
             await supabase.from(TABLE_CUSTOMER_ACTIVITIES).insert({
                 customer_id: customerId,
                 instance_id: instanceId,
-                stage_key: 'quote_preparing',
+                stage_key: 'quote_confirmed',
                 actor_type: state.isAdmin ? 'sales' : 'customer',
                 actor_id: state.adminUser?.id || null,
                 actor_label: text(state.adminUser?.email || (state.isAdmin ? 'Sales' : 'Customer')),
@@ -1740,7 +1741,7 @@ async function appendQuoteCustomerActivity(actionLabel = '', detail = {}, option
         await supabase.from(TABLE_CUSTOMER_ACTIVITIES).insert({
             customer_id: customerId,
             instance_id: instanceId,
-            stage_key: text(options.stageKey, 'quote_preparing'),
+            stage_key: text(options.stageKey, 'quote_confirmed'),
             actor_type: state.isAdmin ? 'sales' : 'customer',
             actor_id: state.adminUser?.id || null,
             actor_label: text(state.adminUser?.email || (state.isAdmin ? 'Sales' : 'Customer')),
@@ -1828,11 +1829,11 @@ function observeQuoteSections(root = byId('content-area')) {
     if (!nodes.length) return;
     state.quoteBehavior.sectionObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
-            if (!entry.isIntersecting || entry.intersectionRatio < 0.55) return;
+            if (!entry.isIntersecting || entry.intersectionRatio < 0.2) return;
             markQuoteSectionSeen(entry.target?.dataset?.quoteSection || '');
         });
     }, {
-        threshold: [0.55],
+        threshold: [0.2],
     });
     nodes.forEach((node) => state.quoteBehavior.sectionObserver.observe(node));
 }
@@ -2672,6 +2673,12 @@ function bindEvents() {
         if (!isMobileViewport()) closeShareMenu();
     });
     window.addEventListener('scroll', updateBackToTop, { passive: true });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') flushQuoteBehaviorSummary();
+    });
+    window.addEventListener('pagehide', () => {
+        flushQuoteBehaviorSummary();
+    });
 }
 
 async function init() {
