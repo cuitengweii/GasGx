@@ -352,6 +352,55 @@ const MINER_MODEL_CATALOG = Object.freeze({
     ],
 });
 
+const LATEST_MINER_MODEL_CATALOG = Object.freeze({
+    bitmain: [
+        { value: 'antminer-s23-hyd', model: 'Antminer S23 Hyd', hashrate: 'Latest series', power: 'Hydro' },
+        { value: 'antminer-s23', model: 'Antminer S23', hashrate: 'Latest series', power: 'Air' },
+        { value: 'antminer-s21-xp-hyd', model: 'Antminer S21 XP Hyd', hashrate: '473 TH/s', power: '5676W' },
+        { value: 'antminer-s21-pro-hyd', model: 'Antminer S21 Pro Hyd', hashrate: 'Hydro series', power: '--' },
+        { value: 'antminer-s21-xp', model: 'Antminer S21 XP', hashrate: '270 TH/s', power: '--' },
+        { value: 'antminer-s21-pro', model: 'Antminer S21 Pro', hashrate: '234 TH/s', power: '3510W' },
+        { value: 'antminer-s21-200t', model: 'Antminer S21', hashrate: '200 TH/s', power: '3500W' },
+    ],
+    microbt: [
+        { value: 'whatsminer-m66s-plus-plus', model: 'WhatsMiner M66S++', hashrate: 'Immersion series', power: '--' },
+        { value: 'whatsminer-m66s-plus', model: 'WhatsMiner M66S+', hashrate: 'Immersion series', power: '--' },
+        { value: 'whatsminer-m66s', model: 'WhatsMiner M66S', hashrate: 'Immersion series', power: '--' },
+        { value: 'whatsminer-m66', model: 'WhatsMiner M66', hashrate: 'Immersion series', power: '--' },
+        { value: 'whatsminer-m65s', model: 'WhatsMiner M65S', hashrate: 'Hydro series', power: '--' },
+        { value: 'whatsminer-m64', model: 'WhatsMiner M64', hashrate: 'Hydro series', power: '--' },
+        { value: 'whatsminer-m63s-plus-plus', model: 'WhatsMiner M63S++', hashrate: 'Hydro / immersion', power: '--' },
+        { value: 'whatsminer-m61', model: 'WhatsMiner M61 Series', hashrate: 'Air series', power: '~5000W OC' },
+        { value: 'whatsminer-m60s', model: 'WhatsMiner M60S', hashrate: '170-186 TH/s', power: '3145-3441W' },
+    ],
+    canaan: [
+        { value: 'avalon-a16xp-300t', model: 'AvalonMiner A16XP-300T', hashrate: '300 TH/s', power: '3850W' },
+        { value: 'avalon-a16-282t', model: 'AvalonMiner A16-282T', hashrate: '282 TH/s', power: '3900W' },
+        { value: 'avalon-a15-200t', model: 'AvalonMiner A15-200T', hashrate: '200 TH/s', power: '3760W' },
+        { value: 'avalon-a1566ha-500t', model: 'AvalonMiner A1566HA-500T', hashrate: '500 TH/s', power: '8064W' },
+        { value: 'avalon-a1566ha-480t', model: 'AvalonMiner A1566HA-480T', hashrate: '480 TH/s', power: '8064W' },
+        { value: 'avalon-a15pro-221t', model: 'AvalonMiner A15Pro', hashrate: '221 TH/s', power: '3662W' },
+        { value: 'avalon-a15xp-209t', model: 'AvalonMiner A15XP', hashrate: '209 TH/s', power: '3667W' },
+    ],
+    bitdeer: [
+        { value: 'sealminer-a3-pro-hyd', model: 'SEALMINER A3 Pro Hydro', hashrate: '660 TH/s', power: '7875-8625W' },
+        { value: 'sealminer-a3-hyd', model: 'SEALMINER A3 Hydro', hashrate: '500 TH/s', power: '6210-7290W' },
+        { value: 'sealminer-a3-pro-air', model: 'SEALMINER A3 Pro Air', hashrate: '290 TH/s', power: '3250-4000W' },
+        { value: 'sealminer-a3-air', model: 'SEALMINER A3 Air', hashrate: '260 TH/s', power: '3360-3920W' },
+        { value: 'sealminer-a2-pro-hyd', model: 'SEALMINER A2 Pro Hydro', hashrate: '500 TH/s', power: '--' },
+        { value: 'sealminer-a2-pro-air', model: 'SEALMINER A2 Pro Air', hashrate: '260 TH/s', power: '--' },
+        { value: 'sealminer-a2-hyd', model: 'SEALMINER A2 Hydro', hashrate: '446 TH/s', power: '--' },
+        { value: 'sealminer-a2', model: 'SEALMINER A2', hashrate: '226 TH/s', power: '3729W' },
+    ],
+    auradine: [
+        { value: 'teraflux-ah3880', model: 'Teraflux AH3880', hashrate: '100-600 TH/s', power: 'Hydro' },
+        { value: 'teraflux-ai3680', model: 'Teraflux AI3680', hashrate: '40-365 TH/s', power: 'Immersion' },
+        { value: 'teraflux-at2880', model: 'Teraflux AT2880', hashrate: '40-270 TH/s', power: '5000W' },
+        { value: 'teraflux-at2870', model: 'Teraflux AT2870', hashrate: 'Air-cooled', power: '--' },
+        { value: 'teraflux-at1500', model: 'Teraflux AT1500', hashrate: 'Air-cooled', power: '--' },
+    ],
+});
+
 function minerBrandLabelMap() {
     return Object.fromEntries(REQUIREMENT_MULTI_OPTIONS.miner_brands.map((item) => [item.value, localize(item.label)]));
 }
@@ -382,7 +431,7 @@ function minerModelOptionsFor(brands = []) {
     if (!selected.length) return [];
     const brandLabels = minerBrandLabelMap();
     return selected.flatMap((brand) => {
-        const entries = (MINER_MODEL_CATALOG[brand] || []).slice(0, 10);
+        const entries = (LATEST_MINER_MODEL_CATALOG[brand] || MINER_MODEL_CATALOG[brand] || []).slice(0, 12);
         return entries.map((entry) => ({
             ...entry,
             brand,
@@ -979,13 +1028,14 @@ function requirementHeading(requirement = {}) {
     return text(requirement.requester_company || requirement.requester_name || '', localize('矿机与供电需求收集'));
 }
 
-function choiceChipMarkup(field, options = [], selectedValues = [], disabled = false) {
+function choiceChipMarkup(field, options = [], selectedValues = [], disabled = false, mode = 'multiple') {
     const selectedSet = new Set(normalizeStringList(selectedValues));
+    const inputType = mode === 'single' ? 'radio' : 'checkbox';
     return `
         <div class="requirement-choice-grid">
             ${options.map((item) => `
                 <label class="requirement-choice ${selectedSet.has(item.value) ? 'is-active' : ''} ${disabled ? 'is-disabled' : ''}">
-                    <input type="checkbox" data-answer-check="${esc(field)}" value="${esc(item.value)}" ${selectedSet.has(item.value) ? 'checked' : ''} ${disabled ? 'disabled' : ''}>
+                    <input type="${inputType}" name="requirement-${esc(field)}" data-answer-check="${esc(field)}" value="${esc(item.value)}" ${selectedSet.has(item.value) ? 'checked' : ''} ${disabled ? 'disabled' : ''}>
                     <span>${esc(localize(item.label))}</span>
                 </label>
             `).join('')}
@@ -1238,6 +1288,20 @@ function renderLoading() {
     `;
 }
 
+function refreshMinerModelChoices() {
+    const wrap = document.getElementById('requirement-miner-model-wrap');
+    const requirement = state.requirement;
+    if (!wrap || !requirement) return;
+    const answers = normalizeAnswers(requirement.answers);
+    const availableModels = minerModelOptionsFor(answers.miner_brands);
+    const availableModelSet = new Set(availableModels.map((item) => item.value));
+    const filteredModels = answers.miner_models.filter((item) => availableModelSet.has(item));
+    if (filteredModels.length !== answers.miner_models.length) {
+        requirement.answers.miner_models = filteredModels;
+    }
+    wrap.innerHTML = minerModelChoiceSelectMarkup(filteredModels, answers.miner_brands, isLocked(requirement.status));
+}
+
 function renderError(message) {
     document.title = localize('公开需求链接不可用') || 'Requirement Link Unavailable';
     root().innerHTML = `
@@ -1400,17 +1464,17 @@ function renderApp() {
             </div>
             <div class="requirement-field ${state.validationErrors.miner_brands ? 'is-invalid' : ''}" data-required-field="miner_brands">
                 <span>${esc(localize('矿机品牌'))}</span>
-                ${choiceChipMarkup('miner_brands', REQUIREMENT_MULTI_OPTIONS.miner_brands, answers.miner_brands, locked)}
+                ${choiceChipMarkup('miner_brands', REQUIREMENT_MULTI_OPTIONS.miner_brands, answers.miner_brands, locked, 'single')}
                 ${fieldErrorMarkup('miner_brands')}
             </div>
             <div class="requirement-field ${state.validationErrors.miner_cooling ? 'is-invalid' : ''}" data-required-field="miner_cooling">
                 <span>${esc(localize('矿机冷却方式'))}</span>
-                ${choiceChipMarkup('miner_cooling', REQUIREMENT_MULTI_OPTIONS.miner_cooling, answers.miner_cooling, locked)}
+                ${choiceChipMarkup('miner_cooling', REQUIREMENT_MULTI_OPTIONS.miner_cooling, answers.miner_cooling, locked, 'single')}
                 ${fieldErrorMarkup('miner_cooling')}
             </div>
             <div class="requirement-field">
-                <span>${esc(localize('推荐机型 (Top 10)'))}</span>
-                ${minerModelChoiceSelectMarkup(filteredModels, answers.miner_brands, locked)}
+                <span>${esc(localize('???????????'))}</span>
+                <div id="requirement-miner-model-wrap">${minerModelChoiceSelectMarkup(filteredModels, answers.miner_brands, locked)}</div>
             </div>
         </section>
 
@@ -1541,14 +1605,17 @@ function bindEvents() {
         node.addEventListener('change', () => {
             const field = node.dataset.answerCheck;
             if (!field) return;
-            requirement.answers[field] = Array.from(document.querySelectorAll(`[data-answer-check="${field}"]`))
+            const selectedValues = Array.from(document.querySelectorAll(`[data-answer-check="${field}"]`))
                 .filter((item) => item.checked)
                 .map((item) => item.value);
+            requirement.answers[field] = ['miner_brands', 'miner_cooling'].includes(field)
+                ? selectedValues.slice(0, 1)
+                : selectedValues;
             updateFieldValidation(field);
             syncFieldValidationUI(field);
             queueRequirementAutoSave({ field });
             if (field === 'miner_brands') {
-                renderApp();
+                refreshMinerModelChoices();
             }
         });
     });

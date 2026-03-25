@@ -197,13 +197,34 @@ function esc(value) {
         .replace(/'/g, '&#39;');
 }
 
-function showToast(message, isError = false) {
+function clearToastState() {
     if (!toastNode) return;
-    toastNode.textContent = message;
-    toastNode.style.borderColor = isError ? 'rgba(239,68,68,0.55)' : 'rgba(93,214,44,0.45)';
-    toastNode.classList.add('show');
+    toastNode.classList.remove('show', 'is-modal', 'is-busy', 'is-error');
+}
+
+function shouldUseProminentToast(message = '', isError = false) {
+    if (isError) return true;
+    return /(\u4fdd\u5b58|\u5df2\u4fdd\u5b58|\u66f4\u65b0|\u5df2\u66f4\u65b0|\u521b\u5efa|\u5df2\u521b\u5efa|\u63d0\u4ea4|\u5df2\u63d0\u4ea4|\u53d1\u5e03|\u5df2\u53d1\u5e03)/.test(String(message || ''));
+}
+
+function showToast(message, isError = false, options = {}) {
+    if (!toastNode) return;
+    const prominent = options.prominent ?? shouldUseProminentToast(message, isError);
+    const busy = Boolean(options.busy);
     clearTimeout(showToast.timer);
-    showToast.timer = setTimeout(() => toastNode.classList.remove('show'), 2600);
+    clearToastState();
+    toastNode.textContent = message;
+    toastNode.style.borderColor = isError
+        ? 'rgba(239,68,68,0.55)'
+        : busy
+            ? 'rgba(255,191,72,0.55)'
+            : 'rgba(93,214,44,0.45)';
+    if (prominent) toastNode.classList.add('is-modal');
+    if (busy) toastNode.classList.add('is-busy');
+    if (isError) toastNode.classList.add('is-error');
+    toastNode.classList.add('show');
+    if (options.persist) return;
+    showToast.timer = setTimeout(() => clearToastState(), prominent ? 1800 : 2600);
 }
 
 async function withButtonBusy(button, busyText, task) {
@@ -221,10 +242,17 @@ async function withButtonBusy(button, busyText, task) {
     button.disabled = true;
     button.classList.add('is-loading');
     button.textContent = busyText || '处理中...';
+    const shouldShowBusyToast = /(\u4fdd\u5b58|\u66f4\u65b0|\u521b\u5efa|\u63d0\u4ea4|\u53d1\u5e03)/.test(String(busyText || ''));
+    if (shouldShowBusyToast) {
+        showToast(busyText || '处理中...', false, { prominent: true, busy: true, persist: true });
+    }
 
     try {
         await task();
     } finally {
+        if (shouldShowBusyToast) {
+            clearToastState();
+        }
         button.classList.remove('is-loading');
         delete button.dataset.loading;
         if (button.isConnected) {

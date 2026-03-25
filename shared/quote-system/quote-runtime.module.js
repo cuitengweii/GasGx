@@ -356,6 +356,16 @@ const state = {
         note: '',
         result: null,
     },
+    quoteBehavior: {
+        visitCount: 0,
+        visitType: 'first',
+        sectionObserver: null,
+        sectionSeenMap: {},
+        sectionDwellMap: {},
+        activeSectionKey: '',
+        activeSectionStartedAt: 0,
+        activitySentMap: {},
+    },
 };
 
 function localeCopy(options = {}) {
@@ -536,6 +546,59 @@ function pickDisplayText(value, fallback = '') {
 function safeNumber(value, fallback = 0) {
     const next = Number(value);
     return Number.isFinite(next) ? next : fallback;
+}
+
+function quoteBehaviorSectionLabel(sectionKey = '') {
+    const key = text(sectionKey);
+    if (key === 'overview') return state.currentLang === 'zh' ? '报价总览' : key;
+    if (key === 'pricing') return state.currentLang === 'zh' ? '价格明细' : key;
+    if (key === 'media') return state.currentLang === 'zh' ? '产品图片' : key;
+    if (key === 'confirmation') return state.currentLang === 'zh' ? '报价确认区' : key;
+    return key || 'quote';
+}
+
+function quoteBehaviorAccessMode() {
+    if (state.route?.type === 'share') return 'share';
+    if (state.route?.type === 'preview') return 'preview';
+    return state.isAdmin ? 'admin' : 'quote';
+}
+
+function quoteBehaviorStorageKey() {
+    const instanceId = text(state.snapshot?.quote?.id || state.snapshot?.quote?.publicSlug || state.route?.quoteSlug || state.route?.token || state.route?.brand);
+    const accessMode = quoteBehaviorAccessMode();
+    if (!instanceId) return '';
+    return `gasgx.quote.visit:${instanceId}:${accessMode}`;
+}
+
+function resetQuoteBehaviorTracking() {
+    state.quoteBehavior.sectionObserver?.disconnect?.();
+    state.quoteBehavior = {
+        visitCount: 0,
+        visitType: 'first',
+        sectionObserver: null,
+        sectionSeenMap: {},
+        sectionDwellMap: {},
+        activeSectionKey: '',
+        activeSectionStartedAt: 0,
+        activitySentMap: {},
+    };
+}
+
+function prepareQuoteBehaviorTracking() {
+    resetQuoteBehaviorTracking();
+    if (state.isAdmin) return;
+    const storageKey = quoteBehaviorStorageKey();
+    let nextCount = 1;
+    if (storageKey) {
+        try {
+            nextCount = safeNumber(window.localStorage.getItem(storageKey), 0) + 1;
+            window.localStorage.setItem(storageKey, String(nextCount));
+        } catch (_error) {
+            nextCount = 1;
+        }
+    }
+    state.quoteBehavior.visitCount = Math.max(1, nextCount);
+    state.quoteBehavior.visitType = nextCount > 1 ? 'return' : 'first';
 }
 
 function formatMoney(value) {
@@ -947,47 +1010,71 @@ function renderContent() {
 
     container.innerHTML = `
         <div class="mb-10 md:mb-16">
-            <h3 class="text-base md:text-lg font-semibold text-[var(--gas-green-light)] mb-4 md:mb-5 flex items-center gap-2 md:gap-3">
-                <span class="bg-[var(--gas-green-bg)] border border-[var(--gas-green-primary)] text-[var(--gas-green-light)] w-6 h-6 md:w-7 md:h-7 rounded flex items-center justify-center text-xs md:text-sm font-mono-num flex-shrink-0">1</span>
-                <span class="leading-tight">${esc(productTitle)}</span>
-            </h3>
-            ${mediaAbove}
+            <section data-quote-section="overview">
+                <h3 class="text-base md:text-lg font-semibold text-[var(--gas-green-light)] mb-4 md:mb-5 flex items-center gap-2 md:gap-3">
+                    <span class="bg-[var(--gas-green-bg)] border border-[var(--gas-green-primary)] text-[var(--gas-green-light)] w-6 h-6 md:w-7 md:h-7 rounded flex items-center justify-center text-xs md:text-sm font-mono-num flex-shrink-0">1</span>
+                    <span class="leading-tight">${esc(productTitle)}</span>
+                </h3>
+            </section>
+            ${mediaAbove ? `<section data-quote-section="media">${mediaAbove}</section>` : ''}
 
-            <div class="quote-total-card bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between shadow-inner gap-4">
-                <span class="font-bold text-white tracking-wider text-xs md:text-sm">${esc(uiText('system_total_label', 'systemTotal'))}:</span>
-                <div class="quote-total-grid text-sm md:text-[15px]">
-                    <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RMB', total))}</span></span>
-                    <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('USD', total * state.rates.USD))}</span></span>
-                    <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('EUR', total * state.rates.EUR))}</span></span>
-                    <span class="flex items-center gap-2"><span class="gas-tag">CAD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('CAD', total * state.rates.CAD))}</span></span>
-                    <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RUB', total * state.rates.RUB))}</span></span>
+            <section data-quote-section="pricing">
+                <div class="quote-total-card bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between shadow-inner gap-4">
+                    <span class="font-bold text-white tracking-wider text-xs md:text-sm">${esc(uiText('system_total_label', 'systemTotal'))}:</span>
+                    <div class="quote-total-grid text-sm md:text-[15px]">
+                        <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RMB', total))}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('USD', total * state.rates.USD))}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('EUR', total * state.rates.EUR))}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">CAD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('CAD', total * state.rates.CAD))}</span></span>
+                        <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RUB', total * state.rates.RUB))}</span></span>
+                    </div>
                 </div>
-            </div>
 
-            <div class="table-scroll-shell" data-scroll-left="false" data-scroll-right="false">
-                <div class="table-scroll-note"><i class="fa-solid fa-arrows-left-right"></i><span>${esc(t('tableSwipeHint'))}</span></div>
-                <div class="table-responsive-wrapper w-full">
-                    <table class="industrial-table text-left">
-                        <thead>
-                            <tr>${t('headers').map((header, index) => `<th class="${index === 0 ? 'w-12 text-center whitespace-nowrap' : 'whitespace-nowrap'}">${esc(header)}</th>`).join('')}</tr>
-                        </thead>
-                        <tbody>${rows.join('')}</tbody>
-                    </table>
+                <div class="table-scroll-shell" data-scroll-left="false" data-scroll-right="false">
+                    <div class="table-scroll-note"><i class="fa-solid fa-arrows-left-right"></i><span>${esc(t('tableSwipeHint'))}</span></div>
+                    <div class="table-responsive-wrapper w-full">
+                        <table class="industrial-table text-left">
+                            <thead>
+                                <tr>${t('headers').map((header, index) => `<th class="${index === 0 ? 'w-12 text-center whitespace-nowrap' : 'whitespace-nowrap'}">${esc(header)}</th>`).join('')}</tr>
+                            </thead>
+                            <tbody>${rows.join('')}</tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
-            ${mediaBelow}
+            </section>
+            ${mediaBelow ? `<section data-quote-section="media">${mediaBelow}</section>` : ''}
         </div>
-        ${confirmationPanel}
+        ${confirmationPanel ? `<section data-quote-section="confirmation">${confirmationPanel}</section>` : ''}
     `;
     bindScrollableTables(container);
     bindProductMediaControls();
+    observeQuoteSections(container);
     byId('quote-confirm-checkbox')?.addEventListener('change', (event) => {
         state.publicConfirmation.confirmed = Boolean(event.currentTarget.checked);
+        if (state.publicConfirmation.confirmed) {
+            logQuoteBehavior('勾选报价确认', {
+                section_key: 'confirmation',
+                section_label: quoteBehaviorSectionLabel('confirmation'),
+                summary: '客户已勾选报价确认复选框',
+            }, {
+                activityType: 'button_click',
+                dedupeKey: 'confirm-checkbox',
+            });
+        }
     });
     byId('quote-confirm-note')?.addEventListener('input', (event) => {
         state.publicConfirmation.note = event.currentTarget.value || '';
     });
     byId('quote-confirm-submit')?.addEventListener('click', () => {
+        logQuoteBehavior('点击提交报价确认', {
+            section_key: 'confirmation',
+            section_label: quoteBehaviorSectionLabel('confirmation'),
+            note_length: text(state.publicConfirmation.note).length,
+            summary: '客户尝试提交报价确认',
+        }, {
+            activityType: 'button_click',
+            dedupeKey: 'confirm-submit-click',
+        });
         void submitEmbeddedPublicConfirmation();
     });
 }
@@ -1599,6 +1686,7 @@ async function logQuoteEvent(eventType, options = {}) {
         });
         const customerId = text(state.snapshot?.quote?.customerId);
         if (customerId) {
+            const visitType = text(options.metadata?.visitType);
             const activityType = eventType === 'share_opened'
                 ? 'public_link_opened'
                 : eventType === 'share_link_generated' || eventType === 'email_clicked' || eventType === 'passcode_unlocked'
@@ -1615,6 +1703,14 @@ async function logQuoteEvent(eventType, options = {}) {
                             : eventType === 'share_opened'
                                 ? '客户打开报价链接'
                                 : '客户查看报价';
+            let normalizedActionLabel = actionLabel;
+            if (eventType === 'share_link_generated') normalizedActionLabel = '生成报价分享链接';
+            else if (eventType === 'email_clicked') normalizedActionLabel = '点击邮件发送';
+            else if (eventType === 'preview_opened') normalizedActionLabel = '后台打开报价预览';
+            else if (eventType === 'passcode_unlocked') normalizedActionLabel = '客户完成提取码验证';
+            else if (eventType === 'share_opened') normalizedActionLabel = visitType === 'return' ? '客户再次回访报价链接' : '客户首次打开报价链接';
+            else if (eventType === 'quote_viewed') normalizedActionLabel = visitType === 'return' ? '客户再次回访报价' : '客户首次打开报价';
+            else normalizedActionLabel = '客户查看报价';
             await supabase.from(TABLE_CUSTOMER_ACTIVITIES).insert({
                 customer_id: customerId,
                 instance_id: instanceId,
@@ -1626,13 +1722,119 @@ async function logQuoteEvent(eventType, options = {}) {
                 entity_type: 'quote_instance',
                 entity_id: instanceId,
                 page_key: 'quote-instances',
-                action_label: actionLabel,
+                action_label: normalizedActionLabel,
                 detail_json: options.metadata && typeof options.metadata === 'object' ? options.metadata : {},
             });
         }
     } catch (_error) {
         // Event logging is best-effort and must not block customer access.
     }
+}
+
+async function appendQuoteCustomerActivity(actionLabel = '', detail = {}, options = {}) {
+    const supabase = getClient();
+    const customerId = text(state.snapshot?.quote?.customerId);
+    const instanceId = text(state.snapshot?.quote?.id);
+    if (!supabase || !customerId || !instanceId || !actionLabel) return;
+    try {
+        await supabase.from(TABLE_CUSTOMER_ACTIVITIES).insert({
+            customer_id: customerId,
+            instance_id: instanceId,
+            stage_key: text(options.stageKey, 'quote_preparing'),
+            actor_type: state.isAdmin ? 'sales' : 'customer',
+            actor_id: state.adminUser?.id || null,
+            actor_label: text(state.adminUser?.email || (state.isAdmin ? 'Sales' : 'Customer')),
+            activity_type: text(options.activityType, 'page_view'),
+            entity_type: 'quote_instance',
+            entity_id: instanceId,
+            page_key: text(options.pageKey, 'quote-view'),
+            action_label: actionLabel,
+            detail_json: detail && typeof detail === 'object' ? detail : {},
+        });
+    } catch (_error) {
+        return;
+    }
+}
+
+function logQuoteBehavior(actionLabel = '', detail = {}, options = {}) {
+    if (state.isAdmin) return;
+    const dedupeKey = text(options.dedupeKey);
+    if (dedupeKey && state.quoteBehavior.activitySentMap[dedupeKey]) return;
+    if (dedupeKey) state.quoteBehavior.activitySentMap[dedupeKey] = true;
+    void appendQuoteCustomerActivity(actionLabel, {
+        access_mode: quoteBehaviorAccessMode(),
+        ...detail,
+    }, options);
+}
+
+function markQuoteSectionSeen(sectionKey = '') {
+    const key = text(sectionKey);
+    if (!key || state.isAdmin) return;
+    const label = quoteBehaviorSectionLabel(key);
+    if (!state.quoteBehavior.sectionSeenMap[key]) {
+        state.quoteBehavior.sectionSeenMap[key] = true;
+        logQuoteBehavior(`查看${label}`, {
+            section_key: key,
+            section_label: label,
+            summary: `客户已查看${label}`,
+        }, {
+            activityType: 'page_view',
+            dedupeKey: `section-seen:${key}`,
+        });
+    }
+    if (state.quoteBehavior.activeSectionKey !== key) {
+        flushQuoteSectionDwell();
+        state.quoteBehavior.activeSectionKey = key;
+        state.quoteBehavior.activeSectionStartedAt = Date.now();
+    }
+}
+
+function flushQuoteSectionDwell() {
+    const activeKey = text(state.quoteBehavior.activeSectionKey);
+    if (!activeKey || !state.quoteBehavior.activeSectionStartedAt) return;
+    const elapsedMs = Date.now() - state.quoteBehavior.activeSectionStartedAt;
+    if (elapsedMs > 0) {
+        state.quoteBehavior.sectionDwellMap[activeKey] = safeNumber(state.quoteBehavior.sectionDwellMap[activeKey], 0) + elapsedMs;
+    }
+    state.quoteBehavior.activeSectionKey = '';
+    state.quoteBehavior.activeSectionStartedAt = 0;
+}
+
+function flushQuoteBehaviorSummary() {
+    if (state.isAdmin) return;
+    flushQuoteSectionDwell();
+    const focused = Object.entries(state.quoteBehavior.sectionDwellMap)
+        .sort((left, right) => safeNumber(right[1], 0) - safeNumber(left[1], 0))[0];
+    if (!focused) return;
+    const [sectionKey, dwellMs] = focused;
+    const dwellSeconds = Math.round(safeNumber(dwellMs, 0) / 1000);
+    if (dwellSeconds < 12) return;
+    const label = quoteBehaviorSectionLabel(sectionKey);
+    logQuoteBehavior(`重点查看${label}`, {
+        section_key: sectionKey,
+        section_label: label,
+        dwell_seconds: dwellSeconds,
+        summary: `停留约 ${dwellSeconds} 秒`,
+    }, {
+        activityType: 'page_view',
+        dedupeKey: `section-focus:${sectionKey}`,
+    });
+}
+
+function observeQuoteSections(root = byId('content-area')) {
+    state.quoteBehavior.sectionObserver?.disconnect?.();
+    if (!root || state.isAdmin || typeof IntersectionObserver !== 'function') return;
+    const nodes = [...root.querySelectorAll('[data-quote-section]')];
+    if (!nodes.length) return;
+    state.quoteBehavior.sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (!entry.isIntersecting || entry.intersectionRatio < 0.55) return;
+            markQuoteSectionSeen(entry.target?.dataset?.quoteSection || '');
+        });
+    }, {
+        threshold: [0.55],
+    });
+    nodes.forEach((node) => state.quoteBehavior.sectionObserver.observe(node));
 }
 
 async function appendShareHistoryRecord(options = {}) {
@@ -2078,6 +2280,7 @@ async function submitEmbeddedPublicConfirmation() {
 
 function applySnapshot(snapshot) {
     state.snapshot = snapshot;
+    prepareQuoteBehaviorTracking();
     state.galleryIndex = 0;
     state.currentLang = normalizeLang(params.get('lang') || snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG);
     state.rates = normalizeRates(snapshot?.quote?.rates || snapshot?.product?.default_rates || DEFAULT_RATES);
@@ -2184,15 +2387,17 @@ async function handlePasscodeSubmit() {
                 ...(pending.payload?.shareMeta && typeof pending.payload.shareMeta === 'object' ? pending.payload.shareMeta : {}),
             },
         });
-        void logQuoteEvent('share_opened', {
-            accessMode: 'share',
-            shareToken: state.route?.token,
-            shareExpiresAt: pending.payload?.expiresAt || '',
-            metadata: {
-                unlockedByPasscode: true,
-                ...(pending.payload?.shareMeta && typeof pending.payload.shareMeta === 'object' ? pending.payload.shareMeta : {}),
-            },
-        });
+            void logQuoteEvent('share_opened', {
+                accessMode: 'share',
+                shareToken: state.route?.token,
+                shareExpiresAt: pending.payload?.expiresAt || '',
+                metadata: {
+                    visitType: state.quoteBehavior.visitType,
+                    visitCount: state.quoteBehavior.visitCount,
+                    unlockedByPasscode: true,
+                    ...(pending.payload?.shareMeta && typeof pending.payload.shareMeta === 'object' ? pending.payload.shareMeta : {}),
+                },
+            });
         await fetchRates(false);
         return;
     }
@@ -2263,6 +2468,8 @@ async function resolveRouteSnapshot() {
                 shareToken: state.route.token,
                 shareExpiresAt: result.payload?.expiresAt || '',
                 metadata: {
+                    visitType: state.quoteBehavior.visitType,
+                    visitCount: state.quoteBehavior.visitCount,
                     passcodeProtected: Boolean(result.payload?.passcode),
                     ...(result.payload?.shareMeta && typeof result.payload.shareMeta === 'object' ? result.payload.shareMeta : {}),
                 },
@@ -2328,6 +2535,8 @@ async function resolveRouteSnapshot() {
         void logQuoteEvent('quote_viewed', {
             accessMode: state.isAdmin ? 'admin' : 'quote',
             metadata: {
+                visitType: state.quoteBehavior.visitType,
+                visitCount: state.quoteBehavior.visitCount,
                 quoteSlug: state.route.quoteSlug,
             },
         });
@@ -2352,6 +2561,8 @@ async function resolveRouteSnapshot() {
     void logQuoteEvent('quote_viewed', {
         accessMode: state.isAdmin ? 'admin' : 'quote',
         metadata: {
+            visitType: state.quoteBehavior.visitType,
+            visitCount: state.quoteBehavior.visitCount,
             brand: state.route.brand,
             productId: state.route.productId || '',
         },

@@ -380,10 +380,16 @@ textarea {
 
 .ams-share-menu {
     position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
 }
 
 .ams-share-menu summary {
     list-style: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
 }
 
 .ams-share-menu summary::-webkit-details-marker {
@@ -479,6 +485,7 @@ textarea {
     display: flex;
     justify-content: flex-end;
     margin-top: 12px;
+    margin-bottom: 8px;
 }
 
 .ams-sales-note-submit .ams-btn {
@@ -508,7 +515,7 @@ textarea {
 
 .ams-share-poster-dialog {
     position: relative;
-    width: min(760px, calc(100vw - 32px));
+    width: min(820px, calc(100vw - 32px));
     margin: 32px auto;
     padding: 20px;
     border: 1px solid rgba(93, 214, 44, 0.22);
@@ -524,6 +531,7 @@ textarea {
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
+    margin-bottom: 10px;
 }
 
 .ams-share-poster-head div {
@@ -533,28 +541,32 @@ textarea {
 
 .ams-share-poster-head strong {
     color: #ffffff;
-    font-size: 18px;
+    font-size: 17px;
+    line-height: 1.25;
 }
 
 .ams-share-poster-head span {
     color: rgba(255, 255, 255, 0.72);
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: 12px;
+    line-height: 1.45;
 }
 
 .ams-share-poster-stage {
     display: flex;
     justify-content: center;
-    padding: 8px;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.02);
+    align-items: center;
+    min-height: 520px;
+    padding: 18px;
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+    border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .ams-share-poster-image {
-    width: min(100%, 520px);
+    width: min(100%, 560px);
     height: auto;
-    border-radius: 18px;
-    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
+    border-radius: 24px;
+    box-shadow: 0 24px 44px rgba(0, 0, 0, 0.3);
 }
 
 .ams-textarea {
@@ -655,18 +667,18 @@ textarea {
 
 .ams-btn.has-alert-dot {
     position: relative;
-    padding-right: 28px;
 }
 
 .ams-btn-alert-dot {
     position: absolute;
-    top: 7px;
-    right: 7px;
+    top: -4px;
+    right: -4px;
     width: 10px;
     height: 10px;
     border-radius: 999px;
     background: #ff453a;
     box-shadow: 0 0 0 2px rgba(12, 12, 12, 0.96), 0 0 12px rgba(255, 69, 58, 0.55);
+    pointer-events: none;
 }
 
 .has-activity-dot {
@@ -805,15 +817,16 @@ textarea {
 .ams-sidebar-user-panel {
     position: absolute;
     left: 0;
+    width: calc(100% - 6px);
     bottom: calc(100% + 12px);
-    width: min(280px, calc(100vw - 48px));
+    box-sizing: border-box;
     padding: 12px;
     border-radius: 18px;
-    border: 1px solid rgba(101, 219, 53, 0.18);
+    border: 1px solid rgba(255, 191, 72, 0.18);
     background:
-        radial-gradient(circle at top left, rgba(101, 219, 53, 0.1), transparent 38%),
-        linear-gradient(180deg, rgba(15, 18, 15, 0.98), rgba(8, 10, 8, 0.99));
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
+        radial-gradient(circle at top left, rgba(255, 191, 72, 0.12), transparent 42%),
+        linear-gradient(180deg, rgba(19, 17, 14, 0.99), rgba(10, 10, 9, 0.99));
+    box-shadow: 0 16px 28px rgba(0, 0, 0, 0.24);
     z-index: 24;
 }
 
@@ -1898,12 +1911,121 @@ textarea {
     transform: translateY(0);
 }
 
+.ams-toast.is-modal {
+    top: 50%;
+    left: 50%;
+    right: auto;
+    min-width: 280px;
+    max-width: min(88vw, 420px);
+    padding: 18px 22px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    transform: translate(-50%, calc(-50% - 10px));
+    box-shadow:
+        0 28px 60px rgba(0, 0, 0, 0.46),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.ams-toast.is-modal.show {
+    transform: translate(-50%, -50%);
+}
+
+.ams-toast.is-busy {
+    border-color: rgba(255, 191, 72, 0.55);
+    background:
+        linear-gradient(180deg, rgba(28, 22, 10, 0.98), rgba(16, 13, 8, 0.98));
+}
+
+.ams-toast.is-error {
+    border-color: rgba(239, 68, 68, 0.55);
+    background:
+        linear-gradient(180deg, rgba(38, 12, 12, 0.98), rgba(24, 10, 10, 0.98));
+}
+
 .ams-empty {
     color: #8c8c8c;
     font-size: 12px;
     border: 1px dashed #2d2d2d;
     border-radius: 10px;
     padding: 14px;
+}
+
+.ams-loading-panel {
+    display: grid;
+    gap: 12px;
+    padding: 20px 22px;
+    border: 1px solid rgba(101, 219, 53, 0.12);
+    border-radius: 14px;
+    background:
+        radial-gradient(circle at top left, rgba(101, 219, 53, 0.06), transparent 36%),
+        linear-gradient(180deg, rgba(13, 16, 13, 0.98), rgba(10, 12, 10, 0.98));
+}
+
+.ams-loading-panel-head {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #f4f8ef;
+}
+
+.ams-loading-panel-head strong {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.ams-loading-panel-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #7cf04a;
+    box-shadow: 0 0 0 0 rgba(124, 240, 74, 0.5);
+    animation: ams-loading-pulse 1.4s ease-in-out infinite;
+}
+
+.ams-loading-panel p {
+    margin: 0;
+    color: #9eab97;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.ams-loading-panel-skeleton {
+    display: grid;
+    gap: 10px;
+}
+
+.ams-loading-panel-skeleton span {
+    display: block;
+    height: 12px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), rgba(101, 219, 53, 0.14), rgba(255, 255, 255, 0.06));
+    background-size: 200% 100%;
+    animation: ams-loading-sheen 1.2s linear infinite;
+}
+
+.ams-loading-panel-skeleton span:nth-child(1) {
+    width: 82%;
+}
+
+.ams-loading-panel-skeleton span:nth-child(2) {
+    width: 68%;
+}
+
+.ams-loading-panel-skeleton span:nth-child(3) {
+    width: 91%;
+}
+
+@keyframes ams-loading-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(124, 240, 74, 0.5); }
+    70% { box-shadow: 0 0 0 10px rgba(124, 240, 74, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(124, 240, 74, 0); }
+}
+
+@keyframes ams-loading-sheen {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
 .ams-footnote {
@@ -1995,6 +2117,12 @@ textarea {
 }
 
 .ams-summary-chip-actions .ams-btn {
+    min-width: 76px;
+    min-height: 32px;
+    padding: 0 12px;
+}
+
+.ams-summary-chip-actions .ams-share-menu > summary.ams-btn {
     min-width: 76px;
     min-height: 32px;
     padding: 0 12px;
@@ -2705,21 +2833,25 @@ textarea {
 
 .ams-section-head h3 {
     margin: 0;
-    color: #f5f7f0;
+    color: #fff7ea;
     font-size: 22px;
     line-height: 1.15;
 }
 
 .ams-section-head p {
     margin: 8px 0 0;
-    color: #98a18f;
+    color: #aca393;
     font-size: 13px;
     line-height: 1.65;
 }
 
 .ams-dashboard-stage-panel,
 .ams-dashboard-todo-panel {
-    padding: 18px 18px 16px;
+    padding: 22px 22px 18px;
+    border-color: rgba(255, 191, 72, 0.12);
+    background:
+        radial-gradient(circle at top right, rgba(255, 191, 72, 0.05), transparent 28%),
+        linear-gradient(180deg, rgba(20, 19, 17, 0.98), rgba(12, 12, 11, 0.98));
 }
 
 .ams-dashboard-todo-panel .ams-sales-inline-list {
@@ -3767,17 +3899,30 @@ textarea {
 
 .ams-sales-stage-guide {
     display: grid;
-    gap: 14px;
+    gap: 18px;
 }
 
 .ams-sales-stage-guide-lane {
-    padding: 16px 18px 18px;
+    position: relative;
+    padding: 18px 20px 20px;
     border-radius: 20px;
-    border: 1px solid rgba(101, 219, 53, 0.14);
+    border: 1px solid rgba(255, 191, 72, 0.14);
     background:
-        radial-gradient(circle at top right, rgba(101, 219, 53, 0.08), transparent 34%),
-        linear-gradient(180deg, rgba(18, 24, 19, 0.98), rgba(11, 14, 12, 0.96));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+        linear-gradient(180deg, rgba(17, 18, 16, 0.98), rgba(12, 12, 11, 0.97));
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.02),
+        inset 0 0 0 1px rgba(255, 191, 72, 0.03);
+}
+
+.ams-sales-stage-guide-lane::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 18px;
+    bottom: 18px;
+    width: 3px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255, 191, 72, 0.9), rgba(255, 191, 72, 0.18));
 }
 
 .ams-sales-stage-guide-head {
@@ -3812,17 +3957,17 @@ textarea {
 }
 
 .ams-sales-stage-guide-title strong {
-    color: #f7fff1;
-    font-size: 20px;
+    color: #fff8eb;
+    font-size: 22px;
     line-height: 1.1;
 }
 
 .ams-sales-stage-guide-head p {
     margin: 0;
     max-width: 560px;
-    color: rgba(232, 241, 230, 0.72);
+    color: rgba(216, 207, 187, 0.8);
     font-size: 13px;
-    line-height: 1.55;
+    line-height: 1.65;
 }
 
 .ams-sales-stage-guide-range {
@@ -3854,11 +3999,31 @@ textarea {
     min-height: 88px;
     padding: 14px 16px;
     border-radius: 18px;
-    border: 1px solid rgba(101, 219, 53, 0.16);
+    border: 1px solid rgba(255, 191, 72, 0.22);
     background:
-        linear-gradient(180deg, rgba(11, 28, 10, 0.96), rgba(10, 20, 10, 0.92));
+        linear-gradient(180deg, rgba(48, 34, 18, 0.82), rgba(28, 22, 14, 0.9));
     text-decoration: none;
     transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.ams-sales-stage-guide-card.is-empty {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: linear-gradient(180deg, rgba(22, 23, 22, 0.88), rgba(15, 16, 15, 0.94));
+}
+
+.ams-sales-stage-guide-card.is-warm,
+.ams-sales-stage-guide-card.is-hot {
+    border-color: rgba(126, 230, 77, 0.24);
+    background: linear-gradient(180deg, rgba(18, 38, 15, 0.94), rgba(10, 23, 10, 0.94));
+}
+
+.ams-sales-stage-guide-card.is-empty::before {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 56%);
+}
+
+.ams-sales-stage-guide-card.is-warm::before,
+.ams-sales-stage-guide-card.is-hot::before {
+    background: linear-gradient(135deg, rgba(145, 241, 96, 0.12), transparent 50%);
 }
 
 .ams-sales-stage-guide-card::before {
@@ -3866,15 +4031,15 @@ textarea {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(135deg, rgba(140, 233, 87, 0.08), transparent 48%);
-    opacity: 0.8;
+    background: linear-gradient(135deg, rgba(255, 220, 150, 0.08), transparent 52%);
+    opacity: 0.9;
     pointer-events: none;
 }
 
 .ams-sales-stage-guide-card:hover {
     transform: translateY(-2px);
-    border-color: rgba(255, 191, 72, 0.34);
-    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+    border-color: rgba(255, 191, 72, 0.42);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.26);
 }
 
 .ams-sales-stage-guide-index {
@@ -3903,32 +4068,92 @@ textarea {
 }
 
 .ams-sales-stage-guide-copy strong {
-    color: #fff;
-    font-size: 16px;
+    color: #fff7ea;
+    font-size: 15px;
+    font-weight: 800;
     line-height: 1.2;
+    letter-spacing: 0.01em;
 }
 
-.ams-sales-stage-guide-copy span {
-    color: #9ad96d;
-    font-size: 12px;
+.ams-sales-stage-guide-metric {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+}
+
+.ams-sales-stage-guide-metric em {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    font-style: normal;
+    font-size: 11px;
+    line-height: 1;
+}
+
+.ams-sales-stage-guide-metric em i {
+    font-size: 11px;
+    line-height: 1;
+}
+
+.ams-sales-stage-guide-metric.is-empty {
+    color: #9a958a;
+}
+
+.ams-sales-stage-guide-metric.is-empty em {
+    opacity: 0.86;
+}
+
+.ams-sales-stage-guide-metric.is-warm {
+    color: #5dd62c;
+    text-shadow: 0 0 12px rgba(93, 214, 44, 0.16);
+}
+
+.ams-sales-stage-guide-metric.is-hot {
+    color: #5dd62c;
+    text-shadow: 0 0 12px rgba(93, 214, 44, 0.2);
 }
 
 .ams-sales-activity-panel {
     padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
 .ams-sales-activity-list {
     display: grid;
     gap: 10px;
+    max-height: min(560px, 58vh);
+    overflow-y: auto;
+    padding-right: 4px;
+    align-content: start;
+}
+
+.ams-sales-activity-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.ams-sales-activity-list::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(177, 255, 111, 0.22);
+}
+
+.ams-sales-activity-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04);
 }
 
 .ams-sales-activity-item {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 14px;
-    padding: 14px 16px;
-    border-radius: 16px;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.02);
 }
@@ -3936,31 +4161,32 @@ textarea {
 .ams-sales-activity-main {
     min-width: 0;
     display: grid;
-    gap: 8px;
+    gap: 5px;
 }
 
 .ams-sales-activity-head {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .ams-sales-activity-head strong {
     color: #f5f7f0;
-    font-size: 14px;
+    font-size: 12px;
+    line-height: 1.35;
 }
 
 .ams-sales-activity-pill,
 .ams-sales-activity-stage {
     display: inline-flex;
     align-items: center;
-    min-height: 24px;
-    padding: 0 10px;
+    min-height: 20px;
+    padding: 0 8px;
     border-radius: 999px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
 }
 
@@ -3986,16 +4212,17 @@ textarea {
 .ams-sales-activity-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 12px;
+    gap: 4px 10px;
     color: #99a494;
-    font-size: 12px;
-    line-height: 1.6;
+    font-size: 11px;
+    line-height: 1.45;
 }
 
 .ams-sales-activity-item time {
     flex: 0 0 auto;
     color: #8f9688;
-    font-size: 12px;
+    font-size: 11px;
+    line-height: 1.35;
     white-space: nowrap;
 }
 
@@ -4004,7 +4231,7 @@ textarea {
     flex: 1 1 auto;
     min-height: 2px;
     border-radius: 999px;
-    background: linear-gradient(90deg, rgba(101, 219, 53, 0.08), rgba(255, 191, 72, 0.55));
+    background: linear-gradient(90deg, rgba(255, 191, 72, 0.1), rgba(255, 191, 72, 0.72));
 }
 
 .ams-sales-stage-guide-sep::after {
@@ -4083,6 +4310,7 @@ textarea {
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.02);
     overflow: hidden;
+    margin-top: 6px;
 }
 
 .ams-fold-summary {
@@ -4749,12 +4977,19 @@ textarea {
 }
 
 .ams-media-actions {
+    display: flex;
     flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
 }
 
 .ams-media-actions .ams-btn,
 .ams-media-actions .ams-media-replace-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     min-height: 34px;
+    line-height: 1;
     border-radius: 10px;
 }
 

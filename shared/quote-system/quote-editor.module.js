@@ -211,6 +211,7 @@ const state = {
     saveInFlight: false,
     hasUnsavedChanges: false,
     changeVersion: 0,
+    settingsRenderKey: '',
 };
 
 function byId(id) {
@@ -713,9 +714,24 @@ function renderToolbarBrand() {
     byId('toolbar-brand-name').textContent = 'GasGx Quotation System';
 }
 
+function settingsRenderKey() {
+    const validityHours = state.kind === 'product' ? state.product.validity_hours : state.instance.validity_hours;
+    return JSON.stringify({
+        kind: state.kind,
+        lang: state.currentLang,
+        enabledLangs: configuredEditorLangs(),
+        validityHours,
+        mediaPosition: state.product.media_config?.position || '',
+        mediaLayout: state.product.media_config?.layout || '',
+    });
+}
+
 function renderSettings() {
     const root = byId('editor-settings-fields');
     if (!root) return;
+    const nextKey = settingsRenderKey();
+    if (state.settingsRenderKey === nextKey) return;
+    state.settingsRenderKey = nextKey;
     const validityHours = state.kind === 'product' ? state.product.validity_hours : state.instance.validity_hours;
     const enabledLangs = configuredEditorLangs();
     root.innerHTML = `
@@ -748,20 +764,6 @@ function renderSettings() {
                 <option value="${MEDIA_LAYOUTS.STACK}" ${state.product.media_config?.layout === MEDIA_LAYOUTS.STACK ? 'selected' : ''}>${esc(t('imageStack'))}</option>
             </select>
         </label>
-        ${
-            state.kind === 'instance'
-                ? `
-            <label class="quote-editor-setting">
-                <span>${esc(t('customerName'))}</span>
-                <input type="text" data-setting-field="customer_name" value="${esc(state.instance.customer_name)}">
-            </label>
-            <label class="quote-editor-setting">
-                <span>${esc(t('receiverName'))}</span>
-                <input type="text" data-setting-field="receiver_name" value="${esc(state.instance.receiver_name)}">
-            </label>
-        `
-                : ''
-        }
     `;
 
     root.querySelectorAll('[data-setting-field]').forEach((node) => {
@@ -1251,34 +1253,49 @@ function bindStaticEditors() {
         renderAll();
         markEditorDirty();
     };
-    byId('edit-send-label').onblur = (event) => {
-        setLocalizedValue(state.product.ui_text, 'send_button', event.currentTarget.textContent);
-        markTranslationDirty('product.ui_text.send_button');
-        renderAll();
-        markEditorDirty();
-    };
-    byId('edit-supplier-label').onblur = (event) => {
-        setLocalizedValue(state.product.ui_text, 'supplier_label', event.currentTarget.textContent);
-        markTranslationDirty('product.ui_text.supplier_label');
-        renderAll();
-        markEditorDirty();
-    };
-    byId('edit-supplier-value').onblur = (event) => {
-        state.brand.supplier_name = text(event.currentTarget.textContent);
-        renderAll();
-        markEditorDirty();
-    };
-    byId('edit-sender-label').onblur = (event) => {
-        setLocalizedValue(state.product.ui_text, 'sender_label', event.currentTarget.textContent);
-        markTranslationDirty('product.ui_text.sender_label');
-        renderAll();
-        markEditorDirty();
-    };
-    byId('edit-sender-value').onblur = (event) => {
-        state.brand.sender_email = text(event.currentTarget.textContent);
-        renderAll();
-        markEditorDirty();
-    };
+    const sendLabelNode = byId('edit-send-label');
+    if (sendLabelNode) {
+        sendLabelNode.onblur = (event) => {
+            setLocalizedValue(state.product.ui_text, 'send_button', event.currentTarget.textContent);
+            markTranslationDirty('product.ui_text.send_button');
+            renderAll();
+            markEditorDirty();
+        };
+    }
+    const supplierLabelNode = byId('edit-supplier-label');
+    if (supplierLabelNode) {
+        supplierLabelNode.onblur = (event) => {
+            setLocalizedValue(state.product.ui_text, 'supplier_label', event.currentTarget.textContent);
+            markTranslationDirty('product.ui_text.supplier_label');
+            renderAll();
+            markEditorDirty();
+        };
+    }
+    const supplierValueNode = byId('edit-supplier-value');
+    if (supplierValueNode) {
+        supplierValueNode.onblur = (event) => {
+            state.brand.supplier_name = text(event.currentTarget.textContent);
+            renderAll();
+            markEditorDirty();
+        };
+    }
+    const senderLabelNode = byId('edit-sender-label');
+    if (senderLabelNode) {
+        senderLabelNode.onblur = (event) => {
+            setLocalizedValue(state.product.ui_text, 'sender_label', event.currentTarget.textContent);
+            markTranslationDirty('product.ui_text.sender_label');
+            renderAll();
+            markEditorDirty();
+        };
+    }
+    const senderValueNode = byId('edit-sender-value');
+    if (senderValueNode) {
+        senderValueNode.onblur = (event) => {
+            state.brand.sender_email = text(event.currentTarget.textContent);
+            renderAll();
+            markEditorDirty();
+        };
+    }
     byId('edit-validity-label').onblur = (event) => {
         setLocalizedValue(state.product.ui_text, 'validity_label', event.currentTarget.textContent);
         markTranslationDirty('product.ui_text.validity_label');

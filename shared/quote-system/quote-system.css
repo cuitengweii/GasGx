@@ -794,8 +794,9 @@
             background: rgba(10, 14, 20, 0.92);
             backdrop-filter: blur(10px);
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
+            flex-wrap: wrap;
             gap: 16px;
         }
 
@@ -804,6 +805,7 @@
             flex-direction: column;
             gap: 3px;
             min-width: 0;
+            flex: 0 0 200px;
         }
 
         .quote-editor-bar__meta strong {
@@ -830,6 +832,18 @@
             align-items: center;
             justify-content: flex-end;
             gap: 8px;
+            margin-left: auto;
+            flex: 0 0 auto;
+        }
+
+        .quote-editor-bar__settings {
+            flex: 1 1 700px;
+            min-width: min(100%, 700px);
+            padding: 0;
+            margin: 0;
+            align-content: start;
+            grid-template-columns: auto repeat(3, minmax(140px, 1fr));
+            align-items: end;
         }
 
         .quote-editor-settings {
@@ -1294,6 +1308,7 @@
 
             .quote-editor-bar__actions {
                 justify-content: flex-start;
+                margin-left: 0;
             }
 
             .quote-editor-settings__body {

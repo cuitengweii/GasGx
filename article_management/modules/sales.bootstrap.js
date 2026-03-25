@@ -60,6 +60,7 @@ const state = {
     page: pageFromUrl() || 'dashboard',
     authView: 'login',
     entryAllowed: false,
+    renderedUserId: null,
 };
 
 function esc(value) {
@@ -74,6 +75,23 @@ function esc(value) {
 function text(value, fallback = '') {
     const normalized = String(value ?? '').trim();
     return normalized || fallback;
+}
+
+function loadingPanelMarkup(message = '正在加载销售数据...', detail = '页面可能需要几秒，请稍候。') {
+    return `
+        <section class="ams-loading-panel" aria-live="polite" aria-busy="true">
+            <div class="ams-loading-panel-head">
+                <span class="ams-loading-panel-dot"></span>
+                <strong>${esc(message)}</strong>
+            </div>
+            <p>${esc(detail)}</p>
+            <div class="ams-loading-panel-skeleton">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </section>
+    `;
 }
 
 function pageFromUrl() {
@@ -100,13 +118,34 @@ function syncPageToUrl(options = {}) {
     }
 }
 
-function showToast(message, isError = false) {
+function clearToastState() {
     if (!toastNode) return;
-    toastNode.textContent = message;
-    toastNode.style.borderColor = isError ? 'rgba(239,68,68,0.55)' : 'rgba(93,214,44,0.45)';
-    toastNode.classList.add('show');
+    toastNode.classList.remove('show', 'is-modal', 'is-busy', 'is-error');
+}
+
+function shouldUseProminentToast(message = '', isError = false) {
+    if (isError) return true;
+    return /(\u4fdd\u5b58|\u5df2\u4fdd\u5b58|\u66f4\u65b0|\u5df2\u66f4\u65b0|\u521b\u5efa|\u5df2\u521b\u5efa|\u63d0\u4ea4|\u5df2\u63d0\u4ea4|\u53d1\u5e03|\u5df2\u53d1\u5e03)/.test(String(message || ''));
+}
+
+function showToast(message, isError = false, options = {}) {
+    if (!toastNode) return;
+    const prominent = options.prominent ?? shouldUseProminentToast(message, isError);
+    const busy = Boolean(options.busy);
     clearTimeout(showToast.timer);
-    showToast.timer = setTimeout(() => toastNode.classList.remove('show'), 2600);
+    clearToastState();
+    toastNode.textContent = message;
+    toastNode.style.borderColor = isError
+        ? 'rgba(239,68,68,0.55)'
+        : busy
+            ? 'rgba(255,191,72,0.55)'
+            : 'rgba(93,214,44,0.45)';
+    if (prominent) toastNode.classList.add('is-modal');
+    if (busy) toastNode.classList.add('is-busy');
+    if (isError) toastNode.classList.add('is-error');
+    toastNode.classList.add('show');
+    if (options.persist) return;
+    showToast.timer = setTimeout(() => clearToastState(), prominent ? 1800 : 2600);
 }
 
 async function withButtonBusy(button, busyText, task) {
@@ -122,9 +161,16 @@ async function withButtonBusy(button, busyText, task) {
     button.disabled = true;
     button.classList.add('is-loading');
     button.textContent = busyText || '处理中...';
+    const shouldShowBusyToast = /(\u4fdd\u5b58|\u66f4\u65b0|\u521b\u5efa|\u63d0\u4ea4|\u53d1\u5e03)/.test(String(busyText || ''));
+    if (shouldShowBusyToast) {
+        showToast(busyText || '处理中...', false, { prominent: true, busy: true, persist: true });
+    }
     try {
         await task();
     } finally {
+        if (shouldShowBusyToast) {
+            clearToastState();
+        }
         button.classList.remove('is-loading');
         delete button.dataset.loading;
         if (button.isConnected) {
@@ -213,14 +259,6 @@ function normalizeQuoteCustomerFlowUi() {
         if (!hasVisibleButton) topActions.remove();
     }
 
-    const userBadge = document.querySelector('[data-shell-user-badge]');
-    const modeBanner = content.querySelector('.ams-sales-mode-banner.is-detail');
-    if (userBadge && modeBanner && !modeBanner.querySelector('.ams-sales-inline-user')) {
-        const clone = document.createElement('span');
-        clone.className = 'ams-sales-inline-user';
-        clone.innerHTML = userBadge.querySelector('.ams-sidebar-user-main')?.innerHTML || userBadge.innerHTML;
-        modeBanner.appendChild(clone);
-    }
 }
 
 function isMaintenanceAdmin() {
@@ -436,7 +474,7 @@ function renderShell() {
                 </div>
             </aside>
             <main class="ams-main">
-                <section id="ams-content" class="ams-content"><div class="ams-empty">加载中...</div></section>
+                <section id="ams-content" class="ams-content">${loadingPanelMarkup()}</section>
             </main>
         </div>
     `;
@@ -509,25 +547,45 @@ function normalizeAccessiblePage() {
     }
 }
 
+function shouldIgnoreAuthRender(event, nextSession = null) {
+    const nextEvent = String(event || '').trim().toUpperCase();
+    if (nextEvent === 'TOKEN_REFRESHED' || nextEvent === 'INITIAL_SESSION') return true;
+    if (nextEvent === 'SIGNED_IN') {
+        const currentUserId = state.user?.id || '';
+        const nextUserId = nextSession?.user?.id || '';
+        if (state.renderedUserId && nextUserId && state.renderedUserId === nextUserId) {
+            return true;
+        }
+        if (currentUserId && nextUserId && currentUserId === nextUserId && state.authView !== 'login') {
+            return true;
+        }
+    }
+    return false;
+}
+
 async function renderPage() {
     if (!state.user) {
+        state.renderedUserId = null;
         state.authView = isPasswordRecoveryMode() ? 'reset' : 'login';
         renderLogin();
         return;
     }
     await refreshAdminAccess(false);
     if (state.adminAccess?.allowed !== true) {
+        state.renderedUserId = null;
         state.authView = isPasswordRecoveryMode() ? 'reset' : 'login';
         renderLogin();
         return;
     }
     if (!state.entryAllowed) {
+        state.renderedUserId = state.user?.id || null;
         renderEntryDenied();
         return;
     }
 
     normalizeAccessiblePage();
     renderShell();
+    state.renderedUserId = state.user?.id || null;
     syncPageToUrl();
 
     try {
@@ -541,6 +599,8 @@ async function renderPage() {
             withButtonBusy,
             rerender: () => renderPage(),
         };
+
+        setContent(loadingPanelMarkup('正在打开页面...', '正在准备当前页面所需的客户、流程和报价数据。'));
 
         if (state.page === 'dashboard') await renderQuoteSalesDashboardPage(pageInput);
         else if (state.page === 'quote-customers') await renderQuoteCustomersPage(pageInput);
@@ -573,9 +633,10 @@ async function boot() {
             await renderPage();
         }
 
-        onAuthStateChange(async (_event, nextSession) => {
+        onAuthStateChange(async (event, nextSession) => {
             state.session = nextSession;
             state.user = nextSession?.user || null;
+            if (shouldIgnoreAuthRender(event, nextSession)) return;
             if (isPasswordRecoveryMode()) {
                 state.authView = 'reset';
                 renderLogin();

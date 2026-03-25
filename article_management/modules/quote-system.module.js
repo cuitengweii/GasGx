@@ -55,6 +55,7 @@ const TABLE_DEAL_STAGE_RECORDS = 'quote_deal_stage_records';
 const TABLE_CUSTOMER_ACTIVITIES = 'quote_customer_activities';
 const TABLE_ACTIVITY_READS = 'quote_activity_reads';
 const STORAGE_BUCKET_PRODUCT_MEDIA = 'quote-product-media';
+const DEFAULT_CUSTOMER_ACTIVITY_FILTER = 'customer';
 
 const moduleState = {
     brands: [],
@@ -76,7 +77,7 @@ const moduleState = {
     dealEditor: null,
     customerEvents: [],
     customerActivities: [],
-    customerActivityFilter: 'all',
+    customerActivityFilter: DEFAULT_CUSTOMER_ACTIVITY_FILTER,
     recentActivities: [],
     activityReadMap: {},
     unreadStageActivityMap: {},
@@ -133,6 +134,13 @@ const SALES_ACTIVITY_ACTOR_LABELS = Object.freeze({
     sales: '销售',
     system: '系统',
 });
+
+const SALES_ACTIVITY_COLLAPSIBLE_TYPES = new Set([
+    'page_view',
+    'public_link_opened',
+]);
+
+const SALES_ACTIVITY_COLLAPSE_WINDOW_MS = 30 * 60 * 1000;
 
 const SEND_STATUS_ORDER = {
     recorded: 0,
@@ -205,6 +213,87 @@ function createSalesActivityRecord(row = {}) {
         occurred_at: text(row.occurred_at || row.created_at),
         source: text(row.source, 'activity'),
     };
+}
+
+function salesActivityTimestampMs(activity = {}) {
+    const stamp = Date.parse(text(activity.occurred_at));
+    return Number.isFinite(stamp) ? stamp : 0;
+}
+
+function salesActivityCollapseKey(activity = {}) {
+    const detail = activity.detail_json && typeof activity.detail_json === 'object' ? activity.detail_json : {};
+    return [
+        text(activity.actor_type, 'system'),
+        text(activity.activity_type),
+        text(activity.action_label),
+        normalizeDealStageKey(activity.stage_key),
+        text(activity.page_key),
+        text(activity.entity_type),
+        text(activity.entity_id),
+        text(activity.instance_id),
+        text(detail.access_mode),
+        text(detail.button),
+    ].join(':');
+}
+
+function salesActivityCollapseLabel(activity = {}, count = 1) {
+    const base = text(activity.action_label, salesActivityTypeLabel(activity.activity_type));
+    if (count <= 1) return base;
+    if (text(activity.activity_type) === 'public_link_opened') return `${base}（${count} 次）`;
+    if (text(activity.activity_type) === 'page_view') return `${base}（${count} 次访问）`;
+    return `${base}（${count} 次）`;
+}
+
+function collapseCustomerActivityRows(rows = []) {
+    const groups = [];
+    rows.forEach((activity) => {
+        const current = createSalesActivityRecord(activity);
+        const collapsible = SALES_ACTIVITY_COLLAPSIBLE_TYPES.has(text(current.activity_type));
+        if (!collapsible) {
+            groups.push({
+                key: '',
+                latestAt: salesActivityTimestampMs(current),
+                items: [current],
+            });
+            return;
+        }
+
+        const activityMs = salesActivityTimestampMs(current);
+        const collapseKey = salesActivityCollapseKey(current);
+        const matched = groups.find((group) => (
+            group.key
+            && group.key === collapseKey
+            && Math.abs(group.latestAt - activityMs) <= SALES_ACTIVITY_COLLAPSE_WINDOW_MS
+        ));
+        if (matched) {
+            matched.items.push(current);
+            matched.latestAt = Math.max(matched.latestAt, activityMs);
+            return;
+        }
+        groups.push({
+            key: collapseKey,
+            latestAt: activityMs,
+            items: [current],
+        });
+    });
+
+    return groups.map((group) => {
+        if (group.items.length <= 1) return group.items[0];
+        const latest = group.items[0];
+        const oldest = group.items[group.items.length - 1];
+        const detail = latest.detail_json && typeof latest.detail_json === 'object' ? { ...latest.detail_json } : {};
+        detail.aggregate_count = group.items.length;
+        detail.aggregate_from = oldest.occurred_at;
+        detail.aggregate_to = latest.occurred_at;
+        if (!text(detail.summary)) {
+            detail.summary = `同类动作集中发生 ${group.items.length} 次`;
+        }
+        return createSalesActivityRecord({
+            ...latest,
+            action_label: salesActivityCollapseLabel(latest, group.items.length),
+            detail_json: detail,
+        });
+    });
 }
 
 function inferSalesActivityStageKey(payload = {}) {
@@ -2318,12 +2407,23 @@ function activityIsRead(activity = {}) {
     return Boolean(moduleState.activityReadMap[text(activity.id)]);
 }
 
-function recomputeUnreadActivityMaps() {
+function activityIsOwnForReader(activity = {}, reader = null) {
+    const currentReader = salesActivityReader(reader);
+    const actorType = text(activity.actor_type);
+    const actorId = text(activity.actor_id);
+    const actorLabel = text(activity.actor_label).trim().toLowerCase();
+    return actorType === 'sales' && (
+        (actorId && actorId === currentReader.userId)
+        || (actorLabel && actorLabel === currentReader.email)
+    );
+}
+
+function recomputeUnreadActivityMaps(reader = null) {
     const stageMap = {};
     const customerMap = {};
     const stageCustomerMap = {};
     (Array.isArray(moduleState.recentActivities) ? moduleState.recentActivities : []).forEach((activity) => {
-        if (!activity?.id || activityIsRead(activity)) return;
+        if (!activity?.id || activityIsRead(activity) || activityIsOwnForReader(activity, reader)) return;
         const stageKey = normalizeDealStageKey(activity.stage_key);
         if (stageKey) stageMap[stageKey] = true;
         const customerId = text(activity.customer_id);
@@ -2358,7 +2458,7 @@ function customerHasUnreadActivityInStage(customerId = '', stageKey = '') {
 async function fetchUnreadStageActivitySummary(reader = null) {
     const activities = await fetchRecentSalesActivities();
     await fetchActivityReadsForUser(reader, activities.map((item) => item.id).filter(Boolean));
-    return recomputeUnreadActivityMaps().stageMap;
+    return recomputeUnreadActivityMaps(reader).stageMap;
 }
 
 function visibleStageCustomerIds(stageKey = '', input = null) {
@@ -2387,8 +2487,10 @@ function customerActivityTimelineRows(customerId = '') {
         .map((item) => legacyEventToSalesActivity(item))
         .filter((item) => text(item.customer_id) === text(customerId));
     const seen = new Set(activityRows.map((item) => [text(item.instance_id), text(item.occurred_at), text(item.action_label)].join(':')));
-    return [...activityRows, ...legacyRows.filter((item) => !seen.has([text(item.instance_id), text(item.occurred_at), text(item.action_label)].join(':')))]
-        .sort((left, right) => text(right.occurred_at).localeCompare(text(left.occurred_at)));
+    return collapseCustomerActivityRows(
+        [...activityRows, ...legacyRows.filter((item) => !seen.has([text(item.instance_id), text(item.occurred_at), text(item.action_label)].join(':')))]
+            .sort((left, right) => text(right.occurred_at).localeCompare(text(left.occurred_at))),
+    );
 }
 
 async function fetchCustomerActivityTimeline(customerId = '', reader = null) {
@@ -2470,6 +2572,7 @@ async function fetchCustomerEditor(customerId) {
         moduleState.customerEditor = createCustomerDraft();
         moduleState.customerEvents = [];
         moduleState.customerSends = [];
+        moduleState.customerActivityFilter = DEFAULT_CUSTOMER_ACTIVITY_FILTER;
         moduleState.customerCreateMode = true;
         return moduleState.customerEditor;
     }
@@ -2481,6 +2584,7 @@ async function fetchCustomerEditor(customerId) {
     ]);
     moduleState.customerLoadedId = customerId;
     moduleState.customerEditor = createCustomerDraft(data);
+    moduleState.customerActivityFilter = DEFAULT_CUSTOMER_ACTIVITY_FILTER;
     moduleState.customerCreateMode = false;
     return moduleState.customerEditor;
 }
@@ -2796,9 +2900,19 @@ async function saveProductDraft(user, draft) {
     }
     if (error) throw error;
 
+    const mediaPayload = payload.id
+        ? payload.media_gallery
+        : normalizeMediaGallery(payload.media_gallery).map((item, index) => createQuoteMediaItem({
+            ...item,
+            id: '',
+            product_id: data.id,
+            storage_path: '',
+            sort_order: item.sort_order || (index + 1) * 10,
+        }));
+
     const [savedItems, savedMedia] = await Promise.all([
         persistItemRows(TABLE_PRODUCT_ITEMS, 'product_id', data.id, payload.items),
-        persistProductMediaRows(data.id, payload.media_gallery),
+        persistProductMediaRows(data.id, mediaPayload),
     ]);
     const syncedMediaConfig = await syncProductMediaState(data.id, data.media_config, savedMedia, user?.id || null);
     syncProductMediaToEditors(data.id, savedMedia, syncedMediaConfig);
@@ -3807,15 +3921,24 @@ function quoteShareCopyText(instance = {}) {
         '用途说明：打开后可直接查看本次产品配置、价格明细、交付范围与说明，方便您内部转发、评估和确认。',
         '品牌说明：GasGx 提供面向燃气发电与矿电场景的产品方案整合、配置呈现与报价支持服务。',
         '',
+        `Hello ${customerLine},`,
+        '',
+        `This is the quotation link for ${productLine} from ${brandLine}.`,
+        'Purpose: open the link to review the product configuration, pricing details, delivery scope, and key notes for internal sharing and confirmation.',
+        'About GasGx: integrated quotation and solution support for gas power generation and mining power scenarios.',
+        '',
         '查看链接：',
         url,
         '',
         `如需调整配置或补充商务信息，请直接联系 ${quoteShareSupportLine(instance)} 。`,
+        `For configuration updates or commercial questions, please contact ${quoteShareSupportLine(instance)}.`,
     ].join('\n');
 }
 
-function quoteQrImageUrl(url = '') {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=0&format=svg&data=${encodeURIComponent(url)}`;
+const sharePosterQrCache = new Map();
+
+function quoteQrImageUrl(url = '', size = 512) {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=${Math.max(180, Number(size) || 512)}x${Math.max(180, Number(size) || 512)}&margin=0&format=svg&data=${encodeURIComponent(url)}`;
 }
 
 function svgTextLine(value = '', fallback = '--') {
@@ -3827,59 +3950,134 @@ function svgTextLine(value = '', fallback = '--') {
         .replace(/'/g, '&#39;');
 }
 
-function quoteSharePosterDataUrl(instance = {}) {
+function svgTextMeasureUnit(char = '') {
+    return /[ -~]/.test(char) ? 0.54 : 1;
+}
+
+function wrapSvgText(value = '', { fallback = '--', maxUnits = 18, maxLines = 2 } = {}) {
+    const source = text(value, fallback).replace(/\s+/g, ' ').trim() || fallback;
+    const chars = Array.from(source);
+    const lines = [];
+    let buffer = '';
+    let units = 0;
+    chars.forEach((char) => {
+        const nextUnits = units + svgTextMeasureUnit(char);
+        if (buffer && nextUnits > maxUnits && lines.length < maxLines - 1) {
+            lines.push(buffer.trim());
+            buffer = char;
+            units = svgTextMeasureUnit(char);
+            return;
+        }
+        if (buffer && nextUnits > maxUnits && lines.length >= maxLines - 1) {
+            buffer = `${buffer.trim()}…`;
+            units = maxUnits;
+            return;
+        }
+        buffer += char;
+        units = nextUnits;
+    });
+    if (buffer.trim()) lines.push(buffer.trim());
+    return lines.slice(0, maxLines);
+}
+
+function svgTextBlock(lines = [], { x = 0, y = 0, lineHeight = 32, fill = '#ffffff', fontSize = 24, fontWeight = 700, letterSpacing = 0 } = {}) {
+    return lines.map((line, index) => `
+  <text x="${x}" y="${y + (index * lineHeight)}" fill="${fill}" font-size="${fontSize}" font-weight="${fontWeight}" font-family="Segoe UI, Arial, sans-serif"${letterSpacing ? ` letter-spacing="${letterSpacing}"` : ''}>${svgTextLine(line, '')}</text>`).join('');
+}
+
+async function quoteQrSvgMarkup(url = '', { x = 0, y = 0, size = 360, radius = 28 } = {}) {
+    const normalizedUrl = text(url);
+    if (!normalizedUrl) throw new Error('缺少二维码链接。');
+    const cacheKey = `${normalizedUrl}::${size}`;
+    if (sharePosterQrCache.has(cacheKey)) return sharePosterQrCache.get(cacheKey);
+    const response = await fetch(quoteQrImageUrl(normalizedUrl, size), { cache: 'force-cache' });
+    if (!response.ok) throw new Error('二维码加载失败。');
+    const source = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(source, 'image/svg+xml');
+    const svgNode = doc.querySelector('svg');
+    if (!svgNode) throw new Error('二维码内容无效。');
+    const viewBox = text(svgNode.getAttribute('viewBox')) || `0 0 ${size} ${size}`;
+    const inner = svgNode.innerHTML;
+    const markup = `
+  <rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${radius}" fill="#ffffff"/>
+  <svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+    sharePosterQrCache.set(cacheKey, markup);
+    return markup;
+}
+
+function posterDataUrlFromSvg(svg = '') {
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+async function quoteSharePosterDataUrl(instance = {}) {
     const url = publicQuoteUrl(instance.public_slug);
     const brandLine = svgTextLine(quoteSharePrimaryBrandLine(instance), 'GasGx');
-    const productLine = svgTextLine(quoteSharePrimaryProductLine(instance), '客户报价方案');
+    const productLines = wrapSvgText(quoteSharePrimaryProductLine(instance), { fallback: '客户报价方案', maxUnits: 13, maxLines: 2 });
     const customerLine = svgTextLine(text(instance.customer_name || instance.receiver_name || '', '专属客户报价'));
+    const customerLines = wrapSvgText(text(instance.customer_name || instance.receiver_name || '', 'Exclusive Customer Quote'), { fallback: 'Exclusive Customer Quote', maxUnits: 20, maxLines: 2 });
     const supportLine = svgTextLine(quoteShareSupportLine(instance), 'sales@gasgx.com');
-    const qrUrl = svgTextLine(quoteQrImageUrl(url), '');
+    const qrMarkup = await quoteQrSvgMarkup(url, { x: 312, y: 714, size: 336, radius: 26 });
     const slugLine = svgTextLine(text(instance.public_slug), '');
+    const customerLineY = 332 + (Math.max(customerLines.length - 1, 0) * 34);
+    const productLineY = customerLineY + 62;
+    const productMetaY = productLineY + (Math.max(productLines.length - 1, 0) * 48) + 58;
     const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="960" height="1360" viewBox="0 0 960 1360">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0d170d"/>
-      <stop offset="55%" stop-color="#122112"/>
-      <stop offset="100%" stop-color="#091009"/>
+      <stop offset="0%" stop-color="#091109"/>
+      <stop offset="55%" stop-color="#122512"/>
+      <stop offset="100%" stop-color="#081008"/>
     </linearGradient>
     <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#163116"/>
-      <stop offset="100%" stop-color="#0e1a0e"/>
+      <stop offset="0%" stop-color="#133213"/>
+      <stop offset="100%" stop-color="#0b1b0b"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="rgba(125,255,69,0.18)"/>
+      <stop offset="100%" stop-color="rgba(125,255,69,0.04)"/>
     </linearGradient>
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#7dff45"/>
-      <stop offset="100%" stop-color="#49b61f"/>
+      <stop offset="0%" stop-color="#93ff5a"/>
+      <stop offset="100%" stop-color="#56cc28"/>
     </linearGradient>
   </defs>
   <rect width="960" height="1360" rx="0" fill="url(#bg)"/>
-  <circle cx="790" cy="140" r="180" fill="#163916" opacity="0.24"/>
-  <circle cx="170" cy="1180" r="220" fill="#163916" opacity="0.18"/>
-  <rect x="56" y="56" width="848" height="1248" rx="42" fill="rgba(8,12,8,0.74)" stroke="rgba(125,255,69,0.22)" />
-  <text x="108" y="150" fill="#ffffff" font-size="64" font-weight="800" font-family="Segoe UI, Arial, sans-serif">GasGx</text>
-  <text x="315" y="150" fill="#7dff45" font-size="64" font-weight="800" font-family="Segoe UI, Arial, sans-serif">AMS</text>
-  <text x="108" y="214" fill="#8be35b" font-size="22" font-weight="700" font-family="Segoe UI, Arial, sans-serif" letter-spacing="5">QUOTE SHARE</text>
+  <circle cx="790" cy="168" r="180" fill="#183f18" opacity="0.22"/>
+  <circle cx="180" cy="1154" r="244" fill="#143014" opacity="0.2"/>
+  <rect x="56" y="56" width="848" height="1248" rx="42" fill="rgba(8,12,8,0.82)" stroke="rgba(125,255,69,0.22)" />
+  <rect x="108" y="108" width="744" height="392" rx="34" fill="url(#hero)" stroke="rgba(125,255,69,0.14)"/>
+  <text x="136" y="170" fill="#ffffff" font-size="60" font-weight="800" font-family="Segoe UI, Arial, sans-serif">GasGx</text>
+  <text x="336" y="170" fill="#7dff45" font-size="60" font-weight="800" font-family="Segoe UI, Arial, sans-serif">AMS</text>
+  <text x="136" y="216" fill="#a7ef79" font-size="19" font-weight="800" font-family="Segoe UI, Arial, sans-serif" letter-spacing="4">QUOTE SHARE</text>
+  <text x="136" y="266" fill="#8be35b" font-size="18" font-weight="700" font-family="Segoe UI, Arial, sans-serif">客户报价 | Customer Quote</text>
+  ${svgTextBlock(customerLines, { x: 136, y: 332, lineHeight: 34, fill: '#ffffff', fontSize: 28, fontWeight: 800 })}
+  <text x="136" y="${customerLineY + 34}" fill="rgba(255,255,255,0.66)" font-size="18" font-weight="500" font-family="Segoe UI, Arial, sans-serif">${customerLine}</text>
+  ${svgTextBlock(productLines, { x: 136, y: productLineY, lineHeight: 48, fill: '#f5fbef', fontSize: 40, fontWeight: 800 })}
+  <text x="136" y="${productMetaY}" fill="#cce2c2" font-size="20" font-weight="600" font-family="Segoe UI, Arial, sans-serif">${brandLine}</text>
+  <text x="136" y="${productMetaY + 32}" fill="rgba(255,255,255,0.72)" font-size="18" font-weight="500" font-family="Segoe UI, Arial, sans-serif">Commercial quotation and solution overview</text>
 
-  <rect x="108" y="262" width="744" height="206" rx="30" fill="url(#panel)" stroke="rgba(125,255,69,0.18)" />
-  <text x="146" y="322" fill="#ffffff" font-size="26" font-weight="800" font-family="Segoe UI, Arial, sans-serif">${customerLine}</text>
-  <text x="146" y="374" fill="#f4fbef" font-size="44" font-weight="800" font-family="Segoe UI, Arial, sans-serif">${productLine}</text>
-  <text x="146" y="424" fill="#a8ba9d" font-size="24" font-weight="600" font-family="Segoe UI, Arial, sans-serif">${brandLine}</text>
+  <rect x="108" y="536" width="744" height="132" rx="28" fill="rgba(255,255,255,0.025)" stroke="rgba(255,255,255,0.06)"/>
+  <text x="144" y="584" fill="#ffffff" font-size="30" font-weight="800" font-family="Segoe UI, Arial, sans-serif">扫码查看完整报价方案</text>
+  <text x="144" y="620" fill="#9af569" font-size="19" font-weight="700" font-family="Segoe UI, Arial, sans-serif">Scan to view the full quotation package</text>
+  <text x="144" y="650" fill="rgba(255,255,255,0.7)" font-size="17" font-weight="500" font-family="Segoe UI, Arial, sans-serif">查看配置、价格、交付范围和关键说明 | Configuration, pricing, scope and notes</text>
 
-  <text x="108" y="548" fill="#ffffff" font-size="34" font-weight="800" font-family="Segoe UI, Arial, sans-serif">扫描二维码查看专属报价方案</text>
-  <text x="108" y="592" fill="#b9c7b1" font-size="24" font-weight="500" font-family="Segoe UI, Arial, sans-serif">用途说明：用于查看本次产品配置、报价明细、交付范围与说明，便于内部评估与确认。</text>
-  <text x="108" y="632" fill="#b9c7b1" font-size="24" font-weight="500" font-family="Segoe UI, Arial, sans-serif">品牌说明：GasGx 提供燃气发电与矿电场景的产品方案整合、配置呈现与报价支持服务。</text>
+  <rect x="228" y="688" width="504" height="504" rx="44" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.08)"/>
+  <rect x="270" y="726" width="420" height="420" rx="34" fill="rgba(13,22,13,0.9)" stroke="rgba(125,255,69,0.12)"/>
+  ${qrMarkup}
+  <text x="480" y="1088" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="800" font-family="Segoe UI, Arial, sans-serif">Quote access via QR code</text>
+  <text x="480" y="1118" text-anchor="middle" fill="rgba(255,255,255,0.68)" font-size="17" font-weight="500" font-family="Segoe UI, Arial, sans-serif">Forward on WeChat, email, or internal review threads</text>
 
-  <rect x="176" y="700" width="608" height="608" rx="36" fill="#ffffff"/>
-  <image x="222" y="746" width="516" height="516" href="${qrUrl}" />
-  <rect x="352" y="944" width="256" height="120" rx="24" fill="#0f190f"/>
-  <text x="480" y="996" text-anchor="middle" fill="#ffffff" font-size="42" font-weight="800" font-family="Segoe UI, Arial, sans-serif">GasGx</text>
-  <text x="480" y="1038" text-anchor="middle" fill="#7dff45" font-size="28" font-weight="800" font-family="Segoe UI, Arial, sans-serif">QUOTE</text>
-
-  <rect x="108" y="1154" width="744" height="84" rx="22" fill="rgba(125,255,69,0.08)" stroke="rgba(125,255,69,0.16)" />
-  <text x="146" y="1204" fill="#dff5d4" font-size="20" font-weight="700" font-family="Segoe UI, Arial, sans-serif">公开链接识别：${slugLine}</text>
-  <text x="146" y="1258" fill="#9fb099" font-size="20" font-weight="500" font-family="Segoe UI, Arial, sans-serif">商务支持：${supportLine}</text>
+  <rect x="108" y="1220" width="744" height="106" rx="24" fill="rgba(125,255,69,0.08)" stroke="rgba(125,255,69,0.16)" />
+  <text x="144" y="1260" fill="#91ef5c" font-size="16" font-weight="800" font-family="Segoe UI, Arial, sans-serif" letter-spacing="1">QUOTE REF</text>
+  <text x="144" y="1290" fill="#ffffff" font-size="20" font-weight="700" font-family="Segoe UI, Arial, sans-serif">${slugLine}</text>
+  <text x="540" y="1260" fill="#91ef5c" font-size="16" font-weight="800" font-family="Segoe UI, Arial, sans-serif" letter-spacing="1">BUSINESS SUPPORT</text>
+  <text x="540" y="1290" fill="#ffffff" font-size="20" font-weight="700" font-family="Segoe UI, Arial, sans-serif">${supportLine}</text>
+  <text x="144" y="1314" fill="rgba(255,255,255,0.62)" font-size="15" font-weight="500" font-family="Segoe UI, Arial, sans-serif">报价识别码 | Customer-facing share identifier</text>
+  <text x="540" y="1314" fill="rgba(255,255,255,0.62)" font-size="15" font-weight="500" font-family="Segoe UI, Arial, sans-serif">商务联系邮箱 | Commercial contact email</text>
 </svg>`;
-    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    return posterDataUrlFromSvg(svg);
 }
 
 function requirementPublicUrl(publicSlug, publicToken) {
@@ -4025,14 +4223,15 @@ function stagePublicEntryChipMarkup(stageKey = '', record = {}, deal = null, opt
     const summary = text(options.summary, '对外发送时会自动带上本节点的确认说明、流程指引以及 GasGx 品牌说明。');
     const hasLink = Boolean(text(record?.public_slug) && text(record?.public_token));
     const href = hasLink ? stageCustomerFacingUrl(stageKey, record, deal) : '';
+    const normalizedStageKey = normalizeDealStageKey(stageKey);
     return `
         <div class="ams-summary-chip ams-summary-chip-link">
             <strong>公开入口</strong>
             <span>${hasLink ? `<a class="ams-inline-link" href="${esc(href)}" target="_blank" rel="noopener">${esc(href)}</a>` : esc('保存后生成公开确认入口')}</span>
             <small>${esc(summary)}</small>
             <div class="ams-summary-chip-actions">
-                <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-open-public-confirmation">${esc(openLabel)}</button>
-                <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-copy-public-confirmation">${esc(copyLabel)}</button>
+                <button class="ams-btn ams-btn-muted" type="button" data-sales-flow-open-public-confirmation="${esc(normalizedStageKey)}">${esc(openLabel)}</button>
+                <button class="ams-btn ams-btn-primary" type="button" data-sales-flow-copy-public-confirmation="${esc(normalizedStageKey)}">${esc(copyLabel)}</button>
             </div>
         </div>
     `;
@@ -4148,12 +4347,11 @@ function requirementShareCopyText(requirement = {}) {
     ].filter(Boolean).join('\n');
 }
 
-function requirementSharePosterDataUrl(requirement = {}) {
+async function requirementSharePosterDataUrl(requirement = {}) {
     const url = requirementPublicUrl(requirement.public_slug, requirement.public_token);
     const customerLine = svgTextLine(text(requirement.requester_company || requirement.requester_name || requirement.customer_name || '', '专属客户需求入口'));
-    const titleLine = svgTextLine(text(requirementDisplayName(requirement), '客户原始需求填报单'));
     const supportLine = svgTextLine(requirementShareSupportLine(requirement), 'GasGx Sales Desk');
-    const qrUrl = svgTextLine(quoteQrImageUrl(url), '');
+    const qrMarkup = await quoteQrSvgMarkup(url, { x: 312, y: 650, size: 336, radius: 26 });
     const slugLine = svgTextLine(text(requirement.public_slug), '');
     const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="960" height="1360" viewBox="0 0 960 1360">
@@ -4174,27 +4372,26 @@ function requirementSharePosterDataUrl(requirement = {}) {
   </defs>
   <rect width="960" height="1360" rx="36" fill="url(#bg)"/>
   <rect x="44" y="44" width="872" height="1272" rx="32" fill="rgba(6,10,6,0.72)" stroke="rgba(127,255,58,0.18)"/>
-  <text x="84" y="122" fill="#8fff5b" font-size="30" font-family="Segoe UI, Arial, sans-serif" font-weight="800" letter-spacing="4">GASGX AMS</text>
-  <text x="84" y="170" fill="#ffffff" font-size="64" font-family="Segoe UI, Arial, sans-serif" font-weight="800">客户需求填报入口</text>
-  <text x="84" y="222" fill="rgba(255,255,255,0.78)" font-size="24" font-family="Segoe UI, Arial, sans-serif">请客户直接扫码填写，系统会自动保存进度，后台可随时查看最新填写内容。</text>
-  <rect x="84" y="276" width="792" height="250" rx="28" fill="url(#panel)" stroke="rgba(127,255,58,0.18)"/>
-  <text x="118" y="334" fill="#8fff5b" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="700">客户信息</text>
-  <text x="118" y="386" fill="#ffffff" font-size="40" font-family="Segoe UI, Arial, sans-serif" font-weight="700">${customerLine}</text>
-  <text x="118" y="446" fill="#ffffff" font-size="34" font-family="Segoe UI, Arial, sans-serif" font-weight="700">${titleLine}</text>
-  <text x="118" y="496" fill="rgba(255,255,255,0.72)" font-size="24" font-family="Segoe UI, Arial, sans-serif">GasGx 会基于这份原始需求，统一整理后续方案、报价与交付建议。</text>
-  <rect x="84" y="566" width="792" height="360" rx="28" fill="rgba(11,18,11,0.9)" stroke="rgba(127,255,58,0.18)"/>
-  <rect x="122" y="604" width="716" height="284" rx="24" fill="#ffffff"/>
-  <image href="${qrUrl}" x="402" y="644" width="156" height="156"/>
-  <text x="480" y="840" fill="#101510" font-size="24" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="700">扫码填写客户需求</text>
-  <text x="480" y="874" fill="#5b615b" font-size="18" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">${slugLine}</text>
-  <rect x="84" y="968" width="792" height="246" rx="28" fill="rgba(17,28,17,0.94)" stroke="rgba(127,255,58,0.18)"/>
-  <text x="118" y="1028" fill="#8fff5b" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="700">填写引导</text>
-  <text x="118" y="1078" fill="#ffffff" font-size="24" font-family="Segoe UI, Arial, sans-serif">1. 按当前采购/部署计划逐项填写。</text>
-  <text x="118" y="1122" fill="#ffffff" font-size="24" font-family="Segoe UI, Arial, sans-serif">2. 可中途离开，系统会自动保存，稍后继续填写。</text>
-  <text x="118" y="1166" fill="#ffffff" font-size="24" font-family="Segoe UI, Arial, sans-serif">3. 提交后需求将锁定，作为 GasGx 后续报价与跟进基线。</text>
-  <text x="118" y="1240" fill="rgba(255,255,255,0.74)" font-size="24" font-family="Segoe UI, Arial, sans-serif">GasGx Support · ${supportLine}</text>
+  <text x="84" y="122" fill="#8fff5b" font-size="28" font-family="Segoe UI, Arial, sans-serif" font-weight="800" letter-spacing="4">GASGX AMS</text>
+  <text x="84" y="174" fill="#ffffff" font-size="54" font-family="Segoe UI, Arial, sans-serif" font-weight="800">客户需求填报入口</text>
+  <text x="84" y="218" fill="rgba(255,255,255,0.78)" font-size="22" font-family="Segoe UI, Arial, sans-serif">客户扫码即可填写，系统会自动保存进度，后台能随时查看最新内容。</text>
+  <rect x="84" y="266" width="792" height="188" rx="28" fill="url(#panel)" stroke="rgba(127,255,58,0.18)"/>
+  <text x="118" y="324" fill="#8fff5b" font-size="22" font-family="Segoe UI, Arial, sans-serif" font-weight="700">客户信息</text>
+  <text x="118" y="372" fill="#ffffff" font-size="34" font-family="Segoe UI, Arial, sans-serif" font-weight="700">${customerLine}</text>
+  <text x="118" y="418" fill="rgba(255,255,255,0.72)" font-size="20" font-family="Segoe UI, Arial, sans-serif">GasGx 会基于这份原始需求，统一整理后续方案、报价与交付建议。</text>
+  <rect x="84" y="500" width="792" height="500" rx="28" fill="rgba(11,18,11,0.9)" stroke="rgba(127,255,58,0.18)"/>
+  <text x="480" y="558" fill="#ffffff" font-size="30" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="800">扫码填写客户需求</text>
+  <text x="480" y="594" fill="rgba(255,255,255,0.68)" font-size="18" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">填写后自动保存，可随时回来继续补充</text>
+  <rect x="270" y="626" width="420" height="420" rx="34" fill="rgba(13,22,13,0.9)" stroke="rgba(127,255,58,0.12)"/>
+  ${qrMarkup}
+  <rect x="84" y="1036" width="792" height="206" rx="28" fill="rgba(17,28,17,0.94)" stroke="rgba(127,255,58,0.18)"/>
+  <text x="118" y="1090" fill="#8fff5b" font-size="22" font-family="Segoe UI, Arial, sans-serif" font-weight="700">填写引导</text>
+  <text x="118" y="1130" fill="#d7e8d2" font-size="18" font-family="Segoe UI, Arial, sans-serif">公开识别：${slugLine}</text>
+  <text x="118" y="1172" fill="#ffffff" font-size="20" font-family="Segoe UI, Arial, sans-serif">1. 按当前采购或部署计划逐项填写。</text>
+  <text x="118" y="1206" fill="#ffffff" font-size="20" font-family="Segoe UI, Arial, sans-serif">2. 中途离开也会自动保存，稍后可继续补充。</text>
+  <text x="118" y="1276" fill="rgba(255,255,255,0.74)" font-size="20" font-family="Segoe UI, Arial, sans-serif">GasGx Support · ${supportLine}</text>
 </svg>`;
-    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    return posterDataUrlFromSvg(svg);
 }
 
 function adminPageUrl(page, params = {}) {
@@ -4363,6 +4560,93 @@ async function repairLegacyBrandRecords(user) {
     moduleState.brandDisplayNameTouched = currentDisplayTouched;
     moduleState.brandDefaultLinkTouched = currentDefaultTouched;
     persistBrandEditorDraftState();
+    return true;
+}
+
+function productNeedsLegacySeedRepair(product = {}, seedEntry = {}) {
+    const current = createProductDraft(product);
+    const target = createProductDraft({
+        ...(seedEntry.product || {}),
+        items: seedEntry.items || [],
+    });
+    const currentTitle = text(current.public_title?.zh);
+    const targetTitle = text(target.public_title?.zh);
+    const hasPlaceholderTitle = !currentTitle || currentTitle === '产品标题' || currentTitle.includes('填写客户看到的产品名称');
+    return hasPlaceholderTitle
+        || text(current.product_code) !== text(target.product_code)
+        || text(current.slug) !== text(target.slug)
+        || currentTitle !== targetTitle
+        || normalizeSectionConfig(current.section_config).length !== normalizeSectionConfig(target.section_config).length
+        || (current.items || []).length !== (target.items || []).length;
+}
+
+function matchLegacyProductRecord(products = [], seedEntry = {}, index = 0) {
+    const seedProduct = createProductDraft(seedEntry.product || {});
+    const seedTitle = text(seedProduct.public_title?.zh).toLowerCase();
+    const byExactKey = products.find((product) =>
+        text(product.slug).toLowerCase() === text(seedProduct.slug).toLowerCase()
+        || text(product.product_code).toLowerCase() === text(seedProduct.product_code).toLowerCase()
+        || text(product.public_title?.zh).toLowerCase() === seedTitle,
+    );
+    if (byExactKey) return byExactKey;
+    if (products.length === 1 && index === 0) return products[0];
+    return products[index] || null;
+}
+
+async function repairLegacyProductRecords(user) {
+    if (moduleState.productLegacyRepairAttempted) return false;
+    moduleState.productLegacyRepairAttempted = true;
+    if (!user?.id) return false;
+
+    const currentEditorId = text(moduleState.productEditor?.id);
+    const currentCreateMode = moduleState.productCreateMode === true;
+    const currentBrandDraft = createBrandDraft(moduleState.productBrandDraft || {});
+    const legacyPages = await ensureLegacyQuotePagesLoaded('/shared/quote-system/quote-pages.js');
+    const legacyBundles = convertLegacyPagesToSeedPayloads(legacyPages);
+    let repairedAny = false;
+
+    for (const bundle of legacyBundles) {
+        const bundleSlug = text(bundle?.brand?.slug).toLowerCase();
+        if (!bundleSlug) continue;
+        const matchingBrands = moduleState.brands.filter((brand) => legacyBrandSeedKey(brand) === bundleSlug);
+        for (const brand of matchingBrands) {
+            const brandProducts = moduleState.products.filter((product) => text(product.brand_id) === text(brand.id));
+            for (const [index, seedEntry] of (bundle.products || []).entries()) {
+                const matched = matchLegacyProductRecord(brandProducts, seedEntry, index);
+                if (!matched?.id) continue;
+                const fullProduct = await fetchFullProductDraft(matched.id, matched);
+                if (!productNeedsLegacySeedRepair(fullProduct, seedEntry)) continue;
+                await saveProductDraft(user, {
+                    ...seedEntry.product,
+                    id: matched.id,
+                    brand_id: brand.id,
+                    sort_order: matched.sort_order || seedEntry.product?.sort_order || (index + 1) * 10,
+                    is_active: matched.is_active !== false,
+                    items: seedEntry.items || [],
+                    media_gallery: seedEntry.product?.media_gallery || fullProduct.media_gallery || [],
+                    media_config: seedEntry.product?.media_config || fullProduct.media_config,
+                });
+                repairedAny = true;
+            }
+        }
+    }
+
+    if (!repairedAny) return false;
+
+    await fetchProductRows();
+    if (currentEditorId && !currentCreateMode) {
+        const refreshed = moduleState.products.find((item) => text(item.id) === currentEditorId);
+        if (refreshed) {
+            moduleState.productLoadedId = refreshed.id;
+            moduleState.productEditor = await fetchFullProductDraft(refreshed.id, refreshed);
+            moduleState.productCreateMode = false;
+            syncProductBrandDraft(moduleState.productEditor.brand_id);
+        }
+    } else if (!currentCreateMode) {
+        moduleState.productEditor = createProductDraft();
+        moduleState.productLoadedId = '';
+        moduleState.productBrandDraft = currentBrandDraft;
+    }
     return true;
 }
 
@@ -5275,11 +5559,16 @@ function salesActivityStageLabel(stageKey = '') {
 
 function salesActivityDetailLine(activity = {}) {
     const detail = activity.detail_json && typeof activity.detail_json === 'object' ? activity.detail_json : {};
+    const aggregateCount = safeNumber(detail.aggregate_count, 0);
+    if (aggregateCount > 1) {
+        return `集中触发 ${aggregateCount} 次 · 首次 ${fmtDate(detail.aggregate_from)} · 最近 ${fmtDate(detail.aggregate_to || activity.occurred_at)}`;
+    }
     if (Array.isArray(detail.fields) && detail.fields.length) {
-        return detail.fields
-            .slice(0, 3)
+        const rendered = detail.fields
+            .slice(0, 4)
             .map((field) => `${text(field.label || field.field)}: ${text(field.before, '空')} -> ${text(field.after, '空')}`)
             .join('；');
+        return detail.fields.length > 4 ? `${rendered}；等 ${detail.fields.length} 项` : rendered;
     }
     if (text(detail.summary)) return text(detail.summary);
     if (text(detail.button)) return `按钮：${text(detail.button)}`;
@@ -5549,42 +5838,6 @@ function productBrandLocalizedFieldGroup(field, label, value = {}, options = {})
                 <div class="ams-field-help">最终多语言内容在报价可视化编辑中处理，这里只维护中文基线。</div>
             </div>
         </div>
-    `;
-}
-
-function productPublishCopyPanelMarkup(product, brandDraft = {}) {
-    const normalized = createProductDraft(product);
-    const brand = createBrandDraft(brandDraft);
-    const copyPlaceholders = {
-        productTitle: {
-            zh: '客户页面看到的产品名称，例如：Magie AIO-500L 液冷版 500kW',
-            en: 'Customer-facing product title in English.',
-            ru: 'Customer-facing product title in Russian.',
-        },
-        overviewTitle: {
-            zh: '填写页面页头标题，例如：燃气发电产品报价',
-            en: 'Quote page header title in English.',
-            ru: 'Quote page header title in Russian.',
-        },
-        footerNote: {
-            zh: '填写页脚说明或品牌落款，例如：GasGx 报价支持',
-            en: 'Footer note or brand signature in English.',
-            ru: 'Footer note or brand signature in Russian.',
-        },
-    };
-    return `
-        <section class="ams-quote-block ams-quote-product-copy-panel">
-            <div class="ams-section-head">
-                <div>
-                    <h3>发布文案</h3>
-                    <p>先把客户会直接看到的标题、页头和品牌落款处理完，再往下维护汇率、配置区块和明细行。</p>
-                </div>
-            </div>
-            <div class="ams-field-help">供应商、发件邮箱、邮件署名继承品牌默认信息，无需在模板中重复维护。</div>
-            <div class="ams-quote-product-copy-grid">
-                ${localizedFieldGroup('product:public_title', '产品标题', normalized.public_title, { placeholders: copyPlaceholders.productTitle, forceEmpty: true })}
-            </div>
-        </section>
     `;
 }
 
@@ -6274,16 +6527,14 @@ function renderSalesCustomerArchiveList() {
                                             </button>
                                         </div>
                                     </div>
-                                    ${expanded ? `
-                                        <div class="ams-sales-customer-card-meta is-compact">
-                                            <span><strong>联系人</strong><em>${esc(text(customer.contact_name, '未填写'))}</em></span>
-                                            <span><strong>客户公司</strong><em>${esc(text(customer.company_name, '未填写'))}</em></span>
-                                            <span><strong>电话 / 邮箱</strong><em>${esc(text(customer.phone || customer.email, '未填写'))}</em></span>
-                                            <span><strong>更新时间</strong><em>${esc(fmtDate(customer.updated_at || customer.created_at))}</em></span>
-                                            <span class="is-wide"><strong>统计</strong><em>${esc(`${deals.length} 条销售流程 / ${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单`)}</em></span>
-                                            <span class="is-wide"><strong>客户备注</strong><em>${esc(notePreview ? `${notePreview.slice(0, 96)}${notePreview.length > 96 ? '...' : ''}` : '未填写')}</em></span>
-                                        </div>
-                                    ` : ''}
+                                    <div class="ams-sales-customer-card-meta is-compact" data-customer-expand-panel="${esc(customer.id)}" ${expanded ? '' : 'hidden'}>
+                                        <span><strong>联系人</strong><em>${esc(text(customer.contact_name, '未填写'))}</em></span>
+                                        <span><strong>客户公司</strong><em>${esc(text(customer.company_name, '未填写'))}</em></span>
+                                        <span><strong>电话 / 邮箱</strong><em>${esc(text(customer.phone || customer.email, '未填写'))}</em></span>
+                                        <span><strong>更新时间</strong><em>${esc(fmtDate(customer.updated_at || customer.created_at))}</em></span>
+                                        <span class="is-wide"><strong>统计</strong><em>${esc(`${deals.length} 条销售流程 / ${requirementSummary.total_requirements} 份需求单 / ${quoteSummary.total_quotes} 份报价单`)}</em></span>
+                                        <span class="is-wide"><strong>客户备注</strong><em>${esc(notePreview ? `${notePreview.slice(0, 96)}${notePreview.length > 96 ? '...' : ''}` : '未填写')}</em></span>
+                                    </div>
                                 </div>
                                 <div class="ams-sales-customer-card-actions">
                                   ${customer.is_deleted
@@ -7050,6 +7301,7 @@ function bindBrandEditor(input) {
     });
 
     document.getElementById('ams-quote-brand-archive-current')?.addEventListener('click', async (event) => {
+        if (!window.confirm('归档后品牌会从默认列表和新建入口中隐藏，但历史产品与报价数据仍会保留。确定继续吗？')) return;
         await input.withButtonBusy(event.currentTarget, '归档中...', async () => {
             try {
                 await saveBrandDraft(input.user, {
@@ -7337,19 +7589,6 @@ function bindProductEditor(input) {
         });
     });
 
-    document.getElementById('ams-quote-product-archive-current')?.addEventListener('click', async (event) => {
-        if (!window.confirm('删除后会从默认产品列表中隐藏，但不会删除已生成的报价单。确定继续吗？')) return;
-        await input.withButtonBusy(event.currentTarget, '删除中...', async () => {
-            try {
-                await archiveProductTemplate(input.user, moduleState.productEditor.id);
-                input.showToast('产品已删除。');
-                await renderQuoteProductsPage(input);
-            } catch (error) {
-                input.showToast(error.message || '删除产品失败。', true);
-            }
-        });
-    });
-
     document.getElementById('ams-quote-product-restore-current')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '恢复中...', async () => {
             try {
@@ -7430,6 +7669,7 @@ function bindProductEditor(input) {
             node.value = '';
             if (!files.length) return;
             try {
+                input.showToast(`正在上传 ${files.length} 张产品图片...`, false, { prominent: true, busy: true, persist: true });
                 const productContext = {
                     ...moduleState.productEditor,
                     brand_slug: brandSlugById(moduleState.productEditor.brand_id),
@@ -7635,6 +7875,8 @@ function bindProductEditor(input) {
 export async function renderQuoteProductsPage(input) {
     try {
         await ensureBaseData();
+        await repairLegacyBrandRecords(input.user);
+        await repairLegacyProductRecords(input.user);
         await ensureBaseTemplates();
     } catch (error) {
         if (isQuoteSetupMissing(error)) {
@@ -7723,14 +7965,7 @@ export async function renderQuoteProductsPage(input) {
                                 <input type="checkbox" data-product-field="is_active" ${product.is_active ? 'checked' : ''}>
                                 <span>启用产品</span>
                             </label>
-                            ${
-                                product.id
-                                    ? product.is_active === false
-                                        ? '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-product-restore-current">恢复产品</button>'
-                                        : '<button class="ams-btn ams-btn-danger" type="button" id="ams-quote-product-archive-current">删除产品</button>'
-                                    : ''
-                            }
-                            <button class="ams-btn ams-btn-muted" type="button" id="ams-open-product-visual-editor" ${product.id ? '' : 'disabled'}>Visual Editor</button>
+                            <button class="ams-btn ams-btn-muted" type="button" id="ams-open-product-visual-editor" ${product.id ? '' : 'disabled'}>可视化产品编辑</button>
                             ${salesConsole ? '' : '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-product-create-instance">从产品生成报价单</button>'}
                             <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-product-save">保存产品</button>
                         </div>
@@ -7758,8 +7993,12 @@ export async function renderQuoteProductsPage(input) {
                         <div class="ams-field"><label>产品型号</label><input class="ams-input" data-product-field="product_code" value="${esc(product.product_code)}" placeholder="产品型号/代号，例如 AIO-500L、P1200GF"></div>
                         <div class="ams-field"><label>有效期（小时）</label><input class="ams-input" type="number" min="1" step="1" data-product-field="validity_hours" value="${esc(product.validity_hours)}" placeholder="报价有效期（小时），例如 72"></div>
                         <div class="ams-field"><label>排序</label><input class="ams-input" type="number" min="0" step="10" data-product-field="sort_order" value="${esc(product.sort_order)}" placeholder="列表排序，数值越小越靠前"></div>
+                        <div class="ams-field">
+                            <label>产品标题</label>
+                            <textarea class="ams-textarea ams-quote-textarea" data-i18n-prefix="product:public_title" data-lang="zh" placeholder="客户页面看到的产品名称，例如：Magie AIO-500L 液冷版 500kW">${esc(product.public_title?.zh || '')}</textarea>
+                            <div class="ams-field-help">客户页面直接显示这里，默认只维护中文基线。</div>
+                        </div>
                     </div>
-                    ${productPublishCopyPanelMarkup(product, currentProductBrandDraft())}
                     ${productVisualEditorSurfaceMarkup(product, currentProductBrandDraft())}
                     ${mediaLibraryMarkup('product', product.media_config, product.media_gallery, {
                         uploadLabel: '上传产品图片',
@@ -8122,6 +8361,7 @@ function bindInstanceEditor(input) {
             node.value = '';
             if (!files.length) return;
             try {
+                input.showToast(`正在上传 ${files.length} 张产品图片...`, false, { prominent: true, busy: true, persist: true });
                 const productContext = {
                     ...(moduleState.products.find((item) => item.id === moduleState.instanceEditor.product_id) || {}),
                     ...moduleState.instanceEditor.product_snapshot,
@@ -8384,16 +8624,22 @@ function bindInstanceEditor(input) {
         if (shareMenu) shareMenu.removeAttribute('open');
     });
 
-    document.getElementById('ams-quote-instance-share-poster')?.addEventListener('click', () => {
-        if (!moduleState.instanceEditor.public_slug) {
-            input.showToast('请先填写公开链接 slug。', true);
-            return;
-        }
-        const posterUrl = quoteSharePosterDataUrl(moduleState.instanceEditor);
-        if (posterImage) posterImage.setAttribute('src', posterUrl);
-        if (posterDownload) posterDownload.setAttribute('href', posterUrl);
-        if (posterModal) posterModal.hidden = false;
-        if (shareMenu) shareMenu.removeAttribute('open');
+    document.getElementById('ams-quote-instance-share-poster')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
+            if (!moduleState.instanceEditor.public_slug) {
+                input.showToast('请先填写公开链接 slug。', true);
+                return;
+            }
+            try {
+                const posterUrl = await quoteSharePosterDataUrl(moduleState.instanceEditor);
+                if (posterImage) posterImage.setAttribute('src', posterUrl);
+                if (posterDownload) posterDownload.setAttribute('href', posterUrl);
+                if (posterModal) posterModal.hidden = false;
+                if (shareMenu) shareMenu.removeAttribute('open');
+            } catch (error) {
+                input.showToast(error.message || '二维码海报生成失败。', true);
+            }
+        });
     });
 
     document.getElementById('ams-quote-share-poster-copy-link')?.addEventListener('click', async () => {
@@ -8478,8 +8724,17 @@ function bindCustomerEditor(input) {
     document.querySelectorAll('[data-customer-expand]').forEach((button) => {
         button.addEventListener('click', () => {
             const customerId = text(button.dataset.customerExpand);
-            moduleState.customerArchiveExpandedMap[customerId] = moduleState.customerArchiveExpandedMap[customerId] !== true;
-            void renderQuoteCustomersPage(input);
+            const nextExpanded = moduleState.customerArchiveExpandedMap[customerId] !== true;
+            moduleState.customerArchiveExpandedMap[customerId] = nextExpanded;
+            button.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
+            button.setAttribute('aria-label', nextExpanded ? '收起客户信息' : '展开客户信息');
+            const icon = button.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('fa-chevron-up', nextExpanded);
+                icon.classList.toggle('fa-chevron-down', !nextExpanded);
+            }
+            const panel = document.querySelector(`[data-customer-expand-panel="${customerId}"]`);
+            if (panel) panel.hidden = !nextExpanded;
         });
     });
 
@@ -8896,7 +9151,7 @@ function bindRequirementEditor(input) {
     document.getElementById('ams-quote-requirement-open-link-inline')?.addEventListener('click', () => {
         document.getElementById('ams-quote-requirement-open-link')?.click();
     });
-    document.getElementById('ams-quote-requirement-share-link')?.addEventListener('click', async () => {
+    const copyRequirementShareLink = async () => {
         if (!moduleState.requirementEditor?.public_slug || !moduleState.requirementEditor?.public_token) {
             input.showToast('请先生成需求单，再分享给客户填写。', true);
             return;
@@ -8909,17 +9164,36 @@ function bindRequirementEditor(input) {
             input.showToast(payload, false);
         }
         if (requirementShareMenu) requirementShareMenu.removeAttribute('open');
+    };
+    document.getElementById('ams-quote-requirement-share-link')?.addEventListener('click', copyRequirementShareLink);
+    content.querySelectorAll('[data-requirement-share-link-trigger]').forEach((button) => {
+        button.addEventListener('click', copyRequirementShareLink);
     });
-    document.getElementById('ams-quote-requirement-share-poster')?.addEventListener('click', () => {
+    const openRequirementSharePoster = async (event = null) => {
         if (!moduleState.requirementEditor?.public_slug || !moduleState.requirementEditor?.public_token) {
             input.showToast('请先生成需求单，再分享二维码。', true);
             return;
         }
-        const posterUrl = requirementSharePosterDataUrl(moduleState.requirementEditor);
-        if (requirementPosterImage) requirementPosterImage.setAttribute('src', posterUrl);
-        if (requirementPosterDownload) requirementPosterDownload.setAttribute('href', posterUrl);
-        if (requirementPosterModal) requirementPosterModal.hidden = false;
-        if (requirementShareMenu) requirementShareMenu.removeAttribute('open');
+        try {
+            const runner = async () => {
+                const posterUrl = await requirementSharePosterDataUrl(moduleState.requirementEditor);
+                if (requirementPosterImage) requirementPosterImage.setAttribute('src', posterUrl);
+                if (requirementPosterDownload) requirementPosterDownload.setAttribute('href', posterUrl);
+                if (requirementPosterModal) requirementPosterModal.hidden = false;
+                if (requirementShareMenu) requirementShareMenu.removeAttribute('open');
+            };
+            if (event?.currentTarget) {
+                await input.withButtonBusy(event.currentTarget, '生成中...', runner);
+            } else {
+                await runner();
+            }
+        } catch (error) {
+            input.showToast(error.message || '二维码海报生成失败。', true);
+        }
+    };
+    document.getElementById('ams-quote-requirement-share-poster')?.addEventListener('click', openRequirementSharePoster);
+    content.querySelectorAll('[data-requirement-share-poster-trigger]').forEach((button) => {
+        button.addEventListener('click', openRequirementSharePoster);
     });
     document.getElementById('ams-requirement-share-poster-copy-link')?.addEventListener('click', async () => {
         if (!moduleState.requirementEditor?.public_slug || !moduleState.requirementEditor?.public_token) {
@@ -9230,13 +9504,15 @@ export async function renderQuoteRequirementsPage(input) {
                         ${isSalesConsole(input) && currentDeal?.id
                             ? `<div class="ams-summary-chip"><strong>商机阶段</strong><span>${esc(dealStageLabel(currentDeal.current_stage))}</span></div>`
                             : ''}
-                        <div class="ams-summary-chip ams-summary-chip-link">
-                            <strong>公开链接</strong>
-                            <span>${requirementLink ? `<a class="ams-inline-link" href="${esc(requirementLink)}" target="_blank" rel="noopener">${esc(requirementLink)}</a>` : esc('先保存后生成')}</span>
-                            <div class="ams-summary-chip-actions">
-                                <button class="ams-btn ams-btn-warning" type="button" id="ams-quote-requirement-open-link-inline" ${requirementLink ? '' : 'disabled'}>查看</button>
-                            </div>
-                        </div>
+                          <div class="ams-summary-chip ams-summary-chip-link">
+                              <strong>公开链接</strong>
+                              <span>${requirementLink ? `<a class="ams-inline-link" href="${esc(requirementLink)}" target="_blank" rel="noopener">${esc(requirementLink)}</a>` : esc('先保存后生成')}</span>
+                              <div class="ams-summary-chip-actions">
+                                  <button class="ams-btn ams-btn-warning" type="button" id="ams-quote-requirement-open-link-inline" ${requirementLink ? '' : 'disabled'}>查看</button>
+                                  <button class="ams-btn ams-btn-primary" type="button" data-requirement-share-link-trigger ${requirementLink ? '' : 'disabled'}>复制链接</button>
+                                  <button class="ams-btn ams-btn-muted" type="button" data-requirement-share-poster-trigger ${requirementLink ? '' : 'disabled'}>二维码海报</button>
+                              </div>
+                          </div>
                         <div class="ams-summary-chip"><strong>客户提交时间</strong><span>${esc(fmtDate(requirement.submitted_at))}</span></div>
                         <div class="ams-summary-chip"><strong>已关联报价</strong><span>${requirementQuoteJumpMarkup(requirement.id)}</span></div>
                         <div class="ams-summary-chip"><strong>更新时间</strong><span>${esc(fmtDate(requirement.updated_at))}</span></div>
@@ -9296,9 +9572,11 @@ export async function renderQuoteRequirementsPage(input) {
                                 </div>
                             </div>
                         </div>
-                        <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
-                            <button class="ams-btn ams-btn-warning" type="button" id="ams-quote-requirement-open-link" ${requirementLink ? '' : 'disabled'}>打开公开需求页</button>
-                        </div>
+                          <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
+                              <button class="ams-btn ams-btn-warning" type="button" id="ams-quote-requirement-open-link" ${requirementLink ? '' : 'disabled'}>打开公开需求页</button>
+                              <button class="ams-btn ams-btn-primary" type="button" data-requirement-share-link-trigger ${requirementLink ? '' : 'disabled'}>复制链接</button>
+                              <button class="ams-btn ams-btn-muted" type="button" data-requirement-share-poster-trigger ${requirementLink ? '' : 'disabled'}>二维码海报</button>
+                          </div>
                     </section>
                     <section class="ams-quote-block">
                         <div class="ams-section-head"><div><h3>客户问卷内容</h3><p>后台这里主要用于查看和必要时预置默认值；正式基线以客户公开提交为准。</p></div></div>
@@ -10564,7 +10842,7 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
                 <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(customer))}</span></div>
                 <div class="ams-summary-chip"><strong>销售线</strong><span>${esc(text(deal?.title, '--'))}</span></div>
                 <div class="ams-summary-chip"><strong>状态</strong><span>${requirementStatusPill(requirement.status)}</span></div>
-                <div class="ams-summary-chip ams-summary-chip-link"><strong>公开链接</strong><span>${requirementLink ? `<a class="ams-inline-link" href="${esc(requirementLink)}" target="_blank" rel="noopener">打开客户表单</a>` : '保存后生成'}</span><small>对外发送时会自动带上填写目的说明、自动保存进度说明和 GasGx 品牌介绍。</small><div class="ams-summary-chip-actions"><button class="ams-btn ams-btn-muted ${unreadCustomerUpdate ? 'has-alert-dot' : ''}" type="button" id="ams-sales-flow-requirement-open-link" ${requirementLink ? '' : 'disabled'}>打开客户表单${unreadCustomerUpdate ? '<span class="ams-btn-alert-dot" aria-hidden="true"></span>' : ''}</button><button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-requirement-share-link" ${requirementLink ? '' : 'disabled'}>复制链接</button><button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-requirement-share-poster" ${requirementLink ? '' : 'disabled'}>二维码海报</button></div></div>
+                <div class="ams-summary-chip ams-summary-chip-link"><strong>公开链接</strong><span>${requirementLink ? `<a class="ams-inline-link" href="${esc(requirementLink)}" target="_blank" rel="noopener">查看客户需求</a>` : '保存后生成'}</span><small>对外发送时会自动带上填写目的说明、自动保存进度说明和 GasGx 品牌介绍。</small><div class="ams-summary-chip-actions"><button class="ams-btn ams-btn-muted ${unreadCustomerUpdate ? 'has-alert-dot' : ''}" type="button" id="ams-sales-flow-requirement-open-link" ${requirementLink ? '' : 'disabled'}>查看客户需求${unreadCustomerUpdate ? '<span class="ams-btn-alert-dot" aria-hidden="true"></span>' : ''}</button><details class="ams-share-menu ams-sales-flow-requirement-share-menu"><summary class="ams-btn ams-btn-primary" ${requirementLink ? '' : 'aria-disabled="true"'}>分享表单</summary><div class="ams-share-menu-panel"><div class="ams-share-menu-copy"><strong>选择分享方式</strong><span>对外发送时，系统会自动带上填写目的说明、自动保存进度说明和 GasGx 品牌介绍。</span></div><button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-link" ${requirementLink ? '' : 'disabled'}><i class="fa-solid fa-link"></i><span>分享链接</span></button><button class="ams-share-menu-item" type="button" id="ams-sales-flow-requirement-share-poster" ${requirementLink ? '' : 'disabled'}><i class="fa-solid fa-qrcode"></i><span>分享二维码</span></button></div></details></div></div>
             </div>
             <div class="ams-site-field-grid ams-site-field-grid-wide">
                 <div class="ams-field"><label>客户填写进度说明</label><input class="ams-input" value="${esc(normalizeDealStageKey(stageKey) === 'requirement_capture' ? '当前阶段只等待客户填写，客户基础信息与需求详情以公开需求页实际提交内容为准。' : '当前阶段请基于客户已提交的真实需求内容进行确认。')}" disabled></div>
@@ -10691,21 +10969,40 @@ function quoteFlowMarkup(stageKey = '', deal = null, instance = {}) {
                     <div class="ams-summary-chip"><strong>品牌</strong><span>${esc(text(brand?.brand_name || brand?.display_name, '--'))}</span></div>
                     <div class="ams-summary-chip"><strong>产品</strong><span>${esc(text(productLabelById(instance.product_id), '--'))}</span></div>
                     <div class="ams-summary-chip"><strong>报价状态</strong><span>${statusPill(instance.status || 'draft')}</span></div>
-                    ${isQuoteDraft && instance.id ? `
-                        <div class="ams-summary-chip ams-summary-chip-link">
-                            <strong>报价入口</strong>
-                            <span>已发布报价可在这里直接进入编辑，或复制对外报价链接用于微信、邮件和群转发。</span>
-                            <div class="ams-summary-chip-actions">
-                                <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-instance-open-inline">打开可视化报价编辑器</button>
-                                <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-instance-copy-link">复制报价链接</button>
-                            </div>
-                        </div>
-                    ` : ''}
-                    ${isQuoteConfirmed ? stagePublicEntryChipMarkup(stageKey, record, deal, {
-                        openLabel: '打开客户报价确认单',
-                        copyLabel: '复制确认链接',
-                        summary: '对外发送时会自动带上报价确认说明、当前销售线信息以及 GasGx 品牌说明。',
-                    }) : ''}
+                      ${isQuoteDraft && instance.id ? `
+                          <div class="ams-summary-chip ams-summary-chip-link">
+                              <strong>报价入口</strong>
+                              <span>已发布报价可在这里直接进入编辑、查看客户视角报价页，或复制对外报价链接用于微信、邮件和群转发。</span>
+                              <div class="ams-summary-chip-actions">
+                                  <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-instance-open-inline">打开可视化报价编辑器</button>
+                                  <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-instance-open-public">查看用户报价</button>
+                                  <details class="ams-share-menu ams-sales-flow-quote-share-menu">
+                                      <summary class="ams-btn ams-btn-primary" ${instance.public_slug ? '' : 'aria-disabled="true"'}>
+                                          分享报价
+                                      </summary>
+                                      <div class="ams-share-menu-panel">
+                                          <div class="ams-share-menu-copy">
+                                              <strong>选择分享方式</strong>
+                                              <span>对外发送时，系统会自动带上用途说明和 GasGx 品牌介绍。</span>
+                                          </div>
+                                          <button class="ams-share-menu-item" type="button" id="ams-sales-flow-instance-share-link" ${instance.public_slug ? '' : 'disabled'}>
+                                              <i class="fa-solid fa-link"></i>
+                                              <span>分享链接</span>
+                                          </button>
+                                          <button class="ams-share-menu-item" type="button" id="ams-sales-flow-instance-share-poster" ${instance.public_slug ? '' : 'disabled'}>
+                                              <i class="fa-solid fa-qrcode"></i>
+                                              <span>分享二维码</span>
+                                          </button>
+                                      </div>
+                                  </details>
+                              </div>
+                          </div>
+                      ` : ''}
+                      ${isQuoteConfirmed ? stagePublicEntryChipMarkup(stageKey, record, deal, {
+                          openLabel: '打开客户报价确认单',
+                          copyLabel: '复制确认链接',
+                          summary: '对外发送时会自动带上报价确认说明、当前销售线信息以及 GasGx 品牌说明。',
+                      }) : ''}
                 </div>
                 ${
                     instance.id
@@ -10723,6 +11020,25 @@ function quoteFlowMarkup(stageKey = '', deal = null, instance = {}) {
                             </div>
                         `
                 }
+                <div class="ams-share-poster-modal" id="ams-sales-flow-quote-share-poster-modal" hidden>
+                    <div class="ams-share-poster-backdrop" data-sales-flow-quote-share-poster-close></div>
+                    <div class="ams-share-poster-dialog">
+                        <div class="ams-share-poster-head">
+                            <div>
+                                <strong>报价分享二维码海报 / Quote Share Poster</strong>
+                                <span>适合微信、邮件或群转发，已包含用途说明与 GasGx 品牌信息。 Ready for WeChat, email, and internal forwarding.</span>
+                            </div>
+                            <button class="ams-btn ams-btn-muted" type="button" data-sales-flow-quote-share-poster-close>关闭</button>
+                        </div>
+                        <div class="ams-share-poster-stage">
+                            <img class="ams-share-poster-image" id="ams-sales-flow-quote-share-poster-image" alt="报价分享二维码海报 / Quote Share Poster">
+                        </div>
+                        <div class="ams-row-actions">
+                            <a class="ams-btn ams-btn-primary" id="ams-sales-flow-quote-share-poster-download" download="gasgx-quote-share-poster.svg">下载海报</a>
+                            <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-quote-share-poster-copy-link">复制海报说明文案</button>
+                        </div>
+                    </div>
+                </div>
             </section>
             ${isQuoteConfirmed ? quoteTermsCardMarkup(record) : ''}
             ${stageCommunicationSectionMarkup(stageKey, record, {
@@ -11268,7 +11584,7 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
         window.open(requirementPublicUrl(requirement.public_slug, requirement.public_token), '_blank', 'noopener');
     });
 
-    const salesFlowRequirementShareMenu = document.querySelector('.ams-share-menu');
+    const salesFlowRequirementShareMenu = document.querySelector('.ams-sales-flow-requirement-share-menu');
     const salesFlowRequirementPosterModal = document.getElementById('ams-sales-flow-requirement-share-poster-modal');
     const salesFlowRequirementPosterImage = document.getElementById('ams-sales-flow-requirement-share-poster-image');
     const salesFlowRequirementPosterDownload = document.getElementById('ams-sales-flow-requirement-share-poster-download');
@@ -11292,17 +11608,23 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
         if (salesFlowRequirementShareMenu) salesFlowRequirementShareMenu.removeAttribute('open');
     });
 
-    document.getElementById('ams-sales-flow-requirement-share-poster')?.addEventListener('click', () => {
-        const requirement = createRequirementDraft(moduleState.requirementEditor);
-        if (!requirement.public_slug || !requirement.public_token) {
-            input.showToast('请先保存需求，再生成客户需求链接。', true);
-            return;
-        }
-        const posterUrl = requirementSharePosterDataUrl(requirement);
-        if (salesFlowRequirementPosterImage) salesFlowRequirementPosterImage.setAttribute('src', posterUrl);
-        if (salesFlowRequirementPosterDownload) salesFlowRequirementPosterDownload.setAttribute('href', posterUrl);
-        if (salesFlowRequirementPosterModal) salesFlowRequirementPosterModal.hidden = false;
-        if (salesFlowRequirementShareMenu) salesFlowRequirementShareMenu.removeAttribute('open');
+    document.getElementById('ams-sales-flow-requirement-share-poster')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
+            const requirement = createRequirementDraft(moduleState.requirementEditor);
+            if (!requirement.public_slug || !requirement.public_token) {
+                input.showToast('请先保存需求，再生成客户需求链接。', true);
+                return;
+            }
+            try {
+                const posterUrl = await requirementSharePosterDataUrl(requirement);
+                if (salesFlowRequirementPosterImage) salesFlowRequirementPosterImage.setAttribute('src', posterUrl);
+                if (salesFlowRequirementPosterDownload) salesFlowRequirementPosterDownload.setAttribute('href', posterUrl);
+                if (salesFlowRequirementPosterModal) salesFlowRequirementPosterModal.hidden = false;
+                if (salesFlowRequirementShareMenu) salesFlowRequirementShareMenu.removeAttribute('open');
+            } catch (error) {
+                input.showToast(error.message || '二维码海报生成失败。', true);
+            }
+        });
     });
 
     document.getElementById('ams-sales-flow-requirement-share-poster-copy')?.addEventListener('click', async () => {
@@ -11365,7 +11687,24 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
         });
     });
 
-    document.getElementById('ams-sales-flow-instance-copy-link')?.addEventListener('click', async (event) => {
+    document.getElementById('ams-sales-flow-instance-open-public')?.addEventListener('click', () => {
+        const instance = moduleState.instanceEditor;
+        if (!instance?.public_slug) {
+            input.showToast('请先发布报价，再查看用户报价页。', true);
+            return;
+        }
+        window.open(publicQuoteUrl(instance.public_slug), '_blank', 'noopener');
+    });
+
+    const salesFlowQuoteShareMenu = document.querySelector('.ams-sales-flow-quote-share-menu');
+    const salesFlowQuotePosterModal = document.getElementById('ams-sales-flow-quote-share-poster-modal');
+    const salesFlowQuotePosterImage = document.getElementById('ams-sales-flow-quote-share-poster-image');
+    const salesFlowQuotePosterDownload = document.getElementById('ams-sales-flow-quote-share-poster-download');
+    const closeSalesFlowQuotePosterModal = () => {
+        if (salesFlowQuotePosterModal) salesFlowQuotePosterModal.hidden = true;
+    };
+
+    document.getElementById('ams-sales-flow-instance-share-link')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '复制中...', async () => {
             const instance = moduleState.instanceEditor;
             if (!instance?.public_slug) {
@@ -11379,29 +11718,74 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
             } catch (_error) {
                 input.showToast(payload, false);
             }
+            if (salesFlowQuoteShareMenu) salesFlowQuoteShareMenu.removeAttribute('open');
         });
     });
 
-    document.getElementById('ams-sales-flow-stage-open-public-confirmation')?.addEventListener('click', async (event) => {
+    document.getElementById('ams-sales-flow-instance-share-poster')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
-            const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
-            const stageRecord = await ensurePublicStageConfirmationLink(input.user, stageKey, activeDeal);
-            window.open(stageCustomerFacingUrl(stageKey, stageRecord, activeDeal), '_blank', 'noopener');
-            input.showToast('客户确认入口已打开。');
+            const instance = moduleState.instanceEditor;
+            if (!instance?.public_slug) {
+                input.showToast('请先发布报价，再分享二维码。', true);
+                return;
+            }
+            try {
+                const posterUrl = await quoteSharePosterDataUrl(instance);
+                if (salesFlowQuotePosterImage) salesFlowQuotePosterImage.setAttribute('src', posterUrl);
+                if (salesFlowQuotePosterDownload) salesFlowQuotePosterDownload.setAttribute('href', posterUrl);
+                if (salesFlowQuotePosterModal) salesFlowQuotePosterModal.hidden = false;
+                if (salesFlowQuoteShareMenu) salesFlowQuoteShareMenu.removeAttribute('open');
+            } catch (error) {
+                input.showToast(error.message || '二维码海报生成失败。', true);
+            }
         });
     });
 
-    document.getElementById('ams-sales-flow-stage-copy-public-confirmation')?.addEventListener('click', async (event) => {
-        await input.withButtonBusy(event.currentTarget, '复制中...', async () => {
-            const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
-            const stageRecord = await ensurePublicStageConfirmationLink(input.user, stageKey, activeDeal);
-            const payload = stageConfirmationCopyText(stageKey, stageRecord, activeDeal);
-            try {
-                await navigator.clipboard.writeText(payload);
-                input.showToast('客户确认链接已复制。');
-            } catch (_error) {
-                input.showToast(payload, false);
-            }
+    document.getElementById('ams-sales-flow-quote-share-poster-copy-link')?.addEventListener('click', async () => {
+        const instance = moduleState.instanceEditor;
+        if (!instance?.public_slug) {
+            input.showToast('请先发布报价，再复制分享说明。', true);
+            return;
+        }
+        const payload = quoteShareCopyText(instance);
+        try {
+            await navigator.clipboard.writeText(payload);
+            input.showToast('海报说明文案已复制。');
+        } catch (_error) {
+            input.showToast(payload, false);
+        }
+    });
+
+    salesFlowQuotePosterModal?.querySelectorAll('[data-sales-flow-quote-share-poster-close]').forEach((button) => {
+        button.addEventListener('click', closeSalesFlowQuotePosterModal);
+    });
+
+    document.querySelectorAll('[data-sales-flow-open-public-confirmation]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
+                const targetStageKey = normalizeDealStageKey(button.dataset.salesFlowOpenPublicConfirmation || stageKey);
+                const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
+                const stageRecord = await ensurePublicStageConfirmationLink(input.user, targetStageKey, activeDeal);
+                window.open(stageCustomerFacingUrl(targetStageKey, stageRecord, activeDeal), '_blank', 'noopener');
+                input.showToast('客户确认入口已打开。');
+            });
+        });
+    });
+
+    document.querySelectorAll('[data-sales-flow-copy-public-confirmation]').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            await input.withButtonBusy(event.currentTarget, '复制中...', async () => {
+                const targetStageKey = normalizeDealStageKey(button.dataset.salesFlowCopyPublicConfirmation || stageKey);
+                const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
+                const stageRecord = await ensurePublicStageConfirmationLink(input.user, targetStageKey, activeDeal);
+                const payload = stageConfirmationCopyText(targetStageKey, stageRecord, activeDeal);
+                try {
+                    await navigator.clipboard.writeText(payload);
+                    input.showToast('客户确认链接已复制。');
+                } catch (_error) {
+                    input.showToast(payload, false);
+                }
+            });
         });
     });
 
@@ -11621,6 +12005,11 @@ export async function renderQuoteCustomerFlowPage(input) {
     await ensureCustomerEditorForSalesFlow(customerId);
     const deals = customerFlowDeals(customerId, input);
     const activeDeal = deals.find((deal) => deal.id === requestedDealId) || deals[0] || null;
+    if (!activeDeal && stageKey !== 'customer_profile') {
+        window.history.replaceState({}, '', customerFlowStageUrl('customer_profile', null, customerId));
+        await renderQuoteCustomerFlowPage(input);
+        return;
+    }
     if (
         activeDeal
         && stageOrderIndex(activeDeal.current_stage) > stageOrderIndex(stageKey)
@@ -11636,9 +12025,6 @@ export async function renderQuoteCustomerFlowPage(input) {
     moduleState.dealEditor = activeDeal ? createDealDraft(moduleState.dealEditor || activeDeal) : createDealDraft();
     moduleState.dealStageRecords = activeDeal ? dealCurrentRecords(moduleState.dealEditor) : [];
     const customerLabel = flowCustomerLabel(moduleState.customerEditor || {}, activeDeal);
-    const timeline = await fetchCustomerActivityTimeline(customerId, input.user);
-    await markCustomerActivitiesRead(customerId, input.user, timeline.map((item) => item.id));
-    await fetchUnreadStageActivitySummary(input.user);
     await appendSalesActivity({
         customer_id: customerId,
         deal_id: activeDeal?.id,
@@ -11657,6 +12043,9 @@ export async function renderQuoteCustomerFlowPage(input) {
             summary: customerLabel,
         },
     });
+    const timeline = await fetchCustomerActivityTimeline(customerId, input.user);
+    await markCustomerActivitiesRead(customerId, input.user, timeline.map((item) => item.id));
+    await fetchUnreadStageActivitySummary(input.user);
 
     const stageLabel = dealStageLabel(stageKey);
     renderSalesPageFrame(input, `独立客户流水线 · ${stageLabel}`, `客户模式：${customerLabel} · 围绕单个客户回看已完成节点，并继续推进当前节点。`, `
@@ -11744,17 +12133,27 @@ export async function renderQuoteSalesDashboardPage(input) {
                             <span class="ams-sales-stage-guide-range">${esc(`${stageOrderIndex(lane.stages[0].key) + 1}-${stageOrderIndex(lane.stages[lane.stages.length - 1].key) + 1}`)}</span>
                         </div>
                         <div class="ams-sales-stage-guide-track">
-                            ${lane.stages.map((stage, stageIndex) => `
-                                <a class="ams-sales-stage-guide-card ${stageHasUnreadActivity(stage.key) ? 'has-activity-dot' : ''}" href="${esc(stage.key === 'customer_profile' ? adminPageUrl('quote-customers') : adminPageUrl('quote-pipeline', { stage: stage.key }))}">
+                            ${lane.stages.map((stage, stageIndex) => {
+                                const count = salesStageCount(stage.key, input);
+                                const countUnit = stage.key === 'customer_profile' ? '个客户' : '条销售线';
+                                const countTone = count <= 0 ? 'is-empty' : count === 1 ? 'is-warm' : 'is-hot';
+                                const countIcon = count <= 0
+                                    ? 'fa-circle-minus'
+                                    : count === 1
+                                        ? 'fa-briefcase'
+                                        : 'fa-chart-line';
+                                return `
+                                <a class="ams-sales-stage-guide-card ${countTone} ${stageHasUnreadActivity(stage.key) ? 'has-activity-dot' : ''}" href="${esc(stage.key === 'customer_profile' ? adminPageUrl('quote-customers') : adminPageUrl('quote-pipeline', { stage: stage.key }))}">
                                     ${stageHasUnreadActivity(stage.key) ? '<span class="ams-activity-dot" aria-hidden="true"></span>' : ''}
                                     <span class="ams-sales-stage-guide-index">${esc(stageOrderIndex(stage.key) + 1)}</span>
                                     <div class="ams-sales-stage-guide-copy">
                                         <strong>${esc(stage.label)}</strong>
-                                        <span>${esc(stage.key === 'customer_profile' ? `${salesStageCount(stage.key, input)} 个客户` : `${salesStageCount(stage.key, input)} 条销售线`)}</span>
+                                        <span class="ams-sales-stage-guide-metric ${countTone}"><em><i class="fa-solid ${countIcon}" aria-hidden="true"></i></em>${esc(`${count} ${countUnit}`)}</span>
                                     </div>
                                 </a>
                                 ${stageIndex < lane.stages.length - 1 ? '<span class="ams-sales-stage-guide-sep" aria-hidden="true"></span>' : ''}
-                            `).join('')}
+                            `;
+                            }).join('')}
                         </div>
                     </article>
                 `).join('')}
