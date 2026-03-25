@@ -28,14 +28,6 @@ function fmtDate(value) {
     return date.toISOString().slice(0, 16).replace('T', ' ');
 }
 
-function roleLabel(value) {
-    const role = String(value || ADMIN_ROLE_ADMIN).trim();
-    if (role === ADMIN_ROLE_SUPER_ADMIN) return '\u8d85\u7ea7\u7ba1\u7406\u5458';
-    if (role === ADMIN_ROLE_EDITOR) return '\u5185\u5bb9\u7f16\u8f91';
-    if (role === ADMIN_ROLE_SALES) return '\u9500\u552e';
-    return '\u7ba1\u7406\u5458';
-}
-
 function allowedRoleEntries(input = null) {
     if (input?.entryKind === 'sales') {
         return [
@@ -155,9 +147,8 @@ export async function renderAdminUsersPage(input) {
                                                   (row) => `
                                         <tr data-admin-row="${esc(row.id)}">
                                             <td>
-                                                <div class="ams-article-cell">
+                                                <div class="ams-admin-user-email-cell">
                                                     <strong>${esc(row.email)}</strong>
-                                                    <span class="ams-footnote">${row.email === String(user?.email || '').trim().toLowerCase() ? '\u5f53\u524d\u767b\u5f55\u8d26\u53f7' : '--'}</span>
                                                 </div>
                                             </td>
                                             <td><input class="ams-input" data-admin-name="${esc(row.id)}" value="${esc(row.full_name || '')}" placeholder="\u59d3\u540d"></td>
@@ -165,12 +156,11 @@ export async function renderAdminUsersPage(input) {
                                                 <select class="ams-select" data-admin-role="${esc(row.id)}" aria-label="\u89d2\u8272">
                                                     ${roleOptions(row.role, input)}
                                                 </select>
-                                                <div class="ams-footnote">${esc(roleLabel(row.role))}</div>
                                             </td>
-                                            <td><label class="ams-social-toggle"><input type="checkbox" data-admin-active="${esc(row.id)}" ${row.is_active !== false ? 'checked' : ''}><span>${row.is_active !== false ? '\u542f\u7528' : '\u505c\u7528'}</span></label></td>
+                                            <td><label class="ams-social-toggle ams-admin-user-status-toggle"><input type="checkbox" data-admin-active="${esc(row.id)}" ${row.is_active !== false ? 'checked' : ''}><span>${row.is_active !== false ? '\u542f\u7528' : '\u505c\u7528'}</span></label></td>
                                             <td>${esc(fmtDate(row.updated_at || row.created_at))}</td>
                                             <td class="ams-col-actions">
-                                                <div class="ams-row-actions">
+                                                <div class="ams-row-actions ams-admin-user-actions">
                                                     <button class="ams-btn ams-btn-primary" type="button" data-admin-save="${esc(row.id)}">\u4fdd\u5b58</button>
                                                     <button class="ams-btn ams-btn-muted" type="button" data-admin-reset="${esc(row.email)}">\u53d1\u9001\u91cd\u7f6e\u90ae\u4ef6</button>
                                                 </div>

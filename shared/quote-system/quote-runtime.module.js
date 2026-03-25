@@ -304,6 +304,12 @@ const supplementalDict = {
         authActionImage: 'Export image',
         authActionPdf: 'Export PDF',
         authActionLink: 'Create share link',
+        authActionConfirm: 'Quote confirmation',
+        quoteConfirmLoginRequired: 'Sign in before submitting quote confirmation.',
+        quoteConfirmEmailRequired: 'Set the customer email on the customer archive or quote first.',
+        quoteConfirmEmailMismatch: 'You are signed in as {actual}. Only the registered customer email {expected} can submit this quote confirmation.',
+        quoteConfirmHintMatched: 'The signed-in account matches the registered customer email and can submit confirmation.',
+        quoteConfirmHintLogin: 'Sign in with the customer email registered on this quote before submitting.',
         tableSwipeHint: 'Swipe sideways on mobile to review the full pricing table',
     },
     ru: {
@@ -320,6 +326,12 @@ const supplementalDict = {
         authActionImage: 'Export image',
         authActionPdf: 'Export PDF',
         authActionLink: 'Create share link',
+        authActionConfirm: 'Quote confirmation',
+        quoteConfirmLoginRequired: 'Sign in before submitting quote confirmation.',
+        quoteConfirmEmailRequired: 'Set the customer email on the customer archive or quote first.',
+        quoteConfirmEmailMismatch: 'You are signed in as {actual}. Only the registered customer email {expected} can submit this quote confirmation.',
+        quoteConfirmHintMatched: 'The signed-in account matches the registered customer email and can submit confirmation.',
+        quoteConfirmHintLogin: 'Sign in with the customer email registered on this quote before submitting.',
         tableSwipeHint: 'Swipe sideways on mobile to review the full pricing table',
     },
 };
@@ -355,6 +367,7 @@ const state = {
         confirmed: false,
         note: '',
         result: null,
+        alertShownSignature: '',
     },
     quoteBehavior: {
         visitCount: 0,
@@ -431,6 +444,7 @@ const AUTH_ACTIONS = Object.freeze({
     image: { icon: 'fa-image', labelKey: 'authActionImage' },
     pdf: { icon: 'fa-file-pdf', labelKey: 'authActionPdf' },
     link: { icon: 'fa-link', labelKey: 'authActionLink' },
+    confirm: { icon: 'fa-file-circle-check', labelKey: 'authActionConfirm' },
 });
 
 function getAuthConfig() {
@@ -507,11 +521,160 @@ function closeAuthModal() {
     modal.setAttribute('aria-hidden', 'true');
 }
 
+function openQuoteConfirmAlert(options = {}) {
+    const modal = byId('quote-confirm-alert-modal');
+    if (!modal) return;
+    byId('quote-confirm-alert-kicker').textContent = text(options.kicker, localeCopy({
+        zh: '报价确认',
+        en: 'QUOTE CONFIRM',
+        ru: 'QUOTE CONFIRM',
+    }));
+    byId('quote-confirm-alert-title').textContent = text(options.title, localeCopy({
+        zh: '当前账号无法提交确认',
+        en: 'This account cannot submit confirmation',
+        ru: 'Этот аккаунт не может отправить подтверждение',
+    }));
+    byId('quote-confirm-alert-message').textContent = text(options.message);
+    byId('quote-confirm-alert-action').textContent = localeCopy({
+        zh: '提交限制',
+        en: 'Submission restriction',
+        ru: 'Ограничение отправки',
+    });
+    byId('quote-confirm-alert-hint').textContent = text(options.hint, localeCopy({
+        zh: '请使用报价中登记的客户邮箱进行确认。',
+        en: 'Use the customer email registered on this quote to confirm.',
+        ru: 'Используйте email клиента, указанный в этом предложении.',
+    }));
+    byId('quote-confirm-alert-ack-text').textContent = localeCopy({
+        zh: '我知道了',
+        en: 'OK',
+        ru: 'Понятно',
+    });
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeQuoteConfirmAlert() {
+    const modal = byId('quote-confirm-alert-modal');
+    if (!modal) return;
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
 function requireSignedIn(actionKey = 'share') {
     if (state.isLoggedIn) return true;
     closeShareMenu();
     openAuthModal(actionKey);
     return false;
+}
+
+function confirmationExpectedEmail() {
+    const profile = state.snapshot?.quote?.customerProfile && typeof state.snapshot.quote.customerProfile === 'object'
+        ? state.snapshot.quote.customerProfile
+        : {};
+    return text(
+        state.snapshot?.quote?.receiverEmail
+        || state.snapshot?.quote?.receiver_email
+        || profile.email
+        || profile.requester_email
+        || profile.contact_email
+        || profile.receiver_email,
+    ).toLowerCase();
+}
+
+function confirmationViewerEmail() {
+    return text(state.adminUser?.email).toLowerCase();
+}
+
+function interpolateCopy(template = '', values = {}) {
+    return text(template).replace(/\{(\w+)\}/g, (_match, key) => text(values[key]));
+}
+
+function quoteConfirmationAccessState() {
+    const expectedEmail = confirmationExpectedEmail();
+    const actualEmail = confirmationViewerEmail();
+    if (!expectedEmail) {
+        return {
+            allowed: false,
+            requiresLogin: false,
+            expectedEmail,
+            actualEmail,
+            message: t('quoteConfirmEmailRequired'),
+        };
+    }
+    if (!state.isLoggedIn || !actualEmail) {
+        return {
+            allowed: false,
+            requiresLogin: true,
+            expectedEmail,
+            actualEmail,
+            message: t('quoteConfirmLoginRequired'),
+        };
+    }
+    if (actualEmail !== expectedEmail) {
+        return {
+            allowed: false,
+            requiresLogin: false,
+            expectedEmail,
+            actualEmail,
+            message: interpolateCopy(t('quoteConfirmEmailMismatch'), {
+                actual: actualEmail,
+                expected: expectedEmail,
+            }),
+        };
+    }
+    return {
+        allowed: true,
+        requiresLogin: false,
+        expectedEmail,
+        actualEmail,
+        message: t('quoteConfirmHintMatched'),
+    };
+}
+
+function quoteConfirmationAccessAlertSignature(access = {}) {
+    return [
+        state.currentLang,
+        access.requiresLogin ? 'login' : 'restricted',
+        access.expectedEmail,
+        access.actualEmail,
+        access.message,
+    ].join('|');
+}
+
+function syncQuoteConfirmationAccessAlert() {
+    if (!hasEmbeddedQuoteConfirmation()) {
+        closeQuoteConfirmAlert();
+        return;
+    }
+    const confirmation = state.publicConfirmation || {};
+    const access = quoteConfirmationAccessState();
+    if (confirmation.submitted || access.allowed || access.requiresLogin) {
+        closeQuoteConfirmAlert();
+        return;
+    }
+    const signature = quoteConfirmationAccessAlertSignature(access);
+    if (confirmation.alertShownSignature === signature) return;
+    confirmation.alertShownSignature = signature;
+    openQuoteConfirmAlert({
+        title: localeCopy({
+            zh: '当前账号无法提交报价确认',
+            en: 'This account cannot submit quote confirmation',
+            ru: 'Этот аккаунт не может подтвердить предложение',
+        }),
+        message: access.message,
+        hint: confirmationExpectedEmail()
+            ? localeCopy({
+                zh: '请切换到报价中登记的客户邮箱后再提交。',
+                en: 'Switch to the customer email registered on this quote before submitting.',
+                ru: 'Переключитесь на email клиента, указанный в предложении, перед отправкой.',
+            })
+            : localeCopy({
+                zh: '请先在客户档案或报价单里设置客户邮箱，再开放确认提交。',
+                en: 'Set the customer email on the customer archive or quote before enabling confirmation.',
+                ru: 'Сначала укажите email клиента в карточке клиента или предложении.',
+            }),
+    });
 }
 
 function t(key) {
@@ -847,6 +1010,27 @@ function renderStaticText() {
     byId('auth-modal-hint').textContent = t('authModalHint');
     byId('auth-modal-login-text').textContent = t('authModalLogin');
     byId('auth-modal-cancel-text').textContent = t('authModalCancel');
+    if (byId('quote-confirm-alert-modal')?.classList.contains('is-open')) {
+        openQuoteConfirmAlert({
+            title: localeCopy({
+                zh: '当前账号无法提交报价确认',
+                en: 'This account cannot submit quote confirmation',
+                ru: 'Этот аккаунт не может подтвердить предложение',
+            }),
+            message: quoteConfirmationAccessState().message,
+            hint: confirmationExpectedEmail()
+                ? localeCopy({
+                    zh: '请切换到报价中登记的客户邮箱后再提交。',
+                    en: 'Switch to the customer email registered on this quote before submitting.',
+                    ru: 'Переключитесь на email клиента, указанный в предложении, перед отправкой.',
+                })
+                : localeCopy({
+                    zh: '请先在客户档案或报价单里设置客户邮箱，再开放确认提交。',
+                    en: 'Set the customer email on the customer archive or quote before enabling confirmation.',
+                    ru: 'Сначала укажите email клиента в карточке клиента или предложении.',
+                }),
+        });
+    }
 
     const expirySelect = byId('share-expiry-select');
     if (expirySelect) {
@@ -2005,13 +2189,22 @@ async function resolveAdminSession() {
 async function fetchPublishedQuoteBySlug(publicSlug) {
     const supabase = getClient();
     if (!supabase || !publicSlug) return null;
-    const { data, error } = await supabase
+    let { data, error } = await supabase
         .from('quote_instances')
-        .select('id, public_slug, customer_id, customer_snapshot, published_snapshot')
+        .select('id, public_slug, customer_id, customer_snapshot, published_snapshot, status, last_active_status')
         .eq('public_slug', publicSlug)
         .eq('status', 'published')
         .maybeSingle();
+    if ((!data || error) && publicSlug) {
+        ({ data, error } = await supabase
+            .from('quote_instances')
+            .select('id, public_slug, customer_id, customer_snapshot, published_snapshot, status, last_active_status')
+            .eq('public_slug', publicSlug)
+            .not('published_snapshot', 'is', null)
+            .maybeSingle());
+    }
     if (error) return null;
+    if (!data?.published_snapshot) return null;
     return hydrateSnapshotWithLiveMeta(data?.published_snapshot || null, data || {});
 }
 
@@ -2159,6 +2352,7 @@ async function fetchEmbeddedPublicConfirmation() {
 function quoteConfirmationPanelMarkup() {
     if (!hasEmbeddedQuoteConfirmation()) return '';
     const confirmation = state.publicConfirmation || {};
+    const access = quoteConfirmationAccessState();
     if (confirmation.loading) {
         return `
             <section class="quote-confirm-card">
@@ -2216,12 +2410,12 @@ function quoteConfirmationPanelMarkup() {
                     <strong>提交结果会同步到后台</strong>
                     <p>销售可立即在确认报价节点看到这次客户确认，并继续进入合同处理。</p>
                 </div>
-                <button id="quote-confirm-submit" type="button" class="btn-glow px-5 py-3 inline-flex items-center gap-2" ${confirmation.submitting || confirmation.submitted ? 'disabled' : ''}>
+                <button id="quote-confirm-submit" type="button" class="btn-glow px-5 py-3 inline-flex items-center gap-2" ${confirmation.submitting || confirmation.submitted || !access.allowed ? 'disabled' : ''}>
                     <i class="fa-solid fa-paper-plane"></i>
                     <span>${confirmation.submitted ? '已提交' : confirmation.submitting ? '提交中...' : '提交报价确认'}</span>
                 </button>
             </div>
-            <div class="quote-confirm-card__status ${confirmation.result?.error ? 'is-error' : ''}">${esc(text(confirmation.result?.message))}</div>
+            <div class="quote-confirm-card__status ${confirmation.result?.error ? 'is-error' : ''}">${esc(text(confirmation.result?.message || ''))}</div>
         </section>
     `;
 }
@@ -2230,6 +2424,35 @@ async function submitEmbeddedPublicConfirmation() {
     const confirmation = state.publicConfirmation || {};
     const next = publicConfirmationParams();
     if (!confirmation.payload || !next.stage || !next.token) return;
+    const access = quoteConfirmationAccessState();
+    if (!access.allowed) {
+        if (access.requiresLogin) openAuthModal('confirm');
+        state.publicConfirmation.result = {
+            error: true,
+            message: access.message,
+        };
+        renderAll();
+        if (!access.requiresLogin) openQuoteConfirmAlert({
+            title: localeCopy({
+                zh: '当前账号无法提交报价确认',
+                en: 'This account cannot submit quote confirmation',
+                ru: 'Этот аккаунт не может подтвердить предложение',
+            }),
+            message: access.message,
+            hint: confirmationExpectedEmail()
+                ? localeCopy({
+                    zh: '请切换到报价中登记的客户邮箱后再提交。',
+                    en: 'Switch to the customer email registered on this quote before submitting.',
+                    ru: 'Переключитесь на email клиента, указанный в предложении, перед отправкой.',
+                })
+                : localeCopy({
+                    zh: '请先在客户档案或报价单里设置客户邮箱，再开放确认提交。',
+                    en: 'Set the customer email on the customer archive or quote before enabling confirmation.',
+                    ru: 'Сначала укажите email клиента в карточке клиента или предложении.',
+                }),
+        });
+        return;
+    }
     if (!confirmation.confirmed) {
         state.publicConfirmation.result = {
             error: true,
@@ -2316,6 +2539,7 @@ function applySnapshot(snapshot) {
     state.shareTarget = deriveShareTarget();
     bodyReadonly(!state.isAdmin);
     renderAll();
+    syncQuoteConfirmationAccessAlert();
     startClock();
     updateBackToTop();
 }
@@ -2640,6 +2864,8 @@ function bindEvents() {
         }
         redirectToSignIn();
     });
+    byId('btn-quote-confirm-alert-close')?.addEventListener('click', closeQuoteConfirmAlert);
+    byId('btn-quote-confirm-alert-ack')?.addEventListener('click', closeQuoteConfirmAlert);
     byId('btn-share-modal-close')?.addEventListener('click', closeShareModal);
     byId('btn-share-close')?.addEventListener('click', closeShareModal);
     byId('share-expiry-select')?.addEventListener('change', syncShareExpiryUi);
@@ -2678,6 +2904,7 @@ function bindEvents() {
 
     document.addEventListener('click', (event) => {
         if (event.target === byId('auth-modal')) closeAuthModal();
+        if (event.target === byId('quote-confirm-alert-modal')) closeQuoteConfirmAlert();
         if (event.target === byId('share-modal')) closeShareModal();
     });
 
@@ -2685,6 +2912,7 @@ function bindEvents() {
         if (event.key !== 'Escape') return;
         closeShareMenu();
         closeAuthModal();
+        closeQuoteConfirmAlert();
         closeShareModal();
     });
 

@@ -1606,6 +1606,15 @@ textarea {
 .ams-admin-users-table .ams-input,
 .ams-admin-users-table .ams-select {
     min-width: 140px;
+    width: 100%;
+}
+
+.ams-admin-users-table td {
+    vertical-align: middle;
+}
+
+.ams-admin-users-table .ams-col-actions {
+    white-space: nowrap;
 }
 
 .ams-admin-users-toolbar-card {
@@ -1619,6 +1628,29 @@ textarea {
 
 .ams-admin-users-toolbar-head > div:first-child {
     display: none;
+}
+
+.ams-admin-user-email-cell {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    word-break: break-all;
+}
+
+.ams-admin-user-status-toggle {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.ams-admin-user-actions {
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+}
+
+.ams-admin-user-actions .ams-btn {
+    min-width: 88px;
 }
 
 .ams-queue-link {
@@ -2127,6 +2159,7 @@ textarea {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    width: 100%;
 }
 
 .ams-summary-chip-actions .ams-btn {
@@ -2420,6 +2453,15 @@ textarea {
     gap: 4px;
 }
 
+.ams-quote-product-hero .ams-quick-link strong {
+    font-size: 12px;
+}
+
+.ams-quote-product-hero .ams-quick-link span {
+    font-size: 11px;
+    line-height: 1.45;
+}
+
 .ams-quote-product-hero .ams-quote-template-loader {
     align-items: start;
 }
@@ -2441,13 +2483,14 @@ textarea {
 }
 
 .ams-quote-product-hero .ams-quote-template-family-chip strong {
-    font-size: 12px;
-    color: var(--gas-green-light);
+    font-size: 11px;
+    color: #d8efcf;
 }
 
 .ams-quote-product-hero .ams-quote-template-family-chip span {
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.45;
+    color: #8ea184;
 }
 
 .ams-quote-product-hero .ams-quote-template-loader-actions {
@@ -2865,6 +2908,30 @@ textarea {
     background:
         radial-gradient(circle at top right, rgba(255, 191, 72, 0.05), transparent 28%),
         linear-gradient(180deg, rgba(20, 19, 17, 0.98), rgba(12, 12, 11, 0.98));
+}
+
+.ams-dashboard-stage-panel .ams-section-head,
+.ams-dashboard-todo-panel .ams-section-head {
+    margin-bottom: 14px;
+}
+
+.ams-dashboard-stage-panel .ams-section-kicker,
+.ams-dashboard-todo-panel .ams-section-kicker {
+    margin-bottom: 6px;
+    font-size: 11px;
+}
+
+.ams-dashboard-stage-panel .ams-section-head h3,
+.ams-dashboard-todo-panel .ams-section-head h3 {
+    font-size: 18px;
+    line-height: 1.15;
+}
+
+.ams-dashboard-stage-panel .ams-section-head p,
+.ams-dashboard-todo-panel .ams-section-head p {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.55;
 }
 
 .ams-dashboard-todo-panel .ams-sales-inline-list {
@@ -3925,13 +3992,13 @@ textarea {
 
 .ams-sales-stage-guide {
     display: grid;
-    gap: 18px;
+    gap: 14px;
 }
 
 .ams-sales-stage-guide-lane {
     position: relative;
-    padding: 18px 20px 20px;
-    border-radius: 20px;
+    padding: 16px 18px 18px;
+    border-radius: 18px;
     border: 1px solid rgba(255, 191, 72, 0.14);
     background:
         linear-gradient(180deg, rgba(17, 18, 16, 0.98), rgba(12, 12, 11, 0.97));
@@ -3955,28 +4022,28 @@ textarea {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 14px;
+    gap: 14px;
+    margin-bottom: 12px;
 }
 
 .ams-sales-stage-guide-title {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
+    gap: 10px;
+    margin-bottom: 6px;
 }
 
 .ams-sales-stage-guide-phase {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 36px;
-    padding: 0 14px;
+    min-height: 32px;
+    padding: 0 12px;
     border-radius: 999px;
     border: 1px solid rgba(255, 191, 72, 0.2);
     background: rgba(255, 191, 72, 0.1);
     color: #ffd37f;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -3993,14 +4060,14 @@ textarea {
     margin: 0;
     max-width: 560px;
     color: rgba(216, 207, 187, 0.8);
-    font-size: 13px;
-    line-height: 1.65;
+    font-size: 12px;
+    line-height: 1.55;
 }
 
 .ams-sales-stage-guide-range {
     flex: 0 0 auto;
     min-width: 54px;
-    padding: 8px 12px;
+    padding: 7px 11px;
     border-radius: 999px;
     border: 1px solid rgba(255, 191, 72, 0.18);
     background: rgba(255, 191, 72, 0.08);
@@ -4012,7 +4079,7 @@ textarea {
 
 .ams-sales-stage-guide-track {
     display: flex;
-    gap: 14px;
+    gap: 12px;
     align-items: center;
 }
 
@@ -4020,12 +4087,12 @@ textarea {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 12px;
-    flex: 0 0 260px;
-    width: 260px;
-    min-height: 88px;
-    padding: 14px 16px;
-    border-radius: 18px;
+    gap: 10px;
+    flex: 0 0 248px;
+    width: 248px;
+    min-height: 82px;
+    padding: 14px;
+    border-radius: 16px;
     border: 1px solid rgba(255, 191, 72, 0.22);
     background:
         linear-gradient(180deg, rgba(48, 34, 18, 0.82), rgba(28, 22, 14, 0.9));
@@ -4072,9 +4139,9 @@ textarea {
 .ams-sales-stage-guide-index {
     position: relative;
     z-index: 1;
-    flex: 0 0 34px;
-    width: 34px;
-    height: 34px;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
@@ -4091,12 +4158,12 @@ textarea {
     z-index: 1;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
 }
 
 .ams-sales-stage-guide-copy strong {
     color: #fff7ea;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 800;
     line-height: 1.2;
     letter-spacing: 0.01em;
@@ -4106,7 +4173,7 @@ textarea {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.01em;
 }
@@ -4683,6 +4750,30 @@ textarea {
     border-color: rgba(93, 214, 44, 0.4);
     background: rgba(93, 214, 44, 0.06);
     transform: translateY(-1px);
+}
+
+.ams-quote-product-list-panel .ams-field {
+    margin-bottom: 4px;
+}
+
+.ams-quote-product-list-panel .ams-field label {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+}
+
+.ams-quote-product-list-panel .ams-select {
+    min-height: 44px;
+    font-size: 13px;
+}
+
+.ams-product-editor-panel .ams-section-head p,
+.ams-product-editor-panel .ams-field-help {
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.ams-product-editor-panel .ams-field label {
+    font-size: 11px;
 }
 
 .ams-quote-inline-meta {

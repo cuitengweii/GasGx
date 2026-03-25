@@ -192,6 +192,38 @@
         </div>
     </div>
 
+    <div id="quote-confirm-alert-modal" class="share-modal-backdrop" aria-hidden="true">
+        <div class="share-modal-card auth-modal-card p-5 md:p-6">
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <div class="text-[var(--gas-green-light)] text-xs uppercase tracking-[0.28em] font-mono-num mb-2" id="quote-confirm-alert-kicker">QUOTE CONFIRM</div>
+                    <h3 id="quote-confirm-alert-title" class="text-xl md:text-2xl font-bold text-white">确认提示</h3>
+                    <p id="quote-confirm-alert-message" class="text-sm text-[var(--text-body)] mt-2 leading-6">当前账号暂时不能提交这份报价确认。</p>
+                </div>
+                <button type="button" id="btn-quote-confirm-alert-close" class="btn-outline w-10 h-10 inline-flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="auth-modal-feature">
+                <div class="auth-modal-feature-icon">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="min-w-0">
+                    <div id="quote-confirm-alert-action" class="text-sm font-semibold text-white tracking-wide">Quote confirmation</div>
+                    <div id="quote-confirm-alert-hint" class="text-sm text-[var(--text-body)] mt-1 leading-6">Please use the customer email registered on this quote.</div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3 mt-6">
+                <button type="button" id="btn-quote-confirm-alert-ack" class="btn-glow px-4 py-2.5 inline-flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span id="quote-confirm-alert-ack-text">OK</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="share-modal" class="share-modal-backdrop" aria-hidden="true">
         <div class="share-modal-card p-5 md:p-6">
             <div class="flex items-start justify-between gap-4 mb-5">
