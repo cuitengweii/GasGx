@@ -378,6 +378,8 @@ export function buildQuoteSnapshot({ brand, product, instance, items = [], publi
             id: text(instance?.id),
             publicSlug: text(instance?.public_slug || instance?.publicSlug),
             status: text(instance?.status || mode),
+            quoteVersion: text(instance?.quote_version || instance?.quoteVersion || instance?.published_version || instance?.publishedVersion),
+            version: text(instance?.quote_version || instance?.quoteVersion || instance?.published_version || instance?.publishedVersion),
             customerId: text(instance?.customer_id || instance?.customerId),
             customerName: text(instance?.customer_name || instance?.customerName),
             receiverName: text(instance?.receiver_name || instance?.receiverName),

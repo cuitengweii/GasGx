@@ -2174,6 +2174,45 @@ textarea {
     padding: 0 12px;
 }
 
+.ams-stage-role-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.ams-stage-role-grid > * {
+    min-width: 0;
+}
+
+.ams-stage-role-panel {
+    min-width: 0;
+}
+
+.ams-stage-role-chip {
+    min-height: 100%;
+}
+
+.ams-stage-role-kicker {
+    display: inline-block;
+    margin-bottom: 2px;
+    color: rgba(255, 255, 255, 0.54);
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.ams-stage-role-chip-sales {
+    border-color: rgba(93, 214, 44, 0.22);
+    background: linear-gradient(180deg, rgba(93, 214, 44, 0.06), rgba(93, 214, 44, 0.02));
+}
+
+.ams-stage-role-chip-customer {
+    border-color: rgba(245, 158, 11, 0.24);
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.03));
+}
+
 .ams-mini-chip.is-ok {
     border-color: rgba(93, 214, 44, 0.35);
     color: var(--ams-green);
@@ -3527,6 +3566,62 @@ textarea {
     line-height: 1.5;
 }
 
+/* Overview and customer-flow modes must be visually distinct. */
+.ams-sales-page.is-overview .ams-sales-mode-banner.is-overview {
+    border-color: rgba(82, 162, 255, 0.45);
+    background:
+        linear-gradient(180deg, rgba(12, 22, 40, 0.96), rgba(9, 14, 30, 0.98)),
+        radial-gradient(circle at top left, rgba(82, 162, 255, 0.18), transparent 55%);
+    box-shadow: inset 0 0 0 1px rgba(82, 162, 255, 0.2);
+}
+
+.ams-sales-page.is-overview .ams-sales-mode-banner.is-overview .ams-sales-mode-badge {
+    color: #98cfff;
+    border-color: rgba(82, 162, 255, 0.5);
+    background: rgba(82, 162, 255, 0.16);
+}
+
+.ams-sales-page.is-overview .ams-sales-pipeline {
+    border-color: rgba(82, 162, 255, 0.4);
+    background:
+        linear-gradient(180deg, rgba(10, 20, 34, 0.95), rgba(8, 14, 26, 0.97)),
+        radial-gradient(circle at top, rgba(82, 162, 255, 0.16), transparent 58%);
+}
+
+.ams-sales-page.is-overview .ams-sales-pipeline-track .ams-sales-pipeline-stage:not(:last-child)::after {
+    background: linear-gradient(90deg, rgba(99, 184, 255, 0.34), rgba(99, 184, 255, 0.96));
+    filter: drop-shadow(0 0 10px rgba(82, 162, 255, 0.45));
+}
+
+.ams-sales-page.is-overview .ams-customer-pipeline-node {
+    border-color: rgba(82, 162, 255, 0.24);
+    background:
+        linear-gradient(180deg, rgba(11, 23, 35, 0.94), rgba(9, 16, 28, 0.96)),
+        radial-gradient(circle at top left, rgba(82, 162, 255, 0.14), transparent 58%);
+}
+
+.ams-sales-page.is-overview .ams-customer-pipeline-node:not(:last-child)::after {
+    color: rgba(125, 193, 255, 0.8);
+}
+
+.ams-sales-page.is-overview .ams-customer-pipeline-icon {
+    background: rgba(82, 162, 255, 0.16);
+    border-color: rgba(82, 162, 255, 0.34);
+    color: #9dd2ff;
+}
+
+.ams-sales-page.is-overview .ams-customer-pipeline-node.is-active {
+    border-color: rgba(82, 162, 255, 0.7);
+    background:
+        linear-gradient(180deg, rgba(21, 39, 67, 0.98), rgba(11, 24, 43, 0.99)),
+        radial-gradient(circle at top left, rgba(82, 162, 255, 0.25), transparent 60%);
+    box-shadow: inset 0 0 0 1px rgba(82, 162, 255, 0.26), 0 10px 22px rgba(82, 162, 255, 0.2);
+}
+
+.ams-sales-page.is-overview .ams-customer-pipeline-node.is-active::before {
+    background: linear-gradient(90deg, rgba(82, 162, 255, 0.95), rgba(125, 193, 255, 0.82));
+}
+
 .ams-sales-pipeline {
     position: sticky;
     top: 12px;
@@ -4752,6 +4847,21 @@ textarea {
     transform: translateY(-1px);
 }
 
+.ams-sales-page.is-overview .ams-quote-list-card {
+    border-color: rgba(82, 162, 255, 0.26);
+    background: linear-gradient(180deg, rgba(10, 18, 28, 0.98), rgba(8, 13, 21, 0.98));
+}
+
+.ams-sales-page.is-overview .ams-quote-list-card:hover,
+.ams-sales-page.is-overview .ams-quote-list-card.is-active {
+    border-color: rgba(82, 162, 255, 0.54);
+    background: rgba(82, 162, 255, 0.12);
+}
+
+.ams-sales-page.is-overview .ams-quote-inline-submeta {
+    color: #a9c8e7 !important;
+}
+
 .ams-quote-product-list-panel .ams-field {
     margin-bottom: 4px;
 }
@@ -5813,6 +5923,10 @@ textarea {
 
     .ams-quote-section-grid,
     .ams-quote-meta-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ams-stage-role-grid {
         grid-template-columns: 1fr;
     }
 

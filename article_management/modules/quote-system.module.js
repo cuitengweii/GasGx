@@ -476,10 +476,10 @@ const REQUIREMENT_STATUS_OPTIONS = Object.freeze([
 ]);
 
 const REQUIREMENT_TYPE_OPTIONS = Object.freeze([
-    { value: 'integrated_mining_power', label: '矿机 + 供电一体化' },
-    { value: 'miner_only', label: '仅矿机需求' },
-    { value: 'power_only', label: '仅供电 / 发电需求' },
-    { value: 'unclear', label: '需求待推荐' },
+    { value: 'integrated_mining_power', label: '燃气发电+矿箱一体化' },
+    { value: 'miner_only', label: '独立矿机矿箱' },
+    { value: 'power_only', label: '独立燃气发电机组' },
+    { value: 'unclear', label: '需要推荐' },
 ]);
 
 const REQUIREMENT_SELECT_OPTIONS = Object.freeze({
@@ -682,7 +682,7 @@ function createCustomerRecord(seed = {}) {
         id: text(seed.id),
         company_name: text(seed.company_name || seed.companyName),
         contact_name: text(seed.contact_name || seed.contactName),
-        email: text(seed.email),
+        email: normalizedCustomerEmail(seed.email),
         phone: text(seed.phone),
         country: text(seed.country),
         notes: text(seed.notes),
@@ -695,6 +695,15 @@ function createCustomerRecord(seed = {}) {
 
 function createCustomerDraft(seed = {}) {
     return createCustomerRecord(seed);
+}
+
+function normalizedCustomerEmail(value = '') {
+    return text(value).trim().toLowerCase();
+}
+
+function isValidCustomerEmail(value = '') {
+    const email = normalizedCustomerEmail(value);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 function normalizeDealStageKey(value = '') {
@@ -981,7 +990,7 @@ function createRequirementDraft(seed = {}) {
         country: text(seed.country),
         requester_company: text(seed.requester_company || seed.requesterCompany),
         requester_name: text(seed.requester_name || seed.requesterName),
-        requester_email: text(seed.requester_email || seed.requesterEmail),
+        requester_email: normalizedCustomerEmail(seed.requester_email || seed.requesterEmail),
         requester_phone: text(seed.requester_phone || seed.requesterPhone),
         public_slug: text(seed.public_slug || seed.publicSlug),
         public_token: text(seed.public_token || seed.publicToken),
@@ -1524,7 +1533,7 @@ function renderSalesPageFrame(input, title, sub, body, options = {}) {
     const modeMarkup = options.pipelineMode === 'detail'
         ? `
             <section class="ams-sales-mode-banner is-detail">
-                <span class="ams-sales-mode-badge">客户流水线模式</span>
+                <span class="ams-sales-mode-badge">独立客户流水线</span>
                 <strong>当前正在处理单个客户 / 单条销售流程</strong>
                 <span>左侧只显示这位客户自己的流程，顶部可回看已完成节点并继续推进当前节点。</span>
             </section>
@@ -1532,14 +1541,19 @@ function renderSalesPageFrame(input, title, sub, body, options = {}) {
         : options.pipelineMode === 'overview'
           ? `
             <section class="ams-sales-mode-banner is-overview">
-                <span class="ams-sales-mode-badge">总流水线模式</span>
+                <span class="ams-sales-mode-badge">总流水线模式（全客户）</span>
                 <strong>当前正在查看全局阶段列表</strong>
                 <span>左侧是当前节点下全部待处理销售线，适合统一筛选、归档和进入单客户流程。</span>
             </section>
           `
           : '';
+    const pageModeClass = options.pipelineMode === 'overview'
+        ? 'is-overview'
+        : options.pipelineMode === 'detail'
+            ? 'is-detail'
+            : '';
     input.setContent(`
-        <div class="ams-sales-page">
+        <div class="ams-sales-page ${pageModeClass}">
             ${showPipeline ? salesPipelineMarkup(input, {
                 deal: activeDeal,
                 currentStage: options.currentStage,
@@ -2079,7 +2093,7 @@ function createInstanceDraft(seed = {}) {
         archived_at: text(seed.archived_at || seed.archivedAt),
         customer_name: text(seed.customer_name || seed.customerName),
         receiver_name: text(seed.receiver_name || seed.receiverName),
-        receiver_email: text(seed.receiver_email || seed.receiverEmail),
+        receiver_email: normalizedCustomerEmail(seed.receiver_email || seed.receiverEmail || customerSnapshot.email),
         customer_phone: text(seed.customer_phone || seed.customerPhone || customerSnapshot.phone),
         customer_country: text(seed.customer_country || seed.customerCountry || customerSnapshot.country),
         customer_notes: text(seed.customer_notes || seed.customerNotes || customerSnapshot.notes),
@@ -2095,6 +2109,9 @@ function createInstanceDraft(seed = {}) {
         customer_snapshot: customerSnapshot,
         brand_snapshot: extractBrandSnapshot(seed.brand_snapshot || seed.brandSnapshot || {}),
         product_snapshot: extractProductSnapshot(seed.product_snapshot || seed.productSnapshot || {}),
+        published_snapshot: seed.published_snapshot && typeof seed.published_snapshot === 'object'
+            ? deepClone(seed.published_snapshot)
+            : (seed.publishedSnapshot && typeof seed.publishedSnapshot === 'object' ? deepClone(seed.publishedSnapshot) : null),
         section_config: normalizeSectionConfig(seed.section_config || seed.sectionConfig),
         created_at: text(seed.created_at || seed.createdAt),
         published_at: text(seed.published_at || seed.publishedAt),
@@ -2405,7 +2422,7 @@ async function fetchProductEditor(productId) {
 async function fetchInstanceRows() {
     const { data, error } = await client
         .from(TABLE_INSTANCES)
-        .select('id, brand_id, product_id, customer_id, deal_id, requirement_id, public_slug, status, last_active_status, archived_at, customer_name, receiver_name, receiver_email, customer_snapshot, share_config, default_lang, validity_hours, created_at, published_at, updated_at')
+            .select('id, brand_id, product_id, customer_id, deal_id, requirement_id, public_slug, status, last_active_status, archived_at, customer_name, receiver_name, receiver_email, customer_snapshot, share_config, published_snapshot, default_lang, validity_hours, created_at, published_at, updated_at')
         .order('updated_at', { ascending: false });
     if (error) throw error;
     moduleState.instances = Array.isArray(data) ? data.map((row) => createInstanceDraft(row)) : [];
@@ -3123,9 +3140,15 @@ function summarizeFieldChanges(previous = {}, next = {}, fields = []) {
 async function saveCustomerDraft(user, draft) {
     const payload = createCustomerDraft(draft);
     const previous = payload.id ? moduleState.customers.find((item) => item.id === payload.id) || {} : {};
-    if (!payload.company_name && !payload.contact_name && !payload.email) {
-        throw new Error('请至少填写客户公司、联系人或邮箱中的一项。');
-    }
+    payload.email = normalizedCustomerEmail(payload.email);
+    if (!payload.email) throw new Error('客户邮箱是必填项，请填写后再保存。');
+    if (!isValidCustomerEmail(payload.email)) throw new Error('客户邮箱格式不正确，请检查后再保存。');
+    const duplicated = moduleState.customers.find((item) =>
+        text(item.id) !== text(payload.id)
+        && normalizedCustomerEmail(item.email) === payload.email
+        && item.is_deleted !== true
+    );
+    if (duplicated) throw new Error('该客户邮箱已被其他客户档案占用，请使用唯一邮箱。');
 
     const savePayload = {
         company_name: payload.company_name,
@@ -3142,6 +3165,7 @@ async function saveCustomerDraft(user, draft) {
     let saved = null;
     if (payload.id) {
         const { data, error } = await client.from(TABLE_CUSTOMERS).update(savePayload).eq('id', payload.id).select('*').single();
+        if (error?.code === '23505') throw new Error('该客户邮箱已被其他客户档案占用，请使用唯一邮箱。');
         if (error) throw error;
         saved = data;
     } else {
@@ -3149,6 +3173,7 @@ async function saveCustomerDraft(user, draft) {
             ...savePayload,
             created_by: user?.id || null,
         }).select('*').single();
+        if (error?.code === '23505') throw new Error('该客户邮箱已被其他客户档案占用，请使用唯一邮箱。');
         if (error) throw error;
         saved = data;
     }
@@ -3306,6 +3331,9 @@ async function saveRequirementDraft(user, draft) {
     const previous = payload.id ? requirementById(payload.id) || {} : {};
     if (!payload.customer_id) throw new Error('需求获取单必须绑定一个客户档案。');
     const customer = moduleState.customers.find((item) => item.id === payload.customer_id) || moduleState.customerEditor;
+    const customerEmail = normalizedCustomerEmail(customer?.email);
+    if (!customerEmail) throw new Error('当前客户档案缺少邮箱，请先在客户建档节点补全邮箱。');
+    payload.requester_email = customerEmail;
     const publicSlug = payload.public_slug || createRequirementPublicSlug(payload);
     const publicToken = payload.public_token || createRequirementPublicToken();
     const savePayload = {
@@ -3551,6 +3579,8 @@ async function createInstanceFromProduct(user, productId, options = {}) {
     const dealId = text(options.dealId || activeDealIdFromState());
     const deal = dealId ? dealById(dealId) : null;
     const customer = deal?.customer_id ? moduleState.customers.find((item) => item.id === deal.customer_id) : null;
+    const customerEmail = normalizedCustomerEmail(customer?.email);
+    if (deal?.customer_id && !customerEmail) throw new Error('当前客户档案缺少邮箱，请先在客户建档节点补全邮箱。');
 
     const draft = createInstanceDraft({
         brand_id: brand.id,
@@ -3562,7 +3592,7 @@ async function createInstanceFromProduct(user, productId, options = {}) {
         last_active_status: 'draft',
         customer_name: text(customer?.company_name),
         receiver_name: text(customer?.contact_name),
-        receiver_email: text(customer?.email),
+        receiver_email: customerEmail,
         customer_phone: text(customer?.phone),
         customer_country: text(customer?.country),
         customer_notes: text(customer?.notes),
@@ -3672,6 +3702,8 @@ async function createInstanceFromRequirement(user, requirementId, productId, opt
 
     const customer = moduleState.customers.find((item) => item.id === requirement.customer_id);
     if (!customer?.id) throw new Error('未找到需求单绑定的客户档案。');
+    const customerEmail = normalizedCustomerEmail(customer.email);
+    if (!customerEmail) throw new Error('当前客户档案缺少邮箱，请先在客户建档节点补全邮箱。');
     const dealId = text(requirement.deal_id || options.dealId || activeDealIdFromState());
 
     const notesBlock = [customer.notes, `需求获取摘要：${requirementSummaryLine(requirement)}`, text(requirement.answers?.extra_notes), requirement.notes]
@@ -3690,7 +3722,7 @@ async function createInstanceFromRequirement(user, requirementId, productId, opt
         last_active_status: 'draft',
         customer_name: customer.company_name,
         receiver_name: customer.contact_name,
-        receiver_email: customer.email,
+        receiver_email: customerEmail,
         customer_phone: customer.phone,
         customer_country: requirement.country || customer.country,
         customer_notes: notesBlock,
@@ -3791,7 +3823,19 @@ async function saveInstanceDraft(user, draft) {
     if (!payload.brand_id || !payload.product_id) throw new Error('报价单必须绑定品牌和产品模板。');
     if (!payload.public_slug) throw new Error('请填写公开链接 slug。');
     if (!pickLocalized(payload.product_snapshot.public_title, payload.default_lang)) throw new Error('请至少填写一个产品标题。');
+    if (payload.customer_id) {
+        const customer = moduleState.customers.find((item) => item.id === payload.customer_id) || moduleState.customerEditor;
+        const customerEmail = normalizedCustomerEmail(customer?.email);
+        if (!customerEmail) throw new Error('当前客户档案缺少邮箱，请先在客户建档节点补全邮箱。');
+        payload.receiver_email = customerEmail;
+        payload.share_config = normalizeShareConfig(payload.share_config, {
+            recipient_email: customerEmail,
+        });
+    }
     const customerRelation = await upsertCustomerForInstance(user, payload);
+    const normalizedReceiverEmail = normalizedCustomerEmail(customerRelation.customer_snapshot?.email || payload.receiver_email);
+    if (!normalizedReceiverEmail) throw new Error('当前客户邮箱为空，无法保存报价。请先补全客户邮箱。');
+    payload.receiver_email = normalizedReceiverEmail;
 
     const savePayload = {
         brand_id: payload.brand_id,
@@ -3806,11 +3850,13 @@ async function saveInstanceDraft(user, draft) {
         archived_by: null,
         customer_name: payload.customer_name,
         receiver_name: payload.receiver_name,
-        receiver_email: payload.receiver_email,
+        receiver_email: normalizedReceiverEmail,
         default_lang: payload.default_lang,
         validity_hours: payload.validity_hours,
         draft_rates: normalizeRates(payload.draft_rates),
-        share_config: payload.share_config && typeof payload.share_config === 'object' ? payload.share_config : {},
+        share_config: normalizeShareConfig(payload.share_config, {
+            recipient_email: normalizedReceiverEmail,
+        }),
         customer_snapshot: customerRelation.customer_snapshot,
         brand_snapshot: extractBrandSnapshot({
             ...payload.brand_snapshot,
@@ -3970,6 +4016,61 @@ function quoteInstanceReadyForConfirmation(instanceDraft = {}) {
     return text(instanceDraft?.status) === 'published' && Boolean(text(instanceDraft?.public_slug));
 }
 
+function parseQuoteVersionNumber(value = '') {
+    const raw = text(value);
+    if (!raw) return 0;
+    const matched = raw.match(/(\d+)(?:\.\d+)?/);
+    if (!matched) return 0;
+    const next = Number(matched[1]);
+    return Number.isFinite(next) && next > 0 ? next : 0;
+}
+
+function quoteVersionLabel(instance = {}) {
+    const value = text(
+        instance?.published_snapshot?.quote?.quoteVersion
+        || instance?.published_snapshot?.quote?.version
+    );
+    return value || '--';
+}
+
+function nextQuoteVersionLabel(instance = {}) {
+    const current = quoteVersionLabel(instance);
+    const major = parseQuoteVersionNumber(current);
+    return `${Math.max(major, 0) + 1}.0`;
+}
+
+function quoteHasUnpublishedChanges(instance = {}) {
+    const publishedAt = Date.parse(text(instance?.published_at));
+    const updatedAt = Date.parse(text(instance?.updated_at));
+    if (!Number.isFinite(publishedAt) || !Number.isFinite(updatedAt)) return false;
+    return updatedAt > publishedAt + 1000;
+}
+
+async function ensurePublishedQuoteForStage(user, stageKey = '', instanceDraft = {}) {
+    const normalizedStageKey = normalizeDealStageKey(stageKey);
+    if (!instanceDraft?.id || !text(instanceDraft?.public_slug)) return instanceDraft;
+    const publishedReceiverEmail = normalizedCustomerEmail(
+        instanceDraft?.published_snapshot?.quote?.receiverEmail
+        || instanceDraft?.published_snapshot?.quote?.receiver_email
+    );
+    if (text(instanceDraft?.status) === 'published' && instanceDraft?.published_snapshot && publishedReceiverEmail) return instanceDraft;
+    if (normalizedStageKey !== 'quote_confirmed') return instanceDraft;
+    return publishInstance(user, instanceDraft);
+}
+
+function quotePublishedForStage(stageKey = '', instance = {}) {
+    const normalizedStageKey = normalizeDealStageKey(stageKey);
+    return Boolean(text(instance?.public_slug)) && (
+        text(instance?.status) === 'published'
+        || normalizedStageKey === 'quote_confirmed'
+    );
+}
+
+function quoteStatusForStage(stageKey = '', instance = {}) {
+    if (quotePublishedForStage(stageKey, instance)) return 'published';
+    return text(instance?.status || 'draft');
+}
+
 async function advancePublishedQuoteDeal(user, instanceDraft) {
     const savedInstance = await saveInstanceDraft(user, instanceDraft);
     if (!savedInstance.deal_id) throw new Error('请先把报价单绑定到一个商机，再推进到确认报价。');
@@ -4009,10 +4110,14 @@ async function advancePublishedQuoteDeal(user, instanceDraft) {
 
 async function publishInstance(user, draft) {
     const savedDraft = await saveInstanceDraft(user, draft);
+    const publishVersion = nextQuoteVersionLabel(savedDraft);
     const snapshot = buildQuoteSnapshot({
         brand: savedDraft.brand_snapshot,
         product: savedDraft.product_snapshot,
-        instance: savedDraft,
+        instance: {
+            ...savedDraft,
+            quote_version: publishVersion,
+        },
         items: savedDraft.items,
         publishedAt: new Date().toISOString(),
         mode: 'published',
@@ -4039,6 +4144,18 @@ async function publishInstance(user, draft) {
         ...data,
         items: savedDraft.items,
     });
+    const linkedDeal = dealById(text(data.deal_id || savedDraft.deal_id)) || moduleState.dealEditor;
+    if (
+        linkedDeal?.id
+        && stageOrderIndex(normalizeDealStageKey(linkedDeal.current_stage)) <= stageOrderIndex('quote_draft')
+        && quoteInstanceReadyForConfirmation(moduleState.instanceEditor)
+    ) {
+        try {
+            await advancePublishedQuoteDeal(user, moduleState.instanceEditor);
+        } catch (_error) {
+            // Keep publish successful even if the sales stage sync is temporarily unavailable.
+        }
+    }
     return moduleState.instanceEditor;
 }
 
@@ -4046,7 +4163,18 @@ function publicQuoteUrl(publicSlug, options = {}) {
     const url = new URL(`/quote/view.html?quote=${encodeURIComponent(publicSlug)}`, window.location.origin);
     if (text(options.confirmStage)) url.searchParams.set('confirm_stage', text(options.confirmStage));
     if (text(options.confirmToken)) url.searchParams.set('confirm_token', text(options.confirmToken));
+    const assetVersion = text(window.AMS_QUOTE_PUBLIC_ASSET_VERSION);
+    if (assetVersion) url.searchParams.set('v', assetVersion);
     return url.toString();
+}
+
+function quotePublicUrlForStage(instance = {}, stageRecord = null) {
+    const publicSlug = text(instance?.public_slug);
+    if (!publicSlug) return '';
+    return publicQuoteUrl(publicSlug, {
+        confirmStage: text(stageRecord?.public_slug),
+        confirmToken: text(stageRecord?.public_token),
+    });
 }
 
 function quoteSharePrimaryBrandLine(instance = {}) {
@@ -4064,8 +4192,8 @@ function quoteShareSupportLine(instance = {}) {
     return text(shareConfig.owner_email || shareConfig.recipient_email || '', 'sales@gasgx.com');
 }
 
-function quoteShareCopyText(instance = {}) {
-    const url = publicQuoteUrl(instance.public_slug);
+function quoteShareCopyText(instance = {}, options = {}) {
+    const url = text(options.url, publicQuoteUrl(instance.public_slug));
     const brandLine = quoteSharePrimaryBrandLine(instance);
     const productLine = quoteSharePrimaryProductLine(instance);
     const customerLine = text(instance.customer_name || instance.receiver_name || '', '尊敬的客户');
@@ -4165,8 +4293,8 @@ function posterDataUrlFromSvg(svg = '') {
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-async function quoteSharePosterDataUrl(instance = {}) {
-    const url = publicQuoteUrl(instance.public_slug);
+async function quoteSharePosterDataUrl(instance = {}, options = {}) {
+    const url = text(options.url, publicQuoteUrl(instance.public_slug));
     const brandLine = svgTextLine(quoteSharePrimaryBrandLine(instance), 'GasGx');
     const productLines = wrapSvgText(quoteSharePrimaryProductLine(instance), { fallback: '客户报价方案', maxUnits: 13, maxLines: 2 });
     const customerLine = svgTextLine(text(instance.customer_name || instance.receiver_name || '', '专属客户报价'));
@@ -4380,6 +4508,8 @@ function stagePublicEntryChipMarkup(stageKey = '', record = {}, deal = null, opt
     if (!stageSupportsPublicConfirmation(stageKey)) return '';
     const openLabel = text(options.openLabel, '打开客户确认入口');
     const copyLabel = text(options.copyLabel, '复制确认链接');
+    const panelClassName = text(options.panelClassName);
+    const kicker = text(options.kicker);
     const schemaMissing = !moduleState.dealStagePublicLinkSupported;
     const summary = schemaMissing
         ? '当前环境缺少公开确认入口所需的数据库字段，需先执行 019 迁移。'
@@ -4391,7 +4521,8 @@ function stagePublicEntryChipMarkup(stageKey = '', record = {}, deal = null, opt
     const href = hasLink ? stageCustomerFacingUrl(stageKey, record, deal) : '';
     const normalizedStageKey = normalizeDealStageKey(stageKey);
     return `
-        <div class="ams-summary-chip ams-summary-chip-link">
+        <div class="ams-summary-chip ams-summary-chip-link ${esc(panelClassName)}">
+            ${kicker ? `<em class="ams-stage-role-kicker">${esc(kicker)}</em>` : ''}
             <strong>公开入口</strong>
             <span>${hasLink ? `<a class="ams-inline-link" href="${esc(href)}" target="_blank" rel="noopener">${esc(href)}</a>` : esc(emptyText)}</span>
             <small>${esc(summary)}</small>
@@ -4634,6 +4765,12 @@ function quoteEditorUrl(kind, id, options = {}) {
     params.set('id', text(id));
     const dealId = text(options.dealId || activeDealIdFromState());
     if (dealId) params.set('deal', dealId);
+    const stage = text(options.stage || readAdminPageParam('stage'));
+    if (stage) params.set('stage', stage);
+    const customerId = text(options.customerId || readAdminPageParam('customer'));
+    if (customerId) params.set('customer', customerId);
+    const returnMode = text(options.returnMode);
+    if (returnMode) params.set('return_mode', returnMode);
     const url = new URL('/quote/editor.html', window.location.origin);
     url.search = params.toString();
     return url.toString();
@@ -5187,6 +5324,7 @@ function pagedInstances() {
 }
 
 let customSelectBindingsReady = false;
+let salesFlowShareMenuBindingsReady = false;
 
 function closeCustomSelectPanels(scope = document) {
     scope.querySelectorAll('.ams-select-shell.is-open').forEach((shell) => shell.classList.remove('is-open'));
@@ -5203,6 +5341,26 @@ function ensureCustomSelectBindings() {
         if (event.key === 'Escape') closeCustomSelectPanels();
     });
     window.addEventListener('resize', () => closeCustomSelectPanels());
+}
+
+function closeSalesFlowShareMenus() {
+    document.querySelectorAll('.ams-sales-flow-requirement-share-menu[open], .ams-sales-flow-quote-share-menu[open]')
+        .forEach((menu) => menu.removeAttribute('open'));
+}
+
+function ensureSalesFlowShareMenuBindings() {
+    if (salesFlowShareMenuBindingsReady) return;
+    salesFlowShareMenuBindingsReady = true;
+    document.addEventListener('pointerdown', (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target) return;
+        if (target.closest('.ams-sales-flow-requirement-share-menu, .ams-sales-flow-quote-share-menu')) return;
+        closeSalesFlowShareMenus();
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeSalesFlowShareMenus();
+    });
+    window.addEventListener('resize', closeSalesFlowShareMenus);
 }
 
 function customSelectCurrentLabel(select) {
@@ -6656,7 +6814,7 @@ async function ensureCustomerRequirementFlow(user, customer) {
             title: `${customerDisplayName(customer || {})} / ${requirementTypeLabel('integrated_mining_power')}`,
             requester_company: customer?.company_name || '',
             requester_name: customer?.contact_name || '',
-            requester_email: customer?.email || '',
+            requester_email: normalizedCustomerEmail(customer?.email),
             requester_phone: customer?.phone || '',
             country: customer?.country || '',
             notes: customer?.notes || '',
@@ -8817,8 +8975,15 @@ function bindInstanceEditor(input) {
         await input.withButtonBusy(event.currentTarget, '发布中...', async () => {
             try {
                 syncInstanceSalesOwner(moduleState.instanceEditor, input.user, { forceOwner: true });
-                await publishInstance(input.user, moduleState.instanceEditor);
+                const publishedInstance = await publishInstance(input.user, moduleState.instanceEditor);
                 input.showToast('报价单已发布。');
+                const linkedDeal = dealById(text(publishedInstance?.deal_id || moduleState.dealEditor?.id || currentDeal?.id));
+                if (linkedDeal?.id && linkedDeal.customer_id) {
+                    const nextDeal = dealById(linkedDeal.id) || linkedDeal;
+                    window.history.replaceState({}, '', customerFlowStageUrl('quote_confirmed', nextDeal, linkedDeal.customer_id));
+                    await renderQuoteCustomerFlowPage(input);
+                    return;
+                }
                 await renderQuoteInstancesPage(input);
             } catch (error) {
                 input.showToast(error.message || '发布报价单失败。', true);
@@ -9282,7 +9447,7 @@ function bindRequirementEditor(input) {
             deal_id: text(seededDeal?.id || moduleState.requirementEditor?.deal_id || activeDealIdFromState()),
             requester_company: seededCustomer?.company_name || '',
             requester_name: seededCustomer?.contact_name || '',
-            requester_email: seededCustomer?.email || '',
+            requester_email: normalizedCustomerEmail(seededCustomer?.email),
             requester_phone: seededCustomer?.phone || '',
             country: seededCustomer?.country || '',
         });
@@ -10267,7 +10432,8 @@ export async function renderQuoteCustomersPage(input) {
         if (moduleState.customers.some((item) => item.id === requestedCustomerId) && moduleState.customerLoadedId !== requestedCustomerId) {
             await fetchCustomerEditor(requestedCustomerId);
         }
-        clearAdminPageParams('customer');
+        const keepCustomerParam = Boolean(requestedDealId || readAdminPageParam('stage'));
+        if (!keepCustomerParam) clearAdminPageParams('customer');
     } else if (requestedDealId && moduleState.dealEditor?.customer_id && moduleState.customerLoadedId !== moduleState.dealEditor.customer_id) {
         await fetchCustomerEditor(moduleState.dealEditor.customer_id);
     }
@@ -10363,9 +10529,8 @@ export async function renderQuoteCustomersPage(input) {
                     </div>
                 ` : ''}
                 <div class="ams-site-field-grid ams-site-field-grid-wide">
-                    <div class="ams-field"><label>客户公司/客户名称</label><input class="ams-input" data-customer-field="company_name" value="${esc(moduleState.customerEditor?.company_name)}" placeholder="Demo Customer"></div>
-                    <div class="ams-field"><label>联系人</label><input class="ams-input" data-customer-field="contact_name" value="${esc(moduleState.customerEditor?.contact_name)}" placeholder="Receiver"></div>
-                    <div class="ams-field"><label>客户邮箱</label><input class="ams-input" data-customer-field="email" value="${esc(moduleState.customerEditor?.email)}" placeholder="customer@example.com"></div>
+<div class="ams-field"><label>客户名称</label><input class="ams-input" data-customer-field="company_name" value="${esc(moduleState.customerEditor?.company_name)}" placeholder="Demo Customer"></div>
+<div class="ams-field"><label>客户邮箱（必填，仅支持邮箱格式）</label><input class="ams-input" type="email" inputmode="email" autocomplete="email" data-customer-field="email" value="${esc(moduleState.customerEditor?.email)}" placeholder="customer@example.com"></div>
                     <div class="ams-field"><label>客户电话</label><input class="ams-input" data-customer-field="phone" value="${esc(moduleState.customerEditor?.phone)}" placeholder="+7 000 000 0000"></div>
                     <div class="ams-field"><label>国家/地区</label><input class="ams-input" data-customer-field="country" value="${esc(moduleState.customerEditor?.country)}" placeholder="Russia"></div>
                 </div>
@@ -10389,7 +10554,7 @@ export async function renderQuoteCustomersPage(input) {
                     <div class="ams-quick-link-icon"><i class="fa-solid fa-address-book"></i></div>
                     <div class="ams-quick-link-body">
                         <strong>新建客户档案</strong>
-                        <span>先建立长期客户主档，再复用公司、联系人和联系方式到后续需求与报价流程。</span>
+<span>先建立长期客户主档，再复用客户名称和邮箱到后续需求与报价流程。</span>
                     </div>
                 </button>
                 ${customerListSwitchActions}
@@ -10428,9 +10593,8 @@ export async function renderQuoteCustomersPage(input) {
                         <div class="ams-summary-chip"><strong>更新时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.updated_at))}</span></div>
                     </div>
                     <div class="ams-site-field-grid ams-site-field-grid-wide">
-                        <div class="ams-field"><label>客户公司/客户名称</label><input class="ams-input" data-customer-field="company_name" value="${esc(moduleState.customerEditor?.company_name)}" placeholder="Demo Customer"></div>
-                        <div class="ams-field"><label>联系人</label><input class="ams-input" data-customer-field="contact_name" value="${esc(moduleState.customerEditor?.contact_name)}" placeholder="Receiver"></div>
-                        <div class="ams-field"><label>客户邮箱</label><input class="ams-input" data-customer-field="email" value="${esc(moduleState.customerEditor?.email)}" placeholder="customer@example.com"></div>
+<div class="ams-field"><label>客户名称</label><input class="ams-input" data-customer-field="company_name" value="${esc(moduleState.customerEditor?.company_name)}" placeholder="Demo Customer"></div>
+<div class="ams-field"><label>客户邮箱（必填，仅支持邮箱格式）</label><input class="ams-input" type="email" inputmode="email" autocomplete="email" data-customer-field="email" value="${esc(moduleState.customerEditor?.email)}" placeholder="customer@example.com"></div>
                         <div class="ams-field"><label>客户电话</label><input class="ams-input" data-customer-field="phone" value="${esc(moduleState.customerEditor?.phone)}" placeholder="+7 000 000 0000"></div>
                         <div class="ams-field"><label>国家/地区</label><input class="ams-input" data-customer-field="country" value="${esc(moduleState.customerEditor?.country)}" placeholder="Russia"></div>
                     </div>
@@ -10923,6 +11087,8 @@ async function ensureCustomerEditorForSalesFlow(customerId = '') {
 
 async function ensureRequirementEditorForDeal(deal = null, user = null) {
     const activeDeal = deal || dealById(activeDealIdFromState());
+    const activeCustomer = moduleState.customers.find((item) => item.id === text(activeDeal?.customer_id)) || {};
+    const activeCustomerEmail = normalizedCustomerEmail(activeCustomer.email);
     if (!activeDeal?.id) {
         moduleState.requirementLoadedId = '';
         moduleState.requirementEditor = createRequirementDraft();
@@ -10942,6 +11108,7 @@ async function ensureRequirementEditorForDeal(deal = null, user = null) {
             },
             deal_id: activeDeal.id,
             customer_id: activeDeal.customer_id,
+            requester_email: activeCustomerEmail || moduleState.requirementEditor?.requester_email,
         });
         if (
             requirementStatusReadyForQuote(moduleState.requirementEditor?.status)
@@ -10962,12 +11129,15 @@ async function ensureRequirementEditorForDeal(deal = null, user = null) {
         deal_id: activeDeal.id,
         customer_id: activeDeal.customer_id,
         title: `${customerDisplayName(moduleState.customers.find((item) => item.id === activeDeal.customer_id) || {})} / ${requirementTypeLabel('integrated_mining_power')}`,
+        requester_email: activeCustomerEmail,
     });
     return moduleState.requirementEditor;
 }
 
 async function ensureInstanceEditorForDeal(deal = null) {
     const activeDeal = deal || dealById(activeDealIdFromState());
+    const customer = moduleState.customers.find((item) => item.id === text(activeDeal?.customer_id)) || {};
+    const customerEmail = normalizedCustomerEmail(customer.email);
     if (!activeDeal?.id) {
         moduleState.instanceLoadedId = '';
         moduleState.instanceEditor = createInstanceDraft();
@@ -10980,17 +11150,20 @@ async function ensureInstanceEditorForDeal(deal = null) {
             ...moduleState.instanceEditor,
             deal_id: activeDeal.id,
             customer_id: text(moduleState.instanceEditor?.customer_id || activeDeal.customer_id),
+            receiver_email: customerEmail || moduleState.instanceEditor?.receiver_email,
+        });
+        moduleState.instanceEditor.share_config = normalizeShareConfig(moduleState.instanceEditor.share_config, {
+            recipient_email: customerEmail || moduleState.instanceEditor?.share_config?.recipient_email,
         });
         return moduleState.instanceEditor;
     }
-    const customer = moduleState.customers.find((item) => item.id === activeDeal.customer_id) || {};
     moduleState.instanceLoadedId = '';
     moduleState.instanceEditor = createInstanceDraft({
         deal_id: activeDeal.id,
         customer_id: activeDeal.customer_id,
         customer_name: customer.company_name,
         receiver_name: customer.contact_name,
-        receiver_email: customer.email,
+        receiver_email: customerEmail,
         customer_phone: customer.phone,
         customer_country: customer.country,
         customer_notes: customer.notes,
@@ -11061,8 +11234,7 @@ function customerProfileFlowMarkup(customer = {}, deals = [], activeDeal = null)
             </div>
             <div class="ams-site-field-grid ams-site-field-grid-wide">
                 <div class="ams-field"><label>客户公司</label><input class="ams-input" data-sales-flow-customer-field="company_name" value="${esc(customer.company_name)}" placeholder="客户公司"></div>
-                <div class="ams-field"><label>联系人</label><input class="ams-input" data-sales-flow-customer-field="contact_name" value="${esc(customer.contact_name)}" placeholder="联系人"></div>
-                <div class="ams-field"><label>客户邮箱</label><input class="ams-input" data-sales-flow-customer-field="email" value="${esc(customer.email)}" placeholder="customer@example.com"></div>
+<div class="ams-field"><label>客户邮箱（必填，仅支持邮箱格式）</label><input class="ams-input" type="email" inputmode="email" autocomplete="email" data-sales-flow-customer-field="email" value="${esc(customer.email)}" placeholder="customer@example.com"></div>
                 <div class="ams-field"><label>客户电话</label><input class="ams-input" data-sales-flow-customer-field="phone" value="${esc(customer.phone)}" placeholder="+86"></div>
                 <div class="ams-field"><label>国家 / 地区</label><input class="ams-input" data-sales-flow-customer-field="country" value="${esc(customer.country)}" placeholder="国家 / 地区"></div>
             </div>
@@ -11332,13 +11504,18 @@ function quoteStageDetailRenderer(stageKey = '') {
     return quoteDraftStageMarkup;
 }
 
-function quoteStageBaseMetaMarkup(deal = null, instance = {}, brand = null) {
+function quoteStageBaseMetaMarkup(stageKey = '', deal = null, instance = {}, brand = null) {
+    const publishedVersion = quoteVersionLabel(instance);
+    const hasPendingDraft = quoteHasUnpublishedChanges(instance);
+    const draftVersion = hasPendingDraft ? nextQuoteVersionLabel(instance) : publishedVersion;
     return `
         <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(moduleState.customers.find((item) => item.id === deal?.customer_id) || {}))}</span></div>
         <div class="ams-summary-chip"><strong>销售线</strong><span>${esc(text(deal?.title, '--'))}</span></div>
         <div class="ams-summary-chip"><strong>品牌</strong><span>${esc(text(brand?.brand_name || brand?.display_name, '--'))}</span></div>
         <div class="ams-summary-chip"><strong>产品</strong><span>${esc(text(productLabelById(instance.product_id), '--'))}</span></div>
-        <div class="ams-summary-chip"><strong>报价状态</strong><span>${statusPill(instance.status || 'draft')}</span></div>
+        <div class="ams-summary-chip"><strong>报价状态</strong><span>${statusPill(quoteStatusForStage(stageKey, instance))}</span></div>
+        <div class="ams-summary-chip"><strong>已发布版本</strong><span>${publishedVersion === '--' ? '--' : `V${esc(publishedVersion)}`}</span></div>
+        <div class="ams-summary-chip"><strong>当前草稿版本</strong><span>${draftVersion === '--' ? '--' : `V${esc(draftVersion)}`}${hasPendingDraft ? '（未发布）' : (draftVersion === '--' ? '' : '（已同步）')}</span></div>
     `;
 }
 
@@ -11378,38 +11555,8 @@ function quoteDraftStageMarkup(stageKey = '', deal = null, instance = {}, contex
                     </div>
                 </div>
                 <div class="ams-quote-meta-grid">
-                    ${quoteStageBaseMetaMarkup(deal, instance, brand)}
-                    ${instance.id ? `
-                        <div class="ams-summary-chip ams-summary-chip-link">
-                            <strong>报价入口</strong>
-                            <span>${quotePublished
-                                ? '已发布报价可在这里直接进入编辑、查看客户视角报价页，或复制对外报价链接用于微信、邮件和群转发。'
-                                : '当前报价还未发布。请先发布报价，再查看用户报价或分享对外链接。'}</span>
-                            <div class="ams-summary-chip-actions">
-                                <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-instance-open-inline">打开可视化报价编辑器</button>
-                                <button class="ams-btn ${quotePublished ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-sales-flow-instance-open-public" ${quotePublished ? '' : 'disabled'} aria-disabled="${quotePublished ? 'false' : 'true'}">查看用户报价</button>
-                                <details class="ams-share-menu ams-sales-flow-quote-share-menu">
-                                    <summary class="ams-btn ${quotePublished ? 'ams-btn-primary' : 'ams-btn-muted'}" ${quotePublished ? '' : 'aria-disabled="true"'}>
-                                        分享报价
-                                    </summary>
-                                    <div class="ams-share-menu-panel">
-                                        <div class="ams-share-menu-copy">
-                                            <strong>选择分享方式</strong>
-                                            <span>对外发送时，系统会自动带上用途说明和 GasGx 品牌介绍。</span>
-                                        </div>
-                                        <button class="ams-share-menu-item" type="button" id="ams-sales-flow-instance-share-link" ${quotePublished ? '' : 'disabled'}>
-                                            <i class="fa-solid fa-link"></i>
-                                            <span>分享链接</span>
-                                        </button>
-                                        <button class="ams-share-menu-item" type="button" id="ams-sales-flow-instance-share-poster" ${quotePublished ? '' : 'disabled'}>
-                                            <i class="fa-solid fa-qrcode"></i>
-                                            <span>分享二维码</span>
-                                        </button>
-                                    </div>
-                                </details>
-                            </div>
-                        </div>
-                    ` : ''}
+                    ${quoteStageBaseMetaMarkup(stageKey, deal, instance, brand)}
+                    ${quoteStageEntryActionsMarkup(instance, quotePublished, '已发布报价可在这里直接进入编辑、查看客户视角报价页，或复制对外报价链接用于微信、邮件和群转发。', '当前报价还未发布。请先发布报价，再查看用户报价或分享对外链接。')}
                 </div>
                 ${
                     instance.id
@@ -11437,8 +11584,85 @@ function quoteDraftStageMarkup(stageKey = '', deal = null, instance = {}, contex
     `;
 }
 
+function quoteStageEntryActionsMarkup(instance = {}, quotePublished = false, publishedText = '', draftText = '') {
+    if (!instance?.id) return '';
+    return `
+        <div class="ams-summary-chip ams-summary-chip-link ams-stage-role-chip ams-stage-role-chip-sales">
+            <em class="ams-stage-role-kicker">销售侧操作</em>
+            <strong>报价入口</strong>
+            <span>${quotePublished ? publishedText : draftText}</span>
+            <div class="ams-summary-chip-actions">
+                <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-instance-open-inline">打开可视化报价编辑器</button>
+                <button class="ams-btn ${quotePublished ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-sales-flow-instance-open-public" ${quotePublished ? '' : 'disabled'} aria-disabled="${quotePublished ? 'false' : 'true'}">查看用户报价</button>
+                <details class="ams-share-menu ams-sales-flow-quote-share-menu">
+                    <summary class="ams-btn ${quotePublished ? 'ams-btn-primary' : 'ams-btn-muted'}" ${quotePublished ? '' : 'aria-disabled="true"'}>
+                        分享报价
+                    </summary>
+                    <div class="ams-share-menu-panel">
+                        <div class="ams-share-menu-copy">
+                            <strong>选择分享方式</strong>
+                            <span>对外发送时，系统会自动带上用途说明和 GasGx 品牌介绍。</span>
+                        </div>
+                        <button class="ams-share-menu-item" type="button" id="ams-sales-flow-instance-share-link" ${quotePublished ? '' : 'disabled'}>
+                            <i class="fa-solid fa-link"></i>
+                            <span>分享链接</span>
+                        </button>
+                        <button class="ams-share-menu-item" type="button" id="ams-sales-flow-instance-share-poster" ${quotePublished ? '' : 'disabled'}>
+                            <i class="fa-solid fa-qrcode"></i>
+                            <span>分享二维码</span>
+                        </button>
+                    </div>
+                </details>
+            </div>
+        </div>
+    `;
+}
+
+function quoteRequirementForStage(deal = null, instance = {}) {
+    return requirementById(instance.requirement_id)
+        || requirementById(deal?.primary_requirement_id)
+        || dealRequirements(text(deal?.id))[0]
+        || null;
+}
+
+function quoteConfirmedActionPanelMarkup(deal = null, instance = {}, quotePublished = false) {
+    const requirement = quoteRequirementForStage(deal, instance);
+    const hasReadonlyRequirement = Boolean(text(requirement?.public_slug) && text(requirement?.public_token));
+    return `
+        <div class="ams-summary-chip ams-summary-chip-link ams-stage-role-chip ams-stage-role-chip-sales">
+            <em class="ams-stage-role-kicker">销售侧操作</em>
+            <strong>确认报价操作</strong>
+            <span>确认报价节点统一在这里处理报价编辑、客户报价查看、分享，以及需求回看入口。</span>
+            <div class="ams-summary-chip-actions">
+                <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-instance-open-inline">打开可视化报价编辑器</button>
+                <button class="ams-btn ${quotePublished ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-sales-flow-instance-open-public" ${quotePublished ? '' : 'disabled'} aria-disabled="${quotePublished ? 'false' : 'true'}">查看用户报价</button>
+                <details class="ams-share-menu ams-sales-flow-quote-share-menu">
+                    <summary class="ams-btn ${quotePublished ? 'ams-btn-primary' : 'ams-btn-muted'}" ${quotePublished ? '' : 'aria-disabled="true"'}>
+                        分享报价
+                    </summary>
+                    <div class="ams-share-menu-panel">
+                        <div class="ams-share-menu-copy">
+                            <strong>选择分享方式</strong>
+                            <span>对外发送时，系统会自动带上用途说明和 GasGx 品牌介绍。</span>
+                        </div>
+                        <button class="ams-share-menu-item" type="button" id="ams-sales-flow-instance-share-link" ${quotePublished ? '' : 'disabled'}>
+                            <i class="fa-solid fa-link"></i>
+                            <span>分享链接</span>
+                        </button>
+                        <button class="ams-share-menu-item" type="button" id="ams-sales-flow-instance-share-poster" ${quotePublished ? '' : 'disabled'}>
+                            <i class="fa-solid fa-qrcode"></i>
+                            <span>分享二维码</span>
+                        </button>
+                    </div>
+                </details>
+                <button class="ams-btn ${hasReadonlyRequirement ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-sales-flow-open-requirement-readonly" ${hasReadonlyRequirement ? '' : 'disabled'}>查看用户需求</button>
+            </div>
+        </div>
+    `;
+}
+
 function quoteConfirmedStageMarkup(stageKey = '', deal = null, instance = {}, context = {}) {
-    const { brand = null, record = createDealStageRecord(), canConfirm = false } = context;
+    const { brand = null, record = createDealStageRecord(), canConfirm = false, quotePublished = false } = context;
     return `
         <div class="ams-stage-detail-stack">
             <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
@@ -11452,13 +11676,8 @@ function quoteConfirmedStageMarkup(stageKey = '', deal = null, instance = {}, co
                     </div>
                 </div>
                 <div class="ams-quote-meta-grid">
-                    ${quoteStageBaseMetaMarkup(deal, instance, brand)}
-                    ${stagePublicEntryChipMarkup(stageKey, record, deal, {
-                        openLabel: '打开客户报价确认单',
-                        copyLabel: '复制确认链接',
-                        summary: '客户可通过该入口查看并确认当前报价；生成后可持续打开回看，也可复制链接继续转发。',
-                        emptyText: '客户报价确认入口可随时打开查看，也可复制链接发给客户。',
-                    })}
+                    ${quoteStageBaseMetaMarkup(stageKey, deal, instance, brand)}
+                    ${quoteConfirmedActionPanelMarkup(deal, instance, quotePublished)}
                 </div>
                 <div class="ams-field-help">当前报价草稿：${esc(text(instance.customer_name || instance.public_slug, instance.id))}。这里的所有条款调整和客户反馈都应写入下面的沟通记录，确保后续签约可追溯。</div>
                 ${quoteSharePosterModalMarkup()}
@@ -11484,7 +11703,7 @@ function quoteFlowMarkup(stageKey = '', deal = null, instance = {}) {
     const canConfirm = normalizeDealStageKey(stageKey) === 'quote_confirmed'
         && Boolean(text(instance.id) && text(instance.deal_id || deal?.id))
         && quoteCustomerConfirmed;
-    const quotePublished = text(instance.status) === 'published' && Boolean(text(instance.public_slug));
+    const quotePublished = quotePublishedForStage(stageKey, instance);
     return renderer(stageKey, deal, instance, {
         products,
         brand,
@@ -11959,6 +12178,7 @@ function bindSalesRequirementActions(input, stageKey = '', customerId = '', cust
         window.open(requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true }), '_blank', 'noopener');
     });
 
+    ensureSalesFlowShareMenuBindings();
     const salesFlowRequirementShareMenu = document.querySelector('.ams-sales-flow-requirement-share-menu');
     const salesFlowRequirementPosterModal = document.getElementById('ams-sales-flow-requirement-share-poster-modal');
     const salesFlowRequirementPosterImage = document.getElementById('ams-sales-flow-requirement-share-poster-image');
@@ -12039,6 +12259,8 @@ function bindSalesRequirementActions(input, stageKey = '', customerId = '', cust
 }
 
 function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFlow = false) {
+    const quotePublicReady = () => quotePublishedForStage(stageKey, moduleState.instanceEditor);
+
     document.getElementById('ams-sales-flow-instance-product')?.addEventListener('change', (event) => {
         moduleState.pipelineProductSelection = event.currentTarget.value || '';
     });
@@ -12060,23 +12282,53 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
     ['ams-sales-flow-instance-open', 'ams-sales-flow-instance-open-inline'].forEach((id) => {
         document.getElementById(id)?.addEventListener('click', () => {
             if (!moduleState.instanceEditor?.id) return;
-            window.open(quoteEditorUrl('instance', moduleState.instanceEditor.id), '_blank', 'noopener');
+            window.open(quoteEditorUrl('instance', moduleState.instanceEditor.id, {
+                dealId: text(moduleState.instanceEditor?.deal_id || readAdminPageParam('deal')),
+                stage: normalizeDealStageKey(stageKey),
+                customerId,
+                returnMode: customerFlow ? 'customer-flow' : 'pipeline',
+            }), '_blank', 'noopener');
         });
     });
 
-    document.getElementById('ams-sales-flow-instance-open-public')?.addEventListener('click', () => {
+    const ensureQuoteConfirmedRecord = async () => {
+        let quoteConfirmedRecord = stageRecordByKey('quote_confirmed', moduleState.dealStageRecords);
+        if (text(quoteConfirmedRecord?.public_slug) && text(quoteConfirmedRecord?.public_token)) return quoteConfirmedRecord;
+        const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id));
+        if (!activeDeal?.id) return quoteConfirmedRecord;
+        try {
+            quoteConfirmedRecord = await ensurePublicStageConfirmationLink(input.user, 'quote_confirmed', activeDeal);
+            moduleState.dealStageRecords = activeDeal ? dealCurrentRecords(moduleState.dealEditor || activeDeal) : moduleState.dealStageRecords;
+        } catch (_error) {
+            return quoteConfirmedRecord;
+        }
+        return quoteConfirmedRecord;
+    };
+
+    document.getElementById('ams-sales-flow-instance-open-public')?.addEventListener('click', async () => {
         const instance = moduleState.instanceEditor;
-        if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
+        if (!quotePublicReady()) {
             input.showToast('请先发布报价，再查看用户报价页。', true);
             return;
         }
-        window.open(publicQuoteUrl(instance.public_slug), '_blank', 'noopener');
+        const quoteConfirmedRecord = await ensureQuoteConfirmedRecord();
+        window.open(quotePublicUrlForStage(instance, quoteConfirmedRecord), '_blank', 'noopener');
+    });
+
+    document.getElementById('ams-sales-flow-open-requirement-readonly')?.addEventListener('click', () => {
+        const instance = moduleState.instanceEditor;
+        const activeDeal = dealById(text(moduleState.dealEditor?.id || instance?.deal_id));
+        const requirement = quoteRequirementForStage(activeDeal, instance);
+        if (!(text(requirement?.public_slug) && text(requirement?.public_token))) {
+            input.showToast('当前还没有可查看的用户需求入口。', true);
+            return;
+        }
+        window.open(requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true }), '_blank', 'noopener');
     });
 
     const salesFlowQuoteShareMenu = document.querySelector('.ams-sales-flow-quote-share-menu');
     salesFlowQuoteShareMenu?.querySelector('summary')?.addEventListener('click', (event) => {
-        const instance = moduleState.instanceEditor;
-        if (text(instance?.status) === 'published' && instance?.public_slug) return;
+        if (quotePublicReady()) return;
         event.preventDefault();
         input.showToast('请先发布报价，再分享报价。', true);
     });
@@ -12090,11 +12342,14 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
     document.getElementById('ams-sales-flow-instance-share-link')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '复制中...', async () => {
             const instance = moduleState.instanceEditor;
-            if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
+            if (!quotePublicReady()) {
                 input.showToast('请先发布报价，再复制对外报价链接。', true);
                 return;
             }
-            const payload = quoteShareCopyText(instance);
+            const quoteConfirmedRecord = await ensureQuoteConfirmedRecord();
+            const payload = quoteShareCopyText(instance, {
+                url: quotePublicUrlForStage(instance, quoteConfirmedRecord),
+            });
             try {
                 await navigator.clipboard.writeText(payload);
                 input.showToast('报价链接和对外说明已复制。');
@@ -12108,12 +12363,15 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
     document.getElementById('ams-sales-flow-instance-share-poster')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
             const instance = moduleState.instanceEditor;
-            if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
+            if (!quotePublicReady()) {
                 input.showToast('请先发布报价，再分享二维码。', true);
                 return;
             }
+            const quoteConfirmedRecord = await ensureQuoteConfirmedRecord();
             try {
-                const posterUrl = await quoteSharePosterDataUrl(instance);
+                const posterUrl = await quoteSharePosterDataUrl(instance, {
+                    url: quotePublicUrlForStage(instance, quoteConfirmedRecord),
+                });
                 if (salesFlowQuotePosterImage) salesFlowQuotePosterImage.setAttribute('src', posterUrl);
                 if (salesFlowQuotePosterDownload) salesFlowQuotePosterDownload.setAttribute('href', posterUrl);
                 if (salesFlowQuotePosterModal) salesFlowQuotePosterModal.hidden = false;
@@ -12126,11 +12384,14 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
 
     document.getElementById('ams-sales-flow-quote-share-poster-copy-link')?.addEventListener('click', async () => {
         const instance = moduleState.instanceEditor;
-        if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
+        if (!quotePublicReady()) {
             input.showToast('请先发布报价，再复制分享说明。', true);
             return;
         }
-        const payload = quoteShareCopyText(instance);
+        const quoteConfirmedRecord = await ensureQuoteConfirmedRecord();
+        const payload = quoteShareCopyText(instance, {
+            url: quotePublicUrlForStage(instance, quoteConfirmedRecord),
+        });
         try {
             await navigator.clipboard.writeText(payload);
             input.showToast('海报说明文案已复制。');
@@ -12463,6 +12724,7 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
         window.open(requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true }), '_blank', 'noopener');
     });
 
+    ensureSalesFlowShareMenuBindings();
     const salesFlowRequirementShareMenu = document.querySelector('.ams-sales-flow-requirement-share-menu');
     const salesFlowRequirementPosterModal = document.getElementById('ams-sales-flow-requirement-share-poster-modal');
     const salesFlowRequirementPosterImage = document.getElementById('ams-sales-flow-requirement-share-poster-image');
@@ -12541,6 +12803,8 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
         });
     });
 
+    const quotePublicReady = () => quotePublishedForStage(stageKey, moduleState.instanceEditor);
+
     document.getElementById('ams-sales-flow-instance-product')?.addEventListener('change', (event) => {
         moduleState.pipelineProductSelection = event.currentTarget.value || '';
     });
@@ -12562,23 +12826,53 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
     ['ams-sales-flow-instance-open', 'ams-sales-flow-instance-open-inline'].forEach((id) => {
         document.getElementById(id)?.addEventListener('click', () => {
             if (!moduleState.instanceEditor?.id) return;
-            window.open(quoteEditorUrl('instance', moduleState.instanceEditor.id), '_blank', 'noopener');
+            window.open(quoteEditorUrl('instance', moduleState.instanceEditor.id, {
+                dealId: text(moduleState.instanceEditor?.deal_id || readAdminPageParam('deal')),
+                stage: normalizeDealStageKey(stageKey),
+                customerId,
+                returnMode: customerFlow ? 'customer-flow' : 'pipeline',
+            }), '_blank', 'noopener');
         });
     });
 
-    document.getElementById('ams-sales-flow-instance-open-public')?.addEventListener('click', () => {
+    const ensureQuoteConfirmedRecord = async () => {
+        let quoteConfirmedRecord = stageRecordByKey('quote_confirmed', moduleState.dealStageRecords);
+        if (text(quoteConfirmedRecord?.public_slug) && text(quoteConfirmedRecord?.public_token)) return quoteConfirmedRecord;
+        const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id));
+        if (!activeDeal?.id) return quoteConfirmedRecord;
+        try {
+            quoteConfirmedRecord = await ensurePublicStageConfirmationLink(input.user, 'quote_confirmed', activeDeal);
+            moduleState.dealStageRecords = activeDeal ? dealCurrentRecords(moduleState.dealEditor || activeDeal) : moduleState.dealStageRecords;
+        } catch (_error) {
+            return quoteConfirmedRecord;
+        }
+        return quoteConfirmedRecord;
+    };
+
+    document.getElementById('ams-sales-flow-instance-open-public')?.addEventListener('click', async () => {
         const instance = moduleState.instanceEditor;
-        if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
+        if (!quotePublicReady()) {
             input.showToast('请先发布报价，再查看用户报价页。', true);
             return;
         }
-        window.open(publicQuoteUrl(instance.public_slug), '_blank', 'noopener');
+        const quoteConfirmedRecord = await ensureQuoteConfirmedRecord();
+        window.open(quotePublicUrlForStage(instance, quoteConfirmedRecord), '_blank', 'noopener');
+    });
+
+    document.getElementById('ams-sales-flow-open-requirement-readonly')?.addEventListener('click', () => {
+        const instance = moduleState.instanceEditor;
+        const activeDeal = dealById(text(moduleState.dealEditor?.id || instance?.deal_id));
+        const requirement = quoteRequirementForStage(activeDeal, instance);
+        if (!(text(requirement?.public_slug) && text(requirement?.public_token))) {
+            input.showToast('当前还没有可查看的用户需求入口。', true);
+            return;
+        }
+        window.open(requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true }), '_blank', 'noopener');
     });
 
     const salesFlowQuoteShareMenu = document.querySelector('.ams-sales-flow-quote-share-menu');
     salesFlowQuoteShareMenu?.querySelector('summary')?.addEventListener('click', (event) => {
-        const instance = moduleState.instanceEditor;
-        if (text(instance?.status) === 'published' && instance?.public_slug) return;
+        if (quotePublicReady()) return;
         event.preventDefault();
         input.showToast('请先发布报价，再分享报价。', true);
     });
@@ -12592,11 +12886,14 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
     document.getElementById('ams-sales-flow-instance-share-link')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '复制中...', async () => {
             const instance = moduleState.instanceEditor;
-            if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
+            if (!quotePublicReady()) {
                 input.showToast('请先发布报价，再复制对外报价链接。', true);
                 return;
             }
-            const payload = quoteShareCopyText(instance);
+            const quoteConfirmedRecord = await ensureQuoteConfirmedRecord();
+            const payload = quoteShareCopyText(instance, {
+                url: quotePublicUrlForStage(instance, quoteConfirmedRecord),
+            });
             try {
                 await navigator.clipboard.writeText(payload);
                 input.showToast('报价链接和对外说明已复制。');
@@ -12610,12 +12907,15 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
     document.getElementById('ams-sales-flow-instance-share-poster')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
             const instance = moduleState.instanceEditor;
-            if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
+            if (!quotePublicReady()) {
                 input.showToast('请先发布报价，再分享二维码。', true);
                 return;
             }
+            const quoteConfirmedRecord = await ensureQuoteConfirmedRecord();
             try {
-                const posterUrl = await quoteSharePosterDataUrl(instance);
+                const posterUrl = await quoteSharePosterDataUrl(instance, {
+                    url: quotePublicUrlForStage(instance, quoteConfirmedRecord),
+                });
                 if (salesFlowQuotePosterImage) salesFlowQuotePosterImage.setAttribute('src', posterUrl);
                 if (salesFlowQuotePosterDownload) salesFlowQuotePosterDownload.setAttribute('href', posterUrl);
                 if (salesFlowQuotePosterModal) salesFlowQuotePosterModal.hidden = false;
@@ -12628,11 +12928,14 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
 
     document.getElementById('ams-sales-flow-quote-share-poster-copy-link')?.addEventListener('click', async () => {
         const instance = moduleState.instanceEditor;
-        if (!(text(instance?.status) === 'published' && instance?.public_slug)) {
+        if (!quotePublicReady()) {
             input.showToast('请先发布报价，再复制分享说明。', true);
             return;
         }
-        const payload = quoteShareCopyText(instance);
+        const quoteConfirmedRecord = await ensureQuoteConfirmedRecord();
+        const payload = quoteShareCopyText(instance, {
+            url: quotePublicUrlForStage(instance, quoteConfirmedRecord),
+        });
         try {
             await navigator.clipboard.writeText(payload);
             input.showToast('海报说明文案已复制。');
@@ -12837,6 +13140,21 @@ export async function renderQuotePipelinePage(input) {
     if (activeDeal?.customer_id) await ensureCustomerEditorForSalesFlow(activeDeal.customer_id);
     if (dealStageDefinition(stageKey).scope === 'requirement') await ensureRequirementEditorForDeal(activeDeal);
     if (dealStageDefinition(stageKey).scope === 'quote') await ensureInstanceEditorForDeal(activeDeal);
+    if (normalizeDealStageKey(stageKey) === 'quote_confirmed' && moduleState.instanceEditor?.id) {
+        moduleState.instanceEditor = await ensurePublishedQuoteForStage(input.user, stageKey, moduleState.instanceEditor);
+    }
+    if (
+        normalizeDealStageKey(stageKey) === 'quote_draft'
+        && activeDeal?.id
+        && normalizeDealStageKey(activeDeal.current_stage) === 'quote_draft'
+        && quoteInstanceReadyForConfirmation(moduleState.instanceEditor)
+    ) {
+        const advancedDeal = await advancePublishedQuoteDeal(input.user, moduleState.instanceEditor);
+        const nextDeal = dealById(advancedDeal.id) || advancedDeal;
+        window.history.replaceState({}, '', adminPageUrl('quote-pipeline', { stage: 'quote_confirmed', deal: nextDeal.id }));
+        await renderQuotePipelinePage(input);
+        return;
+    }
     moduleState.dealEditor = activeDeal ? createDealDraft(moduleState.dealEditor || activeDeal) : createDealDraft();
     moduleState.dealStageRecords = activeDeal ? dealCurrentRecords(moduleState.dealEditor) : [];
     if (activeDeal?.customer_id) {
@@ -12942,6 +13260,9 @@ export async function renderQuoteCustomerFlowPage(input) {
         return;
     }
     if (dealStageDefinition(stageKey).scope === 'quote') await ensureInstanceEditorForDeal(syncedActiveDeal);
+    if (normalizeDealStageKey(stageKey) === 'quote_confirmed' && moduleState.instanceEditor?.id) {
+        moduleState.instanceEditor = await ensurePublishedQuoteForStage(input.user, stageKey, moduleState.instanceEditor);
+    }
     if (
         normalizeDealStageKey(stageKey) === 'quote_draft'
         && syncedActiveDeal?.id

@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GasGx Quote View</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="../shared/ui/main-auth.shared.js"></script>
-    <link rel="stylesheet" href="../shared/quote-system/quote-system.css?v=20260325quote15">
+    <script src="./public-asset-version.js?v=20260326public19"></script>
+    <script>window.AMSLoadQuotePublicStyles('../shared/quote-system/quote-system.css');</script>
 </head>
 <body class="antialiased pb-10 md:pb-20 access-resolved">
     <div id="access-gate-overlay" class="access-gate-overlay hidden">
@@ -53,7 +54,7 @@
     <div id="export-overlay" class="fixed inset-0 z-[99999] bg-[#0A0E14] flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300">
         <i class="fa-solid fa-cube fa-spin text-5xl text-[var(--gas-green-light)] mb-6 pulse-shadow"></i>
         <div class="text-[var(--gas-green-light)] font-mono tracking-widest text-xl font-bold animate-pulse" id="export-loading-text">GENERATING DOCUMENT...</div>
-        <div class="text-[var(--text-muted)] text-sm mt-3" id="export-sub-text">正在进行高清文档渲染，请稍候</div>
+        <div class="text-[var(--text-muted)] text-sm mt-3" id="export-sub-text">正在进行高清文档渲染，请稍候。</div>
     </div>
 
     <div id="toolbar" class="fixed top-0 left-0 right-0 z-50 px-3 md:px-8 py-3 md:py-4 flex justify-between items-center border-b backdrop-blur-md" style="background-color: rgba(10, 14, 20, 0.85); border-color: var(--border-color);">
@@ -72,7 +73,7 @@
             <div class="toolbar-lang flex bg-[#161B22] rounded p-1 border border-[#2C2F33]">
                 <button type="button" id="btn-zh" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">CN</button>
                 <button type="button" id="btn-en" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">EN</button>
-                <button type="button" id="btn-ru" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">РУ</button>
+                <button type="button" id="btn-ru" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">RU</button>
             </div>
 
             <div id="share-group" class="toolbar-share-group relative">
@@ -114,7 +115,7 @@
                         <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
                             <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-receiver">收件人：</span>
                             <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
-                                <span id="val-receiver" class="text-[var(--gas-green-light)] empty-placeholder whitespace-nowrap outline-none w-full text-left block" data-placeholder="请填入客户邮箱号"></span>
+                                <span id="val-receiver" class="text-[var(--gas-green-light)] empty-placeholder whitespace-nowrap outline-none w-full text-left block" data-placeholder="请填写客户邮箱"></span>
                             </div>
                         </div>
                     </div>
@@ -284,6 +285,6 @@
         </div>
     </div>
 
-    <script type="module" src="../shared/quote-system/quote-runtime.module.js?v=20260325share07"></script>
+    <script>window.AMSLoadQuotePublicModule('../shared/quote-system/quote-runtime.module.js');</script>
 </body>
 </html>

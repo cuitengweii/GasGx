@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GasGx Quote Editor</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../shared/quote-system/quote-system.css?v=20260325quote16">
+    <script src="./public-asset-version.js"></script>
+    <script>window.AMSLoadQuotePublicStyles('../shared/quote-system/quote-system.css');</script>
 </head>
 <body class="antialiased pb-10 md:pb-20 access-resolved quote-editor-mode">
     <div id="toolbar" class="fixed top-0 left-0 right-0 z-50 px-3 md:px-8 py-3 md:py-4 flex justify-between items-center border-b backdrop-blur-md" style="background-color: rgba(10, 14, 20, 0.85); border-color: var(--border-color);">
@@ -35,6 +38,7 @@
             <span class="quote-editor-bar__kicker">REAL TEMPLATE EDITOR</span>
             <strong id="editor-status-title">真实报价页编辑</strong>
             <span id="editor-status-text">正在加载...</span>
+            <span id="editor-version-text" class="text-[11px] md:text-xs text-[var(--gas-green-light)] font-mono-num"></span>
         </div>
         <div id="editor-settings-fields" class="quote-editor-settings__body quote-editor-bar__settings"></div>
         <div class="quote-editor-bar__actions">
@@ -114,6 +118,6 @@
         <i class="fa-solid fa-arrow-up text-sm"></i>
     </button>
 
-    <script type="module" src="../shared/quote-system/quote-editor.module.js?v=20260325editor09"></script>
+    <script>window.AMSLoadQuotePublicModule('../shared/quote-system/quote-editor.module.js');</script>
 </body>
 </html>

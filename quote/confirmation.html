@@ -4,20 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GasGx Stage Confirmation</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="../shared/quote-system/quote-system.css?v=20260324confirm01">
+    <script src="./public-asset-version.js"></script>
+    <script>window.AMSLoadQuotePublicStyles('../shared/quote-system/quote-system.css');</script>
 </head>
 <body class="antialiased pb-12 access-resolved">
     <main id="stage-confirmation-app" class="requirement-shell">
         <section class="requirement-card requirement-loading">
             <div class="requirement-loading__spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
             <div class="requirement-loading__title">正在读取客户确认单...</div>
-            <div class="requirement-loading__desc">请稍候，系统正在校验确认链接并加载当前节点内容。</div>
+            <div class="requirement-loading__desc">请稍候，系统正在校验确认链接并加载当前阶段内容。</div>
         </section>
     </main>
 
-    <script type="module" src="../shared/quote-system/quote-confirmation.module.js?v=20260324confirm01"></script>
+    <script>window.AMSLoadQuotePublicModule('../shared/quote-system/quote-confirmation.module.js');</script>
 </body>
 </html>

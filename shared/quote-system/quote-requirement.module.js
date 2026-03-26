@@ -3,11 +3,11 @@ const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGe
 const TABLE_CUSTOMER_ACTIVITIES = 'quote_customer_activities';
 
 const REQUIREMENT_TYPE_OPTIONS = Object.freeze([
-    { value: '', label: '???????' },
-    { value: 'integrated_mining_power', label: '???????????' },
-    { value: 'miner_only', label: '???????????' },
-    { value: 'power_only', label: '??????????' },
-    { value: 'unclear', label: '??????' },
+    { value: '', label: '请选择需求类型' },
+    { value: 'integrated_mining_power', label: '燃气发电+矿箱一体化' },
+    { value: 'miner_only', label: '独立矿机矿箱' },
+    { value: 'power_only', label: '独立燃气发电机组' },
+    { value: 'unclear', label: '需要推荐' },
 ]);
 
 const CONTACT_CHANNEL_OPTIONS = Object.freeze([
@@ -311,10 +311,9 @@ const REQUIREMENT_MULTI_OPTIONS = Object.freeze({
         { value: 'other', label: '其他 / 待确认' },
     ],
     miner_cooling: [
-        { value: 'air', label: '风冷矿机' },
-        { value: 'liquid', label: '液冷矿机' },
-        { value: 'hydro', label: '水冷 / 浸没式' },
-        { value: 'unknown', label: '待推荐' },
+        { value: 'air', label: '风冷' },
+        { value: 'liquid', label: '液冷' },
+        { value: 'immersion', label: '浸没式' },
     ],
     certification_needs: [
         { value: 'ce', label: 'CE' },
@@ -440,6 +439,124 @@ function minerModelOptionsFor(brands = []) {
     });
 }
 
+function allMinerModelOptions() {
+    return Object.keys({ ...MINER_MODEL_CATALOG, ...LATEST_MINER_MODEL_CATALOG })
+        .flatMap((brand) => minerModelOptionsFor([brand]));
+}
+
+function normalizeMinerCooling(value) {
+    return normalizeStringList(value)
+        .map((item) => {
+            const normalized = text(item).toLowerCase();
+            if (!normalized || normalized === 'unknown') return '';
+            if (normalized === 'hydro') return 'liquid';
+            return normalized;
+        })
+        .filter(Boolean)
+        .slice(0, 1);
+}
+
+function parseNumericMax(raw) {
+    const value = text(raw).replace(/[–—]/g, '-');
+    const matches = value.match(/\d+(?:\.\d+)?/g);
+    if (!matches?.length) return null;
+    return Math.max(...matches.map((item) => Number(item)));
+}
+
+function inferCoolingType(entry = {}) {
+    const raw = `${text(entry.model)} ${text(entry.hashrate)} ${text(entry.power)}`.toLowerCase();
+    if (raw.includes('immersion')) return 'immersion';
+    if (raw.includes('hyd') || raw.includes('hydro') || raw.includes('liquid') || raw.includes('water')) return 'liquid';
+    if (raw.includes('air')) return 'air';
+    return '';
+}
+
+function inferHashrateBand(entry = {}) {
+    const max = parseNumericMax(entry.hashrate);
+    if (max == null) return 'need_recommendation';
+    if (max < 150) return 'under_150t';
+    if (max <= 200) return '150t_200t';
+    if (max <= 300) return '200t_300t';
+    return 'over_300t';
+}
+
+function inferPowerBand(entry = {}) {
+    const raw = text(entry.power).toLowerCase();
+    const max = parseNumericMax(raw);
+    if (max == null) return 'need_recommendation';
+    const kw = raw.includes('kw') ? max : max / 1000;
+    if (kw < 3) return 'under_3kw';
+    if (kw <= 4) return '3kw_4kw';
+    if (kw <= 5.5) return '4kw_5_5kw';
+    return 'over_5_5kw';
+}
+
+function selectedMinerModelEntry(requirement = state.requirement) {
+    const answers = normalizeAnswers(requirement?.answers);
+    const selectedValue = answers.miner_models[0] || '';
+    if (!selectedValue) return null;
+    return minerModelOptionsFor(answers.miner_brands).find((item) => item.value === selectedValue)
+        || allMinerModelOptions().find((item) => item.value === selectedValue)
+        || null;
+}
+
+function syncDerivedAnswersFromSelectedModel(requirement = state.requirement, { resetIfMissing = false } = {}) {
+    if (!requirement?.answers) return;
+    const entry = selectedMinerModelEntry(requirement);
+    if (!entry) {
+        if (resetIfMissing) {
+            requirement.answers.miner_hashrate_band = 'need_recommendation';
+            requirement.answers.miner_power_band = 'need_recommendation';
+            requirement.answers.miner_cooling = [];
+        }
+        return;
+    }
+    requirement.answers.miner_hashrate_band = inferHashrateBand(entry);
+    requirement.answers.miner_power_band = inferPowerBand(entry);
+    requirement.answers.miner_cooling = normalizeMinerCooling([inferCoolingType(entry)]);
+}
+
+function minerCoolingLabel(value = '') {
+    const current = text(value);
+    const label = REQUIREMENT_MULTI_OPTIONS.miner_cooling.find((item) => item.value === current)?.label || current;
+    return localize(label);
+}
+
+function minerDerivedFieldsMarkup(answers = {}, locked = false) {
+    const hasModel = normalizeStringList(answers.miner_models).length > 0;
+    const coolingValue = normalizeMinerCooling(answers.miner_cooling)[0] || '';
+    const readOnlyText = (value, fallback = '将随推荐机型自动填入') => {
+        if (!hasModel) return localize('请先选择推荐机型');
+        return value ? value : localize(fallback);
+    };
+    return `
+        <div class="requirement-grid">
+            <label class="requirement-field" data-required-field="miner_hashrate_band">
+                <span>${esc(localize('矿机算力范围'))}</span>
+                <input class="share-input" value="${esc(readOnlyText(optionLabel(REQUIREMENT_SELECT_OPTIONS.miner_hashrate_band, answers.miner_hashrate_band), '请先选择推荐机型'))}" readonly disabled>
+            </label>
+            <label class="requirement-field" data-required-field="miner_power_band">
+                <span>${esc(localize('矿机功耗范围'))}</span>
+                <input class="share-input" value="${esc(readOnlyText(optionLabel(REQUIREMENT_SELECT_OPTIONS.miner_power_band, answers.miner_power_band), '请先选择推荐机型'))}" readonly disabled>
+            </label>
+            <label class="requirement-field" data-required-field="miner_cooling">
+                <span>${esc(localize('散热机位类型'))}</span>
+                <input class="share-input" value="${esc(readOnlyText(minerCoolingLabel(coolingValue), '请先选择推荐机型'))}" readonly disabled>
+            </label>
+            <label class="requirement-field ${state.validationErrors.miner_quantity_band ? 'is-invalid' : ''}" data-required-field="miner_quantity_band">
+                <span>${esc(localize('矿机数量范围'))}</span>
+                <select class="share-select" data-answer-field="miner_quantity_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_quantity_band, answers.miner_quantity_band)}</select>
+                ${fieldErrorMarkup('miner_quantity_band')}
+            </label>
+            <label class="requirement-field ${state.validationErrors.voltage_frequency ? 'is-invalid' : ''}" data-required-field="voltage_frequency">
+                <span>${esc(localize('电压 / 频率'))}</span>
+                <select class="share-select" data-answer-field="voltage_frequency" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.voltage_frequency, answers.voltage_frequency)}</select>
+                ${fieldErrorMarkup('voltage_frequency')}
+            </label>
+        </div>
+    `;
+}
+
 function localizedCountryOptions(locale = state?.locale || 'zh') {
     const targetLocale = locale === 'zh' ? 'zh-CN' : locale === 'ru' ? 'ru-RU' : 'en-US';
     let displayNames = null;
@@ -532,6 +649,7 @@ state.locale = resolveLocale();
 
 const LABEL_MAP = Object.freeze({
     '矿机与供电需求收集': { en: 'Mining & Power Requirement Intake', ru: 'Сбор потребностей по майнингу и электропитанию' },
+    '客户需求单': { en: 'Customer Request', ru: 'Запрос клиента' },
     '请根据当前这一轮采购或部署计划填写下面的选择题。提交后，这份需求会作为后续报价、跟进和内部协作的统一基线。': {
         en: 'Please fill in the selections based on your current procurement or deployment plan. After submission, this request becomes the baseline for pricing and follow-up.',
         ru: 'Пожалуйста, заполните выборы исходя из текущего плана закупки или развертывания. После отправки этот запрос станет базовой линией для расчета и дальнейшей работы.',
@@ -567,8 +685,12 @@ const LABEL_MAP = Object.freeze({
     '电压 / 频率': { en: 'Voltage / Frequency', ru: 'Напряжение / Частота' },
     '矿机品牌': { en: 'Miner Brands', ru: 'Бренды майнеров' },
     '矿机冷却方式': { en: 'Cooling Type', ru: 'Тип охлаждения' },
+    '散热机位类型': { en: 'Cooling Slot Type', ru: 'Тип посадочного места по охлаждению' },
     '推荐机型 (Top 10)': { en: 'Suggested Models (Top 10)', ru: 'Рекомендуемые модели (Топ 10)' },
+    '需求已存证': { en: 'Request Archived', ru: 'Запрос зафиксирован' },
     '请先选择矿机品牌': { en: 'Select miner brands first', ru: 'Сначала выберите бренды майнеров' },
+    '将随推荐机型自动填入': { en: 'Will auto-fill after model selection', ru: 'Будет заполнено автоматически после выбора модели' },
+    '请先选择推荐机型': { en: 'Please select a recommended model first', ru: 'Сначала выберите рекомендованную модель' },
     '交付与现场条件': { en: 'Delivery & Site Conditions', ru: 'Условия поставки и площадки' },
     '这些信息会直接影响配置推荐、报价和交付节奏。': {
         en: 'These inputs affect configuration, pricing, and delivery planning.',
@@ -682,16 +804,16 @@ const LABEL_MAP = Object.freeze({
     'Bitdeer / SEALMINER（比特小鹿）': { en: 'Bitdeer / SEALMINER', ru: 'Bitdeer / SEALMINER' },
     'Auradine / Teraflux': { en: 'Auradine / Teraflux', ru: 'Auradine / Teraflux' },
     '其他 / 待确认': { en: 'Other / TBD', ru: 'Другое / уточнить' },
-    '风冷矿机': { en: 'Air cooled', ru: 'Воздушное охлаждение' },
-    '液冷矿机': { en: 'Liquid cooled', ru: 'Жидкостное охлаждение' },
-    '水冷 / 浸没式': { en: 'Hydro / immersion', ru: 'Водяное / иммерсионное' },
+    '风冷': { en: 'Air Cooling', ru: 'Воздушное охлаждение' },
+    '液冷': { en: 'Liquid Cooling', ru: 'Жидкостное охлаждение' },
+    '浸没式': { en: 'Immersion', ru: 'Иммерсионное охлаждение' },
     '待推荐': { en: 'Need recommendation', ru: 'Нужна рекомендация' },
     '并网 / 电力接口合规': { en: 'Grid / power compliance', ru: 'Соответствие подключению' },
     '暂无明确要求': { en: 'No specific requirements', ru: 'Без требований' },
-    '矿机 + 供电一体化': { en: 'Miners + Power (Integrated)', ru: 'Майнеры + питание (интегрировано)' },
-    '仅矿机需求': { en: 'Miners only', ru: 'Только майнеры' },
-    '仅供电 / 发电需求': { en: 'Power / generation only', ru: 'Только электропитание / генерация' },
-    '需要方案推荐': { en: 'Need recommendation', ru: 'Нужна рекомендация' },
+    '燃气发电+矿箱一体化': { en: 'Integrated gas power + mining container', ru: 'Интегрированное решение: газовая генерация + майнинг-контейнер' },
+    '独立矿机矿箱': { en: 'Standalone miners / mining container', ru: 'Отдельные майнеры / майнинг-контейнер' },
+    '独立燃气发电机组': { en: 'Standalone gas generator set', ru: 'Отдельная газовая генераторная установка' },
+    '需要推荐': { en: 'Need recommendation', ru: 'Нужна рекомендация' },
     'Other': { en: 'Other', ru: 'Другое' },
     '客户公司不能为空。': { en: 'Company is required.', ru: 'Укажите компанию.' },
     '联系人不能为空。': { en: 'Contact name is required.', ru: 'Укажите контактное лицо.' },
@@ -740,7 +862,7 @@ function normalizeAnswers(value = {}) {
         contact_channel: text(source.contact_channel || 'whatsapp'),
         miner_brands: normalizeStringList(source.miner_brands),
         miner_models: normalizeStringList(source.miner_models),
-        miner_cooling: normalizeStringList(source.miner_cooling),
+        miner_cooling: normalizeMinerCooling(source.miner_cooling),
         miner_hashrate_band: text(source.miner_hashrate_band || 'need_recommendation'),
         miner_power_band: text(source.miner_power_band || 'need_recommendation'),
         miner_quantity_band: text(source.miner_quantity_band || 'unknown'),
@@ -1135,12 +1257,10 @@ const REQUIRED_FIELD_ORDER = [
     'country',
     'requirement_type',
     'deployment_mode',
-    'miner_hashrate_band',
-    'miner_power_band',
+    'miner_brands',
+    'miner_model',
     'miner_quantity_band',
     'voltage_frequency',
-    'miner_brands',
-    'miner_cooling',
     'power_capacity_band',
     'container_preference',
     'silent_requirement',
@@ -1157,12 +1277,13 @@ const REQUIRED_FIELD_LABELS = {
     country: '国家 / 地区',
     requirement_type: '需求类型',
     deployment_mode: '部署模式',
+    miner_model: '推荐机型',
     miner_hashrate_band: '矿机算力范围',
     miner_power_band: '矿机功耗范围',
     miner_quantity_band: '矿机数量范围',
     voltage_frequency: '电压 / 频率',
     miner_brands: '矿机品牌',
-    miner_cooling: '矿机冷却方式',
+    miner_cooling: '散热机位类型',
     power_capacity_band: '供电规模',
     container_preference: '部署偏好',
     silent_requirement: '噪音要求',
@@ -1189,8 +1310,6 @@ function validateRequirementField(field, requirement = state.requirement) {
     const selectFields = new Set([
         'requirement_type',
         'deployment_mode',
-        'miner_hashrate_band',
-        'miner_power_band',
         'miner_quantity_band',
         'voltage_frequency',
         'power_capacity_band',
@@ -1208,8 +1327,8 @@ function validateRequirementField(field, requirement = state.requirement) {
     if (field === 'miner_brands' && !answers.miner_brands?.length) {
         return localize('请先选择矿机品牌。');
     }
-    if (field === 'miner_cooling' && !answers.miner_cooling?.length) {
-        return localize('请先选择矿机冷却方式。');
+    if (field === 'miner_model' && !answers.miner_models?.length) {
+        return localize('请先选择推荐机型。');
     }
 
     return '';
@@ -1227,7 +1346,7 @@ function validateRequirementSubmission(requirement = state.requirement) {
 
 function validationFieldSelector(field) {
     if (field === 'contact_channel') return '[data-answer-field="contact_channel"]';
-    if (['deployment_mode', 'miner_hashrate_band', 'miner_power_band', 'miner_quantity_band', 'voltage_frequency', 'power_capacity_band', 'container_preference', 'silent_requirement', 'budget_band', 'timeline_band'].includes(field)) {
+    if (['deployment_mode', 'miner_model', 'miner_quantity_band', 'voltage_frequency', 'power_capacity_band', 'container_preference', 'silent_requirement', 'budget_band', 'timeline_band'].includes(field)) {
         return `[data-answer-field="${field}"]`;
     }
     if (['miner_brands', 'miner_cooling'].includes(field)) {
@@ -1313,7 +1432,16 @@ function refreshMinerModelChoices() {
     if (filteredModels.length !== answers.miner_models.length) {
         requirement.answers.miner_models = filteredModels;
     }
+    syncDerivedAnswersFromSelectedModel(requirement, { resetIfMissing: true });
     wrap.innerHTML = minerModelChoiceSelectMarkup(filteredModels, answers.miner_brands, isLocked(requirement.status));
+    wrap.querySelectorAll('[data-answer-field]').forEach((node) => bindAnswerFieldNode(node, requirement));
+    updateFieldValidation('miner_model');
+    syncFieldValidationUI('miner_model');
+    const derivedWrap = document.getElementById('requirement-miner-derived-fields');
+    if (derivedWrap) {
+        derivedWrap.innerHTML = minerDerivedFieldsMarkup(normalizeAnswers(requirement.answers), isLocked(requirement.status));
+        derivedWrap.querySelectorAll('[data-answer-field]').forEach((node) => bindAnswerFieldNode(node, requirement));
+    }
 }
 
 function renderError(message) {
@@ -1338,6 +1466,7 @@ function renderApp() {
     }
 
     const requirement = state.requirement;
+    syncDerivedAnswersFromSelectedModel(requirement, { resetIfMissing: true });
     const answers = normalizeAnswers(requirement.answers);
     const locked = isLocked(requirement.status);
     const buttonDisabled = locked || state.submitting;
@@ -1364,13 +1493,8 @@ function renderApp() {
             <div class="requirement-watermark" aria-hidden="true">
                 ${Array.from({ length: 81 }).map(() => `
                     <span>
-                        <b>
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M12 1.75c-2.76 0-5 2.24-5 5v3.25H5.5a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2V12a2 2 0 0 0-2-2H17V6.75c0-2.76-2.24-5-5-5Zm-3 5a3 3 0 1 1 6 0v3.25H9V6.75Zm3 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z"/>
-                            </svg>
-                            ${esc(localize('???????'))}
-                        </b>
-                        <small>GasGx</small>
+                        <b>${esc(localize('需求已存证'))}</b>
+                        <small>www.gasgx.com</small>
                     </span>
                 `).join('')}
             </div>
@@ -1455,41 +1579,18 @@ function renderApp() {
                     <select class="share-select" data-answer-field="deployment_mode" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.deployment_mode, answers.deployment_mode)}</select>
                     ${fieldErrorMarkup('deployment_mode')}
                 </label>
-                <label class="requirement-field ${state.validationErrors.miner_hashrate_band ? 'is-invalid' : ''}" data-required-field="miner_hashrate_band">
-                    <span>${esc(localize('矿机算力范围'))}</span>
-                    <select class="share-select" data-answer-field="miner_hashrate_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_hashrate_band, answers.miner_hashrate_band)}</select>
-                    ${fieldErrorMarkup('miner_hashrate_band')}
-                </label>
-                <label class="requirement-field ${state.validationErrors.miner_power_band ? 'is-invalid' : ''}" data-required-field="miner_power_band">
-                    <span>${esc(localize('矿机功耗范围'))}</span>
-                    <select class="share-select" data-answer-field="miner_power_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_power_band, answers.miner_power_band)}</select>
-                    ${fieldErrorMarkup('miner_power_band')}
-                </label>
-                <label class="requirement-field ${state.validationErrors.miner_quantity_band ? 'is-invalid' : ''}" data-required-field="miner_quantity_band">
-                    <span>${esc(localize('矿机数量范围'))}</span>
-                    <select class="share-select" data-answer-field="miner_quantity_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.miner_quantity_band, answers.miner_quantity_band)}</select>
-                    ${fieldErrorMarkup('miner_quantity_band')}
-                </label>
-                <label class="requirement-field ${state.validationErrors.voltage_frequency ? 'is-invalid' : ''}" data-required-field="voltage_frequency">
-                    <span>${esc(localize('电压 / 频率'))}</span>
-                    <select class="share-select" data-answer-field="voltage_frequency" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.voltage_frequency, answers.voltage_frequency)}</select>
-                    ${fieldErrorMarkup('voltage_frequency')}
-                </label>
             </div>
             <div class="requirement-field ${state.validationErrors.miner_brands ? 'is-invalid' : ''}" data-required-field="miner_brands">
                 <span>${esc(localize('矿机品牌'))}</span>
                 ${choiceChipMarkup('miner_brands', REQUIREMENT_MULTI_OPTIONS.miner_brands, answers.miner_brands, locked, 'single')}
                 ${fieldErrorMarkup('miner_brands')}
             </div>
-            <div class="requirement-field ${state.validationErrors.miner_cooling ? 'is-invalid' : ''}" data-required-field="miner_cooling">
-                <span>${esc(localize('矿机冷却方式'))}</span>
-                ${choiceChipMarkup('miner_cooling', REQUIREMENT_MULTI_OPTIONS.miner_cooling, answers.miner_cooling, locked, 'single')}
-                ${fieldErrorMarkup('miner_cooling')}
-            </div>
-            <div class="requirement-field">
-                <span>${esc(localize('???????????'))}</span>
+            <div class="requirement-field ${state.validationErrors.miner_model ? 'is-invalid' : ''}" data-required-field="miner_model">
+                <span>${esc(localize('推荐机型 (Top 10)'))}</span>
                 <div id="requirement-miner-model-wrap">${minerModelChoiceSelectMarkup(filteredModels, answers.miner_brands, locked)}</div>
+                ${fieldErrorMarkup('miner_model')}
             </div>
+            <div id="requirement-miner-derived-fields">${minerDerivedFieldsMarkup(answers, locked)}</div>
         </section>
 
         <section class="requirement-card">
@@ -1565,6 +1666,29 @@ function renderApp() {
     updateAutoSaveIndicators();
 }
 
+function bindAnswerFieldNode(node, requirement = state.requirement) {
+    if (!node || node.dataset.boundAnswerField === 'true') return;
+    node.dataset.boundAnswerField = 'true';
+    const apply = () => {
+        const field = node.dataset.answerField;
+        if (!field) return;
+        if (field === 'miner_model') {
+            requirement.answers.miner_models = node.value ? [node.value] : [];
+            syncDerivedAnswersFromSelectedModel(requirement, { resetIfMissing: true });
+            refreshMinerModelChoices();
+        } else {
+            requirement.answers[field] = node.value;
+        }
+        updateFieldValidation(field);
+        syncFieldValidationUI(field);
+        queueRequirementAutoSave({ field });
+    };
+    node.addEventListener('input', apply);
+    if (node.tagName === 'SELECT') {
+        node.addEventListener('change', apply);
+    }
+}
+
 function bindEvents() {
     const requirement = state.requirement;
     if (!requirement || isLocked(requirement.status)) return;
@@ -1596,24 +1720,7 @@ function bindEvents() {
         }
     });
 
-    document.querySelectorAll('[data-answer-field]').forEach((node) => {
-        const apply = () => {
-            const field = node.dataset.answerField;
-            if (!field) return;
-            if (field === 'miner_model') {
-                requirement.answers.miner_models = node.value ? [node.value] : [];
-            } else {
-                requirement.answers[field] = node.value;
-            }
-            updateFieldValidation(field);
-            syncFieldValidationUI(field);
-            queueRequirementAutoSave({ field });
-        };
-        node.addEventListener('input', apply);
-        if (node.tagName === 'SELECT') {
-            node.addEventListener('change', apply);
-        }
-    });
+    document.querySelectorAll('[data-answer-field]').forEach((node) => bindAnswerFieldNode(node, requirement));
 
     document.querySelectorAll('[data-answer-check]').forEach((node) => {
         node.addEventListener('change', () => {
@@ -1685,7 +1792,7 @@ async function fetchRequirement() {
     }
 
     const serverRequirement = normalizeRequirement(row);
-    const localDraft = !isLocked(serverRequirement.status) ? readRequirementDraft() : null;
+    const localDraft = !isReadOnlyMode(serverRequirement) ? readRequirementDraft() : null;
     state.requirement = applyRequirementDraft(serverRequirement, localDraft);
     state.submitConfirmed = false;
     state.lastSavedSignature = requirementPayloadSignature(buildRequirementPayload(serverRequirement));
@@ -1794,6 +1901,7 @@ async function submitCurrentRequirement() {
 async function init() {
     try {
         state.loading = true;
+        state.viewOnly = isViewOnlyAccess();
         if (document?.documentElement) {
             document.documentElement.lang = state.locale === 'zh' ? 'zh-CN' : state.locale;
         }

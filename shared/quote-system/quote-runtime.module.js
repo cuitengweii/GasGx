@@ -24,13 +24,116 @@ const TABLE_INSTANCE_EVENTS = 'quote_instance_events';
 const TABLE_INSTANCE_SENDS = 'quote_instance_sends';
 const TABLE_CUSTOMER_ACTIVITIES = 'quote_customer_activities';
 
+const sharedUiDict = {
+    supplier: 'SUPPLIER:',
+    sender: 'SENDER:',
+    receiver: 'RECEIVER:',
+    validity: 'VALIDITY:',
+    update: 'SYS_TIME_SYNC',
+    included: 'Included',
+    mainConfig: 'Main Config',
+    optionalConfig: 'Optional Config',
+    systemTotal: 'EST. SYSTEM TOTAL',
+    headers: ['SEQ', 'DESCRIPTION', 'BRAND', 'QTY', 'RMB (?)', 'USD ($)', 'EUR (?)', 'CAD (C$)', 'RUB (?)'],
+    ratesOnline: 'GLOBAL LIVE RATES',
+    ratesRefreshing: 'Refreshing...',
+    ratesFallback: 'Rate fetch failed, using saved snapshot.',
+    refresh: 'REFRESH',
+    send: 'Send',
+    share: 'Share/Export',
+    shareLink: 'Create Share Link',
+    exportImage: 'Export Image',
+    exportPdf: 'Export PDF',
+    shareTitle: 'Create Share Link',
+    shareDesc: 'Generate a customer link with expiry and passcode. Signed-in admins can always open this page.',
+    shareExpiryLabel: 'Link expiry',
+    shareExpiry1d: 'Expire in 1 day',
+    shareExpiry3d: 'Expire in 3 days',
+    shareExpiry7d: 'Expire in 7 days',
+    shareExpiryNever: 'Never expire',
+    shareExpiryCustom: 'Custom time',
+    shareCustomLabel: 'Custom expiration time',
+    shareCustomPicker: 'Pick time',
+    shareAdminHint: 'Admin sessions from the site backend always bypass link expiry.',
+    sharePasscodeLabel: 'Passcode',
+    sharePasscodePlaceholder: 'Generated automatically',
+    shareLinkLabel: 'Share link',
+    shareLinkPlaceholder: 'Generate a share link below',
+    shareGenerate: 'Generate & Copy Link',
+    shareClose: 'Close',
+    sharePreviewDefault: 'The default output is a 3-day share link.',
+    sharePreviewAdmin: 'Signed-in admins can still open the page after link expiry.',
+    shareCopySuccess: 'Link copied to clipboard',
+    shareCopyFallback: 'Link generated. Copy it manually.',
+    shareAdminOnly: 'Only signed-in site admins can create share links.',
+    shareCustomRequired: 'Choose a valid custom expiration time first.',
+    shareCustomExpired: 'The custom expiration time must be later than now.',
+    shareUnavailable: 'This page does not have a published quote target yet.',
+    shareGenerateError: 'Failed to generate the share link. Try again later.',
+    accessBadge: 'Protected Access',
+    accessCheckingTitle: 'Checking access...',
+    accessCheckingMessage: 'Verifying share token and admin session. Please wait.',
+    accessInvalid: 'The share link is invalid or corrupted. Generate a new one.',
+    accessExpired: 'This share link has expired.',
+    accessPasscodeTitle: 'Passcode required',
+    accessPasscodeMessage: 'This share link is protected by a passcode. Enter the 4-character code to continue.',
+    accessPasscodeLabel: 'Passcode',
+    accessPasscodeSubmit: 'Unlock',
+    accessPasscodeError: 'Incorrect passcode. Try again.',
+    accessDeniedTitle: 'Preview unavailable',
+    accessDeniedMessage: 'Draft previews are only available to signed-in admins.',
+    accessRefresh: 'Check Again',
+    notFoundTitle: 'Quote not found',
+    notFoundMessage: 'No published quote data is available for this link.',
+    loading: 'Loading...',
+    exportLoading: 'GENERATING DOCUMENT...',
+    exportSubText: 'Rendering a high-resolution document. Please wait.',
+    receiverPlaceholder: 'Enter customer email',
+    days: 'd',
+    hours: 'h',
+    minutes: 'm',
+    seconds: 's',
+    galleryTitle: 'Product Gallery',
+    galleryPrev: 'Previous',
+    galleryNext: 'Next',
+    galleryModeCarousel: 'Carousel',
+    galleryModeStack: 'Gallery',
+    shareMetaMode: 'Mode: share-link',
+    shareMetaAdmin: 'Mode: admin-preview',
+    shareMetaExpired: 'Expires at: ',
+    shareMetaNever: 'Never expires',
+    unknownBrand: 'Quote System',
+    mailSubjectPrefix: '[SYS_DATA]',
+    noEmail: 'Set a customer email first.',
+    authLogin: 'Login',
+    authAccount: 'Account',
+    authModalTitle: 'Login required',
+    authModalMessage: 'Sign in to keep using protected quote actions.',
+    authModalHint: 'Browsing stays open. After sign-in, you will return to this quote automatically.',
+    authModalLogin: 'Login now',
+    authModalCancel: 'Continue browsing',
+    authProtectedAction: 'Protected action',
+    authActionShare: 'Share / Export',
+    authActionSend: 'Send email',
+    authActionImage: 'Export image',
+    authActionPdf: 'Export PDF',
+    authActionLink: 'Create share link',
+    authActionConfirm: 'Quote confirmation',
+    quoteConfirmLoginRequired: 'Sign in before submitting quote confirmation.',
+    quoteConfirmEmailRequired: 'Set the customer email on the customer archive or quote first.',
+    quoteConfirmEmailMismatch: 'You are signed in as {actual}. Only the registered customer email {expected} can submit this quote confirmation.',
+    quoteConfirmHintMatched: 'The signed-in account matches the registered customer email and can submit confirmation.',
+    quoteConfirmHintLogin: 'Sign in with the customer email registered on this quote before submitting.',
+    tableSwipeHint: 'Swipe sideways on mobile to review the full pricing table',
+};
+
 const dict = {
     zh: {
+        ...sharedUiDict,
         supplier: '供应商：',
         sender: '发件人：',
         receiver: '收件人：',
         validity: '报价有效期：',
-        update: 'SYS_TIME_SYNC',
         included: '包含',
         mainConfig: '主配置',
         optionalConfig: '选配',
@@ -38,7 +141,7 @@ const dict = {
         headers: ['SEQ', '模块描述 (DESCRIPTION)', '规格 (BRAND)', 'QTY', 'RMB (¥)', 'USD ($)', 'EUR (€)', 'CAD (C$)', 'RUB (₽)'],
         ratesOnline: '全球实时汇率在线',
         ratesRefreshing: '正在刷新...',
-        ratesFallback: '汇率获取失败，使用本地快照',
+        ratesFallback: '汇率获取失败，使用本地快照。',
         refresh: '刷新汇率',
         send: '发送',
         share: '分享/导出',
@@ -104,241 +207,33 @@ const dict = {
         shareMetaExpired: '链接到期：',
         shareMetaNever: '永不过期',
         unknownBrand: '报价系统',
-        mailSubjectPrefix: '[SYS_DATA]',
         noEmail: '请先维护客户邮箱。',
-    },
-    en: {
-        supplier: 'SUPPLIER:',
-        sender: 'SENDER:',
-        receiver: 'RECEIVER:',
-        validity: 'VALIDITY:',
-        update: 'SYS_TIME_SYNC',
-        included: 'Included',
-        mainConfig: 'Main Config',
-        optionalConfig: 'Optional Config',
-        systemTotal: 'EST. SYSTEM TOTAL',
-        headers: ['SEQ', 'DESCRIPTION', 'BRAND', 'QTY', 'RMB (¥)', 'USD ($)', 'EUR (€)', 'CAD (C$)', 'RUB (₽)'],
-        ratesOnline: 'GLOBAL LIVE RATES',
-        ratesRefreshing: 'Refreshing...',
-        ratesFallback: 'Rate fetch failed, using saved snapshot',
-        refresh: 'REFRESH',
-        send: 'Send',
-        share: 'Share/Export',
-        shareLink: 'Create Share Link',
-        exportImage: 'Export Image',
-        exportPdf: 'Export PDF',
-        shareTitle: 'Create Share Link',
-        shareDesc: 'Generate a customer link with expiry and passcode. Signed-in admins can always open this page.',
-        shareExpiryLabel: 'Link expiry',
-        shareExpiry1d: 'Expire in 1 day',
-        shareExpiry3d: 'Expire in 3 days',
-        shareExpiry7d: 'Expire in 7 days',
-        shareExpiryNever: 'Never expire',
-        shareExpiryCustom: 'Custom time',
-        shareCustomLabel: 'Custom expiration time',
-        shareCustomPicker: 'Pick time',
-        shareAdminHint: 'Admin sessions from the site backend always bypass link expiry.',
-        sharePasscodeLabel: 'Passcode',
-        sharePasscodePlaceholder: 'Generated automatically',
-        shareLinkLabel: 'Share link',
-        shareLinkPlaceholder: 'Generate a share link below',
-        shareGenerate: 'Generate & Copy Link',
-        shareClose: 'Close',
-        sharePreviewDefault: 'The default output is a 3-day share link.',
-        sharePreviewAdmin: 'Signed-in admins can still open the page after link expiry.',
-        shareCopySuccess: 'Link copied to clipboard',
-        shareCopyFallback: 'Link generated. Copy it manually.',
-        shareAdminOnly: 'Only signed-in site admins can create share links.',
-        shareCustomRequired: 'Choose a valid custom expiration time first.',
-        shareCustomExpired: 'The custom expiration time must be later than now.',
-        shareUnavailable: 'This page does not have a published quote target yet.',
-        shareGenerateError: 'Failed to generate the share link. Try again later.',
-        accessBadge: 'Protected Access',
-        accessCheckingTitle: 'Checking access...',
-        accessCheckingMessage: 'Verifying share token and admin session. Please wait.',
-        accessInvalid: 'The share link is invalid or corrupted. Generate a new one.',
-        accessExpired: 'This share link has expired.',
-        accessPasscodeTitle: 'Passcode required',
-        accessPasscodeMessage: 'This share link is protected by a passcode. Enter the 4-character code to continue.',
-        accessPasscodeLabel: 'Passcode',
-        accessPasscodeSubmit: 'Unlock',
-        accessPasscodeError: 'Incorrect passcode. Try again.',
-        accessDeniedTitle: 'Preview unavailable',
-        accessDeniedMessage: 'Draft previews are only available to signed-in admins.',
-        accessRefresh: 'Check Again',
-        notFoundTitle: 'Quote not found',
-        notFoundMessage: 'No published quote data is available for this link.',
-        loading: 'Loading...',
-        exportLoading: 'GENERATING DOCUMENT...',
-        exportSubText: 'Rendering a high-resolution document. Please wait.',
-        receiverPlaceholder: 'Enter customer email',
-        days: 'd',
-        hours: 'h',
-        minutes: 'm',
-        seconds: 's',
-        galleryTitle: 'Product Gallery',
-        galleryPrev: 'Previous',
-        galleryNext: 'Next',
-        galleryModeCarousel: 'Carousel',
-        galleryModeStack: 'Gallery',
-        shareMetaMode: 'Mode: share-link',
-        shareMetaAdmin: 'Mode: admin-preview',
-        shareMetaExpired: 'Expires at: ',
-        shareMetaNever: 'Never expires',
-        unknownBrand: 'Quote System',
-        mailSubjectPrefix: '[SYS_DATA]',
-        noEmail: 'Set a customer email first.',
-    },
-    ru: {
-        supplier: 'ПОСТАВЩИК:',
-        sender: 'ОТПРАВИТЕЛЬ:',
-        receiver: 'ПОЛУЧАТЕЛЬ:',
-        validity: 'СРОК ДЕЙСТВИЯ:',
-        update: 'SYS_TIME_SYNC',
-        included: 'Вкл.',
-        mainConfig: 'Основная конфигурация',
-        optionalConfig: 'Опции',
-        systemTotal: 'ОЦЕНОЧНАЯ СТОИМОСТЬ СИСТЕМЫ',
-        headers: ['№', 'ОПИСАНИЕ', 'БРЕНД', 'КОЛ', 'RMB (¥)', 'USD ($)', 'EUR (€)', 'CAD (C$)', 'RUB (₽)'],
-        ratesOnline: 'ГЛОБАЛЬНЫЕ КУРСЫ ОНЛАЙН',
-        ratesRefreshing: 'Обновление...',
-        ratesFallback: 'Не удалось получить курс, используем сохраненный снимок',
-        refresh: 'ОБНОВИТЬ',
-        send: 'Отправить',
-        share: 'Поделиться/Экспорт',
-        shareLink: 'Создать ссылку',
-        exportImage: 'Экспорт изображения',
-        exportPdf: 'Экспорт PDF',
-        shareTitle: 'Создать ссылку',
-        shareDesc: 'Сформируйте клиентскую ссылку с ограничением по времени и кодом доступа. Администратор может открыть страницу в любой момент.',
-        shareExpiryLabel: 'Срок действия ссылки',
-        shareExpiry1d: 'Истекает через 1 день',
-        shareExpiry3d: 'Истекает через 3 дня',
-        shareExpiry7d: 'Истекает через 7 дней',
-        shareExpiryNever: 'Без срока',
-        shareExpiryCustom: 'Своя дата',
-        shareCustomLabel: 'Своя дата истечения',
-        shareCustomPicker: 'Выбрать',
-        shareAdminHint: 'Сессия администратора сайта не ограничивается сроком действия ссылки.',
-        sharePasscodeLabel: 'Код доступа',
-        sharePasscodePlaceholder: 'Генерируется автоматически',
-        shareLinkLabel: 'Ссылка',
-        shareLinkPlaceholder: 'Сначала создайте ссылку',
-        shareGenerate: 'Создать и скопировать',
-        shareClose: 'Закрыть',
-        sharePreviewDefault: 'По умолчанию создается ссылка на 3 дня.',
-        sharePreviewAdmin: 'Администратор может открыть страницу и после окончания срока.',
-        shareCopySuccess: 'Ссылка скопирована',
-        shareCopyFallback: 'Ссылка создана. Скопируйте ее вручную.',
-        shareAdminOnly: 'Создавать ссылки может только вошедший администратор сайта.',
-        shareCustomRequired: 'Сначала выберите корректное время истечения.',
-        shareCustomExpired: 'Время истечения должно быть позже текущего времени.',
-        shareUnavailable: 'Для этой страницы пока нет опубликованной ссылки.',
-        shareGenerateError: 'Не удалось создать ссылку. Повторите попытку позже.',
-        accessBadge: 'Защищенный доступ',
-        accessCheckingTitle: 'Проверка доступа...',
-        accessCheckingMessage: 'Проверяем ссылку и сессию администратора. Подождите.',
-        accessInvalid: 'Ссылка повреждена или недействительна.',
-        accessExpired: 'Срок действия ссылки истек.',
-        accessPasscodeTitle: 'Требуется код доступа',
-        accessPasscodeMessage: 'Для этой ссылки включен код доступа. Введите 4-символьный код, чтобы продолжить.',
-        accessPasscodeLabel: 'Код доступа',
-        accessPasscodeSubmit: 'Открыть',
-        accessPasscodeError: 'Неверный код доступа.',
-        accessDeniedTitle: 'Нет доступа к предпросмотру',
-        accessDeniedMessage: 'Черновой предпросмотр доступен только администратору.',
-        accessRefresh: 'Проверить снова',
-        notFoundTitle: 'Предложение не найдено',
-        notFoundMessage: 'Для этой ссылки нет опубликованных данных.',
-        loading: 'Загрузка...',
-        exportLoading: 'СОЗДАНИЕ ДОКУМЕНТА...',
-        exportSubText: 'Идет рендеринг документа высокого качества.',
-        receiverPlaceholder: 'Введите email клиента',
-        days: 'д',
-        hours: 'ч',
-        minutes: 'м',
-        seconds: 'с',
-        galleryTitle: 'Галерея продукта',
-        galleryPrev: 'Назад',
-        galleryNext: 'Далее',
-        galleryModeCarousel: 'Карусель',
-        galleryModeStack: 'Лента',
-        shareMetaMode: 'Режим: share-link',
-        shareMetaAdmin: 'Режим: admin-preview',
-        shareMetaExpired: 'Истекает: ',
-        shareMetaNever: 'Без срока',
-        unknownBrand: 'Quote System',
-        mailSubjectPrefix: '[SYS_DATA]',
-        noEmail: 'Сначала укажите email клиента.',
-    },
-};
-
-const supplementalDict = {
-    zh: {
-        authLogin: '登录',
-        authAccount: '账号',
         authModalTitle: '需要登录',
-        authModalMessage: '登录后才能继续使用报价页的受限操作。',
-        authModalHint: '当前浏览不会中断，登录完成后会自动回到这个报价页。',
+        authModalMessage: '登录后才能继续使用受保护的报价操作。',
+        authModalHint: '当前浏览不会中断。登录完成后会自动回到这份报价。',
         authModalLogin: '立即登录',
         authModalCancel: '继续浏览',
-        authProtectedAction: '受限功能',
-        authActionShare: '分享与导出',
-        authActionSend: '邮件发送',
-        authActionImage: '图片导出',
-        authActionPdf: 'PDF 导出',
-        authActionLink: '分享链接',
-        tableSwipeHint: '手机端可左右滑动表格查看完整报价明细',
+        authProtectedAction: '受保护操作',
+        authActionShare: '分享 / 导出',
+        authActionSend: '发送邮件',
+        authActionImage: '导出图片',
+        authActionPdf: '导出 PDF',
+        authActionLink: '创建分享链接',
+        authActionConfirm: '报价确认',
+        quoteConfirmLoginRequired: '提交报价确认前请先登录。',
+        quoteConfirmEmailRequired: '请先在客户档案或报价单里维护客户邮箱。',
+        quoteConfirmEmailMismatch: '当前登录账号为 {actual}。只有登记的客户邮箱 {expected} 才能提交这份报价确认。',
+        quoteConfirmHintMatched: '当前登录账号与登记的客户邮箱一致，可以提交确认。',
+        quoteConfirmHintLogin: '请使用报价中登记的客户邮箱登录后再提交。',
+        tableSwipeHint: '移动端可左右滑动查看完整报价表',
     },
     en: {
-        authLogin: 'Login',
-        authAccount: 'Account',
-        authModalTitle: 'Login required',
-        authModalMessage: 'Sign in to keep using protected quote actions.',
-        authModalHint: 'Browsing stays open. After sign-in, you will return to this quote automatically.',
-        authModalLogin: 'Login now',
-        authModalCancel: 'Continue browsing',
-        authProtectedAction: 'Protected action',
-        authActionShare: 'Share / Export',
-        authActionSend: 'Send email',
-        authActionImage: 'Export image',
-        authActionPdf: 'Export PDF',
-        authActionLink: 'Create share link',
-        authActionConfirm: 'Quote confirmation',
-        quoteConfirmLoginRequired: 'Sign in before submitting quote confirmation.',
-        quoteConfirmEmailRequired: 'Set the customer email on the customer archive or quote first.',
-        quoteConfirmEmailMismatch: 'You are signed in as {actual}. Only the registered customer email {expected} can submit this quote confirmation.',
-        quoteConfirmHintMatched: 'The signed-in account matches the registered customer email and can submit confirmation.',
-        quoteConfirmHintLogin: 'Sign in with the customer email registered on this quote before submitting.',
-        tableSwipeHint: 'Swipe sideways on mobile to review the full pricing table',
+        ...sharedUiDict,
     },
     ru: {
-        authLogin: 'Login',
-        authAccount: 'Account',
-        authModalTitle: 'Login required',
-        authModalMessage: 'Sign in to keep using protected quote actions.',
-        authModalHint: 'Browsing stays open. After sign-in, you will return to this quote automatically.',
-        authModalLogin: 'Login now',
-        authModalCancel: 'Continue browsing',
-        authProtectedAction: 'Protected action',
-        authActionShare: 'Share / Export',
-        authActionSend: 'Send email',
-        authActionImage: 'Export image',
-        authActionPdf: 'Export PDF',
-        authActionLink: 'Create share link',
-        authActionConfirm: 'Quote confirmation',
-        quoteConfirmLoginRequired: 'Sign in before submitting quote confirmation.',
-        quoteConfirmEmailRequired: 'Set the customer email on the customer archive or quote first.',
-        quoteConfirmEmailMismatch: 'You are signed in as {actual}. Only the registered customer email {expected} can submit this quote confirmation.',
-        quoteConfirmHintMatched: 'The signed-in account matches the registered customer email and can submit confirmation.',
-        quoteConfirmHintLogin: 'Sign in with the customer email registered on this quote before submitting.',
-        tableSwipeHint: 'Swipe sideways on mobile to review the full pricing table',
+        ...sharedUiDict,
     },
 };
-
-SUPPORTED_LANGS.forEach((lang) => {
-    dict[lang] = Object.assign({}, dict[lang] || {}, supplementalDict[lang] || {});
-});
 
 const params = new URLSearchParams(window.location.search);
 
@@ -351,6 +246,7 @@ const state = {
     isLoggedIn: false,
     isAdmin: false,
     adminUser: null,
+    authResolved: false,
     route: null,
     sharePayload: null,
     shareTarget: null,
@@ -453,6 +349,7 @@ function getAuthConfig() {
         return helper.resolveConfig(window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth);
     }
     return {
+        storageKey: 'gasgx-main-auth',
         signInUrl: '/account/user.html',
         accountUrl: '/account/account.html',
         returnUrlStorageKey: 'gx_main_return_url',
@@ -490,7 +387,7 @@ function userDisplayName(user) {
             user?.email,
     );
     if (!candidate) return '';
-    return candidate.length > 18 ? `${candidate.slice(0, 17)}…` : candidate;
+    return candidate.length > 18 ? `${candidate.slice(0, 17)}...` : candidate;
 }
 
 function authActionMeta(actionKey = 'share') {
@@ -501,10 +398,29 @@ function openAuthModal(actionKey = 'share') {
     const modal = byId('auth-modal');
     if (!modal) return;
     const action = authActionMeta(actionKey);
+    const access = actionKey === 'confirm' ? quoteConfirmationAccessState() : null;
+    const expectedEmail = text(access?.expectedEmail);
+    const confirmMessage = localeCopy({
+        zh: '提交报价确认前，请先使用绑定邮箱登录。',
+        en: 'Before submitting quote confirmation, sign in with the bound customer email.',
+        ru: 'Перед подтверждением предложения войдите с привязанным email клиента.',
+    });
+    const confirmHintWithEmail = interpolateCopy(localeCopy({
+        zh: '当前绑定邮箱：{expected}。请使用该邮箱登录后再提交确认。',
+        en: 'Bound customer email: {expected}. Sign in with this email before submitting confirmation.',
+        ru: 'Привязанный email клиента: {expected}. Войдите с этим email перед подтверждением.',
+    }), { expected: expectedEmail });
+    const confirmHintNoEmail = localeCopy({
+        zh: '当前报价尚未设置客户邮箱，请先联系销售补全绑定邮箱。',
+        en: 'No customer email is bound to this quote yet. Ask sales to set it first.',
+        ru: 'К этому предложению пока не привязан email клиента. Попросите менеджера сначала заполнить его.',
+    });
     byId('auth-modal-kicker').textContent = t('authProtectedAction');
     byId('auth-modal-title').textContent = t('authModalTitle');
-    byId('auth-modal-message').textContent = t('authModalMessage');
-    byId('auth-modal-hint').textContent = t('authModalHint');
+    byId('auth-modal-message').textContent = actionKey === 'confirm' ? confirmMessage : t('authModalMessage');
+    byId('auth-modal-hint').textContent = actionKey === 'confirm'
+        ? (expectedEmail ? confirmHintWithEmail : confirmHintNoEmail)
+        : t('authModalHint');
     byId('auth-modal-action').textContent = t(action.labelKey);
     const icon = byId('auth-modal-icon');
     if (icon) icon.className = `fa-solid ${action.icon}`;
@@ -532,23 +448,23 @@ function openQuoteConfirmAlert(options = {}) {
     byId('quote-confirm-alert-title').textContent = text(options.title, localeCopy({
         zh: '当前账号无法提交确认',
         en: 'This account cannot submit confirmation',
-        ru: 'Этот аккаунт не может отправить подтверждение',
+        ru: '协褌芯褌 邪泻泻邪褍薪褌 薪械 屑芯卸械褌 芯褌锌褉邪胁懈褌褜 锌芯写褌胁械褉卸写械薪懈械',
     }));
     byId('quote-confirm-alert-message').textContent = text(options.message);
     byId('quote-confirm-alert-action').textContent = localeCopy({
         zh: '提交限制',
         en: 'Submission restriction',
-        ru: 'Ограничение отправки',
+        ru: '袨谐褉邪薪懈褔械薪懈械 芯褌锌褉邪胁泻懈',
     });
     byId('quote-confirm-alert-hint').textContent = text(options.hint, localeCopy({
         zh: '请使用报价中登记的客户邮箱进行确认。',
         en: 'Use the customer email registered on this quote to confirm.',
-        ru: 'Используйте email клиента, указанный в этом предложении.',
+        ru: '袠褋锌芯谢褜蟹褍泄褌械 email 泻谢懈械薪褌邪, 褍泻邪蟹邪薪薪褘泄 胁 褝褌芯屑 锌褉械写谢芯卸械薪懈懈.',
     }));
     byId('quote-confirm-alert-ack-text').textContent = localeCopy({
         zh: '我知道了',
         en: 'OK',
-        ru: 'Понятно',
+        ru: '袩芯薪褟褌薪芯',
     });
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
@@ -562,6 +478,10 @@ function closeQuoteConfirmAlert() {
 }
 
 function requireSignedIn(actionKey = 'share') {
+    if (!state.authResolved) {
+        void refreshAuthState({ rerender: true, force: true });
+        return false;
+    }
     if (state.isLoggedIn) return true;
     closeShareMenu();
     openAuthModal(actionKey);
@@ -647,6 +567,10 @@ function syncQuoteConfirmationAccessAlert() {
         closeQuoteConfirmAlert();
         return;
     }
+    if (!state.authResolved) {
+        closeQuoteConfirmAlert();
+        return;
+    }
     const confirmation = state.publicConfirmation || {};
     const access = quoteConfirmationAccessState();
     if (confirmation.submitted || access.allowed || access.requiresLogin) {
@@ -656,23 +580,25 @@ function syncQuoteConfirmationAccessAlert() {
     const signature = quoteConfirmationAccessAlertSignature(access);
     if (confirmation.alertShownSignature === signature) return;
     confirmation.alertShownSignature = signature;
+    // Passive sync only: avoid auto popups during initial auth/snapshot race.
+    return;
     openQuoteConfirmAlert({
         title: localeCopy({
             zh: '当前账号无法提交报价确认',
             en: 'This account cannot submit quote confirmation',
-            ru: 'Этот аккаунт не может подтвердить предложение',
+            ru: '协褌芯褌 邪泻泻邪褍薪褌 薪械 屑芯卸械褌 锌芯写褌胁械褉写懈褌褜 锌褉械写谢芯卸械薪懈械',
         }),
         message: access.message,
         hint: confirmationExpectedEmail()
             ? localeCopy({
                 zh: '请切换到报价中登记的客户邮箱后再提交。',
                 en: 'Switch to the customer email registered on this quote before submitting.',
-                ru: 'Переключитесь на email клиента, указанный в предложении, перед отправкой.',
+                ru: '袩械褉械泻谢褞褔懈褌械褋褜 薪邪 email 泻谢懈械薪褌邪, 褍泻邪蟹邪薪薪褘泄 胁 锌褉械写谢芯卸械薪懈懈, 锌械褉械写 芯褌锌褉邪胁泻芯泄.',
             })
             : localeCopy({
                 zh: '请先在客户档案或报价单里设置客户邮箱，再开放确认提交。',
                 en: 'Set the customer email on the customer archive or quote before enabling confirmation.',
-                ru: 'Сначала укажите email клиента в карточке клиента или предложении.',
+                ru: '小薪邪褔邪谢邪 褍泻邪卸懈褌械 email 泻谢懈械薪褌邪 胁 泻邪褉褌芯褔泻械 泻谢懈械薪褌邪 懈谢懈 锌褉械写谢芯卸械薪懈懈.',
             }),
     });
 }
@@ -689,8 +615,8 @@ function uiText(key, fallbackKey = key, fallback = '') {
 function looksCorrupted(value) {
     const sample = text(value);
     if (!sample) return false;
-    if (sample.includes('�') || sample.includes('鈧')) return true;
-    return /(锛|鏈|褋|袘|袨|€|銆?)/.test(sample);
+    if (sample.includes('�') || sample.includes('锟') || sample.includes('鈧') || sample.includes('閳')) return true;
+    return /(閿|泑|閺|瑜|琚|袘|袨)/.test(sample);
 }
 
 function pickDisplayText(value, fallback = '') {
@@ -910,14 +836,14 @@ function renderViewContextBanner() {
     title.textContent = localeCopy({
         zh: '当前页面正在读取后台草稿快照，只用于校对，不会直接对外展示。',
         en: 'This page is reading the current draft snapshot for internal review only.',
-        ru: 'Эта страница показывает текущий черновик только для внутренней проверки.',
+        ru: '协褌邪 褋褌褉邪薪懈褑邪 锌芯泻邪蟹褘胁邪械褌 褌械泻褍褖懈泄 褔械褉薪芯胁懈泻 褌芯谢褜泻芯 写谢褟 胁薪褍褌褉械薪薪械泄 锌褉芯胁械褉泻懈.',
     });
 
     const slug = text(state.snapshot?.quote?.publicSlug || state.snapshot?.quote?.public_slug);
     const modeText = localeCopy({
         zh: '继续在“报价单管理”里修改并重新发布，客户页才会更新。',
         en: 'Keep editing in Quote Instances and publish again to update the customer page.',
-        ru: 'Продолжайте редактировать в Quote Instances и опубликуйте снова, чтобы обновить клиентскую страницу.',
+        ru: '袩褉芯写芯谢卸邪泄褌械 褉械写邪泻褌懈褉芯胁邪褌褜 胁 Quote Instances 懈 芯锌褍斜谢懈泻褍泄褌械 褋薪芯胁邪, 褔褌芯斜褘 芯斜薪芯胁懈褌褜 泻谢懈械薪褌褋泻褍褞 褋褌褉邪薪懈褑褍.',
     });
     meta.textContent = slug ? `${modeText} SLUG: ${slug}` : modeText;
     banner.classList.remove('hidden');
@@ -932,7 +858,46 @@ function renderToolbar() {
 function renderAuthButton() {
     const button = byId('btn-auth');
     if (!button) return;
-    button.hidden = true;
+    const icon = byId('icon-auth');
+    const label = byId('btn-text-auth');
+    button.hidden = false;
+    if (state.isLoggedIn) {
+        if (icon) icon.className = state.isAdmin ? 'fa-solid fa-user-shield' : 'fa-solid fa-user-check';
+        const email = text(state.adminUser?.email);
+        if (label) label.textContent = text(userDisplayName(state.adminUser), email || t('authAccount'));
+        button.title = email || t('authAccount');
+        button.classList.add('is-authenticated');
+        return;
+    }
+    if (icon) icon.className = 'fa-solid fa-user-lock';
+    if (label) label.textContent = t('authLogin');
+    button.title = t('authLogin');
+    button.classList.remove('is-authenticated');
+}
+
+async function refreshAuthState(options = {}) {
+    const { rerender = false, force = false } = options;
+    const previous = {
+        isLoggedIn: state.isLoggedIn === true,
+        isAdmin: state.isAdmin === true,
+        email: text(state.adminUser?.email).toLowerCase(),
+    };
+    const access = await resolveAdminSession();
+    state.isLoggedIn = access.isLoggedIn === true;
+    state.isAdmin = access.allowed === true;
+    state.adminUser = access.user;
+    state.authResolved = true;
+    bodyReadonly(!state.isAdmin);
+    const changed = force
+        || previous.isLoggedIn !== state.isLoggedIn
+        || previous.isAdmin !== state.isAdmin
+        || previous.email !== text(state.adminUser?.email).toLowerCase();
+    if (changed || rerender) {
+        if (state.snapshot) renderAll();
+        else renderAuthButton();
+        syncQuoteConfirmationAccessAlert();
+    }
+    return changed;
 }
 
 function renderLangButtons() {
@@ -962,10 +927,20 @@ function renderStaticText() {
     renderViewContextBanner();
 
     const overviewTitle = pickDisplayText(snapshot.brand.overview_title, pickDisplayText(snapshot.product.public_title, snapshot.product.product_code));
-    const receiver = text(snapshot.quote.receiver_email || snapshot.quote.receiver_name || snapshot.quote.customer_name, '');
+    const quoteVersion = text(snapshot.quote?.quoteVersion || snapshot.quote?.version);
+    const receiver = text(
+        snapshot.quote.receiverEmail
+        || snapshot.quote.receiver_email
+        || snapshot.quote.shareConfig?.recipient_email
+        || snapshot.quote.customerProfile?.email
+        || snapshot.quote.customerProfile?.requester_email
+        || snapshot.quote.receiver_name
+        || snapshot.quote.customer_name,
+        '',
+    );
     const supplier = text(snapshot.brand.supplier_name || snapshot.brand.display_name || snapshot.brand.brand_name || 'GasGx');
 
-    byId('f-title').textContent = overviewTitle;
+    byId('f-title').textContent = quoteVersion ? `${overviewTitle} · V${quoteVersion}` : overviewTitle;
     byId('lbl-receiver').textContent = uiText('receiver_label', 'receiver');
     byId('lbl-validity').textContent = uiText('validity_label', 'validity');
     byId('lbl-update').innerHTML = `<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>${esc(t('update'))}`;
@@ -1015,19 +990,19 @@ function renderStaticText() {
             title: localeCopy({
                 zh: '当前账号无法提交报价确认',
                 en: 'This account cannot submit quote confirmation',
-                ru: 'Этот аккаунт не может подтвердить предложение',
+                ru: '协褌芯褌 邪泻泻邪褍薪褌 薪械 屑芯卸械褌 锌芯写褌胁械褉写懈褌褜 锌褉械写谢芯卸械薪懈械',
             }),
             message: quoteConfirmationAccessState().message,
             hint: confirmationExpectedEmail()
                 ? localeCopy({
                     zh: '请切换到报价中登记的客户邮箱后再提交。',
                     en: 'Switch to the customer email registered on this quote before submitting.',
-                    ru: 'Переключитесь на email клиента, указанный в предложении, перед отправкой.',
+                    ru: '袩械褉械泻谢褞褔懈褌械褋褜 薪邪 email 泻谢懈械薪褌邪, 褍泻邪蟹邪薪薪褘泄 胁 锌褉械写谢芯卸械薪懈懈, 锌械褉械写 芯褌锌褉邪胁泻芯泄.',
                 })
                 : localeCopy({
                     zh: '请先在客户档案或报价单里设置客户邮箱，再开放确认提交。',
                     en: 'Set the customer email on the customer archive or quote before enabling confirmation.',
-                    ru: 'Сначала укажите email клиента в карточке клиента или предложении.',
+                    ru: '小薪邪褔邪谢邪 褍泻邪卸懈褌械 email 泻谢懈械薪褌邪 胁 泻邪褉褌芯褔泻械 泻谢懈械薪褌邪 懈谢懈 锌褉械写谢芯卸械薪懈懈.',
                 }),
         });
     }
@@ -1355,9 +1330,9 @@ function manualRateRefreshMessage(previousRates = {}, nextRates = {}) {
         return {
             tone: 'muted',
             message: localeCopy({
-                zh: `汇率已刷新，接口返回未变化。${timeLabel}`,
+                zh: `汇率已刷新，接口返回值未发生变化。${timeLabel}`,
                 en: `Rates refreshed. The API returned the same values. ${timeLabel}`,
-                ru: `Курсы обновлены. API вернул те же значения. ${timeLabel}`,
+                ru: `Rates refreshed. The API returned the same values. ${timeLabel}`,
             }),
         };
     }
@@ -1368,7 +1343,7 @@ function manualRateRefreshMessage(previousRates = {}, nextRates = {}) {
             message: localeCopy({
                 zh: `汇率已刷新，但四舍五入到 4 位后显示未变化。${timeLabel}`,
                 en: `Rates refreshed, but the rounded 4-digit display did not change. ${timeLabel}`,
-                ru: `Курсы обновлены, но после округления до 4 знаков отображение не изменилось. ${timeLabel}`,
+                ru: `Rates refreshed, but the rounded 4-digit display did not change. ${timeLabel}`,
             }),
         };
     }
@@ -1379,7 +1354,7 @@ function manualRateRefreshMessage(previousRates = {}, nextRates = {}) {
         message: localeCopy({
             zh: `汇率已刷新，${changedText} 已更新。${timeLabel}`,
             en: `Rates refreshed. Updated: ${changedText}. ${timeLabel}`,
-            ru: `Курсы обновлены. Изменено: ${changedText}. ${timeLabel}`,
+            ru: `Rates refreshed. Updated: ${changedText}. ${timeLabel}`,
         }),
     };
 }
@@ -1415,16 +1390,549 @@ async function fetchRates(isManual = false) {
         renderRateLine();
         updateRateStatus('error');
         if (isManual) {
-            setRateDetail(
-                localeCopy({
-                    zh: '汇率刷新失败，当前继续使用报价单里的汇率快照。',
-                    en: 'Rate refresh failed. The page is still using the saved quote snapshot.',
-                    ru: 'Не удалось обновить курсы. Страница продолжает использовать сохраненный снимок.',
-                }),
-                'error',
-            );
+            setRateDetail(localeCopy({
+                zh: '汇率刷新失败，当前继续使用报价单里的汇率快照。',
+                en: 'Rate refresh failed. The page is still using the saved quote snapshot.',
+                ru: 'Rate refresh failed. The page is still using the saved quote snapshot.',
+            }), 'error');
         }
     }
+}
+
+function quoteConfirmationPanelMarkup() {
+    if (!hasEmbeddedQuoteConfirmation()) return '';
+    const confirmation = state.publicConfirmation || {};
+    const access = quoteConfirmationAccessState();
+    if (confirmation.loading) {
+        return `
+            <section class="quote-confirm-card">
+                <div class="quote-confirm-card__head">
+                    <div>
+                        <div class="quote-confirm-card__kicker">QUOTE CONFIRM</div>
+                        <h3>正在加载报价确认</h3>
+                        <p>正在读取当前报价对应的客户确认信息，请稍候。</p>
+                    </div>
+                </div>
+            </section>
+        `;
+    }
+    if (confirmation.error) {
+        return `
+            <section class="quote-confirm-card is-muted">
+                <div class="quote-confirm-card__head">
+                    <div>
+                        <div class="quote-confirm-card__kicker">QUOTE CONFIRM</div>
+                        <h3>报价确认入口异常</h3>
+                        <p>${esc(confirmation.error)}</p>
+                    </div>
+                </div>
+            </section>
+        `;
+    }
+    const payload = confirmation.payload || {};
+    const terms = text(payload.meta?.quote_terms);
+    return `
+        <section class="quote-confirm-card ${confirmation.submitted ? 'is-success' : ''}">
+            <div class="quote-confirm-card__head">
+                <div>
+                    <div class="quote-confirm-card__kicker">QUOTE CONFIRM</div>
+                    <h3>确认当前报价并进入合同阶段</h3>
+                    <p>请在看完这份报价后，直接在这里确认。提交后 GasGx 会自动把流程推进到签约合同，并保留完整确认记录。</p>
+                </div>
+                <div class="quote-confirm-card__badge">${confirmation.submitted ? '已提交' : '待确认'}</div>
+            </div>
+            ${terms ? `
+                <div class="quote-confirm-card__terms">
+                    <strong>报价确认条款</strong>
+                    <p>${esc(terms)}</p>
+                </div>
+            ` : ''}
+            <label class="quote-confirm-card__checkbox ${confirmation.submitted ? 'is-disabled' : ''}">
+                <input id="quote-confirm-checkbox" type="checkbox" ${confirmation.confirmed ? 'checked' : ''} ${confirmation.submitted ? 'disabled' : ''}>
+                <span>我已确认当前报价版本、商务条款、交付范围与说明，可以进入合同阶段。</span>
+            </label>
+            <label class="quote-confirm-card__field">
+                <span>客户确认备注</span>
+                <textarea id="quote-confirm-note" class="share-input" rows="4" placeholder="如需补充备注、说明最终确认条件或额外要求，请写在这里。" ${confirmation.submitted ? 'disabled' : ''}>${esc(confirmation.note || '')}</textarea>
+            </label>
+            <div class="quote-confirm-card__foot">
+                <div class="quote-confirm-card__hint">
+                    <strong>提交结果会同步到后台</strong>
+                    <p>销售可以立即在确认报价节点看到这次客户确认，并继续推进到合同处理。</p>
+                </div>
+                <button id="quote-confirm-submit" type="button" class="btn-glow px-5 py-3 inline-flex items-center gap-2" ${confirmation.submitting || confirmation.submitted ? 'disabled' : ''}>
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>${confirmation.submitted ? '已提交确认' : confirmation.submitting ? '提交中...' : '提交报价确认'}</span>
+                </button>
+            </div>
+            <div class="quote-confirm-card__status">${esc(confirmation.result?.error ? '' : text(confirmation.result?.message))}</div>
+        </section>
+    `;
+}
+
+function friendlyQuoteConfirmErrorMessage(error) {
+    const raw = text(error?.message || '').toLowerCase();
+    if (!raw) {
+        return localeCopy({
+            zh: '提交失败，请稍后重试；如持续失败请联系销售支持。',
+            en: 'Submit failed. Please try again later or contact your sales rep.',
+            ru: 'Submit failed. Please try again later or contact your sales rep.',
+        });
+    }
+    if (raw.includes('permission') || raw.includes('not allowed') || raw.includes('denied') || raw.includes('forbidden')) {
+        return localeCopy({
+            zh: '当前账号没有提交权限。请使用建档时登记的客户邮箱登录后再提交。',
+            en: 'This account is not allowed to submit. Please sign in with the registered customer email.',
+            ru: 'This account is not allowed to submit. Please sign in with the registered customer email.',
+        });
+    }
+    if (raw.includes('token') || raw.includes('expired') || raw.includes('invalid')) {
+        return localeCopy({
+            zh: '确认链接已失效或无效，请向销售索取最新确认链接。',
+            en: 'This confirmation link is invalid or expired. Please request a new link from sales.',
+            ru: 'This confirmation link is invalid or expired. Please request a new link from sales.',
+        });
+    }
+    return text(error?.message, localeCopy({
+        zh: '提交失败，请稍后重试；如持续失败请联系销售支持。',
+        en: 'Submit failed. Please try again later or contact your sales rep.',
+        ru: 'Submit failed. Please try again later or contact your sales rep.',
+    }));
+}
+
+async function submitEmbeddedPublicConfirmation() {
+    const confirmation = state.publicConfirmation || {};
+    const next = publicConfirmationParams();
+    if (!confirmation.payload || !next.stage || !next.token) return;
+    const access = quoteConfirmationAccessState();
+    if (!access.allowed) {
+        if (access.requiresLogin) openAuthModal('confirm');
+        state.publicConfirmation.result = null;
+        renderAll();
+        if (!access.requiresLogin) openQuoteConfirmAlert({
+            title: localeCopy({
+                zh: '当前账号无法提交报价确认',
+                en: 'This account cannot submit quote confirmation',
+                ru: '协褌芯褌 邪泻泻邪褍薪褌 薪械 屑芯卸械褌 锌芯写褌胁械褉写懈褌褜 锌褉械写谢芯卸械薪懈械',
+            }),
+            message: access.message,
+            hint: confirmationExpectedEmail()
+                ? localeCopy({
+                    zh: '请切换到报价中登记的客户邮箱后再提交。',
+                    en: 'Switch to the customer email registered on this quote before submitting.',
+                    ru: '袩械褉械泻谢褞褔懈褌械褋褜 薪邪 email 泻谢懈械薪褌邪, 褍泻邪蟹邪薪薪褘泄 胁 锌褉械写谢芯卸械薪懈懈, 锌械褉械写 芯褌锌褉邪胁泻芯泄.',
+                })
+                : localeCopy({
+                    zh: '请先在客户档案或报价单里设置客户邮箱，再开放确认提交。',
+                    en: 'Set the customer email on the customer archive or quote before enabling confirmation.',
+                    ru: '小薪邪褔邪谢邪 褍泻邪卸懈褌械 email 泻谢懈械薪褌邪 胁 泻邪褉褌芯褔泻械 泻谢懈械薪褌邪 懈谢懈 锌褉械写谢芯卸械薪懈懈.',
+                }),
+        });
+        return;
+    }
+    if (!confirmation.confirmed) {
+        openQuoteConfirmAlert({
+            title: localeCopy({
+                zh: '提交前需要确认',
+                en: 'Confirmation required',
+                ru: 'Требуется подтверждение',
+            }),
+            message: localeCopy({
+                zh: '请先勾选确认，再提交报价确认。',
+                en: 'Check the confirmation box before submitting.',
+                ru: 'Перед отправкой отметьте подтверждение.',
+            }),
+            hint: localeCopy({
+                zh: '勾选“我已确认...”后，再点击提交。',
+                en: 'Tick “I confirm...” and then submit.',
+                ru: 'Отметьте «Я подтверждаю...» и затем отправьте.',
+            }),
+        });
+        state.publicConfirmation.result = null;
+        renderAll();
+        byId('quote-confirm-checkbox')?.focus();
+        return;
+        state.publicConfirmation.result = {
+            error: true,
+            message: localeCopy({
+                zh: '请先勾选确认，再提交报价确认。',
+                en: 'Check the confirmation box before submitting.',
+                ru: '小薪邪褔邪谢邪 芯褌屑械褌褜褌械 锌芯写褌胁械褉卸写械薪懈械.',
+            }),
+        };
+        renderAll();
+        byId('quote-confirm-checkbox')?.focus();
+        return;
+    }
+    state.publicConfirmation.submitting = true;
+    state.publicConfirmation.result = null;
+    renderAll();
+    try {
+        const client = getClient();
+        if (!client) throw new Error('Supabase client is unavailable.');
+        const { data, error } = await client.rpc('submit_public_quote_stage_confirmation', {
+            stage_slug: next.stage,
+            stage_token: next.token,
+            payload: {
+                note: text(confirmation.note),
+                stage_key: 'quote_confirmed',
+            },
+        });
+        if (error) throw error;
+        const row = Array.isArray(data) ? data[0] : null;
+        state.publicConfirmation.submitting = false;
+        state.publicConfirmation.submitted = true;
+        state.publicConfirmation.confirmed = true;
+        state.publicConfirmation.result = {
+            error: false,
+            message: localeCopy({
+                zh: `报价确认已提交，GasGx 将自动进入下一阶段：${text(row?.next_stage, 'contract_signed')}。`,
+                en: `Quote confirmation submitted. GasGx will continue to the next stage: ${text(row?.next_stage, 'contract_signed')}.`,
+                ru: `袩芯写褌胁械褉卸写械薪懈械鎶ヤ环宸叉彁浜ゃ€傂⌒恍敌囱冄幯壭感?褝褌邪锌: ${text(row?.next_stage, 'contract_signed')}.`,
+            }),
+        };
+        try {
+            const customerId = text(state.snapshot?.quote?.customerId);
+            const instanceId = text(state.snapshot?.quote?.id);
+            if (customerId && instanceId) {
+                await client.from(TABLE_CUSTOMER_ACTIVITIES).insert({
+                    customer_id: customerId,
+                    instance_id: instanceId,
+                    stage_key: 'quote_confirmed',
+                    actor_type: 'customer',
+                    actor_label: 'Customer',
+                    activity_type: 'status_change',
+                    entity_type: 'quote_instance',
+                    entity_id: instanceId,
+                    page_key: 'quote-instances',
+                    action_label: '客户确认报价',
+                    detail_json: {
+                        next_stage: text(row?.next_stage, 'contract_signed'),
+                        note: text(confirmation.note),
+                    },
+                });
+            }
+        } catch (_error) {
+            // Best-effort timeline logging only.
+        }
+        renderAll();
+    } catch (error) {
+        state.publicConfirmation.submitting = false;
+        state.publicConfirmation.result = {
+            error: true,
+            message: friendlyQuoteConfirmErrorMessage(error),
+        };
+        renderAll();
+        if (!state.publicConfirmation.submitted) {
+            openQuoteConfirmAlert({
+                title: localeCopy({
+                    zh: '提交失败',
+                    en: 'Submission failed',
+                    ru: 'Submission failed',
+                }),
+                message: state.publicConfirmation.result.message,
+                hint: localeCopy({
+                    zh: '请根据提示处理后再提交；如问题持续，请联系销售支持。',
+                    en: 'Please follow the message and try again. Contact sales support if it persists.',
+                    ru: 'Please follow the message and try again. Contact sales support if it persists.',
+                }),
+            });
+        }
+    }
+}
+
+function applySnapshot(snapshot) {
+    state.snapshot = snapshot;
+    prepareQuoteBehaviorTracking();
+    state.galleryIndex = 0;
+    state.currentLang = resolveRuntimeLang(params.get('lang') || snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG, snapshot);
+    state.rates = normalizeRates(snapshot?.quote?.rates || snapshot?.product?.default_rates || DEFAULT_RATES);
+    state.rateStatusMode = 'online';
+    state.rateDetail = { message: '', tone: 'muted' };
+    state.shareTarget = deriveShareTarget();
+    bodyReadonly(!state.isAdmin);
+    renderAll();
+    syncQuoteConfirmationAccessAlert();
+    startClock();
+    updateBackToTop();
+}
+
+function openAccessOverlay() {
+    const overlay = byId('access-gate-overlay');
+    if (overlay) overlay.classList.remove('hidden');
+}
+
+function closeAccessOverlay() {
+    const overlay = byId('access-gate-overlay');
+    if (overlay) overlay.classList.add('hidden');
+}
+
+function setAccessOverlay({
+    title,
+    message,
+    icon = 'fa-circle-info',
+    help = '',
+    meta = '',
+    showRefresh = true,
+    showPasscode = false,
+} = {}) {
+    openAccessOverlay();
+    const iconNode = byId('access-gate-icon');
+    if (iconNode) iconNode.className = `fa-solid ${icon}`;
+    byId('access-gate-title').textContent = text(title);
+    byId('access-gate-message').textContent = text(message);
+    const helpNode = byId('access-gate-help');
+    if (helpNode) {
+        helpNode.textContent = text(help);
+        helpNode.classList.toggle('hidden', !help);
+    }
+    byId('access-gate-meta').textContent = text(meta);
+    byId('access-gate-actions').classList.toggle('hidden', !showRefresh && !showPasscode);
+    byId('access-passcode-wrap').classList.toggle('hidden', !showPasscode);
+    byId('access-gate-refresh').classList.toggle('hidden', !showRefresh);
+    if (!showPasscode) {
+        byId('access-passcode-input').value = '';
+        byId('access-passcode-status').textContent = '';
+    }
+}
+
+async function resolveSharedSnapshot(token) {
+    const unsigned = parseUnsignedPayload(token);
+    if (!unsigned) return { status: 'invalid' };
+
+    let snapshot = null;
+    if (unsigned.quoteSlug) {
+        snapshot = await fetchPublishedQuoteBySlug(unsigned.quoteSlug);
+    } else if (unsigned.brand) {
+        snapshot = await resolveSnapshotFromBrand(unsigned.brand, unsigned.productId || '');
+    }
+    if (!snapshot) return { status: 'not-found' };
+
+    const verified = await decodeSignedPayload(token, text(snapshot.brand?.share_signing_secret, DEFAULT_SHARE_SECRET));
+    if (!verified.valid || !verified.payload) return { status: 'invalid' };
+
+    const payload = verified.payload;
+    const expiresAtMs = payload.expiresAt ? Date.parse(payload.expiresAt) : NaN;
+    if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now() && !state.isAdmin) {
+        return { status: 'expired', snapshot, payload, signaturePart: verified.signaturePart };
+    }
+
+    const passcode = text(payload.passcode).toUpperCase();
+    if (passcode && !state.isAdmin) {
+        const unlocked = text(readUnlockedPasscode(snapshot.brand?.share_unlock_prefix, verified.signaturePart)).toUpperCase();
+        if (unlocked !== passcode) {
+            return { status: 'passcode', snapshot, payload, signaturePart: verified.signaturePart };
+        }
+    }
+
+    return { status: 'allowed', snapshot, payload, signaturePart: verified.signaturePart };
+}
+
+async function handlePasscodeSubmit() {
+    const pending = state.pendingSharedAccess;
+    if (!pending) return;
+    const input = byId('access-passcode-input');
+    const statusNode = byId('access-passcode-status');
+    const candidate = text(input?.value).toUpperCase();
+    if (candidate === text(pending.payload?.passcode).toUpperCase()) {
+        persistUnlockedPasscode(pending.snapshot.brand?.share_unlock_prefix, pending.signaturePart, candidate);
+        state.sharePayload = pending.payload;
+        state.pendingSharedAccess = null;
+        closeAccessOverlay();
+        applySnapshot(pending.snapshot);
+        await fetchEmbeddedPublicConfirmation();
+        renderAll();
+        void logQuoteEvent('passcode_unlocked', {
+            accessMode: 'share',
+            shareToken: state.route?.token,
+            shareExpiresAt: pending.payload?.expiresAt || '',
+            metadata: {
+                passcodeProtected: true,
+                ...(pending.payload?.shareMeta && typeof pending.payload.shareMeta === 'object' ? pending.payload.shareMeta : {}),
+            },
+        });
+            void logQuoteEvent('share_opened', {
+                accessMode: 'share',
+                shareToken: state.route?.token,
+                shareExpiresAt: pending.payload?.expiresAt || '',
+                metadata: {
+                    visitType: state.quoteBehavior.visitType,
+                    visitCount: state.quoteBehavior.visitCount,
+                    unlockedByPasscode: true,
+                    ...(pending.payload?.shareMeta && typeof pending.payload.shareMeta === 'object' ? pending.payload.shareMeta : {}),
+                },
+            });
+        await fetchRates(false);
+        return;
+    }
+    if (statusNode) {
+        statusNode.textContent = t('accessPasscodeError');
+        statusNode.style.color = '#fca5a5';
+    }
+}
+
+async function resolveRouteSnapshot() {
+    if (state.route.type === 'preview') {
+        if (!state.isAdmin) {
+            setAccessOverlay({
+                title: t('accessDeniedTitle'),
+                message: t('accessDeniedMessage'),
+                icon: 'fa-lock',
+                showRefresh: true,
+            });
+            return false;
+        }
+        setAccessOverlay({
+            title: t('accessCheckingTitle'),
+            message: t('accessCheckingMessage'),
+            icon: 'fa-spinner fa-spin',
+            meta: t('shareMetaAdmin'),
+            showRefresh: false,
+        });
+        const snapshot = await fetchPreviewQuote(state.route.previewId);
+        if (!snapshot) {
+            setAccessOverlay({
+                title: t('notFoundTitle'),
+                message: t('notFoundMessage'),
+                icon: 'fa-circle-exclamation',
+                showRefresh: true,
+            });
+            return false;
+        }
+        closeAccessOverlay();
+        applySnapshot(snapshot);
+        await fetchEmbeddedPublicConfirmation();
+        renderAll();
+        void logQuoteEvent('preview_opened', {
+            accessMode: 'preview',
+            metadata: {
+                previewId: state.route.previewId,
+            },
+        });
+        await fetchRates(false);
+        return true;
+    }
+
+    if (state.route.type === 'share') {
+        setAccessOverlay({
+            title: t('accessCheckingTitle'),
+            message: t('accessCheckingMessage'),
+            icon: 'fa-spinner fa-spin',
+            showRefresh: false,
+        });
+        const result = await resolveSharedSnapshot(state.route.token);
+        if (result.status === 'allowed') {
+            state.sharePayload = result.payload;
+            closeAccessOverlay();
+            applySnapshot(result.snapshot);
+            await fetchEmbeddedPublicConfirmation();
+            renderAll();
+            void logQuoteEvent('share_opened', {
+                accessMode: 'share',
+                shareToken: state.route.token,
+                shareExpiresAt: result.payload?.expiresAt || '',
+                metadata: {
+                    visitType: state.quoteBehavior.visitType,
+                    visitCount: state.quoteBehavior.visitCount,
+                    passcodeProtected: Boolean(result.payload?.passcode),
+                    ...(result.payload?.shareMeta && typeof result.payload.shareMeta === 'object' ? result.payload.shareMeta : {}),
+                },
+            });
+            await fetchRates(false);
+            return true;
+        }
+        if (result.status === 'passcode') {
+            state.pendingSharedAccess = result;
+            setAccessOverlay({
+                title: t('accessPasscodeTitle'),
+                message: t('accessPasscodeMessage'),
+                icon: 'fa-lock',
+                meta: result.payload?.expiresAt ? `${t('shareMetaMode')} | ${t('shareMetaExpired')}${new Date(result.payload.expiresAt).toLocaleString()}` : t('shareMetaMode'),
+                showRefresh: true,
+                showPasscode: true,
+            });
+            return false;
+        }
+        if (result.status === 'expired') {
+            setAccessOverlay({
+                title: t('accessDeniedTitle'),
+                message: t('accessExpired'),
+                icon: 'fa-clock',
+                meta: result.payload?.expiresAt ? `${t('shareMetaExpired')}${new Date(result.payload.expiresAt).toLocaleString()}` : '',
+                showRefresh: true,
+            });
+            return false;
+        }
+        if (result.status === 'not-found') {
+            setAccessOverlay({
+                title: t('notFoundTitle'),
+                message: t('notFoundMessage'),
+                icon: 'fa-circle-exclamation',
+                showRefresh: true,
+            });
+            return false;
+        }
+        setAccessOverlay({
+            title: t('accessDeniedTitle'),
+            message: t('accessInvalid'),
+            icon: 'fa-triangle-exclamation',
+            showRefresh: true,
+        });
+        return false;
+    }
+
+    if (state.route.type === 'quote') {
+        const snapshot = await fetchPublishedQuoteBySlug(state.route.quoteSlug);
+        if (!snapshot) {
+            setAccessOverlay({
+                title: t('notFoundTitle'),
+                message: t('notFoundMessage'),
+                icon: 'fa-circle-exclamation',
+                showRefresh: true,
+            });
+            return false;
+        }
+        closeAccessOverlay();
+        applySnapshot(snapshot);
+        await fetchEmbeddedPublicConfirmation();
+        renderAll();
+        void logQuoteEvent('quote_viewed', {
+            accessMode: state.isAdmin ? 'admin' : 'quote',
+            metadata: {
+                visitType: state.quoteBehavior.visitType,
+                visitCount: state.quoteBehavior.visitCount,
+                quoteSlug: state.route.quoteSlug,
+            },
+        });
+        await fetchRates(false);
+        return true;
+    }
+
+    const snapshot = await resolveSnapshotFromBrand(state.route.brand, state.route.productId);
+    if (!snapshot) {
+        setAccessOverlay({
+            title: t('notFoundTitle'),
+            message: t('notFoundMessage'),
+            icon: 'fa-circle-exclamation',
+            showRefresh: true,
+        });
+        return false;
+    }
+    closeAccessOverlay();
+    applySnapshot(snapshot);
+    await fetchEmbeddedPublicConfirmation();
+    renderAll();
+    void logQuoteEvent('quote_viewed', {
+        accessMode: state.isAdmin ? 'admin' : 'quote',
+        metadata: {
+            visitType: state.quoteBehavior.visitType,
+            visitCount: state.quoteBehavior.visitCount,
+            brand: state.route.brand,
+            productId: state.route.productId || '',
+        },
+    });
+    await fetchRates(false);
+    return true;
 }
 
 function getFileName(ext) {
@@ -1840,10 +2348,13 @@ function persistUnlockedPasscode(prefix, signaturePart, value) {
 function getClient() {
     if (!window.supabase || typeof window.supabase.createClient !== 'function') return null;
     if (!getClient.instance) {
+        const config = getAuthConfig();
         getClient.instance = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
             auth: {
+                storageKey: text(config?.storageKey, 'gasgx-main-auth'),
                 persistSession: true,
                 autoRefreshToken: true,
+                detectSessionInUrl: true,
             },
         });
     }
@@ -1856,6 +2367,18 @@ function hydrateSnapshotWithLiveMeta(snapshot, row = {}) {
     if (!text(quote.id) && text(row.id)) quote.id = text(row.id);
     if (!text(quote.publicSlug) && text(row.public_slug)) quote.publicSlug = text(row.public_slug);
     if (!text(quote.customerId) && text(row.customer_id)) quote.customerId = text(row.customer_id);
+    if (!text(quote.receiverEmail) && text(row.receiver_email)) quote.receiverEmail = text(row.receiver_email);
+    if (!text(quote.receiver_email) && text(row.receiver_email)) quote.receiver_email = text(row.receiver_email);
+    if ((!quote.shareConfig || typeof quote.shareConfig !== 'object' || !Object.keys(quote.shareConfig).length)
+        && row.share_config && typeof row.share_config === 'object') {
+        quote.shareConfig = normalizeShareConfig(row.share_config, {
+            recipient_email: text(row.receiver_email),
+        });
+    } else if (quote.shareConfig && typeof quote.shareConfig === 'object' && text(row.receiver_email)) {
+        quote.shareConfig = normalizeShareConfig(quote.shareConfig, {
+            recipient_email: text(row.receiver_email),
+        });
+    }
     if ((!quote.customerProfile || typeof quote.customerProfile !== 'object' || !Object.keys(quote.customerProfile).length)
         && row.customer_snapshot && typeof row.customer_snapshot === 'object') {
         quote.customerProfile = { ...row.customer_snapshot };
@@ -1866,308 +2389,8 @@ function hydrateSnapshotWithLiveMeta(snapshot, row = {}) {
     };
 }
 
-async function sha256Hex(value) {
-    const input = text(value);
-    if (!input || !window.crypto?.subtle) return '';
-    const digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
-    return Array.from(new Uint8Array(digest), (item) => item.toString(16).padStart(2, '0')).join('');
-}
-
-async function logQuoteEvent(eventType, options = {}) {
-    const supabase = getClient();
-    const instanceId = text(state.snapshot?.quote?.id);
-    if (!supabase || !instanceId) return;
-    try {
-        const shareTokenHash = options.shareToken ? await sha256Hex(options.shareToken) : '';
-        await supabase.from(TABLE_INSTANCE_EVENTS).insert({
-            instance_id: instanceId,
-            customer_id: text(state.snapshot?.quote?.customerId) || null,
-            event_type: text(eventType),
-            access_mode: text(options.accessMode || 'quote') || 'quote',
-            viewer_email: text(state.adminUser?.email).toLowerCase(),
-            viewer_user_id: state.adminUser?.id || null,
-            viewer_label: state.isAdmin ? 'admin' : (state.isLoggedIn ? 'logged-in-user' : 'anonymous'),
-            share_token_hash: shareTokenHash,
-            share_expires_at: text(options.shareExpiresAt) || null,
-            user_agent: text(navigator.userAgent).slice(0, 1200),
-            referrer_url: text(document.referrer).slice(0, 1200),
-            page_url: text(window.location.href).slice(0, 1200),
-            locale: text(state.currentLang, DEFAULT_LANG),
-            metadata: options.metadata && typeof options.metadata === 'object' ? options.metadata : {},
-        });
-        const customerId = text(state.snapshot?.quote?.customerId);
-        if (customerId) {
-            const visitType = text(options.metadata?.visitType);
-            const activityType = eventType === 'share_opened'
-                ? 'public_link_opened'
-                : eventType === 'share_link_generated' || eventType === 'email_clicked' || eventType === 'passcode_unlocked'
-                    ? 'button_click'
-                    : 'page_view';
-            const actionLabel = eventType === 'share_link_generated'
-                ? '生成报价分享链接'
-                : eventType === 'email_clicked'
-                    ? '点击邮件发送'
-                    : eventType === 'preview_opened'
-                        ? '后台打开报价预览'
-                        : eventType === 'passcode_unlocked'
-                            ? '客户完成提取码验证'
-                            : eventType === 'share_opened'
-                                ? '客户打开报价链接'
-                                : '客户查看报价';
-            let normalizedActionLabel = actionLabel;
-            if (eventType === 'share_link_generated') normalizedActionLabel = '生成报价分享链接';
-            else if (eventType === 'email_clicked') normalizedActionLabel = '点击邮件发送';
-            else if (eventType === 'preview_opened') normalizedActionLabel = '后台打开报价预览';
-            else if (eventType === 'passcode_unlocked') normalizedActionLabel = '客户完成提取码验证';
-            else if (eventType === 'share_opened') normalizedActionLabel = visitType === 'return' ? '客户再次回访报价链接' : '客户首次打开报价链接';
-            else if (eventType === 'quote_viewed') normalizedActionLabel = visitType === 'return' ? '客户再次回访报价' : '客户首次打开报价';
-            else normalizedActionLabel = '客户查看报价';
-            await supabase.from(TABLE_CUSTOMER_ACTIVITIES).insert({
-                customer_id: customerId,
-                instance_id: instanceId,
-                stage_key: 'quote_confirmed',
-                actor_type: state.isAdmin ? 'sales' : 'customer',
-                actor_id: state.adminUser?.id || null,
-                actor_label: text(state.adminUser?.email || (state.isAdmin ? 'Sales' : 'Customer')),
-                activity_type: activityType,
-                entity_type: 'quote_instance',
-                entity_id: instanceId,
-                page_key: 'quote-instances',
-                action_label: normalizedActionLabel,
-                detail_json: options.metadata && typeof options.metadata === 'object' ? options.metadata : {},
-            });
-        }
-    } catch (_error) {
-        // Event logging is best-effort and must not block customer access.
-    }
-}
-
-async function appendQuoteCustomerActivity(actionLabel = '', detail = {}, options = {}) {
-    const supabase = getClient();
-    const customerId = text(state.snapshot?.quote?.customerId);
-    const instanceId = text(state.snapshot?.quote?.id);
-    if (!supabase || !customerId || !instanceId || !actionLabel) return;
-    try {
-        await supabase.from(TABLE_CUSTOMER_ACTIVITIES).insert({
-            customer_id: customerId,
-            instance_id: instanceId,
-            stage_key: text(options.stageKey, 'quote_confirmed'),
-            actor_type: state.isAdmin ? 'sales' : 'customer',
-            actor_id: state.adminUser?.id || null,
-            actor_label: text(state.adminUser?.email || (state.isAdmin ? 'Sales' : 'Customer')),
-            activity_type: text(options.activityType, 'page_view'),
-            entity_type: 'quote_instance',
-            entity_id: instanceId,
-            page_key: text(options.pageKey, 'quote-view'),
-            action_label: actionLabel,
-            detail_json: detail && typeof detail === 'object' ? detail : {},
-        });
-    } catch (_error) {
-        return;
-    }
-}
-
-function logQuoteBehavior(actionLabel = '', detail = {}, options = {}) {
-    if (state.isAdmin) return;
-    const dedupeKey = text(options.dedupeKey);
-    if (dedupeKey && state.quoteBehavior.activitySentMap[dedupeKey]) return;
-    if (dedupeKey) state.quoteBehavior.activitySentMap[dedupeKey] = true;
-    void appendQuoteCustomerActivity(actionLabel, {
-        access_mode: quoteBehaviorAccessMode(),
-        ...detail,
-    }, options);
-}
-
-function markQuoteSectionSeen(sectionKey = '') {
-    const key = text(sectionKey);
-    if (!key || state.isAdmin) return;
-    const label = quoteBehaviorSectionLabel(key);
-    if (!state.quoteBehavior.sectionSeenMap[key]) {
-        state.quoteBehavior.sectionSeenMap[key] = true;
-        logQuoteBehavior(`查看${label}`, {
-            section_key: key,
-            section_label: label,
-            summary: `客户已查看${label}`,
-        }, {
-            activityType: 'page_view',
-            dedupeKey: `section-seen:${key}`,
-        });
-    }
-    if (state.quoteBehavior.activeSectionKey !== key) {
-        flushQuoteSectionDwell();
-        state.quoteBehavior.activeSectionKey = key;
-        state.quoteBehavior.activeSectionStartedAt = Date.now();
-    }
-}
-
-function flushQuoteSectionDwell() {
-    const activeKey = text(state.quoteBehavior.activeSectionKey);
-    if (!activeKey || !state.quoteBehavior.activeSectionStartedAt) return;
-    const elapsedMs = Date.now() - state.quoteBehavior.activeSectionStartedAt;
-    if (elapsedMs > 0) {
-        state.quoteBehavior.sectionDwellMap[activeKey] = safeNumber(state.quoteBehavior.sectionDwellMap[activeKey], 0) + elapsedMs;
-    }
-    state.quoteBehavior.activeSectionKey = '';
-    state.quoteBehavior.activeSectionStartedAt = 0;
-}
-
-function flushQuoteBehaviorSummary() {
-    if (state.isAdmin) return;
-    flushQuoteSectionDwell();
-    const focused = Object.entries(state.quoteBehavior.sectionDwellMap)
-        .sort((left, right) => safeNumber(right[1], 0) - safeNumber(left[1], 0))[0];
-    if (!focused) return;
-    const [sectionKey, dwellMs] = focused;
-    const dwellSeconds = Math.round(safeNumber(dwellMs, 0) / 1000);
-    if (dwellSeconds < 12) return;
-    const label = quoteBehaviorSectionLabel(sectionKey);
-    logQuoteBehavior(`重点查看${label}`, {
-        section_key: sectionKey,
-        section_label: label,
-        dwell_seconds: dwellSeconds,
-        summary: `停留约 ${dwellSeconds} 秒`,
-    }, {
-        activityType: 'page_view',
-        dedupeKey: `section-focus:${sectionKey}`,
-    });
-}
-
-function observeQuoteSections(root = byId('content-area')) {
-    state.quoteBehavior.sectionObserver?.disconnect?.();
-    if (!root || state.isAdmin || typeof IntersectionObserver !== 'function') return;
-    const nodes = [...root.querySelectorAll('[data-quote-section]')];
-    if (!nodes.length) return;
-    state.quoteBehavior.sectionObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            if (!entry.isIntersecting || entry.intersectionRatio < 0.2) return;
-            markQuoteSectionSeen(entry.target?.dataset?.quoteSection || '');
-        });
-    }, {
-        threshold: [0.2],
-    });
-    nodes.forEach((node) => state.quoteBehavior.sectionObserver.observe(node));
-}
-
-async function appendShareHistoryRecord(options = {}) {
-    const supabase = getClient();
-    const instanceId = text(state.snapshot?.quote?.id);
-    if (!supabase || !instanceId || !state.isLoggedIn) return null;
-
-    try {
-        const baseConfig = currentShareConfig();
-        const customerId = text(state.snapshot?.quote?.customerId) || null;
-        const now = text(options.sentAt, new Date().toISOString());
-        const recipientEmail = text(options.recipientEmail, baseConfig.recipient_email).toLowerCase();
-        const recipientName = text(options.recipientName, baseConfig.recipient_name);
-        const recipientCompany = text(options.recipientCompany, baseConfig.recipient_company);
-        const ownerEmail = text(options.ownerEmail, baseConfig.owner_email).toLowerCase();
-        const ownerName = text(options.ownerName, baseConfig.owner_name);
-        const shareTarget = text(options.shareTarget, state.shareTarget?.type || '');
-        const channel = text(options.channel, 'share_link');
-        const nextStatus = text(options.status, channel === 'email' ? 'emailed' : 'generated');
-
-        let query = supabase
-            .from(TABLE_INSTANCE_SENDS)
-            .select('*')
-            .eq('instance_id', instanceId)
-            .eq('share_target', shareTarget)
-            .order('updated_at', { ascending: false })
-            .limit(20);
-        if (recipientEmail) {
-            query = query.eq('recipient_email', recipientEmail);
-        } else {
-            query = query.eq('recipient_name', recipientName).eq('recipient_company', recipientCompany);
-        }
-        const { data: matches, error: matchError } = await query;
-        if (matchError) throw matchError;
-
-        const existing = (Array.isArray(matches) ? matches : [])
-            .map((entry) => normalizeShareHistoryEntry({
-                ...entry,
-                instance_id: entry.instance_id,
-                customer_id: entry.customer_id,
-                updated_at: entry.updated_at,
-            }))
-            .find((entry) => text(entry.status) !== 'closed') || null;
-
-        let saved = null;
-        if (existing?.id) {
-            const nextChannels = Array.from(new Set([...(Array.isArray(existing.channels) ? existing.channels : [existing.channel]), channel].filter(Boolean)));
-            const { data, error } = await supabase
-                .from(TABLE_INSTANCE_SENDS)
-                .update({
-                    customer_id: customerId,
-                    recipient_name: recipientName || existing.recipient_name,
-                    recipient_email: recipientEmail || existing.recipient_email,
-                    recipient_company: recipientCompany || existing.recipient_company,
-                    owner_name: ownerName || existing.owner_name,
-                    owner_email: ownerEmail || existing.owner_email,
-                    follow_up_notes: text(options.followUpNotes, existing.follow_up_notes),
-                    share_target: shareTarget,
-                    last_channel: channel,
-                    channels: nextChannels,
-                    status: nextStatus,
-                    attempt_count: Math.max(1, Number(existing.attempt_count || 1)) + 1,
-                    last_sent_at: now,
-                    expires_at: text(options.expiresAt, existing.expires_at) || null,
-                    passcode_protected: options.passcodeProtected === true || existing.passcode_protected === true,
-                    sender_name: userDisplayName(state.adminUser),
-                    sender_email: text(state.adminUser?.email).toLowerCase(),
-                    updated_by: state.adminUser?.id || null,
-                })
-                .eq('id', existing.id)
-                .select('*')
-                .single();
-            if (error) throw error;
-            saved = data;
-        } else {
-            const { data, error } = await supabase
-                .from(TABLE_INSTANCE_SENDS)
-                .insert({
-                    instance_id: instanceId,
-                    customer_id: customerId,
-                    recipient_name: recipientName,
-                    recipient_email: recipientEmail,
-                    recipient_company: recipientCompany,
-                    owner_name: ownerName,
-                    owner_email: ownerEmail,
-                    follow_up_notes: text(options.followUpNotes, baseConfig.follow_up_notes),
-                    share_target: shareTarget,
-                    last_channel: channel,
-                    channels: [channel],
-                    status: nextStatus,
-                    attempt_count: 1,
-                    first_sent_at: now,
-                    last_sent_at: now,
-                    expires_at: text(options.expiresAt) || null,
-                    passcode_protected: options.passcodeProtected === true,
-                    sender_name: userDisplayName(state.adminUser),
-                    sender_email: text(state.adminUser?.email).toLowerCase(),
-                    created_by: state.adminUser?.id || null,
-                    updated_by: state.adminUser?.id || null,
-                })
-                .select('*')
-                .single();
-            if (error) throw error;
-            saved = data;
-        }
-
-        if (saved && state.snapshot?.quote?.shareConfig) {
-            const current = normalizeShareConfig(state.snapshot.quote.shareConfig);
-            state.snapshot.quote.shareConfig = normalizeShareConfig({
-                ...current,
-                recipient_name: recipientName || current.recipient_name,
-                recipient_email: recipientEmail || current.recipient_email,
-                recipient_company: recipientCompany || current.recipient_company,
-                owner_name: ownerName || current.owner_name,
-                owner_email: ownerEmail || current.owner_email,
-                follow_up_notes: text(options.followUpNotes, current.follow_up_notes),
-            });
-        }
-        return saved;
-    } catch (_error) {
-        return null;
-    }
+async function appendShareHistoryRecord(_options = {}) {
+    return null;
 }
 
 async function resolveAdminSession() {
@@ -2191,14 +2414,14 @@ async function fetchPublishedQuoteBySlug(publicSlug) {
     if (!supabase || !publicSlug) return null;
     let { data, error } = await supabase
         .from('quote_instances')
-        .select('id, public_slug, customer_id, customer_snapshot, published_snapshot, status, last_active_status')
+        .select('id, public_slug, customer_id, receiver_email, share_config, customer_snapshot, published_snapshot, status, last_active_status')
         .eq('public_slug', publicSlug)
         .eq('status', 'published')
         .maybeSingle();
     if ((!data || error) && publicSlug) {
         ({ data, error } = await supabase
             .from('quote_instances')
-            .select('id, public_slug, customer_id, customer_snapshot, published_snapshot, status, last_active_status')
+            .select('id, public_slug, customer_id, receiver_email, share_config, customer_snapshot, published_snapshot, status, last_active_status')
             .eq('public_slug', publicSlug)
             .not('published_snapshot', 'is', null)
             .maybeSingle());
@@ -2319,507 +2542,147 @@ async function fetchEmbeddedPublicConfirmation() {
             stage_token: next.token,
         });
         if (error) throw error;
-        const row = Array.isArray(data) ? data[0] : null;
-        if (!row || text(row.stage_key) !== 'quote_confirmed') {
-            throw new Error('The quote confirmation request is no longer available.');
-        }
-        if (text(state.route?.quoteSlug) && text(row.quote_public_slug) && text(row.quote_public_slug) !== text(state.route.quoteSlug)) {
-            throw new Error('This confirmation request does not match the current quote page.');
-        }
-        state.publicConfirmation.payload = row;
-        state.publicConfirmation.error = '';
-        state.publicConfirmation.submitted = Boolean(text(row.stage_status) === 'completed' || row.completed_at);
-        state.publicConfirmation.confirmed = state.publicConfirmation.submitted;
-        state.publicConfirmation.note = '';
-        state.publicConfirmation.result = state.publicConfirmation.submitted
-            ? {
-                error: false,
-                message: localeCopy({
-                    zh: '这份报价确认单已经提交，无需重复操作。',
-                    en: 'This quote confirmation has already been submitted.',
-                    ru: 'Это подтверждение报价已提交。',
-                }),
-            }
-            : null;
+        const payload = data && typeof data === 'object' ? data : {};
+        state.publicConfirmation = {
+            ...state.publicConfirmation,
+            loading: false,
+            payload,
+            submitted: Boolean(payload.confirmed_at),
+            confirmed: Boolean(payload.confirmed_at),
+            note: text(payload.confirm_note),
+            result: null,
+            error: '',
+        };
+        syncQuoteConfirmationAccessAlert();
     } catch (error) {
-        state.publicConfirmation.payload = null;
-        state.publicConfirmation.error = text(error?.message, 'Failed to load quote confirmation.');
-    } finally {
         state.publicConfirmation.loading = false;
+        state.publicConfirmation.payload = null;
+        state.publicConfirmation.error = text(error?.message, 'Failed to load public confirmation.');
     }
 }
 
-function quoteConfirmationPanelMarkup() {
-    if (!hasEmbeddedQuoteConfirmation()) return '';
-    const confirmation = state.publicConfirmation || {};
-    const access = quoteConfirmationAccessState();
-    if (confirmation.loading) {
-        return `
-            <section class="quote-confirm-card">
-                <div class="quote-confirm-card__head">
-                    <div>
-                        <div class="quote-confirm-card__kicker">QUOTE CONFIRM</div>
-                        <h3>正在加载报价确认</h3>
-                        <p>正在检查这份报价是否需要客户确认，请稍候。</p>
-                    </div>
-                </div>
-            </section>
-        `;
-    }
-    if (confirmation.error) {
-        return `
-            <section class="quote-confirm-card is-muted">
-                <div class="quote-confirm-card__head">
-                    <div>
-                        <div class="quote-confirm-card__kicker">QUOTE CONFIRM</div>
-                        <h3>报价确认入口不可用</h3>
-                        <p>${esc(confirmation.error)}</p>
-                    </div>
-                </div>
-            </section>
-        `;
-    }
-    const payload = confirmation.payload || {};
-    const terms = text(payload.meta?.quote_terms);
-    return `
-        <section class="quote-confirm-card ${confirmation.submitted ? 'is-success' : ''}">
-            <div class="quote-confirm-card__head">
-                <div>
-                    <div class="quote-confirm-card__kicker">QUOTE CONFIRM</div>
-                    <h3>确认当前报价并进入合同阶段</h3>
-                    <p>请在看完这份报价后，直接在这里确认。提交后 GasGx 会自动把流程推进到签约合同，并保留完整确认记录。</p>
-                </div>
-                <div class="quote-confirm-card__badge">${confirmation.submitted ? '已提交' : '待确认'}</div>
-            </div>
-            ${terms ? `
-                <div class="quote-confirm-card__terms">
-                    <strong>本次确认条款</strong>
-                    <p>${esc(terms)}</p>
-                </div>
-            ` : ''}
-            <label class="quote-confirm-card__checkbox ${confirmation.submitted ? 'is-disabled' : ''}">
-                <input id="quote-confirm-checkbox" type="checkbox" ${confirmation.confirmed ? 'checked' : ''} ${confirmation.submitted ? 'disabled' : ''}>
-                <span>我已确认当前报价版本、商务条款、交付范围与说明，可进入合同阶段。</span>
-            </label>
-            <label class="quote-confirm-card__field">
-                <span>客户确认备注</span>
-                <textarea id="quote-confirm-note" class="share-input" rows="4" placeholder="如需补充备注、说明最终确认条件或额外要求，请写在这里。" ${confirmation.submitted ? 'disabled' : ''}>${esc(confirmation.note || '')}</textarea>
-            </label>
-            <div class="quote-confirm-card__foot">
-                <div class="quote-confirm-card__hint">
-                    <strong>提交结果会同步到后台</strong>
-                    <p>销售可立即在确认报价节点看到这次客户确认，并继续进入合同处理。</p>
-                </div>
-                <button id="quote-confirm-submit" type="button" class="btn-glow px-5 py-3 inline-flex items-center gap-2" ${confirmation.submitting || confirmation.submitted || !access.allowed ? 'disabled' : ''}>
-                    <i class="fa-solid fa-paper-plane"></i>
-                    <span>${confirmation.submitted ? '已提交' : confirmation.submitting ? '提交中...' : '提交报价确认'}</span>
-                </button>
-            </div>
-            <div class="quote-confirm-card__status ${confirmation.result?.error ? 'is-error' : ''}">${esc(text(confirmation.result?.message || ''))}</div>
-        </section>
-    `;
+async function sha256Hex(value) {
+    const input = text(value);
+    if (!input || !window.crypto?.subtle) return '';
+    const digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+    return Array.from(new Uint8Array(digest), (item) => item.toString(16).padStart(2, '0')).join('');
 }
 
-async function submitEmbeddedPublicConfirmation() {
-    const confirmation = state.publicConfirmation || {};
-    const next = publicConfirmationParams();
-    if (!confirmation.payload || !next.stage || !next.token) return;
-    const access = quoteConfirmationAccessState();
-    if (!access.allowed) {
-        if (access.requiresLogin) openAuthModal('confirm');
-        state.publicConfirmation.result = {
-            error: true,
-            message: access.message,
-        };
-        renderAll();
-        if (!access.requiresLogin) openQuoteConfirmAlert({
-            title: localeCopy({
-                zh: '当前账号无法提交报价确认',
-                en: 'This account cannot submit quote confirmation',
-                ru: 'Этот аккаунт не может подтвердить предложение',
-            }),
-            message: access.message,
-            hint: confirmationExpectedEmail()
-                ? localeCopy({
-                    zh: '请切换到报价中登记的客户邮箱后再提交。',
-                    en: 'Switch to the customer email registered on this quote before submitting.',
-                    ru: 'Переключитесь на email клиента, указанный в предложении, перед отправкой.',
-                })
-                : localeCopy({
-                    zh: '请先在客户档案或报价单里设置客户邮箱，再开放确认提交。',
-                    en: 'Set the customer email on the customer archive or quote before enabling confirmation.',
-                    ru: 'Сначала укажите email клиента в карточке клиента или предложении.',
-                }),
-        });
-        return;
-    }
-    if (!confirmation.confirmed) {
-        state.publicConfirmation.result = {
-            error: true,
-            message: localeCopy({
-                zh: '请先勾选确认，再提交报价确认。',
-                en: 'Check the confirmation box before submitting.',
-                ru: 'Сначала отметьте подтверждение.',
-            }),
-        };
-        renderAll();
-        byId('quote-confirm-checkbox')?.focus();
-        return;
-    }
-    state.publicConfirmation.submitting = true;
-    state.publicConfirmation.result = null;
-    renderAll();
+async function logQuoteEvent(eventType, options = {}) {
+    const supabase = getClient();
+    const instanceId = text(state.snapshot?.quote?.id);
+    if (!supabase || !instanceId) return;
     try {
-        const client = getClient();
-        if (!client) throw new Error('Supabase client is unavailable.');
-        const { data, error } = await client.rpc('submit_public_quote_stage_confirmation', {
-            stage_slug: next.stage,
-            stage_token: next.token,
-            payload: {
-                note: text(confirmation.note),
-                stage_key: 'quote_confirmed',
-            },
+        const shareTokenHash = options.shareToken ? await sha256Hex(options.shareToken) : '';
+        await supabase.from(TABLE_INSTANCE_EVENTS).insert({
+            instance_id: instanceId,
+            customer_id: text(state.snapshot?.quote?.customerId) || null,
+            event_type: text(eventType),
+            access_mode: text(options.accessMode || 'quote') || 'quote',
+            viewer_email: text(state.adminUser?.email).toLowerCase(),
+            viewer_user_id: state.adminUser?.id || null,
+            viewer_label: state.isAdmin ? 'admin' : (state.isLoggedIn ? 'logged-in-user' : 'anonymous'),
+            share_token_hash: shareTokenHash,
+            share_expires_at: text(options.shareExpiresAt) || null,
+            user_agent: text(navigator.userAgent).slice(0, 1200),
+            referrer_url: text(document.referrer).slice(0, 1200),
+            page_url: text(window.location.href).slice(0, 1200),
+            locale: text(state.currentLang, DEFAULT_LANG),
+            metadata: options.metadata && typeof options.metadata === 'object' ? options.metadata : {},
         });
-        if (error) throw error;
-        const row = Array.isArray(data) ? data[0] : null;
-        state.publicConfirmation.submitting = false;
-        state.publicConfirmation.submitted = true;
-        state.publicConfirmation.confirmed = true;
-        state.publicConfirmation.result = {
-            error: false,
-            message: localeCopy({
-                zh: `报价确认已提交，GasGx 将自动进入下一阶段：${text(row?.next_stage, 'contract_signed')}。`,
-                en: `Quote confirmation submitted. GasGx will continue to the next stage: ${text(row?.next_stage, 'contract_signed')}.`,
-                ru: `Подтверждение报价已提交。Следующий этап: ${text(row?.next_stage, 'contract_signed')}.`,
-            }),
-        };
-        try {
-            const customerId = text(state.snapshot?.quote?.customerId);
-            const instanceId = text(state.snapshot?.quote?.id);
-            if (customerId && instanceId) {
-                await client.from(TABLE_CUSTOMER_ACTIVITIES).insert({
-                    customer_id: customerId,
-                    instance_id: instanceId,
-                    stage_key: 'quote_confirmed',
-                    actor_type: 'customer',
-                    actor_label: 'Customer',
-                    activity_type: 'status_change',
-                    entity_type: 'quote_instance',
-                    entity_id: instanceId,
-                    page_key: 'quote-instances',
-                    action_label: '客户确认报价',
-                    detail_json: {
-                        next_stage: text(row?.next_stage, 'contract_signed'),
-                        note: text(confirmation.note),
-                    },
-                });
-            }
-        } catch (_error) {
-            // Best-effort timeline logging only.
-        }
-        renderAll();
-    } catch (error) {
-        state.publicConfirmation.submitting = false;
-        state.publicConfirmation.result = {
-            error: true,
-            message: text(error?.message, 'Failed to submit quote confirmation.'),
-        };
-        renderAll();
-    }
-}
-
-function applySnapshot(snapshot) {
-    state.snapshot = snapshot;
-    prepareQuoteBehaviorTracking();
-    state.galleryIndex = 0;
-    state.currentLang = resolveRuntimeLang(params.get('lang') || snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG, snapshot);
-    state.rates = normalizeRates(snapshot?.quote?.rates || snapshot?.product?.default_rates || DEFAULT_RATES);
-    state.rateStatusMode = 'online';
-    state.rateDetail = { message: '', tone: 'muted' };
-    state.shareTarget = deriveShareTarget();
-    bodyReadonly(!state.isAdmin);
-    renderAll();
-    syncQuoteConfirmationAccessAlert();
-    startClock();
-    updateBackToTop();
-}
-
-function openAccessOverlay() {
-    const overlay = byId('access-gate-overlay');
-    if (overlay) overlay.classList.remove('hidden');
-}
-
-function closeAccessOverlay() {
-    const overlay = byId('access-gate-overlay');
-    if (overlay) overlay.classList.add('hidden');
-}
-
-function setAccessOverlay({
-    title,
-    message,
-    icon = 'fa-circle-info',
-    help = '',
-    meta = '',
-    showRefresh = true,
-    showPasscode = false,
-} = {}) {
-    openAccessOverlay();
-    const iconNode = byId('access-gate-icon');
-    if (iconNode) iconNode.className = `fa-solid ${icon}`;
-    byId('access-gate-title').textContent = text(title);
-    byId('access-gate-message').textContent = text(message);
-    const helpNode = byId('access-gate-help');
-    if (helpNode) {
-        helpNode.textContent = text(help);
-        helpNode.classList.toggle('hidden', !help);
-    }
-    byId('access-gate-meta').textContent = text(meta);
-    byId('access-gate-actions').classList.toggle('hidden', !showRefresh && !showPasscode);
-    byId('access-passcode-wrap').classList.toggle('hidden', !showPasscode);
-    byId('access-gate-refresh').classList.toggle('hidden', !showRefresh);
-    if (!showPasscode) {
-        byId('access-passcode-input').value = '';
-        byId('access-passcode-status').textContent = '';
-    }
-}
-
-async function resolveSharedSnapshot(token) {
-    const unsigned = parseUnsignedPayload(token);
-    if (!unsigned) return { status: 'invalid' };
-
-    let snapshot = null;
-    if (unsigned.quoteSlug) {
-        snapshot = await fetchPublishedQuoteBySlug(unsigned.quoteSlug);
-    } else if (unsigned.brand) {
-        snapshot = await resolveSnapshotFromBrand(unsigned.brand, unsigned.productId || '');
-    }
-    if (!snapshot) return { status: 'not-found' };
-
-    const verified = await decodeSignedPayload(token, text(snapshot.brand?.share_signing_secret, DEFAULT_SHARE_SECRET));
-    if (!verified.valid || !verified.payload) return { status: 'invalid' };
-
-    const payload = verified.payload;
-    const expiresAtMs = payload.expiresAt ? Date.parse(payload.expiresAt) : NaN;
-    if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now() && !state.isAdmin) {
-        return { status: 'expired', snapshot, payload, signaturePart: verified.signaturePart };
-    }
-
-    const passcode = text(payload.passcode).toUpperCase();
-    if (passcode && !state.isAdmin) {
-        const unlocked = text(readUnlockedPasscode(snapshot.brand?.share_unlock_prefix, verified.signaturePart)).toUpperCase();
-        if (unlocked !== passcode) {
-            return { status: 'passcode', snapshot, payload, signaturePart: verified.signaturePart };
-        }
-    }
-
-    return { status: 'allowed', snapshot, payload, signaturePart: verified.signaturePart };
-}
-
-async function handlePasscodeSubmit() {
-    const pending = state.pendingSharedAccess;
-    if (!pending) return;
-    const input = byId('access-passcode-input');
-    const statusNode = byId('access-passcode-status');
-    const candidate = text(input?.value).toUpperCase();
-    if (candidate === text(pending.payload?.passcode).toUpperCase()) {
-        persistUnlockedPasscode(pending.snapshot.brand?.share_unlock_prefix, pending.signaturePart, candidate);
-        state.sharePayload = pending.payload;
-        state.pendingSharedAccess = null;
-        closeAccessOverlay();
-        applySnapshot(pending.snapshot);
-        await fetchEmbeddedPublicConfirmation();
-        renderAll();
-        void logQuoteEvent('passcode_unlocked', {
-            accessMode: 'share',
-            shareToken: state.route?.token,
-            shareExpiresAt: pending.payload?.expiresAt || '',
-            metadata: {
-                passcodeProtected: true,
-                ...(pending.payload?.shareMeta && typeof pending.payload.shareMeta === 'object' ? pending.payload.shareMeta : {}),
-            },
-        });
-            void logQuoteEvent('share_opened', {
-                accessMode: 'share',
-                shareToken: state.route?.token,
-                shareExpiresAt: pending.payload?.expiresAt || '',
-                metadata: {
-                    visitType: state.quoteBehavior.visitType,
-                    visitCount: state.quoteBehavior.visitCount,
-                    unlockedByPasscode: true,
-                    ...(pending.payload?.shareMeta && typeof pending.payload.shareMeta === 'object' ? pending.payload.shareMeta : {}),
-                },
-            });
-        await fetchRates(false);
+    } catch (_error) {
         return;
     }
-    if (statusNode) {
-        statusNode.textContent = t('accessPasscodeError');
-        statusNode.style.color = '#fca5a5';
+}
+
+async function appendQuoteCustomerActivity(actionLabel = '', detail = {}, options = {}) {
+    const supabase = getClient();
+    const customerId = text(state.snapshot?.quote?.customerId);
+    const instanceId = text(state.snapshot?.quote?.id);
+    if (!supabase || !customerId || !instanceId || !actionLabel) return;
+    try {
+        await supabase.from(TABLE_CUSTOMER_ACTIVITIES).insert({
+            customer_id: customerId,
+            instance_id: instanceId,
+            stage_key: text(options.stageKey, 'quote_confirmed'),
+            actor_type: state.isAdmin ? 'sales' : 'customer',
+            actor_id: state.adminUser?.id || null,
+            actor_label: text(state.adminUser?.email || (state.isAdmin ? 'Sales' : 'Customer')),
+            activity_type: text(options.activityType, 'page_view'),
+            entity_type: 'quote_instance',
+            entity_id: instanceId,
+            page_key: text(options.pageKey, 'quote-view'),
+            action_label: actionLabel,
+            detail_json: detail && typeof detail === 'object' ? detail : {},
+        });
+    } catch (_error) {
+        return;
     }
 }
 
-async function resolveRouteSnapshot() {
-    if (state.route.type === 'preview') {
-        if (!state.isAdmin) {
-            setAccessOverlay({
-                title: t('accessDeniedTitle'),
-                message: t('accessDeniedMessage'),
-                icon: 'fa-lock',
-                showRefresh: true,
-            });
-            return false;
-        }
-        setAccessOverlay({
-            title: t('accessCheckingTitle'),
-            message: t('accessCheckingMessage'),
-            icon: 'fa-spinner fa-spin',
-            meta: t('shareMetaAdmin'),
-            showRefresh: false,
-        });
-        const snapshot = await fetchPreviewQuote(state.route.previewId);
-        if (!snapshot) {
-            setAccessOverlay({
-                title: t('notFoundTitle'),
-                message: t('notFoundMessage'),
-                icon: 'fa-circle-exclamation',
-                showRefresh: true,
-            });
-            return false;
-        }
-        closeAccessOverlay();
-        applySnapshot(snapshot);
-        await fetchEmbeddedPublicConfirmation();
-        renderAll();
-        void logQuoteEvent('preview_opened', {
-            accessMode: 'preview',
-            metadata: {
-                previewId: state.route.previewId,
-            },
-        });
-        await fetchRates(false);
-        return true;
-    }
+function logQuoteBehavior(actionLabel = '', detail = {}, options = {}) {
+    if (state.isAdmin) return;
+    const dedupeKey = text(options.dedupeKey);
+    if (dedupeKey && state.quoteBehavior.activitySentMap[dedupeKey]) return;
+    if (dedupeKey) state.quoteBehavior.activitySentMap[dedupeKey] = true;
+    void appendQuoteCustomerActivity(actionLabel, {
+        access_mode: quoteBehaviorAccessMode(),
+        ...detail,
+    }, options);
+}
 
-    if (state.route.type === 'share') {
-        setAccessOverlay({
-            title: t('accessCheckingTitle'),
-            message: t('accessCheckingMessage'),
-            icon: 'fa-spinner fa-spin',
-            showRefresh: false,
+function markQuoteSectionSeen(sectionKey = '') {
+    const key = text(sectionKey);
+    if (!key || state.isAdmin) return;
+    const label = quoteBehaviorSectionLabel(key);
+    if (!state.quoteBehavior.sectionSeenMap[key]) {
+        state.quoteBehavior.sectionSeenMap[key] = true;
+        logQuoteBehavior(`查看${label}`, {
+            section_key: key,
+            section_label: label,
+            summary: `客户已查看${label}`,
+        }, {
+            activityType: 'page_view',
+            dedupeKey: `section-seen:${key}`,
         });
-        const result = await resolveSharedSnapshot(state.route.token);
-        if (result.status === 'allowed') {
-            state.sharePayload = result.payload;
-            closeAccessOverlay();
-            applySnapshot(result.snapshot);
-            await fetchEmbeddedPublicConfirmation();
-            renderAll();
-            void logQuoteEvent('share_opened', {
-                accessMode: 'share',
-                shareToken: state.route.token,
-                shareExpiresAt: result.payload?.expiresAt || '',
-                metadata: {
-                    visitType: state.quoteBehavior.visitType,
-                    visitCount: state.quoteBehavior.visitCount,
-                    passcodeProtected: Boolean(result.payload?.passcode),
-                    ...(result.payload?.shareMeta && typeof result.payload.shareMeta === 'object' ? result.payload.shareMeta : {}),
-                },
-            });
-            await fetchRates(false);
-            return true;
-        }
-        if (result.status === 'passcode') {
-            state.pendingSharedAccess = result;
-            setAccessOverlay({
-                title: t('accessPasscodeTitle'),
-                message: t('accessPasscodeMessage'),
-                icon: 'fa-lock',
-                meta: result.payload?.expiresAt ? `${t('shareMetaMode')} | ${t('shareMetaExpired')}${new Date(result.payload.expiresAt).toLocaleString()}` : t('shareMetaMode'),
-                showRefresh: true,
-                showPasscode: true,
-            });
-            return false;
-        }
-        if (result.status === 'expired') {
-            setAccessOverlay({
-                title: t('accessDeniedTitle'),
-                message: t('accessExpired'),
-                icon: 'fa-clock',
-                meta: result.payload?.expiresAt ? `${t('shareMetaExpired')}${new Date(result.payload.expiresAt).toLocaleString()}` : '',
-                showRefresh: true,
-            });
-            return false;
-        }
-        if (result.status === 'not-found') {
-            setAccessOverlay({
-                title: t('notFoundTitle'),
-                message: t('notFoundMessage'),
-                icon: 'fa-circle-exclamation',
-                showRefresh: true,
-            });
-            return false;
-        }
-        setAccessOverlay({
-            title: t('accessDeniedTitle'),
-            message: t('accessInvalid'),
-            icon: 'fa-triangle-exclamation',
-            showRefresh: true,
-        });
-        return false;
     }
+    if (state.quoteBehavior.activeSectionKey !== key) {
+        flushQuoteSectionDwell();
+        state.quoteBehavior.activeSectionKey = key;
+        state.quoteBehavior.activeSectionStartedAt = Date.now();
+    }
+}
 
-    if (state.route.type === 'quote') {
-        const snapshot = await fetchPublishedQuoteBySlug(state.route.quoteSlug);
-        if (!snapshot) {
-            setAccessOverlay({
-                title: t('notFoundTitle'),
-                message: t('notFoundMessage'),
-                icon: 'fa-circle-exclamation',
-                showRefresh: true,
-            });
-            return false;
-        }
-        closeAccessOverlay();
-        applySnapshot(snapshot);
-        await fetchEmbeddedPublicConfirmation();
-        renderAll();
-        void logQuoteEvent('quote_viewed', {
-            accessMode: state.isAdmin ? 'admin' : 'quote',
-            metadata: {
-                visitType: state.quoteBehavior.visitType,
-                visitCount: state.quoteBehavior.visitCount,
-                quoteSlug: state.route.quoteSlug,
-            },
-        });
-        await fetchRates(false);
-        return true;
+function flushQuoteSectionDwell() {
+    const activeKey = text(state.quoteBehavior.activeSectionKey);
+    if (!activeKey || !state.quoteBehavior.activeSectionStartedAt) return;
+    const elapsedMs = Date.now() - state.quoteBehavior.activeSectionStartedAt;
+    if (elapsedMs > 0) {
+        state.quoteBehavior.sectionDwellMap[activeKey] = safeNumber(state.quoteBehavior.sectionDwellMap[activeKey], 0) + elapsedMs;
     }
+    state.quoteBehavior.activeSectionKey = '';
+    state.quoteBehavior.activeSectionStartedAt = 0;
+}
 
-    const snapshot = await resolveSnapshotFromBrand(state.route.brand, state.route.productId);
-    if (!snapshot) {
-        setAccessOverlay({
-            title: t('notFoundTitle'),
-            message: t('notFoundMessage'),
-            icon: 'fa-circle-exclamation',
-            showRefresh: true,
+function flushQuoteBehaviorSummary() {
+    if (state.isAdmin) return;
+    flushQuoteSectionDwell();
+}
+
+function observeQuoteSections(root = byId('content-area')) {
+    state.quoteBehavior.sectionObserver?.disconnect?.();
+    if (!root || state.isAdmin || typeof IntersectionObserver !== 'function') return;
+    const nodes = [...root.querySelectorAll('[data-quote-section]')];
+    if (!nodes.length) return;
+    state.quoteBehavior.sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (!entry.isIntersecting || entry.intersectionRatio < 0.2) return;
+            markQuoteSectionSeen(entry.target?.dataset?.quoteSection || '');
         });
-        return false;
-    }
-    closeAccessOverlay();
-    applySnapshot(snapshot);
-    await fetchEmbeddedPublicConfirmation();
-    renderAll();
-    void logQuoteEvent('quote_viewed', {
-        accessMode: state.isAdmin ? 'admin' : 'quote',
-        metadata: {
-            visitType: state.quoteBehavior.visitType,
-            visitCount: state.quoteBehavior.visitCount,
-            brand: state.route.brand,
-            productId: state.route.productId || '',
-        },
+    }, {
+        threshold: [0.2],
     });
-    await fetchRates(false);
-    return true;
+    nodes.forEach((node) => state.quoteBehavior.sectionObserver.observe(node));
 }
 
 function bindEvents() {
@@ -2921,7 +2784,14 @@ function bindEvents() {
     });
     window.addEventListener('scroll', updateBackToTop, { passive: true });
     document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            void refreshAuthState({ rerender: true });
+            return;
+        }
         if (document.visibilityState === 'hidden') flushQuoteBehaviorSummary();
+    });
+    window.addEventListener('focus', () => {
+        void refreshAuthState({ rerender: true });
     });
     window.addEventListener('pagehide', () => {
         flushQuoteBehaviorSummary();
@@ -2931,11 +2801,7 @@ function bindEvents() {
 async function init() {
     bindEvents();
     state.route = resolveInitialRoute();
-    const access = await resolveAdminSession();
-    state.isLoggedIn = access.isLoggedIn === true;
-    state.isAdmin = access.allowed === true;
-    state.adminUser = access.user;
-    bodyReadonly(!state.isAdmin);
+    await refreshAuthState({ force: true });
     const resolved = await resolveRouteSnapshot();
     if (resolved) {
         closeAccessOverlay();
@@ -2943,3 +2809,4 @@ async function init() {
 }
 
 void init();
+

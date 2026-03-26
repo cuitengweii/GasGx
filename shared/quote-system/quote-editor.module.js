@@ -33,6 +33,7 @@ const TABLE_PRODUCT_ITEMS = 'quote_product_items';
 const TABLE_PRODUCT_MEDIA = 'quote_product_media';
 const TABLE_INSTANCES = 'quote_instances';
 const TABLE_INSTANCE_ITEMS = 'quote_instance_items';
+const TABLE_CUSTOMERS = 'quote_customers';
 const TRANSLATE_FUNCTION_NAME = 'quote-translate';
 const AUTO_TRANSLATE_TARGETS = ['en', 'ru'];
 const AUTO_SAVE_DELAY_MS = 1800;
@@ -231,6 +232,15 @@ function text(value, fallback = '') {
     return String(value ?? fallback).trim();
 }
 
+function normalizedCustomerEmail(value = '') {
+    return text(value).toLowerCase();
+}
+
+function isValidCustomerEmail(value = '') {
+    const email = normalizedCustomerEmail(value);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 function safeNumber(value, fallback = 0) {
     const next = Number(value);
     return Number.isFinite(next) ? next : fallback;
@@ -272,7 +282,35 @@ function cancelAutoSave() {
 function publishedInstanceActionMode() {
     if (state.kind !== 'instance') return 'publish';
     if (state.instance?.status !== 'published') return 'publish';
-    return state.hasUnsavedChanges ? 'update' : 'copy';
+    return 'update';
+}
+
+function parseQuoteVersionNumber(value = '') {
+    const raw = text(value);
+    if (!raw) return 0;
+    const matched = raw.match(/(\d+)(?:\.\d+)?/);
+    if (!matched) return 0;
+    const next = Number(matched[1]);
+    return Number.isFinite(next) && next > 0 ? next : 0;
+}
+
+function publishedQuoteVersion(instance = {}) {
+    return text(
+        instance?.published_snapshot?.quote?.quoteVersion
+        || instance?.published_snapshot?.quote?.version
+    ) || '1.0';
+}
+
+function nextQuoteVersion(instance = {}) {
+    const major = parseQuoteVersionNumber(publishedQuoteVersion(instance));
+    return `${Math.max(major, 0) + 1}.0`;
+}
+
+function instanceHasPendingChanges(instance = {}) {
+    const publishedAt = Date.parse(text(instance?.published_at));
+    const updatedAt = Date.parse(text(instance?.updated_at));
+    if (!Number.isFinite(publishedAt) || !Number.isFinite(updatedAt)) return false;
+    return updatedAt > publishedAt + 1000;
 }
 
 function pipelineReturnUrl() {
@@ -280,10 +318,18 @@ function pipelineReturnUrl() {
     const params = new URLSearchParams(window.location.search || '');
     const entryKind = normalizeEntryKind(params.get('admin_entry') || ADMIN_ENTRY_KIND);
     const dealId = text(params.get('deal'));
+    const stage = text(params.get('stage'), 'quote_draft');
+    const returnMode = text(params.get('return_mode'));
+    const customerId = text(params.get('customer'));
     if (entryKind === SALES_ENTRY_KIND && dealId) {
         const url = new URL(adminConsolePath(entryKind), window.location.origin);
-        url.searchParams.set('page', 'quote-pipeline');
-        url.searchParams.set('stage', 'quote_draft');
+        if (returnMode === 'customer-flow' && customerId) {
+            url.searchParams.set('page', 'quote-customer-flow');
+            url.searchParams.set('customer', customerId);
+        } else {
+            url.searchParams.set('page', 'quote-pipeline');
+        }
+        url.searchParams.set('stage', stage || 'quote_draft');
         url.searchParams.set('deal', dealId);
         url.searchParams.set('admin_entry', entryKind);
         return url.toString();
@@ -391,18 +437,22 @@ function normalizeProductEditor(value = {}) {
 function normalizeInstanceEditor(value = {}) {
     return {
         id: text(value.id),
+        customer_id: text(value.customer_id || value.customerId),
+        deal_id: text(value.deal_id || value.dealId),
+        requirement_id: text(value.requirement_id || value.requirementId),
         brand_id: text(value.brand_id),
         product_id: text(value.product_id),
         public_slug: text(value.public_slug),
         status: text(value.status || 'draft') === 'published' ? 'published' : 'draft',
         customer_name: text(value.customer_name),
         receiver_name: text(value.receiver_name),
-        receiver_email: text(value.receiver_email),
+        receiver_email: normalizedCustomerEmail(value.receiver_email),
         default_lang: SUPPORTED_LANGS.includes(text(value.default_lang)) ? text(value.default_lang) : DEFAULT_LANG,
         validity_hours: Math.max(1, safeNumber(value.validity_hours, 72)),
         draft_rates: normalizeRates(value.draft_rates || value.rates || DEFAULT_RATES),
         share_config: value.share_config && typeof value.share_config === 'object' ? { ...value.share_config } : {},
         section_config: normalizeSectionConfig(value.section_config),
+        published_snapshot: value.published_snapshot && typeof value.published_snapshot === 'object' ? { ...value.published_snapshot } : null,
         published_at: text(value.published_at),
         updated_at: text(value.updated_at),
     };
@@ -793,7 +843,7 @@ function applySettingField(field, value) {
     } else if (field === 'media_layout') {
         state.product.media_config = normalizeMediaConfig({ ...state.product.media_config, layout: value });
     } else if (state.kind === 'instance') {
-        state.instance[field] = text(value);
+        state.instance[field] = field === 'receiver_email' ? normalizedCustomerEmail(value) : text(value);
     }
 }
 
@@ -815,6 +865,13 @@ function renderStatus(message, tone = 'normal') {
 }
 
 function renderBanner() {
+    const instanceVersionMeta = state.kind === 'instance'
+        ? (() => {
+            const published = publishedQuoteVersion(state.instance);
+            const draft = instanceHasPendingChanges(state.instance) ? nextQuoteVersion(state.instance) : published;
+            return ` | 已发布 V${published} | 草稿 V${draft}${instanceHasPendingChanges(state.instance) ? '（未发布）' : '（已同步）'}`;
+        })()
+        : '';
     byId('editor-banner-title').textContent = state.kind === 'product'
         ? '你现在编辑的就是基础模板原页面。'
         : '你现在编辑的就是当前报价单原页面。';
@@ -831,11 +888,28 @@ function syncBackLink() {
     const basePath = adminConsolePath(entryKind);
     const page = state.kind === 'product' ? 'quote-products' : 'quote-instances';
     const url = new URL(basePath, window.location.origin);
+    const dealId = String(params.get('deal') || '').trim();
+    const stage = text(params.get('stage'), 'quote_draft');
+    const returnMode = text(params.get('return_mode'));
+    const customerId = text(params.get('customer'));
+    if (
+        state.kind === 'instance'
+        && entryKind === SALES_ENTRY_KIND
+        && returnMode === 'customer-flow'
+        && customerId
+        && dealId
+    ) {
+        url.searchParams.set('page', 'quote-customer-flow');
+        url.searchParams.set('customer', customerId);
+        url.searchParams.set('stage', stage || 'quote_draft');
+        url.searchParams.set('deal', dealId);
+        node.href = url.toString();
+        return;
+    }
     url.searchParams.set('page', page);
     if (state.kind === 'instance' && state.instance?.id) {
         url.searchParams.set('instance', state.instance.id);
     }
-    const dealId = String(params.get('deal') || '').trim();
     if (dealId && entryKind === SALES_ENTRY_KIND) {
         url.searchParams.set('deal', dealId);
     }
@@ -894,6 +968,18 @@ function renderEditorActions() {
             : '\u53d1\u5e03\u62a5\u4ef7';
 }
 
+function renderEditorVersionText() {
+    const node = byId('editor-version-text');
+    if (!node) return;
+    if (state.kind !== 'instance' || !state.instance?.id) {
+        node.textContent = '';
+        return;
+    }
+    const published = publishedQuoteVersion(state.instance);
+    const next = nextQuoteVersion(state.instance);
+    node.textContent = `已发布版本 V${published} | 下一发布版本 V${next}`;
+}
+
 function renderStaticText() {
     renderLangButtons();
     renderToolbarBrand();
@@ -901,6 +987,7 @@ function renderStaticText() {
     renderSettings();
     syncBackLink();
     renderEditorActions();
+    renderEditorVersionText();
 
     byId('edit-overview-title').textContent = localizedValue(state.brand.overview_title);
     byId('btn-send-editor')?.setAttribute('hidden', 'hidden');
@@ -912,11 +999,11 @@ function renderStaticText() {
     byId('btn-text-refresh').textContent = uiText('refresh_button', t('refresh'));
 
     const receiverValue = state.kind === 'instance'
-        ? text(state.instance.receiver_name || state.instance.receiver_email)
+        ? text(state.instance.receiver_email || state.instance.receiver_name)
         : uiText('receiver_placeholder', t('receiverPlaceholder'));
     const receiverNode = byId('edit-receiver-value');
     receiverNode.textContent = receiverValue;
-    receiverNode.classList.toggle('is-placeholder', !text(state.instance?.receiver_name || state.instance?.receiver_email));
+    receiverNode.classList.toggle('is-placeholder', !text(state.instance?.receiver_email || state.instance?.receiver_name));
 }
 
 function renderRateLine() {
@@ -1310,7 +1397,7 @@ function bindStaticEditors() {
     };
     byId('edit-receiver-value').onblur = (event) => {
         if (state.kind === 'instance') {
-            state.instance.receiver_name = text(event.currentTarget.textContent);
+            state.instance.receiver_email = normalizedCustomerEmail(event.currentTarget.textContent);
         } else {
             setLocalizedValue(state.product.ui_text, 'receiver_placeholder', event.currentTarget.textContent);
             markTranslationDirty('product.ui_text.receiver_placeholder');
@@ -1429,7 +1516,7 @@ function flushPendingEditorChanges() {
     const receiverValue = byId('edit-receiver-value');
     if (receiverValue) {
         if (state.kind === 'instance') {
-            state.instance.receiver_name = text(receiverValue.textContent);
+            state.instance.receiver_email = normalizedCustomerEmail(receiverValue.textContent);
         } else {
             setLocalizedValue(state.product.ui_text, 'receiver_placeholder', receiverValue.textContent);
         }
@@ -1573,7 +1660,42 @@ async function saveProduct(user) {
     state.id = data.id;
 }
 
+async function syncInstanceCustomerEmail(nextEmail = '') {
+    const customerId = text(state.instance?.customer_id);
+    if (!customerId) return;
+    const { error } = await client
+        .from(TABLE_CUSTOMERS)
+        .update({
+            email: normalizedCustomerEmail(nextEmail),
+            updated_by: state.user?.id || null,
+        })
+        .eq('id', customerId);
+    if (error?.code === '23505') throw new Error('该客户邮箱已被占用，请更换唯一邮箱后再保存。');
+    if (error) throw error;
+}
+
 async function saveInstance(user) {
+    const email = normalizedCustomerEmail(state.instance.receiver_email);
+    if (!email) throw new Error('客户邮箱为必填项，请先填写后再保存。');
+    if (!isValidCustomerEmail(email)) throw new Error('客户邮箱格式不正确，请输入标准邮箱地址。');
+    const customerId = text(state.instance?.customer_id);
+    if (customerId) {
+        const { data: duplicated, error: duplicateError } = await client
+            .from(TABLE_CUSTOMERS)
+            .select('id')
+            .eq('email', email)
+            .neq('id', customerId)
+            .maybeSingle();
+        if (duplicateError) throw duplicateError;
+        if (duplicated?.id) throw new Error('该客户邮箱已被占用，请更换唯一邮箱后再保存。');
+    }
+    state.instance.receiver_email = email;
+    if (state.instance.share_config && typeof state.instance.share_config === 'object') {
+        state.instance.share_config = {
+            ...state.instance.share_config,
+            recipient_email: email,
+        };
+    }
     const currentStatus = text(state.instance.status || 'draft').toLowerCase();
     const nextStatus = currentStatus === 'published'
         ? 'published'
@@ -1592,7 +1714,7 @@ async function saveInstance(user) {
         last_active_status: nextLastActiveStatus,
         customer_name: state.instance.customer_name,
         receiver_name: state.instance.receiver_name,
-        receiver_email: state.instance.receiver_email,
+        receiver_email: email,
         default_lang: state.instance.default_lang,
         validity_hours: state.instance.validity_hours,
         draft_rates: normalizeRates(state.rates),
@@ -1623,6 +1745,7 @@ async function saveInstance(user) {
     }
     const savedItems = await persistItemRows(TABLE_INSTANCE_ITEMS, 'instance_id', saved.id, state.items);
     state.instance = normalizeInstanceEditor(saved);
+    await syncInstanceCustomerEmail(state.instance.receiver_email);
     state.items = sortItems(savedItems.map((item) => normalizeQuoteItem(item, item.section_key)));
     state.id = saved.id;
     return state.instance;
@@ -1630,6 +1753,7 @@ async function saveInstance(user) {
 
 async function publishInstance(user) {
     const saved = await saveInstance(user);
+    const publishVersion = nextQuoteVersion(saved);
     const snapshot = buildQuoteSnapshot({
         brand: extractBrandSnapshot(state.brand),
         product: extractProductSnapshot({
@@ -1641,6 +1765,7 @@ async function publishInstance(user) {
         instance: {
             ...state.instance,
             ...saved,
+            quote_version: publishVersion,
         },
         items: state.items,
         publishedAt: new Date().toISOString(),
@@ -1688,6 +1813,7 @@ async function runAutoTranslation(force = false) {
 
 async function handleSave(options = {}) {
     const source = options.source === 'auto' ? 'auto' : 'manual';
+    let saveSucceeded = false;
     cancelAutoSave();
     if (state.saveInFlight) {
         if (source === 'auto') state.autoSavePending = true;
@@ -1717,6 +1843,7 @@ async function handleSave(options = {}) {
         state.snapshot = buildSnapshot();
         renderAll();
         clearTranslationDirty();
+        saveSucceeded = true;
         if (state.changeVersion === saveVersion) {
             state.hasUnsavedChanges = false;
         }
@@ -1736,7 +1863,8 @@ async function handleSave(options = {}) {
         renderStatus(`${t('saveFailed')} ${error.message || ''}`, 'error');
     } finally {
         state.saveInFlight = false;
-        if (state.hasUnsavedChanges && (state.autoSavePending || source === 'auto')) {
+        renderEditorActions();
+        if (saveSucceeded && state.hasUnsavedChanges && (state.autoSavePending || source === 'auto')) {
             state.autoSavePending = false;
             scheduleAutoSave(300);
         }
@@ -1899,6 +2027,7 @@ function bindGlobal() {
                 publishButton.disabled = false;
                 publishButton.textContent = originalLabel;
             }
+            renderEditorActions();
         }
     });
 

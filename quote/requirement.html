@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GasGx Requirement Intake</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="../shared/quote-system/quote-system.css?v=20260325requirement05">
+    <script src="./public-asset-version.js"></script>
+    <script>window.AMSLoadQuotePublicStyles('../shared/quote-system/quote-system.css');</script>
 </head>
 <body class="antialiased pb-12 access-resolved">
     <main id="requirement-app" class="requirement-shell">
@@ -18,6 +21,6 @@
         </section>
     </main>
 
-    <script type="module" src="../shared/quote-system/quote-requirement.module.js?v=20260325requirement05"></script>
+    <script>window.AMSLoadQuotePublicModule('../shared/quote-system/quote-requirement.module.js');</script>
 </body>
 </html>
