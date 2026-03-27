@@ -153,3 +153,22 @@ Scope: `article_management/sales/index.html` and related modules
   - deal void/cancel/archive branch outcomes
   - blocked stage status and recovery
   - concurrent edits conflict scenarios
+
+## Exception Branch E2E (Archive / Void) Completed
+- Run date: 2026-03-27
+- Spec: `tests/playwright/sales-exception-branches.spec.ts`
+- Result: `2 passed / 0 failed`
+
+### Coverage Details
+1. Archive branch
+- Admin creates new deal in `requirement_capture`.
+- Executes `data-sales-stage-archive` with confirmation modal.
+- Verifies the deal is removed from active stage list actions.
+
+2. Void branch
+- Admin creates new deal in `requirement_capture`.
+- Executes `data-sales-stage-void` with confirmation modal.
+- Verifies the deal is removed from active stage list actions.
+
+### Meaning
+- Non-happy-path lifecycle exits (`归档` / `作废`) are now automated and validated in formal backend.
