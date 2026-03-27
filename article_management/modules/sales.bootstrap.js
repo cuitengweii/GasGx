@@ -29,7 +29,7 @@ import {
     renderQuotePipelinePage,
     renderQuoteProductsPage,
     renderQuoteSalesDashboardPage,
-} from './quote-system.module.js?v=20260326quote54';
+} from './quote-system.module.js?v=20260327quote56';
 
 const root = document.getElementById('ams-root');
 const toastNode = document.getElementById('ams-toast');
@@ -538,17 +538,23 @@ async function renderPage() {
             rerender: () => renderPage(),
         };
 
-        setContent(loadingPanelMarkup('正在打开页面...', '正在准备当前页面所需的客户、流程和报价数据。'));
+        const delayedLoadingTimer = window.setTimeout(() => {
+            setContent(loadingPanelMarkup('正在打开页面...', '正在准备当前页面所需的客户、流程和报价数据。'));
+        }, 180);
 
-        if (state.page === 'dashboard') await renderQuoteSalesDashboardPage(pageInput);
-        else if (state.page === 'quote-customers') await renderQuoteCustomersPage(pageInput);
-        else if (state.page === 'quote-pipeline') await renderQuotePipelinePage(pageInput);
-        else if (state.page === 'quote-customer-flow') await renderQuoteCustomerFlowPage(pageInput);
-        else if (state.page === 'quote-brands') await renderQuoteBrandsPage(pageInput);
-        else if (state.page === 'quote-products') await renderQuoteProductsPage(pageInput);
-        else if (state.page === 'admin-users') await renderAdminUsersPage(pageInput);
-        else if (state.page === 'admin-security') await renderAdminSecurityPage(pageInput);
-        else setContent('<div class="ams-empty">未知页面。</div>');
+        try {
+            if (state.page === 'dashboard') await renderQuoteSalesDashboardPage(pageInput);
+            else if (state.page === 'quote-customers') await renderQuoteCustomersPage(pageInput);
+            else if (state.page === 'quote-pipeline') await renderQuotePipelinePage(pageInput);
+            else if (state.page === 'quote-customer-flow') await renderQuoteCustomerFlowPage(pageInput);
+            else if (state.page === 'quote-brands') await renderQuoteBrandsPage(pageInput);
+            else if (state.page === 'quote-products') await renderQuoteProductsPage(pageInput);
+            else if (state.page === 'admin-users') await renderAdminUsersPage(pageInput);
+            else if (state.page === 'admin-security') await renderAdminSecurityPage(pageInput);
+            else setContent('<div class="ams-empty">未知页面。</div>');
+        } finally {
+            window.clearTimeout(delayedLoadingTimer);
+        }
     } catch (error) {
         console.error(error);
         setContent(`<div class="ams-empty">${esc(error.message || '页面渲染失败。')}</div>`);

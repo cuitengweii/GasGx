@@ -4,6 +4,8 @@ import { ADMIN_ENTRY_KIND, SALES_ENTRY_KIND, adminConsolePath, detectAdminEntryK
 const ADMIN_USERS_TABLE = 'admin_users';
 
 export const ADMIN_ROLE_SALES = 'sales';
+export const ADMIN_ROLE_PRE_SALES = 'pre_sales';
+export const ADMIN_ROLE_AFTER_SALES = 'after_sales';
 export const ADMIN_ROLE_EDITOR = 'editor';
 export const ADMIN_ROLE_ADMIN = 'admin';
 export const ADMIN_ROLE_SUPER_ADMIN = 'super_admin';
@@ -11,9 +13,21 @@ export const ADMIN_ROLE_SUPER_ADMIN = 'super_admin';
 export function normalizeAdminRole(value = '') {
     const role = String(value || '').trim().toLowerCase();
     if (role === ADMIN_ROLE_SALES) return ADMIN_ROLE_SALES;
+    if (role === ADMIN_ROLE_PRE_SALES) return ADMIN_ROLE_PRE_SALES;
+    if (role === ADMIN_ROLE_AFTER_SALES) return ADMIN_ROLE_AFTER_SALES;
     if (role === ADMIN_ROLE_EDITOR) return ADMIN_ROLE_EDITOR;
     if (role === ADMIN_ROLE_SUPER_ADMIN) return ADMIN_ROLE_SUPER_ADMIN;
     return ADMIN_ROLE_ADMIN;
+}
+
+function isSalesConsoleRole(role = '') {
+    return [
+        ADMIN_ROLE_SALES,
+        ADMIN_ROLE_PRE_SALES,
+        ADMIN_ROLE_AFTER_SALES,
+        ADMIN_ROLE_ADMIN,
+        ADMIN_ROLE_SUPER_ADMIN,
+    ].includes(normalizeAdminRole(role));
 }
 
 export function canAccessConsoleEntry(adminRow = null, entryKind = ADMIN_ENTRY_KIND) {
@@ -21,7 +35,7 @@ export function canAccessConsoleEntry(adminRow = null, entryKind = ADMIN_ENTRY_K
     const targetEntry = normalizeEntryKind(entryKind);
     if (!adminRow || adminRow.is_active === false) return false;
     if (targetEntry === SALES_ENTRY_KIND) {
-        return role === ADMIN_ROLE_SALES || role === ADMIN_ROLE_ADMIN || role === ADMIN_ROLE_SUPER_ADMIN;
+        return isSalesConsoleRole(role);
     }
     return role === ADMIN_ROLE_EDITOR || role === ADMIN_ROLE_ADMIN || role === ADMIN_ROLE_SUPER_ADMIN;
 }

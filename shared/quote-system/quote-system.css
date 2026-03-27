@@ -233,12 +233,16 @@
         /* 鎸夐挳涓庢爣绛?*/
         .btn-glow {
             background-color: var(--gas-green-primary);
-            color: #FFFFFF;
+            color: #000000;
             font-weight: 600;
             border-radius: 4px;
             transition: all 0.3s ease;
             box-shadow: 0 0 10px rgba(93, 214, 44, 0.3);
             border: 1px solid transparent;
+        }
+        .btn-glow i,
+        .btn-glow span {
+            color: inherit;
         }
         .btn-glow:hover {
             background-color: var(--gas-green-light);
@@ -764,6 +768,100 @@
             color: #fca5a5;
         }
 
+        .quote-production-card {
+            border-color: rgba(250, 173, 20, 0.22);
+            background: linear-gradient(180deg, rgba(250, 173, 20, 0.08), rgba(10, 14, 20, 0.92));
+        }
+
+        .quote-production-meta-grid {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        }
+
+        .quote-production-meta-grid span {
+            display: grid;
+            gap: 4px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-body);
+            font-size: 12px;
+        }
+
+        .quote-production-meta-grid strong {
+            color: #fff;
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .quote-production-track {
+            display: grid;
+            gap: 10px;
+        }
+
+        .quote-production-step {
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(10, 14, 20, 0.76);
+            display: grid;
+            gap: 8px;
+        }
+
+        .quote-production-step__head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .quote-production-step__head strong {
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .quote-production-step__status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .quote-production-step__status.is-active {
+            border-color: rgba(250, 173, 20, 0.45);
+            color: #facc15;
+            background: rgba(250, 173, 20, 0.16);
+        }
+
+        .quote-production-step__status.is-completed {
+            border-color: rgba(93, 214, 44, 0.42);
+            color: #93f86b;
+            background: rgba(93, 214, 44, 0.16);
+        }
+
+        .quote-production-step__status.is-delayed {
+            border-color: rgba(248, 113, 113, 0.44);
+            color: #fda4af;
+            background: rgba(239, 68, 68, 0.18);
+        }
+
+        .quote-production-step__meta {
+            display: grid;
+            gap: 4px;
+            color: var(--text-body);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
         .quote-editor-mode .quote-editable {
             outline: 1px dashed transparent;
             outline-offset: 3px;
@@ -1209,6 +1307,15 @@
 
             .quote-confirm-card__badge {
                 justify-self: flex-start;
+            }
+
+            .quote-production-meta-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quote-production-step__head {
+                flex-direction: column;
+                align-items: flex-start;
             }
 
             #export-area {

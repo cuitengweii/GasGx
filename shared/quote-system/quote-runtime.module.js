@@ -277,6 +277,14 @@ const state = {
     },
 };
 
+const PRODUCTION_PROGRESS_STEPS = Object.freeze([
+    { key: 'production_step_plan', label: { zh: '排程确认', en: 'Planning confirmed', ru: 'Planning confirmed' } },
+    { key: 'production_step_material', label: { zh: '物料齐套', en: 'Materials ready', ru: 'Materials ready' } },
+    { key: 'production_step_assembly', label: { zh: '产线组装', en: 'Assembly', ru: 'Assembly' } },
+    { key: 'production_step_test', label: { zh: '联调测试', en: 'Integrated testing', ru: 'Integrated testing' } },
+    { key: 'production_step_ready', label: { zh: '待验收', en: 'Ready for FAT', ru: 'Ready for FAT' } },
+]);
+
 function localeCopy(options = {}) {
     return options[state.currentLang] || options.en || options.zh || '';
 }
@@ -295,6 +303,85 @@ function publicConfirmationParams() {
 function hasEmbeddedQuoteConfirmation() {
     const next = publicConfirmationParams();
     return Boolean(next.stage && next.token);
+}
+
+function embeddedPublicStageKey() {
+    return text(state.publicConfirmation?.payload?.stage_key);
+}
+
+function isEmbeddedProductionProgressStage() {
+    return embeddedPublicStageKey() === 'production_scheduled';
+}
+
+function productionProgressMetaValue(payload = {}, key = '', fallback = '') {
+    const meta = payload?.meta && typeof payload.meta === 'object' ? payload.meta : {};
+    return text(meta[key], fallback);
+}
+
+function productionProgressStatusLabel(value = '') {
+    const status = text(value, 'pending');
+    if (status === 'completed') return localeCopy({ zh: '已完成', en: 'Completed', ru: 'Completed' });
+    if (status === 'in_progress') return localeCopy({ zh: '进行中', en: 'In progress', ru: 'In progress' });
+    if (status === 'delayed') return localeCopy({ zh: '延误', en: 'Delayed', ru: 'Delayed' });
+    return localeCopy({ zh: '待开始', en: 'Pending', ru: 'Pending' });
+}
+
+function productionProgressStatusClass(value = '') {
+    const status = text(value, 'pending');
+    if (status === 'completed') return 'is-completed';
+    if (status === 'in_progress') return 'is-active';
+    if (status === 'delayed') return 'is-delayed';
+    return 'is-pending';
+}
+
+function productionProgressPanelMarkup(payload = {}) {
+    const scheduleStatus = productionProgressMetaValue(payload, 'production_schedule_status', '--');
+    const scheduleEta = productionProgressMetaValue(payload, 'production_eta', '--');
+    const factoryName = productionProgressMetaValue(payload, 'factory_name', '--');
+    const batch = productionProgressMetaValue(payload, 'production_batch', '--');
+    const delayReason = productionProgressMetaValue(payload, 'production_delay_reason');
+    return `
+        <section class="quote-confirm-card is-muted quote-production-card">
+            <div class="quote-confirm-card__head">
+                <div>
+                    <div class="quote-confirm-card__kicker">PRODUCTION PROGRESS</div>
+                    <h3>${esc(localeCopy({ zh: '生产进度同步', en: 'Production Progress', ru: 'Production Progress' }))}</h3>
+                    <p>${esc(localeCopy({
+                        zh: '该链接用于客户查看排产阶段的最新进度，销售会根据工厂反馈持续更新。',
+                        en: 'This link shows the latest production progress. Sales will keep it updated based on factory feedback.',
+                        ru: 'This link shows the latest production progress. Sales will keep it updated based on factory feedback.',
+                    }))}</p>
+                </div>
+                <div class="quote-confirm-card__badge">${esc(productionProgressStatusLabel(scheduleStatus))}</div>
+            </div>
+            <div class="quote-production-meta-grid">
+                <span><strong>${esc(localeCopy({ zh: '工厂/产线', en: 'Factory/Line', ru: 'Factory/Line' }))}</strong>${esc(factoryName)}</span>
+                <span><strong>${esc(localeCopy({ zh: '批次', en: 'Batch', ru: 'Batch' }))}</strong>${esc(batch)}</span>
+                <span><strong>${esc(localeCopy({ zh: '预计完工', en: 'ETA', ru: 'ETA' }))}</strong>${esc(scheduleEta)}</span>
+                <span><strong>${esc(localeCopy({ zh: '工期状态', en: 'Schedule', ru: 'Schedule' }))}</strong>${esc(productionProgressStatusLabel(scheduleStatus))}</span>
+            </div>
+            ${delayReason ? `<div class="quote-confirm-card__terms"><strong>${esc(localeCopy({ zh: '延误说明', en: 'Delay note', ru: 'Delay note' }))}</strong><p>${esc(delayReason)}</p></div>` : ''}
+            <div class="quote-production-track">
+                ${PRODUCTION_PROGRESS_STEPS.map((step, index) => {
+                    const status = productionProgressMetaValue(payload, `${step.key}_status`, 'pending');
+                    const date = productionProgressMetaValue(payload, `${step.key}_date`, '--');
+                    const note = productionProgressMetaValue(payload, `${step.key}_note`, '--');
+                    return `
+                        <article class="quote-production-step">
+                            <div class="quote-production-step__head">
+                                <strong>${esc(`${index + 1}. ${localeCopy(step.label)}`)}</strong>
+                                <span class="quote-production-step__status ${productionProgressStatusClass(status)}">${esc(productionProgressStatusLabel(status))}</span>
+                            </div>
+                            <div class="quote-production-step__meta">
+                                <span>${esc(localeCopy({ zh: '更新时间', en: 'Updated', ru: 'Updated' }))}: ${esc(date)}</span>
+                                <span>${esc(localeCopy({ zh: '说明', en: 'Note', ru: 'Note' }))}: ${esc(note)}</span>
+                            </div>
+                        </article>
+                    `;
+                }).join('')}
+            </div>
+        </section>
+    `;
 }
 
 function esc(value) {
@@ -440,6 +527,7 @@ function closeAuthModal() {
 function openQuoteConfirmAlert(options = {}) {
     const modal = byId('quote-confirm-alert-modal');
     if (!modal) return;
+    modal.setAttribute('data-alert-type', text(options.alertType, 'generic'));
     byId('quote-confirm-alert-kicker').textContent = text(options.kicker, localeCopy({
         zh: '报价确认',
         en: 'QUOTE CONFIRM',
@@ -475,6 +563,7 @@ function closeQuoteConfirmAlert() {
     if (!modal) return;
     modal.classList.remove('is-open');
     modal.setAttribute('aria-hidden', 'true');
+    modal.removeAttribute('data-alert-type');
 }
 
 function requireSignedIn(actionKey = 'share') {
@@ -910,7 +999,7 @@ function renderLangButtons() {
         if (!enabled) return;
         button.textContent = lang.toUpperCase();
         if (lang === state.currentLang) {
-            button.className = 'px-2 md:px-4 py-1 md:py-1.5 rounded transition-all bg-[var(--gas-green-primary)] text-white font-semibold shadow-[0_0_8px_rgba(93,214,44,0.4)]';
+            button.className = 'px-2 md:px-4 py-1 md:py-1.5 rounded transition-all bg-[var(--gas-green-primary)] text-black font-semibold shadow-[0_0_8px_rgba(93,214,44,0.4)]';
             return;
         }
         button.className = 'px-2 md:px-4 py-1 md:py-1.5 rounded transition-all text-[var(--text-body)] hover:text-white';
@@ -985,14 +1074,18 @@ function renderStaticText() {
     byId('auth-modal-hint').textContent = t('authModalHint');
     byId('auth-modal-login-text').textContent = t('authModalLogin');
     byId('auth-modal-cancel-text').textContent = t('authModalCancel');
-    if (byId('quote-confirm-alert-modal')?.classList.contains('is-open')) {
+    const quoteConfirmAccess = quoteConfirmationAccessState();
+    const quoteConfirmModal = byId('quote-confirm-alert-modal');
+    const quoteConfirmAlertType = quoteConfirmModal?.getAttribute('data-alert-type') || '';
+    if (quoteConfirmModal?.classList.contains('is-open') && quoteConfirmAlertType === 'access' && !quoteConfirmAccess.allowed) {
         openQuoteConfirmAlert({
+            alertType: 'access',
             title: localeCopy({
                 zh: '当前账号无法提交报价确认',
                 en: 'This account cannot submit quote confirmation',
                 ru: '协褌芯褌 邪泻泻邪褍薪褌 薪械 屑芯卸械褌 锌芯写褌胁械褉写懈褌褜 锌褉械写谢芯卸械薪懈械',
             }),
-            message: quoteConfirmationAccessState().message,
+            message: quoteConfirmAccess.message,
             hint: confirmationExpectedEmail()
                 ? localeCopy({
                     zh: '请切换到报价中登记的客户邮箱后再提交。',
@@ -1005,6 +1098,9 @@ function renderStaticText() {
                     ru: '小薪邪褔邪谢邪 褍泻邪卸懈褌械 email 泻谢懈械薪褌邪 胁 泻邪褉褌芯褔泻械 泻谢懈械薪褌邪 懈谢懈 锌褉械写谢芯卸械薪懈懈.',
                 }),
         });
+    }
+    if (quoteConfirmModal?.classList.contains('is-open') && quoteConfirmAlertType === 'access' && quoteConfirmAccess.allowed) {
+        closeQuoteConfirmAlert();
     }
 
     const expirySelect = byId('share-expiry-select');
@@ -1430,6 +1526,9 @@ function quoteConfirmationPanelMarkup() {
         `;
     }
     const payload = confirmation.payload || {};
+    if (text(payload.stage_key) === 'production_scheduled') {
+        return productionProgressPanelMarkup(payload);
+    }
     const terms = text(payload.meta?.quote_terms);
     return `
         <section class="quote-confirm-card ${confirmation.submitted ? 'is-success' : ''}">
@@ -1471,7 +1570,14 @@ function quoteConfirmationPanelMarkup() {
 }
 
 function friendlyQuoteConfirmErrorMessage(error) {
-    const raw = text(error?.message || '').toLowerCase();
+    const raw = quoteConfirmErrorFingerprint(error);
+    if (raw.includes('ambiguous') && raw.includes('stage_key')) {
+        return localeCopy({
+            zh: '系统正在修复一次提交流程异常，请稍后重试；如仍失败请联系销售支持。',
+            en: 'The system is fixing a submission workflow issue. Please retry shortly or contact sales support.',
+            ru: 'The system is fixing a submission workflow issue. Please retry shortly or contact sales support.',
+        });
+    }
     if (!raw) {
         return localeCopy({
             zh: '提交失败，请稍后重试；如持续失败请联系销售支持。',
@@ -1493,23 +1599,88 @@ function friendlyQuoteConfirmErrorMessage(error) {
             ru: 'This confirmation link is invalid or expired. Please request a new link from sales.',
         });
     }
-    return text(error?.message, localeCopy({
+    return localeCopy({
         zh: '提交失败，请稍后重试；如持续失败请联系销售支持。',
         en: 'Submit failed. Please try again later or contact your sales rep.',
         ru: 'Submit failed. Please try again later or contact your sales rep.',
-    }));
+    });
+}
+
+function quoteConfirmErrorFingerprint(error) {
+    const parts = [];
+    const collect = (value) => {
+        const normalized = text(value);
+        if (normalized) parts.push(normalized);
+    };
+    collect(error?.message);
+    collect(error?.details);
+    collect(error?.hint);
+    collect(error?.code);
+    collect(error?.status);
+    collect(error?.statusText);
+    collect(error?.error_description);
+    if (error?.error && typeof error.error === 'object') {
+        collect(error.error.message);
+        collect(error.error.details);
+        collect(error.error.hint);
+        collect(error.error.code);
+    }
+    return parts.join(' | ').toLowerCase();
 }
 
 async function submitEmbeddedPublicConfirmation() {
     const confirmation = state.publicConfirmation || {};
     const next = publicConfirmationParams();
-    if (!confirmation.payload || !next.stage || !next.token) return;
+    if (!confirmation.payload || !next.stage || !next.token) {
+        openQuoteConfirmAlert({
+            alertType: 'validation',
+            title: localeCopy({
+                zh: '无法提交报价确认',
+                en: 'Unable to submit confirmation',
+                ru: 'Unable to submit confirmation',
+            }),
+            message: localeCopy({
+                zh: '当前确认链接缺少必要参数，请联系销售重新生成报价确认链接。',
+                en: 'This confirmation link is missing required parameters. Please request a new link from sales.',
+                ru: 'This confirmation link is missing required parameters. Please request a new link from sales.',
+            }),
+            hint: localeCopy({
+                zh: '请确保链接包含完整参数后再提交。',
+                en: 'Make sure the link includes complete parameters before submitting.',
+                ru: 'Make sure the link includes complete parameters before submitting.',
+            }),
+        });
+        return;
+    }
+    const stageKey = text(confirmation.payload?.stage_key, 'quote_confirmed');
+    if (stageKey !== 'quote_confirmed') {
+        openQuoteConfirmAlert({
+            alertType: 'validation',
+            title: localeCopy({
+                zh: '当前链接为只读进度页',
+                en: 'This link is read-only',
+                ru: 'This link is read-only',
+            }),
+            message: localeCopy({
+                zh: '该链接用于查看生产进度，不支持提交报价确认。',
+                en: 'This link is for production progress viewing only and does not support quote confirmation submission.',
+                ru: 'This link is for production progress viewing only and does not support quote confirmation submission.',
+            }),
+            hint: localeCopy({
+                zh: '如需提交报价确认，请使用“客户报价确认”专用链接。',
+                en: 'Use the dedicated quote confirmation link if you need to submit confirmation.',
+                ru: 'Use the dedicated quote confirmation link if you need to submit confirmation.',
+            }),
+        });
+        return;
+    }
     const access = quoteConfirmationAccessState();
     if (!access.allowed) {
         if (access.requiresLogin) openAuthModal('confirm');
         state.publicConfirmation.result = null;
         renderAll();
         if (!access.requiresLogin) openQuoteConfirmAlert({
+            alertType: 'access',
             title: localeCopy({
                 zh: '当前账号无法提交报价确认',
                 en: 'This account cannot submit quote confirmation',
@@ -1532,6 +1703,7 @@ async function submitEmbeddedPublicConfirmation() {
     }
     if (!confirmation.confirmed) {
         openQuoteConfirmAlert({
+            alertType: 'validation',
             title: localeCopy({
                 zh: '提交前需要确认',
                 en: 'Confirmation required',
@@ -1575,7 +1747,6 @@ async function submitEmbeddedPublicConfirmation() {
             stage_token: next.token,
             payload: {
                 note: text(confirmation.note),
-                stage_key: 'quote_confirmed',
             },
         });
         if (error) throw error;
@@ -1617,14 +1788,21 @@ async function submitEmbeddedPublicConfirmation() {
         }
         renderAll();
     } catch (error) {
+        const friendlyMessage = friendlyQuoteConfirmErrorMessage(error);
+        try {
+            console.error('[quote-confirm-submit-error]', error);
+        } catch {
+            // noop
+        }
         state.publicConfirmation.submitting = false;
         state.publicConfirmation.result = {
             error: true,
-            message: friendlyQuoteConfirmErrorMessage(error),
+            message: friendlyMessage,
         };
         renderAll();
         if (!state.publicConfirmation.submitted) {
             openQuoteConfirmAlert({
+                alertType: 'submit-error',
                 title: localeCopy({
                     zh: '提交失败',
                     en: 'Submission failed',
@@ -2542,14 +2720,24 @@ async function fetchEmbeddedPublicConfirmation() {
             stage_token: next.token,
         });
         if (error) throw error;
-        const payload = data && typeof data === 'object' ? data : {};
+        const payload = Array.isArray(data)
+            ? (data[0] || null)
+            : (data && typeof data === 'object' ? data : null);
+        if (!payload) {
+            throw new Error('No public stage payload found for this link.');
+        }
+        const submitted = (
+            text(payload.stage_status) === 'completed'
+            || Boolean(payload.completed_at)
+            || Boolean(payload.meta?.public_confirmed_at)
+        );
         state.publicConfirmation = {
             ...state.publicConfirmation,
             loading: false,
             payload,
-            submitted: Boolean(payload.confirmed_at),
-            confirmed: Boolean(payload.confirmed_at),
-            note: text(payload.confirm_note),
+            submitted,
+            confirmed: submitted,
+            note: text(payload.meta?.public_confirmation_note || payload.confirm_note),
             result: null,
             error: '',
         };

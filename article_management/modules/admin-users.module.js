@@ -1,6 +1,8 @@
 import {
     ADMIN_ROLE_ADMIN,
+    ADMIN_ROLE_AFTER_SALES,
     ADMIN_ROLE_EDITOR,
+    ADMIN_ROLE_PRE_SALES,
     ADMIN_ROLE_SALES,
     ADMIN_ROLE_SUPER_ADMIN,
     fetchAdminUsers,
@@ -9,7 +11,7 @@ import {
     saveAdminUserEntry,
     sendPasswordResetEmail,
     updateCurrentPassword,
-} from './auth.module.js?v=20260321admin01';
+} from './auth.module.js?v=20260327admin02';
 
 let adminUsersCreatePanelExpanded = false;
 
@@ -33,12 +35,16 @@ function allowedRoleEntries(input = null) {
         return [
             { value: ADMIN_ROLE_SUPER_ADMIN, label: '\u8d85\u7ea7\u7ba1\u7406\u5458' },
             { value: ADMIN_ROLE_ADMIN, label: '\u7ba1\u7406\u5458' },
+            { value: ADMIN_ROLE_PRE_SALES, label: '\u552e\u524d\u8054\u7cfb\u4eba' },
+            { value: ADMIN_ROLE_AFTER_SALES, label: '\u552e\u540e\u8054\u7cfb\u4eba' },
             { value: ADMIN_ROLE_SALES, label: '\u9500\u552e' },
         ];
     }
     return [
         { value: ADMIN_ROLE_SUPER_ADMIN, label: '\u8d85\u7ea7\u7ba1\u7406\u5458' },
         { value: ADMIN_ROLE_ADMIN, label: '\u7ba1\u7406\u5458' },
+        { value: ADMIN_ROLE_PRE_SALES, label: '\u552e\u524d\u8054\u7cfb\u4eba' },
+        { value: ADMIN_ROLE_AFTER_SALES, label: '\u552e\u540e\u8054\u7cfb\u4eba' },
         { value: ADMIN_ROLE_SALES, label: '\u9500\u552e' },
         { value: ADMIN_ROLE_EDITOR, label: '\u5185\u5bb9\u7f16\u8f91' },
     ];

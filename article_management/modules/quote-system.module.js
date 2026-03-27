@@ -122,6 +122,10 @@ const moduleState = {
     instanceListMode: 'active',
     instanceViewPage: 1,
     salesPipelineExpanded: false,
+    baseDataLoadedAt: 0,
+    baseDataLoadingPromise: null,
+    unreadSummaryLoadedAt: 0,
+    unreadSummaryLoadingPromise: null,
 };
 
 const quoteBusyState = {
@@ -129,6 +133,11 @@ const quoteBusyState = {
 };
 
 const SALES_ACTIVITY_LIMIT = 800;
+const BASE_DATA_FRESH_MS = 15 * 1000;
+const BASE_DATA_MAX_STALE_MS = 3 * 60 * 1000;
+const BASE_DATA_SESSION_CACHE_MS = 90 * 1000;
+const BASE_DATA_SESSION_CACHE_KEY = 'ams_quote_base_data_cache_v1';
+const UNREAD_SUMMARY_CACHE_MS = 12 * 1000;
 
 const SALES_ACTIVITY_ACTOR_LABELS = Object.freeze({
     customer: '客户',
@@ -184,6 +193,28 @@ const DEAL_STAGE_STATUS_OPTIONS = Object.freeze([
     { value: 'completed', label: '已完成' },
     { value: 'blocked', label: '阻塞' },
 ]);
+
+const PRODUCTION_SUBFLOW_STATUS_OPTIONS = Object.freeze([
+    { value: 'pending', label: '待开始' },
+    { value: 'in_progress', label: '进行中' },
+    { value: 'completed', label: '已完成' },
+    { value: 'delayed', label: '延误' },
+]);
+
+const PRODUCTION_SUBFLOW_STEPS = Object.freeze([
+    { key: 'production_step_plan', label: '排程确认', hint: '确认工厂档期、批次和资源。' },
+    { key: 'production_step_material', label: '物料齐套', hint: '核心部件采购到位并齐套。' },
+    { key: 'production_step_assembly', label: '产线组装', hint: '机组、矿箱、配套组件装配。' },
+    { key: 'production_step_test', label: '联调测试', hint: '整机联调与运行稳定性测试。' },
+    { key: 'production_step_ready', label: '待验收', hint: '完成生产并预约客户出厂验收。' },
+]);
+
+const STAGE_CONTACT_META_KEYS = Object.freeze({
+    preSalesName: 'pre_sales_contact_name',
+    preSalesEmail: 'pre_sales_contact_email',
+    afterSalesName: 'after_sales_contact_name',
+    afterSalesEmail: 'after_sales_contact_email',
+});
 
 function salesActivityReader(inputUser = null) {
     const email = text(inputUser?.email).trim().toLowerCase();
@@ -401,6 +432,7 @@ async function appendSalesActivity(payload = {}) {
     try {
         const { data, error } = await client.from(TABLE_CUSTOMER_ACTIVITIES).insert(row).select('*').single();
         if (error) throw error;
+        moduleState.unreadSummaryLoadedAt = 0;
         return createSalesActivityRecord(data || row);
     } catch (_error) {
         return null;
@@ -431,6 +463,7 @@ async function appendSalesActivities(payloads = []) {
     try {
         const { data, error } = await client.from(TABLE_CUSTOMER_ACTIVITIES).insert(rows).select('*');
         if (error) throw error;
+        moduleState.unreadSummaryLoadedAt = 0;
         return Array.isArray(data) ? data.map((item) => createSalesActivityRecord(item)) : [];
     } catch (_error) {
         return [];
@@ -2587,9 +2620,29 @@ function customerHasUnreadActivityInStage(customerId = '', stageKey = '') {
 }
 
 async function fetchUnreadStageActivitySummary(reader = null) {
-    const activities = await fetchRecentSalesActivities();
-    await fetchActivityReadsForUser(reader, activities.map((item) => item.id).filter(Boolean));
-    return recomputeUnreadActivityMaps(reader).stageMap;
+    const now = Date.now();
+    if (
+        moduleState.unreadSummaryLoadedAt > 0
+        && now - moduleState.unreadSummaryLoadedAt <= UNREAD_SUMMARY_CACHE_MS
+    ) {
+        return moduleState.unreadStageActivityMap;
+    }
+    if (moduleState.unreadSummaryLoadingPromise) {
+        return moduleState.unreadSummaryLoadingPromise;
+    }
+    const request = (async () => {
+        const activities = await fetchRecentSalesActivities();
+        await fetchActivityReadsForUser(reader, activities.map((item) => item.id).filter(Boolean));
+        const summary = recomputeUnreadActivityMaps(reader).stageMap;
+        moduleState.unreadSummaryLoadedAt = Date.now();
+        return summary;
+    })();
+    moduleState.unreadSummaryLoadingPromise = request.finally(() => {
+        if (moduleState.unreadSummaryLoadingPromise === request) {
+            moduleState.unreadSummaryLoadingPromise = null;
+        }
+    });
+    return moduleState.unreadSummaryLoadingPromise;
 }
 
 function visibleStageCustomerIds(stageKey = '', input = null) {
@@ -2665,6 +2718,7 @@ async function markCustomerActivitiesRead(customerId = '', reader = null, visibl
             moduleState.activityReadMap[text(activityId)] = now;
         });
         recomputeUnreadActivityMaps();
+        moduleState.unreadSummaryLoadedAt = Date.now();
     } catch (_error) {
         return;
     }
@@ -4384,6 +4438,10 @@ const PUBLIC_STAGE_CONFIRMATION_CONFIG = Object.freeze({
         title: '客户验收确认单',
         description: '客户完成线上验收确认或纸质单回传后，这条销售线自动进入尾款确认。',
     },
+    production_scheduled: {
+        title: '客户生产进度页',
+        description: '客户可随时查看生产子节点进度、预计完工与延期说明。',
+    },
 });
 
 function publicStageConfirmationConfig(stageKey = '') {
@@ -4468,7 +4526,11 @@ function stageCustomerFacingUrl(stageKey = '', record = {}, deal = null) {
     const quoteLine = moduleState.instances.find((item) => item.id === text(deal?.primary_instance_id))
         || dealQuotes(text(deal?.id))[0]
         || null;
-    if (normalizeDealStageKey(stageKey) === 'quote_confirmed' && text(quoteLine?.public_slug)) {
+    const normalizedStageKey = normalizeDealStageKey(stageKey);
+    if (normalizedStageKey === 'production_scheduled') {
+        return stageConfirmationPublicUrl(record.public_slug, record.public_token);
+    }
+    if (normalizedStageKey === 'quote_confirmed' && text(quoteLine?.public_slug)) {
         return publicQuoteUrl(quoteLine.public_slug, {
             confirmStage: record.public_slug,
             confirmToken: record.public_token,
@@ -4493,9 +4555,11 @@ function stageConfirmationCopyText(stageKey = '', record = {}, deal = null) {
         `销售流程：${text(deal?.title, '--')}`,
         normalizeDealStageKey(stageKey) === 'quote_confirmed'
             ? '请直接打开下方报价单链接，在报价页面底部完成最终确认。'
-            : quoteLine?.public_slug
-                ? `关联报价：${publicQuoteUrl(quoteLine.public_slug)}`
-                : '',
+            : normalizeDealStageKey(stageKey) === 'production_scheduled'
+                ? '请直接打开下方链接查看最新生产进度节点、工期状态和备注。'
+                : quoteLine?.public_slug
+                    ? `关联报价：${publicQuoteUrl(quoteLine.public_slug)}`
+                    : '',
         '',
         '请打开下方入口完成确认：',
         url,
@@ -5740,8 +5804,90 @@ function brandDefaultLinkContext(brandDraft = {}) {
     };
 }
 
+function startBaseDataLoad({ force = false } = {}) {
+    if (moduleState.baseDataLoadingPromise && !force) return moduleState.baseDataLoadingPromise;
+    const request = Promise.all([
+        fetchBrandRows(),
+        fetchProductRows(),
+        fetchCustomerRows(),
+        fetchRequirementRows(),
+        fetchInstanceRows(),
+        fetchDealRows(),
+    ]).then(() => {
+        moduleState.baseDataLoadedAt = Date.now();
+        writeBaseDataSessionCache();
+    });
+    moduleState.baseDataLoadingPromise = request.finally(() => {
+        if (moduleState.baseDataLoadingPromise === request) moduleState.baseDataLoadingPromise = null;
+    });
+    return moduleState.baseDataLoadingPromise;
+}
+
+function writeBaseDataSessionCache() {
+    try {
+        const storage = window?.sessionStorage;
+        if (!storage) return;
+        const payload = {
+            savedAt: Date.now(),
+            brands: Array.isArray(moduleState.brands) ? moduleState.brands : [],
+            products: Array.isArray(moduleState.products) ? moduleState.products : [],
+            customers: Array.isArray(moduleState.customers) ? moduleState.customers : [],
+            requirements: Array.isArray(moduleState.requirements) ? moduleState.requirements : [],
+            instances: Array.isArray(moduleState.instances) ? moduleState.instances : [],
+            deals: Array.isArray(moduleState.deals) ? moduleState.deals : [],
+        };
+        storage.setItem(BASE_DATA_SESSION_CACHE_KEY, JSON.stringify(payload));
+    } catch {
+        // Ignore cache write failures (quota / privacy mode / unavailable storage).
+    }
+}
+
+function tryHydrateBaseDataFromSessionCache() {
+    try {
+        const storage = window?.sessionStorage;
+        if (!storage) return false;
+        const raw = storage.getItem(BASE_DATA_SESSION_CACHE_KEY);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw);
+        const savedAt = Number(parsed?.savedAt || 0);
+        if (!Number.isFinite(savedAt) || Date.now() - savedAt > BASE_DATA_SESSION_CACHE_MS) return false;
+        const keys = ['brands', 'products', 'customers', 'requirements', 'instances', 'deals'];
+        if (keys.some((key) => !Array.isArray(parsed?.[key]))) return false;
+        moduleState.brands = parsed.brands;
+        moduleState.products = parsed.products;
+        moduleState.customers = parsed.customers;
+        moduleState.requirements = parsed.requirements;
+        moduleState.instances = parsed.instances;
+        moduleState.deals = parsed.deals;
+        moduleState.baseDataLoadedAt = savedAt;
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 async function ensureBaseData() {
-    await Promise.all([fetchBrandRows(), fetchProductRows(), fetchCustomerRows(), fetchRequirementRows(), fetchInstanceRows(), fetchDealRows()]);
+    const now = Date.now();
+    const hasSnapshot = moduleState.baseDataLoadedAt > 0;
+    const age = hasSnapshot ? (now - moduleState.baseDataLoadedAt) : Number.POSITIVE_INFINITY;
+
+    if (!hasSnapshot) {
+        if (tryHydrateBaseDataFromSessionCache()) {
+            if (!moduleState.baseDataLoadingPromise) void startBaseDataLoad();
+            return;
+        }
+        await startBaseDataLoad();
+        return;
+    }
+
+    if (age <= BASE_DATA_FRESH_MS) return;
+
+    if (age <= BASE_DATA_MAX_STALE_MS) {
+        if (!moduleState.baseDataLoadingPromise) void startBaseDataLoad();
+        return;
+    }
+
+    await startBaseDataLoad();
 }
 
 function isQuoteSetupMissing(error) {
@@ -11783,12 +11929,85 @@ function depositStageMarkup(stage = {}, deal = null, record = {}) {
     `;
 }
 
+function productionSubflowStatusLabel(value = '') {
+    return optionLabel(PRODUCTION_SUBFLOW_STATUS_OPTIONS, text(value, 'pending'));
+}
+
+function productionSubflowStatusPill(value = '') {
+    const normalized = text(value, 'pending');
+    const tone = normalized === 'completed'
+        ? 'is-completed'
+        : normalized === 'in_progress'
+            ? 'is-active'
+            : normalized === 'delayed'
+                ? 'is-delayed'
+                : 'is-pending';
+    return `<span class="ams-production-subflow-status ${tone}">${esc(productionSubflowStatusLabel(normalized))}</span>`;
+}
+
+function productionSubflowCardMarkup(record = {}, step = {}, index = 0) {
+    const statusKey = `${step.key}_status`;
+    const dateKey = `${step.key}_date`;
+    const noteKey = `${step.key}_note`;
+    const currentStatus = stageMetaValue(record, statusKey, 'pending');
+    return `
+        <article class="ams-production-subflow-card">
+            <div class="ams-production-subflow-card-head">
+                <strong>${esc(`${index + 1}. ${step.label}`)}</strong>
+                ${productionSubflowStatusPill(currentStatus)}
+            </div>
+            <p>${esc(step.hint)}</p>
+            <div class="ams-production-subflow-grid">
+                <div class="ams-field">
+                    <label>状态</label>
+                    <select class="ams-select" data-sales-flow-stage-meta="${esc(statusKey)}">
+                        ${selectOptionsMarkup(PRODUCTION_SUBFLOW_STATUS_OPTIONS, currentStatus)}
+                    </select>
+                </div>
+                <div class="ams-field">
+                    <label>更新时间</label>
+                    <input class="ams-input" type="date" data-sales-flow-stage-meta="${esc(dateKey)}" value="${esc(stageMetaValue(record, dateKey))}">
+                </div>
+                <div class="ams-field">
+                    <label>阶段备注</label>
+                    <input class="ams-input" data-sales-flow-stage-meta="${esc(noteKey)}" value="${esc(stageMetaValue(record, noteKey))}" placeholder="本节点重点说明">
+                </div>
+            </div>
+        </article>
+    `;
+}
+
+function productionSubflowMarkup(record = {}) {
+    return `
+        <section class="ams-production-subflow">
+            <div class="ams-section-head">
+                <div>
+                    <h3>生产子流水线</h3>
+                    <p>从生产开始持续推进关键节点，便于销售与工厂同步，并把同一份进度开放给客户查看。</p>
+                </div>
+            </div>
+            <div class="ams-production-subflow-track">
+                ${PRODUCTION_SUBFLOW_STEPS.map((step, index) => productionSubflowCardMarkup(record, step, index)).join('')}
+            </div>
+        </section>
+    `;
+}
+
 function productionStageMarkup(stage = {}, deal = null, record = {}) {
     return `
         <div class="ams-stage-detail-stack">
             ${executionStageCardMarkup(stage, {
                 intro: '按生产流程更新集装箱、发电机、矿箱模块等环节状态，记录工期和是否延误，并保留通知客户的方式。',
                 actionsMarkup: executionStageActionsMarkup('保存排产进度', '通知客户验收并进入出厂验收'),
+                metaMarkup: `
+                    <div class="ams-quote-meta-grid">
+                        ${stagePublicEntryChipMarkup(stage.key, record, deal, {
+                            openLabel: '打开客户生产进度页',
+                            copyLabel: '复制进度链接',
+                            summary: '该链接会进入独立的客户生产进度页，页面内容与下方生产子流水线实时联动。',
+                        })}
+                    </div>
+                `,
                 bodyMarkup: `
                     ${executionStageFieldGridMarkup(record, [
                         { key: 'factory_name', label: '工厂 / 产线', placeholder: 'Factory A' },
@@ -11807,6 +12026,7 @@ function productionStageMarkup(stage = {}, deal = null, record = {}) {
                         { key: 'customer_notify_channels', label: '通知客户方式', defaultValue: '邮箱 / WhatsApp', placeholder: '邮箱 / WhatsApp / 电话' },
                         { key: 'customer_notify_email', label: '通知客户邮箱', placeholder: 'customer@example.com' },
                     ])}
+                    ${productionSubflowMarkup(record)}
                     ${executionStageTextareaFieldMarkup(record, {
                         key: 'production_notice_note',
                         label: '排产与验收通知说明',
@@ -12407,6 +12627,7 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
     document.querySelectorAll('[data-sales-flow-open-public-confirmation]').forEach((button) => {
         button.addEventListener('click', async (event) => {
             const targetStageKey = normalizeDealStageKey(button.dataset.salesFlowOpenPublicConfirmation || stageKey);
+            const linkLabel = targetStageKey === 'production_scheduled' ? '客户生产进度页' : '客户确认入口';
             const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
             const existingRecord = stageRecordByKey(targetStageKey, moduleState.dealStageRecords);
             const hasExistingLink = Boolean(text(existingRecord?.public_slug) && text(existingRecord?.public_token));
@@ -12423,7 +12644,7 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
                     } else {
                         window.open(targetUrl, '_blank', 'noopener');
                     }
-                    input.showToast('客户确认入口已打开。');
+                    input.showToast(`${linkLabel}已打开。`);
                 } catch (error) {
                     popup?.close();
                     throw error;
@@ -12435,6 +12656,7 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
     document.querySelectorAll('[data-sales-flow-copy-public-confirmation]').forEach((button) => {
         button.addEventListener('click', async (event) => {
             const targetStageKey = normalizeDealStageKey(button.dataset.salesFlowCopyPublicConfirmation || stageKey);
+            const linkLabel = targetStageKey === 'production_scheduled' ? '客户生产进度链接' : '客户确认链接';
             const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
             const existingRecord = stageRecordByKey(targetStageKey, moduleState.dealStageRecords);
             const hasExistingLink = Boolean(text(existingRecord?.public_slug) && text(existingRecord?.public_token));
@@ -12445,7 +12667,7 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
                 const payload = stageConfirmationCopyText(targetStageKey, stageRecord, activeDeal);
                 try {
                     await navigator.clipboard.writeText(payload);
-                    input.showToast(hasExistingLink ? '客户确认链接已复制。' : '客户确认链接已生成并复制。');
+                    input.showToast(hasExistingLink ? `${linkLabel}已复制。` : `${linkLabel}已生成并复制。`);
                 } catch (_error) {
                     input.showToast(payload, false);
                 }
@@ -12531,9 +12753,11 @@ function bindSalesExecutionActions(input, stageKey = '', customerId = '', custom
     });
 
     document.querySelectorAll('[data-sales-flow-stage-meta]').forEach((node) => {
-        node.addEventListener('input', () => {
+        const apply = () => {
             setStageRecordMeta(stageKey, node.dataset.salesFlowStageMeta, node.value);
-        });
+        };
+        node.addEventListener('input', apply);
+        if (node.tagName === 'SELECT') node.addEventListener('change', apply);
     });
 
     document.getElementById('ams-sales-flow-stage-save')?.addEventListener('click', async (event) => {
@@ -12951,6 +13175,7 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
     document.querySelectorAll('[data-sales-flow-open-public-confirmation]').forEach((button) => {
         button.addEventListener('click', async (event) => {
             const targetStageKey = normalizeDealStageKey(button.dataset.salesFlowOpenPublicConfirmation || stageKey);
+            const linkLabel = targetStageKey === 'production_scheduled' ? '客户生产进度页' : '客户确认入口';
             const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
             const existingRecord = stageRecordByKey(targetStageKey, moduleState.dealStageRecords);
             const hasExistingLink = Boolean(text(existingRecord?.public_slug) && text(existingRecord?.public_token));
@@ -12967,7 +13192,7 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
                     } else {
                         window.open(targetUrl, '_blank', 'noopener');
                     }
-                    input.showToast('客户确认入口已打开。');
+                    input.showToast(`${linkLabel}已打开。`);
                 } catch (error) {
                     popup?.close();
                     throw error;
@@ -12979,6 +13204,7 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
     document.querySelectorAll('[data-sales-flow-copy-public-confirmation]').forEach((button) => {
         button.addEventListener('click', async (event) => {
             const targetStageKey = normalizeDealStageKey(button.dataset.salesFlowCopyPublicConfirmation || stageKey);
+            const linkLabel = targetStageKey === 'production_scheduled' ? '客户生产进度链接' : '客户确认链接';
             const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
             const existingRecord = stageRecordByKey(targetStageKey, moduleState.dealStageRecords);
             const hasExistingLink = Boolean(text(existingRecord?.public_slug) && text(existingRecord?.public_token));
@@ -12989,7 +13215,7 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
                 const payload = stageConfirmationCopyText(targetStageKey, stageRecord, activeDeal);
                 try {
                     await navigator.clipboard.writeText(payload);
-                    input.showToast(hasExistingLink ? '客户确认链接已复制。' : '客户确认链接已生成并复制。');
+                    input.showToast(hasExistingLink ? `${linkLabel}已复制。` : `${linkLabel}已生成并复制。`);
                 } catch (_error) {
                     input.showToast(payload, false);
                 }
@@ -13073,9 +13299,11 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
     });
 
     document.querySelectorAll('[data-sales-flow-stage-meta]').forEach((node) => {
-        node.addEventListener('input', () => {
+        const apply = () => {
             setStageRecordMeta(stageKey, node.dataset.salesFlowStageMeta, node.value);
-        });
+        };
+        node.addEventListener('input', apply);
+        if (node.tagName === 'SELECT') node.addEventListener('change', apply);
     });
 
     document.getElementById('ams-sales-flow-stage-save')?.addEventListener('click', async (event) => {
@@ -13275,15 +13503,12 @@ export async function renderQuoteCustomerFlowPage(input) {
         await renderQuoteCustomerFlowPage(input);
         return;
     }
-    if (
-        normalizeDealStageKey(stageKey) === 'quote_confirmed'
-        && syncedActiveDeal?.id
-        && moduleState.dealStagePublicLinkSupported
-    ) {
-        const confirmationRecord = stageRecordByKey('quote_confirmed', moduleState.dealStageRecords);
+    const stageNeedsPublicLink = ['quote_confirmed', 'production_scheduled'].includes(normalizeDealStageKey(stageKey));
+    if (stageNeedsPublicLink && syncedActiveDeal?.id && moduleState.dealStagePublicLinkSupported) {
+        const confirmationRecord = stageRecordByKey(stageKey, moduleState.dealStageRecords);
         if (!(text(confirmationRecord?.public_slug) && text(confirmationRecord?.public_token))) {
             try {
-                await ensurePublicStageConfirmationLink(input.user, 'quote_confirmed', syncedActiveDeal);
+                await ensurePublicStageConfirmationLink(input.user, stageKey, syncedActiveDeal);
             } catch (error) {
                 if (!isDealStagePublicLinkSchemaMissing(error) && !text(error?.message).includes('公开确认入口依赖数据库迁移')) throw error;
             }
