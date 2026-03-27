@@ -5768,6 +5768,22 @@ textarea {
     font-size: 12px;
 }
 
+.ams-sales-flow-action-bar {
+    margin-top: 10px;
+}
+
+.ams-sales-flow-action-bar .ams-row-actions {
+    margin-left: auto;
+    gap: 8px;
+}
+
+.ams-sales-flow-action-bar .ams-btn {
+    min-height: 36px;
+    min-width: 148px;
+    padding: 8px 14px;
+    font-size: 12px;
+}
+
 @media (max-width: 1280px) {
     .ams-app {
         grid-template-columns: 220px 1fr;

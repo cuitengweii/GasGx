@@ -11414,9 +11414,6 @@ function customerProfileFlowMarkup(customer = {}, deals = [], activeDeal = null)
                     <h3>${esc(customerLabel)}</h3>
                     <p>当前客户流水线的第一节点，只维护客户主档信息，不在这里处理需求、报价和履约详情。</p>
                 </div>
-                <div class="ams-row-actions">
-                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-customer-save">保存并进入获取需求</button>
-                </div>
             </div>
             <div class="ams-quote-meta-grid">
                 <div class="ams-summary-chip"><strong>客户公司</strong><span>${esc(text(customer.company_name, '--'))}</span></div>
@@ -11434,6 +11431,7 @@ function customerProfileFlowMarkup(customer = {}, deals = [], activeDeal = null)
                 <label>客户备注</label>
                 <textarea class="ams-textarea" rows="5" data-sales-flow-customer-field="notes" placeholder="记录客户来源、偏好和跟进节奏。">${esc(customer.notes)}</textarea>
             </div>
+            ${salesFlowActionBarMarkup('<button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-customer-save">保存并进入获取需求</button>', '先保存客户档案，再推进到获取需求。')}
         </section>
     `;
 }
@@ -11478,9 +11476,6 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
                 <div>
                     <h3>${esc(dealStageLabel(stageKey))}</h3>
                         <p>${esc(stageIntro)}</p>
-                </div>
-                <div class="ams-row-actions">
-                    ${normalizeDealStageKey(stageKey) === 'requirement_confirmed' ? `<button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-requirement-confirm" ${canConfirm ? '' : 'disabled'}>确认需求</button>` : ''}
                 </div>
             </div>
             <div class="ams-share-poster-modal" id="ams-sales-flow-requirement-share-poster-modal" hidden>
@@ -11573,6 +11568,12 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
                         : '<div class="ams-empty">当前还没有沟通备注记录。</div>'}
                 </div>
             </details>
+            ${salesFlowActionBarMarkup(`
+                <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-requirement-save" ${requirementLocked ? 'disabled' : ''}>保存需求</button>
+                ${normalizeDealStageKey(stageKey) === 'requirement_confirmed'
+                    ? `<button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-requirement-confirm" ${canConfirm ? '' : 'disabled'}>确认需求并进入报价</button>`
+                    : ''}
+            `, '需求与报价节点必须双向确认，保存后再推进。')}
         </section>
     `;
 }
@@ -11630,9 +11631,7 @@ function quoteTermsCardMarkup(record = {}) {
                 <label>报价确认条款</label>
                 <textarea class="ams-textarea" rows="6" data-sales-flow-stage-meta="quote_terms" placeholder="示例：30% 定金后排产；预计 45 天交付；尾款在出厂验收后支付；质保 12 个月。">${esc(stageMetaValue(record, 'quote_terms'))}</textarea>
             </div>
-            <div class="ams-row-actions">
-                <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-quote-save">保存确认条款</button>
-            </div>
+            ${salesFlowActionBarMarkup('<button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-quote-save">保存确认条款</button>', '条款保存后再执行报价确认。')}
         </section>
     `;
 }
@@ -12264,12 +12263,10 @@ function executionStageRenderer(stage = {}) {
 }
 
 function executionStageActionsMarkup(saveLabel = '保存阶段', completeLabel = '标记完成并进入下一节点') {
-    return `
-        <div class="ams-row-actions">
-            <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">${esc(saveLabel)}</button>
-            <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">${esc(completeLabel)}</button>
-        </div>
-    `;
+    return salesFlowActionBarMarkup(`
+        <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-stage-save">${esc(saveLabel)}</button>
+        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-stage-complete">${esc(completeLabel)}</button>
+    `, '保存当前节点后，再推进到下一环节。');
 }
 
 function executionStageCardMarkup(stage = {}, options = {}) {
@@ -12401,6 +12398,62 @@ async function updateDealLifecycle(input, dealId, patch = {}) {
     });
 }
 
+function salesFlowActionBarMarkup(buttonsMarkup = '', hint = '') {
+    return `
+        <div class="ams-editor-action-bar ams-sales-flow-action-bar">
+            ${hint ? `<span class="ams-editor-action-hint">${esc(hint)}</span>` : ''}
+            <div class="ams-row-actions">${buttonsMarkup}</div>
+        </div>
+    `;
+}
+
+function saveConfirmPayload(options = {}) {
+    return {
+        title: text(options.title, '确认保存当前节点？'),
+        message: text(options.message, '保存后会覆盖当前草稿并同步到销售流水线。'),
+        confirmLabel: text(options.confirmLabel, '确认保存'),
+        danger: false,
+    };
+}
+
+function advanceConfirmPayload(options = {}) {
+    return {
+        title: text(options.title, '确认推进到下一节点？'),
+        message: text(options.message, '推进后当前节点将标记完成，并进入下一节点。'),
+        confirmLabel: text(options.confirmLabel, '确认推进'),
+        danger: false,
+    };
+}
+
+function bindSalesCustomerActions(input, stageKey = '', customerId = '', customerFlow = false) {
+    document.querySelectorAll('[data-sales-flow-customer-field]').forEach((node) => {
+        node.addEventListener('input', () => {
+            const field = node.dataset.salesFlowCustomerField || '';
+            if (!field) return;
+            moduleState.customerEditor[field] = node.value;
+        });
+    });
+
+    document.getElementById('ams-sales-flow-customer-save')?.addEventListener('click', async (event) => {
+        const confirmed = await confirmSalesAction(advanceConfirmPayload({
+            title: '确认保存客户档案并进入获取需求？',
+            message: '系统会先保存客户主档，并把当前销售线推进到“获取需求”节点。',
+            confirmLabel: '确认并进入',
+        }));
+        if (!confirmed) return;
+        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
+            const saved = await saveCustomerDraft(input.user, moduleState.customerEditor);
+            moduleState.customerEditor = createCustomerDraft(saved);
+            const flow = await ensureCustomerRequirementFlow(input.user, saved);
+            const nextDeal = flow?.deal || moduleState.dealEditor || null;
+            input.showToast('客户档案已保存，正在进入获取需求。');
+            window.location.assign(customerFlow
+                ? customerFlowStageUrl('requirement_capture', nextDeal, saved.id)
+                : adminPageUrl('quote-pipeline', { stage: 'requirement_capture', customer: saved.id, deal: flow?.deal?.id }));
+        });
+    });
+}
+
 function bindSalesRequirementActions(input, stageKey = '', customerId = '', customerFlow = false) {
     document.querySelectorAll('[data-sales-flow-requirement-field]').forEach((node) => {
         const apply = () => {
@@ -12423,6 +12476,11 @@ function bindSalesRequirementActions(input, stageKey = '', customerId = '', cust
     });
 
     document.getElementById('ams-sales-flow-requirement-save')?.addEventListener('click', async (event) => {
+        const confirmed = await confirmSalesAction(saveConfirmPayload({
+            title: '确认保存需求信息？',
+            message: '保存后将更新客户需求记录，供后续“确认需求”与报价基线使用。',
+        }));
+        if (!confirmed) return;
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
             const answers = normalizeRequirementAnswers(moduleState.requirementEditor.answers);
             moduleState.requirementEditor.answers = answers;
@@ -12748,6 +12806,11 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
     });
 
     document.getElementById('ams-sales-flow-quote-save')?.addEventListener('click', async (event) => {
+        const confirmed = await confirmSalesAction(saveConfirmPayload({
+            title: '确认保存报价确认条款？',
+            message: '保存后会覆盖当前条款内容，并作为报价确认节点的内部基线。',
+        }));
+        if (!confirmed) return;
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
             flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
             if (moduleState.instanceEditor?.id) {
@@ -12833,6 +12896,11 @@ function bindSalesExecutionActions(input, stageKey = '', customerId = '', custom
     });
 
     document.getElementById('ams-sales-flow-stage-save')?.addEventListener('click', async (event) => {
+        const confirmed = await confirmSalesAction(saveConfirmPayload({
+            title: `确认保存${dealStageLabel(stageKey)}节点？`,
+            message: '保存后将同步当前节点状态、负责人信息和沟通记录。',
+        }));
+        if (!confirmed) return;
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
             flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
             const saved = await saveDealDraft(input.user, moduleState.dealEditor, {
@@ -12887,6 +12955,11 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
     });
 
     document.getElementById('ams-sales-stage-contacts-save')?.addEventListener('click', async (event) => {
+        const confirmed = await confirmSalesAction(saveConfirmPayload({
+            title: `确认保存${dealStageLabel(stageKey)}双负责人？`,
+            message: '保存后会更新当前节点的售前/售后负责人信息。',
+        }));
+        if (!confirmed) return;
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
             if (!moduleState.dealEditor?.id) {
                 input.showToast('当前节点没有可保存的销售线。', true);
@@ -12900,16 +12973,6 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
             input.showToast('节点双负责人已保存。');
             await input.rerender();
         });
-    });
-
-    document.querySelectorAll('[data-sales-flow-stage-meta]').forEach((node) => {
-        const apply = () => {
-            const field = node.dataset.salesFlowStageMeta || '';
-            if (!field) return;
-            setStageRecordMeta(stageKey, field, node.value);
-        };
-        node.addEventListener('input', apply);
-        if (node.tagName === 'SELECT') node.addEventListener('change', apply);
     });
 
     document.querySelectorAll('[data-customer-activity-filter]').forEach((button) => {
@@ -12958,488 +13021,10 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
         });
     }
 
-    document.querySelectorAll('[data-sales-flow-customer-field]').forEach((node) => {
-        node.addEventListener('input', () => {
-            const field = node.dataset.salesFlowCustomerField || '';
-            if (!field) return;
-            moduleState.customerEditor[field] = node.value;
-        });
-    });
-
-    document.getElementById('ams-sales-flow-customer-save')?.addEventListener('click', async (event) => {
-        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
-            const saved = await saveCustomerDraft(input.user, moduleState.customerEditor);
-            moduleState.customerEditor = createCustomerDraft(saved);
-            const flow = await ensureCustomerRequirementFlow(input.user, saved);
-            input.showToast('客户档案已保存，正在进入获取需求。');
-            window.location.assign(customerFlow
-                ? customerFlowStageUrl('requirement_capture', flow?.deal || deal, saved.id)
-                : adminPageUrl('quote-pipeline', { stage: 'requirement_capture', customer: saved.id, deal: flow?.deal?.id }));
-        });
-    });
-
-    document.querySelectorAll('[data-sales-flow-requirement-field]').forEach((node) => {
-        const apply = () => {
-            const field = node.dataset.salesFlowRequirementField || '';
-            if (!field) return;
-            moduleState.requirementEditor[field] = node.value;
-        };
-        node.addEventListener('input', apply);
-        if (node.tagName === 'SELECT') node.addEventListener('change', apply);
-    });
-
-    document.querySelectorAll('[data-sales-flow-requirement-answer]').forEach((node) => {
-        node.addEventListener('input', () => {
-            const field = node.dataset.salesFlowRequirementAnswer || '';
-            if (!field) return;
-            const answers = normalizeRequirementAnswers(moduleState.requirementEditor.answers);
-            answers[field] = node.value;
-            moduleState.requirementEditor.answers = answers;
-        });
-    });
-
-    document.getElementById('ams-sales-flow-requirement-save')?.addEventListener('click', async (event) => {
-        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
-            const answers = normalizeRequirementAnswers(moduleState.requirementEditor.answers);
-            moduleState.requirementEditor.answers = answers;
-            const saved = await saveRequirementDraft(input.user, moduleState.requirementEditor);
-            moduleState.requirementEditor = createRequirementDraft(saved);
-            input.showToast('需求已保存。');
-            await input.rerender();
-        });
-    });
-
-    document.getElementById('ams-sales-flow-requirement-note-submit')?.addEventListener('click', async (event) => {
-        await input.withButtonBusy(event.currentTarget, '提交中...', async () => {
-            const answers = normalizeRequirementAnswers(moduleState.requirementEditor.answers);
-            const noteDraft = text(answers.communication_note_draft);
-            if (!noteDraft) {
-                input.showToast('请先填写沟通备注。', true);
-                return;
-            }
-            answers.communication_notes = [
-                {
-                    note: noteDraft,
-                    created_at: new Date().toISOString(),
-                    author: text(input.user?.email || input.user?.id, 'sales'),
-                },
-                ...(answers.communication_notes || []),
-            ];
-            answers.communication_note_draft = '';
-            moduleState.requirementEditor.answers = answers;
-            const saved = await saveRequirementDraft(input.user, moduleState.requirementEditor);
-            moduleState.requirementEditor = createRequirementDraft(saved);
-            input.showToast('沟通备注已提交。');
-            await input.rerender();
-        });
-    });
-
-    document.getElementById('ams-sales-flow-requirement-open-link')?.addEventListener('click', () => {
-        const requirement = createRequirementDraft(moduleState.requirementEditor);
-        if (!requirement.public_slug || !requirement.public_token) {
-            input.showToast('请先保存需求，再生成客户需求链接。', true);
-            return;
-        }
-        markRequirementCustomerUpdateSeen(requirement);
-        document.getElementById('ams-sales-flow-requirement-open-link')?.classList.remove('has-alert-dot');
-        document.querySelector('#ams-sales-flow-requirement-open-link .ams-btn-alert-dot')?.remove();
-        window.open(requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true }), '_blank', 'noopener');
-    });
-
-    ensureSalesFlowShareMenuBindings();
-    const salesFlowRequirementShareMenu = document.querySelector('.ams-sales-flow-requirement-share-menu');
-    const salesFlowRequirementPosterModal = document.getElementById('ams-sales-flow-requirement-share-poster-modal');
-    const salesFlowRequirementPosterImage = document.getElementById('ams-sales-flow-requirement-share-poster-image');
-    const salesFlowRequirementPosterDownload = document.getElementById('ams-sales-flow-requirement-share-poster-download');
-    const closeSalesFlowRequirementPosterModal = () => {
-        if (salesFlowRequirementPosterModal) salesFlowRequirementPosterModal.hidden = true;
-    };
-
-    document.getElementById('ams-sales-flow-requirement-share-link')?.addEventListener('click', async () => {
-        const requirement = createRequirementDraft(moduleState.requirementEditor);
-        if (!requirement.public_slug || !requirement.public_token) {
-            input.showToast('请先保存需求，再生成客户需求链接。', true);
-            return;
-        }
-        const payload = requirementShareCopyText(requirement);
-        try {
-            await navigator.clipboard.writeText(payload);
-            input.showToast('客户需求分享文案已复制。');
-        } catch (_error) {
-            input.showToast(payload, false);
-        }
-        if (salesFlowRequirementShareMenu) salesFlowRequirementShareMenu.removeAttribute('open');
-    });
-
-    document.getElementById('ams-sales-flow-requirement-share-poster')?.addEventListener('click', async (event) => {
-        await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
-            const requirement = createRequirementDraft(moduleState.requirementEditor);
-            if (!requirement.public_slug || !requirement.public_token) {
-                input.showToast('请先保存需求，再生成客户需求链接。', true);
-                return;
-            }
-            try {
-                const posterUrl = await requirementSharePosterDataUrl(requirement);
-                if (salesFlowRequirementPosterImage) salesFlowRequirementPosterImage.setAttribute('src', posterUrl);
-                if (salesFlowRequirementPosterDownload) salesFlowRequirementPosterDownload.setAttribute('href', posterUrl);
-                if (salesFlowRequirementPosterModal) salesFlowRequirementPosterModal.hidden = false;
-                if (salesFlowRequirementShareMenu) salesFlowRequirementShareMenu.removeAttribute('open');
-            } catch (error) {
-                input.showToast(error.message || '二维码海报生成失败。', true);
-            }
-        });
-    });
-
-    document.getElementById('ams-sales-flow-requirement-share-poster-copy')?.addEventListener('click', async () => {
-        const requirement = createRequirementDraft(moduleState.requirementEditor);
-        if (!requirement.public_slug || !requirement.public_token) {
-            input.showToast('请先保存需求，再生成客户需求链接。', true);
-            return;
-        }
-        const payload = requirementShareCopyText(requirement);
-        try {
-            await navigator.clipboard.writeText(payload);
-            input.showToast('海报分享文案已复制。');
-        } catch (_error) {
-            input.showToast(payload, false);
-        }
-    });
-    salesFlowRequirementPosterModal?.querySelectorAll('[data-sales-flow-requirement-share-poster-close]').forEach((node) => {
-        node.addEventListener('click', closeSalesFlowRequirementPosterModal);
-    });
-
-    document.getElementById('ams-sales-flow-requirement-confirm')?.addEventListener('click', async (event) => {
-        const confirmed = await confirmSalesAction({
-            title: '确认需求并进入报价？',
-            message: '确认后当前需求会被锁定为报价基线，后续将直接进入转入报价节点。',
-            confirmLabel: '确认需求',
-            danger: false,
-        });
-        if (!confirmed) return;
-        await input.withButtonBusy(event.currentTarget, '确认中...', async () => {
-            const saved = await confirmRequirementForDeal(input.user, moduleState.requirementEditor);
-            input.showToast('需求已确认。');
-            window.location.assign(customerFlow
-                ? customerFlowStageUrl('quote_draft', dealById(saved.deal_id), customerId)
-                : adminPageUrl('quote-pipeline', { stage: 'quote_draft', deal: saved.deal_id }));
-        });
-    });
-
-    const quotePublicReady = () => quotePublishedForStage(stageKey, moduleState.instanceEditor);
-
-    document.getElementById('ams-sales-flow-instance-product')?.addEventListener('change', (event) => {
-        moduleState.pipelineProductSelection = event.currentTarget.value || '';
-    });
-
-    document.getElementById('ams-sales-flow-instance-create')?.addEventListener('click', async (event) => {
-        await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
-            const deal = dealById(readAdminPageParam('deal'));
-            const productId = moduleState.pipelineProductSelection || '';
-            if (!deal?.id) throw new Error('请先选中一条销售线。');
-            const instance = await createInstanceFromProduct(input.user, productId, { dealId: deal.id });
-            await fetchInstanceEditor(instance.id);
-            input.showToast('报价草稿已生成。');
-            window.location.assign(customerFlow
-                ? customerFlowStageUrl('quote_draft', dealById(instance.deal_id), customerId)
-                : adminPageUrl('quote-pipeline', { stage: 'quote_draft', deal: instance.deal_id }));
-        });
-    });
-
-    ['ams-sales-flow-instance-open', 'ams-sales-flow-instance-open-inline'].forEach((id) => {
-        document.getElementById(id)?.addEventListener('click', () => {
-            if (!moduleState.instanceEditor?.id) return;
-            window.open(quoteEditorUrl('instance', moduleState.instanceEditor.id, {
-                dealId: text(moduleState.instanceEditor?.deal_id || readAdminPageParam('deal')),
-                stage: normalizeDealStageKey(stageKey),
-                customerId,
-                returnMode: customerFlow ? 'customer-flow' : 'pipeline',
-            }), '_blank', 'noopener');
-        });
-    });
-
-    const ensureQuoteConfirmedRecord = async () => {
-        let quoteConfirmedRecord = stageRecordByKey('quote_confirmed', moduleState.dealStageRecords);
-        if (text(quoteConfirmedRecord?.public_slug) && text(quoteConfirmedRecord?.public_token)) return quoteConfirmedRecord;
-        const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id));
-        if (!activeDeal?.id) return quoteConfirmedRecord;
-        try {
-            quoteConfirmedRecord = await ensurePublicStageConfirmationLink(input.user, 'quote_confirmed', activeDeal);
-            moduleState.dealStageRecords = activeDeal ? dealCurrentRecords(moduleState.dealEditor || activeDeal) : moduleState.dealStageRecords;
-        } catch (_error) {
-            return quoteConfirmedRecord;
-        }
-        return quoteConfirmedRecord;
-    };
-
-    document.getElementById('ams-sales-flow-instance-open-public')?.addEventListener('click', async () => {
-        const instance = moduleState.instanceEditor;
-        if (!quotePublicReady()) {
-            input.showToast('请先发布报价，再查看用户报价页。', true);
-            return;
-        }
-        const quoteConfirmedRecord = await ensureQuoteConfirmedRecord();
-        window.open(quotePublicUrlForStage(instance, quoteConfirmedRecord), '_blank', 'noopener');
-    });
-
-    document.getElementById('ams-sales-flow-open-requirement-readonly')?.addEventListener('click', () => {
-        const instance = moduleState.instanceEditor;
-        const activeDeal = dealById(text(moduleState.dealEditor?.id || instance?.deal_id));
-        const requirement = quoteRequirementForStage(activeDeal, instance);
-        if (!(text(requirement?.public_slug) && text(requirement?.public_token))) {
-            input.showToast('当前还没有可查看的用户需求入口。', true);
-            return;
-        }
-        window.open(requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true }), '_blank', 'noopener');
-    });
-
-    const salesFlowQuoteShareMenu = document.querySelector('.ams-sales-flow-quote-share-menu');
-    salesFlowQuoteShareMenu?.querySelector('summary')?.addEventListener('click', (event) => {
-        if (quotePublicReady()) return;
-        event.preventDefault();
-        input.showToast('请先发布报价，再分享报价。', true);
-    });
-    const salesFlowQuotePosterModal = document.getElementById('ams-sales-flow-quote-share-poster-modal');
-    const salesFlowQuotePosterImage = document.getElementById('ams-sales-flow-quote-share-poster-image');
-    const salesFlowQuotePosterDownload = document.getElementById('ams-sales-flow-quote-share-poster-download');
-    const closeSalesFlowQuotePosterModal = () => {
-        if (salesFlowQuotePosterModal) salesFlowQuotePosterModal.hidden = true;
-    };
-
-    document.getElementById('ams-sales-flow-instance-share-link')?.addEventListener('click', async (event) => {
-        await input.withButtonBusy(event.currentTarget, '复制中...', async () => {
-            const instance = moduleState.instanceEditor;
-            if (!quotePublicReady()) {
-                input.showToast('请先发布报价，再复制对外报价链接。', true);
-                return;
-            }
-            const quoteConfirmedRecord = await ensureQuoteConfirmedRecord();
-            const payload = quoteShareCopyText(instance, {
-                url: quotePublicUrlForStage(instance, quoteConfirmedRecord),
-            });
-            try {
-                await navigator.clipboard.writeText(payload);
-                input.showToast('报价链接和对外说明已复制。');
-            } catch (_error) {
-                input.showToast(payload, false);
-            }
-            if (salesFlowQuoteShareMenu) salesFlowQuoteShareMenu.removeAttribute('open');
-        });
-    });
-
-    document.getElementById('ams-sales-flow-instance-share-poster')?.addEventListener('click', async (event) => {
-        await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
-            const instance = moduleState.instanceEditor;
-            if (!quotePublicReady()) {
-                input.showToast('请先发布报价，再分享二维码。', true);
-                return;
-            }
-            const quoteConfirmedRecord = await ensureQuoteConfirmedRecord();
-            try {
-                const posterUrl = await quoteSharePosterDataUrl(instance, {
-                    url: quotePublicUrlForStage(instance, quoteConfirmedRecord),
-                });
-                if (salesFlowQuotePosterImage) salesFlowQuotePosterImage.setAttribute('src', posterUrl);
-                if (salesFlowQuotePosterDownload) salesFlowQuotePosterDownload.setAttribute('href', posterUrl);
-                if (salesFlowQuotePosterModal) salesFlowQuotePosterModal.hidden = false;
-                if (salesFlowQuoteShareMenu) salesFlowQuoteShareMenu.removeAttribute('open');
-            } catch (error) {
-                input.showToast(error.message || '二维码海报生成失败。', true);
-            }
-        });
-    });
-
-    document.getElementById('ams-sales-flow-quote-share-poster-copy-link')?.addEventListener('click', async () => {
-        const instance = moduleState.instanceEditor;
-        if (!quotePublicReady()) {
-            input.showToast('请先发布报价，再复制分享说明。', true);
-            return;
-        }
-        const quoteConfirmedRecord = await ensureQuoteConfirmedRecord();
-        const payload = quoteShareCopyText(instance, {
-            url: quotePublicUrlForStage(instance, quoteConfirmedRecord),
-        });
-        try {
-            await navigator.clipboard.writeText(payload);
-            input.showToast('海报说明文案已复制。');
-        } catch (_error) {
-            input.showToast(payload, false);
-        }
-    });
-
-    salesFlowQuotePosterModal?.querySelectorAll('[data-sales-flow-quote-share-poster-close]').forEach((button) => {
-        button.addEventListener('click', closeSalesFlowQuotePosterModal);
-    });
-
-    document.querySelectorAll('[data-sales-flow-open-public-confirmation]').forEach((button) => {
-        button.addEventListener('click', async (event) => {
-            const targetStageKey = normalizeDealStageKey(button.dataset.salesFlowOpenPublicConfirmation || stageKey);
-            const linkLabel = targetStageKey === 'production_scheduled' ? '客户生产进度页' : '客户确认入口';
-            const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
-            const existingRecord = stageRecordByKey(targetStageKey, moduleState.dealStageRecords);
-            const hasExistingLink = Boolean(text(existingRecord?.public_slug) && text(existingRecord?.public_token));
-            const popup = window.open('about:blank', '_blank');
-            await input.withButtonBusy(event.currentTarget, '打开中...', async () => {
-                try {
-                    const stageRecord = hasExistingLink
-                        ? existingRecord
-                        : await ensurePublicStageConfirmationLink(input.user, targetStageKey, activeDeal);
-                    const targetUrl = stageCustomerFacingUrl(targetStageKey, stageRecord, activeDeal);
-                    if (popup) {
-                        popup.location.replace(targetUrl);
-                        try { popup.opener = null; } catch (_error) { /* noop */ }
-                    } else {
-                        window.open(targetUrl, '_blank', 'noopener');
-                    }
-                    input.showToast(`${linkLabel}已打开。`);
-                } catch (error) {
-                    popup?.close();
-                    throw error;
-                }
-            });
-        });
-    });
-
-    document.querySelectorAll('[data-sales-flow-copy-public-confirmation]').forEach((button) => {
-        button.addEventListener('click', async (event) => {
-            const targetStageKey = normalizeDealStageKey(button.dataset.salesFlowCopyPublicConfirmation || stageKey);
-            const linkLabel = targetStageKey === 'production_scheduled' ? '客户生产进度链接' : '客户确认链接';
-            const activeDeal = dealById(text(moduleState.dealEditor?.id || moduleState.instanceEditor?.deal_id || moduleState.requirementEditor?.deal_id));
-            const existingRecord = stageRecordByKey(targetStageKey, moduleState.dealStageRecords);
-            const hasExistingLink = Boolean(text(existingRecord?.public_slug) && text(existingRecord?.public_token));
-            await input.withButtonBusy(event.currentTarget, hasExistingLink ? '复制中...' : '生成中...', async () => {
-                const stageRecord = hasExistingLink
-                    ? existingRecord
-                    : await ensurePublicStageConfirmationLink(input.user, targetStageKey, activeDeal);
-                const payload = stageConfirmationCopyText(targetStageKey, stageRecord, activeDeal);
-                try {
-                    await navigator.clipboard.writeText(payload);
-                    input.showToast(hasExistingLink ? `${linkLabel}已复制。` : `${linkLabel}已生成并复制。`);
-                } catch (_error) {
-                    input.showToast(payload, false);
-                }
-            });
-        });
-    });
-
-    document.getElementById('ams-sales-flow-quote-save')?.addEventListener('click', async (event) => {
-        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
-            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
-            if (moduleState.instanceEditor?.id) {
-                await saveInstanceDraft(input.user, moduleState.instanceEditor);
-            }
-            if (moduleState.dealEditor?.id) {
-                await saveDealDraft(input.user, moduleState.dealEditor, {
-                    stageRecords: moduleState.dealStageRecords,
-                    currentStage: stageKey,
-                });
-            }
-            input.showToast('报价节点已保存。');
-            await input.rerender();
-        });
-    });
-
-    document.getElementById('ams-sales-flow-stage-note-submit')?.addEventListener('click', async (event) => {
-        await input.withButtonBusy(event.currentTarget, '提交中...', async () => {
-            const record = stageRecordByKey(stageKey, moduleState.dealStageRecords);
-            const noteDraft = text(record?.meta?.communication_note_draft);
-            if (!noteDraft) {
-                input.showToast('请先填写沟通备注。', true);
-                return;
-            }
-            appendStageCommunicationLog(stageKey, noteDraft, input.user?.email || input.user?.id || '销售沟通');
-            if (moduleState.dealEditor?.id) {
-                const saved = await saveDealDraft(input.user, moduleState.dealEditor, {
-                    stageRecords: moduleState.dealStageRecords,
-                    currentStage: stageKey,
-                });
-                await fetchDealEditor(saved.id);
-            }
-            input.showToast('沟通备注已提交。');
-            await input.rerender();
-        });
-    });
-
-    document.getElementById('ams-sales-flow-instance-confirm')?.addEventListener('click', async (event) => {
-        const quoteConfirmedRecord = stageRecordByKey('quote_confirmed', moduleState.dealStageRecords);
-        if (!quoteConfirmationSubmitted(quoteConfirmedRecord)) {
-            input.showToast('客户还未提交报价确认，暂时不能推进到签约合同。', true);
-            return;
-        }
-        const confirmed = await confirmSalesAction({
-            title: '确认报价并推进到签约合同？',
-            message: '确认后当前报价版本会被锁定为正式商务基线，并自动进入签约合同节点。',
-            confirmLabel: '确认报价',
-            danger: false,
-        });
-        if (!confirmed) return;
-        await input.withButtonBusy(event.currentTarget, '确认中...', async () => {
-            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
-            const saved = await confirmQuoteForDeal(input.user, moduleState.instanceEditor);
-            input.showToast('报价已确认。');
-            window.location.assign(customerFlow
-                ? customerFlowStageUrl('contract_signed', dealById(saved.deal_id), customerId)
-                : adminPageUrl('quote-pipeline', { stage: 'contract_signed', deal: saved.deal_id }));
-        });
-    });
-
-    document.querySelectorAll('[data-sales-flow-stage-field]').forEach((node) => {
-        const apply = () => {
-            const field = node.dataset.salesFlowStageField || '';
-            replaceStageRecord(stageKey, (record) => {
-                if (field === 'stage_status') record.stage_status = normalizeDealStageStatus(node.value);
-                else if (field === 'planned_at' || field === 'completed_at') record[field] = parseDateTimeLocal(node.value);
-                else record[field] = node.value;
-                return record;
-            });
-        };
-        node.addEventListener('input', apply);
-        if (node.tagName === 'SELECT') node.addEventListener('change', apply);
-    });
-
-    document.querySelectorAll('[data-sales-flow-stage-meta]').forEach((node) => {
-        const apply = () => {
-            setStageRecordMeta(stageKey, node.dataset.salesFlowStageMeta, node.value);
-        };
-        node.addEventListener('input', apply);
-        if (node.tagName === 'SELECT') node.addEventListener('change', apply);
-    });
-
-    document.getElementById('ams-sales-flow-stage-save')?.addEventListener('click', async (event) => {
-        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
-            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
-            const saved = await saveDealDraft(input.user, moduleState.dealEditor, {
-                stageRecords: moduleState.dealStageRecords,
-                currentStage: stageKey,
-            });
-            await fetchDealEditor(saved.id);
-            input.showToast('阶段已保存。');
-            await input.rerender();
-        });
-    });
-
-    document.getElementById('ams-sales-flow-stage-complete')?.addEventListener('click', async (event) => {
-        const finalStage = normalizeDealStageKey(stageKey) === 'support_active';
-        const confirmed = await confirmSalesAction({
-            title: finalStage ? '确认完成整条销售流程？' : `确认完成${dealStageLabel(stageKey)}并进入下一节点？`,
-            message: finalStage
-                ? '完成后这条销售流程会进入已完成状态，不再继续往后推进。'
-                : '推进后当前节点会被标记为已完成，并自动进入下一节点。',
-            confirmLabel: finalStage ? '确认完成' : '确认推进',
-            danger: !finalStage,
-        });
-        if (!confirmed) return;
-        await input.withButtonBusy(event.currentTarget, '推进中...', async () => {
-            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
-            const saved = await saveAndAdvanceDeal(input.user, {
-                id: moduleState.dealEditor?.id,
-                deal_status: finalStage ? 'completed' : moduleState.dealEditor?.deal_status,
-            }, [stageKey], finalStage ? 'support_active' : nextStageKey(stageKey));
-            input.showToast(finalStage ? '销售线已完成。' : '已推进到下一节点。');
-            window.location.assign(customerFlow
-                ? customerFlowStageUrl(finalStage ? 'support_active' : nextStageKey(stageKey), saved, customerId)
-                : adminPageUrl('quote-pipeline', { stage: finalStage ? 'support_active' : nextStageKey(stageKey), deal: saved.id }));
-        });
-    });
+    bindSalesCustomerActions(input, stageKey, customerId, customerFlow);
+    bindSalesRequirementActions(input, stageKey, customerId, customerFlow);
+    bindSalesQuoteActions(input, stageKey, customerId, customerFlow);
+    bindSalesExecutionActions(input, stageKey, customerId, customerFlow);
 }
 
 export async function renderQuotePipelinePage(input) {

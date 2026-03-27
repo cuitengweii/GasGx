@@ -215,7 +215,15 @@ function navButton(id, label, icon) {
 }
 
 function bindShellEvents() {
-    bindShellEvents();
+    document.querySelectorAll('.ams-nav-btn').forEach((button) => {
+        if (button.dataset.bound === '1') return;
+        button.dataset.bound = '1';
+        button.addEventListener('click', () => {
+            state.page = button.dataset.page || 'dashboard';
+            syncPageToUrl({ clearFlowParams: true });
+            void renderPage();
+        });
+    });
 }
 
 function updateShellState() {
@@ -433,13 +441,7 @@ function renderShell() {
         });
     });
 
-    document.querySelectorAll('.ams-nav-btn').forEach((button) => {
-        button.addEventListener('click', () => {
-            state.page = button.dataset.page || 'dashboard';
-            syncPageToUrl({ clearFlowParams: true });
-            void renderPage();
-        });
-    });
+    bindShellEvents();
 }
 
 function renderEntryDenied() {

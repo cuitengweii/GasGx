@@ -11,6 +11,8 @@
     "up": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ftp_upload_changed.ps1",
     "up:dry": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ftp_upload_changed.ps1 -DryRun",
     "test:e2e": "playwright test",
+    "test:e2e:sales-roles": "playwright test tests/playwright/sales-auth-roles.spec.ts",
+    "test:e2e:sales-formal": "playwright test tests/playwright/sales-formal-backend.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
     "test:smoke:news-media": "node scripts/smoke_check_news_media.mjs",
