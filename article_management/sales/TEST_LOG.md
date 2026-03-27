@@ -172,3 +172,23 @@ Scope: `article_management/sales/index.html` and related modules
 
 ### Meaning
 - Non-happy-path lifecycle exits (`归档` / `作废`) are now automated and validated in formal backend.
+
+## QR Share Poster UI Fix
+- Date: 2026-03-27
+- Scope: `ams-share-poster-*` shared modal styles
+
+### Fixed Issues
+1. Modal layout and scrolling
+- Switched poster modal to centered grid container with viewport-safe padding.
+- Added dialog max-height and internal overflow to prevent clipping on small screens.
+
+2. Poster preview scaling
+- Added max-height and object-fit for poster image to prevent overflow and distortion.
+- Tuned stage min-height with `clamp` so desktop and mobile keep stable proportion.
+
+3. Mobile action consistency
+- Poster header now stacks cleanly on narrow screens.
+- Action buttons wrap on tablet and become full width on phone.
+
+### Regression
+- `tests/playwright/sales-flow.spec.ts` passed (`2 passed`).
