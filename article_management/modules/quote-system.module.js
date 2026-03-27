@@ -840,6 +840,53 @@ function stageMetaValue(record = {}, key = '', fallback = '') {
     return text(record?.meta?.[key], fallback);
 }
 
+function stageContactSnapshot(record = {}, deal = null) {
+    const preSalesName = stageMetaValue(record, STAGE_CONTACT_META_KEYS.preSalesName, text(record.owner_name || deal?.owner_name));
+    const preSalesEmail = stageMetaValue(record, STAGE_CONTACT_META_KEYS.preSalesEmail, text(record.owner_email || deal?.owner_email));
+    const afterSalesName = stageMetaValue(record, STAGE_CONTACT_META_KEYS.afterSalesName);
+    const afterSalesEmail = stageMetaValue(record, STAGE_CONTACT_META_KEYS.afterSalesEmail);
+    return {
+        preSalesName,
+        preSalesEmail,
+        afterSalesName,
+        afterSalesEmail,
+    };
+}
+
+function stageContactDisplayLabel(record = {}, deal = null) {
+    const contact = stageContactSnapshot(record, deal);
+    const preSales = text(contact.preSalesName || contact.preSalesEmail, '未设置');
+    const afterSales = text(contact.afterSalesName || contact.afterSalesEmail, '未设置');
+    return `售前 ${preSales} · 售后 ${afterSales}`;
+}
+
+function stageContactFieldsMarkup(stageKey = '', record = {}, options = {}) {
+    const contact = stageContactSnapshot(record);
+    const compact = options.compact === true;
+    const datasetAttr = text(options.datasetAttr, 'data-sales-flow-stage-meta');
+    const stageKeyAttr = options.withStageKey === false ? '' : ` data-stage-key="${esc(stageKey)}"`;
+    return `
+        <div class="ams-site-field-grid ams-site-field-grid-wide ${compact ? 'ams-site-field-grid-compact' : ''}">
+            <div class="ams-field">
+                <label>售前联系人</label>
+                <input class="ams-input" ${datasetAttr}="${esc(STAGE_CONTACT_META_KEYS.preSalesName)}"${stageKeyAttr} value="${esc(contact.preSalesName)}" placeholder="售前负责人姓名">
+            </div>
+            <div class="ams-field">
+                <label>售前邮箱</label>
+                <input class="ams-input" type="email" ${datasetAttr}="${esc(STAGE_CONTACT_META_KEYS.preSalesEmail)}"${stageKeyAttr} value="${esc(contact.preSalesEmail)}" placeholder="presales@example.com">
+            </div>
+            <div class="ams-field">
+                <label>售后联系人</label>
+                <input class="ams-input" ${datasetAttr}="${esc(STAGE_CONTACT_META_KEYS.afterSalesName)}"${stageKeyAttr} value="${esc(contact.afterSalesName)}" placeholder="售后负责人姓名">
+            </div>
+            <div class="ams-field">
+                <label>售后邮箱</label>
+                <input class="ams-input" type="email" ${datasetAttr}="${esc(STAGE_CONTACT_META_KEYS.afterSalesEmail)}"${stageKeyAttr} value="${esc(contact.afterSalesEmail)}" placeholder="aftersales@example.com">
+            </div>
+        </div>
+    `;
+}
+
 function normalizeStageCommunicationLogs(value) {
     if (!Array.isArray(value)) return [];
     return value
@@ -1539,7 +1586,9 @@ function salesPipelineMarkup(input, options = {}) {
                         <span>${esc(description)}</span>
                         <em>${esc(
                             pipelineMode === 'detail' && activeDeal?.id
-                                ? (text(stageRecord.completed_at) ? `完成于 ${fmtDate(stageRecord.completed_at)}` : `负责人 ${text(stageRecord.owner_name || stageRecord.owner_email, '未设置')}`)
+                                ? (text(stageRecord.completed_at)
+                                    ? `完成于 ${fmtDate(stageRecord.completed_at)} · ${stageContactDisplayLabel(stageRecord, activeDeal)}`
+                                    : stageContactDisplayLabel(stageRecord, activeDeal))
                                 : (isDisabled ? '先创建销售线' : (stage.key === 'customer_profile' ? '打开客户档案' : '打开列表'))
                         )}</em>
                     `;
@@ -10809,11 +10858,8 @@ function dealStageCardMarkup(stage, record = {}) {
                     <label>完成时间</label>
                     <input class="ams-input" type="datetime-local" data-deal-stage-field="completed_at" data-stage-key="${esc(stage.key)}" value="${esc(datetimeLocalValue(stageRecord.completed_at))}">
                 </div>
-                <div class="ams-field">
-                    <label>负责人</label>
-                    <input class="ams-input" data-deal-stage-field="owner_name" data-stage-key="${esc(stage.key)}" value="${esc(stageRecord.owner_name)}" placeholder="当前销售 / 交付负责人">
-                </div>
             </div>
+            ${stageContactFieldsMarkup(stage.key, stageRecord, { datasetAttr: 'data-deal-stage-meta' })}
             ${metaFields.length
                 ? `
                     <div class="ams-site-field-grid ams-site-field-grid-wide">
@@ -12262,7 +12308,7 @@ function executionStageFlowMarkup(stage = {}, deal = null) {
                         <div class="ams-summary-chip"><strong>客户</strong><span>${esc(customerDisplayName(moduleState.customers.find((item) => item.id === deal?.customer_id) || {}))}</span></div>
                         <div class="ams-summary-chip"><strong>销售线</strong><span>${esc(text(deal?.title, '--'))}</span></div>
                         <div class="ams-summary-chip"><strong>阶段状态</strong><span>${dealStageStatusPill(record.stage_status)}</span></div>
-                        <div class="ams-summary-chip"><strong>负责人</strong><span>${esc(text(record.owner_name || record.owner_email, '未设置'))}</span></div>
+                        <div class="ams-summary-chip"><strong>双负责人</strong><span>${esc(stageContactDisplayLabel(record, deal))}</span></div>
                     </div>
                 `,
                 bodyMarkup: `
@@ -12270,9 +12316,8 @@ function executionStageFlowMarkup(stage = {}, deal = null) {
                         <div class="ams-field"><label>阶段状态</label><select class="ams-select" data-sales-flow-stage-field="stage_status">${selectOptionsMarkup(DEAL_STAGE_STATUS_OPTIONS, record.stage_status)}</select></div>
                         <div class="ams-field"><label>计划时间</label><input class="ams-input" type="datetime-local" data-sales-flow-stage-field="planned_at" value="${esc(datetimeLocalValue(record.planned_at))}"></div>
                         <div class="ams-field"><label>完成时间</label><input class="ams-input" type="datetime-local" data-sales-flow-stage-field="completed_at" value="${esc(datetimeLocalValue(record.completed_at))}"></div>
-                        <div class="ams-field"><label>负责人</label><input class="ams-input" data-sales-flow-stage-field="owner_name" value="${esc(record.owner_name)}" placeholder="负责人"></div>
-                        <div class="ams-field"><label>负责人邮箱</label><input class="ams-input" data-sales-flow-stage-field="owner_email" value="${esc(record.owner_email)}" placeholder="负责人邮箱"></div>
                     </div>
+                    ${stageContactFieldsMarkup(stage.key, record)}
                     ${executionStageFieldGridMarkup(record, stageMetaFields(stage.key).map((field) => ({
                         key: field.key,
                         label: field.label,
@@ -12304,12 +12349,39 @@ function salesStageDetailRenderer(stage = {}) {
     return (deal) => executionStageFlowMarkup(stage, deal);
 }
 
+function salesStageContactsCardMarkup(stageKey = '', deal = null) {
+    if (!deal?.id) return '';
+    const record = stageRecordByKey(stageKey, moduleState.dealStageRecords) || createDealStageRecord({
+        deal_id: deal.id,
+        stage_key: stageKey,
+        owner_name: deal.owner_name,
+        owner_email: deal.owner_email,
+    });
+    return `
+        <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
+            <div class="ams-section-head">
+                <div>
+                    <h3>节点双负责人</h3>
+                    <p>每个节点至少维护售前与售后两位联系人，便于报价、履约和运维协同。</p>
+                </div>
+                <div class="ams-row-actions">
+                    <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-stage-contacts-save">保存双负责人</button>
+                </div>
+            </div>
+            ${stageContactFieldsMarkup(stageKey, record)}
+        </section>
+    `;
+}
+
 function salesStageDetailMarkup(stageKey = '', deal = null, customer = {}, input = null) {
     const stage = dealStageDefinition(stageKey);
     if (!deal?.id && stage.key !== 'customer_profile') {
         return '<section class="ams-card"><div class="ams-empty">当前阶段还没有可处理的销售线。</div></section>';
     }
-    return salesStageDetailRenderer(stage)(deal, customer, input);
+    return `
+        ${salesStageDetailRenderer(stage)(deal, customer, input)}
+        ${salesStageContactsCardMarkup(stage.key, deal)}
+    `;
 }
 
 function flowCustomerLabel(customer = {}, deal = null) {
@@ -12812,6 +12884,32 @@ function bindSalesStageListActions(input, stageKey = '', customerId = '', custom
             const href = button.dataset.salesStageSelect;
             if (href) window.location.assign(href);
         });
+    });
+
+    document.getElementById('ams-sales-stage-contacts-save')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
+            if (!moduleState.dealEditor?.id) {
+                input.showToast('当前节点没有可保存的销售线。', true);
+                return;
+            }
+            const saved = await saveDealDraft(input.user, moduleState.dealEditor, {
+                stageRecords: moduleState.dealStageRecords,
+                currentStage: stageKey,
+            });
+            await fetchDealEditor(saved.id);
+            input.showToast('节点双负责人已保存。');
+            await input.rerender();
+        });
+    });
+
+    document.querySelectorAll('[data-sales-flow-stage-meta]').forEach((node) => {
+        const apply = () => {
+            const field = node.dataset.salesFlowStageMeta || '';
+            if (!field) return;
+            setStageRecordMeta(stageKey, field, node.value);
+        };
+        node.addEventListener('input', apply);
+        if (node.tagName === 'SELECT') node.addEventListener('change', apply);
     });
 
     document.querySelectorAll('[data-customer-activity-filter]').forEach((button) => {
