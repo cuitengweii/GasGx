@@ -102,3 +102,18 @@ Scope: `article_management/sales/index.html` and related modules
 ### Current Conclusion
 - Sales pipeline from admin creation -> customer requirement submit -> requirement confirmation -> quote draft -> quote publish -> customer quote confirmation -> contract stage transition is now fully validated on formal backend path.
 - Key checkpoints for requirement/quote confirmation and operator/customer handoff are covered by automated tests.
+
+## Governance Matrix Validation (New)
+- Run date: 2026-03-27
+- Spec: `tests/playwright/sales-governance.spec.ts`
+- Result: `2 passed / 0 failed`
+
+### Added Coverage
+1. Role boundary: customer account cannot enter sales admin console
+- Flow: customer logs in from `/account/user.html` -> tries `/article_management/sales/index.html?page=quote-customers`
+- Expected: sales login gate is still required (`#ams-login-form` visible), admin shell (`.ams-app-sales`) not rendered.
+
+2. Pipeline guard (pre-confirm rollback protection): quote cannot be advanced before customer confirmation
+- Flow: admin creates customer+deal -> customer submits requirement -> admin confirms requirement -> admin creates+publishes quote -> enters `quote_confirmed`
+- Expected: `#ams-sales-flow-instance-confirm` remains disabled before customer-side quote confirmation.
+- Meaning: critical node is gated, preventing premature advancement to `contract_signed`.
