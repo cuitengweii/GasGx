@@ -117,3 +117,39 @@ Scope: `article_management/sales/index.html` and related modules
 - Flow: admin creates customer+deal -> customer submits requirement -> admin confirms requirement -> admin creates+publishes quote -> enters `quote_confirmed`
 - Expected: `#ams-sales-flow-instance-confirm` remains disabled before customer-side quote confirmation.
 - Meaning: critical node is gated, preventing premature advancement to `contract_signed`.
+
+## Execution Chain E2E (Contract -> Support) Completed
+- Run date: 2026-03-27
+- Spec: `tests/playwright/sales-execution-chain.spec.ts`
+- Result: `1 passed / 0 failed`
+
+### Coverage Details
+- Starts from formal backend path and reaches `contract_signed` after customer quote confirmation.
+- Then validates execution chain with per-stage save+advance:
+  - `contract_signed -> deposit_paid`
+  - `deposit_paid -> production_scheduled`
+  - `production_scheduled -> factory_accepted`
+  - `factory_accepted -> balance_confirmed`
+  - `balance_confirmed -> shipping_in_transit`
+  - `shipping_in_transit -> deployment_completed`
+  - `deployment_completed -> support_active`
+- Each node verifies:
+  - stage action bar buttons are available (`#ams-sales-flow-stage-save`, `#ams-sales-flow-stage-complete`)
+  - save action confirmation modal works
+  - advance action confirmation modal works
+  - URL stage transitions are sequential and deterministic.
+
+## Full Sales Regression Snapshot
+- Combined run:
+  - `sales-flow.spec.ts`
+  - `sales-auth-roles.spec.ts`
+  - `sales-formal-backend.spec.ts`
+  - `sales-governance.spec.ts`
+  - `sales-execution-chain.spec.ts`
+- Final result: `8 passed / 0 failed`
+
+### Remaining Gaps (Known)
+- Exceptional branches are not yet fully automated:
+  - deal void/cancel/archive branch outcomes
+  - blocked stage status and recovery
+  - concurrent edits conflict scenarios
