@@ -9,6 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="../shared/ui/site-shell.config.js?v=20260321auth02"></script>
+    <script src="../shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
     <script src="./public-asset-version.js"></script>
     <script>window.AMSLoadQuotePublicStyles('../shared/quote-system/quote-system.css');</script>
 </head>
@@ -21,6 +23,50 @@
         </section>
     </main>
 
-    <script>window.AMSLoadQuotePublicModule('../shared/quote-system/quote-requirement.module.js');</script>
+    <script>
+        (function redirectRequirementToAccountSales() {
+            const params = new URL(window.location.href).searchParams;
+            const mode = String(params.get('mode') || '').trim().toLowerCase();
+            const reqSlug = String(params.get('req') || '').trim();
+            const reqToken = String(params.get('req_token') || params.get('token') || '').trim();
+            if (mode === 'readonly' || !reqSlug || !reqToken) {
+                window.AMSLoadQuotePublicModule('../shared/quote-system/quote-requirement.module.js');
+                return;
+            }
+
+            const helper = window.GasGxMainAuthShared;
+            if (!helper?.createClient || !window.supabase) {
+                window.AMSLoadQuotePublicModule('../shared/quote-system/quote-requirement.module.js');
+                return;
+            }
+
+            const runtime = helper.resolveConfig(window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth);
+            const accountUrl = new URL(runtime.accountUrl || '/account/account.html', window.location.origin);
+            accountUrl.searchParams.set('tab', 'sales');
+            accountUrl.searchParams.set('req', reqSlug);
+            accountUrl.searchParams.set('req_token', reqToken);
+
+            const targetPath = `${accountUrl.pathname}${accountUrl.search}`;
+            const redirectToAccount = () => {
+                try {
+                    window.sessionStorage.setItem(runtime.returnUrlStorageKey || 'gx_main_return_url', targetPath);
+                } catch (_error) {
+                    // Ignore storage errors and continue redirect.
+                }
+                window.location.replace(targetPath);
+            };
+
+            const client = helper.createClient(window.supabase, runtime);
+            client.auth.getSession()
+                .then(({ data, error }) => {
+                    if (error || !data?.session?.user) {
+                        redirectToAccount();
+                        return;
+                    }
+                    redirectToAccount();
+                })
+                .catch(() => redirectToAccount());
+        })();
+    </script>
 </body>
 </html>

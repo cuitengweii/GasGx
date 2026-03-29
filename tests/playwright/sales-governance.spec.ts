@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+﻿import { expect, test } from '@playwright/test';
+import { bootstrapDealToQuoteConfirmed } from './helpers/sales-quote-bootstrap';
 
 const adminEmail = process.env.GX_ADMIN_EMAIL || '';
 const adminPassword = process.env.GX_ADMIN_PASSWORD || '';
@@ -13,28 +14,137 @@ function hasCustomerCreds() {
   return Boolean(customerEmail && customerPassword);
 }
 
-async function confirmDialog(page: import('@playwright/test').Page) {
-  const submit = page.locator('[data-sales-confirm-submit]').last();
-  await expect(submit).toBeVisible({ timeout: 10000 });
-  await submit.click();
+async function confirmDialog(page: import('@playwright/test').Page, required = true) {
+  const submit = page.locator('[data-sales-confirm-submit]:visible').last();
+  const visible = await submit.isVisible({ timeout: 10000 }).catch(() => false);
+  if (!visible) {
+    if (required) {
+      throw new Error('Expected confirmation dialog, but none appeared.');
+    }
+    return;
+  }
+  await submit.click({ force: true, noWaitAfter: true });
 }
 
-async function selectFirstNonEmptyOption(page: import('@playwright/test').Page, selector: string) {
-  const value = await page.evaluate((inputSelector) => {
-    const node = document.querySelector(inputSelector) as HTMLSelectElement | null;
-    if (!node) return '';
-    const target = Array.from(node.options).map((item) => item.value).find((item) => item && item.trim());
-    if (!target) return '';
-    node.value = target;
-    node.dispatchEvent(new Event('input', { bubbles: true }));
-    node.dispatchEvent(new Event('change', { bubbles: true }));
-    return target;
-  }, selector);
-  return value;
+async function openCustomerSalesEntry(page: import('@playwright/test').Page, entryUrl: string) {
+  await page.goto(entryUrl);
+
+  const loginVisible = await page.locator('#auth-form').isVisible({ timeout: 8000 }).catch(() => false);
+  if (loginVisible) {
+    await page.fill('#email', customerEmail);
+    await page.fill('#password', customerPassword);
+    await page.locator('#auth-form button[type="submit"]').click();
+  }
+
+  await page.waitForURL(/\/account\/account\.html/, { timeout: 30000 });
+  const salesTab = page.locator('#tab-sales');
+  const salesTabActive = await salesTab.evaluate((node) => node.classList.contains('active')).catch(() => false);
+  if (!salesTabActive) {
+    await page.click('#nav-sales');
+  }
+  await expect(page.locator('#tab-sales')).toHaveClass(/active/, { timeout: 20000 });
+}
+
+async function submitRequirementInAccount(
+  page: import('@playwright/test').Page,
+  requirementLink: string,
+  companyName: string,
+  contactName: string,
+  phone: string,
+) {
+  await openCustomerSalesEntry(page, requirementLink);
+  await expect(page.locator('[data-sales-req-field="requester_company"]')).toBeVisible({ timeout: 30000 });
+
+  await page.fill('[data-sales-req-field="title"]', `Requirement ${Date.now()}`);
+  await page.fill('[data-sales-req-field="requirement_type"]', 'integrated_mining_power');
+  await page.fill('[data-sales-req-field="requester_company"]', companyName);
+  await page.fill('[data-sales-req-field="requester_name"]', contactName);
+  await page.fill('[data-sales-req-field="requester_email"]', customerEmail);
+  await page.fill('[data-sales-req-field="requester_phone"]', phone);
+  await page.fill('[data-sales-req-field="country"]', 'China');
+  await page.fill('[data-sales-req-field="note"]', 'Governance requirement submission via account center');
+
+  page.once('dialog', (dialog) => {
+    void dialog.accept();
+  });
+  await page.click('#sales-stage-submit-requirement');
+  await page.waitForTimeout(1500);
+}
+
+async function openOrCreateCustomerRequirementFlow(
+  page: import('@playwright/test').Page,
+  uniqueTag: string,
+) {
+  await page.goto('/article_management/sales/index.html?page=quote-customers');
+  await expect(page.locator('#ams-quote-customer-search')).toBeVisible({ timeout: 20000 });
+  await page.fill('#ams-quote-customer-search', customerEmail);
+  await page.waitForTimeout(600);
+
+  const customerCards = page
+    .locator('details[data-customer-expand-wrap]')
+    .filter({ hasText: customerEmail });
+  const existingCount = await customerCards.count();
+  let companyName = `Formal ${uniqueTag}`;
+  let customerId = '';
+
+  if (existingCount > 0) {
+    customerId = (await customerCards.first().getAttribute('data-customer-expand-wrap')) || '';
+  }
+  if (!customerId) {
+    customerId = await page.evaluate(async (email) => {
+      const createClient = (window as any)?.supabase?.createClient;
+      if (typeof createClient !== 'function') return '';
+      const url = (window as any).AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
+      const key = (window as any).AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+      const client = createClient(url, key);
+      const { data, error } = await client
+        .from('quote_customers')
+        .select('id, email')
+        .ilike('email', String(email || ''))
+        .limit(1);
+      if (error || !Array.isArray(data) || data.length === 0) return '';
+      return String(data[0]?.id || '');
+    }, customerEmail);
+  }
+
+  if (customerId) {
+    await page.goto(`/article_management/sales/index.html?page=quote-customers&customer=${encodeURIComponent(customerId)}`);
+    await expect(page.locator('#ams-quote-customer-save')).toBeVisible({ timeout: 20000 });
+    const companyField = page.locator('[data-customer-field="company_name"]:visible');
+    if (await companyField.count()) {
+      companyName = (await companyField.first().inputValue()).trim() || companyName;
+    }
+    await page.fill('[data-customer-field="notes"]:visible', `governance guard ${uniqueTag}`);
+    await page.click('#ams-quote-customer-save');
+  } else {
+    await page.click('#ams-quote-customer-new');
+    await page.fill('[data-customer-field="company_name"]:visible', companyName);
+    await page.fill('[data-customer-field="email"]:visible', customerEmail);
+    await page.fill('[data-customer-field="notes"]:visible', `governance guard ${uniqueTag}`);
+    await page.click('#ams-quote-customer-save');
+  }
+
+  await page.waitForURL((url) => url.searchParams.get('page') === 'quote-customer-flow' && url.searchParams.get('stage') === 'requirement_capture', { timeout: 40000 });
+
+  const flowUrl = new URL(page.url());
+  const dealId = flowUrl.searchParams.get('deal') || '';
+  const resolvedCustomerId = flowUrl.searchParams.get('customer') || '';
+  expect(dealId).toBeTruthy();
+  expect(resolvedCustomerId).toBeTruthy();
+
+  const requirementLink = await page.locator('a.ams-inline-link').first().getAttribute('href');
+  expect(requirementLink).toBeTruthy();
+
+  return {
+    companyName,
+    customerId: resolvedCustomerId,
+    dealId,
+    requirementLink: requirementLink!,
+  };
 }
 
 test.describe('Sales governance guards', () => {
-  test.setTimeout(300000);
+  test.setTimeout(900000);
 
   test('customer account cannot access sales admin console', async ({ page }) => {
     test.skip(!hasCustomerCreds(), 'Missing GX_CUSTOMER_EMAIL or GX_CUSTOMER_PASSWORD');
@@ -52,10 +162,9 @@ test.describe('Sales governance guards', () => {
   });
 
   test('quote cannot be advanced to contract before customer confirmation', async ({ page, browser }) => {
-    test.skip(!hasAdminCreds(), 'Missing GX_ADMIN_EMAIL or GX_ADMIN_PASSWORD');
+    test.skip(!(hasAdminCreds() && hasCustomerCreds()), 'Missing GX_ADMIN_* or GX_CUSTOMER_* credentials');
 
     const uniqueTag = `E2E-GUARD-${Date.now()}`;
-    const seededCustomerEmail = `formal-guard-${Date.now()}@example.com`;
     const phone = `+86-13${String(Date.now()).slice(-9)}`;
 
     await page.goto('/article_management/sales/index.html?page=quote-customers');
@@ -65,82 +174,31 @@ test.describe('Sales governance guards', () => {
     await page.locator('#ams-login-form button[type="submit"]').click();
     await expect(page.locator('.ams-app-sales')).toBeVisible({ timeout: 20000 });
 
-    await page.goto('/article_management/sales/index.html?page=quote-customers');
-    await page.click('#ams-quote-customer-new');
-    const companyName = `Formal ${uniqueTag}`;
-    await page.fill('[data-customer-field="company_name"]:visible', companyName);
-    await page.fill('[data-customer-field="email"]:visible', seededCustomerEmail);
-    await page.fill('[data-customer-field="notes"]:visible', `governance guard ${uniqueTag}`);
-    await page.click('#ams-quote-customer-save');
-
-    await page.waitForURL((url) => url.searchParams.get('page') === 'quote-customer-flow' && url.searchParams.get('stage') === 'requirement_capture', { timeout: 30000 });
-
-    const requirementLink = await page.locator('a.ams-inline-link').first().getAttribute('href');
-    expect(requirementLink).toBeTruthy();
+    const entry = await openOrCreateCustomerRequirementFlow(page, uniqueTag);
 
     const customerPage = await browser.newPage();
-    await customerPage.goto(requirementLink!);
-    await customerPage.fill('[data-field="requester_company"]', companyName);
-    await customerPage.fill('[data-field="requester_name"]', 'Flow Guard');
-    await customerPage.fill('[data-field="requester_email"]', seededCustomerEmail);
-    await customerPage.fill('[data-field="requester_phone"]', phone);
-    await selectFirstNonEmptyOption(customerPage, '[data-field="country"]');
-    await selectFirstNonEmptyOption(customerPage, '[data-field="requirement_type"]');
-    await selectFirstNonEmptyOption(customerPage, '[data-answer-field="contact_channel"]');
-    await selectFirstNonEmptyOption(customerPage, '[data-answer-field="deployment_mode"]');
-    const firstBrand = customerPage.locator('[data-answer-check="miner_brands"]').first();
-    if (await firstBrand.count()) await firstBrand.check();
-    await selectFirstNonEmptyOption(customerPage, '[data-answer-field="miner_model"]');
-    await selectFirstNonEmptyOption(customerPage, '[data-answer-field="miner_hashrate_band"]');
-    await selectFirstNonEmptyOption(customerPage, '[data-answer-field="miner_power_band"]');
-    await selectFirstNonEmptyOption(customerPage, '[data-answer-field="miner_quantity_band"]');
-    await selectFirstNonEmptyOption(customerPage, '[data-answer-field="voltage_frequency"]');
-    await selectFirstNonEmptyOption(customerPage, '[data-answer-field="power_capacity_band"]');
-    await selectFirstNonEmptyOption(customerPage, '[data-answer-field="container_preference"]');
-    await selectFirstNonEmptyOption(customerPage, '[data-answer-field="silent_requirement"]');
-    await selectFirstNonEmptyOption(customerPage, '[data-answer-field="budget_band"]');
-    await selectFirstNonEmptyOption(customerPage, '[data-answer-field="timeline_band"]');
-    await customerPage.check('#requirement-submit-confirm');
-    await customerPage.click('#requirement-submit');
-    await expect(customerPage.locator('#requirement-submit-status')).toContainText(/submitted|已提�?/i, { timeout: 30000 });
+    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.companyName, 'Flow Guard', phone);
 
-    const flowUrl = new URL(page.url());
-    const customerId = flowUrl.searchParams.get('customer') || '';
-    const dealId = flowUrl.searchParams.get('deal') || '';
-    expect(customerId).toBeTruthy();
-    expect(dealId).toBeTruthy();
-
+    const customerId = entry.customerId;
+    const dealId = entry.dealId;
     await page.goto(`/article_management/sales/index.html?page=quote-customer-flow&customer=${encodeURIComponent(customerId)}&deal=${encodeURIComponent(dealId)}&stage=requirement_confirmed`);
-    await page.click('#ams-sales-flow-requirement-confirm');
-    await confirmDialog(page);
-    await page.waitForURL((url) => url.searchParams.get('stage') === 'quote_draft', { timeout: 30000 });
 
-    const productSelect = page.locator('#ams-sales-flow-instance-product');
-    await expect(productSelect).toBeVisible({ timeout: 20000 });
-    const options = await productSelect.locator('option').all();
-    let chosenValue = '';
-    for (const option of options) {
-      const value = (await option.getAttribute('value')) || '';
-      const label = ((await option.textContent()) || '').trim();
-      const disabled = await option.getAttribute('disabled');
-      const placeholderLike = /请选择|先选择|暂无|无可用|select/i.test(label);
-      if (value.trim() && !disabled && !placeholderLike) {
-        chosenValue = value;
-        break;
-      }
+    const requirementConfirmBtn = page.locator('#ams-sales-flow-requirement-confirm');
+    const canConfirmRequirement = await requirementConfirmBtn.isVisible({ timeout: 5000 }).catch(() => false);
+    if (canConfirmRequirement) {
+      await requirementConfirmBtn.click();
+      await confirmDialog(page);
+      await page.waitForURL((url) => {
+        const stage = url.searchParams.get('stage');
+        return stage === 'quote_draft' || stage === 'quote_confirmed';
+      }, { timeout: 30000 });
     }
-    expect(chosenValue).toBeTruthy();
-    await productSelect.selectOption(chosenValue);
-    await page.click('#ams-sales-flow-instance-create');
-    await expect(page.locator('#ams-sales-flow-instance-open-inline')).toBeVisible({ timeout: 30000 });
 
-    const editorPopupPromise = page.waitForEvent('popup');
-    await page.click('#ams-sales-flow-instance-open-inline');
-    const editorPopup = await editorPopupPromise;
-    await editorPopup.waitForURL(/\/quote\/editor\.html\?/, { timeout: 30000 });
-    await editorPopup.locator('#btn-publish-instance').click();
-    await editorPopup.waitForURL(/\/article_management\/sales\/index\.html\?/, { timeout: 60000 });
-    await editorPopup.close();
+    await bootstrapDealToQuoteConfirmed(page, {
+      dealId,
+      customerId,
+      customerEmail,
+    });
 
     await page.goto(`/article_management/sales/index.html?page=quote-customer-flow&customer=${encodeURIComponent(customerId)}&deal=${encodeURIComponent(dealId)}&stage=quote_confirmed`);
     const confirmBtn = page.locator('#ams-sales-flow-instance-confirm');

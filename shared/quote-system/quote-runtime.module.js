@@ -463,6 +463,29 @@ function redirectToSignIn() {
     window.location.href = config.signInUrl;
 }
 
+function buildAccountSalesPath(extraParams = {}) {
+    const config = getAuthConfig();
+    const target = new URL(config.accountUrl || '/account/account.html', window.location.origin);
+    target.searchParams.set('tab', 'sales');
+    Object.entries(extraParams || {}).forEach(([key, value]) => {
+        const normalized = text(value);
+        if (!normalized) return;
+        target.searchParams.set(key, normalized);
+    });
+    return `${target.pathname}${target.search}`;
+}
+
+async function redirectToAccountSales(extraParams = {}) {
+    const config = getAuthConfig();
+    const targetPath = buildAccountSalesPath(extraParams);
+    try {
+        window.sessionStorage.setItem(config.returnUrlStorageKey, targetPath);
+    } catch (_error) {
+        // Ignore storage errors and continue redirect.
+    }
+    window.location.href = targetPath;
+}
+
 function userDisplayName(user) {
     const metadata = user?.user_metadata && typeof user.user_metadata === 'object' ? user.user_metadata : {};
     const candidate = text(
@@ -1498,15 +1521,14 @@ async function fetchRates(isManual = false) {
 function quoteConfirmationPanelMarkup() {
     if (!hasEmbeddedQuoteConfirmation()) return '';
     const confirmation = state.publicConfirmation || {};
-    const access = quoteConfirmationAccessState();
     if (confirmation.loading) {
         return `
             <section class="quote-confirm-card">
                 <div class="quote-confirm-card__head">
                     <div>
                         <div class="quote-confirm-card__kicker">QUOTE CONFIRM</div>
-                        <h3>正在加载报价确认</h3>
-                        <p>正在读取当前报价对应的客户确认信息，请稍候。</p>
+                        <h3>Loading quote confirmation</h3>
+                        <p>Loading customer confirmation context, please wait.</p>
                     </div>
                 </div>
             </section>
@@ -1518,50 +1540,62 @@ function quoteConfirmationPanelMarkup() {
                 <div class="quote-confirm-card__head">
                     <div>
                         <div class="quote-confirm-card__kicker">QUOTE CONFIRM</div>
-                        <h3>报价确认入口异常</h3>
+                        <h3>Confirmation entry unavailable</h3>
                         <p>${esc(confirmation.error)}</p>
                     </div>
                 </div>
             </section>
         `;
     }
+
     const payload = confirmation.payload || {};
     if (text(payload.stage_key) === 'production_scheduled') {
         return productionProgressPanelMarkup(payload);
     }
+
     const terms = text(payload.meta?.quote_terms);
     return `
         <section class="quote-confirm-card ${confirmation.submitted ? 'is-success' : ''}">
             <div class="quote-confirm-card__head">
                 <div>
                     <div class="quote-confirm-card__kicker">QUOTE CONFIRM</div>
-                    <h3>确认当前报价并进入合同阶段</h3>
-                    <p>请在看完这份报价后，直接在这里确认。提交后 GasGx 会自动把流程推进到签约合同，并保留完整确认记录。</p>
+                    <h3>${esc(localeCopy({
+                        zh: '客户确认入口已迁移到用户中心',
+                        en: 'Customer confirmation moved to Account Center',
+                        ru: 'Customer confirmation moved to Account Center',
+                    }))}</h3>
+                    <p>${esc(localeCopy({
+                        zh: '报价确认提交统一在 Account > Sales Pipeline 完成。公开页仅用于查看与跳转。',
+                        en: 'Quote confirmation now runs in Account > Sales Pipeline. This page is for viewing and redirect only.',
+                        ru: 'Quote confirmation now runs in Account > Sales Pipeline. This page is for viewing and redirect only.',
+                    }))}</p>
                 </div>
-                <div class="quote-confirm-card__badge">${confirmation.submitted ? '已提交' : '待确认'}</div>
+                <div class="quote-confirm-card__badge">${confirmation.submitted ? 'Completed' : 'Redirect'}</div>
             </div>
             ${terms ? `
                 <div class="quote-confirm-card__terms">
-                    <strong>报价确认条款</strong>
+                    <strong>${esc(localeCopy({ zh: '客户可见条款', en: 'Customer terms', ru: 'Customer terms' }))}</strong>
                     <p>${esc(terms)}</p>
                 </div>
             ` : ''}
-            <label class="quote-confirm-card__checkbox ${confirmation.submitted ? 'is-disabled' : ''}">
-                <input id="quote-confirm-checkbox" type="checkbox" ${confirmation.confirmed ? 'checked' : ''} ${confirmation.submitted ? 'disabled' : ''}>
-                <span>我已确认当前报价版本、商务条款、交付范围与说明，可以进入合同阶段。</span>
-            </label>
-            <label class="quote-confirm-card__field">
-                <span>客户确认备注</span>
-                <textarea id="quote-confirm-note" class="share-input" rows="4" placeholder="如需补充备注、说明最终确认条件或额外要求，请写在这里。" ${confirmation.submitted ? 'disabled' : ''}>${esc(confirmation.note || '')}</textarea>
-            </label>
             <div class="quote-confirm-card__foot">
                 <div class="quote-confirm-card__hint">
-                    <strong>提交结果会同步到后台</strong>
-                    <p>销售可以立即在确认报价节点看到这次客户确认，并继续推进到合同处理。</p>
+                    <strong>${esc(localeCopy({
+                        zh: '统一流程入口',
+                        en: 'Single workflow entry',
+                        ru: 'Single workflow entry',
+                    }))}</strong>
+                    <p>${esc(localeCopy({
+                        zh: '登录后将自动跳转到账户中心对应节点，销售后台同步可见。',
+                        en: 'After sign-in, you will be routed to the matching stage in Account Center with live backend sync.',
+                        ru: 'After sign-in, you will be routed to the matching stage in Account Center with live backend sync.',
+                    }))}</p>
                 </div>
                 <button id="quote-confirm-submit" type="button" class="btn-glow px-5 py-3 inline-flex items-center gap-2" ${confirmation.submitting || confirmation.submitted ? 'disabled' : ''}>
-                    <i class="fa-solid fa-paper-plane"></i>
-                    <span>${confirmation.submitted ? '已提交确认' : confirmation.submitting ? '提交中...' : '提交报价确认'}</span>
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>${confirmation.submitted
+                        ? localeCopy({ zh: '已完成', en: 'Completed', ru: 'Completed' })
+                        : localeCopy({ zh: '登录后去用户中心处理', en: 'Sign in and continue in Account', ru: 'Sign in and continue in Account' })}</span>
                 </button>
             </div>
             <div class="quote-confirm-card__status">${esc(confirmation.result?.error ? '' : text(confirmation.result?.message))}</div>
@@ -1631,192 +1665,39 @@ function quoteConfirmErrorFingerprint(error) {
 async function submitEmbeddedPublicConfirmation() {
     const confirmation = state.publicConfirmation || {};
     const next = publicConfirmationParams();
-    if (!confirmation.payload || !next.stage || !next.token) {
+    if (!next.stage || !next.token) {
         openQuoteConfirmAlert({
             alertType: 'validation',
             title: localeCopy({
-                zh: '无法提交报价确认',
-                en: 'Unable to submit confirmation',
-                ru: 'Unable to submit confirmation',
+                zh: '无法识别当前确认链接',
+                en: 'Invalid confirmation link',
+                ru: 'Invalid confirmation link',
             }),
             message: localeCopy({
-                zh: '当前确认链接缺少必要参数，请联系销售重新生成报价确认链接。',
-                en: 'This confirmation link is missing required parameters. Please request a new link from sales.',
-                ru: 'This confirmation link is missing required parameters. Please request a new link from sales.',
-            }),
-            hint: localeCopy({
-                zh: '请确保链接包含完整参数后再提交。',
-                en: 'Make sure the link includes complete parameters before submitting.',
-                ru: 'Make sure the link includes complete parameters before submitting.',
+                zh: '当前链接缺少参数，请联系销售获取最新入口。',
+                en: 'This link is missing parameters. Please request a fresh entry from sales.',
+                ru: 'This link is missing parameters. Please request a fresh entry from sales.',
             }),
         });
         return;
     }
-    const stageKey = text(confirmation.payload?.stage_key, 'quote_confirmed');
-    if (stageKey !== 'quote_confirmed') {
-        openQuoteConfirmAlert({
-            alertType: 'validation',
-            title: localeCopy({
-                zh: '当前链接为只读进度页',
-                en: 'This link is read-only',
-                ru: 'This link is read-only',
-            }),
-            message: localeCopy({
-                zh: '该链接用于查看生产进度，不支持提交报价确认。',
-                en: 'This link is for production progress viewing only and does not support quote confirmation submission.',
-                ru: 'This link is for production progress viewing only and does not support quote confirmation submission.',
-            }),
-            hint: localeCopy({
-                zh: '如需提交报价确认，请使用“客户报价确认”专用链接。',
-                en: 'Use the dedicated quote confirmation link if you need to submit confirmation.',
-                ru: 'Use the dedicated quote confirmation link if you need to submit confirmation.',
-            }),
-        });
-        return;
-    }
-    const access = quoteConfirmationAccessState();
-    if (!access.allowed) {
-        if (access.requiresLogin) openAuthModal('confirm');
-        state.publicConfirmation.result = null;
-        renderAll();
-        if (!access.requiresLogin) openQuoteConfirmAlert({
-            alertType: 'access',
-            title: localeCopy({
-                zh: '当前账号无法提交报价确认',
-                en: 'This account cannot submit quote confirmation',
-                ru: '协褌芯褌 邪泻泻邪褍薪褌 薪械 屑芯卸械褌 锌芯写褌胁械褉写懈褌褜 锌褉械写谢芯卸械薪懈械',
-            }),
-            message: access.message,
-            hint: confirmationExpectedEmail()
-                ? localeCopy({
-                    zh: '请切换到报价中登记的客户邮箱后再提交。',
-                    en: 'Switch to the customer email registered on this quote before submitting.',
-                    ru: '袩械褉械泻谢褞褔懈褌械褋褜 薪邪 email 泻谢懈械薪褌邪, 褍泻邪蟹邪薪薪褘泄 胁 锌褉械写谢芯卸械薪懈懈, 锌械褉械写 芯褌锌褉邪胁泻芯泄.',
-                })
-                : localeCopy({
-                    zh: '请先在客户档案或报价单里设置客户邮箱，再开放确认提交。',
-                    en: 'Set the customer email on the customer archive or quote before enabling confirmation.',
-                    ru: '小薪邪褔邪谢邪 褍泻邪卸懈褌械 email 泻谢懈械薪褌邪 胁 泻邪褉褌芯褔泻械 泻谢懈械薪褌邪 懈谢懈 锌褉械写谢芯卸械薪懈懈.',
-                }),
-        });
-        return;
-    }
-    if (!confirmation.confirmed) {
-        openQuoteConfirmAlert({
-            alertType: 'validation',
-            title: localeCopy({
-                zh: '提交前需要确认',
-                en: 'Confirmation required',
-                ru: 'Требуется подтверждение',
-            }),
-            message: localeCopy({
-                zh: '请先勾选确认，再提交报价确认。',
-                en: 'Check the confirmation box before submitting.',
-                ru: 'Перед отправкой отметьте подтверждение.',
-            }),
-            hint: localeCopy({
-                zh: '勾选“我已确认...”后，再点击提交。',
-                en: 'Tick “I confirm...” and then submit.',
-                ru: 'Отметьте «Я подтверждаю...» и затем отправьте.',
-            }),
-        });
-        state.publicConfirmation.result = null;
-        renderAll();
-        byId('quote-confirm-checkbox')?.focus();
-        return;
-        state.publicConfirmation.result = {
-            error: true,
-            message: localeCopy({
-                zh: '请先勾选确认，再提交报价确认。',
-                en: 'Check the confirmation box before submitting.',
-                ru: '小薪邪褔邪谢邪 芯褌屑械褌褜褌械 锌芯写褌胁械褉卸写械薪懈械.',
-            }),
-        };
-        renderAll();
-        byId('quote-confirm-checkbox')?.focus();
-        return;
-    }
+
+    if (confirmation.submitting) return;
     state.publicConfirmation.submitting = true;
-    state.publicConfirmation.result = null;
+    state.publicConfirmation.result = {
+        error: false,
+        message: localeCopy({
+            zh: '正在跳转到账户中心...',
+            en: 'Redirecting to Account Center...',
+            ru: 'Redirecting to Account Center...',
+        }),
+    };
     renderAll();
-    try {
-        const client = getClient();
-        if (!client) throw new Error('Supabase client is unavailable.');
-        const { data, error } = await client.rpc('submit_public_quote_stage_confirmation', {
-            stage_slug: next.stage,
-            stage_token: next.token,
-            payload: {
-                note: text(confirmation.note),
-            },
-        });
-        if (error) throw error;
-        const row = Array.isArray(data) ? data[0] : null;
-        state.publicConfirmation.submitting = false;
-        state.publicConfirmation.submitted = true;
-        state.publicConfirmation.confirmed = true;
-        state.publicConfirmation.result = {
-            error: false,
-            message: localeCopy({
-                zh: `报价确认已提交，GasGx 将自动进入下一阶段：${text(row?.next_stage, 'contract_signed')}。`,
-                en: `Quote confirmation submitted. GasGx will continue to the next stage: ${text(row?.next_stage, 'contract_signed')}.`,
-                ru: `袩芯写褌胁械褉卸写械薪懈械鎶ヤ环宸叉彁浜ゃ€傂⌒恍敌囱冄幯壭感?褝褌邪锌: ${text(row?.next_stage, 'contract_signed')}.`,
-            }),
-        };
-        try {
-            const customerId = text(state.snapshot?.quote?.customerId);
-            const instanceId = text(state.snapshot?.quote?.id);
-            if (customerId && instanceId) {
-                await client.from(TABLE_CUSTOMER_ACTIVITIES).insert({
-                    customer_id: customerId,
-                    instance_id: instanceId,
-                    stage_key: 'quote_confirmed',
-                    actor_type: 'customer',
-                    actor_label: 'Customer',
-                    activity_type: 'status_change',
-                    entity_type: 'quote_instance',
-                    entity_id: instanceId,
-                    page_key: 'quote-instances',
-                    action_label: '客户确认报价',
-                    detail_json: {
-                        next_stage: text(row?.next_stage, 'contract_signed'),
-                        note: text(confirmation.note),
-                    },
-                });
-            }
-        } catch (_error) {
-            // Best-effort timeline logging only.
-        }
-        renderAll();
-    } catch (error) {
-        const friendlyMessage = friendlyQuoteConfirmErrorMessage(error);
-        try {
-            console.error('[quote-confirm-submit-error]', error);
-        } catch {
-            // noop
-        }
-        state.publicConfirmation.submitting = false;
-        state.publicConfirmation.result = {
-            error: true,
-            message: friendlyMessage,
-        };
-        renderAll();
-        if (!state.publicConfirmation.submitted) {
-            openQuoteConfirmAlert({
-                alertType: 'submit-error',
-                title: localeCopy({
-                    zh: '提交失败',
-                    en: 'Submission failed',
-                    ru: 'Submission failed',
-                }),
-                message: state.publicConfirmation.result.message,
-                hint: localeCopy({
-                    zh: '请根据提示处理后再提交；如问题持续，请联系销售支持。',
-                    en: 'Please follow the message and try again. Contact sales support if it persists.',
-                    ru: 'Please follow the message and try again. Contact sales support if it persists.',
-                }),
-            });
-        }
-    }
+
+    await redirectToAccountSales({
+        confirm_stage: next.stage,
+        confirm_token: next.token,
+    });
 }
 
 function applySnapshot(snapshot) {

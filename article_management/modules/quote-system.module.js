@@ -6986,7 +6986,10 @@ async function ensureCustomerRequirementFlow(user, customer) {
     const customerId = text(customer?.id);
     if (!customerId) throw new Error('请先保存客户档案。');
 
-    let deal = customerActivePipelineDeals(customerId)[0] || customerDeals(customerId)[0] || null;
+    const activeDeals = customerActivePipelineDeals(customerId);
+    let deal = activeDeals.find((item) => normalizeDealStageKey(item.current_stage) === 'requirement_capture')
+        || activeDeals.find((item) => normalizeDealStageKey(item.current_stage) === 'customer_profile')
+        || null;
     if (!deal?.id) {
         const owner = currentSalesOwner(user);
         deal = await saveDealDraft(user, {

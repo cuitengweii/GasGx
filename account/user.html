@@ -180,6 +180,7 @@
         const gxClient = window.supabase ? MAIN_AUTH_HELPER.createClient(window.supabase, MAIN_AUTH_CONFIG) : null;
 
         let isSignUp = false;
+        let redirectScheduled = false;
 
         function getAuthRedirectUrl() {
             return new URL(SIGN_IN_URL, window.location.origin).toString();
@@ -198,6 +199,12 @@
         }
 
         function saveReturnUrl() {
+            try {
+                const preset = window.sessionStorage.getItem(MAIN_AUTH_CONFIG.returnUrlStorageKey);
+                if (preset && preset.startsWith('/')) return preset;
+            } catch (_error) {
+                // Ignore storage read errors and continue with fallback save.
+            }
             MAIN_AUTH_HELPER.saveReturnUrl({
                 runtimeConfig: MAIN_AUTH_CONFIG,
                 excludePaths: [SIGN_IN_URL, DEFAULT_HOME_PATH]
@@ -212,6 +219,8 @@
         }
 
         function performRedirect() {
+            if (redirectScheduled) return;
+            redirectScheduled = true;
             document.getElementById('loading-overlay').classList.remove('hidden');
             document.getElementById('loading-text').textContent = 'REDIRECTING...';
             setTimeout(() => { window.location.href = getTargetUrl(); }, 500);

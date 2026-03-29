@@ -101,6 +101,390 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
+        .sales-main-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: minmax(260px, 320px) 1fr;
+            align-items: start;
+        }
+        .sales-deal-list,
+        .sales-stage-card {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.25);
+        }
+        .sales-list-head,
+        .sales-detail-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 18px 18px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .sales-list-head strong {
+            font-size: 12px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #a5a5a5;
+        }
+        .sales-list-head span {
+            color: #5DD62C;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+        .sales-list-scroll {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 68vh;
+            overflow: auto;
+            padding: 14px;
+        }
+        .sales-deal-card {
+            text-align: left;
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+        }
+        .sales-deal-card:hover {
+            transform: translateY(-1px);
+            border-color: rgba(93, 214, 44, 0.4);
+        }
+        .sales-deal-card strong {
+            color: #fff;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .sales-deal-card span {
+            color: #b8b8b8;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .sales-deal-card em {
+            color: #868686;
+            font-style: normal;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .sales-deal-card.is-active {
+            border-color: rgba(93, 214, 44, 0.66);
+            background: rgba(93, 214, 44, 0.1);
+        }
+        .sales-detail {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .sales-kicker {
+            color: #5DD62C;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+        .sales-detail-head h2 {
+            margin-top: 10px;
+            font-size: clamp(22px, 3vw, 32px);
+            font-family: 'Oswald', sans-serif;
+            text-transform: uppercase;
+        }
+        .sales-detail-head p {
+            margin-top: 8px;
+            color: #b1b1b1;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .sales-timeline {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+        }
+        .sales-pipeline-node {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 10px 12px;
+            text-align: left;
+        }
+        .sales-pipeline-node-index {
+            width: 24px;
+            height: 24px;
+            border-radius: 9999px;
+            display: grid;
+            place-items: center;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            flex-shrink: 0;
+        }
+        .sales-pipeline-node-main {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            gap: 3px;
+        }
+        .sales-pipeline-node-main strong {
+            font-size: 12px;
+            font-weight: 700;
+            color: #f5f5f5;
+            line-height: 1.5;
+        }
+        .sales-pipeline-node-main em {
+            font-size: 11px;
+            color: #9ca3af;
+            font-style: normal;
+        }
+        .sales-pipeline-node.is-current {
+            border-color: rgba(93, 214, 44, 0.65);
+            box-shadow: 0 0 0 2px rgba(93, 214, 44, 0.15);
+        }
+        .sales-pipeline-node.is-completed .sales-pipeline-node-index {
+            background: rgba(93, 214, 44, 0.25);
+            color: #5DD62C;
+        }
+        .sales-pipeline-node.is-active .sales-pipeline-node-index {
+            background: rgba(56, 189, 248, 0.22);
+            color: #7dd3fc;
+        }
+        .sales-pipeline-node.is-blocked .sales-pipeline-node-index {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+        .sales-stage-card {
+            padding: 18px;
+        }
+        .sales-stage-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .sales-stage-head h3 {
+            margin-top: 8px;
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .sales-stage-head p {
+            margin-top: 6px;
+            color: #a3a3a3;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .sales-stage-pill {
+            border-radius: 9999px;
+            padding: 6px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            font-size: 10px;
+            letter-spacing: 0.14em;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #cfcfcf;
+            white-space: nowrap;
+        }
+        .sales-stage-pill.is-completed {
+            border-color: rgba(93, 214, 44, 0.45);
+            color: #5DD62C;
+            background: rgba(93, 214, 44, 0.11);
+        }
+        .sales-stage-pill.is-active {
+            border-color: rgba(56, 189, 248, 0.5);
+            color: #7dd3fc;
+            background: rgba(56, 189, 248, 0.12);
+        }
+        .sales-stage-pill.is-blocked {
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+            background: rgba(239, 68, 68, 0.12);
+        }
+        .sales-stage-note {
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            color: #b2b2b2;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .sales-stage-form-grid,
+        .sales-stage-readonly-grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .sales-stage-form-grid label,
+        .sales-stage-confirm label,
+        .sales-stage-readonly-grid div {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .sales-stage-form-grid label > span,
+        .sales-stage-confirm label > span,
+        .sales-stage-readonly-grid span {
+            color: #7f7f7f;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .sales-stage-readonly-grid strong {
+            color: #f4f4f4;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.5;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .sales-stage-confirm {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .sales-check-line {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(93, 214, 44, 0.35);
+            background: rgba(93, 214, 44, 0.08);
+            padding: 10px 12px;
+            color: #e5e7eb;
+            font-size: 13px;
+        }
+        .sales-check-line input {
+            margin-top: 2px;
+            accent-color: #5DD62C;
+        }
+        .sales-span-2 {
+            grid-column: span 2;
+        }
+        .sales-action-bar {
+            margin-top: 16px;
+            position: sticky;
+            bottom: 0;
+            z-index: 4;
+            border-radius: 14px;
+            border: 1px solid rgba(93, 214, 44, 0.2);
+            background: rgba(10, 10, 10, 0.92);
+            backdrop-filter: blur(8px);
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .sales-action-bar span {
+            color: #a3a3a3;
+            font-size: 11px;
+        }
+        .sales-action-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .sales-activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sales-activity-item {
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.02);
+            padding: 11px 12px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .sales-activity-item strong {
+            font-size: 12px;
+            color: #f5f5f5;
+        }
+        .sales-activity-item span {
+            margin-top: 4px;
+            display: block;
+            font-size: 12px;
+            color: #9ca3af;
+            line-height: 1.5;
+        }
+        .sales-activity-item em {
+            font-size: 11px;
+            color: #7f7f7f;
+            font-style: normal;
+            white-space: nowrap;
+        }
+        .sales-empty,
+        .sales-loading,
+        .sales-empty-card {
+            border-radius: 18px;
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.03);
+            color: #9ca3af;
+            padding: 18px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .sales-loading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sales-empty-card h3 {
+            font-family: 'Oswald', sans-serif;
+            text-transform: uppercase;
+            font-size: 26px;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+        @media (max-width: 1279px) {
+            .sales-main-grid {
+                grid-template-columns: 1fr;
+            }
+            .sales-list-scroll {
+                max-height: none;
+            }
+        }
+        @media (max-width: 767px) {
+            .sales-timeline {
+                grid-template-columns: 1fr;
+            }
+            .sales-stage-form-grid,
+            .sales-stage-readonly-grid {
+                grid-template-columns: 1fr;
+            }
+            .sales-span-2 {
+                grid-column: span 1;
+            }
+            .sales-action-buttons {
+                width: 100%;
+            }
+            .sales-action-buttons button {
+                width: 100%;
+                justify-content: center;
+            }
+            .sales-activity-item {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -140,6 +524,9 @@
                 </button>
                 <button id="nav-preferences" onclick="switchTab('preferences')" class="nav-item flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition">
                     <i class="fa-solid fa-sliders w-4 text-center"></i><span>Preferences</span>
+                </button>
+                <button id="nav-sales" onclick="switchTab('sales')" class="nav-item flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition">
+                    <i class="fa-solid fa-diagram-project w-4 text-center"></i><span>Sales Pipeline</span>
                 </button>
             </nav>
             <div class="mt-8 border-t border-white/8 p-6">
@@ -347,6 +734,7 @@
                                     <option value="saved">Saved</option>
                                     <option value="profile">Profile</option>
                                     <option value="security">Security</option>
+                                    <option value="sales">Sales Pipeline</option>
                                 </select>
                             </div>
                             <div class="md:col-span-2">
@@ -354,6 +742,15 @@
                             </div>
                         </form>
                     </article>
+                </section>
+
+                <section id="tab-sales" class="tab-content space-y-6">
+                    <header>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green">Sales Pipeline</p>
+                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl">Customer Deal Workflow</h2>
+                        <p class="mt-2 max-w-3xl text-sm text-gray-400">All customer-side milestones are handled here. Requirement, quote, contract, and factory acceptance confirmations are submitted in this tab only.</p>
+                    </header>
+                    <div id="sales-pipeline-root"></div>
                 </section>
 
             </div>
@@ -366,6 +763,7 @@
     <script src="/shared/ui/site-shell.config.js?v=20260321auth02"></script>
     <script src="/shared/ui/site-shell.shared.js?v=20260322logout01"></script>
     <script src="/shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
+    <script src="/account/sales-pipeline.portal.js?v=20260327portal01"></script>
     <script>
         const MAIN_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
         const MAIN_AUTH_HELPER = window.GasGxMainAuthShared;
@@ -428,7 +826,7 @@
         }
 
         function getPreferences(metadata) {
-            const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security']);
+            const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security', 'sales']);
             const defaultTab = allowedTabs.has(metadata.preferences?.defaultTab) ? metadata.preferences.defaultTab : 'dashboard';
             return {
                 weeklyDigest: Boolean(metadata.preferences?.weeklyDigest),
@@ -705,11 +1103,15 @@
         };
 
         window.switchTab = function(tabId) {
+            const navItem = document.getElementById(`nav-${tabId}`);
+            const tabContent = document.getElementById(`tab-${tabId}`);
+            if (!navItem || !tabContent) return;
             document.querySelectorAll('.nav-item').forEach((item) => item.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach((item) => item.classList.remove('active'));
-            document.getElementById(`nav-${tabId}`).classList.add('active');
-            document.getElementById(`tab-${tabId}`).classList.add('active');
+            navItem.classList.add('active');
+            tabContent.classList.add('active');
             if (tabId === 'saved') loadSavedLibrary();
+            if (tabId === 'sales') window.GasGxSalesPipelinePortal?.onTabActivated?.();
             if (window.innerWidth < 1024) {
                 const sidebar = document.getElementById('account-sidebar');
                 if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
@@ -745,30 +1147,43 @@
             applyViewModel(viewModel);
             await fetchSavedCount();
 
-            const targetTab = viewModel.preferences.defaultTab || 'dashboard';
-            if (targetTab !== 'dashboard') {
-                switchTab(targetTab);
-            }
+            const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security', 'sales']);
+            const queryTab = new URL(window.location.href).searchParams.get('tab');
+            const targetTab = allowedTabs.has(queryTab) ? queryTab : (viewModel.preferences.defaultTab || 'dashboard');
+            switchTab(targetTab);
+            document.dispatchEvent(new CustomEvent('gasgx-account-ready'));
         }
 
         async function bootstrapAccount() {
+            const redirectToSignIn = () => {
+                try {
+                    const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+                    if (returnPath && returnPath.startsWith('/')) {
+                        window.sessionStorage.setItem(MAIN_AUTH_CONFIG.returnUrlStorageKey, returnPath);
+                    }
+                } catch (_error) {
+                    // Ignore storage failure and continue redirect.
+                }
+                window.location.href = SIGN_IN_URL;
+            };
+
             try {
                 const { data: { session }, error } = await client.auth.getSession();
                 if (error || !session?.user) {
-                    window.location.href = SIGN_IN_URL;
+                    redirectToSignIn();
                     return;
                 }
 
                 client.auth.onAuthStateChange((_event, nextSession) => {
                     if (!nextSession?.user) {
-                        window.location.href = SIGN_IN_URL;
+                        redirectToSignIn();
                     }
                 });
 
                 await initializeAccount(session);
             } catch (error) {
                 showToast(error.message || 'Failed to load account workspace.', 'error');
-                window.location.href = SIGN_IN_URL;
+                redirectToSignIn();
             } finally {
                 document.getElementById('auth-loader').classList.add('hidden');
             }

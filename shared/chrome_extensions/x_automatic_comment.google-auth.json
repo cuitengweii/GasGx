@@ -1,0 +1,18 @@
+{
+  "extension": "X Automatic Comment",
+  "authProvider": "google",
+  "source": "D:\\code\\GasGx\\shared\\ui\\main-auth.shared.js",
+  "mainAuth": {
+    "storageKey": "gasgx-main-auth",
+    "signInUrl": "/account/user.html",
+    "accountUrl": "/account/account.html",
+    "signOutRedirectUrl": "/account/user.html",
+    "returnUrlStorageKey": "gx_main_return_url",
+    "supabaseUrl": "https://mkpcliytqudclkwtewru.supabase.co",
+    "supabaseKey": "sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw",
+    "providerRollout": {
+      "twitter": false,
+      "linkedin": false
+    }
+  }
+}
