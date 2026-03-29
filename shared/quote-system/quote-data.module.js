@@ -58,6 +58,15 @@ function text(value, fallback = '') {
     return String(value ?? fallback).trim();
 }
 
+export function normalizeLangCode(value = '', fallback = DEFAULT_LANG) {
+    const raw = text(value).toLowerCase();
+    if (raw === 'cn' || raw === 'zh-cn' || raw === 'zh_cn') return 'zh';
+    if (SUPPORTED_LANGS.includes(raw)) return raw;
+    const fallbackCode = text(fallback).toLowerCase();
+    if (fallbackCode === 'cn' || fallbackCode === 'zh-cn' || fallbackCode === 'zh_cn') return 'zh';
+    return SUPPORTED_LANGS.includes(fallbackCode) ? fallbackCode : DEFAULT_LANG;
+}
+
 function looksCorrupted(value) {
     const sample = text(value);
     if (!sample) return false;
@@ -79,13 +88,16 @@ export function createProductUiText(seed = {}) {
         acc[key] = createLocalizedText(seed?.[key] || '');
         return acc;
     }, {});
-    base.enabled_langs = Array.isArray(seed?.enabled_langs) ? seed.enabled_langs.map((item) => text(item)).filter(Boolean) : [];
+    base.enabled_langs = Array.isArray(seed?.enabled_langs)
+        ? [...new Set(seed.enabled_langs.map((item) => normalizeLangCode(item)).filter((item) => SUPPORTED_LANGS.includes(item)))]
+        : [];
     return base;
 }
 
 export function normalizeLocalizedText(value, fallback = '') {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
-        const next = { ...createLocalizedText(fallback), ...value };
+        const legacyZh = text(value?.zh || value?.cn || value?.['zh-cn'] || value?.['zh_cn']);
+        const next = { ...createLocalizedText(fallback), ...value, zh: legacyZh || text(value?.zh) };
         SUPPORTED_LANGS.forEach((lang) => {
             next[lang] = text(next[lang], lang === 'zh' ? fallback : next.zh || fallback);
         });
@@ -101,7 +113,9 @@ export function normalizeProductUiText(value = {}) {
         base[key] = normalizeLocalizedText(value?.[key] || '', '');
     });
     PRODUCT_UI_ARRAY_KEYS.forEach((key) => {
-        base[key] = Array.isArray(value?.[key]) ? value[key].map((item) => text(item)).filter(Boolean) : [];
+        base[key] = Array.isArray(value?.[key])
+            ? [...new Set(value[key].map((item) => normalizeLangCode(item)).filter((item) => SUPPORTED_LANGS.includes(item)))]
+            : [];
     });
     return base;
 }
@@ -153,7 +167,8 @@ export function normalizeShareHistoryEntry(value = {}) {
 
 export function pickLocalized(value, lang = DEFAULT_LANG, fallback = '') {
     const localized = normalizeLocalizedText(value, fallback);
-    const ordered = [localized[lang], localized.en, localized.zh, localized.ru, fallback].map((entry) => text(entry));
+    const requestedLang = normalizeLangCode(lang);
+    const ordered = [localized[requestedLang], localized.en, localized.zh, localized.ru, fallback].map((entry) => text(entry));
     return ordered.find((entry) => entry && !looksCorrupted(entry)) || ordered.find(Boolean) || '';
 }
 
@@ -324,11 +339,12 @@ export function extractBrandSnapshot(value = {}) {
 }
 
 export function extractProductSnapshot(value = {}) {
+    const defaultLang = normalizeLangCode(value.default_lang || value.defaultLang, DEFAULT_LANG);
     return {
         slug: text(value.slug),
         product_code: text(value.product_code || value.productCode || value.slug),
         public_title: normalizeLocalizedText(value.public_title || value.title || value.publicTitle || ''),
-        default_lang: SUPPORTED_LANGS.includes(text(value.default_lang || value.defaultLang)) ? text(value.default_lang || value.defaultLang) : DEFAULT_LANG,
+        default_lang: defaultLang,
         validity_hours: Math.max(1, safeNumber(value.validity_hours || value.validityHours, 72)),
         default_rates: normalizeRates(value.default_rates || value.defaultRates || DEFAULT_RATES),
         section_config: normalizeSectionConfig(value.section_config || value.sectionConfig),
@@ -367,6 +383,8 @@ export function buildQuoteSnapshot({ brand, product, instance, items = [], publi
         }),
     }));
 
+    const instanceDefaultLang = normalizeLangCode(instance?.default_lang || instance?.defaultLang, productSnapshot.default_lang);
+
     return {
         mode,
         brand: brandSnapshot,
@@ -388,9 +406,7 @@ export function buildQuoteSnapshot({ brand, product, instance, items = [], publi
                 instance?.customer_snapshot && typeof instance.customer_snapshot === 'object'
                     ? { ...instance.customer_snapshot }
                     : {},
-            defaultLang: SUPPORTED_LANGS.includes(text(instance?.default_lang || instance?.defaultLang))
-                ? text(instance?.default_lang || instance?.defaultLang)
-                : productSnapshot.default_lang,
+            defaultLang: instanceDefaultLang,
             validityHours: Math.max(1, safeNumber(instance?.validity_hours || instance?.validityHours, productSnapshot.validity_hours)),
             rates: normalizeRates(instance?.draft_rates || instance?.rates || productSnapshot.default_rates),
             publishedAt: text(publishedAt || instance?.published_at || instance?.publishedAt),

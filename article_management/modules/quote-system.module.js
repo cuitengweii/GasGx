@@ -27,6 +27,7 @@ import {
     extractBrandSnapshot,
     extractProductSnapshot,
     normalizeLocalizedText,
+    normalizeLangCode,
     normalizeMediaConfig,
     normalizeProductUiText,
     normalizeQuoteItem,
@@ -38,7 +39,7 @@ import {
     pickLocalized,
     sortMediaItems,
     sortItems,
-} from '../../shared/quote-system/quote-data.module.js?v=20260323quote12';
+} from '../../shared/quote-system/quote-data.module.js?v=20260329lang01';
 
 const TABLE_BRANDS = 'quote_brands';
 const TABLE_PRODUCTS = 'quote_products';
@@ -2138,13 +2139,14 @@ function createBrandDraft(seed = {}) {
 }
 
 function createProductDraft(seed = {}) {
+    const defaultLang = normalizeLangCode(seed.default_lang || seed.defaultLang, DEFAULT_LANG);
     return {
         id: text(seed.id),
         brand_id: text(seed.brand_id || seed.brandId),
         slug: text(seed.slug),
         product_code: text(seed.product_code || seed.productCode),
         public_title: normalizeLocalizedText(seed.public_title || seed.publicTitle || ''),
-        default_lang: SUPPORTED_LANGS.includes(text(seed.default_lang || seed.defaultLang)) ? text(seed.default_lang || seed.defaultLang) : DEFAULT_LANG,
+        default_lang: defaultLang,
         validity_hours: Math.max(1, safeNumber(seed.validity_hours || seed.validityHours, 72)),
         default_rates: normalizeRates(seed.default_rates || seed.defaultRates || DEFAULT_RATES),
         section_config: normalizeSectionConfig(seed.section_config || seed.sectionConfig),
@@ -2162,6 +2164,7 @@ function createInstanceDraft(seed = {}) {
         ? deepClone(seed.customer_snapshot)
         : (seed.customerSnapshot && typeof seed.customerSnapshot === 'object' ? deepClone(seed.customerSnapshot) : {});
     const normalizedStatus = text(seed.status || 'draft').toLowerCase();
+    const defaultLang = normalizeLangCode(seed.default_lang || seed.defaultLang, DEFAULT_LANG);
     const draft = {
         id: text(seed.id),
         brand_id: text(seed.brand_id || seed.brandId),
@@ -2179,7 +2182,7 @@ function createInstanceDraft(seed = {}) {
         customer_phone: text(seed.customer_phone || seed.customerPhone || customerSnapshot.phone),
         customer_country: text(seed.customer_country || seed.customerCountry || customerSnapshot.country),
         customer_notes: text(seed.customer_notes || seed.customerNotes || customerSnapshot.notes),
-        default_lang: SUPPORTED_LANGS.includes(text(seed.default_lang || seed.defaultLang)) ? text(seed.default_lang || seed.defaultLang) : DEFAULT_LANG,
+        default_lang: defaultLang,
         validity_hours: Math.max(1, safeNumber(seed.validity_hours || seed.validityHours, 72)),
         draft_rates: normalizeRates(seed.draft_rates || seed.rates || DEFAULT_RATES),
         share_config: normalizeShareConfig(seed.share_config || seed.shareConfig, {

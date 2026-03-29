@@ -491,54 +491,54 @@
     <div id="auth-loader" class="fixed inset-0 z-[90] flex items-center justify-center bg-[#050505]">
         <div class="flex flex-col items-center gap-4">
             <i class="fa-solid fa-circle-notch fa-spin text-gas-green text-3xl"></i>
-            <span class="font-mono text-xs uppercase tracking-[0.35em] text-gray-400">Loading workspace...</span>
+            <span class="font-mono text-xs uppercase tracking-[0.35em] text-gray-400" data-i18n="loaderWorkspace">Loading workspace...</span>
         </div>
     </div>
     <div id="toast-container" class="fixed top-20 right-4 z-[100] flex w-[min(92vw,420px)] flex-col gap-2 pointer-events-none"></div>
     <div id="ggx-site-header-slot"></div>
 
     <div class="flex min-h-screen pt-16 grid-lines">
-        <button id="mobile-menu-btn" onclick="toggleAccountSidebar()" class="fixed left-4 top-20 z-[85] rounded-full border border-gas-green/30 bg-[#0f140f]/90 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green shadow-[0_12px_30px_rgba(0,0,0,0.35)] lg:hidden">
+        <button id="mobile-menu-btn" onclick="toggleAccountSidebar()" class="fixed left-4 top-20 z-[85] rounded-full border border-gas-green/30 bg-[#0f140f]/90 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green shadow-[0_12px_30px_rgba(0,0,0,0.35)] lg:hidden" data-i18n="menu">
             Menu
         </button>
         <div id="sidebar-overlay" onclick="toggleAccountSidebar()" class="fixed inset-0 z-[70] hidden bg-black/60 lg:hidden"></div>
 
         <aside id="account-sidebar" class="fixed inset-y-0 left-0 z-[75] w-[88vw] max-w-72 -translate-x-full border-r border-white/10 bg-[#0d0d0d]/95 pt-20 backdrop-blur-xl transition-transform duration-300 lg:static lg:w-72 lg:max-w-none lg:translate-x-0 lg:pt-8">
             <div class="px-6">
-                <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gray-500">Workspace</p>
-                <h1 class="mt-3 font-header text-3xl uppercase text-white">Account</h1>
-                <p class="mt-2 text-sm text-gray-400">User profile, security, preferences, and saved content.</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gray-500" data-i18n="sidebarWorkspace">Workspace</p>
+                <h1 class="mt-3 font-header text-3xl uppercase text-white" data-i18n="sidebarAccount">Account</h1>
+                <p class="mt-2 text-sm text-gray-400" data-i18n="sidebarDesc">User profile, security, preferences, and saved content.</p>
             </div>
             <nav class="mt-8 space-y-2 px-4">
                 <button id="nav-dashboard" onclick="switchTab('dashboard')" class="nav-item active flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition">
-                    <i class="fa-solid fa-gauge-high w-4 text-center"></i><span>Overview</span>
+                    <i class="fa-solid fa-gauge-high w-4 text-center"></i><span data-i18n="navOverview">Overview</span>
                 </button>
                 <button id="nav-saved" onclick="switchTab('saved')" class="nav-item flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition">
-                    <i class="fa-regular fa-bookmark w-4 text-center"></i><span>Saved</span>
+                    <i class="fa-regular fa-bookmark w-4 text-center"></i><span data-i18n="navSaved">Saved</span>
                 </button>
                 <button id="nav-profile" onclick="switchTab('profile')" class="nav-item flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition">
-                    <i class="fa-regular fa-id-badge w-4 text-center"></i><span>Profile</span>
+                    <i class="fa-regular fa-id-badge w-4 text-center"></i><span data-i18n="navProfile">Profile</span>
                 </button>
                 <button id="nav-security" onclick="switchTab('security')" class="nav-item flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition">
-                    <i class="fa-solid fa-shield-halved w-4 text-center"></i><span>Security</span>
+                    <i class="fa-solid fa-shield-halved w-4 text-center"></i><span data-i18n="navSecurity">Security</span>
                 </button>
                 <button id="nav-preferences" onclick="switchTab('preferences')" class="nav-item flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition">
-                    <i class="fa-solid fa-sliders w-4 text-center"></i><span>Preferences</span>
+                    <i class="fa-solid fa-sliders w-4 text-center"></i><span data-i18n="navPreferences">Preferences</span>
                 </button>
                 <button id="nav-sales" onclick="switchTab('sales')" class="nav-item flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition">
-                    <i class="fa-solid fa-diagram-project w-4 text-center"></i><span>Sales Pipeline</span>
+                    <i class="fa-solid fa-diagram-project w-4 text-center"></i><span data-i18n="navSales">Sales Pipeline</span>
                 </button>
             </nav>
             <div class="mt-8 border-t border-white/8 p-6">
                 <div class="flex items-center gap-3">
                     <div id="sidebar-avatar" class="flex h-11 w-11 items-center justify-center rounded-2xl border border-gas-green/30 bg-gas-green/10 text-sm font-bold text-gas-green">U</div>
                     <div class="min-w-0">
-                        <div id="sidebar-name" class="truncate text-sm font-bold text-white">User</div>
+                        <div id="sidebar-name" class="truncate text-sm font-bold text-white" data-i18n="userFallback">User</div>
                         <div id="sidebar-email" class="truncate font-mono text-xs text-gray-400">...</div>
                     </div>
                 </div>
                 <button onclick="handleSignOut()" class="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:border-red-500 hover:bg-red-500 hover:text-white">
-                    <i class="fa-solid fa-arrow-right-from-bracket"></i><span>Sign out</span>
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i><span data-i18n="signOut">Sign out</span>
                 </button>
             </div>
         </aside>
@@ -547,59 +547,59 @@
             <div class="mx-auto max-w-6xl">
                 <section id="tab-dashboard" class="tab-content active space-y-6">
                     <header>
-                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green">Overview</p>
-                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl">Welcome, <span id="welcome-name">User</span></h2>
-                        <p class="mt-2 max-w-2xl text-sm text-gray-400">Core account health, auth methods, and workspace activity in one place.</p>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green" data-i18n="dashboardKicker">Overview</p>
+                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl"><span data-i18n="dashboardWelcome">Welcome,</span> <span id="welcome-name" data-i18n="userFallback">User</span></h2>
+                        <p class="mt-2 max-w-2xl text-sm text-gray-400" data-i18n="dashboardDesc">Core account health, auth methods, and workspace activity in one place.</p>
                     </header>
                     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         <article class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-5 shadow-panel">
-                            <div class="flex items-center justify-between"><span class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">Saved items</span><i class="fa-regular fa-bookmark text-gas-green"></i></div>
+                            <div class="flex items-center justify-between"><span class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500" data-i18n="statSavedItems">Saved items</span><i class="fa-regular fa-bookmark text-gas-green"></i></div>
                             <div id="stat-saved-count" class="mt-4 text-3xl font-bold text-white">0</div>
-                            <p class="mt-2 text-xs text-gray-500">Bookmarks in `main_bookmarks`.</p>
+                            <p class="mt-2 text-xs text-gray-500" data-i18n="statSavedHint">Bookmarks in `main_bookmarks`.</p>
                         </article>
                         <article class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-5 shadow-panel">
-                            <div class="flex items-center justify-between"><span class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">Auth methods</span><i class="fa-solid fa-key text-gas-green"></i></div>
+                            <div class="flex items-center justify-between"><span class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500" data-i18n="statAuthMethods">Auth methods</span><i class="fa-solid fa-key text-gas-green"></i></div>
                             <div id="stat-provider-count" class="mt-4 text-3xl font-bold text-white">0</div>
-                            <p id="stat-provider-list" class="mt-2 text-xs text-gray-500">No provider data.</p>
+                            <p id="stat-provider-list" class="mt-2 text-xs text-gray-500" data-i18n="noProviderData">No provider data.</p>
                         </article>
                         <article class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-5 shadow-panel">
-                            <div class="flex items-center justify-between"><span class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">Verification</span><i class="fa-solid fa-circle-check text-gas-green"></i></div>
+                            <div class="flex items-center justify-between"><span class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500" data-i18n="statVerification">Verification</span><i class="fa-solid fa-circle-check text-gas-green"></i></div>
                             <div id="stat-verification" class="mt-4 text-2xl font-bold text-white">Pending</div>
                             <p id="stat-verification-hint" class="mt-2 text-xs text-gray-500">Email and phone status.</p>
                         </article>
                         <article class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-5 shadow-panel">
-                            <div class="flex items-center justify-between"><span class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">Joined</span><i class="fa-regular fa-calendar text-gas-green"></i></div>
+                            <div class="flex items-center justify-between"><span class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500" data-i18n="statJoined">Joined</span><i class="fa-regular fa-calendar text-gas-green"></i></div>
                             <div id="stat-created-at" class="mt-4 text-xl font-bold text-white">-</div>
-                            <p id="stat-last-sign-in" class="mt-2 text-xs text-gray-500">Last sign-in unknown.</p>
+                            <p id="stat-last-sign-in" class="mt-2 text-xs text-gray-500" data-i18n="lastSignInUnknown">Last sign-in unknown.</p>
                         </article>
                     </div>
                     <div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
                         <article class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-6 shadow-panel">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">Identity summary</p>
-                                    <h3 class="mt-2 text-xl font-bold text-white">Account status</h3>
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500" data-i18n="identitySummary">Identity summary</p>
+                                    <h3 class="mt-2 text-xl font-bold text-white" data-i18n="accountStatus">Account status</h3>
                                 </div>
-                                <button onclick="refreshAccount()" class="rounded-full border border-white/10 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-300 transition hover:border-gas-green/50 hover:text-gas-green">Refresh</button>
+                                <button onclick="refreshAccount()" class="rounded-full border border-white/10 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-300 transition hover:border-gas-green/50 hover:text-gas-green" data-i18n="refresh">Refresh</button>
                             </div>
                             <dl class="mt-6 grid gap-4 md:grid-cols-2">
-                                <div class="rounded-2xl border border-white/8 bg-white/5 p-4"><dt class="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Email</dt><dd id="summary-email" class="mt-2 break-all font-mono text-sm text-white">-</dd></div>
-                                <div class="rounded-2xl border border-white/8 bg-white/5 p-4"><dt class="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Phone</dt><dd id="summary-phone" class="mt-2 font-mono text-sm text-white">-</dd></div>
-                                <div class="rounded-2xl border border-white/8 bg-white/5 p-4"><dt class="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">User ID</dt><dd id="summary-user-id" class="mt-2 font-mono text-sm text-white">-</dd></div>
-                                <div class="rounded-2xl border border-white/8 bg-white/5 p-4"><dt class="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Profile completeness</dt><dd id="summary-completeness" class="mt-2 text-sm text-white">0%</dd></div>
+                                <div class="rounded-2xl border border-white/8 bg-white/5 p-4"><dt class="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500" data-i18n="labelEmail">Email</dt><dd id="summary-email" class="mt-2 break-all font-mono text-sm text-white">-</dd></div>
+                                <div class="rounded-2xl border border-white/8 bg-white/5 p-4"><dt class="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500" data-i18n="labelPhone">Phone</dt><dd id="summary-phone" class="mt-2 font-mono text-sm text-white">-</dd></div>
+                                <div class="rounded-2xl border border-white/8 bg-white/5 p-4"><dt class="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500" data-i18n="labelUserId">User ID</dt><dd id="summary-user-id" class="mt-2 font-mono text-sm text-white">-</dd></div>
+                                <div class="rounded-2xl border border-white/8 bg-white/5 p-4"><dt class="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500" data-i18n="labelProfileCompleteness">Profile completeness</dt><dd id="summary-completeness" class="mt-2 text-sm text-white">0%</dd></div>
                             </dl>
                         </article>
                         <article class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-6 shadow-panel">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">Quick actions</p>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500" data-i18n="quickActions">Quick actions</p>
                             <div class="mt-5 space-y-3">
                                 <button onclick="switchTab('profile')" class="flex w-full items-center justify-between rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-left text-sm text-white transition hover:border-gas-green/50">
-                                    <span>Update profile details</span><i class="fa-solid fa-arrow-right text-gas-green"></i>
+                                    <span data-i18n="actionUpdateProfile">Update profile details</span><i class="fa-solid fa-arrow-right text-gas-green"></i>
                                 </button>
                                 <button onclick="switchTab('security')" class="flex w-full items-center justify-between rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-left text-sm text-white transition hover:border-gas-green/50">
-                                    <span>Change password</span><i class="fa-solid fa-arrow-right text-gas-green"></i>
+                                    <span data-i18n="actionChangePassword">Change password</span><i class="fa-solid fa-arrow-right text-gas-green"></i>
                                 </button>
                                 <button onclick="switchTab('saved')" class="flex w-full items-center justify-between rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-left text-sm text-white transition hover:border-gas-green/50">
-                                    <span>Review saved library</span><i class="fa-solid fa-arrow-right text-gas-green"></i>
+                                    <span data-i18n="actionReviewSaved">Review saved library</span><i class="fa-solid fa-arrow-right text-gas-green"></i>
                                 </button>
                             </div>
                         </article>
@@ -608,54 +608,54 @@
                 <section id="tab-saved" class="tab-content space-y-6">
                     <header class="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green">Saved library</p>
-                            <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl">Bookmarks</h2>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green" data-i18n="savedKicker">Saved library</p>
+                            <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl" data-i18n="savedTitle">Bookmarks</h2>
                         </div>
-                        <button onclick="loadSavedLibrary()" class="rounded-full border border-white/10 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-300 transition hover:border-gas-green/50 hover:text-gas-green">Refresh</button>
+                        <button onclick="loadSavedLibrary()" class="rounded-full border border-white/10 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-300 transition hover:border-gas-green/50 hover:text-gas-green" data-i18n="refresh">Refresh</button>
                     </header>
                     <div id="saved-loader" class="hidden rounded-3xl border border-white/10 bg-[#0f0f0f] p-12 text-center shadow-panel">
                         <i class="fa-solid fa-circle-notch fa-spin text-2xl text-gas-green"></i>
                     </div>
                     <div id="saved-empty-state" class="hidden rounded-3xl border border-dashed border-white/10 bg-white/5 p-12 text-center">
                         <i class="fa-regular fa-folder-open text-4xl text-gray-600"></i>
-                        <p class="mt-4 text-sm text-gray-400">No saved items yet.</p>
+                        <p class="mt-4 text-sm text-gray-400" data-i18n="savedEmpty">No saved items yet.</p>
                     </div>
                     <div id="saved-list" class="grid gap-4 md:grid-cols-2"></div>
                 </section>
 
                 <section id="tab-profile" class="tab-content space-y-6">
                     <header>
-                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green">Profile</p>
-                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl">User details</h2>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green" data-i18n="profileKicker">Profile</p>
+                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl" data-i18n="profileTitle">User details</h2>
                     </header>
                     <article class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-6 shadow-panel">
                         <form id="profile-form" class="grid gap-5 md:grid-cols-2" onsubmit="saveProfile(event)">
                             <div class="space-y-2">
-                                <label class="field-label" for="profile-full-name">Full name</label>
-                                <input id="profile-full-name" class="field-input px-4 py-3.5" placeholder="Full name">
+                                <label class="field-label" for="profile-full-name" data-i18n="profileFullName">Full name</label>
+                                <input id="profile-full-name" class="field-input px-4 py-3.5" placeholder="Full name" data-i18n-placeholder="profileFullNamePlaceholder">
                             </div>
                             <div class="space-y-2">
-                                <label class="field-label" for="profile-company">Company</label>
-                                <input id="profile-company" class="field-input px-4 py-3.5" placeholder="Company">
+                                <label class="field-label" for="profile-company" data-i18n="profileCompany">Company</label>
+                                <input id="profile-company" class="field-input px-4 py-3.5" placeholder="Company" data-i18n-placeholder="profileCompanyPlaceholder">
                             </div>
                             <div class="space-y-2">
-                                <label class="field-label" for="profile-title">Job title</label>
-                                <input id="profile-title" class="field-input px-4 py-3.5" placeholder="Role or title">
+                                <label class="field-label" for="profile-title" data-i18n="profileJobTitle">Job title</label>
+                                <input id="profile-title" class="field-input px-4 py-3.5" placeholder="Role or title" data-i18n-placeholder="profileJobTitlePlaceholder">
                             </div>
                             <div class="space-y-2">
-                                <label class="field-label" for="profile-location">Location</label>
-                                <input id="profile-location" class="field-input px-4 py-3.5" placeholder="Country / region">
+                                <label class="field-label" for="profile-location" data-i18n="profileLocation">Location</label>
+                                <input id="profile-location" class="field-input px-4 py-3.5" placeholder="Country / region" data-i18n-placeholder="profileLocationPlaceholder">
                             </div>
                             <div class="space-y-2 md:col-span-2">
-                                <label class="field-label" for="profile-phone">Phone</label>
-                                <input id="profile-phone" autocomplete="tel" class="field-input px-4 py-3.5" placeholder="+1 555 123 4567">
+                                <label class="field-label" for="profile-phone" data-i18n="profilePhone">Phone</label>
+                                <input id="profile-phone" autocomplete="tel" class="field-input px-4 py-3.5" placeholder="+1 555 123 4567" data-i18n-placeholder="profilePhonePlaceholder">
                             </div>
                             <div class="space-y-2 md:col-span-2">
-                                <label class="field-label" for="profile-bio">Bio</label>
-                                <textarea id="profile-bio" rows="4" class="field-textarea px-4 py-3.5" placeholder="Short background or focus area"></textarea>
+                                <label class="field-label" for="profile-bio" data-i18n="profileBio">Bio</label>
+                                <textarea id="profile-bio" rows="4" class="field-textarea px-4 py-3.5" placeholder="Short background or focus area" data-i18n-placeholder="profileBioPlaceholder"></textarea>
                             </div>
                             <div class="md:col-span-2">
-                                <button id="save-profile-btn" data-busy-label="Saving..." class="rounded-2xl bg-gas-green px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-black transition hover:bg-white">Save profile</button>
+                                <button id="save-profile-btn" data-busy-label="Saving..." data-i18n-busy="busySaving" class="rounded-2xl bg-gas-green px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-black transition hover:bg-white" data-i18n="profileSave">Save profile</button>
                             </div>
                         </form>
                     </article>
@@ -663,37 +663,37 @@
 
                 <section id="tab-security" class="tab-content space-y-6">
                     <header>
-                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green">Security</p>
-                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl">Authentication</h2>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green" data-i18n="securityKicker">Security</p>
+                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl" data-i18n="securityTitle">Authentication</h2>
                     </header>
                     <div class="grid gap-6 xl:grid-cols-2">
                         <article class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-6 shadow-panel">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">Connected methods</p>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500" data-i18n="securityConnectedMethods">Connected methods</p>
                             <div id="provider-chips" class="mt-5 flex flex-wrap gap-3"></div>
                             <div class="mt-6 grid gap-4">
                                 <div class="rounded-2xl border border-white/8 bg-white/5 p-4">
-                                    <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Email verification</div>
-                                    <div id="security-email-status" class="mt-2 text-sm text-white">Unknown</div>
+                                    <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500" data-i18n="securityEmailVerification">Email verification</div>
+                                    <div id="security-email-status" class="mt-2 text-sm text-white" data-i18n="statusUnknown">Unknown</div>
                                 </div>
                                 <div class="rounded-2xl border border-white/8 bg-white/5 p-4">
-                                    <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Phone verification</div>
-                                    <div id="security-phone-status" class="mt-2 text-sm text-white">Unknown</div>
+                                    <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500" data-i18n="securityPhoneVerification">Phone verification</div>
+                                    <div id="security-phone-status" class="mt-2 text-sm text-white" data-i18n="statusUnknown">Unknown</div>
                                 </div>
                             </div>
-                            <button id="security-magic-btn" type="button" data-busy-label="Sending..." onclick="sendMagicLinkToCurrentUser(this)" class="mt-6 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:border-gas-green/50 hover:text-gas-green">Send login link to this email</button>
+                            <button id="security-magic-btn" type="button" data-busy-label="Sending..." data-i18n-busy="busySending" onclick="sendMagicLinkToCurrentUser(this)" class="mt-6 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:border-gas-green/50 hover:text-gas-green" data-i18n="securitySendLoginLink">Send login link to this email</button>
                         </article>
                         <article class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-6 shadow-panel">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">Change password</p>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500" data-i18n="securityChangePassword">Change password</p>
                             <form id="password-form" class="mt-5 space-y-4" onsubmit="changePassword(event)">
                                 <div class="space-y-2">
-                                    <label class="field-label" for="new-password">New password</label>
-                                    <input id="new-password" type="password" minlength="6" autocomplete="new-password" required class="field-input px-4 py-3.5" placeholder="Minimum 6 characters">
+                                    <label class="field-label" for="new-password" data-i18n="securityNewPassword">New password</label>
+                                    <input id="new-password" type="password" minlength="6" autocomplete="new-password" required class="field-input px-4 py-3.5" placeholder="Minimum 6 characters" data-i18n-placeholder="securityNewPasswordPlaceholder">
                                 </div>
                                 <div class="space-y-2">
-                                    <label class="field-label" for="confirm-password">Confirm password</label>
-                                    <input id="confirm-password" type="password" minlength="6" autocomplete="new-password" required class="field-input px-4 py-3.5" placeholder="Repeat the password">
+                                    <label class="field-label" for="confirm-password" data-i18n="securityConfirmPassword">Confirm password</label>
+                                    <input id="confirm-password" type="password" minlength="6" autocomplete="new-password" required class="field-input px-4 py-3.5" placeholder="Repeat the password" data-i18n-placeholder="securityConfirmPasswordPlaceholder">
                                 </div>
-                                <button id="change-password-btn" data-busy-label="Updating..." class="rounded-2xl bg-gas-green px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-black transition hover:bg-white">Update password</button>
+                                <button id="change-password-btn" data-busy-label="Updating..." data-i18n-busy="busyUpdating" class="rounded-2xl bg-gas-green px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-black transition hover:bg-white" data-i18n="securityUpdatePassword">Update password</button>
                             </form>
                         </article>
                     </div>
@@ -701,44 +701,44 @@
 
                 <section id="tab-preferences" class="tab-content space-y-6">
                     <header>
-                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green">Preferences</p>
-                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl">Workspace defaults</h2>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green" data-i18n="preferencesKicker">Preferences</p>
+                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl" data-i18n="preferencesTitle">Workspace defaults</h2>
                     </header>
                     <article class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-6 shadow-panel">
                         <form id="preferences-form" class="grid gap-5 md:grid-cols-2" onsubmit="savePreferences(event)">
                             <label class="flex items-center justify-between rounded-2xl border border-white/8 bg-white/5 px-4 py-4">
                                 <span>
-                                    <span class="block text-sm font-bold text-white">Weekly digest</span>
-                                    <span class="mt-1 block text-xs text-gray-400">Receive a weekly market digest.</span>
+                                    <span class="block text-sm font-bold text-white" data-i18n="prefWeeklyDigest">Weekly digest</span>
+                                    <span class="mt-1 block text-xs text-gray-400" data-i18n="prefWeeklyDigestHint">Receive a weekly market digest.</span>
                                 </span>
                                 <input id="pref-weekly-digest" type="checkbox" class="h-5 w-5 accent-[#5DD62C]">
                             </label>
                             <label class="flex items-center justify-between rounded-2xl border border-white/8 bg-white/5 px-4 py-4">
                                 <span>
-                                    <span class="block text-sm font-bold text-white">Product alerts</span>
-                                    <span class="mt-1 block text-xs text-gray-400">Notify when new power solutions go live.</span>
+                                    <span class="block text-sm font-bold text-white" data-i18n="prefProductAlerts">Product alerts</span>
+                                    <span class="mt-1 block text-xs text-gray-400" data-i18n="prefProductAlertsHint">Notify when new power solutions go live.</span>
                                 </span>
                                 <input id="pref-product-alerts" type="checkbox" class="h-5 w-5 accent-[#5DD62C]">
                             </label>
                             <div class="space-y-2">
-                                <label class="field-label" for="pref-language">Language</label>
+                                <label class="field-label" for="pref-language" data-i18n="prefLanguage">Language</label>
                                 <select id="pref-language" class="field-select px-4 py-3.5">
-                                    <option value="en">English</option>
-                                    <option value="zh">Chinese</option>
+                                    <option value="en" data-i18n="languageEnglish">English</option>
+                                    <option value="zh" data-i18n="languageChinese">Chinese</option>
                                 </select>
                             </div>
                             <div class="space-y-2">
-                                <label class="field-label" for="pref-default-tab">Default tab</label>
+                                <label class="field-label" for="pref-default-tab" data-i18n="prefDefaultTab">Default tab</label>
                                 <select id="pref-default-tab" class="field-select px-4 py-3.5">
-                                    <option value="dashboard">Overview</option>
-                                    <option value="saved">Saved</option>
-                                    <option value="profile">Profile</option>
-                                    <option value="security">Security</option>
-                                    <option value="sales">Sales Pipeline</option>
+                                    <option value="dashboard" data-i18n="navOverview">Overview</option>
+                                    <option value="saved" data-i18n="navSaved">Saved</option>
+                                    <option value="profile" data-i18n="navProfile">Profile</option>
+                                    <option value="security" data-i18n="navSecurity">Security</option>
+                                    <option value="sales" data-i18n="navSales">Sales Pipeline</option>
                                 </select>
                             </div>
                             <div class="md:col-span-2">
-                                <button id="save-preferences-btn" data-busy-label="Saving..." class="rounded-2xl bg-gas-green px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-black transition hover:bg-white">Save preferences</button>
+                                <button id="save-preferences-btn" data-busy-label="Saving..." data-i18n-busy="busySaving" class="rounded-2xl bg-gas-green px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-black transition hover:bg-white" data-i18n="preferencesSave">Save preferences</button>
                             </div>
                         </form>
                     </article>
@@ -746,9 +746,9 @@
 
                 <section id="tab-sales" class="tab-content space-y-6">
                     <header>
-                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green">Sales Pipeline</p>
-                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl">Customer Deal Workflow</h2>
-                        <p class="mt-2 max-w-3xl text-sm text-gray-400">All customer-side milestones are handled here. Requirement, quote, contract, and factory acceptance confirmations are submitted in this tab only.</p>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green" data-i18n="salesKicker">Sales Pipeline</p>
+                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl" data-i18n="salesTitle">Customer Deal Workflow</h2>
+                        <p class="mt-2 max-w-3xl text-sm text-gray-400" data-i18n="salesDesc">All customer-side milestones are handled here. Requirement, quote, contract, and factory acceptance confirmations are submitted in this tab only.</p>
                     </header>
                     <div id="sales-pipeline-root"></div>
                 </section>
@@ -775,6 +775,315 @@
         let currentUser = null;
         let currentSession = null;
         let currentViewModel = null;
+        let accountLang = 'en';
+
+        const ACCOUNT_I18N = {
+            en: {
+                pageTitle: 'My Account - GasGx',
+                loaderWorkspace: 'Loading workspace...',
+                sidebarWorkspace: 'Workspace',
+                sidebarAccount: 'Account',
+                sidebarDesc: 'User profile, security, preferences, and saved content.',
+                menu: 'Menu',
+                navOverview: 'Overview',
+                navSaved: 'Saved',
+                navProfile: 'Profile',
+                navSecurity: 'Security',
+                navPreferences: 'Preferences',
+                navSales: 'Sales Pipeline',
+                signOut: 'Sign out',
+                dashboardKicker: 'Overview',
+                dashboardWelcome: 'Welcome,',
+                dashboardDesc: 'Core account health, auth methods, and workspace activity in one place.',
+                statSavedItems: 'Saved items',
+                statSavedHint: 'Bookmarks in `main_bookmarks`.',
+                statAuthMethods: 'Auth methods',
+                statVerification: 'Verification',
+                statJoined: 'Joined',
+                identitySummary: 'Identity summary',
+                accountStatus: 'Account status',
+                refresh: 'Refresh',
+                labelEmail: 'Email',
+                labelPhone: 'Phone',
+                labelUserId: 'User ID',
+                labelProfileCompleteness: 'Profile completeness',
+                quickActions: 'Quick actions',
+                actionUpdateProfile: 'Update profile details',
+                actionChangePassword: 'Change password',
+                actionReviewSaved: 'Review saved library',
+                savedKicker: 'Saved library',
+                savedTitle: 'Bookmarks',
+                savedEmpty: 'No saved items yet.',
+                profileKicker: 'Profile',
+                profileTitle: 'User details',
+                profileFullName: 'Full name',
+                profileFullNamePlaceholder: 'Full name',
+                profileCompany: 'Company',
+                profileCompanyPlaceholder: 'Company',
+                profileJobTitle: 'Job title',
+                profileJobTitlePlaceholder: 'Role or title',
+                profileLocation: 'Location',
+                profileLocationPlaceholder: 'Country / region',
+                profilePhone: 'Phone',
+                profilePhonePlaceholder: '+1 555 123 4567',
+                profileBio: 'Bio',
+                profileBioPlaceholder: 'Short background or focus area',
+                profileSave: 'Save profile',
+                securityKicker: 'Security',
+                securityTitle: 'Authentication',
+                securityConnectedMethods: 'Connected methods',
+                securityEmailVerification: 'Email verification',
+                securityPhoneVerification: 'Phone verification',
+                securitySendLoginLink: 'Send login link to this email',
+                securityChangePassword: 'Change password',
+                securityNewPassword: 'New password',
+                securityNewPasswordPlaceholder: 'Minimum 6 characters',
+                securityConfirmPassword: 'Confirm password',
+                securityConfirmPasswordPlaceholder: 'Repeat the password',
+                securityUpdatePassword: 'Update password',
+                preferencesKicker: 'Preferences',
+                preferencesTitle: 'Workspace defaults',
+                prefWeeklyDigest: 'Weekly digest',
+                prefWeeklyDigestHint: 'Receive a weekly market digest.',
+                prefProductAlerts: 'Product alerts',
+                prefProductAlertsHint: 'Notify when new power solutions go live.',
+                prefLanguage: 'Language',
+                languageEnglish: 'English',
+                languageChinese: 'Chinese',
+                prefDefaultTab: 'Default tab',
+                preferencesSave: 'Save preferences',
+                salesKicker: 'Sales Pipeline',
+                salesTitle: 'Customer Deal Workflow',
+                salesDesc: 'All customer-side milestones are handled here. Requirement, quote, contract, and factory acceptance confirmations are submitted in this tab only.',
+                busySaving: 'Saving...',
+                busySending: 'Sending...',
+                busyUpdating: 'Updating...',
+                busyWorking: 'Working...',
+                userFallback: 'User',
+                noEmail: 'No email',
+                noProviderData: 'No provider data.',
+                providerNone: 'No providers',
+                lastSignInUnknown: 'Last sign-in unknown.',
+                lastSignIn: 'Last sign in: {time}',
+                verificationVerified: 'Verified',
+                verificationPending: 'Pending',
+                verificationEmailPhone: 'Email: {email} | Phone: {phone}',
+                statusVerified: 'verified',
+                statusPending: 'pending',
+                statusUnknown: 'Unknown',
+                securityEmailVerifiedOn: 'Verified on {time}',
+                securityEmailNotVerified: 'Email not verified yet',
+                securityPhoneVerified: 'Verified phone {phone}',
+                securityPhoneNotVerified: 'Phone not verified yet',
+                savedItemLabel: 'Saved item',
+                savedUntitled: 'Untitled',
+                savedNoPreview: 'No preview available.',
+                savedOpenSource: 'Open source',
+                savedRemove: 'Remove',
+                toastFailedLoadSaved: 'Failed to load saved items.',
+                toastSavedRemoved: 'Saved item removed.',
+                toastUnableRemoveSaved: 'Unable to remove the saved item.',
+                toastProfileUpdated: 'Profile updated.',
+                toastFailedSaveProfile: 'Failed to save profile.',
+                toastPreferencesUpdated: 'Preferences updated.',
+                toastFailedSavePreferences: 'Failed to save preferences.',
+                toastPasswordMismatch: 'Password confirmation does not match.',
+                toastPasswordUpdated: 'Password updated.',
+                toastFailedUpdatePassword: 'Failed to update password.',
+                toastNoCurrentEmail: 'Current account has no email address.',
+                toastMagicSent: 'Magic link sent to the current account email.',
+                toastFailedMagic: 'Failed to send magic link.',
+                toastAccountRefreshed: 'Account data refreshed.',
+                toastFailedLoadWorkspace: 'Failed to load account workspace.',
+                signOutFailed: 'Account sign-out failed:'
+            },
+            zh: {
+                pageTitle: '我的账户 - GasGx',
+                loaderWorkspace: '正在加载工作区...',
+                sidebarWorkspace: '工作区',
+                sidebarAccount: '账户中心',
+                sidebarDesc: '统一管理用户资料、安全、偏好和收藏内容。',
+                menu: '菜单',
+                navOverview: '总览',
+                navSaved: '收藏',
+                navProfile: '资料',
+                navSecurity: '安全',
+                navPreferences: '偏好',
+                navSales: '销售流水线',
+                signOut: '退出登录',
+                dashboardKicker: '总览',
+                dashboardWelcome: '欢迎，',
+                dashboardDesc: '在这里查看账户健康、认证方式和工作区活动。',
+                statSavedItems: '收藏条目',
+                statSavedHint: '`main_bookmarks` 内收藏总数。',
+                statAuthMethods: '认证方式',
+                statVerification: '验证状态',
+                statJoined: '加入时间',
+                identitySummary: '身份摘要',
+                accountStatus: '账户状态',
+                refresh: '刷新',
+                labelEmail: '邮箱',
+                labelPhone: '电话',
+                labelUserId: '用户 ID',
+                labelProfileCompleteness: '资料完整度',
+                quickActions: '快捷操作',
+                actionUpdateProfile: '更新个人资料',
+                actionChangePassword: '修改密码',
+                actionReviewSaved: '查看收藏库',
+                savedKicker: '收藏库',
+                savedTitle: '我的收藏',
+                savedEmpty: '当前还没有收藏内容。',
+                profileKicker: '资料',
+                profileTitle: '用户详情',
+                profileFullName: '姓名',
+                profileFullNamePlaceholder: '请输入姓名',
+                profileCompany: '公司',
+                profileCompanyPlaceholder: '请输入公司名称',
+                profileJobTitle: '职位',
+                profileJobTitlePlaceholder: '请输入职位',
+                profileLocation: '所在地',
+                profileLocationPlaceholder: '国家 / 地区',
+                profilePhone: '电话',
+                profilePhonePlaceholder: '请输入联系电话',
+                profileBio: '简介',
+                profileBioPlaceholder: '填写背景介绍或关注方向',
+                profileSave: '保存资料',
+                securityKicker: '安全',
+                securityTitle: '身份认证',
+                securityConnectedMethods: '已连接方式',
+                securityEmailVerification: '邮箱验证',
+                securityPhoneVerification: '电话验证',
+                securitySendLoginLink: '向当前邮箱发送登录链接',
+                securityChangePassword: '修改密码',
+                securityNewPassword: '新密码',
+                securityNewPasswordPlaceholder: '至少 6 位字符',
+                securityConfirmPassword: '确认密码',
+                securityConfirmPasswordPlaceholder: '请再次输入密码',
+                securityUpdatePassword: '更新密码',
+                preferencesKicker: '偏好',
+                preferencesTitle: '工作区默认设置',
+                prefWeeklyDigest: '每周摘要',
+                prefWeeklyDigestHint: '每周接收一次市场摘要。',
+                prefProductAlerts: '产品提醒',
+                prefProductAlertsHint: '有新产品上线时通知我。',
+                prefLanguage: '语言',
+                languageEnglish: '英文',
+                languageChinese: '中文',
+                prefDefaultTab: '默认标签页',
+                preferencesSave: '保存偏好',
+                salesKicker: '销售流水线',
+                salesTitle: '客户交易流程',
+                salesDesc: '客户侧里程碑都在此处理。需求、报价、合同和验收确认均在此标签内提交。',
+                busySaving: '保存中...',
+                busySending: '发送中...',
+                busyUpdating: '更新中...',
+                busyWorking: '处理中...',
+                userFallback: '用户',
+                noEmail: '无邮箱',
+                noProviderData: '暂无认证方式数据。',
+                providerNone: '暂无认证方式',
+                lastSignInUnknown: '暂无最近登录记录。',
+                lastSignIn: '最近登录：{time}',
+                verificationVerified: '已验证',
+                verificationPending: '待验证',
+                verificationEmailPhone: '邮箱：{email} | 电话：{phone}',
+                statusVerified: '已验证',
+                statusPending: '待验证',
+                statusUnknown: '未知',
+                securityEmailVerifiedOn: '验证时间：{time}',
+                securityEmailNotVerified: '邮箱尚未验证',
+                securityPhoneVerified: '已验证电话：{phone}',
+                securityPhoneNotVerified: '电话尚未验证',
+                savedItemLabel: '收藏条目',
+                savedUntitled: '未命名',
+                savedNoPreview: '暂无内容预览。',
+                savedOpenSource: '打开来源',
+                savedRemove: '移除',
+                toastFailedLoadSaved: '加载收藏失败。',
+                toastSavedRemoved: '已移除收藏条目。',
+                toastUnableRemoveSaved: '无法移除该收藏条目。',
+                toastProfileUpdated: '资料已更新。',
+                toastFailedSaveProfile: '保存资料失败。',
+                toastPreferencesUpdated: '偏好已更新。',
+                toastFailedSavePreferences: '保存偏好失败。',
+                toastPasswordMismatch: '两次输入的密码不一致。',
+                toastPasswordUpdated: '密码已更新。',
+                toastFailedUpdatePassword: '更新密码失败。',
+                toastNoCurrentEmail: '当前账号没有可用邮箱。',
+                toastMagicSent: '登录链接已发送到当前账号邮箱。',
+                toastFailedMagic: '发送登录链接失败。',
+                toastAccountRefreshed: '账户数据已刷新。',
+                toastFailedLoadWorkspace: '加载账户工作区失败。',
+                signOutFailed: '账户退出失败：'
+            }
+        };
+
+        function normalizeAccountLang(lang) {
+            return String(lang || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+        }
+
+        function readAccountLang() {
+            try {
+                const stored = window.localStorage.getItem('gasgx-lang') || window.localStorage.getItem('gas_lang');
+                if (stored) return normalizeAccountLang(stored);
+            } catch (_error) {
+                // Ignore storage failure.
+            }
+            return normalizeAccountLang(document.documentElement.getAttribute('lang') || 'en');
+        }
+
+        function t(key, vars = {}) {
+            const dict = ACCOUNT_I18N[accountLang] || ACCOUNT_I18N.en;
+            const fallback = ACCOUNT_I18N.en;
+            let text = dict[key] ?? fallback[key] ?? key;
+            Object.entries(vars).forEach(([token, value]) => {
+                text = text.replaceAll(`{${token}}`, String(value ?? ''));
+            });
+            return text;
+        }
+
+        function setAccountLang(nextLang, options = {}) {
+            accountLang = normalizeAccountLang(nextLang);
+            if (options.persist !== false) {
+                try {
+                    window.localStorage.setItem('gasgx-lang', accountLang);
+                    window.localStorage.setItem('gas_lang', accountLang);
+                } catch (_error) {
+                    // Ignore storage failure.
+                }
+            }
+            document.documentElement.setAttribute('lang', accountLang === 'zh' ? 'zh-CN' : 'en');
+            if (currentViewModel?.preferences) {
+                currentViewModel.preferences.language = accountLang;
+            }
+            applyAccountI18n();
+        }
+
+        function applyAccountI18n() {
+            document.title = t('pageTitle');
+
+            document.querySelectorAll('[data-i18n]').forEach((node) => {
+                const key = node.dataset.i18n;
+                if (!key) return;
+                node.textContent = t(key);
+            });
+
+            document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {
+                const key = node.dataset.i18nPlaceholder;
+                if (!key) return;
+                node.setAttribute('placeholder', t(key));
+            });
+
+            document.querySelectorAll('[data-i18n-busy]').forEach((node) => {
+                const key = node.dataset.i18nBusy;
+                if (!key) return;
+                node.dataset.busyLabel = t(key);
+            });
+
+            if (currentUser && currentViewModel) {
+                applyViewModel(currentViewModel);
+            }
+        }
 
         function showToast(message, type = 'success') {
             const iconMap = {
@@ -797,7 +1106,7 @@
             if (busy) {
                 if (!button.dataset.originalHtml) button.dataset.originalHtml = button.innerHTML;
                 button.disabled = true;
-                button.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${button.dataset.busyLabel || 'Working...'}`;
+                button.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${button.dataset.busyLabel || t('busyWorking')}`;
                 return;
             }
             button.disabled = false;
@@ -808,7 +1117,7 @@
             if (!value) return '-';
             const date = new Date(value);
             if (Number.isNaN(date.getTime())) return '-';
-            return date.toLocaleString();
+            return date.toLocaleString(accountLang === 'zh' ? 'zh-CN' : 'en-US');
         }
 
         function getProviders(user) {
@@ -831,14 +1140,14 @@
             return {
                 weeklyDigest: Boolean(metadata.preferences?.weeklyDigest),
                 productAlerts: Boolean(metadata.preferences?.productAlerts),
-                language: metadata.preferences?.language || 'en',
+                language: normalizeAccountLang(metadata.preferences?.language || readAccountLang()),
                 defaultTab
             };
         }
 
         function buildViewModel(profile) {
             const metadata = getUserMetadata(currentUser);
-            const nameFromEmail = currentUser.email ? currentUser.email.split('@')[0] : 'User';
+            const nameFromEmail = currentUser.email ? currentUser.email.split('@')[0] : t('userFallback');
             const fullName = profile?.full_name || metadata.full_name || metadata.name || nameFromEmail;
             const providers = getProviders(currentUser);
             const preferences = getPreferences(metadata);
@@ -882,23 +1191,31 @@
             currentViewModel = viewModel;
             document.getElementById('welcome-name').textContent = viewModel.fullName;
             document.getElementById('sidebar-name').textContent = viewModel.fullName;
-            document.getElementById('sidebar-email').textContent = currentUser.email || 'No email';
+            document.getElementById('sidebar-email').textContent = currentUser.email || t('noEmail');
             document.getElementById('sidebar-avatar').textContent = viewModel.fullName.charAt(0).toUpperCase();
             document.getElementById('summary-email').textContent = currentUser.email || '-';
             document.getElementById('summary-phone').textContent = viewModel.phone || '-';
             document.getElementById('summary-user-id').textContent = currentUser.id ? `${currentUser.id.slice(0, 8)}...` : '-';
             document.getElementById('summary-completeness').textContent = `${viewModel.completeness}%`;
             document.getElementById('stat-provider-count').textContent = viewModel.providers.length;
-            document.getElementById('stat-provider-list').textContent = viewModel.providers.length ? viewModel.providers.join(', ') : 'No provider data.';
+            document.getElementById('stat-provider-list').textContent = viewModel.providers.length ? viewModel.providers.join(', ') : t('noProviderData');
             document.getElementById('stat-created-at').textContent = formatDate(currentUser.created_at);
-            document.getElementById('stat-last-sign-in').textContent = `Last sign in: ${formatDate(currentUser.last_sign_in_at)}`;
+            const lastSignInTime = formatDate(currentUser.last_sign_in_at);
+            document.getElementById('stat-last-sign-in').textContent = currentUser.last_sign_in_at ? t('lastSignIn', { time: lastSignInTime }) : t('lastSignInUnknown');
 
             const emailVerified = Boolean(currentUser.email_confirmed_at);
             const phoneVerified = Boolean(currentUser.phone_confirmed_at);
-            document.getElementById('stat-verification').textContent = emailVerified || phoneVerified ? 'Verified' : 'Pending';
-            document.getElementById('stat-verification-hint').textContent = `Email: ${emailVerified ? 'verified' : 'pending'} | Phone: ${phoneVerified ? 'verified' : 'pending'}`;
-            document.getElementById('security-email-status').textContent = emailVerified ? `Verified on ${formatDate(currentUser.email_confirmed_at)}` : 'Email not verified yet';
-            document.getElementById('security-phone-status').textContent = phoneVerified ? `Verified phone ${viewModel.phone || ''}` : 'Phone not verified yet';
+            document.getElementById('stat-verification').textContent = emailVerified || phoneVerified ? t('verificationVerified') : t('verificationPending');
+            document.getElementById('stat-verification-hint').textContent = t('verificationEmailPhone', {
+                email: emailVerified ? t('statusVerified') : t('statusPending'),
+                phone: phoneVerified ? t('statusVerified') : t('statusPending')
+            });
+            document.getElementById('security-email-status').textContent = emailVerified
+                ? t('securityEmailVerifiedOn', { time: formatDate(currentUser.email_confirmed_at) })
+                : t('securityEmailNotVerified');
+            document.getElementById('security-phone-status').textContent = phoneVerified
+                ? t('securityPhoneVerified', { phone: viewModel.phone || '-' })
+                : t('securityPhoneNotVerified');
 
             document.getElementById('profile-full-name').value = viewModel.fullName;
             document.getElementById('profile-company').value = viewModel.company;
@@ -915,7 +1232,7 @@
             const providerChips = document.getElementById('provider-chips');
             providerChips.innerHTML = viewModel.providers.length
                 ? viewModel.providers.map((provider) => `<span class="rounded-full border border-gas-green/30 bg-gas-green/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-gas-green">${provider}</span>`).join('')
-                : `<span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-400">No providers</span>`;
+                : `<span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-400">${t('providerNone')}</span>`;
         }
 
         async function fetchSavedCount() {
@@ -955,21 +1272,21 @@
                     <article class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-5 shadow-panel">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-gas-green">Saved item</div>
-                                <h3 class="mt-3 line-clamp-2 text-sm font-bold text-white">${item.title || 'Untitled'}</h3>
+                                <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-gas-green">${t('savedItemLabel')}</div>
+                                <h3 class="mt-3 line-clamp-2 text-sm font-bold text-white">${item.title || t('savedUntitled')}</h3>
                             </div>
-                            <button type="button" onclick="removeSavedItem('${item.id}')" class="rounded-full border border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-300 transition hover:border-red-500 hover:text-red-400">Remove</button>
+                            <button type="button" onclick="removeSavedItem('${item.id}')" class="rounded-full border border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-300 transition hover:border-red-500 hover:text-red-400">${t('savedRemove')}</button>
                         </div>
-                        <p class="mt-3 line-clamp-2 text-sm text-gray-400">${item.content || 'No preview available.'}</p>
+                        <p class="mt-3 line-clamp-2 text-sm text-gray-400">${item.content || t('savedNoPreview')}</p>
                         <div class="mt-4 flex items-center justify-between gap-4">
                             <span class="font-mono text-xs text-gray-500">${formatDate(item.news_time || item.created_at)}</span>
-                            <a href="${item.link || '#'}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold uppercase tracking-[0.16em] text-gas-green hover:text-white">Open source</a>
+                            <a href="${item.link || '#'}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold uppercase tracking-[0.16em] text-gas-green hover:text-white">${t('savedOpenSource')}</a>
                         </div>
                     </article>
                 `).join('');
             } catch (error) {
                 emptyState.classList.remove('hidden');
-                showToast(error.message || 'Failed to load saved items.', 'error');
+                showToast(error.message || t('toastFailedLoadSaved'), 'error');
             } finally {
                 loader.classList.add('hidden');
             }
@@ -983,10 +1300,10 @@
                     .eq('id', id)
                     .eq('user_id', currentUser.id);
                 if (error) throw error;
-                showToast('Saved item removed.');
+                showToast(t('toastSavedRemoved'));
                 await Promise.all([loadSavedLibrary(), fetchSavedCount()]);
             } catch (error) {
-                showToast(error.message || 'Unable to remove the saved item.', 'error');
+                showToast(error.message || t('toastUnableRemoveSaved'), 'error');
             }
         };
 
@@ -1029,9 +1346,9 @@
                     // Keep auth metadata as the source of truth if the profile table is not ready.
                 }
                 applyViewModel(buildViewModel({ full_name: patch.full_name }));
-                showToast('Profile updated.');
+                showToast(t('toastProfileUpdated'));
             } catch (error) {
-                showToast(error.message || 'Failed to save profile.', 'error');
+                showToast(error.message || t('toastFailedSaveProfile'), 'error');
             } finally {
                 setButtonBusy(button, false);
             }
@@ -1050,9 +1367,11 @@
             try {
                 await persistUserMetadata({ preferences });
                 currentViewModel.preferences = preferences;
-                showToast('Preferences updated.');
+                setAccountLang(preferences.language);
+                document.dispatchEvent(new CustomEvent('gasgx:lang-changed', { detail: { lang: preferences.language } }));
+                showToast(t('toastPreferencesUpdated'));
             } catch (error) {
-                showToast(error.message || 'Failed to save preferences.', 'error');
+                showToast(error.message || t('toastFailedSavePreferences'), 'error');
             } finally {
                 setButtonBusy(button, false);
             }
@@ -1062,23 +1381,23 @@
             event.preventDefault();
             const password = document.getElementById('new-password').value;
             const confirm = document.getElementById('confirm-password').value;
-            if (password !== confirm) return showToast('Password confirmation does not match.', 'error');
+            if (password !== confirm) return showToast(t('toastPasswordMismatch'), 'error');
             const button = document.getElementById('change-password-btn');
             setButtonBusy(button, true);
             try {
                 const { error } = await client.auth.updateUser({ password });
                 if (error) throw error;
                 document.getElementById('password-form').reset();
-                showToast('Password updated.');
+                showToast(t('toastPasswordUpdated'));
             } catch (error) {
-                showToast(error.message || 'Failed to update password.', 'error');
+                showToast(error.message || t('toastFailedUpdatePassword'), 'error');
             } finally {
                 setButtonBusy(button, false);
             }
         };
 
         window.sendMagicLinkToCurrentUser = async function(button) {
-            if (!currentUser?.email) return showToast('Current account has no email address.', 'error');
+            if (!currentUser?.email) return showToast(t('toastNoCurrentEmail'), 'error');
             setButtonBusy(button, true);
             try {
                 const { error } = await client.auth.signInWithOtp({
@@ -1086,9 +1405,9 @@
                     options: { emailRedirectTo: new URL(SIGN_IN_URL, window.location.origin).toString() }
                 });
                 if (error) throw error;
-                showToast('Magic link sent to the current account email.');
+                showToast(t('toastMagicSent'));
             } catch (error) {
-                showToast(error.message || 'Failed to send magic link.', 'error');
+                showToast(error.message || t('toastFailedMagic'), 'error');
             } finally {
                 setButtonBusy(button, false);
             }
@@ -1126,7 +1445,7 @@
                 client,
                 runtimeConfig: MAIN_AUTH_CONFIG,
                 redirectTo: SIGN_IN_URL,
-                errorLabel: 'Account sign-out failed:'
+                errorLabel: t('signOutFailed')
             });
         };
 
@@ -1136,7 +1455,7 @@
             if (activeTab !== (currentViewModel?.preferences?.defaultTab || 'dashboard')) {
                 switchTab(activeTab);
             }
-            showToast('Account data refreshed.');
+            showToast(t('toastAccountRefreshed'));
         };
 
         async function initializeAccount(session) {
@@ -1144,6 +1463,7 @@
             currentUser = session.user;
             const profile = await fetchProfile();
             const viewModel = buildViewModel(profile);
+            setAccountLang(viewModel.preferences.language);
             applyViewModel(viewModel);
             await fetchSavedCount();
 
@@ -1182,14 +1502,29 @@
 
                 await initializeAccount(session);
             } catch (error) {
-                showToast(error.message || 'Failed to load account workspace.', 'error');
+                showToast(error.message || t('toastFailedLoadWorkspace'), 'error');
                 redirectToSignIn();
             } finally {
                 document.getElementById('auth-loader').classList.add('hidden');
             }
         }
 
-        window.addEventListener('DOMContentLoaded', bootstrapAccount);
+        document.addEventListener('gasgx:lang-changed', (event) => {
+            const nextLang = event?.detail?.lang;
+            if (!nextLang) return;
+            setAccountLang(nextLang);
+        });
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'gasgx-lang' || event.key === 'gas_lang') {
+                setAccountLang(event.newValue, { persist: false });
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setAccountLang(readAccountLang(), { persist: false });
+            bootstrapAccount();
+        });
     </script>
 </body>
 </html>

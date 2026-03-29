@@ -16,6 +16,7 @@ import {
     extractBrandSnapshot,
     extractProductSnapshot,
     normalizeLocalizedText,
+    normalizeLangCode,
     normalizeMediaConfig,
     normalizeProductUiText,
     normalizeQuoteItem,
@@ -24,7 +25,7 @@ import {
     normalizeSectionConfig,
     sortItems,
     sortMediaItems,
-} from './quote-data.module.js';
+} from './quote-data.module.js?v=20260329lang01';
 
 const RATE_API_URL = 'https://open.er-api.com/v6/latest/CNY';
 const TABLE_BRANDS = 'quote_brands';
@@ -416,13 +417,14 @@ function normalizeBrandEditor(value = {}) {
 
 function normalizeProductEditor(value = {}) {
     const snapshot = extractProductSnapshot(value);
+    const defaultLang = normalizeLangCode(value.default_lang || snapshot.default_lang, DEFAULT_LANG);
     return {
         id: text(value.id),
         brand_id: text(value.brand_id),
         slug: snapshot.slug,
         product_code: text(value.product_code || snapshot.product_code || snapshot.slug),
         public_title: normalizeLocalizedText(snapshot.public_title),
-        default_lang: SUPPORTED_LANGS.includes(text(value.default_lang || snapshot.default_lang)) ? text(value.default_lang || snapshot.default_lang) : DEFAULT_LANG,
+        default_lang: defaultLang,
         validity_hours: Math.max(1, safeNumber(value.validity_hours || snapshot.validity_hours, 72)),
         default_rates: normalizeRates(value.default_rates || snapshot.default_rates || DEFAULT_RATES),
         section_config: normalizeSectionConfig(value.section_config || snapshot.section_config),
@@ -435,6 +437,7 @@ function normalizeProductEditor(value = {}) {
 }
 
 function normalizeInstanceEditor(value = {}) {
+    const defaultLang = normalizeLangCode(value.default_lang, DEFAULT_LANG);
     return {
         id: text(value.id),
         customer_id: text(value.customer_id || value.customerId),
@@ -447,7 +450,7 @@ function normalizeInstanceEditor(value = {}) {
         customer_name: text(value.customer_name),
         receiver_name: text(value.receiver_name),
         receiver_email: normalizedCustomerEmail(value.receiver_email),
-        default_lang: SUPPORTED_LANGS.includes(text(value.default_lang)) ? text(value.default_lang) : DEFAULT_LANG,
+        default_lang: defaultLang,
         validity_hours: Math.max(1, safeNumber(value.validity_hours, 72)),
         draft_rates: normalizeRates(value.draft_rates || value.rates || DEFAULT_RATES),
         share_config: value.share_config && typeof value.share_config === 'object' ? { ...value.share_config } : {},
@@ -488,14 +491,14 @@ function configuredEditorLangs() {
     const source = state.kind === 'instance'
         ? state.instance?.share_config?.enabled_langs
         : state.product?.ui_text?.enabled_langs;
-    const values = Array.isArray(source) ? source.map((item) => text(item)).filter((item) => SUPPORTED_LANGS.includes(item)) : [];
+    const values = Array.isArray(source) ? source.map((item) => normalizeLangCode(item)).filter((item) => SUPPORTED_LANGS.includes(item)) : [];
     if (values.length) return [...new Set(values)];
     const fallback = state.kind === 'instance' ? state.instance?.default_lang : state.product?.default_lang;
-    return [SUPPORTED_LANGS.includes(text(fallback)) ? text(fallback) : DEFAULT_LANG];
+    return [normalizeLangCode(fallback, DEFAULT_LANG)];
 }
 
 function updateConfiguredEditorLangs(nextLangs = []) {
-    const langs = [...new Set(nextLangs.map((item) => text(item)).filter((item) => SUPPORTED_LANGS.includes(item)))];
+    const langs = [...new Set(nextLangs.map((item) => normalizeLangCode(item)).filter((item) => SUPPORTED_LANGS.includes(item)))];
     const safeLangs = langs.length ? langs : [DEFAULT_LANG];
     if (state.kind === 'instance') {
         state.instance.share_config = state.instance.share_config && typeof state.instance.share_config === 'object' ? { ...state.instance.share_config } : {};

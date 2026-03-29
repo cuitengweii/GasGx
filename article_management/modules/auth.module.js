@@ -25,6 +25,7 @@ function isSalesConsoleRole(role = '') {
         ADMIN_ROLE_SALES,
         ADMIN_ROLE_PRE_SALES,
         ADMIN_ROLE_AFTER_SALES,
+        ADMIN_ROLE_EDITOR,
         ADMIN_ROLE_ADMIN,
         ADMIN_ROLE_SUPER_ADMIN,
     ].includes(normalizeAdminRole(role));

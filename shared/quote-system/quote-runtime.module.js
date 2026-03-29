@@ -9,11 +9,12 @@ import {
     buildQuoteSnapshot,
     ensureLegacyQuotePagesLoaded,
     normalizeMediaConfig,
+    normalizeLangCode,
     normalizeRates,
     normalizeShareConfig,
     normalizeShareHistoryEntry,
     sortMediaItems,
-} from './quote-data.module.js?v=20260323quote12';
+} from './quote-data.module.js?v=20260329lang01';
 
 const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
@@ -854,7 +855,7 @@ function applyTheme(brand = {}) {
 }
 
 function normalizeLang(value) {
-    return SUPPORTED_LANGS.includes(text(value)) ? text(value) : DEFAULT_LANG;
+    return normalizeLangCode(value, DEFAULT_LANG);
 }
 
 function configuredRuntimeLangs(snapshot = state.snapshot) {
@@ -862,7 +863,7 @@ function configuredRuntimeLangs(snapshot = state.snapshot) {
     const productEnabled = snapshot?.product?.ui_text?.enabled_langs;
     const source = Array.isArray(quoteEnabled) && quoteEnabled.length ? quoteEnabled : productEnabled;
     const langs = Array.isArray(source)
-        ? [...new Set(source.map((item) => text(item)).filter((item) => SUPPORTED_LANGS.includes(item)))]
+        ? [...new Set(source.map((item) => normalizeLangCode(item)).filter((item) => SUPPORTED_LANGS.includes(item)))]
         : [];
     if (langs.length) return langs;
     const fallback = normalizeLang(snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG);
