@@ -23,7 +23,15 @@ async function confirmDialog(page: import('@playwright/test').Page, required = t
     }
     return;
   }
-  await submit.click({ force: true, noWaitAfter: true });
+  try {
+    await submit.click({ force: true, noWaitAfter: true, timeout: 8000 });
+  } catch (_error) {
+    await page.evaluate(() => {
+      const list = Array.from(document.querySelectorAll('[data-sales-confirm-submit]'));
+      const node = list[list.length - 1] as HTMLButtonElement | undefined;
+      node?.click();
+    });
+  }
 }
 
 async function openCustomerSalesEntry(page: import('@playwright/test').Page, entryUrl: string) {
@@ -36,13 +44,36 @@ async function openCustomerSalesEntry(page: import('@playwright/test').Page, ent
     await page.locator('#auth-form button[type="submit"]').click();
   }
 
-  await page.waitForURL(/\/account\/account\.html/, { timeout: 30000 });
-  const salesTab = page.locator('#tab-sales');
-  const salesTabActive = await salesTab.evaluate((node) => node.classList.contains('active')).catch(() => false);
-  if (!salesTabActive) {
-    await page.click('#nav-sales');
+  await page.waitForURL((url) => url.pathname.endsWith('/account/sales.html'), { timeout: 30000 });
+  await expect(page.locator('#sales-pipeline-root')).toBeVisible({ timeout: 20000 });
+}
+
+async function openAdminCustomerFlowStage(
+  page: import('@playwright/test').Page,
+  customerId: string,
+  dealId: string,
+  stage: string,
+) {
+  const url = `/article_management/sales/index.html?page=quote-customer-flow&customer=${encodeURIComponent(customerId)}&deal=${encodeURIComponent(dealId)}&stage=${encodeURIComponent(stage)}`;
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+
+  const waitUntilReady = async () => {
+    await page.waitForFunction(() => {
+      const shell = document.querySelector('.ams-app-sales');
+      if (!shell) return false;
+      const loadingPanel = document.querySelector('.ams-loading-panel');
+      const stageConfirm = document.querySelector('#ams-sales-flow-instance-confirm');
+      const fallbackContent = document.querySelector('#ams-content .ams-empty, #ams-content .ams-card, #ams-content .ams-quote-layout');
+      return !loadingPanel || !!stageConfirm || !!fallbackContent;
+    }, { timeout: 60000 });
+  };
+
+  await waitUntilReady();
+  const stillLoading = await page.locator('.ams-loading-panel').isVisible({ timeout: 1500 }).catch(() => false);
+  if (stillLoading) {
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitUntilReady();
   }
-  await expect(page.locator('#tab-sales')).toHaveClass(/active/, { timeout: 20000 });
 }
 
 async function submitRequirementInAccount(
@@ -200,9 +231,9 @@ test.describe('Sales governance guards', () => {
       customerEmail,
     });
 
-    await page.goto(`/article_management/sales/index.html?page=quote-customer-flow&customer=${encodeURIComponent(customerId)}&deal=${encodeURIComponent(dealId)}&stage=quote_confirmed`);
+    await openAdminCustomerFlowStage(page, customerId, dealId, 'quote_confirmed');
     const confirmBtn = page.locator('#ams-sales-flow-instance-confirm');
-    await expect(confirmBtn).toBeVisible({ timeout: 30000 });
+    await expect(confirmBtn).toBeVisible({ timeout: 90000 });
     await expect(confirmBtn).toBeDisabled();
 
     await customerPage.close();

@@ -465,9 +465,7 @@ function redirectToSignIn() {
 }
 
 function buildAccountSalesPath(extraParams = {}) {
-    const config = getAuthConfig();
-    const target = new URL(config.accountUrl || '/account/account.html', window.location.origin);
-    target.searchParams.set('tab', 'sales');
+    const target = new URL('/account/sales.html', window.location.origin);
     Object.entries(extraParams || {}).forEach(([key, value]) => {
         const normalized = text(value);
         if (!normalized) return;

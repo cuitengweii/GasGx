@@ -34,19 +34,18 @@
                 return;
             }
 
+            const accountUrl = new URL('/account/sales.html', window.location.origin);
+            accountUrl.searchParams.set('confirm_stage', stageSlug);
+            accountUrl.searchParams.set('confirm_token', stageToken);
+            const targetPath = `${accountUrl.pathname}${accountUrl.search}`;
+
             const helper = window.GasGxMainAuthShared;
             if (!helper?.createClient || !window.supabase) {
-                window.AMSLoadQuotePublicModule('../shared/quote-system/quote-confirmation.module.js');
+                window.location.replace(targetPath);
                 return;
             }
 
             const runtime = helper.resolveConfig(window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth);
-            const accountUrl = new URL(runtime.accountUrl || '/account/account.html', window.location.origin);
-            accountUrl.searchParams.set('tab', 'sales');
-            accountUrl.searchParams.set('confirm_stage', stageSlug);
-            accountUrl.searchParams.set('confirm_token', stageToken);
-
-            const targetPath = `${accountUrl.pathname}${accountUrl.search}`;
             const redirectToAccount = () => {
                 try {
                     window.sessionStorage.setItem(runtime.returnUrlStorageKey || 'gx_main_return_url', targetPath);

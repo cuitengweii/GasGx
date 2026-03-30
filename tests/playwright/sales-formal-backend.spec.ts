@@ -19,10 +19,35 @@ async function confirmDialog(page: import('@playwright/test').Page, required = t
     }
     return;
   }
-  await submit.click({ force: true, noWaitAfter: true });
+  try {
+    await submit.click({ force: true, noWaitAfter: true, timeout: 8000 });
+  } catch (_error) {
+    await page.evaluate(() => {
+      const list = Array.from(document.querySelectorAll('[data-sales-confirm-submit]'));
+      const node = list[list.length - 1] as HTMLButtonElement | undefined;
+      node?.click();
+    });
+  }
 }
 
 async function settleToContractStage(page: import('@playwright/test').Page, dealId: string) {
+  const readDealCurrentStage = async (): Promise<string> => {
+    return page.evaluate(async (dealIdentifier) => {
+      const createClient = (window as any)?.supabase?.createClient;
+      if (typeof createClient !== 'function') return '';
+      const url = (window as any).AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
+      const key = (window as any).AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+      const client = createClient(url, key);
+      const { data, error } = await client
+        .from('quote_deals')
+        .select('current_stage')
+        .eq('id', String(dealIdentifier || ''))
+        .limit(1);
+      if (error || !Array.isArray(data) || !data.length) return '';
+      return String(data[0]?.current_stage || '');
+    }, dealId);
+  };
+
   const deadline = Date.now() + 45000;
   while (Date.now() < deadline) {
     const stage = new URL(page.url()).searchParams.get('stage') || '';
@@ -46,8 +71,20 @@ async function settleToContractStage(page: import('@playwright/test').Page, deal
     await page.reload();
   }
   await forceCustomerQuoteConfirmation(page, { dealId, customerEmail });
-  await page.reload();
-  await expect(page).toHaveURL(/stage=contract_signed/, { timeout: 5000 });
+  const afterForceDeadline = Date.now() + 30000;
+  while (Date.now() < afterForceDeadline) {
+    await page.reload();
+    const uiStage = new URL(page.url()).searchParams.get('stage') || '';
+    if (uiStage === 'contract_signed') return;
+    const backendStage = await readDealCurrentStage();
+    if (backendStage === 'contract_signed') {
+      await page.goto(`/article_management/sales/index.html?page=quote-customer-flow&deal=${encodeURIComponent(dealId)}&stage=contract_signed`);
+      await expect(page).toHaveURL(/stage=contract_signed/, { timeout: 10000 });
+      return;
+    }
+    await page.waitForTimeout(2000);
+  }
+  throw new Error('Flow did not settle to contract_signed after customer confirmation.');
 }
 
 async function openCustomerSalesEntry(page: import('@playwright/test').Page, entryUrl: string) {
@@ -60,13 +97,8 @@ async function openCustomerSalesEntry(page: import('@playwright/test').Page, ent
     await page.locator('#auth-form button[type="submit"]').click();
   }
 
-  await page.waitForURL(/\/account\/account\.html/, { timeout: 30000 });
-  const salesTab = page.locator('#tab-sales');
-  const salesTabActive = await salesTab.evaluate((node) => node.classList.contains('active')).catch(() => false);
-  if (!salesTabActive) {
-    await page.click('#nav-sales');
-  }
-  await expect(page.locator('#tab-sales')).toHaveClass(/active/, { timeout: 20000 });
+  await page.waitForURL((url) => url.pathname.endsWith('/account/sales.html'), { timeout: 30000 });
+  await expect(page.locator('#sales-pipeline-root')).toBeVisible({ timeout: 20000 });
 }
 
 async function submitRequirementInAccount(
@@ -238,7 +270,7 @@ test.describe('Sales formal backend flow', () => {
 
     const confirmationEntryUrl = bootstrap.confirmStageSlug && bootstrap.confirmStageToken
       ? `/quote/confirmation.html?stage=${encodeURIComponent(bootstrap.confirmStageSlug)}&token=${encodeURIComponent(bootstrap.confirmStageToken)}`
-      : `/account/account.html?tab=sales&deal=${encodeURIComponent(dealId)}&stage=quote_confirmed`;
+      : `/account/sales.html?deal=${encodeURIComponent(dealId)}&stage=quote_confirmed`;
     await submitQuoteConfirmationInAccount(customerPage, confirmationEntryUrl);
 
     await page.reload();

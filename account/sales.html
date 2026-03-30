@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Pipeline - GasGx</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(93, 214, 44, 0.10), transparent 25%),
+                linear-gradient(180deg, #050505 0%, #090909 100%);
+            color: #f5f5f5;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .grid-lines {
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 36px 36px;
+        }
+        .nav-item.active {
+            background: rgba(93, 214, 44, 0.12);
+            border-color: rgba(93, 214, 44, 0.45);
+            color: #5DD62C;
+        }
+        .nav-item.active i { color: #5DD62C; }
+        .toast {
+            background: rgba(18, 18, 18, 0.96);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left: 3px solid #5DD62C;
+            color: #f8f8f8;
+            padding: 12px 16px;
+            border-radius: 12px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.error { border-left-color: #ef4444; }
+        .field-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #7b7b7b;
+        }
+        .field-input, .field-textarea {
+            width: 100%;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            background: rgba(255, 255, 255, 0.03);
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .field-input:focus, .field-textarea:focus {
+            border-color: rgba(93, 214, 44, 0.8);
+            box-shadow: 0 0 0 3px rgba(93, 214, 44, 0.12);
+        }
+        .sales-main-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: minmax(260px, 320px) 1fr;
+            align-items: start;
+        }
+        .sales-deal-list,
+        .sales-stage-card {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.25);
+        }
+        .sales-list-head,
+        .sales-detail-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 18px 18px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .sales-list-head strong {
+            font-size: 12px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #a5a5a5;
+        }
+        .sales-list-head span {
+            color: #5DD62C;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+        .sales-list-scroll {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 68vh;
+            overflow: auto;
+            padding: 14px;
+        }
+        .sales-deal-card {
+            text-align: left;
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+        }
+        .sales-deal-card:hover {
+            transform: translateY(-1px);
+            border-color: rgba(93, 214, 44, 0.4);
+        }
+        .sales-deal-card strong {
+            color: #fff;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .sales-deal-card span {
+            color: #b8b8b8;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .sales-deal-card em {
+            color: #868686;
+            font-style: normal;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .sales-deal-card.is-active {
+            border-color: rgba(93, 214, 44, 0.66);
+            background: rgba(93, 214, 44, 0.1);
+        }
+        .sales-detail { display: flex; flex-direction: column; gap: 16px; }
+        .sales-kicker {
+            color: #5DD62C;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+        .sales-detail-head h2 {
+            margin-top: 10px;
+            font-size: clamp(22px, 3vw, 32px);
+            font-family: 'Oswald', sans-serif;
+            text-transform: uppercase;
+        }
+        .sales-detail-head p {
+            margin-top: 8px;
+            color: #b1b1b1;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .sales-timeline {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+        }
+        .sales-pipeline-node {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 10px 12px;
+            text-align: left;
+        }
+        .sales-pipeline-node-index {
+            width: 24px;
+            height: 24px;
+            border-radius: 9999px;
+            display: grid;
+            place-items: center;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            flex-shrink: 0;
+        }
+        .sales-pipeline-node-main { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
+        .sales-pipeline-node-main strong { font-size: 12px; font-weight: 700; color: #f5f5f5; line-height: 1.5; }
+        .sales-pipeline-node-main em { font-size: 11px; color: #9ca3af; font-style: normal; }
+        .sales-pipeline-node.is-current { border-color: rgba(93, 214, 44, 0.65); box-shadow: 0 0 0 2px rgba(93, 214, 44, 0.15); }
+        .sales-pipeline-node.is-completed .sales-pipeline-node-index { background: rgba(93, 214, 44, 0.25); color: #5DD62C; }
+        .sales-pipeline-node.is-active .sales-pipeline-node-index { background: rgba(56, 189, 248, 0.22); color: #7dd3fc; }
+        .sales-pipeline-node.is-blocked .sales-pipeline-node-index { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .sales-stage-card { padding: 18px; }
+        .sales-stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+        .sales-stage-head h3 { margin-top: 8px; font-size: 22px; font-weight: 700; color: #fff; }
+        .sales-stage-head p { margin-top: 6px; color: #a3a3a3; font-size: 12px; line-height: 1.6; }
+        .sales-stage-pill { border-radius: 9999px; padding: 6px 10px; border: 1px solid rgba(255, 255, 255, 0.18); font-size: 10px; letter-spacing: 0.14em; font-weight: 700; text-transform: uppercase; color: #cfcfcf; white-space: nowrap; }
+        .sales-stage-pill.is-completed { border-color: rgba(93, 214, 44, 0.45); color: #5DD62C; background: rgba(93, 214, 44, 0.11); }
+        .sales-stage-pill.is-active { border-color: rgba(56, 189, 248, 0.5); color: #7dd3fc; background: rgba(56, 189, 248, 0.12); }
+        .sales-stage-pill.is-blocked { border-color: rgba(239, 68, 68, 0.5); color: #fca5a5; background: rgba(239, 68, 68, 0.12); }
+        .sales-stage-note { border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03); padding: 12px; color: #b2b2b2; font-size: 13px; line-height: 1.6; }
+        .sales-stage-form-grid, .sales-stage-readonly-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .sales-stage-form-grid label, .sales-stage-confirm label, .sales-stage-readonly-grid div { display: flex; flex-direction: column; gap: 6px; }
+        .sales-stage-form-grid label > span, .sales-stage-confirm label > span, .sales-stage-readonly-grid span { color: #7f7f7f; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+        .sales-stage-readonly-grid strong { color: #f4f4f4; font-size: 13px; font-weight: 600; line-height: 1.5; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03); }
+        .sales-stage-confirm { display: flex; flex-direction: column; gap: 12px; }
+        .sales-check-line { display: flex; align-items: flex-start; gap: 10px; border-radius: 12px; border: 1px solid rgba(93, 214, 44, 0.35); background: rgba(93, 214, 44, 0.08); padding: 10px 12px; color: #e5e7eb; font-size: 13px; }
+        .sales-check-line input { margin-top: 2px; accent-color: #5DD62C; }
+        .sales-span-2 { grid-column: span 2; }
+        .sales-action-bar { margin-top: 16px; position: sticky; bottom: 0; z-index: 4; border-radius: 14px; border: 1px solid rgba(93, 214, 44, 0.2); background: rgba(10, 10, 10, 0.92); backdrop-filter: blur(8px); padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .sales-action-bar span { color: #a3a3a3; font-size: 11px; }
+        .sales-action-buttons { display: flex; gap: 10px; align-items: center; }
+        .sales-activity-list { display: flex; flex-direction: column; gap: 10px; }
+        .sales-activity-item { border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.02); padding: 11px 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+        .sales-activity-item strong { font-size: 12px; color: #f5f5f5; }
+        .sales-activity-item span { margin-top: 4px; display: block; font-size: 12px; color: #9ca3af; line-height: 1.5; }
+        .sales-activity-item em { font-size: 11px; color: #7f7f7f; font-style: normal; white-space: nowrap; }
+        .sales-empty, .sales-loading, .sales-empty-card { border-radius: 18px; border: 1px dashed rgba(255, 255, 255, 0.15); background: rgba(255, 255, 255, 0.03); color: #9ca3af; padding: 18px; font-size: 13px; line-height: 1.6; }
+        .sales-loading { display: flex; align-items: center; gap: 10px; }
+        .sales-empty-card h3 { font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 26px; color: #fff; margin-bottom: 6px; }
+        @media (max-width: 1279px) {
+            .sales-main-grid { grid-template-columns: 1fr; }
+            .sales-list-scroll { max-height: none; }
+        }
+        @media (max-width: 767px) {
+            .sales-timeline { grid-template-columns: 1fr; }
+            .sales-stage-form-grid, .sales-stage-readonly-grid { grid-template-columns: 1fr; }
+            .sales-span-2 { grid-column: span 1; }
+            .sales-action-buttons { width: 100%; }
+            .sales-action-buttons button { width: 100%; justify-content: center; }
+            .sales-activity-item { flex-direction: column; }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div id="auth-loader" class="fixed inset-0 z-[90] flex items-center justify-center bg-[#050505]">
+        <div class="flex flex-col items-center gap-4">
+            <i class="fa-solid fa-circle-notch fa-spin text-[#5DD62C] text-3xl"></i>
+            <span class="font-mono text-xs uppercase tracking-[0.35em] text-gray-400" data-i18n="loaderWorkspace">Loading workspace...</span>
+        </div>
+    </div>
+    <div id="toast-container" class="fixed top-20 right-4 z-[100] flex w-[min(92vw,420px)] flex-col gap-2 pointer-events-none"></div>
+    <div id="ggx-site-header-slot"></div>
+
+    <div class="flex min-h-screen pt-16 grid-lines">
+        <button id="mobile-menu-btn" onclick="toggleSalesSidebar()" class="fixed left-4 top-20 z-[85] rounded-full border border-[#5DD62C]/30 bg-[#0f140f]/90 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.24em] text-[#5DD62C] shadow-[0_12px_30px_rgba(0,0,0,0.35)] lg:hidden" data-i18n="menu">Menu</button>
+        <div id="sidebar-overlay" onclick="toggleSalesSidebar()" class="fixed inset-0 z-[70] hidden bg-black/60 lg:hidden"></div>
+
+        <aside id="sales-sidebar" class="fixed inset-y-0 left-0 z-[75] w-[88vw] max-w-72 -translate-x-full border-r border-white/10 bg-[#0d0d0d]/95 pt-20 backdrop-blur-xl transition-transform duration-300 lg:static lg:w-72 lg:max-w-none lg:translate-x-0 lg:pt-8">
+            <div class="px-6">
+                <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gray-500" data-i18n="sidebarWorkspace">Workspace</p>
+                <h1 class="mt-3 font-header text-3xl uppercase text-white" data-i18n="sidebarAccount">Account</h1>
+                <p class="mt-2 text-sm text-gray-400" data-i18n="sidebarDesc">User profile, security, preferences, and saved content.</p>
+            </div>
+            <nav class="mt-8 space-y-2 px-4">
+                <a href="/account/account.html?tab=dashboard" class="nav-item flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition"><i class="fa-solid fa-gauge-high w-4 text-center"></i><span data-i18n="navOverview">Overview</span></a>
+                <a href="/account/account.html?tab=saved" class="nav-item flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition"><i class="fa-regular fa-bookmark w-4 text-center"></i><span data-i18n="navSaved">Saved</span></a>
+                <a href="/account/account.html?tab=profile" class="nav-item flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition"><i class="fa-regular fa-id-badge w-4 text-center"></i><span data-i18n="navProfile">Profile</span></a>
+                <a href="/account/account.html?tab=security" class="nav-item flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition"><i class="fa-solid fa-shield-halved w-4 text-center"></i><span data-i18n="navSecurity">Security</span></a>
+                <a href="/account/account.html?tab=preferences" class="nav-item flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition"><i class="fa-solid fa-sliders w-4 text-center"></i><span data-i18n="navPreferences">Preferences</span></a>
+                <a href="/account/sales.html" class="nav-item active flex w-full items-center gap-3 rounded-2xl border border-transparent px-4 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-gray-400 transition"><i class="fa-solid fa-diagram-project w-4 text-center"></i><span data-i18n="navSales">Sales Pipeline</span></a>
+            </nav>
+            <div class="mt-8 border-t border-white/8 p-6">
+                <div class="flex items-center gap-3">
+                    <div id="sidebar-avatar" class="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#5DD62C]/30 bg-[#5DD62C]/10 text-sm font-bold text-[#5DD62C]">U</div>
+                    <div class="min-w-0">
+                        <div id="sidebar-name" class="truncate text-sm font-bold text-white">User</div>
+                        <div id="sidebar-email" class="truncate font-mono text-xs text-gray-400">...</div>
+                    </div>
+                </div>
+                <button onclick="handleSignOut()" class="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition hover:border-red-500 hover:bg-red-500 hover:text-white">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i><span data-i18n="signOut">Sign out</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 px-4 pb-12 pt-20 sm:pt-24 lg:px-8 lg:pt-10">
+            <div class="mx-auto max-w-6xl">
+                <section id="tab-sales" class="tab-content active space-y-6">
+                    <header>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-[#5DD62C]" data-i18n="salesKicker">Sales Pipeline</p>
+                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl" data-i18n="salesTitle">Customer Deal Workflow</h2>
+                        <p class="mt-2 max-w-3xl text-sm text-gray-400" data-i18n="salesDesc">All customer-side milestones are handled here. Requirement, quote, contract, and factory acceptance confirmations are submitted in this tab only.</p>
+                    </header>
+                    <div id="sales-pipeline-root"></div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div id="ggx-site-footer-slot"></div>
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+    <script src="/shared/ui/site-shell.config.js?v=20260321auth02"></script>
+    <script src="/shared/ui/site-shell.shared.js?v=20260330shell02"></script>
+    <script src="/shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
+    <script src="/account/sales-pipeline.portal.js?v=20260330i18n03"></script>
+    <script>
+        const MAIN_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
+        const MAIN_AUTH_HELPER = window.GasGxMainAuthShared;
+        const MAIN_AUTH_CONFIG = MAIN_AUTH_HELPER.resolveConfig(MAIN_AUTH);
+        const SIGN_IN_URL = MAIN_AUTH_CONFIG.signInUrl;
+        const client = MAIN_AUTH_HELPER.createClient(window.supabase, MAIN_AUTH_CONFIG);
+
+        let currentUser = null;
+
+        const PAGE_I18N = {
+            en: {
+                pageTitle: 'Sales Pipeline - GasGx',
+                loaderWorkspace: 'Loading workspace...',
+                menu: 'Menu',
+                sidebarWorkspace: 'Workspace',
+                sidebarAccount: 'Account',
+                sidebarDesc: 'User profile, security, preferences, and saved content.',
+                navOverview: 'Overview',
+                navSaved: 'Saved',
+                navProfile: 'Profile',
+                navSecurity: 'Security',
+                navPreferences: 'Preferences',
+                navSales: 'Sales Pipeline',
+                signOut: 'Sign out',
+                salesKicker: 'Sales Pipeline',
+                salesTitle: 'Customer Deal Workflow',
+                salesDesc: 'All customer-side milestones are handled here. Requirement, quote, contract, and factory acceptance confirmations are submitted in this tab only.',
+                userFallback: 'User',
+                noEmail: 'No email'
+            },
+            zh: {
+                pageTitle: '销售流水线 - GasGx',
+                loaderWorkspace: '正在加载工作区...',
+                menu: '菜单',
+                sidebarWorkspace: '工作区',
+                sidebarAccount: '账户中心',
+                sidebarDesc: '统一管理用户资料、安全、偏好和收藏内容。',
+                navOverview: '总览',
+                navSaved: '收藏',
+                navProfile: '资料',
+                navSecurity: '安全',
+                navPreferences: '偏好',
+                navSales: '销售流水线',
+                signOut: '退出登录',
+                salesKicker: '销售流水线',
+                salesTitle: '客户交易流程',
+                salesDesc: '客户侧里程碑都在此处理。需求、报价、合同和验收确认均在此标签内提交。',
+                userFallback: '用户',
+                noEmail: '无邮箱'
+            }
+        };
+
+        PAGE_I18N.zh = {
+            pageTitle: '销售流水线 - GasGx',
+            loaderWorkspace: '正在加载工作区...',
+            menu: '菜单',
+            sidebarWorkspace: '工作区',
+            sidebarAccount: '账户中心',
+            sidebarDesc: '统一管理用户资料、安全、偏好和收藏内容。',
+            navOverview: '总览',
+            navSaved: '收藏',
+            navProfile: '资料',
+            navSecurity: '安全',
+            navPreferences: '偏好',
+            navSales: '销售流水线',
+            signOut: '退出登录',
+            salesKicker: '销售流水线',
+            salesTitle: '客户交易流程',
+            salesDesc: '客户侧里程碑都在此处理。需求、报价、合同和验收确认均在此标签内提交。',
+            userFallback: '用户',
+            noEmail: '无邮箱'
+        };
+
+        function normalizeLang(langCandidate) {
+            return String(langCandidate || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+        }
+
+        function currentLang() {
+            try {
+                const stored = window.localStorage.getItem('gasgx-lang') || window.localStorage.getItem('gas_lang');
+                if (stored) return normalizeLang(stored);
+            } catch (_error) {}
+            return normalizeLang(document.documentElement.getAttribute('lang') || 'en');
+        }
+
+        function t(key) {
+            const lang = currentLang();
+            return PAGE_I18N[lang]?.[key] || PAGE_I18N.en[key] || key;
+        }
+
+        function applyPageI18n() {
+            document.title = t('pageTitle');
+            document.querySelectorAll('[data-i18n]').forEach((node) => {
+                const key = node.dataset.i18n;
+                node.textContent = t(key);
+            });
+            if (currentUser) {
+                const fallbackName = currentUser.email ? currentUser.email.split('@')[0] : t('userFallback');
+                document.getElementById('sidebar-name').textContent = fallbackName;
+                document.getElementById('sidebar-email').textContent = currentUser.email || t('noEmail');
+            }
+        }
+
+        window.toggleSalesSidebar = function() {
+            const sidebar = document.getElementById('sales-sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const shouldOpen = sidebar.classList.contains('-translate-x-full');
+            sidebar.classList.toggle('-translate-x-full', !shouldOpen);
+            overlay.classList.toggle('hidden', !shouldOpen);
+        };
+
+        window.handleSignOut = async function() {
+            document.getElementById('auth-loader').classList.remove('hidden');
+            await MAIN_AUTH_HELPER.signOut({
+                client,
+                runtimeConfig: MAIN_AUTH_CONFIG,
+                redirectTo: SIGN_IN_URL,
+                errorLabel: 'Account sign-out failed:'
+            });
+        };
+
+        async function bootstrapSalesPage() {
+            try {
+                const { data: { session }, error } = await client.auth.getSession();
+                if (error || !session?.user) {
+                    window.location.href = SIGN_IN_URL;
+                    return;
+                }
+                currentUser = session.user;
+                const fallbackName = currentUser.email ? currentUser.email.split('@')[0] : t('userFallback');
+                document.getElementById('sidebar-name').textContent = fallbackName;
+                document.getElementById('sidebar-email').textContent = currentUser.email || t('noEmail');
+                document.getElementById('sidebar-avatar').textContent = fallbackName.charAt(0).toUpperCase();
+                document.dispatchEvent(new CustomEvent('gasgx-account-ready'));
+                window.GasGxSalesPipelinePortal?.onTabActivated?.();
+            } finally {
+                document.getElementById('auth-loader').classList.add('hidden');
+            }
+        }
+
+        document.addEventListener('gasgx:lang-changed', () => {
+            applyPageI18n();
+        });
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'gasgx-lang' || event.key === 'gas_lang') {
+                applyPageI18n();
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            applyPageI18n();
+            bootstrapSalesPage();
+        });
+    </script>
+</body>
+</html>

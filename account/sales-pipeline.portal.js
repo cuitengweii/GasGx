@@ -1,20 +1,190 @@
 ﻿(function (window, document) {
     'use strict';
 
+    function normalizeLang(langCandidate) {
+        return String(langCandidate || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+    }
+
+    function currentLang() {
+        try {
+            const stored = window.localStorage.getItem('gasgx-lang') || window.localStorage.getItem('gas_lang');
+            if (stored) return normalizeLang(stored);
+        } catch (_error) {
+            // Ignore storage failures.
+        }
+        return normalizeLang(document.documentElement.getAttribute('lang') || 'en');
+    }
+
+    const COPY = {
+        en: {
+            sales_pipeline: 'Sales Pipeline',
+            noDeals: 'No sales deal is linked to this account yet.',
+            noSummary: 'No summary yet.',
+            loadingPipeline: 'Loading sales pipeline...',
+            unmatchedHint: 'Your account is not linked to a customer deal yet. Please contact sales to bind your customer email.',
+            listTitle: 'Deal List',
+            listCountSuffix: '',
+            dealUntitled: 'Untitled Deal',
+            dealSummary: 'Customer confirmations are handled in this user portal.',
+            stageReadonly: 'This is a read-only stage. No customer action is required.',
+            stageDefaultNote: 'Please confirm key information at this stage before moving forward.',
+            stageConfirmLine: 'I have reviewed the stage information and agree to move to the next stage.',
+            stageConfirmNote: 'Confirmation Note',
+            stageConfirmNotePlaceholder: 'Optional note',
+            stageRequirementTitle: 'Requirement Title',
+            stageRequirementType: 'Requirement Type',
+            stageCompany: 'Company',
+            stageContact: 'Contact',
+            stageEmail: 'Email',
+            stagePhone: 'Phone',
+            stageCountry: 'Country/Region',
+            stageRequirementNote: 'Requirement Notes',
+            stageRequirementNotePlaceholder: 'Add delivery constraints, budget range, and timeline',
+            stageRequirementTypePlaceholder: 'integrated_mining_power',
+            stageProductionStatus: 'Progress Status',
+            stageProductionEta: 'Estimated Completion',
+            stageProductionFactory: 'Factory / Line',
+            stageProductionBatch: 'Batch',
+            stageProductionDelay: 'Delay Notes',
+            stageCurrent: 'Current Stage',
+            stageHintActionable: 'Customer action stage: submission will move the flow to the next stage.',
+            stageHintReadonly: 'Read-only stage: progress display only, no submit action.',
+            stageHintSystem: 'System stage: status display only.',
+            stageOutOfTurn: 'You are viewing a past/future stage. Submission is only allowed when the flow reaches "{stage}".',
+            actionHint: 'Critical actions will ask for confirmation first.',
+            actionNone: 'No action required now',
+            activitiesKicker: 'Customer Activity',
+            activitiesTitle: 'Interaction Records',
+            activitiesDesc: 'Only customer-visible timeline is shown here. Internal drafts are hidden.',
+            activitiesEmpty: 'No customer-visible activity yet.',
+            submitRequirement: 'Submit Requirement',
+            submitConfirm: 'Confirm & Proceed',
+            toastNeedFields: 'Please complete required requirement fields before submitting.',
+            toastNeedCheck: 'Please tick confirmation before submitting.',
+            toastSubmittedRequirement: 'Requirement submitted. Flow moved forward.',
+            toastFailedRequirement: 'Failed to submit requirement.',
+            toastSubmittedStage: 'Stage confirmation submitted.',
+            toastFailedStage: 'Failed to submit stage confirmation.',
+            toastFailedOverview: 'Failed to load sales pipeline overview.',
+            toastFailedDetail: 'Failed to load deal details.',
+            toastFallbackDetail: 'Detail endpoint is temporarily unavailable. Compatibility mode is enabled.',
+            confirmRequirement: 'Submit requirement and move to next stage?',
+            confirmStage: 'Submit confirmation and move to next stage?',
+            statusPending: 'Pending',
+            statusActive: 'In Progress',
+            statusCompleted: 'Completed',
+            statusBlocked: 'Blocked'
+        },
+        zh: {
+            sales_pipeline: '销售流水线',
+            noDeals: '当前账号还没有匹配的销售线。',
+            noSummary: '暂无摘要',
+            loadingPipeline: '正在加载销售流水线...',
+            unmatchedHint: '当前账号还未匹配客户销售线，请联系销售同事绑定客户邮箱。',
+            listTitle: '销售线列表',
+            listCountSuffix: '条',
+            dealUntitled: '未命名销售线',
+            dealSummary: '客户节点确认统一在用户中心执行。',
+            stageReadonly: '该节点为只读节点，客户侧无需操作。',
+            stageDefaultNote: '请确认当前节点关键信息，提交后流程将进入下一节点。',
+            stageConfirmLine: '我已确认当前节点信息，并同意推进到下一节点。',
+            stageConfirmNote: '确认备注',
+            stageConfirmNotePlaceholder: '可选：填写备注',
+            stageRequirementTitle: '需求标题',
+            stageRequirementType: '需求类型',
+            stageCompany: '公司',
+            stageContact: '联系人',
+            stageEmail: '邮箱',
+            stagePhone: '电话',
+            stageCountry: '国家/地区',
+            stageRequirementNote: '需求补充说明',
+            stageRequirementNotePlaceholder: '补充交付要求、预算和时间线',
+            stageRequirementTypePlaceholder: 'integrated_mining_power',
+            stageProductionStatus: '进度状态',
+            stageProductionEta: '预计完工',
+            stageProductionFactory: '工厂/产线',
+            stageProductionBatch: '批次',
+            stageProductionDelay: '延期说明',
+            stageCurrent: '当前节点',
+            stageHintActionable: '客户动作节点：提交后会同步推进下一节点。',
+            stageHintReadonly: '只读节点：展示交付进度，不提供提交按钮。',
+            stageHintSystem: '系统节点：仅展示状态。',
+            stageOutOfTurn: '当前查看的是历史/未来节点。仅当流程到达「{stage}」时才允许客户提交动作。',
+            actionHint: '关键动作执行前会弹窗确认。',
+            actionNone: '当前无需操作',
+            activitiesKicker: '客户活动',
+            activitiesTitle: '对接记录',
+            activitiesDesc: '仅展示客户可见轨迹，不包含内部沟通草稿。',
+            activitiesEmpty: '暂无客户侧活动记录。',
+            submitRequirement: '提交需求',
+            submitConfirm: '确认并推进',
+            toastNeedFields: '请先完整填写客户需求核心字段。',
+            toastNeedCheck: '请先勾选确认后再提交。',
+            toastSubmittedRequirement: '需求已提交，流程已推进。',
+            toastFailedRequirement: '提交需求失败。',
+            toastSubmittedStage: '节点确认已提交。',
+            toastFailedStage: '节点确认提交失败。',
+            toastFailedOverview: '加载销售流水线失败。',
+            toastFailedDetail: '加载销售线详情失败。',
+            toastFallbackDetail: '详情接口临时不可用，已切换到兼容模式继续处理流程。',
+            confirmRequirement: '确认提交需求并进入下一节点吗？',
+            confirmStage: '确认提交并推进到下一节点吗？',
+            statusPending: '待开始',
+            statusActive: '进行中',
+            statusCompleted: '已完成',
+            statusBlocked: '阻塞'
+        }
+    };
+
+    const STAGE_LABELS = {
+        customer_profile: { zh: '客户建档', en: 'Customer Profile' },
+        requirement_capture: { zh: '获取需求', en: 'Requirement Capture' },
+        requirement_confirmed: { zh: '确认需求', en: 'Requirement Confirmed' },
+        quote_draft: { zh: '转入报价', en: 'Quote Draft' },
+        quote_confirmed: { zh: '确认报价', en: 'Quote Confirmed' },
+        contract_signed: { zh: '签约合同', en: 'Contract Signed' },
+        deposit_paid: { zh: '定金付款', en: 'Deposit Paid' },
+        production_scheduled: { zh: '排产安排', en: 'Production Scheduled' },
+        factory_accepted: { zh: '出厂验收', en: 'Factory Acceptance' },
+        balance_confirmed: { zh: '尾款确认', en: 'Balance Confirmed' },
+        shipping_in_transit: { zh: '物流运输', en: 'Shipping In Transit' },
+        deployment_completed: { zh: '到场部署', en: 'Deployment Completed' },
+        support_active: { zh: '运维支持', en: 'Support Active' }
+    };
+
+    function tr(key, vars = {}) {
+        const lang = currentLang();
+        const dict = COPY[lang] || COPY.en;
+        let value = dict[key] ?? COPY.en[key] ?? key;
+        Object.entries(vars).forEach(([token, replacement]) => {
+            value = value.replaceAll(`{${token}}`, String(replacement ?? ''));
+        });
+        return value;
+    }
+
+    function trSafe(key, fallback, vars = {}) {
+        const resolved = tr(key, vars);
+        return resolved === key ? fallback : resolved;
+    }
+
+    function pipelineLabel() {
+        return currentLang() === 'zh' ? '销售流水线' : 'Sales Pipeline';
+    }
+
     const STAGES = [
-        { key: 'customer_profile', label: '客户建档', customerAction: false },
-        { key: 'requirement_capture', label: '获取需求', customerAction: true },
-        { key: 'requirement_confirmed', label: '确认需求', customerAction: false },
-        { key: 'quote_draft', label: '转入报价', customerAction: false },
-        { key: 'quote_confirmed', label: '确认报价', customerAction: true },
-        { key: 'contract_signed', label: '签约合同', customerAction: true },
-        { key: 'deposit_paid', label: '定金付款', customerAction: false },
-        { key: 'production_scheduled', label: '排产安排', customerAction: false, readonlyProgress: true },
-        { key: 'factory_accepted', label: '出厂验收', customerAction: true },
-        { key: 'balance_confirmed', label: '尾款确认', customerAction: false },
-        { key: 'shipping_in_transit', label: '物流运输', customerAction: false },
-        { key: 'deployment_completed', label: '到场部署', customerAction: false },
-        { key: 'support_active', label: '运维支持', customerAction: false },
+        { key: 'customer_profile', label: 'Customer Profile', customerAction: false },
+        { key: 'requirement_capture', label: 'Requirement Capture', customerAction: true },
+        { key: 'requirement_confirmed', label: 'Requirement Confirmed', customerAction: false },
+        { key: 'quote_draft', label: 'Quote Draft', customerAction: false },
+        { key: 'quote_confirmed', label: 'Quote Confirmed', customerAction: true },
+        { key: 'contract_signed', label: 'Contract Signed', customerAction: true },
+        { key: 'deposit_paid', label: 'Deposit Paid', customerAction: false },
+        { key: 'production_scheduled', label: 'Production Scheduled', customerAction: false, readonlyProgress: true },
+        { key: 'factory_accepted', label: 'Factory Acceptance', customerAction: true },
+        { key: 'balance_confirmed', label: 'Balance Confirmed', customerAction: false },
+        { key: 'shipping_in_transit', label: 'Shipping In Transit', customerAction: false },
+        { key: 'deployment_completed', label: 'Deployment Completed', customerAction: false },
+        { key: 'support_active', label: 'Support Active', customerAction: false },
     ];
 
     const STAGE_INDEX = Object.fromEntries(STAGES.map((item, index) => [item.key, index]));
@@ -58,12 +228,14 @@
         if (!value) return '--';
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return '--';
-        return date.toLocaleString();
+        return date.toLocaleString(currentLang() === 'zh' ? 'zh-CN' : 'en-US');
     }
 
     function stageLabel(stageKey = '') {
-        const target = STAGES.find((item) => item.key === text(stageKey));
-        return target ? target.label : text(stageKey, '--');
+        const normalized = text(stageKey);
+        const label = STAGE_LABELS[normalized];
+        if (!label) return text(stageKey, '--');
+        return currentLang() === 'zh' ? label.zh : label.en;
     }
 
     function normalizeStatus(value = '') {
@@ -74,10 +246,10 @@
 
     function statusLabel(value = '') {
         const normalized = normalizeStatus(value);
-        if (normalized === 'completed') return '已完成';
-        if (normalized === 'active') return '进行中';
-        if (normalized === 'blocked') return '阻塞';
-        return '待开始';
+        if (normalized === 'completed') return tr('statusCompleted');
+        if (normalized === 'active') return tr('statusActive');
+        if (normalized === 'blocked') return tr('statusBlocked');
+        return tr('statusPending');
     }
 
     function statusClass(value = '') {
@@ -125,8 +297,7 @@
     }
 
     function buildSalesUrl(dealId = '', stageKey = '') {
-        const url = new URL('/account/account.html', window.location.origin);
-        url.searchParams.set('tab', 'sales');
+        const url = new URL('/account/sales.html', window.location.origin);
         if (state.legacyEntry && text(dealId) === 'legacy-public') {
             if (state.legacyEntry.kind === 'requirement') {
                 url.searchParams.set('req', state.legacyEntry.slug);
@@ -187,7 +358,7 @@
             customer_id: text(row.customer_id),
             customer_company: text(row.requester_company || row.customer_company),
             customer_email: text(row.requester_email || row.customer_email),
-            deal_title: text(row.title, '客户需求确认'),
+            deal_title: text(row.title, tr('stage_requirement_confirmed')),
             current_stage: currentStage,
             deal_status: 'active',
             summary: text(row.title),
@@ -239,7 +410,7 @@
             customer_id: '',
             customer_company: text(row.customer_company),
             customer_email: text(row.customer_email),
-            deal_title: text(row.customer_name || row.title, '客户节点确认'),
+            deal_title: text(row.customer_name || row.title, tr('stage_requirement_confirmed')),
             current_stage: STAGE_INDEX[currentStage] != null ? currentStage : stageKey,
             deal_status: 'active',
             summary: text(row.customer_name || row.title),
@@ -298,7 +469,7 @@
                 <button type="button" class="sales-pipeline-node ${statusClass(status)} ${active ? 'is-current' : ''}" data-sales-stage-node="${esc(item.key)}">
                     <span class="sales-pipeline-node-index">${index + 1}</span>
                     <span class="sales-pipeline-node-main">
-                        <strong>${esc(item.label)}</strong>
+                        <strong>${esc(stageLabel(item.key))}</strong>
                         <em>${esc(statusLabel(status))}</em>
                     </span>
                 </button>
@@ -308,7 +479,7 @@
 
     function renderOverviewCards() {
         if (!state.overview.length) {
-            return '<div class="sales-empty">当前账号还没有匹配的销售线。</div>';
+            return `<div class="sales-empty">${esc(tr('noDeals'))}</div>`;
         }
         return state.overview.map((item) => {
             const selected = text(item.deal_id) === text(state.selectedDealId);
@@ -316,7 +487,7 @@
                 <button type="button" class="sales-deal-card ${selected ? 'is-active' : ''}" data-sales-deal="${esc(item.deal_id)}">
                     <strong>${esc(text(item.deal_title, item.deal_id))}</strong>
                     <span>${esc(stageLabel(item.current_stage))} · ${esc(text(item.deal_status, 'active'))}</span>
-                    <em>${esc(text(item.summary, '暂无摘要'))}</em>
+                    <em>${esc(text(item.summary, tr('noSummary')))}</em>
                 </button>
             `;
         }).join('');
@@ -326,14 +497,14 @@
         const req = detail.requirement && typeof detail.requirement === 'object' ? detail.requirement : {};
         return `
             <div class="sales-stage-form-grid">
-                <label><span>需求标题</span><input class="field-input px-4 py-3" data-sales-req-field="title" value="${esc(text(req.title))}" ${editable ? '' : 'disabled'}></label>
-                <label><span>需求类型</span><input class="field-input px-4 py-3" data-sales-req-field="requirement_type" value="${esc(text(req.requirement_type))}" placeholder="integrated_mining_power" ${editable ? '' : 'disabled'}></label>
-                <label><span>公司</span><input class="field-input px-4 py-3" data-sales-req-field="requester_company" value="${esc(text(req.requester_company, detail.customer_company))}" ${editable ? '' : 'disabled'}></label>
-                <label><span>联系人</span><input class="field-input px-4 py-3" data-sales-req-field="requester_name" value="${esc(text(req.requester_name))}" ${editable ? '' : 'disabled'}></label>
-                <label><span>邮箱</span><input class="field-input px-4 py-3" data-sales-req-field="requester_email" value="${esc(text(req.requester_email, detail.customer_email))}" ${editable ? '' : 'disabled'}></label>
-                <label><span>电话</span><input class="field-input px-4 py-3" data-sales-req-field="requester_phone" value="${esc(text(req.requester_phone))}" ${editable ? '' : 'disabled'}></label>
-                <label><span>国家/地区</span><input class="field-input px-4 py-3" data-sales-req-field="country" value="${esc(text(req.country))}" ${editable ? '' : 'disabled'}></label>
-                <label class="sales-span-2"><span>需求补充说明</span><textarea class="field-textarea px-4 py-3" rows="4" data-sales-req-field="note" placeholder="补充交付要求、预算和时间线" ${editable ? '' : 'disabled'}></textarea></label>
+                <label><span>${esc(tr('stageRequirementTitle'))}</span><input class="field-input px-4 py-3" data-sales-req-field="title" value="${esc(text(req.title))}" ${editable ? '' : 'disabled'}></label>
+                <label><span>${esc(tr('stageRequirementType'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requirement_type" value="${esc(text(req.requirement_type))}" placeholder="${esc(tr('stageRequirementTypePlaceholder'))}" ${editable ? '' : 'disabled'}></label>
+                <label><span>${esc(tr('stageCompany'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_company" value="${esc(text(req.requester_company, detail.customer_company))}" ${editable ? '' : 'disabled'}></label>
+                <label><span>${esc(tr('stageContact'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_name" value="${esc(text(req.requester_name))}" ${editable ? '' : 'disabled'}></label>
+                <label><span>${esc(tr('stageEmail'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_email" value="${esc(text(req.requester_email, detail.customer_email))}" ${editable ? '' : 'disabled'}></label>
+                <label><span>${esc(tr('stagePhone'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_phone" value="${esc(text(req.requester_phone))}" ${editable ? '' : 'disabled'}></label>
+                <label><span>${esc(tr('stageCountry'))}</span><input class="field-input px-4 py-3" data-sales-req-field="country" value="${esc(text(req.country))}" ${editable ? '' : 'disabled'}></label>
+                <label class="sales-span-2"><span>${esc(tr('stageRequirementNote'))}</span><textarea class="field-textarea px-4 py-3" rows="4" data-sales-req-field="note" placeholder="${esc(tr('stageRequirementNotePlaceholder'))}" ${editable ? '' : 'disabled'}></textarea></label>
             </div>
         `;
     }
@@ -344,12 +515,12 @@
         const meta = record.meta && typeof record.meta === 'object' ? record.meta : {};
         return `
             <div class="sales-stage-confirm">
-                <div class="sales-stage-note">${esc(text(meta.quote_terms || '请确认当前节点关键信息，提交后流程将进入下一节点。'))}</div>
+                <div class="sales-stage-note">${esc(text(meta.quote_terms || tr('stageDefaultNote')))}</div>
                 <label class="sales-check-line">
                     <input type="checkbox" id="sales-stage-confirm-checkbox" ${editable ? '' : 'disabled'}>
-                    <span>我已确认当前节点信息，并同意推进到下一节点。</span>
+                    <span>${esc(tr('stageConfirmLine'))}</span>
                 </label>
-                <label><span>确认备注</span><textarea id="sales-stage-confirm-note" class="field-textarea px-4 py-3" rows="4" placeholder="可选：填写备注" ${editable ? '' : 'disabled'}></textarea></label>
+                <label><span>${esc(tr('stageConfirmNote'))}</span><textarea id="sales-stage-confirm-note" class="field-textarea px-4 py-3" rows="4" placeholder="${esc(tr('stageConfirmNotePlaceholder'))}" ${editable ? '' : 'disabled'}></textarea></label>
             </div>
         `;
     }
@@ -359,11 +530,11 @@
         const meta = record.meta && typeof record.meta === 'object' ? record.meta : {};
         return `
             <div class="sales-stage-readonly-grid">
-                <div><span>进度状态</span><strong>${esc(text(meta.production_schedule_status, 'pending'))}</strong></div>
-                <div><span>预计完工</span><strong>${esc(text(meta.production_eta, '--'))}</strong></div>
-                <div><span>工厂/产线</span><strong>${esc(text(meta.factory_name, '--'))}</strong></div>
-                <div><span>批次</span><strong>${esc(text(meta.production_batch, '--'))}</strong></div>
-                <div class="sales-span-2"><span>延期说明</span><strong>${esc(text(meta.production_delay_reason, '--'))}</strong></div>
+                <div><span>${esc(tr('stageProductionStatus'))}</span><strong>${esc(text(meta.production_schedule_status, 'pending'))}</strong></div>
+                <div><span>${esc(tr('stageProductionEta'))}</span><strong>${esc(text(meta.production_eta, '--'))}</strong></div>
+                <div><span>${esc(tr('stageProductionFactory'))}</span><strong>${esc(text(meta.factory_name, '--'))}</strong></div>
+                <div><span>${esc(tr('stageProductionBatch'))}</span><strong>${esc(text(meta.production_batch, '--'))}</strong></div>
+                <div class="sales-span-2"><span>${esc(tr('stageProductionDelay'))}</span><strong>${esc(text(meta.production_delay_reason, '--'))}</strong></div>
             </div>
         `;
     }
@@ -374,18 +545,18 @@
         const editable = isCurrentStageActionable(stageKey, detail);
         const dealCurrent = resolveDealCurrentStage(detail);
 
-        let body = '<div class="sales-stage-note">该节点为只读节点，客户侧无需操作。</div>';
+        let body = `<div class="sales-stage-note">${esc(tr('stageReadonly'))}</div>`;
         let actions = '';
 
         if (stageKey === 'requirement_capture') {
             body = requirementFormMarkup(detail, editable);
             actions = editable
-                ? `<button type="button" class="rounded-2xl bg-gas-green px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-black" id="sales-stage-submit-requirement" ${state.pendingReqSubmit ? 'disabled' : ''}>提交需求</button>`
+                ? `<button type="button" class="rounded-2xl bg-gas-green px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-black" id="sales-stage-submit-requirement" ${state.pendingReqSubmit ? 'disabled' : ''}>${esc(tr('submitRequirement'))}</button>`
                 : '';
         } else if (ACTIONABLE_STAGE_SET.has(stageKey)) {
             body = stageConfirmationMarkup(stageKey, detail, editable);
             actions = editable
-                ? `<button type="button" class="rounded-2xl bg-gas-green px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-black" id="sales-stage-submit-confirmation" ${state.pendingStageSubmit ? 'disabled' : ''}>确认并推进</button>`
+                ? `<button type="button" class="rounded-2xl bg-gas-green px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-black" id="sales-stage-submit-confirmation" ${state.pendingStageSubmit ? 'disabled' : ''}>${esc(tr('submitConfirm'))}</button>`
                 : '';
         } else if (stageKey === 'production_scheduled') {
             body = productionReadonlyMarkup(detail);
@@ -395,32 +566,32 @@
             actions = '';
             body = `
                 <div class="sales-stage-note">
-                    当前查看的是历史/未来节点。仅当流程到达「${esc(stageLabel(dealCurrent))}」时才允许客户提交动作。
+                    ${esc(tr('stageOutOfTurn', { stage: stageLabel(dealCurrent) }))}
                 </div>
                 ${body}
             `;
         }
 
         const visibilityHint = stage.customerAction
-            ? '客户动作节点：提交后会同步推进下一节点。'
+            ? tr('stageHintActionable')
             : stage.readonlyProgress
-                ? '只读节点：展示交付进度，不提供提交按钮。'
-                : '系统节点：仅展示状态。';
+                ? tr('stageHintReadonly')
+                : tr('stageHintSystem');
 
         return `
             <section class="sales-stage-card">
                 <div class="sales-stage-head">
                     <div>
-                        <div class="sales-kicker">当前节点</div>
-                        <h3>${esc(stage.label)}</h3>
+                        <div class="sales-kicker">${esc(tr('stageCurrent'))}</div>
+                        <h3>${esc(stageLabel(stage.key))}</h3>
                         <p>${esc(visibilityHint)}</p>
                     </div>
                     <span class="sales-stage-pill ${statusClass(stageStatusForKey(stage.key, resolveDealCurrentStage(detail), parseStageRecords(detail)))}">${esc(statusLabel(stageStatusForKey(stage.key, resolveDealCurrentStage(detail), parseStageRecords(detail))))}</span>
                 </div>
                 ${body}
                 <div class="sales-action-bar">
-                    <span>关键动作执行前会弹窗确认。</span>
-                    <div class="sales-action-buttons">${actions || '<button type="button" class="rounded-2xl border border-white/15 px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-gray-400" disabled>当前无需操作</button>'}</div>
+                    <span>${esc(tr('actionHint'))}</span>
+                    <div class="sales-action-buttons">${actions || `<button type="button" class="rounded-2xl border border-white/15 px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-gray-400" disabled>${esc(tr('actionNone'))}</button>`}</div>
                 </div>
             </section>
         `;
@@ -428,7 +599,7 @@
 
     function activitiesMarkup(detail = {}) {
         const list = Array.isArray(detail.activities) ? detail.activities : [];
-        if (!list.length) return '<div class="sales-empty">暂无客户侧活动记录。</div>';
+        if (!list.length) return `<div class="sales-empty">${esc(tr('activitiesEmpty'))}</div>`;
         return list.slice(0, 30).map((item) => `
             <article class="sales-activity-item">
                 <div>
@@ -445,12 +616,12 @@
         if (!root) return;
 
         if (state.overviewLoading && !state.loadedOnce) {
-            root.innerHTML = '<div class="sales-loading"><i class="fa-solid fa-circle-notch fa-spin"></i><span>正在加载销售流水线...</span></div>';
+            root.innerHTML = `<div class="sales-loading"><i class="fa-solid fa-circle-notch fa-spin"></i><span>${esc(tr('loadingPipeline'))}</span></div>`;
             return;
         }
 
         if (!state.overview.length) {
-            root.innerHTML = '<div class="sales-empty-card"><h3>Sales Pipeline</h3><p>当前账号还未匹配客户销售线，请联系销售同事绑定客户邮箱。</p></div>';
+            root.innerHTML = `<div class="sales-empty-card"><h3>${esc(trSafe('sales_pipeline', pipelineLabel()))}</h3><p>${esc(tr('unmatchedHint'))}</p></div>`;
             return;
         }
 
@@ -459,17 +630,17 @@
             <div class="sales-main-grid">
                 <aside class="sales-deal-list">
                     <div class="sales-list-head">
-                        <strong>销售线列表</strong>
-                        <span>${state.overview.length} 条</span>
+                        <strong>${esc(tr('listTitle'))}</strong>
+                        <span>${state.overview.length} ${esc(tr('listCountSuffix'))}</span>
                     </div>
                     <div class="sales-list-scroll">${renderOverviewCards()}</div>
                 </aside>
                 <section class="sales-detail">
                     <div class="sales-detail-head">
                         <div>
-                            <div class="sales-kicker">Sales Pipeline</div>
-                            <h2>${esc(text(detail.deal_title, '未命名销售线'))}</h2>
-                            <p>${esc(text(detail.summary, '客户节点确认统一在用户中心执行。'))}</p>
+                            <div class="sales-kicker">${esc(trSafe('sales_pipeline', pipelineLabel()))}</div>
+                            <h2>${esc(text(detail.deal_title, tr('dealUntitled')))}</h2>
+                            <p>${esc(text(detail.summary, tr('dealSummary')))}</p>
                         </div>
                     </div>
                     <div class="sales-timeline">${renderTimeline(detail)}</div>
@@ -477,9 +648,9 @@
                     <section class="sales-stage-card">
                         <div class="sales-stage-head">
                             <div>
-                                <div class="sales-kicker">客户活动</div>
-                                <h3>对接记录</h3>
-                                <p>仅展示客户可见轨迹，不包含内部沟通草稿。</p>
+                                <div class="sales-kicker">${esc(tr('activitiesKicker'))}</div>
+                                <h3>${esc(tr('activitiesTitle'))}</h3>
+                                <p>${esc(tr('activitiesDesc'))}</p>
                             </div>
                         </div>
                         <div class="sales-activity-list">${activitiesMarkup(detail)}</div>
@@ -511,10 +682,10 @@
         const requiredFields = ['requester_company', 'requester_name', 'requester_email', 'requester_phone', 'country'];
         const missing = requiredFields.find((key) => !text(payload[key]));
         if (missing) {
-            showToast('请先完整填写客户需求核心字段。', 'error');
+            showToast(tr('toastNeedFields'), 'error');
             return;
         }
-        if (!window.confirm('确认提交需求并进入下一节点吗？')) return;
+        if (!window.confirm(tr('confirmRequirement'))) return;
 
         state.pendingReqSubmit = true;
         render();
@@ -531,10 +702,10 @@
                     payload,
                 });
             }
-            showToast('需求已提交，流程已推进。');
+            showToast(tr('toastSubmittedRequirement'));
             await reloadData();
         } catch (error) {
-            showToast(error.message || '提交需求失败。', 'error');
+            showToast(error.message || tr('toastFailedRequirement'), 'error');
         } finally {
             state.pendingReqSubmit = false;
             render();
@@ -549,10 +720,10 @@
 
         const checked = byId('sales-stage-confirm-checkbox')?.checked === true;
         if (!checked) {
-            showToast('请先勾选确认后再提交。', 'error');
+            showToast(tr('toastNeedCheck'), 'error');
             return;
         }
-        if (!window.confirm('确认提交并推进到下一节点吗？')) return;
+        if (!window.confirm(tr('confirmStage'))) return;
 
         const note = text(byId('sales-stage-confirm-note')?.value);
         state.pendingStageSubmit = true;
@@ -571,10 +742,10 @@
                     payload: { note },
                 });
             }
-            showToast('节点确认已提交。');
+            showToast(tr('toastSubmittedStage'));
             await reloadData();
         } catch (error) {
-            showToast(error.message || '节点确认提交失败。', 'error');
+            showToast(error.message || tr('toastFailedStage'), 'error');
         } finally {
             state.pendingStageSubmit = false;
             render();
@@ -721,10 +892,10 @@
                 const fallbackStage = state.selectedStage || (state.legacyEntry.kind === 'requirement' ? 'requirement_capture' : 'quote_confirmed');
                 state.overview = [{
                     deal_id: 'legacy-public',
-                    deal_title: 'Legacy Entry',
+                    deal_title: tr('legacy_entry'),
                     current_stage: fallbackStage,
                     deal_status: 'active',
-                    summary: '从历史公开链接进入的客户节点',
+                    summary: tr('legacy_summary'),
                     next_action: '',
                     next_action_due_at: null,
                     updated_at: new Date().toISOString(),
@@ -734,7 +905,7 @@
                 state.loadedOnce = true;
             } else {
                 state.overview = [];
-                showToast(error.message || '加载销售流水线失败。', 'error');
+                showToast(error.message || tr('toastFailedOverview'), 'error');
             }
         } finally {
             state.overviewLoading = false;
@@ -781,10 +952,10 @@
                 state.detail = fallbackRow;
                 if (!state.selectedStage) state.selectedStage = text(fallbackRow.current_stage, 'requirement_capture');
                 syncUrl();
-                showToast('详情接口临时不可用，已切换到兼容模式继续处理流程。', 'error');
+                showToast(tr('toastFallbackDetail'), 'error');
             } else {
                 state.detail = null;
-                showToast(error.message || '加载销售线详情失败。', 'error');
+                showToast(error.message || tr('toastFailedDetail'), 'error');
             }
         } finally {
             state.detailLoading = false;
@@ -809,7 +980,7 @@
 
     async function onTabActivated() {
         const salesTab = byId('tab-sales');
-        if (!salesTab?.classList.contains('active')) return;
+        if (salesTab && !salesTab.classList.contains('active')) return;
         await ensureLoaded();
     }
 
@@ -819,6 +990,16 @@
 
         document.addEventListener('gasgx-account-ready', () => {
             void onTabActivated();
+        });
+
+        document.addEventListener('gasgx:lang-changed', () => {
+            render();
+        });
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'gasgx-lang' || event.key === 'gas_lang') {
+                render();
+            }
         });
 
         if (document.readyState === 'loading') {

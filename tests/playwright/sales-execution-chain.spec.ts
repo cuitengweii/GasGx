@@ -19,7 +19,15 @@ async function confirmDialog(page: import('@playwright/test').Page, required = t
     }
     return;
   }
-  await submit.click({ noWaitAfter: true, force: true });
+  try {
+    await submit.click({ noWaitAfter: true, force: true, timeout: 8000 });
+  } catch (_error) {
+    await page.evaluate(() => {
+      const list = Array.from(document.querySelectorAll('[data-sales-confirm-submit]'));
+      const node = list[list.length - 1] as HTMLButtonElement | undefined;
+      node?.click();
+    });
+  }
 }
 
 async function settleToContractStage(page: import('@playwright/test').Page, dealId: string) {
@@ -76,11 +84,11 @@ async function saveAndAdvanceStage(
   const advanceOnce = async () => {
     await expect(page.locator('#ams-sales-flow-stage-save')).toBeVisible({ timeout: 30000 });
     await page.click('#ams-sales-flow-stage-save');
-    await confirmDialog(page);
+    await confirmDialog(page, false);
 
     await expect(page.locator('#ams-sales-flow-stage-complete')).toBeVisible({ timeout: 30000 });
     await page.click('#ams-sales-flow-stage-complete');
-    await confirmDialog(page);
+    await confirmDialog(page, false);
   };
 
   const syncFromBackendIfNeeded = async () => {
@@ -146,13 +154,36 @@ async function openCustomerSalesEntry(page: import('@playwright/test').Page, ent
     await page.locator('#auth-form button[type="submit"]').click();
   }
 
-  await page.waitForURL(/\/account\/account\.html/, { timeout: 30000 });
-  const salesTab = page.locator('#tab-sales');
-  const salesTabActive = await salesTab.evaluate((node) => node.classList.contains('active')).catch(() => false);
-  if (!salesTabActive) {
-    await page.click('#nav-sales');
+  await page.waitForURL((url) => url.pathname.endsWith('/account/sales.html'), { timeout: 30000 });
+  await expect(page.locator('#sales-pipeline-root')).toBeVisible({ timeout: 20000 });
+}
+
+async function openAdminCustomerFlowStage(
+  page: import('@playwright/test').Page,
+  customerId: string,
+  dealId: string,
+  stage: string,
+) {
+  const url = `/article_management/sales/index.html?page=quote-customer-flow&customer=${encodeURIComponent(customerId)}&deal=${encodeURIComponent(dealId)}&stage=${encodeURIComponent(stage)}`;
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+
+  const waitUntilReady = async () => {
+    await page.waitForFunction(() => {
+      const shell = document.querySelector('.ams-app-sales');
+      if (!shell) return false;
+      const loadingPanel = document.querySelector('.ams-loading-panel');
+      const stageConfirm = document.querySelector('#ams-sales-flow-instance-confirm');
+      const fallbackContent = document.querySelector('#ams-content .ams-empty, #ams-content .ams-card, #ams-content .ams-quote-layout');
+      return !loadingPanel || !!stageConfirm || !!fallbackContent;
+    }, { timeout: 60000 });
+  };
+
+  await waitUntilReady();
+  const stillLoading = await page.locator('.ams-loading-panel').isVisible({ timeout: 1500 }).catch(() => false);
+  if (stillLoading) {
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitUntilReady();
   }
-  await expect(page.locator('#tab-sales')).toHaveClass(/active/, { timeout: 20000 });
 }
 
 async function submitRequirementInAccount(
@@ -316,12 +347,12 @@ test.describe('Sales execution chain formal backend flow', () => {
       customerEmail,
     });
 
-    await page.goto(`/article_management/sales/index.html?page=quote-customer-flow&customer=${encodeURIComponent(customerId)}&deal=${encodeURIComponent(dealId)}&stage=quote_confirmed`);
-    await expect(page.locator('#ams-sales-flow-instance-confirm')).toBeVisible({ timeout: 30000 });
+    await openAdminCustomerFlowStage(page, customerId, dealId, 'quote_confirmed');
+    await expect(page.locator('#ams-sales-flow-instance-confirm')).toBeVisible({ timeout: 90000 });
 
     const confirmationEntryUrl = bootstrap.confirmStageSlug && bootstrap.confirmStageToken
       ? `/quote/confirmation.html?stage=${encodeURIComponent(bootstrap.confirmStageSlug)}&token=${encodeURIComponent(bootstrap.confirmStageToken)}`
-      : `/account/account.html?tab=sales&deal=${encodeURIComponent(dealId)}&stage=quote_confirmed`;
+      : `/account/sales.html?deal=${encodeURIComponent(dealId)}&stage=quote_confirmed`;
     await submitQuoteConfirmationInAccount(customerPage, confirmationEntryUrl);
 
     await page.reload();

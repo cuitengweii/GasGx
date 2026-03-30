@@ -11,6 +11,7 @@
         storageKey: "gasgx-main-auth",
         signInUrl: "/account/user.html",
         accountUrl: "/account/account.html",
+        salesUrl: "/account/sales.html",
         signOutRedirectUrl: "/account/user.html",
         returnUrlStorageKey: "gx_main_return_url",
         supabaseUrl: "https://mkpcliytqudclkwtewru.supabase.co",
@@ -32,6 +33,7 @@
             authLogout: "Logout",
             contactUs: "Contact Us",
             account: "Account",
+            orders: "Orders",
             welcome: "Welcome,",
             privacyPolicy: "Privacy Policy",
             languageEnglish: "English",
@@ -45,6 +47,37 @@
             authLogout: "退出",
             contactUs: "联系我们",
             account: "账号",
+            welcome: "欢迎，",
+            privacyPolicy: "隐私政策",
+            languageEnglish: "English",
+            languageChinese: "简体中文"
+        }
+    };
+
+    const CLEAN_SHARED_TEXT = {
+        en: {
+            tagline: "Natural Gas Power Mining Assistant",
+            footerTagline: "Making natural gas power mining easier",
+            strategicPartners: "Strategic Partners",
+            authLogin: "Login",
+            authLogout: "Logout",
+            contactUs: "Contact Us",
+            account: "Account",
+            orders: "Orders",
+            welcome: "Welcome,",
+            privacyPolicy: "Privacy Policy",
+            languageEnglish: "English",
+            languageChinese: "简体中文"
+        },
+        zh: {
+            tagline: "天然气发电挖矿助手",
+            footerTagline: "让天然气发电挖矿更简单",
+            strategicPartners: "战略合作伙伴",
+            authLogin: "登录",
+            authLogout: "退出",
+            contactUs: "联系我们",
+            account: "账户",
+            orders: "订单",
             welcome: "欢迎，",
             privacyPolicy: "隐私政策",
             languageEnglish: "English",
@@ -80,6 +113,9 @@
                             <a id="dropdown-account-link" href="/account/account.html" class="block px-4 py-2 border-b border-white/5 mb-1 hover:bg-white/5 transition-colors">
                                 <span data-ggx-text="account" class="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Account</span>
                                 <div id="dropdown-username" class="text-xs text-white font-bold truncate mt-1">User</div>
+                            </a>
+                            <a id="dropdown-sales-link" href="/account/sales.html" class="hidden px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors border-b border-white/5 mb-1">
+                                <i class="fa-solid fa-diagram-project mr-2"></i><span data-ggx-text="orders">Orders</span>
                             </a>
                             <button data-ggx-action="auth-sign-out" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors flex items-center">
                                 <i class="fa-solid fa-right-from-bracket mr-2"></i> <span data-ggx-text="auth-logout">Logout</span>
@@ -126,7 +162,7 @@
             <i class="fa-brands fa-google"></i>
             <span data-ggx-text="auth-login">Login</span>
         </button>
-         <div id="mob-auth-user-profile" class="hidden flex items-center justify-between w-full max-w-xs px-2">
+         <div id="mob-auth-user-profile" class="hidden flex flex-col gap-3 w-full max-w-xs px-2">
             <a id="mob-auth-account-link" href="/account/account.html" class="flex items-center gap-3 min-w-0">
                  <img id="mob-auth-user-avatar" src="" alt="User avatar" class="w-10 h-10 rounded-full border border-gas-green">
                  <div class="flex flex-col min-w-0">
@@ -134,9 +170,14 @@
                      <span id="mob-auth-username" class="text-sm text-white font-bold truncate">User</span>
                  </div>
             </a>
-            <button data-ggx-action="auth-sign-out" class="text-xs text-red-400 hover:text-red-300 border border-red-900/50 bg-red-900/20 px-3 py-1.5 rounded">
-                <span data-ggx-text="auth-logout">Logout</span>
-            </button>
+            <div class="flex items-center gap-2">
+                <a id="mob-auth-sales-link" href="/account/sales.html" class="hidden text-xs text-gray-200 hover:text-gas-green border border-white/20 bg-white/5 px-3 py-1.5 rounded">
+                    <i class="fa-solid fa-diagram-project mr-1"></i><span data-ggx-text="orders">Orders</span>
+                </a>
+                <button data-ggx-action="auth-sign-out" class="text-xs text-red-400 hover:text-red-300 border border-red-900/50 bg-red-900/20 px-3 py-1.5 rounded">
+                    <span data-ggx-text="auth-logout">Logout</span>
+                </button>
+            </div>
          </div>
     </div>
     <nav id="mobile-nav-content" class="flex flex-col space-y-1"></nav>
@@ -852,8 +893,8 @@
 
         return Object.assign(
             {},
-            SHARED_TEXT.en,
-            SHARED_TEXT[lang] || SHARED_TEXT.en,
+            CLEAN_SHARED_TEXT.en,
+            CLEAN_SHARED_TEXT[lang] || CLEAN_SHARED_TEXT.en,
             langOverride
         );
     }
@@ -880,6 +921,7 @@
         setSharedTextByKey("auth-logout", text.authLogout);
         setSharedTextByKey("contact-us", text.contactUs);
         setSharedTextByKey("account", text.account);
+        setSharedTextByKey("orders", text.orders || (lang === "zh" ? "订单" : "Orders"));
         setSharedTextByKey("welcome", text.welcome);
         setSharedTextByKey("privacy-policy", text.privacyPolicy);
 
@@ -1548,6 +1590,7 @@
             storageKey: pickString("storageKey", MAIN_AUTH_DEFAULTS.storageKey),
             signInUrl: pickString("signInUrl", MAIN_AUTH_DEFAULTS.signInUrl),
             accountUrl: pickString("accountUrl", MAIN_AUTH_DEFAULTS.accountUrl),
+            salesUrl: pickString("salesUrl", MAIN_AUTH_DEFAULTS.salesUrl),
             signOutRedirectUrl: pickString("signOutRedirectUrl", MAIN_AUTH_DEFAULTS.signOutRedirectUrl),
             returnUrlStorageKey: pickString("returnUrlStorageKey", MAIN_AUTH_DEFAULTS.returnUrlStorageKey),
             supabaseUrl: pickString("supabaseUrl", MAIN_AUTH_DEFAULTS.supabaseUrl),
@@ -1567,9 +1610,11 @@
             userAvatar: document.getElementById("auth-user-avatar"),
             dropdownAccountLink: document.getElementById("dropdown-account-link"),
             dropdownUsername: document.getElementById("dropdown-username"),
+            dropdownSalesLink: document.getElementById("dropdown-sales-link"),
             mobLoginBtn: document.getElementById("mob-auth-login-btn"),
             mobUserProfile: document.getElementById("mob-auth-user-profile"),
             mobAccountLink: document.getElementById("mob-auth-account-link"),
+            mobSalesLink: document.getElementById("mob-auth-sales-link"),
             mobUserAvatar: document.getElementById("mob-auth-user-avatar"),
             mobUsername: document.getElementById("mob-auth-username"),
             mobHeaderAuthLink: document.getElementById("mob-header-auth-link"),
@@ -1629,10 +1674,12 @@
         els.mobHeaderAuthLabel.textContent = text.authLogin || "Login";
     }
 
-    function applyMainAuthState(user, displayName) {
+    function applyMainAuthState(user, displayName, options = {}) {
         const els = getMainAuthElements();
         const authConfig = authBridgeState.runtimeConfig || getMainAuthConfig();
         const accountUrl = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
+        const salesUrl = authConfig.salesUrl || MAIN_AUTH_DEFAULTS.salesUrl;
+        const hasOrders = options && options.hasOrders === true;
         if (user) {
             setAuthElementVisibility(els.loginBtn, false);
             setAuthElementVisibility(els.userProfile, true);
@@ -1643,6 +1690,14 @@
             if (els.accountLink) els.accountLink.href = accountUrl;
             if (els.userAvatar) els.userAvatar.src = avatar;
             if (els.dropdownAccountLink) els.dropdownAccountLink.href = accountUrl;
+            if (els.dropdownSalesLink) {
+                els.dropdownSalesLink.href = salesUrl;
+                els.dropdownSalesLink.classList.toggle("hidden", !hasOrders);
+            }
+            if (els.mobSalesLink) {
+                els.mobSalesLink.href = salesUrl;
+                els.mobSalesLink.classList.toggle("hidden", !hasOrders);
+            }
             if (els.mobAccountLink) els.mobAccountLink.href = accountUrl;
             if (els.mobUserAvatar) els.mobUserAvatar.src = avatar;
             if (els.dropdownUsername) els.dropdownUsername.textContent = displayName;
@@ -1655,6 +1710,12 @@
         setAuthElementVisibility(els.userProfile, false);
         setAuthElementVisibility(els.mobLoginBtn, true);
         setAuthElementVisibility(els.mobUserProfile, false);
+        if (els.dropdownSalesLink) {
+            els.dropdownSalesLink.classList.add("hidden");
+        }
+        if (els.mobSalesLink) {
+            els.mobSalesLink.classList.add("hidden");
+        }
         applyMobileHeaderAuthState(null, displayName, authConfig);
     }
 
@@ -1672,6 +1733,17 @@
         }
     }
 
+    async function fetchMainAuthOrderCount() {
+        if (!authBridgeState.client) return 0;
+        try {
+            const { data, error } = await authBridgeState.client.rpc("get_customer_pipeline_overview", {});
+            if (error) throw error;
+            return Array.isArray(data) ? data.length : 0;
+        } catch (_error) {
+            return 0;
+        }
+    }
+
     async function applyMainAuthUser(user) {
         authBridgeState.currentUser = user || null;
         if (!authBridgeState.currentUser) {
@@ -1679,9 +1751,12 @@
             return;
         }
 
-        const profileName = await fetchMainAuthProfileName(authBridgeState.currentUser.id);
+        const [profileName, orderCount] = await Promise.all([
+            fetchMainAuthProfileName(authBridgeState.currentUser.id),
+            fetchMainAuthOrderCount()
+        ]);
         const displayName = resolveMainAuthDisplayName(authBridgeState.currentUser, profileName);
-        applyMainAuthState(authBridgeState.currentUser, displayName);
+        applyMainAuthState(authBridgeState.currentUser, displayName, { hasOrders: orderCount > 0 });
     }
 
     function saveMainReturnUrl() {
@@ -1691,6 +1766,7 @@
             const pathname = String((window.location && window.location.pathname) || "/").toLowerCase();
             if (pathname.startsWith("/account/user")) return;
             if (pathname.startsWith("/account/account")) return;
+            if (pathname.startsWith("/account/sales")) return;
             window.sessionStorage.setItem(config.returnUrlStorageKey, window.location.href);
         } catch (error) {
             // Ignore storage failures in restricted environments.

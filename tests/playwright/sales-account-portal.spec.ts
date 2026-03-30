@@ -12,22 +12,21 @@ async function expectLegacyFunnel(
   entryUrl: string,
   expectedTokens: string[],
 ) {
-  await page.goto(entryUrl);
+  await page.goto(entryUrl, { waitUntil: 'domcontentloaded' });
   await page.waitForURL((url) => {
     return url.pathname.endsWith('/account/user.html')
-      || (url.pathname.endsWith('/account/account.html') && url.searchParams.get('tab') === 'sales');
+      || url.pathname.endsWith('/account/sales.html');
   }, { timeout: 20000 });
 
   const current = new URL(page.url());
   if (current.pathname.endsWith('/account/user.html')) {
     const returnUrl = await page.evaluate(() => window.sessionStorage.getItem('gx_main_return_url') || '');
-    expect(returnUrl).toContain('/account/account.html?tab=sales');
+    expect(returnUrl).toContain('/account/sales.html');
     expectedTokens.forEach((token) => expect(returnUrl).toContain(token));
     return;
   }
 
-  expect(current.pathname).toContain('/account/account.html');
-  expect(current.searchParams.get('tab')).toBe('sales');
+  expect(current.pathname).toContain('/account/sales.html');
   expectedTokens.forEach((token) => expect(current.search).toContain(token));
 }
 
@@ -48,7 +47,7 @@ test.describe('Sales account center portal funnel', () => {
     );
   });
 
-  test('customer can open account sales pipeline tab', async ({ page }) => {
+  test('customer can open account sales pipeline page', async ({ page }) => {
     test.skip(!hasCustomerCreds(), 'Missing GX_CUSTOMER_EMAIL or GX_CUSTOMER_PASSWORD');
 
     await page.goto('/account/user.html');
@@ -56,12 +55,10 @@ test.describe('Sales account center portal funnel', () => {
     await page.fill('#email', customerEmail);
     await page.fill('#password', customerPassword);
     await page.locator('#auth-form button[type=\"submit\"]').click();
-    await page.waitForURL(/\/account\/account\.html/, { timeout: 30000 });
+    await page.waitForURL((url) => url.pathname.endsWith('/account/account.html') || url.pathname.endsWith('/account/sales.html'), { timeout: 30000 });
 
-    await page.goto('/account/account.html?tab=sales');
-    await expect(page.locator('#nav-sales')).toHaveClass(/active/, { timeout: 20000 });
-    await expect(page.locator('#tab-sales')).toHaveClass(/active/, { timeout: 20000 });
+    await page.goto('/account/sales.html');
+    await expect(page.locator('a[href=\"/account/sales.html\"].active')).toBeVisible({ timeout: 20000 });
     await expect(page.locator('#sales-pipeline-root')).toBeVisible({ timeout: 20000 });
   });
 });
-
