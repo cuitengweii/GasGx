@@ -48,4 +48,5 @@ chroma_db_data/
 Thumbs.db
 
 # Project specific
-temp_*.* 
+temp_*.*
+tools/bin/supabase/supabase.exe
