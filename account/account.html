@@ -1445,7 +1445,12 @@
                 try {
                     const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
                     if (returnPath && returnPath.startsWith('/')) {
-                        window.sessionStorage.setItem(MAIN_AUTH_CONFIG.returnUrlStorageKey, returnPath);
+                        const url = new URL(returnPath, window.location.origin);
+                        url.searchParams.delete('error');
+                        url.searchParams.delete('error_description');
+                        url.searchParams.delete('error_code');
+                        const cleanPath = `${url.pathname}${url.search}${url.hash}`;
+                        window.sessionStorage.setItem(MAIN_AUTH_CONFIG.returnUrlStorageKey, cleanPath);
                     }
                 } catch (_error) {
                     // Ignore storage failure and continue redirect.
