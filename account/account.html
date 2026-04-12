@@ -722,7 +722,7 @@
     <div id="ggx-back-to-top-slot"></div>
     <div id="ggx-chatbot-slot"></div>
     <script src="/shared/ui/site-shell.config.js?v=20260321auth02"></script>
-    <script src="/shared/ui/site-shell.shared.js?v=20260330shell02"></script>
+    <script src="/shared/ui/site-shell.shared.js?v=20260412shell03"></script>
     <script src="/shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
     <script>
         const MAIN_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
@@ -1451,6 +1451,20 @@
             }
         };
 
+        function ensureActiveTabVisible(preferredTab) {
+            const activeTab = document.querySelector('.tab-content.active');
+            const activeNav = document.querySelector('.nav-item.active');
+            if (activeTab && activeNav) return;
+            const normalized = normalizeTabId(preferredTab) || 'dashboard';
+            const navItem = document.getElementById(`nav-${normalized}`) || document.getElementById('nav-dashboard');
+            const tabContent = document.getElementById(`tab-${normalized}`) || document.getElementById('tab-dashboard');
+            if (!navItem || !tabContent) return;
+            document.querySelectorAll('.nav-item').forEach((item) => item.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach((item) => item.classList.remove('active'));
+            navItem.classList.add('active');
+            tabContent.classList.add('active');
+        }
+
         window.handleSignOut = async function() {
             document.getElementById('auth-loader').classList.remove('hidden');
             await MAIN_AUTH_HELPER.signOut({
@@ -1554,12 +1568,15 @@
             } catch (error) {
                 const fallbackTab = normalizeTabId(new URL(window.location.href).searchParams.get('tab')) || 'dashboard';
                 switchTab(fallbackTab);
+                ensureActiveTabVisible(fallbackTab);
                 showToast(error.message || t('toastFailedLoadWorkspace'), 'error');
                 if (!resolvedSession?.user && !currentUser?.id) {
                     redirectToSignIn();
                 }
             } finally {
                 document.getElementById('auth-loader').classList.add('hidden');
+                const fallbackTab = normalizeTabId(new URL(window.location.href).searchParams.get('tab')) || 'dashboard';
+                ensureActiveTabVisible(fallbackTab);
             }
         }
 
@@ -1580,6 +1597,8 @@
             setAccountLang(readAccountLang(), { persist: false });
             const requestedTab = normalizeTabId(new URL(window.location.href).searchParams.get('tab'));
             switchTab(requestedTab || 'dashboard');
+            window.setTimeout(() => ensureActiveTabVisible(requestedTab || 'dashboard'), 0);
+            window.setTimeout(() => ensureActiveTabVisible(requestedTab || 'dashboard'), 800);
             bootstrapAccount();
         });
     </script>
