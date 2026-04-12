@@ -8,7 +8,33 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+    <link rel="stylesheet" href="/shared/ui/loading.shared.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#050505',
+                            panel: '#0f0f0f',
+                            soft: '#151515',
+                            border: '#262626',
+                            green: '#5DD62C'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        header: ['Oswald', 'sans-serif']
+                    },
+                    boxShadow: {
+                        panel: '0 24px 60px rgba(0, 0, 0, 0.35)'
+                    }
+                }
+            }
+        };
+    </script>
     <style>
         :root { color-scheme: dark; }
         body {
@@ -243,10 +269,10 @@
     </style>
 </head>
 <body class="min-h-screen">
-    <div id="auth-loader" class="fixed inset-0 z-[90] flex items-center justify-center bg-[#050505]">
+    <div id="auth-loader" class="fixed inset-0 bg-[#050505] z-[80] flex items-center justify-center">
         <div class="flex flex-col items-center gap-4">
-            <i class="fa-solid fa-circle-notch fa-spin text-[#5DD62C] text-3xl"></i>
-            <span class="font-mono text-xs uppercase tracking-[0.35em] text-gray-400" data-i18n="loaderWorkspace">Loading workspace...</span>
+            <div class="gas-loading-spinner"></div>
+            <span class="text-gray-500 font-mono text-xs uppercase tracking-widest" data-i18n="loaderWorkspace">Loading workspace...</span>
         </div>
     </div>
     <div id="toast-container" class="fixed top-20 right-4 z-[100] flex w-[min(92vw,420px)] flex-col gap-2 pointer-events-none"></div>
@@ -428,8 +454,26 @@
 
         async function bootstrapSalesPage() {
             try {
-                const { data: { session }, error } = await client.auth.getSession();
+                let session = null;
+
+                const { data, error } = await client.auth.getSession();
+                session = data?.session;
+
                 if (error || !session?.user) {
+                    const waitForSession = new Promise((resolve) => {
+                        const timeout = setTimeout(() => resolve(null), 3000);
+                        const unsubscribe = client.auth.onAuthStateChange((_event, nextSession) => {
+                            if (nextSession?.user) {
+                                clearTimeout(timeout);
+                                unsubscribe.unsubscribe();
+                                resolve(nextSession);
+                            }
+                        });
+                    });
+                    session = await waitForSession;
+                }
+
+                if (!session?.user) {
                     window.location.href = SIGN_IN_URL;
                     return;
                 }

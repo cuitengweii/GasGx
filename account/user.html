@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+    <link rel="stylesheet" href="/shared/ui/loading.shared.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/shared/ui/site-shell.config.js?v=20260321auth02"></script>
     <script src="/shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
@@ -108,10 +109,10 @@
         <div id="toast-container" class="fixed right-5 top-20 z-[100] flex flex-col gap-2 pointer-events-none"></div>
         <div class="pointer-events-none absolute left-0 top-0 h-64 w-full bg-gradient-to-b from-gas-green/5 to-transparent"></div>
 
-        <div id="loading-overlay" class="fixed inset-0 z-[50] flex items-center justify-center bg-[#050505]">
+        <div id="loading-overlay" class="fixed inset-0 bg-[#050505] z-[80] flex items-center justify-center">
             <div class="flex flex-col items-center gap-4">
-                <i class="fa-solid fa-circle-notch fa-spin text-3xl text-gas-green"></i>
-                <span id="loading-text" class="font-mono text-sm tracking-widest text-gray-400">VERIFYING...</span>
+                <div class="gas-loading-spinner"></div>
+                <span id="loading-text" class="text-gray-500 font-mono text-xs uppercase tracking-widest">VERIFYING...</span>
             </div>
         </div>
 

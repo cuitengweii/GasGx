@@ -1,0 +1,33 @@
+/* Shared Loading Spinner Styles for GasGx */
+
+.gas-loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #5DD62C;
+    border-radius: 50%;
+    animation: gas-spin 0.9s linear infinite;
+}
+
+.gas-loading-spinner-sm {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+}
+
+.gas-loading-spinner-lg {
+    width: 48px;
+    height: 48px;
+    border-width: 3px;
+}
+
+@keyframes gas-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Legacy spinner support - maps to gas-loading-spinner */
+.spinner,
+.fa-circle-notch {
+    display: none !important;
+}

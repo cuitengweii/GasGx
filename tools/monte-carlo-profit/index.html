@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+    <link rel="stylesheet" href="/shared/ui/loading.shared.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
@@ -360,10 +361,11 @@
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loading" class="fixed inset-0 bg-black/95 z-[70] hidden flex-col items-center justify-center backdrop-blur-sm">
-        <div class="w-16 h-16 border-4 border-gas-green/30 border-t-gas-green rounded-full animate-spin mb-6"></div>
-        <div class="text-gas-green font-bold text-xl animate-pulse tracking-widest">CALCULATING...</div>
-        <div class="text-gray-500 text-sm mt-2 font-mono">Simulating 100k Outcomes</div>
+    <div id="loading" class="fixed inset-0 bg-[#050505] z-[80] flex items-center justify-center">
+        <div class="flex flex-col items-center gap-4">
+            <div class="gas-loading-spinner"></div>
+            <span id="loading-text" class="text-gray-500 font-mono text-xs uppercase tracking-widest">CALCULATING...</span>
+        </div>
     </div>
 
     <!-- Application Logic -->

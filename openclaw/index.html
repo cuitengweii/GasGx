@@ -17,6 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link rel="stylesheet" href="/shared/ui/loading.shared.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
     <script>
@@ -207,10 +208,10 @@
                     GasGx Network &copy; 2026
                 </p>
             </footer>
-            <div id="loader" class="absolute inset-0 flex flex-col items-center justify-center bg-gas-bg z-10">
+            <div id="loader" class="fixed inset-0 bg-[#050505] z-[80] flex items-center justify-center">
                 <div class="flex flex-col items-center gap-4">
-                    <i class="fa-solid fa-circle-notch fa-spin text-4xl text-gas-green"></i>
-                    <p class="text-xs text-gas-subtext font-mono uppercase tracking-widest animate-pulse">Syncing ClawdBot Neural Net...</p>
+                    <div class="gas-loading-spinner"></div>
+                    <span class="text-gray-500 font-mono text-xs uppercase tracking-widest">Syncing ClawdBot Neural Net...</span>
                 </div>
             </div>
         </div>
