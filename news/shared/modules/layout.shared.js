@@ -2,13 +2,45 @@ function mobileToggleExpr(appGlobal) {
     return `window.${appGlobal} && window.${appGlobal}.toggleMobileMenu()`;
 }
 
-const AUTH_FALLBACK_AVATAR = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2232%22 fill=%22%23121812%22/%3E%3Cpath d=%22M32 33c7.18 0 13-5.82 13-13S39.18 7 32 7 19 12.82 19 20s5.82 13 13 13Zm0 4c-9.94 0-18 6.27-18 14v2h36v-2c0-7.73-8.06-14-18-14Z%22 fill=%22%235DD62C%22/%3E%3C/svg%3E';
+const AUTH_DEFAULT_AVATAR_KEY = 'pixel-01';
+const AUTH_AVATAR_PRESETS = Object.freeze({
+    'pixel-01': { bg: '#0d1410', panel: '#213429', accent: '#5DD62C', eye: '#dfffd1' },
+    'pixel-02': { bg: '#131126', panel: '#2a2450', accent: '#8a7bff', eye: '#e4dcff' },
+    'pixel-03': { bg: '#101922', panel: '#1e3448', accent: '#45d6ff', eye: '#d0f7ff' },
+    'pixel-04': { bg: '#18120b', panel: '#3e2a16', accent: '#ffb347', eye: '#ffe8bf' },
+    'pixel-05': { bg: '#1c0f15', panel: '#4a1f34', accent: '#ff6fa8', eye: '#ffd6e8' },
+    'pixel-06': { bg: '#0f1915', panel: '#204534', accent: '#46dd97', eye: '#cbffe8' },
+    'pixel-07': { bg: '#151515', panel: '#2a2a2a', accent: '#f4f4f4', eye: '#ffffff' },
+    'pixel-08': { bg: '#12160c', panel: '#33461f', accent: '#b9ff52', eye: '#eeffcf' },
+    'pixel-09': { bg: '#16111a', panel: '#3b2550', accent: '#d77dff', eye: '#f3d9ff' },
+    'pixel-10': { bg: '#11141d', panel: '#1f2b46', accent: '#7fa8ff', eye: '#dce8ff' }
+});
+
+function buildPixelAvatarDataUri(preset) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges"><rect width="64" height="64" rx="14" fill="${preset.bg}"/><rect x="14" y="12" width="36" height="32" fill="${preset.panel}"/><rect x="22" y="22" width="6" height="6" fill="${preset.eye}"/><rect x="36" y="22" width="6" height="6" fill="${preset.eye}"/><rect x="26" y="32" width="12" height="4" fill="${preset.accent}"/><rect x="18" y="46" width="28" height="10" fill="${preset.accent}" opacity="0.95"/></svg>`;
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+function resolveAuthAvatarByKey(key) {
+    const normalized = String(key || '').trim().toLowerCase();
+    if (window.GasGxSharedUI && typeof window.GasGxSharedUI.resolveAvatarUriByKey === 'function') {
+        return window.GasGxSharedUI.resolveAvatarUriByKey(normalized || AUTH_DEFAULT_AVATAR_KEY);
+    }
+    const preset = AUTH_AVATAR_PRESETS[normalized] || AUTH_AVATAR_PRESETS[AUTH_DEFAULT_AVATAR_KEY];
+    return buildPixelAvatarDataUri(preset);
+}
+
+const AUTH_FALLBACK_AVATAR = resolveAuthAvatarByKey(AUTH_DEFAULT_AVATAR_KEY);
 
 function resolveAuthAvatar(currentUser) {
     if (!currentUser || typeof currentUser !== 'object') return AUTH_FALLBACK_AVATAR;
     const meta = currentUser.user_metadata && typeof currentUser.user_metadata === 'object'
         ? currentUser.user_metadata
         : {};
+    const avatarKey = String(meta?.preferences?.avatarKey || meta?.avatar_key || AUTH_DEFAULT_AVATAR_KEY).trim().toLowerCase();
+    if (avatarKey) {
+        return resolveAuthAvatarByKey(avatarKey);
+    }
     const raw = meta.avatar_url || meta.picture;
     return typeof raw === 'string' && raw.trim() ? raw.trim() : AUTH_FALLBACK_AVATAR;
 }
@@ -28,8 +60,8 @@ function renderLoggedInDesktopAuth({ accountUrl, safeName, avatarUrl }) {
     return `
         <div class="flex items-center gap-2 cursor-pointer group relative h-full">
             <a href="${safeAccountUrl}" class="relative py-3" aria-label="Open account">
-                <img src="${safeAvatarUrl}" alt="${safeName}" class="w-9 h-9 rounded-full border-2 border-gas-green p-0.5 transition-transform group-hover:scale-105">
-                <div class="absolute bottom-3 right-0 w-2.5 h-2.5 bg-gas-green rounded-full border-2 border-[#151515]"></div>
+                <img src="${safeAvatarUrl}" alt="${safeName}" class="w-5 h-5 rounded-full border border-gas-green p-0 transition-transform group-hover:scale-105 image-rendering-pixelated">
+                <div class="absolute bottom-2 right-0 w-2 h-2 bg-gas-green rounded-full border border-[#151515]"></div>
             </a>
             <div class="absolute right-0 top-full pt-1 w-48 hidden group-hover:block z-[60]">
                 <div class="bg-[#151515] border border-white/10 rounded-xl shadow-2xl py-2 mt-1">

@@ -1,5 +1,5 @@
-import { mountSharedHeader, mountSharedFooter } from '../../shared/modules/layout.shared.js?v=20260412authsync01';
-import { mountChannelMain, createChannelApp } from '../../shared/modules/channel-page.shared.js?v=20260412authsync01';
+import { mountSharedHeader, mountSharedFooter } from '../../shared/modules/layout.shared.js?v=20260413authsync02';
+import { mountChannelMain, createChannelApp } from '../../shared/modules/channel-page.shared.js?v=20260413authsync02';
 
 const STARTUP_TIMEOUT_MS = 8000;
 
