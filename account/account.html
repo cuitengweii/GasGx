@@ -1103,7 +1103,7 @@
         }
 
         function getPreferences(metadata) {
-            const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security']);
+            const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security', 'preferences']);
             const defaultTab = allowedTabs.has(metadata.preferences?.defaultTab) ? metadata.preferences.defaultTab : 'dashboard';
             return {
                 weeklyDigest: Boolean(metadata.preferences?.weeklyDigest),
@@ -1111,6 +1111,11 @@
                 language: normalizeAccountLang(metadata.preferences?.language || readAccountLang()),
                 defaultTab
             };
+        }
+
+        function isMissingBookmarksTable(error) {
+            const message = String(error?.message || '').toLowerCase();
+            return message.includes('public.main_bookmarks') || message.includes('main_bookmarks');
         }
 
         function buildViewModel(profile) {
@@ -1258,7 +1263,9 @@
                 `).join('');
             } catch (error) {
                 emptyState.classList.remove('hidden');
-                showToast(error.message || t('toastFailedLoadSaved'), 'error');
+                if (!isMissingBookmarksTable(error)) {
+                    showToast(error.message || t('toastFailedLoadSaved'), 'error');
+                }
             } finally {
                 loader.classList.add('hidden');
             }
@@ -1275,7 +1282,9 @@
                 showToast(t('toastSavedRemoved'));
                 await Promise.all([loadSavedLibrary(), fetchSavedCount()]);
             } catch (error) {
-                showToast(error.message || t('toastUnableRemoveSaved'), 'error');
+                if (!isMissingBookmarksTable(error)) {
+                    showToast(error.message || t('toastUnableRemoveSaved'), 'error');
+                }
             }
         };
 
@@ -1394,14 +1403,20 @@
         };
 
         window.switchTab = function(tabId) {
-            const navItem = document.getElementById(`nav-${tabId}`);
-            const tabContent = document.getElementById(`tab-${tabId}`);
-            if (!navItem || !tabContent) return;
+            let normalizedTabId = tabId;
+            let navItem = document.getElementById(`nav-${normalizedTabId}`);
+            let tabContent = document.getElementById(`tab-${normalizedTabId}`);
+            if (!navItem || !tabContent) {
+                normalizedTabId = 'dashboard';
+                navItem = document.getElementById('nav-dashboard');
+                tabContent = document.getElementById('tab-dashboard');
+                if (!navItem || !tabContent) return;
+            }
             document.querySelectorAll('.nav-item').forEach((item) => item.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach((item) => item.classList.remove('active'));
             navItem.classList.add('active');
             tabContent.classList.add('active');
-            if (tabId === 'saved') loadSavedLibrary();
+            if (normalizedTabId === 'saved') loadSavedLibrary();
             if (window.innerWidth < 1024) {
                 const sidebar = document.getElementById('account-sidebar');
                 if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
@@ -1438,7 +1453,7 @@
             applyViewModel(viewModel);
             await fetchSavedCount();
 
-            const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security']);
+            const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security', 'preferences']);
             const queryTab = new URL(window.location.href).searchParams.get('tab');
             const targetTab = allowedTabs.has(queryTab) ? queryTab : (viewModel.preferences.defaultTab || 'dashboard');
             switchTab(targetTab);
