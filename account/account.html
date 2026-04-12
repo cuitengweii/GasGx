@@ -1182,6 +1182,14 @@
                 const node = document.getElementById(id);
                 if (node) node.textContent = value;
             };
+            const setValue = (id, value) => {
+                const node = document.getElementById(id);
+                if (node) node.value = value;
+            };
+            const setChecked = (id, value) => {
+                const node = document.getElementById(id);
+                if (node) node.checked = Boolean(value);
+            };
             setText('welcome-name', viewModel.fullName);
             setText('sidebar-name', viewModel.fullName);
             setText('sidebar-email', currentUser.email || t('noEmail'));
@@ -1210,22 +1218,24 @@
                 ? t('securityPhoneVerified', { phone: viewModel.phone || '-' })
                 : t('securityPhoneNotVerified'));
 
-            document.getElementById('profile-full-name').value = viewModel.fullName;
-            document.getElementById('profile-company').value = viewModel.company;
-            document.getElementById('profile-title').value = viewModel.jobTitle;
-            document.getElementById('profile-location').value = viewModel.location;
-            document.getElementById('profile-phone').value = viewModel.phone;
-            document.getElementById('profile-bio').value = viewModel.bio;
+            setValue('profile-full-name', viewModel.fullName);
+            setValue('profile-company', viewModel.company);
+            setValue('profile-title', viewModel.jobTitle);
+            setValue('profile-location', viewModel.location);
+            setValue('profile-phone', viewModel.phone);
+            setValue('profile-bio', viewModel.bio);
 
-            document.getElementById('pref-weekly-digest').checked = viewModel.preferences.weeklyDigest;
-            document.getElementById('pref-product-alerts').checked = viewModel.preferences.productAlerts;
-            document.getElementById('pref-language').value = viewModel.preferences.language;
-            document.getElementById('pref-default-tab').value = viewModel.preferences.defaultTab;
+            setChecked('pref-weekly-digest', viewModel.preferences.weeklyDigest);
+            setChecked('pref-product-alerts', viewModel.preferences.productAlerts);
+            setValue('pref-language', viewModel.preferences.language);
+            setValue('pref-default-tab', viewModel.preferences.defaultTab);
 
             const providerChips = document.getElementById('provider-chips');
-            providerChips.innerHTML = viewModel.providers.length
-                ? viewModel.providers.map((provider) => `<span class="rounded-full border border-gas-green/30 bg-gas-green/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-gas-green">${provider}</span>`).join('')
-                : `<span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-400">${t('providerNone')}</span>`;
+            if (providerChips) {
+                providerChips.innerHTML = viewModel.providers.length
+                    ? viewModel.providers.map((provider) => `<span class="rounded-full border border-gas-green/30 bg-gas-green/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-gas-green">${provider}</span>`).join('')
+                    : `<span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-400">${t('providerNone')}</span>`;
+            }
         }
 
         async function fetchSavedCount() {
@@ -1465,6 +1475,19 @@
             tabContent.classList.add('active');
         }
 
+        function enterGuestMode(message) {
+            currentSession = null;
+            currentUser = null;
+            const fallbackTab = normalizeTabId(new URL(window.location.href).searchParams.get('tab')) || 'dashboard';
+            switchTab(fallbackTab);
+            ensureActiveTabVisible(fallbackTab);
+            const loader = document.getElementById('auth-loader');
+            if (loader) loader.classList.add('hidden');
+            if (message) {
+                showToast(message, 'error');
+            }
+        }
+
         window.handleSignOut = async function() {
             document.getElementById('auth-loader').classList.remove('hidden');
             await MAIN_AUTH_HELPER.signOut({
@@ -1504,21 +1527,30 @@
         }
 
         async function bootstrapAccount() {
-            const redirectToSignIn = () => {
+            const resolveSessionWithFallbacks = async () => {
+                const { data, error } = await client.auth.getSession();
+                let session = data?.session || null;
+                if (session?.user && !error) return session;
+
                 try {
-                    const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-                    if (returnPath && returnPath.startsWith('/')) {
-                        const url = new URL(returnPath, window.location.origin);
-                        url.searchParams.delete('error');
-                        url.searchParams.delete('error_description');
-                        url.searchParams.delete('error_code');
-                        const cleanPath = `${url.pathname}${url.search}${url.hash}`;
-                        window.sessionStorage.setItem(MAIN_AUTH_CONFIG.returnUrlStorageKey, cleanPath);
+                    const refreshed = await client.auth.refreshSession();
+                    if (refreshed?.data?.session?.user) {
+                        return refreshed.data.session;
                     }
-                } catch (_error) {
-                    // Ignore storage failure and continue redirect.
+                } catch (_refreshError) {
+                    // Ignore and continue fallback flow.
                 }
-                window.location.href = SIGN_IN_URL;
+
+                try {
+                    const userData = await client.auth.getUser();
+                    if (userData?.data?.user) {
+                        return { user: userData.data.user };
+                    }
+                } catch (_userError) {
+                    // Ignore and continue fallback flow.
+                }
+
+                return session;
             };
 
             let resolvedSession = null;
@@ -1528,16 +1560,12 @@
                     return;
                 }
 
-                let session = null;
-                let sessionError = null;
-
-                const { data, error } = await client.auth.getSession();
-                session = data?.session;
-                sessionError = error;
+                let session = await resolveSessionWithFallbacks();
+                const sessionError = session?.user ? null : new Error('Session unavailable');
 
                 if (sessionError || !session?.user) {
                     const waitForSession = new Promise((resolve) => {
-                        const timeout = setTimeout(() => resolve(null), 6000);
+                        const timeout = setTimeout(() => resolve(null), 4000);
                         const authListener = client.auth.onAuthStateChange((_event, nextSession) => {
                             if (nextSession?.user) {
                                 clearTimeout(timeout);
@@ -1553,14 +1581,14 @@
                 }
 
                 if (!session?.user) {
-                    redirectToSignIn();
+                    enterGuestMode('Session expired. Please sign in to load account data.');
                     return;
                 }
 
                 resolvedSession = session;
                 client.auth.onAuthStateChange((_event, nextSession) => {
                     if (!nextSession?.user) {
-                        redirectToSignIn();
+                        enterGuestMode('Session expired. Please sign in again.');
                     }
                 });
 
@@ -1571,7 +1599,7 @@
                 ensureActiveTabVisible(fallbackTab);
                 showToast(error.message || t('toastFailedLoadWorkspace'), 'error');
                 if (!resolvedSession?.user && !currentUser?.id) {
-                    redirectToSignIn();
+                    enterGuestMode('Unable to verify session. Please sign in again.');
                 }
             } finally {
                 document.getElementById('auth-loader').classList.add('hidden');
