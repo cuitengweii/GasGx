@@ -72,6 +72,31 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
+        .avatar-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.03);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        .avatar-option:hover {
+            border-color: rgba(93, 214, 44, 0.6);
+            transform: translateY(-1px);
+        }
+        .avatar-option.active {
+            border-color: rgba(93, 214, 44, 0.95);
+            box-shadow: 0 0 0 2px rgba(93, 214, 44, 0.18);
+        }
+        .avatar-option img {
+            width: 24px;
+            height: 24px;
+            border-radius: 8px;
+            image-rendering: pixelated;
+        }
         .sales-main-grid {
             display: grid;
             gap: 20px;
@@ -499,7 +524,10 @@
             </nav>
             <div class="p-6 border-t border-white/5 bg-transparent shrink-0">
                 <div class="flex items-center gap-3 mb-4">
-                    <div id="sidebar-avatar" class="w-8 h-8 rounded-full bg-gas-green/20 text-gas-green flex items-center justify-center font-bold text-xs shrink-0 border border-gas-green/30">U</div>
+                    <div id="sidebar-avatar" class="w-8 h-8 rounded-full bg-gas-green/20 text-gas-green flex items-center justify-center font-bold text-xs shrink-0 border border-gas-green/30 overflow-hidden">
+                        <img id="sidebar-avatar-img" src="" alt="User avatar" class="w-4 h-4 image-rendering-pixelated hidden">
+                        <span id="sidebar-avatar-text">U</span>
+                    </div>
                     <div class="min-w-0 flex-1">
                         <div class="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Signed in as</div>
                         <div id="sidebar-name" class="text-xs text-white font-semibold truncate leading-tight">User</div>
@@ -707,6 +735,12 @@
                                     <option value="security" data-i18n="navSecurity">Security</option>
                                 </select>
                             </div>
+                            <div class="md:col-span-2 space-y-2">
+                                <label class="field-label" data-i18n="prefAvatar">Avatar</label>
+                                <p class="text-xs text-gray-400" data-i18n="prefAvatarHint">Pick one pixel-style avatar for your account.</p>
+                                <input id="pref-avatar-key" type="hidden" value="pixel-01">
+                                <div id="avatar-picker" class="flex flex-wrap gap-2"></div>
+                            </div>
                             <div class="md:col-span-2">
                                 <button id="save-preferences-btn" data-busy-label="Saving..." data-i18n-busy="busySaving" class="rounded-2xl bg-gas-green px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-black transition hover:bg-white" data-i18n="preferencesSave">Save preferences</button>
                             </div>
@@ -730,6 +764,8 @@
         const SIGN_IN_URL = MAIN_AUTH_CONFIG.signInUrl;
         const BOOKMARKS_TABLE = 'main_bookmarks';
         const client = MAIN_AUTH_HELPER.createClient(window.supabase, MAIN_AUTH_CONFIG);
+        const AVATAR_KEYS = ['pixel-01', 'pixel-02', 'pixel-03', 'pixel-04', 'pixel-05', 'pixel-06', 'pixel-07', 'pixel-08', 'pixel-09', 'pixel-10'];
+        const DEFAULT_AVATAR_KEY = 'pixel-01';
 
         let currentUser = null;
         let currentSession = null;
@@ -810,6 +846,8 @@
                 languageEnglish: 'English',
                 languageChinese: 'Chinese',
                 prefDefaultTab: 'Default tab',
+                prefAvatar: 'Avatar',
+                prefAvatarHint: 'Pick one pixel-style avatar for your account.',
                 preferencesSave: 'Save preferences',
                 salesKicker: 'Sales Pipeline',
                 salesTitle: 'Customer Deal Workflow',
@@ -985,6 +1023,37 @@
             return String(tabId || '').trim().toLowerCase();
         }
 
+        function buildPixelAvatarDataUri(key) {
+            const paletteMap = {
+                'pixel-01': { bg: '#0d1410', panel: '#213429', accent: '#5DD62C', eye: '#dfffd1' },
+                'pixel-02': { bg: '#131126', panel: '#2a2450', accent: '#8a7bff', eye: '#e4dcff' },
+                'pixel-03': { bg: '#101922', panel: '#1e3448', accent: '#45d6ff', eye: '#d0f7ff' },
+                'pixel-04': { bg: '#18120b', panel: '#3e2a16', accent: '#ffb347', eye: '#ffe8bf' },
+                'pixel-05': { bg: '#1c0f15', panel: '#4a1f34', accent: '#ff6fa8', eye: '#ffd6e8' },
+                'pixel-06': { bg: '#0f1915', panel: '#204534', accent: '#46dd97', eye: '#cbffe8' },
+                'pixel-07': { bg: '#151515', panel: '#2a2a2a', accent: '#f4f4f4', eye: '#ffffff' },
+                'pixel-08': { bg: '#12160c', panel: '#33461f', accent: '#b9ff52', eye: '#eeffcf' },
+                'pixel-09': { bg: '#16111a', panel: '#3b2550', accent: '#d77dff', eye: '#f3d9ff' },
+                'pixel-10': { bg: '#11141d', panel: '#1f2b46', accent: '#7fa8ff', eye: '#dce8ff' }
+            };
+            const tone = paletteMap[key] || paletteMap[DEFAULT_AVATAR_KEY];
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges"><rect width="64" height="64" rx="14" fill="${tone.bg}"/><rect x="14" y="12" width="36" height="32" fill="${tone.panel}"/><rect x="22" y="22" width="6" height="6" fill="${tone.eye}"/><rect x="36" y="22" width="6" height="6" fill="${tone.eye}"/><rect x="26" y="32" width="12" height="4" fill="${tone.accent}"/><rect x="18" y="46" width="28" height="10" fill="${tone.accent}" opacity="0.95"/></svg>`;
+            return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+        }
+
+        function resolveAvatarUriByKey(key) {
+            const normalized = String(key || '').trim().toLowerCase();
+            if (window.GasGxSharedUI && typeof window.GasGxSharedUI.resolveAvatarUriByKey === 'function') {
+                return window.GasGxSharedUI.resolveAvatarUriByKey(normalized);
+            }
+            return buildPixelAvatarDataUri(normalized || DEFAULT_AVATAR_KEY);
+        }
+
+        function normalizeAvatarKey(key) {
+            const normalized = String(key || '').trim().toLowerCase();
+            return AVATAR_KEYS.includes(normalized) ? normalized : DEFAULT_AVATAR_KEY;
+        }
+
         function readAccountLang() {
             try {
                 const stored = window.localStorage.getItem('gasgx-lang') || window.localStorage.getItem('gas_lang');
@@ -1109,11 +1178,13 @@
             const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security', 'preferences']);
             const preferredTab = normalizeTabId(metadata.preferences?.defaultTab);
             const defaultTab = allowedTabs.has(preferredTab) ? preferredTab : 'dashboard';
+            const avatarKey = normalizeAvatarKey(metadata.preferences?.avatarKey || metadata.avatar_key);
             return {
                 weeklyDigest: Boolean(metadata.preferences?.weeklyDigest),
                 productAlerts: Boolean(metadata.preferences?.productAlerts),
                 language: normalizeAccountLang(metadata.preferences?.language || readAccountLang()),
-                defaultTab
+                defaultTab,
+                avatarKey
             };
         }
 
@@ -1189,10 +1260,27 @@
                 const node = document.getElementById(id);
                 if (node) node.checked = Boolean(value);
             };
+            const applyHeaderAvatar = (avatarUri) => {
+                const desktopAvatar = document.getElementById('auth-user-avatar');
+                const mobileAvatar = document.getElementById('mob-auth-user-avatar');
+                if (desktopAvatar) desktopAvatar.src = avatarUri;
+                if (mobileAvatar) mobileAvatar.src = avatarUri;
+            };
             setText('welcome-name', viewModel.fullName);
             setText('sidebar-name', viewModel.fullName);
             setText('sidebar-email', currentUser.email || t('noEmail'));
-            setText('sidebar-avatar', viewModel.fullName.charAt(0).toUpperCase());
+            const avatarUri = resolveAvatarUriByKey(viewModel.preferences.avatarKey);
+            const sidebarAvatarImg = document.getElementById('sidebar-avatar-img');
+            const sidebarAvatarText = document.getElementById('sidebar-avatar-text');
+            if (sidebarAvatarImg) {
+                sidebarAvatarImg.src = avatarUri;
+                sidebarAvatarImg.classList.remove('hidden');
+            }
+            if (sidebarAvatarText) {
+                sidebarAvatarText.textContent = viewModel.fullName.charAt(0).toUpperCase();
+                sidebarAvatarText.classList.add('hidden');
+            }
+            applyHeaderAvatar(avatarUri);
             setText('summary-email', currentUser.email || '-');
             setText('summary-phone', viewModel.phone || '-');
             setText('summary-user-id', currentUser.id ? `${currentUser.id.slice(0, 8)}...` : '-');
@@ -1228,6 +1316,8 @@
             setChecked('pref-product-alerts', viewModel.preferences.productAlerts);
             setValue('pref-language', viewModel.preferences.language);
             setValue('pref-default-tab', viewModel.preferences.defaultTab);
+            setValue('pref-avatar-key', viewModel.preferences.avatarKey);
+            renderAvatarPicker(viewModel.preferences.avatarKey);
 
             const providerChips = document.getElementById('provider-chips');
             if (providerChips) {
@@ -1339,6 +1429,38 @@
             currentUser = data.user || currentUser;
         }
 
+        function renderAvatarPicker(selectedKey) {
+            const picker = document.getElementById('avatar-picker');
+            if (!picker) return;
+            const normalizedSelected = normalizeAvatarKey(selectedKey);
+            picker.innerHTML = AVATAR_KEYS.map((key) => {
+                const activeClass = key === normalizedSelected ? ' active' : '';
+                return `<button type="button" class="avatar-option${activeClass}" data-avatar-key="${key}" aria-label="Select ${key}"><img src="${resolveAvatarUriByKey(key)}" alt="${key}"></button>`;
+            }).join('');
+
+            picker.querySelectorAll('[data-avatar-key]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const key = normalizeAvatarKey(button.getAttribute('data-avatar-key'));
+                    const hidden = document.getElementById('pref-avatar-key');
+                    if (hidden) hidden.value = key;
+                    picker.querySelectorAll('[data-avatar-key]').forEach((node) => {
+                        node.classList.toggle('active', node.getAttribute('data-avatar-key') === key);
+                    });
+
+                    const avatarUri = resolveAvatarUriByKey(key);
+                    const sidebarAvatarImg = document.getElementById('sidebar-avatar-img');
+                    if (sidebarAvatarImg) {
+                        sidebarAvatarImg.src = avatarUri;
+                        sidebarAvatarImg.classList.remove('hidden');
+                    }
+                    const desktopAvatar = document.getElementById('auth-user-avatar');
+                    const mobileAvatar = document.getElementById('mob-auth-user-avatar');
+                    if (desktopAvatar) desktopAvatar.src = avatarUri;
+                    if (mobileAvatar) mobileAvatar.src = avatarUri;
+                });
+            });
+        }
+
         window.saveProfile = async function(event) {
             event.preventDefault();
             const button = document.getElementById('save-profile-btn');
@@ -1378,7 +1500,8 @@
                 weeklyDigest: document.getElementById('pref-weekly-digest').checked,
                 productAlerts: document.getElementById('pref-product-alerts').checked,
                 language: document.getElementById('pref-language').value,
-                defaultTab: document.getElementById('pref-default-tab').value
+                defaultTab: document.getElementById('pref-default-tab').value,
+                avatarKey: normalizeAvatarKey(document.getElementById('pref-avatar-key').value)
             };
             try {
                 await persistUserMetadata({ preferences });
