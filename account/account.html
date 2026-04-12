@@ -1469,10 +1469,13 @@
                 if (sessionError || !session?.user) {
                     const waitForSession = new Promise((resolve) => {
                         const timeout = setTimeout(() => resolve(null), 3000);
-                        const unsubscribe = client.auth.onAuthStateChange((_event, nextSession) => {
+                        const authListener = client.auth.onAuthStateChange((_event, nextSession) => {
                             if (nextSession?.user) {
                                 clearTimeout(timeout);
-                                unsubscribe.unsubscribe();
+                                const subscription = authListener?.data?.subscription || authListener?.subscription || authListener;
+                                if (subscription && typeof subscription.unsubscribe === 'function') {
+                                    subscription.unsubscribe();
+                                }
                                 resolve(nextSession);
                             }
                         });
