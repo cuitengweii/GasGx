@@ -454,6 +454,11 @@
 
         async function bootstrapSalesPage() {
             try {
+                if (!client?.auth) {
+                    document.getElementById('auth-loader').classList.add('hidden');
+                    return;
+                }
+
                 let session = null;
 
                 const { data, error } = await client.auth.getSession();
@@ -461,7 +466,7 @@
 
                 if (error || !session?.user) {
                     const waitForSession = new Promise((resolve) => {
-                        const timeout = setTimeout(() => resolve(null), 3000);
+                        const timeout = setTimeout(() => resolve(null), 6000);
                         const authListener = client.auth.onAuthStateChange((_event, nextSession) => {
                             if (nextSession?.user) {
                                 clearTimeout(timeout);

@@ -1458,7 +1458,13 @@
                 window.location.href = SIGN_IN_URL;
             };
 
+            let resolvedSession = null;
             try {
+                if (!client?.auth) {
+                    showToast('Auth client unavailable on account page.', 'error');
+                    return;
+                }
+
                 let session = null;
                 let sessionError = null;
 
@@ -1468,7 +1474,7 @@
 
                 if (sessionError || !session?.user) {
                     const waitForSession = new Promise((resolve) => {
-                        const timeout = setTimeout(() => resolve(null), 3000);
+                        const timeout = setTimeout(() => resolve(null), 6000);
                         const authListener = client.auth.onAuthStateChange((_event, nextSession) => {
                             if (nextSession?.user) {
                                 clearTimeout(timeout);
@@ -1488,6 +1494,7 @@
                     return;
                 }
 
+                resolvedSession = session;
                 client.auth.onAuthStateChange((_event, nextSession) => {
                     if (!nextSession?.user) {
                         redirectToSignIn();
@@ -1497,7 +1504,9 @@
                 await initializeAccount(session);
             } catch (error) {
                 showToast(error.message || t('toastFailedLoadWorkspace'), 'error');
-                redirectToSignIn();
+                if (!resolvedSession?.user && !currentUser?.id) {
+                    redirectToSignIn();
+                }
             } finally {
                 document.getElementById('auth-loader').classList.add('hidden');
             }

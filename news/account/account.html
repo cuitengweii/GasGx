@@ -259,15 +259,21 @@
         // --- AUTH & LOAD ---
         document.addEventListener('DOMContentLoaded', async () => {
             const loader = document.getElementById('auth-loader');
+            let resolvedSession = null;
             
             try {
+                if (!client?.auth) {
+                    showToast('Auth client unavailable.', 'error');
+                    return;
+                }
+
                 let session = null;
                 const { data, error } = await client.auth.getSession();
                 session = data?.session;
                 
                 if (error || !session) {
                     const waitForSession = new Promise((resolve) => {
-                        const timeout = setTimeout(() => resolve(null), 3000);
+                        const timeout = setTimeout(() => resolve(null), 6000);
                         const authListener = client.auth.onAuthStateChange((_event, nextSession) => {
                             if (nextSession?.user) {
                                 clearTimeout(timeout);
@@ -287,6 +293,7 @@
                     return;
                 }
 
+                resolvedSession = session;
                 currentUser = session.user;
                 client.auth.onAuthStateChange((_event, nextSession) => {
                     if (!nextSession?.user) window.location.href = SIGN_IN_URL;
@@ -306,6 +313,9 @@
 
             } catch (e) {
                 console.error("Auth Error:", e);
+                if (!resolvedSession?.user && !currentUser?.id) {
+                    window.location.href = SIGN_IN_URL;
+                }
             } finally {
                 if(loader) loader.classList.add('hidden');
             }
