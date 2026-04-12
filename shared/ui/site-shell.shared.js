@@ -2328,6 +2328,12 @@
             return host;
         }
 
+        // Safety guard: only allow the dedicated news footer host to be wrapped.
+        // Never rewrite arbitrary containers (it can wipe page content).
+        if (host.id !== "ggx-footer-slot") {
+            return host.querySelector("#ggx-site-footer-slot") || null;
+        }
+
         let slot = host.querySelector("#ggx-site-footer-slot");
         if (slot) {
             return slot;
