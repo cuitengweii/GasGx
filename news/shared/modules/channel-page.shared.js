@@ -1,5 +1,5 @@
 ﻿
-import { renderSharedAuthState } from './layout.shared.js?v=20260322logout01';
+import { renderSharedAuthState } from './layout.shared.js?v=20260412authsync01';
 import { HEADER_NAVIGATION } from '../config/navigation.config.js';
 import {
     DEFAULT_COVER,
@@ -642,7 +642,18 @@ export function mountChannelMain(container, channelKey) {
 export function createChannelApp(channelKey) {
     const config = getChannelConfig(channelKey);
     const { createClient } = supabase;
-    const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const mainAuthConfig = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
+    const mainAuthStorageKey = typeof mainAuthConfig.storageKey === 'string' && mainAuthConfig.storageKey.trim()
+        ? mainAuthConfig.storageKey.trim()
+        : 'gasgx-main-auth';
+    const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: {
+            storageKey: mainAuthStorageKey,
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+        },
+    });
 
     return {
         state: {
@@ -738,8 +749,8 @@ export function createChannelApp(channelKey) {
                 navigation: HEADER_NAVIGATION,
                 currentUser: this.state.currentUser,
                 displayName: this.state.displayName,
-                accountUrl: '/news/account/account.html',
-                signInUrl: '/news/account/user.html',
+                accountUrl: '/account/account.html',
+                signInUrl: '/account/user.html',
                 activeTitle: config.navTitle,
                 activePath: window.location.pathname,
             });

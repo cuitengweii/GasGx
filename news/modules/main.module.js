@@ -1,5 +1,5 @@
 
-import { renderSharedAuthState } from '../shared/modules/layout.shared.js?v=20260322logout01';
+import { renderSharedAuthState } from '../shared/modules/layout.shared.js?v=20260412authsync01';
 import { HEADER_NAVIGATION } from '../shared/config/navigation.config.js';
 import {
     DEFAULT_COVER as SHARED_DEFAULT_COVER,
@@ -233,7 +233,18 @@ export function mountNewsMain(container) {
 
 export function createNewsHomeApp() {
     const { createClient } = supabase;
-    const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const mainAuthConfig = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
+    const mainAuthStorageKey = typeof mainAuthConfig.storageKey === 'string' && mainAuthConfig.storageKey.trim()
+        ? mainAuthConfig.storageKey.trim()
+        : 'gasgx-main-auth';
+    const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: {
+            storageKey: mainAuthStorageKey,
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+        },
+    });
 
     return {
         state: {
@@ -362,8 +373,8 @@ export function createNewsHomeApp() {
                 navigation: HEADER_NAVIGATION,
                 currentUser: this.state.currentUser,
                 displayName: this.state.displayName,
-                accountUrl: '/news/account/account.html',
-                signInUrl: '/news/account/user.html',
+                accountUrl: '/account/account.html',
+                signInUrl: '/account/user.html',
                 activeTitle: 'HOME',
             });
         },

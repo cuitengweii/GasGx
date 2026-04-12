@@ -82,7 +82,7 @@ function renderNewsHomeHeader({ idPrefix, appGlobal }) {
                 <div class="flex items-center gap-3 md:gap-4">
                     <div id="${idPrefix}-auth-btn-container" class="hidden lg:block ml-4"></div>
 
-                    <a href="/news/account/account.html" id="${idPrefix}-header-account-trigger" class="lg:hidden flex items-center gap-2 text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 px-3 py-1.5 rounded-full hover:bg-gas-green hover:text-black transition-all max-w-[140px]" aria-label="Account">
+    <a href="/account/user.html" id="${idPrefix}-header-account-trigger" class="lg:hidden flex items-center gap-2 text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 px-3 py-1.5 rounded-full hover:bg-gas-green hover:text-black transition-all max-w-[140px]" aria-label="Account">
                         <i class="fa-solid fa-user"></i>
                         <span id="${idPrefix}-mobile-trigger-text" class="truncate">SIGN IN</span>
                     </a>
@@ -1193,8 +1193,8 @@ export function renderSharedAuthState(options = {}) {
     const currentUser = options.currentUser || null;
     const isLogged = Boolean(currentUser);
     const displayName = resolveDisplayName(currentUser, options.displayName);
-    const accountUrl = options.accountUrl || '/news/account/account.html';
-    const signInUrl = options.signInUrl || '/news/account/user.html';
+    const accountUrl = options.accountUrl || '/account/account.html';
+    const signInUrl = options.signInUrl || '/account/user.html';
     const activeTitle = options.activeTitle || '';
     const activeChildTitle = options.activeChildTitle || '';
     const activePath = options.activePath || (typeof window !== 'undefined' ? window.location.pathname : '');

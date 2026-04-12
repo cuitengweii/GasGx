@@ -1,5 +1,5 @@
 
-import { renderSharedAuthState } from '../../shared/modules/layout.shared.js?v=20260322logout01';
+import { renderSharedAuthState } from '../../shared/modules/layout.shared.js?v=20260412authsync01';
 import { HEADER_NAVIGATION } from '../../shared/config/navigation.config.js';
 
 const DEFAULT_MAIN_AUTH = Object.freeze({
@@ -7,8 +7,8 @@ const DEFAULT_MAIN_AUTH = Object.freeze({
     supabaseUrl: 'https://mkpcliytqudclkwtewru.supabase.co',
     supabaseKey: 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw',
 });
-const FLASH_ACCOUNT_URL = '/news/account/account.html';
-const FLASH_SIGN_IN_URL = '/news/account/user.html';
+const FLASH_ACCOUNT_URL = '/account/account.html';
+const FLASH_SIGN_IN_URL = '/account/user.html';
 const API_BASE = 'https://api.theblockbeats.news/v1/open-api/open-flash';
 const FLASH_PROXY_BASES = ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='];
 const FLASH_FETCH_TIMEOUT_MS = 15000;

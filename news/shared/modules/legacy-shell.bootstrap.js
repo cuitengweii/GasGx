@@ -1,4 +1,4 @@
-import { mountSharedHeader, mountSharedFooter, renderSharedAuthState } from './layout.shared.js?v=20260322logout01';
+import { mountSharedHeader, mountSharedFooter, renderSharedAuthState } from './layout.shared.js?v=20260412authsync01';
 import { HEADER_NAVIGATION } from '../config/navigation.config.js';
 
 const DEFAULT_MAIN_AUTH = Object.freeze({
@@ -54,9 +54,9 @@ function getLegacyMainAuthConfig() {
     }
     return {
         storageKey: typeof source.storageKey === 'string' && source.storageKey.trim() ? source.storageKey.trim() : DEFAULT_MAIN_AUTH.storageKey,
-        signInUrl: '/news/account/user.html',
+        signInUrl: '/account/user.html',
         accountUrl: '/account/account.html',
-        signOutRedirectUrl: '/news/account/user.html',
+        signOutRedirectUrl: '/account/user.html',
         returnUrlStorageKey: 'gx_main_return_url',
         supabaseUrl: typeof source.supabaseUrl === 'string' && source.supabaseUrl.trim() ? source.supabaseUrl.trim() : DEFAULT_MAIN_AUTH.supabaseUrl,
         supabaseKey: typeof source.supabaseKey === 'string' && source.supabaseKey.trim() ? source.supabaseKey.trim() : DEFAULT_MAIN_AUTH.supabaseKey,
@@ -223,8 +223,8 @@ function applySharedNavState({ page, idPrefix, currentUser, displayName, activeT
         navigation: HEADER_NAVIGATION,
         currentUser,
         displayName,
-        accountUrl: '/news/account/account.html',
-        signInUrl: '/news/account/user.html',
+        accountUrl: '/account/account.html',
+        signInUrl: '/account/user.html',
         activeTitle,
         activePath,
     });
@@ -255,14 +255,14 @@ async function signOutLegacyAuth() {
         await helper.signOut({
             client: legacyAuthClient,
             runtimeConfig: authConfig,
-            redirectTo: '/news/account/user.html',
+            redirectTo: '/account/user.html',
             errorLabel: 'Legacy shell sign-out failed:'
         });
         return;
     }
 
     clearLegacyAuthStorage(authConfig);
-    window.location.replace('/news/account/user.html');
+    window.location.replace('/account/user.html');
 }
 
 async function initAuthBridge({ page, idPrefix, activeTitle, activePath }) {
