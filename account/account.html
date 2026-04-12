@@ -982,6 +982,10 @@
             return String(lang || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
         }
 
+        function normalizeTabId(tabId) {
+            return String(tabId || '').trim().toLowerCase();
+        }
+
         function readAccountLang() {
             try {
                 const stored = window.localStorage.getItem('gasgx-lang') || window.localStorage.getItem('gas_lang');
@@ -1104,7 +1108,8 @@
 
         function getPreferences(metadata) {
             const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security', 'preferences']);
-            const defaultTab = allowedTabs.has(metadata.preferences?.defaultTab) ? metadata.preferences.defaultTab : 'dashboard';
+            const preferredTab = normalizeTabId(metadata.preferences?.defaultTab);
+            const defaultTab = allowedTabs.has(preferredTab) ? preferredTab : 'dashboard';
             return {
                 weeklyDigest: Boolean(metadata.preferences?.weeklyDigest),
                 productAlerts: Boolean(metadata.preferences?.productAlerts),
@@ -1114,8 +1119,19 @@
         }
 
         function isMissingBookmarksTable(error) {
+            const code = String(error?.code || '').toUpperCase();
             const message = String(error?.message || '').toLowerCase();
-            return message.includes('public.main_bookmarks') || message.includes('main_bookmarks');
+            if (code === 'PGRST204' || code === 'PGRST205') {
+                return true;
+            }
+            if (!message.includes('main_bookmarks')) {
+                return false;
+            }
+            return message.includes('public.main_bookmarks')
+                || message.includes('schema cache')
+                || message.includes('could not find the table')
+                || message.includes('does not exist')
+                || message.includes('not found');
         }
 
         function buildViewModel(profile) {
@@ -1214,10 +1230,17 @@
 
         async function fetchSavedCount() {
             try {
-                const { count } = await client
+                const { count, error } = await client
                     .from(BOOKMARKS_TABLE)
                     .select('*', { count: 'exact', head: true })
                     .eq('user_id', currentUser.id);
+                if (error) {
+                    if (!isMissingBookmarksTable(error)) {
+                        throw error;
+                    }
+                    document.getElementById('stat-saved-count').textContent = '0';
+                    return;
+                }
                 document.getElementById('stat-saved-count').textContent = count ?? 0;
             } catch (_error) {
                 document.getElementById('stat-saved-count').textContent = '0';
@@ -1262,8 +1285,11 @@
                     </article>
                 `).join('');
             } catch (error) {
-                emptyState.classList.remove('hidden');
-                if (!isMissingBookmarksTable(error)) {
+                if (isMissingBookmarksTable(error)) {
+                    list.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                } else {
+                    emptyState.classList.remove('hidden');
                     showToast(error.message || t('toastFailedLoadSaved'), 'error');
                 }
             } finally {
@@ -1403,7 +1429,7 @@
         };
 
         window.switchTab = function(tabId) {
-            let normalizedTabId = tabId;
+            let normalizedTabId = normalizeTabId(tabId) || 'dashboard';
             let navItem = document.getElementById(`nav-${normalizedTabId}`);
             let tabContent = document.getElementById(`tab-${normalizedTabId}`);
             if (!navItem || !tabContent) {
@@ -1454,8 +1480,11 @@
             await fetchSavedCount();
 
             const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security', 'preferences']);
-            const queryTab = new URL(window.location.href).searchParams.get('tab');
-            const targetTab = allowedTabs.has(queryTab) ? queryTab : (viewModel.preferences.defaultTab || 'dashboard');
+            const queryTab = normalizeTabId(new URL(window.location.href).searchParams.get('tab'));
+            const fallbackTab = normalizeTabId(viewModel.preferences.defaultTab) || 'dashboard';
+            const targetTab = allowedTabs.has(queryTab)
+                ? queryTab
+                : (allowedTabs.has(fallbackTab) ? fallbackTab : 'dashboard');
             switchTab(targetTab);
             document.dispatchEvent(new CustomEvent('gasgx-account-ready'));
         }
@@ -1523,6 +1552,8 @@
 
                 await initializeAccount(session);
             } catch (error) {
+                const fallbackTab = normalizeTabId(new URL(window.location.href).searchParams.get('tab')) || 'dashboard';
+                switchTab(fallbackTab);
                 showToast(error.message || t('toastFailedLoadWorkspace'), 'error');
                 if (!resolvedSession?.user && !currentUser?.id) {
                     redirectToSignIn();
@@ -1547,6 +1578,8 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             setAccountLang(readAccountLang(), { persist: false });
+            const requestedTab = normalizeTabId(new URL(window.location.href).searchParams.get('tab'));
+            switchTab(requestedTab || 'dashboard');
             bootstrapAccount();
         });
     </script>
