@@ -502,6 +502,7 @@
                     <div id="sidebar-avatar" class="w-8 h-8 rounded-full bg-gas-green/20 text-gas-green flex items-center justify-center font-bold text-xs shrink-0 border border-gas-green/30">U</div>
                     <div class="min-w-0 flex-1">
                         <div class="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Signed in as</div>
+                        <div id="sidebar-name" class="text-xs text-white font-semibold truncate leading-tight">User</div>
                         <div id="sidebar-email" class="text-xs text-white font-mono break-all leading-tight">...</div>
                     </div>
                 </div>
@@ -1156,33 +1157,37 @@
 
         function applyViewModel(viewModel) {
             currentViewModel = viewModel;
-            document.getElementById('welcome-name').textContent = viewModel.fullName;
-            document.getElementById('sidebar-name').textContent = viewModel.fullName;
-            document.getElementById('sidebar-email').textContent = currentUser.email || t('noEmail');
-            document.getElementById('sidebar-avatar').textContent = viewModel.fullName.charAt(0).toUpperCase();
-            document.getElementById('summary-email').textContent = currentUser.email || '-';
-            document.getElementById('summary-phone').textContent = viewModel.phone || '-';
-            document.getElementById('summary-user-id').textContent = currentUser.id ? `${currentUser.id.slice(0, 8)}...` : '-';
-            document.getElementById('summary-completeness').textContent = `${viewModel.completeness}%`;
-            document.getElementById('stat-provider-count').textContent = viewModel.providers.length;
-            document.getElementById('stat-provider-list').textContent = viewModel.providers.length ? viewModel.providers.join(', ') : t('noProviderData');
-            document.getElementById('stat-created-at').textContent = formatDate(currentUser.created_at);
+            const setText = (id, value) => {
+                const node = document.getElementById(id);
+                if (node) node.textContent = value;
+            };
+            setText('welcome-name', viewModel.fullName);
+            setText('sidebar-name', viewModel.fullName);
+            setText('sidebar-email', currentUser.email || t('noEmail'));
+            setText('sidebar-avatar', viewModel.fullName.charAt(0).toUpperCase());
+            setText('summary-email', currentUser.email || '-');
+            setText('summary-phone', viewModel.phone || '-');
+            setText('summary-user-id', currentUser.id ? `${currentUser.id.slice(0, 8)}...` : '-');
+            setText('summary-completeness', `${viewModel.completeness}%`);
+            setText('stat-provider-count', String(viewModel.providers.length));
+            setText('stat-provider-list', viewModel.providers.length ? viewModel.providers.join(', ') : t('noProviderData'));
+            setText('stat-created-at', formatDate(currentUser.created_at));
             const lastSignInTime = formatDate(currentUser.last_sign_in_at);
-            document.getElementById('stat-last-sign-in').textContent = currentUser.last_sign_in_at ? t('lastSignIn', { time: lastSignInTime }) : t('lastSignInUnknown');
+            setText('stat-last-sign-in', currentUser.last_sign_in_at ? t('lastSignIn', { time: lastSignInTime }) : t('lastSignInUnknown'));
 
             const emailVerified = Boolean(currentUser.email_confirmed_at);
             const phoneVerified = Boolean(currentUser.phone_confirmed_at);
-            document.getElementById('stat-verification').textContent = emailVerified || phoneVerified ? t('verificationVerified') : t('verificationPending');
-            document.getElementById('stat-verification-hint').textContent = t('verificationEmailPhone', {
+            setText('stat-verification', emailVerified || phoneVerified ? t('verificationVerified') : t('verificationPending'));
+            setText('stat-verification-hint', t('verificationEmailPhone', {
                 email: emailVerified ? t('statusVerified') : t('statusPending'),
                 phone: phoneVerified ? t('statusVerified') : t('statusPending')
-            });
-            document.getElementById('security-email-status').textContent = emailVerified
+            }));
+            setText('security-email-status', emailVerified
                 ? t('securityEmailVerifiedOn', { time: formatDate(currentUser.email_confirmed_at) })
-                : t('securityEmailNotVerified');
-            document.getElementById('security-phone-status').textContent = phoneVerified
+                : t('securityEmailNotVerified'));
+            setText('security-phone-status', phoneVerified
                 ? t('securityPhoneVerified', { phone: viewModel.phone || '-' })
-                : t('securityPhoneNotVerified');
+                : t('securityPhoneNotVerified'));
 
             document.getElementById('profile-full-name').value = viewModel.fullName;
             document.getElementById('profile-company').value = viewModel.company;
