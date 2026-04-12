@@ -11,7 +11,7 @@
         storageKey: "gasgx-main-auth",
         signInUrl: "/account/user.html",
         accountUrl: "/account/account.html",
-        salesUrl: "/account/sales.html",
+        salesUrl: "/account/account.html?tab=sales",
         signOutRedirectUrl: "/account/user.html",
         returnUrlStorageKey: "gx_main_return_url",
         supabaseUrl: "https://mkpcliytqudclkwtewru.supabase.co",
@@ -135,7 +135,7 @@
                                 <span data-ggx-text="account" class="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Account</span>
                                 <div id="dropdown-username" class="text-xs text-white font-bold truncate mt-1">User</div>
                             </a>
-                            <a id="dropdown-sales-link" href="/account/sales.html" class="hidden block w-full px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors border-b border-white/5 mb-1">
+                            <a id="dropdown-sales-link" href="/account/account.html?tab=sales" class="hidden block w-full px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors border-b border-white/5 mb-1">
                                 <i class="fa-solid fa-diagram-project mr-2"></i><span data-ggx-text="orders">Orders</span>
                             </a>
                             <button data-ggx-action="auth-sign-out" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors flex items-center">
@@ -192,7 +192,7 @@
                  </div>
             </a>
             <div class="flex items-center gap-2">
-                <a id="mob-auth-sales-link" href="/account/sales.html" class="hidden w-full text-xs text-gray-200 hover:text-gas-green border border-white/20 bg-white/5 px-3 py-1.5 rounded">
+                <a id="mob-auth-sales-link" href="/account/account.html?tab=sales" class="hidden w-full text-xs text-gray-200 hover:text-gas-green border border-white/20 bg-white/5 px-3 py-1.5 rounded">
                     <i class="fa-solid fa-diagram-project mr-1"></i><span data-ggx-text="orders">Orders</span>
                 </a>
                 <button data-ggx-action="auth-sign-out" class="text-xs text-red-400 hover:text-red-300 border border-red-900/50 bg-red-900/20 px-3 py-1.5 rounded">

@@ -537,6 +537,9 @@
                 <button id="nav-preferences" onclick="switchTab('preferences')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 text-left uppercase tracking-wide group">
                     <i class="fa-solid fa-sliders w-4 text-center group-hover:scale-110 transition-transform"></i><span data-i18n="navPreferences">Preferences</span>
                 </button>
+                <button id="nav-sales" onclick="switchTab('sales')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 text-left uppercase tracking-wide group">
+                    <i class="fa-solid fa-diagram-project w-4 text-center group-hover:scale-110 transition-transform"></i><span data-i18n="navSales">Sales Pipeline</span>
+                </button>
             </nav>
             <div class="p-6 border-t border-white/5 bg-transparent shrink-0">
                 <div class="flex items-center gap-3 mb-4">
@@ -749,6 +752,7 @@
                                     <option value="saved" data-i18n="navSaved">Saved</option>
                                     <option value="profile" data-i18n="navProfile">Profile</option>
                                     <option value="security" data-i18n="navSecurity">Security</option>
+                                    <option value="sales" data-i18n="navSales">Sales Pipeline</option>
                                 </select>
                             </div>
                             <div class="md:col-span-2 space-y-2">
@@ -764,6 +768,15 @@
                     </article>
                 </section>
 
+                <section id="tab-sales" class="tab-content space-y-6">
+                    <header>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green" data-i18n="salesKicker">Sales Pipeline</p>
+                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl" data-i18n="salesTitle">Customer Deal Workflow</h2>
+                        <p class="mt-2 max-w-4xl text-sm text-gray-400" data-i18n="salesDesc">All customer-side milestones are handled here. Requirement, quote, contract, and factory acceptance confirmations are submitted in this tab only.</p>
+                    </header>
+                    <div id="sales-pipeline-root" class="rounded-xl border border-white/10 bg-[#0F0F0F]/60 p-4 md:p-6 shadow-lg hover:border-gas-green/30 transition-colors duration-500"></div>
+                </section>
+
             </div>
         </main>
     </div>
@@ -773,6 +786,7 @@
     <script src="/shared/ui/site-shell.config.js?v=20260321auth02"></script>
     <script src="/shared/ui/site-shell.shared.js?v=20260412shell03"></script>
     <script src="/shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
+    <script src="/account/sales-pipeline.portal.js?v=20260413salesTab01"></script>
     <script>
         const MAIN_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
         const MAIN_AUTH_HELPER = window.GasGxMainAuthShared;
@@ -1191,7 +1205,7 @@
         }
 
         function getPreferences(metadata) {
-            const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security', 'preferences']);
+            const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security', 'preferences', 'sales']);
             const preferredTab = normalizeTabId(metadata.preferences?.defaultTab);
             const defaultTab = allowedTabs.has(preferredTab) ? preferredTab : 'dashboard';
             const avatarKey = normalizeAvatarKey(metadata.preferences?.avatarKey || metadata.avatar_key);
@@ -1591,6 +1605,9 @@
             navItem.classList.add('active');
             tabContent.classList.add('active');
             if (normalizedTabId === 'saved') loadSavedLibrary();
+            if (normalizedTabId === 'sales' && window.GasGxSalesPipelinePortal?.onTabActivated) {
+                void window.GasGxSalesPipelinePortal.onTabActivated();
+            }
             if (window.innerWidth < 1024) {
                 const sidebar = document.getElementById('account-sidebar');
                 if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
@@ -1654,7 +1671,7 @@
             applyViewModel(viewModel);
             await fetchSavedCount();
 
-            const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security', 'preferences']);
+            const allowedTabs = new Set(['dashboard', 'saved', 'profile', 'security', 'preferences', 'sales']);
             const queryTab = normalizeTabId(new URL(window.location.href).searchParams.get('tab'));
             const fallbackTab = normalizeTabId(viewModel.preferences.defaultTab) || 'dashboard';
             const targetTab = allowedTabs.has(queryTab)

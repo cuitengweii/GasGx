@@ -297,7 +297,8 @@
     }
 
     function buildSalesUrl(dealId = '', stageKey = '') {
-        const url = new URL('/account/sales.html', window.location.origin);
+        const url = new URL('/account/account.html', window.location.origin);
+        url.searchParams.set('tab', 'sales');
         if (state.legacyEntry && text(dealId) === 'legacy-public') {
             if (state.legacyEntry.kind === 'requirement') {
                 url.searchParams.set('req', state.legacyEntry.slug);
