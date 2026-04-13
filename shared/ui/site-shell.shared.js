@@ -1114,7 +1114,7 @@
 
             if (!children.length) {
                 return `
-                    <a href="${itemPath}" class="block py-4 border-b border-white/10 text-lg font-medium hover:text-gas-green">
+                    <a href="${itemPath}" class="block py-4 border-b border-white/10 text-sm font-semibold uppercase tracking-wide text-gray-300 hover:text-gas-green">
                         ${title}
                     </a>
                 `;
@@ -1126,7 +1126,7 @@
                 childLinks = children.map((child) => {
                     const childTitle = escapeHtml(getLabelValue(child && child.title, lang));
                     const childPath = escapeHtml(normalizePath(child && child.path));
-                    return `<a href="${childPath}" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">${childTitle}</a>`;
+                    return `<a href="${childPath}" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-xs font-semibold uppercase tracking-wide">${childTitle}</a>`;
                 }).join("");
             } else {
                 childLinks = visibleSections.map((section) => {
@@ -1134,7 +1134,7 @@
                     const subItems = filterVisibleItems(section && section.items).map((subItem) => {
                         const subTitle = escapeHtml(getLabelValue(subItem && subItem.title, lang));
                         const subPath = escapeHtml(normalizePath(subItem && subItem.path));
-                        return `<a href="${subPath}" class="block py-2 pl-6 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-sm">${subTitle}</a>`;
+                        return `<a href="${subPath}" class="block py-2 pl-6 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-xs font-semibold uppercase tracking-wide">${subTitle}</a>`;
                     }).join("");
                     return `<div class="py-2"><h4 class="text-gas-green text-xs font-bold uppercase mb-2 pl-4">${header}</h4>${subItems}</div>`;
                 }).join("");
@@ -1142,9 +1142,9 @@
 
             return `
                 <div class="border-b border-white/10">
-                    <button class="w-full py-4 flex justify-between items-center text-lg font-medium hover:text-gas-green focus:outline-none" data-ggx-action="toggle-mobile-submenu" data-ggx-target="${subId}" aria-label="Toggle submenu">
+                    <button class="w-full py-4 flex justify-between items-center text-sm font-semibold uppercase tracking-wide text-gray-300 hover:text-gas-green focus:outline-none" data-ggx-action="toggle-mobile-submenu" data-ggx-target="${subId}" aria-label="Toggle submenu">
                         <span>${title}</span>
-                        <i class="fa-solid fa-chevron-down text-sm transition-transform duration-300"></i>
+                        <i class="fa-solid fa-chevron-down text-xs transition-transform duration-300"></i>
                     </button>
                     <div id="${subId}" class="mobile-submenu"><div class="pb-4 space-y-1">${childLinks}</div></div>
                 </div>
