@@ -88,7 +88,7 @@
             unmatchedHint: '当前账号还未匹配客户销售线，请联系销售同事绑定客户邮箱。',
             listTitle: '销售线列表',
             listCountSuffix: '条',
-            listExpand: '展开全部订单',
+            listExpand: '展开订单',
             listCollapse: '收起订单',
             timelineTitle: '销售流水线',
             timelineExpand: '展开流水线',
