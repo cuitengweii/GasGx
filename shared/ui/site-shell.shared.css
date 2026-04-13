@@ -160,6 +160,7 @@
     cursor: pointer;
     line-height: 1;
     transition: color 0.2s ease, transform 0.2s ease;
+    font-size: 15px;
 }
 
 #ggx-site-header-slot .ggx-lang-trigger:hover {

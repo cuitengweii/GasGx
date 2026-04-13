@@ -116,7 +116,7 @@
             <span id="header-tagline" class="block text-gas-green text-[8px] sm:text-[9px] xl:text-[10px] font-bold tracking-wide leading-tight max-w-[240px] truncate">Natural Gas Power Mining Assistant</span>
         </div>
 
-        <nav id="desktop-nav" class="hidden xl:flex items-center justify-start 2xl:justify-center gap-1 xl:gap-2 2xl:gap-6 h-full flex-1 min-w-0 px-1"></nav>
+        <nav id="desktop-nav" class="hidden xl:flex items-center justify-center gap-1 xl:gap-2 2xl:gap-6 h-full flex-1 min-w-0 px-1"></nav>
 
         <div class="flex items-center gap-2 xl:gap-4 w-auto shrink-0 justify-end ml-2 xl:ml-4">
             <div class="hidden md:flex relative items-center">
@@ -149,7 +149,7 @@
             <div class="hidden sm:flex items-center">
                 <div id="ggx-lang-picker" class="ggx-lang-picker">
                     <button id="lang-menu-btn" data-ggx-action="toggle-lang-menu" class="ggx-lang-trigger" title="Language" aria-label="Language menu" aria-expanded="false" aria-haspopup="true">
-                        <span class="ggx-lang-globe" aria-hidden="true"></span>
+                        <i class="fa-solid fa-globe"></i>
                     </button>
                     <div id="ggx-lang-dropdown" class="ggx-lang-dropdown hidden">
                         <button id="ggx-btn-lang-en" data-ggx-action="set-lang" data-ggx-lang="en" class="ggx-lang-option is-active">English</button>
