@@ -54,8 +54,9 @@ function renderLoggedOutAuthLink(signInUrl) {
     `;
 }
 
-function renderLoggedInDesktopAuth({ accountUrl, safeName, avatarUrl }) {
+function renderLoggedInDesktopAuth({ accountUrl, ordersUrl, safeName, avatarUrl }) {
     const safeAccountUrl = escapeHtml(accountUrl);
+    const safeOrdersUrl = escapeHtml(ordersUrl);
     const safeAvatarUrl = escapeHtml(avatarUrl);
     return `
         <div class="flex items-center gap-2 cursor-pointer group relative h-full">
@@ -69,8 +70,8 @@ function renderLoggedInDesktopAuth({ accountUrl, safeName, avatarUrl }) {
                         <span class="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Account</span>
                         <div class="text-xs text-white font-bold truncate mt-1">${safeName}</div>
                     </div>
-                    <a href="${safeAccountUrl}" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors flex items-center">
-                        <i class="fa-solid fa-user mr-2"></i><span>Open account</span>
+                    <a href="${safeOrdersUrl}" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors flex items-center border-b border-white/5 mb-1">
+                        <i class="fa-solid fa-diagram-project mr-2"></i><span>Orders</span>
                     </a>
                     <button type="button" onclick="window.GGXNewsAuthSignOut && window.GGXNewsAuthSignOut()" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-red-400 hover:bg-white/5 transition-colors flex items-center">
                         <i class="fa-solid fa-right-from-bracket mr-2"></i><span>Logout</span>
@@ -1174,7 +1175,7 @@ function renderMobileNav(navigation, activeTitle, activePath, activeChildTitle) 
         .join('');
 }
 
-function renderNewsHomeAuthState({ idPrefix, currentUser, isLogged, displayName, accountUrl, signInUrl }) {
+function renderNewsHomeAuthState({ idPrefix, currentUser, isLogged, displayName, accountUrl, signInUrl, ordersUrl }) {
     const desktopAuthContainer = document.getElementById(`${idPrefix}-auth-btn-container`);
     const mobileTrigger = document.getElementById(`${idPrefix}-header-account-trigger`);
     const mobileTriggerText = document.getElementById(`${idPrefix}-mobile-trigger-text`);
@@ -1185,7 +1186,7 @@ function renderNewsHomeAuthState({ idPrefix, currentUser, isLogged, displayName,
 
     if (desktopAuthContainer) {
         desktopAuthContainer.innerHTML = isLogged
-            ? renderLoggedInDesktopAuth({ accountUrl, safeName, avatarUrl })
+            ? renderLoggedInDesktopAuth({ accountUrl, ordersUrl, safeName, avatarUrl })
             : renderLoggedOutAuthLink(signInUrl);
     }
 
@@ -1198,7 +1199,7 @@ function renderNewsHomeAuthState({ idPrefix, currentUser, isLogged, displayName,
     }
 }
 
-function renderFlashAuthState({ idPrefix, currentUser, isLogged, displayName, accountUrl, signInUrl }) {
+function renderFlashAuthState({ idPrefix, currentUser, isLogged, displayName, accountUrl, signInUrl, ordersUrl }) {
     const desktopAuthContainer = document.getElementById(`${idPrefix}-desktop-auth-container`);
     const mobileAuthTriggerWrapper = document.getElementById(`${idPrefix}-mobile-auth-trigger-wrapper`);
     const safeName = escapeHtml(displayName);
@@ -1207,7 +1208,7 @@ function renderFlashAuthState({ idPrefix, currentUser, isLogged, displayName, ac
 
     if (desktopAuthContainer) {
         desktopAuthContainer.innerHTML = isLogged
-            ? renderLoggedInDesktopAuth({ accountUrl, safeName, avatarUrl })
+            ? renderLoggedInDesktopAuth({ accountUrl, ordersUrl, safeName, avatarUrl })
             : renderLoggedOutAuthLink(signInUrl);
     }
 
@@ -1226,6 +1227,7 @@ export function renderSharedAuthState(options = {}) {
     const isLogged = Boolean(currentUser);
     const displayName = resolveDisplayName(currentUser, options.displayName);
     const accountUrl = options.accountUrl || '/account/account.html';
+    const ordersUrl = options.ordersUrl || '/account/account.html?tab=sales';
     const signInUrl = options.signInUrl || '/account/user.html';
     const activeTitle = options.activeTitle || '';
     const activeChildTitle = options.activeChildTitle || '';
@@ -1243,9 +1245,9 @@ export function renderSharedAuthState(options = {}) {
     }
 
     if (page === 'flash') {
-        renderFlashAuthState({ idPrefix, currentUser, isLogged, displayName, accountUrl, signInUrl });
+        renderFlashAuthState({ idPrefix, currentUser, isLogged, displayName, accountUrl, signInUrl, ordersUrl });
     } else {
-        renderNewsHomeAuthState({ idPrefix, currentUser, isLogged, displayName, accountUrl, signInUrl });
+        renderNewsHomeAuthState({ idPrefix, currentUser, isLogged, displayName, accountUrl, signInUrl, ordersUrl });
     }
 }
 
