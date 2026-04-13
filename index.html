@@ -449,6 +449,10 @@
             function resolveAvatar(user) {
                 if (!user) return FALLBACK_AVATAR;
                 const meta = user.user_metadata || {};
+                const avatarKey = meta?.preferences?.avatarKey || meta?.avatar_key;
+                if (avatarKey && window.GasGxSharedUI && typeof window.GasGxSharedUI.resolveAvatarUriByKey === 'function') {
+                    return window.GasGxSharedUI.resolveAvatarUriByKey(String(avatarKey).trim().toLowerCase());
+                }
                 return meta.avatar_url || meta.picture || FALLBACK_AVATAR;
             }
 

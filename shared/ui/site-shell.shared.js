@@ -1076,7 +1076,7 @@
 
                 return `
                     <div class="group h-full flex items-center cursor-pointer">
-                        <span class="nav-item-link font-medium text-sm"><span>${title}</span> <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i></span>
+                        <span class="nav-item-link font-medium text-sm"><span>${title}</span></span>
                         ${dropContent}
                     </div>
                 `;
@@ -1092,7 +1092,7 @@
 
                 return `
                     <div class="group h-full flex items-center cursor-pointer relative">
-                        <span class="nav-item-link font-medium text-sm"><span>${title}</span> <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i></span>
+                        <span class="nav-item-link font-medium text-sm"><span>${title}</span></span>
                         <div class="dropdown-menu ${isRightAligned ? "right-0" : "left-0"}">${childrenHtml}</div>
                     </div>
                 `;
@@ -1640,7 +1640,8 @@
             mobUsername: document.getElementById("mob-auth-username"),
             mobHeaderAuthLink: document.getElementById("mob-header-auth-link"),
             mobHeaderAuthIcon: document.getElementById("mob-header-auth-icon"),
-            mobHeaderAuthLabel: document.getElementById("mob-header-auth-label")
+            mobHeaderAuthLabel: document.getElementById("mob-header-auth-label"),
+            mobHeaderAvatar: document.getElementById("mob-header-auth-avatar")
         };
     }
 
@@ -1693,22 +1694,47 @@
     function applyMobileHeaderAuthState(user, displayName, authConfig) {
         const els = getMainAuthElements();
         const text = getSharedText(getCurrentLang());
-        if (!els.mobHeaderAuthLink || !els.mobHeaderAuthLabel || !els.mobHeaderAuthIcon) return;
+        const avatar = user ? resolveMainAuthAvatar(user) : MAIN_AUTH_FALLBACK_AVATAR;
 
         if (user) {
-            els.mobHeaderAuthLink.href = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
-            els.mobHeaderAuthLink.className = "xl:hidden flex items-center gap-2 text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full px-3 py-1.5 max-w-[132px]";
-            els.mobHeaderAuthLink.setAttribute("aria-label", text.account || "Account");
-            els.mobHeaderAuthIcon.className = "fa-solid fa-user";
-            els.mobHeaderAuthLabel.textContent = displayName;
+            if (els.mobHeaderAuthLink) {
+                els.mobHeaderAuthLink.href = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
+                els.mobHeaderAuthLink.className = "xl:hidden flex items-center gap-2 text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full px-3 py-1.5 max-w-[180px]";
+            }
+            if (els.mobHeaderAuthIcon) {
+                els.mobHeaderAuthIcon.classList.add("hidden");
+            }
+            if (!els.mobHeaderAvatar && els.mobHeaderAuthIcon) {
+                const avatarImg = document.createElement("img");
+                avatarImg.id = "mob-header-auth-avatar";
+                avatarImg.alt = "User avatar";
+                avatarImg.className = "h-5 w-5 rounded-full border border-gas-green object-cover";
+                avatarImg.src = avatar;
+                els.mobHeaderAuthIcon.insertAdjacentElement("afterend", avatarImg);
+            } else if (els.mobHeaderAvatar) {
+                els.mobHeaderAvatar.classList.remove("hidden");
+                els.mobHeaderAvatar.src = avatar;
+            }
+            if (els.mobHeaderAuthLabel) {
+                els.mobHeaderAuthLabel.textContent = displayName;
+            }
             return;
         }
 
-        els.mobHeaderAuthLink.href = authConfig.signInUrl || MAIN_AUTH_DEFAULTS.signInUrl;
-        els.mobHeaderAuthLink.className = "xl:hidden flex items-center gap-2 text-[10px] font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-3 py-1.5 shadow-glow max-w-[132px]";
-        els.mobHeaderAuthLink.setAttribute("aria-label", text.authLogin || "Login");
-        els.mobHeaderAuthIcon.className = "fa-solid fa-right-to-bracket";
-        els.mobHeaderAuthLabel.textContent = text.authLogin || "Login";
+        if (els.mobHeaderAuthLink) {
+            els.mobHeaderAuthLink.href = authConfig.signInUrl || MAIN_AUTH_DEFAULTS.signInUrl;
+            els.mobHeaderAuthLink.className = "xl:hidden flex items-center gap-2 text-[10px] font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-3 py-1.5 shadow-glow max-w-[132px]";
+        }
+        if (els.mobHeaderAuthIcon) {
+            els.mobHeaderAuthIcon.className = "fa-solid fa-right-to-bracket";
+            els.mobHeaderAuthIcon.classList.remove("hidden");
+        }
+        if (els.mobHeaderAvatar) {
+            els.mobHeaderAvatar.classList.add("hidden");
+        }
+        if (els.mobHeaderAuthLabel) {
+            els.mobHeaderAuthLabel.textContent = text.authLogin || "Login";
+        }
     }
 
     function applyMainAuthState(user, displayName, options = {}) {

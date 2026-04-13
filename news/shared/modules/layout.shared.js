@@ -37,8 +37,9 @@ function resolveAuthAvatar(currentUser) {
     const meta = currentUser.user_metadata && typeof currentUser.user_metadata === 'object'
         ? currentUser.user_metadata
         : {};
-    const avatarKey = String(meta?.preferences?.avatarKey || meta?.avatar_key || AUTH_DEFAULT_AVATAR_KEY).trim().toLowerCase();
-    if (avatarKey) {
+    const rawAvatarKey = meta?.preferences?.avatarKey || meta?.avatar_key;
+    if (rawAvatarKey) {
+        const avatarKey = String(rawAvatarKey).trim().toLowerCase();
         return resolveAuthAvatarByKey(avatarKey);
     }
     const raw = meta.avatar_url || meta.picture;
@@ -115,9 +116,9 @@ function renderNewsHomeHeader({ idPrefix, appGlobal }) {
                 <div class="flex items-center gap-3 md:gap-4">
                     <div id="${idPrefix}-auth-btn-container" class="hidden lg:block ml-4"></div>
 
-    <a href="/account/user.html" id="${idPrefix}-header-account-trigger" class="lg:hidden flex items-center gap-2 text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 px-3 py-1.5 rounded-full hover:bg-gas-green hover:text-black transition-all max-w-[140px]" aria-label="Account">
-                        <i class="fa-solid fa-user"></i>
-                        <span id="${idPrefix}-mobile-trigger-text" class="truncate">SIGN IN</span>
+    <a href="/account/user.html" id="${idPrefix}-header-account-trigger" class="lg:hidden flex items-center gap-2 text-[10px] font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-3 py-1.5 shadow-glow max-w-[132px]" aria-label="Account">
+                        <i id="${idPrefix}-header-auth-icon" class="fa-solid fa-right-to-bracket"></i>
+                        <span id="${idPrefix}-mobile-trigger-text" class="truncate">Login</span>
                     </a>
 
                     <button onclick="${onToggle}" class="lg:hidden text-white text-lg ml-2" aria-label="Toggle Menu">
@@ -1120,13 +1121,12 @@ function renderDesktopNav(page, navigation, activeTitle, activePath, activeChild
             const isActive = isNavItemActive(item, activeTitle, activePath) || hasActiveChild;
             const colorClass = isActive ? 'text-gas-green gsh-nav-link-active' : 'text-gray-400';
             const extra = page === 'flash' ? ' whitespace-nowrap' : '';
-            const caret = hasChildren ? '<i class="fa-solid fa-chevron-down gsh-nav-caret"></i>' : '';
             const submenu = hasChildren ? renderDesktopSubmenu(children, activeChildTitle, activePath) : '';
 
             return `
                 <div class="gsh-nav-item">
                     <a href="${path}" class="${colorClass} text-xs font-bold hover:text-white px-4 py-2 transition-colors uppercase tracking-wide rounded-full${extra} gsh-nav-link">
-                        <span>${title}</span>${caret}
+                        <span>${title}</span>
                     </a>
                     ${submenu}
                 </div>
@@ -1178,10 +1178,10 @@ function renderMobileNav(navigation, activeTitle, activePath, activeChildTitle) 
 function renderNewsHomeAuthState({ idPrefix, currentUser, isLogged, displayName, accountUrl, signInUrl, ordersUrl }) {
     const desktopAuthContainer = document.getElementById(`${idPrefix}-auth-btn-container`);
     const mobileTrigger = document.getElementById(`${idPrefix}-header-account-trigger`);
+    const mobileTriggerIcon = document.getElementById(`${idPrefix}-header-auth-icon`);
     const mobileTriggerText = document.getElementById(`${idPrefix}-mobile-trigger-text`);
 
     const safeName = escapeHtml(displayName);
-    const mobileTarget = isLogged ? accountUrl : signInUrl;
     const avatarUrl = resolveAuthAvatar(currentUser);
 
     if (desktopAuthContainer) {
@@ -1190,12 +1190,41 @@ function renderNewsHomeAuthState({ idPrefix, currentUser, isLogged, displayName,
             : renderLoggedOutAuthLink(signInUrl);
     }
 
-    if (mobileTriggerText) {
-        mobileTriggerText.textContent = isLogged ? displayName : 'SIGN IN';
-    }
-
-    if (mobileTrigger) {
-        mobileTrigger.href = mobileTarget;
+    if (isLogged) {
+        if (mobileTrigger) {
+            mobileTrigger.href = accountUrl;
+            mobileTrigger.className = 'lg:hidden flex items-center gap-2 text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full px-3 py-1.5 max-w-[180px]';
+        }
+        if (mobileTriggerIcon) {
+            mobileTriggerIcon.classList.add('hidden');
+            let avatarEl = document.getElementById(`${idPrefix}-header-auth-avatar`);
+            if (!avatarEl && mobileTriggerIcon.parentNode) {
+                avatarEl = document.createElement('img');
+                avatarEl.id = `${idPrefix}-header-auth-avatar`;
+                avatarEl.alt = 'User avatar';
+                avatarEl.className = 'h-5 w-5 rounded-full border border-gas-green object-cover';
+                mobileTriggerIcon.insertAdjacentElement('afterend', avatarEl);
+            }
+            if (avatarEl) {
+                avatarEl.classList.remove('hidden');
+                avatarEl.src = avatarUrl;
+            }
+        }
+        if (mobileTriggerText) {
+            mobileTriggerText.textContent = displayName;
+        }
+    } else {
+        if (mobileTrigger) {
+            mobileTrigger.href = signInUrl;
+            mobileTrigger.className = 'lg:hidden flex items-center gap-2 text-[10px] font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-3 py-1.5 shadow-glow max-w-[132px]';
+        }
+        if (mobileTriggerIcon) {
+            mobileTriggerIcon.className = 'fa-solid fa-right-to-bracket';
+            mobileTriggerIcon.classList.remove('hidden');
+        }
+        const avatarEl = document.getElementById(`${idPrefix}-header-auth-avatar`);
+        if (avatarEl) avatarEl.classList.add('hidden');
+        if (mobileTriggerText) mobileTriggerText.textContent = 'Login';
     }
 }
 
