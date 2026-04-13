@@ -179,6 +179,26 @@
             font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
         }
+        .sales-list-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .sales-list-count {
+            color: #5DD62C;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .sales-list-toggle {
+            flex-shrink: 0;
+            white-space: normal;
+            line-height: 1.2;
+            text-align: center;
+        }
         .sales-list-scroll {
             display: flex;
             flex-direction: column;
@@ -227,6 +247,34 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
+        }
+        .sales-timeline-shell {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.02);
+            overflow: hidden;
+        }
+        .sales-timeline-toggle {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .sales-timeline-toggle i {
+            transition: transform 0.2s ease;
+        }
+        .sales-timeline-toggle.is-collapsed i {
+            transform: rotate(-90deg);
+        }
+        .sales-timeline-panel {
+            padding: 12px;
+        }
+        .sales-timeline-panel.is-collapsed {
+            display: none;
         }
         .sales-kicker {
             color: #5DD62C;
@@ -450,6 +498,12 @@
             flex-direction: column;
             gap: 10px;
         }
+        .sales-activity-scroll {
+            max-height: min(38vh, 320px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding-right: 4px;
+        }
         .sales-activity-item {
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -505,12 +559,53 @@
                 grid-template-columns: 1fr;
             }
             .sales-list-scroll {
-                max-height: none;
+                max-height: min(42vh, 320px);
+                overflow-y: auto;
+                overscroll-behavior: contain;
             }
         }
         @media (max-width: 767px) {
+            .sales-list-head {
+                align-items: center;
+                padding: 14px 14px 10px;
+            }
+            .sales-list-actions {
+                max-width: 68%;
+                justify-content: flex-end;
+            }
+            .sales-list-count {
+                font-size: 11px;
+            }
+            .sales-list-toggle {
+                font-size: 9px;
+                letter-spacing: 0.08em;
+                padding: 6px 10px;
+            }
+            .sales-list-scroll {
+                display: flex;
+                flex-direction: row;
+                gap: 8px;
+                max-height: none;
+                overflow-x: auto;
+                overflow-y: hidden;
+                padding: 10px 12px 12px;
+                scroll-snap-type: x proximity;
+            }
+            .sales-deal-card {
+                min-width: 240px;
+                max-width: 82vw;
+                flex-shrink: 0;
+                scroll-snap-align: start;
+                padding: 10px;
+            }
+            .sales-deal-card em {
+                display: none;
+            }
             .sales-timeline {
                 grid-template-columns: 1fr;
+            }
+            .sales-timeline-panel {
+                padding: 10px;
             }
             .sales-stage-form-grid,
             .sales-stage-readonly-grid {
@@ -543,12 +638,9 @@
     <div id="ggx-site-header-slot"></div>
 
     <div class="flex flex-1 pt-16 h-full overflow-hidden relative">
-        <button id="mobile-menu-btn" onclick="toggleAccountSidebar()" class="fixed left-4 top-20 z-[85] rounded-full border border-gas-green/30 bg-[#0f140f]/90 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green shadow-[0_12px_30px_rgba(0,0,0,0.35)] lg:hidden" data-i18n="menu">
-            Menu
-        </button>
         <div id="sidebar-overlay" onclick="toggleAccountSidebar()" class="fixed inset-0 z-[70] hidden bg-black/60 lg:hidden"></div>
 
-        <aside id="account-sidebar" class="fixed inset-y-0 left-0 z-[75] w-[88vw] max-w-72 -translate-x-full border-r border-white/10 bg-[#0d0d0d]/95 pt-20 backdrop-blur-xl transition-transform duration-300 lg:static lg:w-72 lg:max-w-none lg:translate-x-0 lg:pt-8">
+        <aside id="account-sidebar" class="fixed inset-y-0 right-0 z-[75] w-[88vw] max-w-72 translate-x-full border-l border-white/10 bg-[#0d0d0d]/95 pt-20 backdrop-blur-xl transition-transform duration-300 lg:static lg:w-72 lg:max-w-none lg:translate-x-0 lg:border-l-0 lg:border-r lg:border-white/10 lg:pt-8">
             <div class="px-6">
                 <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gray-500" data-i18n="sidebarWorkspace">Workspace</p>
                 <h1 class="mt-3 font-header text-3xl uppercase text-white" data-i18n="sidebarAccount">Account</h1>
@@ -1204,6 +1296,76 @@
             }, 3600);
         }
 
+        function syncHeaderAuthState(user) {
+            const desktopLogin = document.getElementById('auth-login-btn');
+            const desktopProfile = document.getElementById('auth-user-profile');
+            const mobileMenuLogin = document.getElementById('mob-auth-login-btn');
+            const mobileMenuProfile = document.getElementById('mob-auth-user-profile');
+            const mobileHeaderLink = document.getElementById('mob-header-auth-link');
+            const mobileHeaderIcon = document.getElementById('mob-header-auth-icon');
+            const mobileHeaderLabel = document.getElementById('mob-header-auth-label');
+            const mobileHeaderAvatar = document.getElementById('mob-header-auth-avatar');
+
+            if (user) {
+                desktopLogin?.classList.add('hidden');
+                desktopProfile?.classList.remove('hidden');
+                desktopProfile?.classList.add('flex');
+                mobileMenuLogin?.classList.add('hidden');
+                mobileMenuProfile?.classList.remove('hidden');
+                mobileMenuProfile?.classList.add('flex');
+                if (mobileHeaderLink) {
+                    mobileHeaderLink.href = '#';
+                    mobileHeaderLink.className = 'xl:hidden flex items-center gap-2 text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full px-3 py-1.5 max-w-[180px]';
+                    mobileHeaderLink.setAttribute('data-sidebar-toggle', '1');
+                }
+                if (mobileHeaderIcon) mobileHeaderIcon.classList.add('hidden');
+                if (mobileHeaderAvatar) mobileHeaderAvatar.classList.remove('hidden');
+                if (mobileHeaderLabel) mobileHeaderLabel.textContent = currentViewModel?.fullName || user.email?.split('@')[0] || 'Account';
+                return;
+            }
+
+            desktopLogin?.classList.remove('hidden');
+            desktopProfile?.classList.add('hidden');
+            desktopProfile?.classList.remove('flex');
+            mobileMenuLogin?.classList.remove('hidden');
+            mobileMenuProfile?.classList.add('hidden');
+            mobileMenuProfile?.classList.remove('flex');
+            if (mobileHeaderLink) {
+                mobileHeaderLink.href = '/account/user.html';
+                mobileHeaderLink.removeAttribute('data-sidebar-toggle');
+                mobileHeaderLink.className = 'xl:hidden flex items-center gap-2 text-[10px] font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-3 py-1.5 shadow-glow max-w-[132px]';
+            }
+            if (mobileHeaderIcon) {
+                mobileHeaderIcon.className = 'fa-solid fa-right-to-bracket';
+                mobileHeaderIcon.classList.remove('hidden');
+            }
+            if (mobileHeaderAvatar) mobileHeaderAvatar.classList.add('hidden');
+            if (mobileHeaderLabel) mobileHeaderLabel.textContent = 'Login';
+        }
+
+        function ensureMobileHeaderAvatar() {
+            const link = document.getElementById('mob-header-auth-link');
+            const icon = document.getElementById('mob-header-auth-icon');
+            if (!link || !icon || document.getElementById('mob-header-auth-avatar')) return;
+            const avatar = document.createElement('img');
+            avatar.id = 'mob-header-auth-avatar';
+            avatar.alt = 'User avatar';
+            avatar.className = 'hidden h-5 w-5 rounded-full border border-gas-green object-cover';
+            icon.insertAdjacentElement('afterend', avatar);
+        }
+
+        function bindMobileHeaderSidebarTrigger() {
+            const link = document.getElementById('mob-header-auth-link');
+            if (!link || link.dataset.boundSidebarToggle === '1') return;
+            link.addEventListener('click', (event) => {
+                if (window.innerWidth >= 1280) return;
+                if (link.getAttribute('data-sidebar-toggle') !== '1') return;
+                event.preventDefault();
+                toggleAccountSidebar();
+            });
+            link.dataset.boundSidebarToggle = '1';
+        }
+
         function setButtonBusy(button, busy) {
             if (!button) return;
             if (busy) {
@@ -1326,8 +1488,10 @@
             const applyHeaderAvatar = (avatarUri) => {
                 const desktopAvatar = document.getElementById('auth-user-avatar');
                 const mobileAvatar = document.getElementById('mob-auth-user-avatar');
+                const mobileHeaderAvatar = document.getElementById('mob-header-auth-avatar');
                 if (desktopAvatar) desktopAvatar.src = avatarUri;
                 if (mobileAvatar) mobileAvatar.src = avatarUri;
+                if (mobileHeaderAvatar) mobileHeaderAvatar.src = avatarUri;
             };
             setText('welcome-name', viewModel.fullName);
             setText('sidebar-name', viewModel.fullName);
@@ -1518,8 +1682,10 @@
                     }
                     const desktopAvatar = document.getElementById('auth-user-avatar');
                     const mobileAvatar = document.getElementById('mob-auth-user-avatar');
+                    const mobileHeaderAvatar = document.getElementById('mob-header-auth-avatar');
                     if (desktopAvatar) desktopAvatar.src = avatarUri;
                     if (mobileAvatar) mobileAvatar.src = avatarUri;
+                    if (mobileHeaderAvatar) mobileHeaderAvatar.src = avatarUri;
                 });
             });
         }
@@ -1618,8 +1784,8 @@
         window.toggleAccountSidebar = function() {
             const sidebar = document.getElementById('account-sidebar');
             const overlay = document.getElementById('sidebar-overlay');
-            const shouldOpen = sidebar.classList.contains('-translate-x-full');
-            sidebar.classList.toggle('-translate-x-full', !shouldOpen);
+            const shouldOpen = sidebar.classList.contains('translate-x-full');
+            sidebar.classList.toggle('translate-x-full', !shouldOpen);
             overlay.classList.toggle('hidden', !shouldOpen);
         };
 
@@ -1643,7 +1809,7 @@
             }
             if (window.innerWidth < 1024) {
                 const sidebar = document.getElementById('account-sidebar');
-                if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
+                if (sidebar && !sidebar.classList.contains('translate-x-full')) {
                     toggleAccountSidebar();
                 }
             }
@@ -1666,6 +1832,7 @@
         function enterGuestMode(message) {
             currentSession = null;
             currentUser = null;
+            syncHeaderAuthState(null);
             const fallbackTab = normalizeTabId(new URL(window.location.href).searchParams.get('tab')) || 'dashboard';
             switchTab(fallbackTab);
             ensureActiveTabVisible(fallbackTab);
@@ -1711,6 +1878,7 @@
                 ? queryTab
                 : (allowedTabs.has(fallbackTab) ? fallbackTab : 'dashboard');
             switchTab(targetTab);
+            syncHeaderAuthState(currentUser);
             document.dispatchEvent(new CustomEvent('gasgx-account-ready'));
         }
 
@@ -1824,6 +1992,12 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             setAccountLang(readAccountLang(), { persist: false });
+            ensureMobileHeaderAvatar();
+            bindMobileHeaderSidebarTrigger();
+            window.setTimeout(() => {
+                ensureMobileHeaderAvatar();
+                bindMobileHeaderSidebarTrigger();
+            }, 200);
             const requestedTab = normalizeTabId(new URL(window.location.href).searchParams.get('tab'));
             switchTab(requestedTab || 'dashboard');
             window.setTimeout(() => ensureActiveTabVisible(requestedTab || 'dashboard'), 0);

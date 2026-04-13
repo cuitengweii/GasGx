@@ -24,6 +24,11 @@
             unmatchedHint: 'Your account is not linked to a customer deal yet. Please contact sales to bind your customer email.',
             listTitle: 'Deal List',
             listCountSuffix: '',
+            listExpand: 'Show all deals',
+            listCollapse: 'Collapse list',
+            timelineTitle: 'Sales Timeline',
+            timelineExpand: 'Show timeline',
+            timelineCollapse: 'Hide timeline',
             dealUntitled: 'Untitled Deal',
             dealSummary: 'Customer confirmations are handled in this user portal.',
             stageReadonly: 'This is a read-only stage. No customer action is required.',
@@ -83,6 +88,11 @@
             unmatchedHint: '当前账号还未匹配客户销售线，请联系销售同事绑定客户邮箱。',
             listTitle: '销售线列表',
             listCountSuffix: '条',
+            listExpand: '展开全部订单',
+            listCollapse: '收起订单',
+            timelineTitle: '销售流水线',
+            timelineExpand: '展开流水线',
+            timelineCollapse: '折叠流水线',
             dealUntitled: '未命名销售线',
             dealSummary: '客户节点确认统一在用户中心执行。',
             stageReadonly: '该节点为只读节点，客户侧无需操作。',
@@ -204,7 +214,28 @@
         pendingStageSubmit: false,
         resolvedLegacyEntry: false,
         legacyEntry: null,
+        mobileViewport: false,
+        mobileListCollapsed: true,
+        timelineCollapsed: false,
     };
+
+    function isMobileViewport() {
+        return window.matchMedia('(max-width: 767px)').matches;
+    }
+
+    function normalizeMobileListState(forceCollapseOnMobile = false) {
+        const mobileNow = isMobileViewport();
+        state.mobileViewport = mobileNow;
+        if (!mobileNow) {
+            state.mobileListCollapsed = false;
+            if (forceCollapseOnMobile) state.timelineCollapsed = false;
+            return;
+        }
+        if (forceCollapseOnMobile || typeof state.mobileListCollapsed !== 'boolean') {
+            state.mobileListCollapsed = true;
+            state.timelineCollapsed = true;
+        }
+    }
 
     function text(value, fallback = '') {
         const normalized = value == null ? '' : String(value).trim();
@@ -482,7 +513,10 @@
         if (!state.overview.length) {
             return `<div class="sales-empty">${esc(tr('noDeals'))}</div>`;
         }
-        return state.overview.map((item) => {
+        const shouldCollapse = state.mobileViewport && state.mobileListCollapsed;
+        const selectedDeal = overviewRowByDealId(state.selectedDealId) || state.overview[0] || null;
+        const rows = shouldCollapse && selectedDeal ? [selectedDeal] : state.overview;
+        return rows.map((item) => {
             const selected = text(item.deal_id) === text(state.selectedDealId);
             return `
                 <button type="button" class="sales-deal-card ${selected ? 'is-active' : ''}" data-sales-deal="${esc(item.deal_id)}">
@@ -492,6 +526,18 @@
                 </button>
             `;
         }).join('');
+    }
+
+    function scrollActiveDealCardIntoView(smooth = false) {
+        if (!state.mobileViewport) return;
+        const container = document.querySelector('#sales-pipeline-root .sales-list-scroll');
+        const activeCard = container?.querySelector('.sales-deal-card.is-active');
+        if (!container || !activeCard) return;
+        activeCard.scrollIntoView({
+            behavior: smooth ? 'smooth' : 'auto',
+            block: 'nearest',
+            inline: 'center',
+        });
     }
 
     function requirementFormMarkup(detail, editable) {
@@ -615,6 +661,7 @@
     function render() {
         const root = byId('sales-pipeline-root');
         if (!root) return;
+        normalizeMobileListState(false);
 
         if (state.overviewLoading && !state.loadedOnce) {
             root.innerHTML = `<div class="sales-loading"><i class="fa-solid fa-circle-notch fa-spin"></i><span>${esc(tr('loadingPipeline'))}</span></div>`;
@@ -627,12 +674,19 @@
         }
 
         const detail = state.detail || {};
+        const canToggleList = state.mobileViewport && state.overview.length > 1;
+        const timelineCollapsed = state.timelineCollapsed === true;
         root.innerHTML = `
             <div class="sales-main-grid">
                 <aside class="sales-deal-list">
                     <div class="sales-list-head">
                         <strong>${esc(tr('listTitle'))}</strong>
-                        <span>${state.overview.length} ${esc(tr('listCountSuffix'))}</span>
+                        <div class="sales-list-actions">
+                            ${canToggleList
+                                ? `<button type="button" class="sales-list-toggle rounded-full border border-white/15 px-3 py-1 text-[10px] font-bold tracking-[0.08em] text-gray-300 transition hover:border-gas-green/60 hover:text-gas-green" data-sales-list-toggle>${esc(state.mobileListCollapsed ? tr('listExpand') : tr('listCollapse'))}</button>`
+                                : ''}
+                            <span class="sales-list-count">${state.overview.length} ${esc(tr('listCountSuffix'))}</span>
+                        </div>
                     </div>
                     <div class="sales-list-scroll">${renderOverviewCards()}</div>
                 </aside>
@@ -644,8 +698,19 @@
                             <p>${esc(text(detail.summary, tr('dealSummary')))}</p>
                         </div>
                     </div>
-                    <div class="sales-timeline">${renderTimeline(detail)}</div>
                     ${stageActionArea(detail)}
+                    <section class="sales-timeline-shell">
+                        <button type="button" class="sales-timeline-toggle ${timelineCollapsed ? 'is-collapsed' : ''}" data-sales-timeline-toggle>
+                            <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-300">${esc(tr('timelineTitle'))}</span>
+                            <span class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-gas-green">
+                                <span>${esc(timelineCollapsed ? tr('timelineExpand') : tr('timelineCollapse'))}</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </span>
+                        </button>
+                        <div class="sales-timeline-panel ${timelineCollapsed ? 'is-collapsed' : ''}">
+                            <div class="sales-timeline">${renderTimeline(detail)}</div>
+                        </div>
+                    </section>
                     <section class="sales-stage-card">
                         <div class="sales-stage-head">
                             <div>
@@ -654,13 +719,16 @@
                                 <p>${esc(tr('activitiesDesc'))}</p>
                             </div>
                         </div>
-                        <div class="sales-activity-list">${activitiesMarkup(detail)}</div>
+                        <div class="sales-activity-scroll">
+                            <div class="sales-activity-list">${activitiesMarkup(detail)}</div>
+                        </div>
                     </section>
                 </section>
             </div>
         `;
 
         bindRenderedActions();
+        requestAnimationFrame(() => scrollActiveDealCardIntoView(false));
     }
 
     function collectRequirementPayload() {
@@ -762,7 +830,19 @@
                 state.selectedStage = '';
                 syncUrl();
                 await loadDetail();
+                requestAnimationFrame(() => scrollActiveDealCardIntoView(true));
             });
+        });
+
+        byId('sales-pipeline-root')?.querySelector('[data-sales-list-toggle]')?.addEventListener('click', () => {
+            state.mobileListCollapsed = !state.mobileListCollapsed;
+            render();
+            requestAnimationFrame(() => scrollActiveDealCardIntoView(true));
+        });
+
+        byId('sales-pipeline-root')?.querySelector('[data-sales-timeline-toggle]')?.addEventListener('click', () => {
+            state.timelineCollapsed = !state.timelineCollapsed;
+            render();
         });
 
         document.querySelectorAll('[data-sales-stage-node]').forEach((button) => {
@@ -988,6 +1068,7 @@
     function init() {
         if (state.initialized) return;
         state.initialized = true;
+        normalizeMobileListState(true);
 
         document.addEventListener('gasgx-account-ready', () => {
             void onTabActivated();
@@ -999,6 +1080,14 @@
 
         window.addEventListener('storage', (event) => {
             if (event.key === 'gasgx-lang' || event.key === 'gas_lang') {
+                render();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            const before = state.mobileViewport;
+            normalizeMobileListState(true);
+            if (before !== state.mobileViewport) {
                 render();
             }
         });
