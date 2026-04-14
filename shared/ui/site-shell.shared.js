@@ -45,11 +45,11 @@
         MAIN_AUTH_AVATAR_URI_MAP[key] = buildPixelAvatarDataUri(MAIN_AUTH_AVATAR_PRESETS[key]);
     });
     const MAIN_AUTH_FALLBACK_AVATAR = MAIN_AUTH_AVATAR_URI_MAP[MAIN_AUTH_DEFAULT_AVATAR_KEY];
-    const COOKIE_CONSENT_STORAGE_KEY = "ggx_cookie_consent_v1";
-    const COOKIE_CONSENT_COOKIE_NAME = "ggx_cookie_consent";
+    const COOKIE_CONSENT_STORAGE_KEY = "ggx_cookie_consent_v2";
+    const COOKIE_CONSENT_COOKIE_NAME = "ggx_cookie_consent_v2";
     const COOKIE_CONSENT_BANNER_ID = "ggx-cookie-consent-banner";
     const COOKIE_CONSENT_MAX_AGE_SECONDS = 31536000;
-    const COOKIE_PREFS_STORAGE_KEY = "ggx_cookie_preferences_v1";
+    const COOKIE_PREFS_STORAGE_KEY = "ggx_cookie_preferences_v2";
     const COOKIE_PREFS_MODAL_ID = "ggx-cookie-prefs-modal";
     const SHARED_TEXT = {
         en: {

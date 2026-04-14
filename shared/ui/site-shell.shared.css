@@ -570,13 +570,13 @@
 }
 
 .ggx-cookie-consent-text a {
-    color: #2f6eb8;
+    color: #5dd62c;
     text-decoration: underline;
     font-weight: 700;
 }
 
 .ggx-cookie-consent-text a:hover {
-    color: #1e4f8a;
+    color: #3fa91f;
 }
 
 .ggx-cookie-consent-actions {
@@ -600,35 +600,35 @@
 }
 
 .ggx-cookie-consent-btn-outline {
-    color: #2f6eb8;
-    background: #fff;
-    border-color: #2f6eb8;
+    color: #5dd62c;
+    background: #0f160c;
+    border-color: #5dd62c;
 }
 
 .ggx-cookie-consent-btn-outline:hover {
-    background: #eff6ff;
+    background: #162112;
 }
 
 .ggx-cookie-consent-btn-secondary {
-    color: #fff;
-    background: #2f6eb8;
-    border-color: #2f6eb8;
+    color: #081204;
+    background: #7ef34a;
+    border-color: #7ef34a;
 }
 
 .ggx-cookie-consent-btn-secondary:hover {
-    background: #255b97;
-    border-color: #255b97;
+    background: #8dff5e;
+    border-color: #8dff5e;
 }
 
 .ggx-cookie-consent-btn-primary {
-    color: #fff;
-    background: #1d5fa8;
-    border-color: #1d5fa8;
+    color: #081204;
+    background: #5dd62c;
+    border-color: #5dd62c;
 }
 
 .ggx-cookie-consent-btn-primary:hover {
-    background: #174d89;
-    border-color: #174d89;
+    background: #6fe63e;
+    border-color: #6fe63e;
 }
 
 .ggx-cookie-consent-hidden {
