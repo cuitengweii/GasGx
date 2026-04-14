@@ -136,6 +136,28 @@ function navTypeLabel(type) {
     return '链接';
 }
 
+function normalizeNavigationPath(path) {
+    const value = String(path || '').trim().toLowerCase();
+    if (!value) return '';
+    return value.replace(/\/+$/, '') || '/';
+}
+
+function isUseCasesNavItem(item) {
+    return normalizeNavigationPath(item && item.path) === '/use-cases';
+}
+
+function normalizeUseCasesGroupKey(value) {
+    const safe = String(value || '').trim().toLowerCase();
+    if (safe === 'application' || safe === 'solution') return safe;
+    return '';
+}
+
+function useCasesGroupLabel(groupKey) {
+    if (groupKey === 'application') return 'Application Scenarios';
+    if (groupKey === 'solution') return 'Solutions';
+    return 'Auto (legacy order)';
+}
+
 function formatSavedTime(value) {
     const date = new Date(value || '');
     if (Number.isNaN(date.getTime())) return '';
@@ -590,10 +612,26 @@ function renderItemFields(basePath, item, options = {}) {
     `;
 }
 
-function renderMenuChild(child, topIndex, childIndex) {
+function renderUseCasesGroupField(basePath, child) {
+    const groupKey = normalizeUseCasesGroupKey(child && child.groupKey);
+    return `
+        <div class="ams-field">
+            <label>Use Cases Group</label>
+            <select class="ams-select" data-site-config-path="${esc(`${basePath}.groupKey`)}">
+                <option value="" ${groupKey ? '' : 'selected'}>Auto (legacy order)</option>
+                <option value="application" ${groupKey === 'application' ? 'selected' : ''}>Application Scenarios</option>
+                <option value="solution" ${groupKey === 'solution' ? 'selected' : ''}>Solutions</option>
+            </select>
+        </div>
+    `;
+}
+
+function renderMenuChild(child, topIndex, childIndex, topItem = null) {
     const key = `nav:${topIndex}:child:${childIndex}`;
     const expanded = isExpanded(key, false);
     const basePath = `navigation.${topIndex}.children.${childIndex}`;
+    const isUseCasesMenu = isUseCasesNavItem(topItem);
+    const groupLabel = isUseCasesMenu ? ` · ${useCasesGroupLabel(normalizeUseCasesGroupKey(child && child.groupKey))}` : '';
     return `
         <div class="ams-site-tree-node ams-site-tree-node-child">
             <div class="ams-site-tree-row">
@@ -601,7 +639,7 @@ function renderMenuChild(child, topIndex, childIndex) {
                     ${renderToggleButton('toggle-expand', key, expanded)}
                     <div class="ams-site-tree-copy ams-site-tree-copy-toggle" data-site-action="toggle-expand" data-site-toggle-path="${esc(key)}">
                         <strong>${esc(bilingualLabel(child.title, `子项 ${childIndex + 1}`))}</strong>
-                        <span>${esc(child.path || '未设置路径')} · ${child.visible === false ? '隐藏' : '显示'}</span>
+                        <span>${esc(child.path || '未设置路径')} · ${child.visible === false ? '隐藏' : '显示'}${groupLabel}</span>
                     </div>
                 </div>
                 <div class="ams-site-tree-actions">
@@ -611,7 +649,10 @@ function renderMenuChild(child, topIndex, childIndex) {
                     <button class="ams-btn ams-btn-danger" type="button" data-site-action="delete-array-item" data-site-array-path="navigation.${topIndex}.children" data-site-index="${childIndex}">删除</button>
                 </div>
             </div>
-            ${expanded ? renderItemFields(basePath, child, { titleLabel: '子项标题', navIndex: topIndex }) : ''}
+            ${expanded ? `
+                ${renderItemFields(basePath, child, { titleLabel: '子项标题', navIndex: topIndex })}
+                ${isUseCasesMenu ? `<div class="ams-site-editor-panel">${renderUseCasesGroupField(basePath, child)}</div>` : ''}
+            ` : ''}
         </div>
     `;
 }
@@ -713,7 +754,7 @@ function renderTopNavItem(item, index) {
                             <div class="ams-site-branch-title ams-site-tree-copy-toggle" data-site-action="toggle-expand" data-site-toggle-path="${esc(`${key}:children`)}">二级菜单项 <span>${children.length}</span></div>
                             ${renderToggleButton('toggle-expand', `${key}:children`, menuListOpen)}
                         </div>
-                        ${menuListOpen ? `<div class="ams-site-tree-children">${children.length ? children.map((child, childIndex) => renderMenuChild(child, index, childIndex)).join('') : '<div class="ams-empty">当前还没有子项。</div>'}</div>` : ''}
+                        ${menuListOpen ? `<div class="ams-site-tree-children">${children.length ? children.map((child, childIndex) => renderMenuChild(child, index, childIndex, item)).join('') : '<div class="ams-empty">当前还没有子项。</div>'}</div>` : ''}
                     </div>
                 ` : ''}
                 ${item.type === 'mega' ? `

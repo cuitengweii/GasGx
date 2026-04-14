@@ -1036,6 +1036,45 @@
         return [];
     }
 
+    function normalizeUseCasesGroupKey(value) {
+        const raw = String(value || "").trim().toLowerCase();
+        if (raw === "application" || raw === "applications") return "application";
+        if (raw === "solution" || raw === "solutions") return "solution";
+        return "";
+    }
+
+    function getUseCasesGroupedChildren(item, children, lang) {
+        const itemPath = normalizePath(item && item.path);
+        if (itemPath !== "/use-cases") return null;
+        if (!Array.isArray(children) || !children.length) return null;
+
+        const hasExplicitGroup = children.some((child) => normalizeUseCasesGroupKey(child && child.groupKey));
+        if (!hasExplicitGroup && children.length <= 4) return null;
+
+        const groupMeta = [
+            { key: "application", title: lang === "zh" ? "应用场景" : "Use Cases" },
+            { key: "solution", title: lang === "zh" ? "解决方案" : "Solutions" }
+        ];
+        const groupedMap = new Map(groupMeta.map((entry) => [entry.key, []]));
+
+        children.forEach((child, index) => {
+            const explicitGroup = normalizeUseCasesGroupKey(child && child.groupKey);
+            const fallbackGroup = index < 4 ? "application" : "solution";
+            const groupKey = explicitGroup || fallbackGroup;
+            if (!groupedMap.has(groupKey)) groupedMap.set(groupKey, []);
+            groupedMap.get(groupKey).push(child);
+        });
+
+        const groups = groupMeta
+            .map((entry) => ({
+                title: entry.title,
+                items: groupedMap.get(entry.key) || []
+            }))
+            .filter((entry) => entry.items.length);
+
+        return groups.length ? groups : null;
+    }
+
     function getFooterItems(item) {
         if (!item || typeof item !== "object") return [];
 
@@ -1104,6 +1143,34 @@
             }
 
             if ((itemType === "menu" || children.length) && children.length) {
+                const groupedChildren = getUseCasesGroupedChildren(item, children, lang);
+                if (groupedChildren) {
+                    const sectionsHtml = groupedChildren.map((group, sectionIndex) => {
+                        const groupTitle = escapeHtml(group.title);
+                        const itemsHtml = group.items.map((child) => {
+                            const childTitle = escapeHtml(getLabelValue(child && child.title, lang));
+                            const childPath = escapeHtml(normalizePath(child && child.path));
+                            return `<li class="mb-2"><a href="${childPath}" class="text-gray-400 hover:text-gas-green text-xs flex items-center gap-2 transition-colors"><i class="fa-solid fa-angle-right text-[10px] opacity-50"></i>${childTitle}</a></li>`;
+                        }).join("");
+                        const borderClass = sectionIndex === groupedChildren.length - 1 ? "" : "border-r border-white/5";
+                        return `
+                            <div class="col-span-1 space-y-4 ${borderClass} px-2">
+                                <h3 class="text-gas-green font-bold text-sm uppercase tracking-wider mb-3 border-b border-white/5 pb-2">${groupTitle}</h3>
+                                <ul>${itemsHtml}</ul>
+                            </div>
+                        `;
+                    }).join("");
+
+                    return `
+                        <div class="group h-full flex items-center cursor-pointer">
+                            <span class="nav-item-link font-medium text-sm"><span>${title}</span></span>
+                            <div class="mega-menu">
+                                <div class="max-w-[1800px] mx-auto px-4 grid grid-cols-2 gap-6">${sectionsHtml}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 const isRightAligned = index >= navigation.length - 3;
                 const childrenHtml = children.map((child) => {
                     const childTitle = escapeHtml(getLabelValue(child && child.title, lang));
@@ -1144,11 +1211,22 @@
             const subId = `ggx-mobile-submenu-${index}`;
             let childLinks = "";
             if (itemType === "menu") {
-                childLinks = children.map((child) => {
-                    const childTitle = escapeHtml(getLabelValue(child && child.title, lang));
-                    const childPath = escapeHtml(normalizePath(child && child.path));
-                    return `<a href="${childPath}" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-xs font-semibold uppercase tracking-wide">${childTitle}</a>`;
-                }).join("");
+                const groupedChildren = getUseCasesGroupedChildren(item, children, lang);
+                childLinks = groupedChildren
+                    ? groupedChildren.map((group) => {
+                        const groupTitle = escapeHtml(group.title);
+                        const groupItems = group.items.map((child) => {
+                            const childTitle = escapeHtml(getLabelValue(child && child.title, lang));
+                            const childPath = escapeHtml(normalizePath(child && child.path));
+                            return `<a href="${childPath}" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-xs font-semibold uppercase tracking-wide">${childTitle}</a>`;
+                        }).join("");
+                        return `<div class="py-2"><h4 class="text-gas-green text-xs font-bold uppercase mb-2 pl-4">${groupTitle}</h4>${groupItems}</div>`;
+                    }).join("")
+                    : children.map((child) => {
+                        const childTitle = escapeHtml(getLabelValue(child && child.title, lang));
+                        const childPath = escapeHtml(normalizePath(child && child.path));
+                        return `<a href="${childPath}" class="block py-3 pl-4 text-gray-400 border-l border-white/10 ml-2 hover:text-gas-green hover:border-gas-green text-xs font-semibold uppercase tracking-wide">${childTitle}</a>`;
+                    }).join("");
             } else {
                 childLinks = visibleSections.map((section) => {
                     const header = escapeHtml(getLabelValue(section && section.header, lang));
