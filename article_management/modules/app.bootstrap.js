@@ -186,6 +186,7 @@ const state = {
     selectedArticleIds: new Set(),
     selectedQueueIds: new Set(),
     previewUnbind: null,
+    navGroupOpen: {},
 };
 
 function esc(value) {
@@ -1054,17 +1055,25 @@ function renderLogin() {
     });
 }
 
-function navButton(id, label, icon) {
+function navButton(id, label, icon, groupId = '') {
     const active = state.page === id ? 'active' : '';
-    return `<button type="button" class="ams-nav-btn ${active}" data-page="${id}"><span><i class="fa-solid ${icon}"></i> ${label}</span><i class="fa-solid fa-angle-right"></i></button>`;
+    return `<button type="button" class="ams-nav-btn ${active}" data-page="${id}" data-page-group="${esc(groupId)}"><span><i class="fa-solid ${icon}"></i> ${label}</span><i class="fa-solid fa-angle-right"></i></button>`;
 }
 
-function navGroup(label, items = []) {
+function navGroup(groupId, label, items = [], pages = []) {
+    const containsCurrentPage = Array.isArray(pages) && pages.includes(state.page);
+    const savedState = state.navGroupOpen?.[groupId];
+    const isOpen = containsCurrentPage || (typeof savedState === 'boolean' ? savedState : false);
     return `
-        <div class="ams-nav-group">
-            <div class="ams-nav-group-label">${esc(label)}</div>
-            <div class="ams-nav-group-items">${items.join('')}</div>
-        </div>
+        <section class="ams-nav-group ${isOpen ? 'is-open' : ''}" data-nav-group="${esc(groupId)}">
+            <button type="button" class="ams-nav-group-label" data-nav-group-toggle="${esc(groupId)}">
+                <span>${esc(label)}</span>
+                <i class="fa-solid fa-angle-down ams-nav-group-caret"></i>
+            </button>
+            <div class="ams-nav-group-drawer">
+                <div class="ams-nav-group-items">${items.join('')}</div>
+            </div>
+        </section>
     `;
 }
 
@@ -1079,31 +1088,31 @@ function renderShell() {
                     <div class="ams-sidebar-meta">网站管理后台</div>
                 </div>
                 <nav class="ams-nav">
-                    ${navGroup('Dashboard', [navButton('dashboard', '总览', 'fa-chart-line')])}
-                    ${navGroup('Site', [
-                        navButton('site-general', '主站配置', 'fa-sliders'),
-                    ])}
-                    ${navGroup('System', [
-                        navButton('site-navigation', '主站导航', 'fa-compass'),
-                        navButton('site-footer', '主站页脚', 'fa-window-maximize'),
-                        navButton('admin-users', '人员管理', 'fa-users-gear'),
-                        navButton('admin-security', '账号安全', 'fa-user-shield'),
-                    ])}
-                    ${navGroup('Quotes', [
-                        navButton('quote-brands', '品牌管理', 'fa-layer-group'),
-                        navButton('quote-products', '产品模板', 'fa-cubes'),
-                        navButton('quote-requirements', '客户线索', 'fa-clipboard-list'),
-                        navButton('quote-customers', '客户跟踪', 'fa-address-book'),
-                        navButton('quote-instances', '报价单管理', 'fa-file-invoice-dollar'),
-                    ])}
-                    ${navGroup('News', [
-                        navButton('articles', '文章管理', 'fa-file-lines'),
-                        navButton('editor', '新建文章', 'fa-pen-to-square'),
-                        navButton('recycle', '回收站', 'fa-trash-can-arrow-up'),
-                        navButton('featured', '首页推荐位', 'fa-ranking-star'),
-                        navButton('queue', '采集队列', 'fa-list-check'),
-                        navButton('tags', '标签管理', 'fa-tags'),
-                    ])}
+                    ${navGroup('dashboard', 'Dashboard', [navButton('dashboard', '总览', 'fa-chart-line', 'dashboard')], ['dashboard'])}
+                    ${navGroup('site', 'Site', [
+                        navButton('site-general', '主站配置', 'fa-sliders', 'site'),
+                    ], ['site-general'])}
+                    ${navGroup('system', 'System', [
+                        navButton('site-navigation', '主站导航', 'fa-compass', 'system'),
+                        navButton('site-footer', '主站页脚', 'fa-window-maximize', 'system'),
+                        navButton('admin-users', '人员管理', 'fa-users-gear', 'system'),
+                        navButton('admin-security', '账号安全', 'fa-user-shield', 'system'),
+                    ], ['site-navigation', 'site-footer', 'admin-users', 'admin-security'])}
+                    ${navGroup('quotes', 'Quotes', [
+                        navButton('quote-brands', '品牌管理', 'fa-layer-group', 'quotes'),
+                        navButton('quote-products', '产品模板', 'fa-cubes', 'quotes'),
+                        navButton('quote-requirements', '客户线索', 'fa-clipboard-list', 'quotes'),
+                        navButton('quote-customers', '客户跟踪', 'fa-address-book', 'quotes'),
+                        navButton('quote-instances', '报价单管理', 'fa-file-invoice-dollar', 'quotes'),
+                    ], ['quote-brands', 'quote-products', 'quote-requirements', 'quote-customers', 'quote-instances'])}
+                    ${navGroup('news', 'News', [
+                        navButton('articles', '文章管理', 'fa-file-lines', 'news'),
+                        navButton('editor', '新建文章', 'fa-pen-to-square', 'news'),
+                        navButton('recycle', '回收站', 'fa-trash-can-arrow-up', 'news'),
+                        navButton('featured', '首页推荐位', 'fa-ranking-star', 'news'),
+                        navButton('queue', '采集队列', 'fa-list-check', 'news'),
+                        navButton('tags', '标签管理', 'fa-tags', 'news'),
+                    ], ['articles', 'editor', 'recycle', 'featured', 'queue', 'tags'])}
                 </nav>
             </aside>
             <main class="ams-main">
@@ -1133,10 +1142,24 @@ function renderShell() {
         });
     });
 
+    document.querySelectorAll('[data-nav-group-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const groupId = button.dataset.navGroupToggle || '';
+            if (!groupId) return;
+            const section = root.querySelector(`[data-nav-group="${groupId}"]`);
+            if (!section) return;
+            const isOpen = section.classList.contains('is-open');
+            state.navGroupOpen[groupId] = !isOpen;
+            section.classList.toggle('is-open', !isOpen);
+        });
+    });
+
     document.querySelectorAll('.ams-nav-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
             if (!confirmDiscardEditorChanges()) return;
             state.page = btn.dataset.page || 'dashboard';
+            const groupId = btn.dataset.pageGroup || '';
+            if (groupId) state.navGroupOpen[groupId] = true;
             if (state.page === 'editor' && state.editor.mode !== 'edit') {
                 state.editor = prepareEditorState('create');
             }
