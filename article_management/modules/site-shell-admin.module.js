@@ -143,7 +143,8 @@ function normalizeNavigationPath(path) {
 }
 
 function isUseCasesNavItem(item) {
-    return normalizeNavigationPath(item && item.path) === '/use-cases';
+    const path = normalizeNavigationPath(item && item.path);
+    return path === '/use-cases' || path === '/use-cases/index.html';
 }
 
 function normalizeUseCasesGroupKey(value) {

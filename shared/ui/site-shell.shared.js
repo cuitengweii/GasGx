@@ -1141,8 +1141,8 @@
     }
 
     function getUseCasesGroupedChildren(item, children, lang) {
-        const itemPath = normalizePath(item && item.path);
-        if (itemPath !== "/use-cases") return null;
+        const itemPath = normalizeSiteShellNavPath(item && item.path);
+        if (itemPath !== "/use-cases" && itemPath !== "/use-cases/index.html") return null;
         if (!Array.isArray(children) || !children.length) return null;
 
         const hasExplicitGroup = children.some((child) => normalizeUseCasesGroupKey(child && child.groupKey));
