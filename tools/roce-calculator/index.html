@@ -22,6 +22,14 @@
             theme: {
                 extend: {
                     colors: {
+                        gas: {
+                            bg: '#0B0E14',
+                            card: '#151A22',
+                            green: '#5DD62C',
+                            darkGreen: '#337418',
+                            text: '#E2E8F0',
+                            subtext: '#94A3B8'
+                        },
                         gasgx: {
                             DEFAULT: '#5DD62C', // 涓婚浜豢
                             hover: 'rgba(93, 214, 44, 0.15)', // 瑙勮寖鎮仠鑹?
@@ -29,6 +37,10 @@
                             card: '#151A22', // 鍗＄墖/寮圭獥鑳屾櫙
                             border: 'rgba(255, 255, 255, 0.08)' // 鍏ㄥ眬杈规
                         }
+                    },
+                    boxShadow: {
+                        glow: '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 18px rgba(93, 214, 44, 0.45)'
                     }
                 }
             }
@@ -179,8 +191,8 @@
                 <div class="bg-gasgx-hover border border-gasgx/30 rounded-lg p-4 flex items-start">
                     <i data-lucide="terminal" class="w-4 h-4 text-gasgx mr-3 flex-shrink-0 mt-0.5"></i>
                     <p class="text-xs text-gasgx/90 leading-relaxed font-medium" data-i18n="txtAlert">
-                        妯″瀷宸叉墸闄ょ淮淇濄€佹湀渚涗笌鐕冩枡鎴愭湰銆?br>
-                        <strong class="text-white">棰勮鍗忚锛?/strong>绾㈣壊楂樹寒琛屼唬琛ㄥ噣鐜伴噾娴佹柇瑁?Negative CF)銆?
+                        Model deducts O&amp;M, lease and fuel.<br>
+                        <strong class="text-white">Alert Protocol:</strong> Red rows indicate Negative Cash Flow.
                     </p>
                 </div>
                 <div class="cyber-card rounded-xl p-4">
@@ -227,7 +239,7 @@
                         <div class="absolute top-0 right-0 w-16 h-16 bg-[#a78bfa]/5 rounded-bl-full -z-10 group-hover:bg-[#a78bfa]/10 transition-colors"></div>
                         <div class="flex items-center text-slate-400 mb-4">
                             <i data-lucide="clock" class="w-4 h-4 mr-2 text-[#a78bfa]"></i>
-                            <span class="text-xs font-bold uppercase tracking-wider" data-i18n="kpiPayback">鏈€蹇洖鏈懆鏈?/span>
+                            <span class="text-xs font-bold uppercase tracking-wider" data-i18n="kpiPayback">Fastest Payback</span>
                         </div>
                         <div class="flex items-end justify-between">
                             <h3 id="kpi_payback_model" class="text-2xl font-bold text-white truncate max-w-[150px]">--</h3>
@@ -240,7 +252,7 @@
                 <div class="cyber-card rounded-xl p-6 relative">
                     <h3 class="text-sm font-bold text-white mb-6 uppercase tracking-wider flex items-center">
                         <i data-lucide="bar-chart" class="w-4 h-4 mr-2 text-slate-400"></i>
-                        <span data-i18n="chartTitle">ROCE 涓?鐜伴噾娴佺患鍚堢煩闃?/span>
+                        <span data-i18n="chartTitle">ROCE &amp; Cashflow Matrix</span>
                     </h3>
                     <div class="h-[300px] w-full">
                         <canvas id="mainChart"></canvas>
@@ -262,8 +274,8 @@
                                     <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colModel">鏈哄瀷鐭╅樀</th>
                                     <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colUnits">鑺傜偣瑙勬ā</th>
                                     <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colDown">棣栦粯閲戦</th>
-                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colLease">鍒氭€ф湀渚?/th>
-                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colCash">鏈堝噣鐜伴噾娴?/th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colLease">Mo. Lease</th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colCash">Net Cash/Mo</th>
                                     <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colPayback">鍥炴湰閫熷害</th>
                                     <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colRoce">棣栧勾 ROCE</th>
                                 </tr>
