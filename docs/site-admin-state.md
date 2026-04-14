@@ -393,3 +393,53 @@
    - `bindSalesExecutionActions(...)`
 2. Re-run end-to-end verification for customer-flow stages after the dispatcher cleanup.
 3. Keep `sales.bootstrap.js` limited to shell responsibilities and reject any new business-DOM mutation there.
+
+## 2026-04-15 home onboarding + shared shell accessibility update
+
+### Latest milestone
+
+- Home page now includes a first-visit guided onboarding flow covering three core interaction zones:
+  - hotspot country markers
+  - main globe interaction area
+  - bottom total-score ranking drawer
+- Mobile ranking drawer behavior was hardened with:
+  - backdrop overlay
+  - synced `aria-expanded` and `aria-label`
+  - `Esc` key close support
+- Shared shell accessibility and consistency were refined via:
+  - active-language checkmark glyph fix (`\2713`)
+  - `:focus-visible` outlines for header/footer interactive controls
+  - `prefers-reduced-motion: reduce` fallback to disable non-essential motion
+
+### Effective behaviors
+
+- Onboarding auto-triggers once per browser profile via localStorage version key:
+  - `gasgx-home-guide:20260415a`
+- Users can manually reopen onboarding through the floating `Guide / 新手引导` button.
+- Guide rendering is UI-layer only (mask/highlight/step card), and does not alter:
+  - business data
+  - route state
+  - API behavior
+
+### Solved in this thread
+
+- Landed home-page onboarding runtime and visual layer in `index.html`.
+- Added drawer close/backdrop usability hardening for mobile ranking panel.
+- Added shared shell keyboard-focus visibility and reduced-motion fallback rules.
+- Synced documentation updates in:
+  - `docs/shared-site-shell.md`
+  - `docs/site-admin-decisions.md`
+
+### Unfinished
+
+- Onboarding copy is still hardcoded in page runtime and not yet centralized into shared i18n config.
+- Full manual QA matrix is still pending for:
+  - low-end mobile devices
+  - landscape orientation
+  - keyboard-only navigation traversal
+
+### Next Step
+
+1. Move onboarding copy definitions into shared i18n/config to reduce page-level hardcoding.
+2. Run focused responsive + accessibility checks on mobile breakpoints and keyboard-only flows.
+3. Keep onboarding behavior strictly UI-scoped unless a later thread explicitly requires workflow/API coupling.

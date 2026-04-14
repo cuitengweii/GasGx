@@ -241,3 +241,17 @@ News integration:
 
 - `news/shared/modules/layout.shared.js` now prefers the unified site shell config for footer rendering
 - legacy footer values from `feeder_form_options` are only used as fallback
+
+## 11. 2026-04-15 UI refinement (home + shared shell)
+
+- Home page (`/index.html`) mobile ranking drawer now has:
+  - backdrop layer when expanded
+  - synchronized `aria-expanded` + `aria-label`
+  - `Esc` key support to close the drawer in mobile mode
+- Shared shell styles (`/shared/ui/site-shell.shared.css`) now include:
+  - fixed active-language checkmark glyph (`\2713`)
+  - consistent `:focus-visible` outlines for header/footer interactive controls
+  - `prefers-reduced-motion: reduce` fallback to disable non-essential transitions/animations
+
+Boundary note:
+- This update is UI-only and does not change business data, routing, API behavior, or page-level domain logic.

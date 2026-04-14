@@ -261,7 +261,7 @@
 }
 
 #ggx-site-header-slot .ggx-lang-option.is-active::after {
-    content: "✓";
+    content: "\2713";
     font-size: 11px;
     font-weight: 800;
     color: #5DD62C;
@@ -533,6 +533,16 @@
     border-color: rgba(93, 214, 44, 0.28);
     color: #5DD62C;
     background: rgba(93, 214, 44, 0.04);
+}
+
+#ggx-site-header-slot .nav-item-link:focus-visible,
+#ggx-site-header-slot .ggx-lang-trigger:focus-visible,
+#ggx-site-header-slot .ggx-lang-option:focus-visible,
+#ggx-site-footer-slot .footer-link:focus-visible,
+#ggx-site-footer-slot .ggx-social-btn:focus-visible,
+#ggx-site-footer-slot .ggx-partner-entry:focus-visible .ggx-partner-pill {
+    outline: 2px solid #5DD62C;
+    outline-offset: 2px;
 }
 
 .ggx-cookie-consent {
@@ -858,4 +868,21 @@ button[onclick*="captureAndShare"] {
 #ggx-chatbot-slot #ggx-chat-wrapper.ggx-chat-is-docked #ggx-chat-toggle-btn,
 #ggx-chatbot-slot #ggx-chat-wrapper.ggx-chat-is-docked #ggx-chat-dock-btn {
     display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #ggx-site-header-slot .group:hover .mega-menu,
+    #ggx-site-header-slot .group:hover .dropdown-menu,
+    #ggx-site-header-slot .nav-item-link,
+    #ggx-site-header-slot #mobile-menu-container,
+    #ggx-site-header-slot .mobile-submenu,
+    #ggx-site-header-slot .ggx-lang-trigger,
+    #ggx-site-header-slot .ggx-lang-option,
+    #ggx-site-footer-slot .footer-link,
+    #ggx-site-footer-slot .ggx-social-btn,
+    #ggx-site-footer-slot .ggx-partner-pill,
+    #ggx-chatbot-slot .ggx-chat-attention {
+        animation: none !important;
+        transition: none !important;
+    }
 }

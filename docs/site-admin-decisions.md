@@ -171,3 +171,17 @@
   2. verify the helpers are stable
   3. replace the root binder with dispatch-only wiring
 - This order reduces the risk of breaking the workflow in one large patch while still lowering complexity over time.
+
+### Decision 23: Home page must provide a first-visit guided tour for core interactions
+
+- `index.html` now treats first-time users as a required onboarding case, not an optional enhancement.
+- The guide sequence is fixed to three core interactions:
+  1. hotspot country markers
+  2. main globe interaction area
+  3. bottom total-score ranking drawer
+- Auto-trigger rule:
+  - show once for first visit (tracked by localStorage version key)
+  - allow manual reopen via the floating `Guide / 新手引导` button
+- Scope boundary:
+  - onboarding is UI-only (mask/highlight/step card)
+  - no business data, route, or API behavior changes are coupled into the guide flow
