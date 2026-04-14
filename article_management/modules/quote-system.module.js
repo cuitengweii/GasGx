@@ -7631,12 +7631,13 @@ function customerActivityTimelinePanelMarkup(customerId = '') {
     const rows = customerActivityTimelineRows(customerId)
         .filter((item) => filter === 'all' ? true : text(item.actor_type) === filter);
     return `
-        <section class="ams-card ams-sales-activity-panel">
-            <div class="ams-section-head">
-                <div>
-                    <h3>用户行为轨迹</h3>
-                    <p>记录客户、销售和系统在这条客户销售链路上的关键动作。</p>
-                </div>
+        <details class="ams-card ams-sales-activity-panel ams-fold-card ams-stage-module-fold">
+            <summary class="ams-fold-summary">
+                <span>用户行为轨迹</span>
+                <em>${esc(`${rows.length} 条`)}</em>
+            </summary>
+            <div class="ams-fold-body">
+                <p class="ams-field-help">记录客户、销售和系统在这条客户销售链路上的关键动作。</p>
                 <div class="ams-row-actions">
                     ${['all', 'customer', 'sales', 'system'].map((actorType) => `
                         <button class="ams-btn ${filter === actorType ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" data-customer-activity-filter="${esc(actorType)}">${esc(actorType === 'all' ? '全部' : SALES_ACTIVITY_ACTOR_LABELS[actorType])}</button>
@@ -7646,7 +7647,7 @@ function customerActivityTimelinePanelMarkup(customerId = '') {
             <div class="ams-sales-activity-list">
                 ${rows.length ? rows.map((item) => salesActivityTimelineItemMarkup(item)).join('') : '<div class="ams-empty">当前客户还没有可展示的销售活动。</div>'}
             </div>
-        </section>
+        </details>
     `;
 }
 
@@ -10567,7 +10568,6 @@ export async function renderQuoteInstancesPage(input) {
                                 <textarea class="ams-textarea" rows="3" data-instance-field="customer_notes" placeholder="记录客户偏好、分享要求或跟进备注。">${esc(moduleState.instanceEditor.customer_notes)}</textarea>
                             </div>
                         `,
-                        true,
                     )}
                     ${quoteManagementFold(
                         '客户备注与分享对象',
@@ -11589,26 +11589,21 @@ function stageCommunicationSectionMarkup(stageKey = '', record = {}, options = {
     const title = text(options.title, '沟通记录');
     const help = text(options.help, '记录这个节点里与客户沟通、内部确认、修改原因和关键结论。每次保存都会追加一条历史。');
     return `
-        <section class="ams-card ams-stage-log-card">
-            <div class="ams-section-head">
-                <div>
-                    <h3>${esc(title)}</h3>
-                    <p>${esc(help)}</p>
+        <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold">
+            <summary class="ams-fold-summary">
+                <span>${esc(title)}</span>
+                <em>${esc(`${logs.length} 条`)}</em>
+            </summary>
+            <div class="ams-fold-body">
+                <p class="ams-field-help">${esc(help)}</p>
+                <div class="ams-field">
+                    <label>新增沟通备注</label>
+                    <textarea class="ams-textarea" rows="3" data-sales-flow-stage-meta="communication_note_draft" placeholder="记录本次和客户沟通的要点、变更原因、承诺事项或内部判断。">${esc(stageMetaValue(record, 'communication_note_draft'))}</textarea>
+                    <div class="ams-sales-note-submit">
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-note-submit">提交备注</button>
+                    </div>
                 </div>
-            </div>
-            <div class="ams-field">
-                <label>新增沟通备注</label>
-                <textarea class="ams-textarea" rows="3" data-sales-flow-stage-meta="communication_note_draft" placeholder="记录本次和客户沟通的要点、变更原因、承诺事项或内部判断。">${esc(stageMetaValue(record, 'communication_note_draft'))}</textarea>
-                <div class="ams-sales-note-submit">
-                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-note-submit">提交备注</button>
-                </div>
-            </div>
-            <details class="ams-fold-card" ${logs.length ? '' : 'open'}>
-                <summary class="ams-fold-summary">
-                    <span>沟通记录列表</span>
-                    <em>${esc(logs.length)} 条</em>
-                </summary>
-                <div class="ams-fold-body">
+                <div class="ams-sales-stage-note-list">
                     ${logs.length
                         ? logs.map((item) => `
                             <article class="ams-note-log-item">
@@ -11619,26 +11614,27 @@ function stageCommunicationSectionMarkup(stageKey = '', record = {}, options = {
                         `).join('')
                         : '<div class="ams-empty">当前节点还没有沟通记录。</div>'}
                 </div>
-            </details>
-        </section>
+            </div>
+        </details>
     `;
 }
 
 function quoteTermsCardMarkup(record = {}) {
     return `
-        <section class="ams-card ams-stage-log-card">
-            <div class="ams-section-head">
-                <div>
-                    <h3>确认条款</h3>
-                    <p>在客户确认报价前，把首付款比例、交付周期、服务边界和其他关键条款写清楚，并同步进入后续签约合同节点。</p>
+        <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold">
+            <summary class="ams-fold-summary">
+                <span>确认条款</span>
+                <em>可展开编辑</em>
+            </summary>
+            <div class="ams-fold-body">
+                <p class="ams-field-help">在客户确认报价前，把首付款比例、交付周期、服务边界和其他关键条款写清楚，并同步进入后续签约合同节点。</p>
+                <div class="ams-field">
+                    <label>报价确认条款</label>
+                    <textarea class="ams-textarea" rows="6" data-sales-flow-stage-meta="quote_terms" placeholder="示例：30% 定金后排产；预计 45 天交付；尾款在出厂验收后支付；质保 12 个月。">${esc(stageMetaValue(record, 'quote_terms'))}</textarea>
                 </div>
+                ${salesFlowActionBarMarkup('<button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-quote-save">保存确认条款</button>', '条款保存后再执行报价确认。')}
             </div>
-            <div class="ams-field">
-                <label>报价确认条款</label>
-                <textarea class="ams-textarea" rows="6" data-sales-flow-stage-meta="quote_terms" placeholder="示例：30% 定金后排产；预计 45 天交付；尾款在出厂验收后支付；质保 12 个月。">${esc(stageMetaValue(record, 'quote_terms'))}</textarea>
-            </div>
-            ${salesFlowActionBarMarkup('<button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-quote-save">保存确认条款</button>', '条款保存后再执行报价确认。')}
-        </section>
+        </details>
     `;
 }
 
@@ -12283,17 +12279,18 @@ function executionStageCardMarkup(stage = {}, options = {}) {
         bodyMarkup = '',
     } = options;
     return `
-        <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
-            <div class="ams-section-head">
-                <div>
-                    <h3>${esc(stage.label)}</h3>
-                    <p>${esc(intro)}</p>
-                </div>
+        <details class="ams-card ams-quote-editor-panel ams-instance-editor-panel ams-fold-card ams-stage-module-fold" open>
+            <summary class="ams-fold-summary">
+                <span>${esc(stage.label)}</span>
+                <em>主模块</em>
+            </summary>
+            <div class="ams-fold-body">
+                <p class="ams-field-help">${esc(intro)}</p>
+                ${metaMarkup}
+                ${bodyMarkup}
                 ${actionsMarkup}
             </div>
-            ${metaMarkup}
-            ${bodyMarkup}
-        </section>
+        </details>
     `;
 }
 
@@ -12361,18 +12358,19 @@ function salesStageContactsCardMarkup(stageKey = '', deal = null) {
         owner_email: deal.owner_email,
     });
     return `
-        <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
-            <div class="ams-section-head">
-                <div>
-                    <h3>节点双负责人</h3>
-                    <p>每个节点至少维护售前与售后两位联系人，便于报价、履约和运维协同。</p>
-                </div>
+        <details class="ams-card ams-quote-editor-panel ams-instance-editor-panel ams-fold-card ams-stage-module-fold">
+            <summary class="ams-fold-summary">
+                <span>节点双负责人</span>
+                <em>售前 / 售后</em>
+            </summary>
+            <div class="ams-fold-body">
+                <p class="ams-field-help">每个节点至少维护售前与售后两位联系人，便于报价、履约和运维协同。</p>
+                ${stageContactFieldsMarkup(stageKey, record)}
                 <div class="ams-row-actions">
                     <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-stage-contacts-save">保存双负责人</button>
                 </div>
             </div>
-            ${stageContactFieldsMarkup(stageKey, record)}
-        </section>
+        </details>
     `;
 }
 

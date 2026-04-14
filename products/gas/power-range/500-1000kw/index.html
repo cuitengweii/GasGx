@@ -97,6 +97,12 @@
 </head>
 <body class="flex flex-col min-h-screen relative">
 
+    <!-- loader-version: 2026-04-15-03 -->
+    <div id="loading-overlay" class="fixed inset-0 z-[100] bg-[#0F0F0F] flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-gas-green mb-4"></div>
+        <div class="text-gas-green text-sm font-bold tracking-widest animate-pulse">LOADING</div>
+    </div>
+
     <div id="ggx-site-header-slot"></div>
 
     <main class="flex-grow pt-24 pb-12 px-4 w-full">
@@ -670,6 +676,16 @@
         async function initData() {
             logDebug("Connecting to Supabase...");
             const { data, error } = await _supabase.from(TABLE_NAME).select('*').order('rated_power_kw', { ascending: false });
+
+            // 无论成功失败，都关闭加载动画（与主路径一致）
+            const loader = document.getElementById('loading-overlay');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 500);
+            }
+
             if (error) { logDebug(`Error: ${error.message}`, true); return; }
             if (!data || data.length === 0) { logDebug(`Connected but table ${TABLE_NAME} is empty.`, true); return; }
             allData = data;

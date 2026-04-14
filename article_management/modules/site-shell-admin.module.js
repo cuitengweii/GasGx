@@ -244,19 +244,7 @@ function isExpanded(key, fallback = false) {
 }
 
 function expandDefaults(config) {
-    const navList = Array.isArray(config.navigation) ? config.navigation : [];
-    setExpanded('site:brand', true);
-    setExpanded('site:shared-text', true);
-    setExpanded('site:home', true);
-    setExpanded('site:about-company', true);
-    setExpanded('site:about-contact', true);
-    if (navList.length) {
-        setExpanded('nav:0', true);
-        if (navList[0]?.type === 'menu') setExpanded('nav:0:children', true);
-        if (navList[0]?.type === 'mega') setExpanded('nav:0:sections', true);
-    }
-    setExpanded('footer:display', true);
-    setExpanded('footer:contact', true);
+    void config;
 }
 
 async function ensureLoaded(forceRefresh = false) {
@@ -724,9 +712,9 @@ function renderMegaSection(section, topIndex, sectionIndex) {
 
 function renderTopNavItem(item, index) {
     const key = `nav:${index}`;
-    const expanded = isExpanded(key, index === 0);
-    const menuListOpen = isExpanded(`${key}:children`, index === 0 && item.type === 'menu');
-    const megaListOpen = isExpanded(`${key}:sections`, index === 0 && item.type === 'mega');
+    const expanded = isExpanded(key, false);
+    const menuListOpen = isExpanded(`${key}:children`, false);
+    const megaListOpen = isExpanded(`${key}:sections`, false);
     const children = Array.isArray(item.children) ? item.children : [];
     const sections = Array.isArray(item.sections) ? item.sections : [];
     return `

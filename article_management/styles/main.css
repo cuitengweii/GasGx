@@ -3668,10 +3668,9 @@ textarea {
 
 .ams-sales-pipeline-track {
     display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(154px, 1fr);
-    gap: 10px;
-    overflow-x: auto;
+    grid-template-columns: repeat(13, minmax(0, 1fr));
+    gap: 8px;
+    overflow-x: hidden;
     overflow-y: hidden;
     padding: 8px 14px 10px;
     max-width: 100%;
@@ -3680,7 +3679,7 @@ textarea {
 }
 
 .ams-sales-pipeline-stage {
-    min-height: 116px;
+    min-height: 108px;
 }
 
 .ams-sales-pipeline-track .ams-sales-pipeline-stage:not(:last-child)::after {
@@ -3704,6 +3703,30 @@ textarea {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
+}
+
+.ams-sales-pipeline-stage.is-overview-filter {
+    cursor: pointer;
+    text-align: left;
+}
+
+.ams-sales-pipeline-stage.is-overview-filter.is-active {
+    border-color: rgba(82, 162, 255, 0.7);
+    background:
+        linear-gradient(180deg, rgba(21, 39, 67, 0.98), rgba(11, 24, 43, 0.99)),
+        radial-gradient(circle at top left, rgba(82, 162, 255, 0.25), transparent 60%);
+    box-shadow: inset 0 0 0 1px rgba(82, 162, 255, 0.26), 0 10px 22px rgba(82, 162, 255, 0.2);
+}
+
+.ams-sales-pipeline-stage.is-overview-filter.is-active::before {
+    background: linear-gradient(90deg, rgba(82, 162, 255, 0.95), rgba(125, 193, 255, 0.82));
+}
+
+@media (max-width: 1560px) {
+    .ams-sales-pipeline-track {
+        grid-template-columns: repeat(7, minmax(180px, 1fr));
+        overflow-x: auto;
+    }
 }
 
 .ams-confirm-dialog[hidden] {
@@ -4532,6 +4555,8 @@ textarea {
     color: #f2f2f2;
     font-size: 13px;
     font-weight: 700;
+    position: relative;
+    padding-right: 32px;
 }
 
 .ams-fold-summary em {
@@ -4540,11 +4565,86 @@ textarea {
     font-size: 12px;
 }
 
+.ams-fold-summary::-webkit-details-marker {
+    display: none;
+}
+
+.ams-fold-summary > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(101, 219, 53, 0.36);
+    background: linear-gradient(180deg, rgba(101, 219, 53, 0.12), rgba(101, 219, 53, 0.04));
+    color: #d7ffd0;
+    box-shadow: inset 0 0 0 1px rgba(101, 219, 53, 0.1);
+}
+
+.ams-fold-summary::after {
+    content: '\f107';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    color: #8be957;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    transition: transform 0.18s ease;
+}
+
+.ams-fold-card[open] > .ams-fold-summary::after {
+    transform: translateY(-50%) rotate(0deg);
+}
+
 .ams-fold-body {
     display: flex;
     flex-direction: column;
     gap: 10px;
     padding: 0 14px 14px;
+}
+
+.ams-stage-module-fold {
+    margin-top: 8px;
+    border-color: rgba(101, 219, 53, 0.16);
+}
+
+.ams-stage-module-fold > .ams-fold-summary {
+    min-height: 38px;
+    box-sizing: border-box;
+    padding: 6px 14px;
+    padding-right: 34px;
+    line-height: 1;
+}
+
+.ams-stage-module-fold > .ams-fold-summary > span {
+    height: 24px;
+    padding: 0 10px;
+    flex: 0 0 auto;
+    font-size: 13px;
+}
+
+.ams-stage-module-fold > .ams-fold-summary > em {
+    line-height: 1;
+    min-width: 64px;
+    text-align: right;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.ams-stage-module-fold[open] .ams-fold-summary {
+    border-bottom: 1px solid rgba(101, 219, 53, 0.12);
+    background: rgba(101, 219, 53, 0.06);
+}
+
+.ams-stage-module-fold:not([open]) .ams-fold-body {
+    display: none;
+}
+
+.ams-sales-stage-note-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .ams-note-log-item {

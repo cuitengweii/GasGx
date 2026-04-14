@@ -43,7 +43,6 @@ import {
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
 import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260327sales03';
-import { renderQuoteBrandsPage, renderQuoteCustomersPage, renderQuoteInstancesPage, renderQuoteProductsPage, renderQuoteRequirementsPage } from './quote-system.module.js?v=20260414quote59';
 import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260414site09';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js?v=20260321admin01';
 
@@ -134,11 +133,6 @@ const ADMIN_PAGE_IDS = new Set([
     'site-footer',
     'admin-users',
     'admin-security',
-    'quote-brands',
-    'quote-requirements',
-    'quote-customers',
-    'quote-products',
-    'quote-instances',
     'articles',
     'editor',
     'recycle',
@@ -1061,9 +1055,8 @@ function navButton(id, label, icon, groupId = '') {
 }
 
 function navGroup(groupId, label, items = [], pages = []) {
-    const containsCurrentPage = Array.isArray(pages) && pages.includes(state.page);
     const savedState = state.navGroupOpen?.[groupId];
-    const isOpen = containsCurrentPage || (typeof savedState === 'boolean' ? savedState : false);
+    const isOpen = typeof savedState === 'boolean' ? savedState : false;
     return `
         <section class="ams-nav-group ${isOpen ? 'is-open' : ''}" data-nav-group="${esc(groupId)}">
             <button type="button" class="ams-nav-group-label" data-nav-group-toggle="${esc(groupId)}">
@@ -1098,13 +1091,6 @@ function renderShell() {
                         navButton('admin-users', '人员管理', 'fa-users-gear', 'system'),
                         navButton('admin-security', '账号安全', 'fa-user-shield', 'system'),
                     ], ['site-navigation', 'site-footer', 'admin-users', 'admin-security'])}
-                    ${navGroup('quotes', 'Quotes', [
-                        navButton('quote-brands', '品牌管理', 'fa-layer-group', 'quotes'),
-                        navButton('quote-products', '产品模板', 'fa-cubes', 'quotes'),
-                        navButton('quote-requirements', '客户线索', 'fa-clipboard-list', 'quotes'),
-                        navButton('quote-customers', '客户跟踪', 'fa-address-book', 'quotes'),
-                        navButton('quote-instances', '报价单管理', 'fa-file-invoice-dollar', 'quotes'),
-                    ], ['quote-brands', 'quote-products', 'quote-requirements', 'quote-customers', 'quote-instances'])}
                     ${navGroup('news', 'News', [
                         navButton('articles', '文章管理', 'fa-file-lines', 'news'),
                         navButton('editor', '新建文章', 'fa-pen-to-square', 'news'),
@@ -1114,6 +1100,29 @@ function renderShell() {
                         navButton('tags', '标签管理', 'fa-tags', 'news'),
                     ], ['articles', 'editor', 'recycle', 'featured', 'queue', 'tags'])}
                 </nav>
+                <div class="ams-sidebar-footer">
+                    <details class="ams-sidebar-user-menu">
+                        <summary class="ams-sidebar-user-badge" data-shell-user-badge>
+                            <span class="ams-sidebar-user-main"><i class="fa-solid fa-user"></i> <strong>${name}</strong></span>
+                            <i class="fa-solid fa-chevron-up ams-sidebar-user-caret"></i>
+                        </summary>
+                        <div class="ams-sidebar-user-panel">
+                            <div class="ams-sidebar-user-panel-head">
+                                <span class="ams-sidebar-user-panel-kicker">Account</span>
+                                <strong>${name}</strong>
+                            </div>
+                            <button id="ams-open-security" class="ams-sidebar-user-item" type="button">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <span>账号安全</span>
+                            </button>
+                            ${canOpenSalesConsole ? `<a class="ams-sidebar-user-item" href="${esc(adminConsoleUrl('dashboard', {}, { entryKind: SALES_ENTRY_KIND }))}"><i class="fa-solid fa-up-right-from-square"></i><span>进入销售工作台</span></a>` : ''}
+                            <button id="ams-signout" class="ams-sidebar-user-item is-danger" type="button">
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                                <span>退出登录</span>
+                            </button>
+                        </div>
+                    </details>
+                </div>
             </aside>
             <main class="ams-main">
                 <header class="ams-header">
@@ -1121,16 +1130,19 @@ function renderShell() {
                         <h1 id="ams-page-title">GasGx 网站管理后台</h1>
                         <p id="ams-page-sub">统一管理主站配置、系统导航、News 内容与推荐位</p>
                     </div>
-                    <div class="ams-user">
-                        ${canOpenSalesConsole ? `<a class="ams-btn ams-btn-muted" href="${esc(adminConsoleUrl('dashboard', {}, { entryKind: SALES_ENTRY_KIND }))}">进入销售工作台</a>` : ''}
-                        <span><i class="fa-solid fa-user"></i> <strong>${name}</strong></span>
-                        <button id="ams-signout" class="ams-btn ams-btn-muted" type="button">退出登录</button>
-                    </div>
                 </header>
                 <section id="ams-content" class="ams-content"><div class="ams-empty">加载中...</div></section>
             </main>
         </div>
     `;
+
+    document.getElementById('ams-open-security')?.addEventListener('click', () => {
+        if (!confirmDiscardEditorChanges()) return;
+        state.page = 'admin-security';
+        state.navGroupOpen.system = true;
+        syncPageToUrl();
+        void renderPage();
+    });
 
     document.getElementById('ams-signout')?.addEventListener('click', async (event) => {
         await withButtonBusy(event.currentTarget, '退出中...', async () => {
@@ -1342,6 +1354,9 @@ function articleRows(rows, recycleMode = false) {
     if (!rows.length) return `<tr><td colspan="${emptyColspan}"><div class="ams-empty">暂无数据。</div></td></tr>`;
     return rows
         .map((row) => {
+            const fullTitle = String(row.main_title || '未命名');
+            const titleGlyphs = Array.from(fullTitle);
+            const titlePreview = titleGlyphs.length > 10 ? `${titleGlyphs.slice(0, 10).join('')}...` : fullTitle;
             const previewUrl = resolveArticlePageUrl(row, row.id);
             const displayId = resolveArticleDisplayId(row);
             const previewAction = previewUrl
@@ -1363,7 +1378,7 @@ function articleRows(rows, recycleMode = false) {
                 <div class="ams-article-cell">
                     ${renderArticleMediaThumb(row)}
                     <div class="ams-article-text">
-                        <strong>${esc(row.main_title || '未命名')}</strong>
+                        <strong title="${esc(fullTitle)}">${esc(titlePreview)}</strong>
                         <div class="ams-footnote">${esc(row.subheading || '')}</div>
                     </div>
                 </div>
@@ -2983,46 +2998,6 @@ async function renderPage() {
             rerender: () => renderPage(),
         });
         else if (state.page === 'admin-security') await renderAdminSecurityPage({
-            user: state.user,
-            setPageHeader,
-            setContent,
-            showToast,
-            withButtonBusy,
-            rerender: () => renderPage(),
-        });
-        else if (state.page === 'quote-brands') await renderQuoteBrandsPage({
-            user: state.user,
-            setPageHeader,
-            setContent,
-            showToast,
-            withButtonBusy,
-            rerender: () => renderPage(),
-        });
-        else if (state.page === 'quote-customers') await renderQuoteCustomersPage({
-            user: state.user,
-            setPageHeader,
-            setContent,
-            showToast,
-            withButtonBusy,
-            rerender: () => renderPage(),
-        });
-        else if (state.page === 'quote-requirements') await renderQuoteRequirementsPage({
-            user: state.user,
-            setPageHeader,
-            setContent,
-            showToast,
-            withButtonBusy,
-            rerender: () => renderPage(),
-        });
-        else if (state.page === 'quote-products') await renderQuoteProductsPage({
-            user: state.user,
-            setPageHeader,
-            setContent,
-            showToast,
-            withButtonBusy,
-            rerender: () => renderPage(),
-        });
-        else if (state.page === 'quote-instances') await renderQuoteInstancesPage({
             user: state.user,
             setPageHeader,
             setContent,
