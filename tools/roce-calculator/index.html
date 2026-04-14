@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx 动力经济核算中枢 v6.2</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Shared Site Shell -->
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gasgx: {
+                            DEFAULT: '#5DD62C', // 主题亮绿
+                            hover: 'rgba(93, 214, 44, 0.15)', // 规范悬停�?
+                            dark: '#0B0E14', // 底层背景
+                            card: '#151A22', // 卡片/弹窗背景
+                            border: 'rgba(255, 255, 255, 0.08)' // 全局边框
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- GasGx-UI-v6.1+ Global Token Takeover -->
+    <style>
+        :root {
+            --bg-base: #0B0E14;
+            --bg-card: #151A22;
+            --border-line: rgba(255, 255, 255, 0.08);
+            --brand-green: #5DD62C;
+            --brand-green-hover: rgba(93, 214, 44, 0.15);
+            --text-main: #E2E8F0;
+            --text-muted: #94A3B8;
+        }
+
+        body { 
+            background-color: var(--bg-base); 
+            color: var(--text-main);
+            font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Helvetica Neue', Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .data-numbers { 
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important; 
+            letter-spacing: -0.5px;
+        }
+
+        .cyber-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-line);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .cyber-divider { border-color: var(--border-line); }
+
+        .table-row {
+            transition: background-color 0.2s ease;
+            border-bottom: 1px solid var(--border-line);
+        }
+        .table-row:hover { background-color: var(--brand-green-hover) !important; }
+
+        /* Range Sliders */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 18px; width: 18px; border-radius: 2px;
+            background: var(--brand-green); cursor: pointer; margin-top: -7px;
+            box-shadow: 0 0 10px rgba(93, 214, 44, 0.4);
+            transform: rotate(45deg);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: var(--border-line); border-radius: 2px;
+        }
+        input[type=range]:focus { outline: none; }
+
+        /* Modal */
+        .cyber-modal-overlay {
+            background: rgba(11, 14, 20, 0.85);
+            backdrop-filter: blur(6px);
+        }
+
+        /* Forms in Modal */
+        .cyber-input {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-line);
+            color: var(--text-main);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            width: 100%;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .cyber-input:focus { outline: none; border-color: var(--brand-green); background: rgba(93, 214, 44, 0.05); }
+        .cyber-select {
+            background: #151A22;
+            border: 1px solid var(--border-line);
+            color: var(--text-main);
+            padding: 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            outline: none;
+        }
+        .cyber-select:focus { border-color: var(--brand-green); }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--brand-green); }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-10 w-full">
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+            
+            <!-- Left Sidebar: Parameters -->
+            <div class="xl:col-span-1 space-y-6">
+                <div class="cyber-card rounded-xl p-6">
+                    <div class="flex items-center mb-6 pb-4 cyber-divider border-b">
+                        <i data-lucide="sliders" class="w-5 h-5 text-gasgx mr-2"></i>
+                        <h2 class="text-sm font-bold text-white uppercase tracking-wider" data-i18n="panelParams">Params Control</h2>
+                    </div>
+
+                    <div class="mb-7">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wide" data-i18n="lblTarget">目标装机规模</label>
+                            <span id="val_kw" class="text-sm font-bold text-gasgx data-numbers">10000 kW</span>
+                        </div>
+                        <input type="range" id="input_kw" min="1000" max="50000" step="1000" value="10000">
+                    </div>
+
+                    <div class="mb-7">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wide" data-i18n="lblElec">售电单价 (USD)</label>
+                            <span id="val_elec" class="text-sm font-bold text-gasgx data-numbers">$0.065</span>
+                        </div>
+                        <input type="range" id="input_elec" min="0.03" max="0.12" step="0.005" value="0.065">
+                        <div class="text-[11px] text-slate-500 mt-1.5 data-numbers flex justify-end" id="val_elec_rmb">�?¥0.468</div>
+                    </div>
+
+                    <div class="mb-7">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wide" data-i18n="lblGas">天然气成�?(USD/mcf)</label>
+                            <span id="val_gas" class="text-sm font-bold text-gasgx data-numbers">$2.50</span>
+                        </div>
+                        <input type="range" id="input_gas" min="1.0" max="6.0" step="0.1" value="2.5">
+                    </div>
+
+                    <div class="mb-5">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wide" data-i18n="lblDown">融资首付比例</label>
+                            <span id="val_down" class="text-sm font-bold text-gasgx data-numbers">30%</span>
+                        </div>
+                        <input type="range" id="input_down" min="10" max="100" step="10" value="30">
+                        <div class="text-[11px] text-slate-500 mt-2 leading-relaxed" data-i18n="txtDownDesc">
+                            * 余款�?年期18%平息核算月供
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gasgx-hover border border-gasgx/30 rounded-lg p-4 flex items-start">
+                    <i data-lucide="terminal" class="w-4 h-4 text-gasgx mr-3 flex-shrink-0 mt-0.5"></i>
+                    <p class="text-xs text-gasgx/90 leading-relaxed font-medium" data-i18n="txtAlert">
+                        模型已扣除维保、月供与燃料成本�?br>
+                        <strong class="text-white">预警协议�?/strong>红色高亮行代表净现金流断�?Negative CF)�?
+                    </p>
+                </div>
+                <div class="cyber-card rounded-xl p-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400" data-i18n="panelConfig">Machine Config</p>
+                            <p class="mt-1 text-xs text-slate-500" data-i18n="panelConfigDesc">Manage model presets used in ROCE calculation.</p>
+                        </div>
+                        <button onclick="openConfigModal()" class="shrink-0 text-xs font-bold text-gasgx hover:text-white transition px-3 py-2 border border-gasgx/50 hover:bg-gasgx/20 rounded uppercase flex items-center shadow-[0_0_8px_rgba(93,214,44,0.2)]">
+                            <i data-lucide="database" class="w-3.5 h-3.5 mr-1.5"></i>
+                            <span data-i18n="navConfig">机型配置</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Dashboard -->
+            <div class="xl:col-span-3 space-y-6">
+                <!-- Top KPI Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div class="cyber-card rounded-xl p-5 flex flex-col justify-between relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-gasgx/5 rounded-bl-full -z-10 group-hover:bg-gasgx/10 transition-colors"></div>
+                        <div class="flex items-center text-slate-400 mb-4">
+                            <i data-lucide="target" class="w-4 h-4 mr-2 text-gasgx"></i>
+                            <span class="text-xs font-bold uppercase tracking-wider" data-i18n="kpiRoce">最佳资本回�?(ROCE)</span>
+                        </div>
+                        <div class="flex items-end justify-between">
+                            <h3 id="kpi_roce_model" class="text-2xl font-bold text-white truncate max-w-[150px]">--</h3>
+                            <span id="kpi_roce_val" class="text-xl font-bold text-gasgx data-numbers drop-shadow-[0_0_8px_rgba(93,214,44,0.5)]">--%</span>
+                        </div>
+                    </div>
+                    <div class="cyber-card rounded-xl p-5 flex flex-col justify-between relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-[#38bdf8]/5 rounded-bl-full -z-10 group-hover:bg-[#38bdf8]/10 transition-colors"></div>
+                        <div class="flex items-center text-slate-400 mb-4">
+                            <i data-lucide="database" class="w-4 h-4 mr-2 text-[#38bdf8]"></i>
+                            <span class="text-xs font-bold uppercase tracking-wider" data-i18n="kpiCash">最高月净造血</span>
+                        </div>
+                        <div class="flex items-end justify-between">
+                            <h3 id="kpi_cash_model" class="text-2xl font-bold text-white truncate max-w-[150px]">--</h3>
+                            <span id="kpi_cash_val" class="text-xl font-bold text-[#38bdf8] data-numbers">--</span>
+                        </div>
+                    </div>
+                    <div class="cyber-card rounded-xl p-5 flex flex-col justify-between relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-[#a78bfa]/5 rounded-bl-full -z-10 group-hover:bg-[#a78bfa]/10 transition-colors"></div>
+                        <div class="flex items-center text-slate-400 mb-4">
+                            <i data-lucide="clock" class="w-4 h-4 mr-2 text-[#a78bfa]"></i>
+                            <span class="text-xs font-bold uppercase tracking-wider" data-i18n="kpiPayback">最快回本周�?/span>
+                        </div>
+                        <div class="flex items-end justify-between">
+                            <h3 id="kpi_payback_model" class="text-2xl font-bold text-white truncate max-w-[150px]">--</h3>
+                            <span id="kpi_payback_val" class="text-xl font-bold text-[#a78bfa] data-numbers">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Chart -->
+                <div class="cyber-card rounded-xl p-6 relative">
+                    <h3 class="text-sm font-bold text-white mb-6 uppercase tracking-wider flex items-center">
+                        <i data-lucide="bar-chart" class="w-4 h-4 mr-2 text-slate-400"></i>
+                        <span data-i18n="chartTitle">ROCE �?现金流综合矩�?/span>
+                    </h3>
+                    <div class="h-[300px] w-full">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Detailed Data Table -->
+                <div class="cyber-card rounded-xl overflow-hidden">
+                    <div class="px-6 py-4 border-b cyber-divider bg-[#1e2532]/50 flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center">
+                            <i data-lucide="server" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            <span data-i18n="tableTitle">全栈财务数据解析 (RMB: �?</span>
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-[#10141a]">
+                                    <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colModel">机型矩阵</th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colUnits">节点规模</th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colDown">首付金额</th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colLease">刚性月�?/th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colCash">月净现金�?/th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colPayback">回本速度</th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colRoce">首年 ROCE</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table_body" class="bg-transparent">
+                                <!-- Data rows injected by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Machine Data Configurator -->
+    <div id="configModal" class="fixed inset-0 cyber-modal-overlay z-[500] hidden flex items-center justify-center p-4">
+        <div class="cyber-card w-full max-w-5xl rounded-xl shadow-2xl border border-gasgx/30 flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b cyber-divider flex justify-between items-center bg-[#151A22]">
+                <h3 class="text-lg font-bold text-white flex items-center">
+                    <i data-lucide="database" class="w-5 h-5 mr-2 text-gasgx"></i> 
+                    <span data-i18n="modTitle">编辑机型数据�?(DB Config)</span>
+                </h3>
+                <button onclick="closeConfigModal()" class="text-slate-400 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-grow bg-[#0f131a]">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
+                        <thead>
+                            <tr class="text-xs text-slate-400 uppercase border-b cyber-divider bg-[#151A22]">
+                                <th class="p-3 font-semibold w-1/4" data-i18n="mColName">机型名称/型号</th>
+                                <th class="p-3 font-semibold" data-i18n="mColPower">功率(kW)</th>
+                                <th class="p-3 font-semibold" data-i18n="mColPrice">机器单价(�?</th>
+                                <th class="p-3 font-semibold" data-i18n="mColGas">满载耗气(m³/h)</th>
+                                <th class="p-3 font-semibold" data-i18n="mColMaint">维保费用(�?</th>
+                                <th class="p-3 font-semibold" data-i18n="mColMType">计费模式</th>
+                                <th class="p-3 font-semibold text-center w-12"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal_table_body" class="divide-y divide-slate-800/50">
+                            <!-- Rows injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <button onclick="addMachineRow()" class="mt-4 text-xs font-bold text-gasgx hover:text-white hover:bg-gasgx/10 border border-dashed border-gasgx/50 p-3 rounded w-full transition uppercase tracking-wider flex justify-center items-center">
+                    <i data-lucide="plus" class="w-4 h-4 mr-1"></i> <span data-i18n="btnAdd">新增机型配置</span>
+                </button>
+            </div>
+            
+            <div class="p-5 border-t cyber-divider flex justify-end space-x-3 bg-[#151A22] rounded-b-xl">
+                <button onclick="closeConfigModal()" class="px-5 py-2 rounded text-xs font-bold text-slate-400 hover:text-white border border-slate-700 hover:bg-slate-800 transition" data-i18n="btnCancel">取消 (CANCEL)</button>
+                <button onclick="saveConfigModal()" class="px-5 py-2 rounded text-xs font-bold bg-gasgx text-black hover:brightness-110 transition shadow-[0_0_12px_rgba(93,214,44,0.3)] flex items-center" data-i18n="btnSave">
+                    <i data-lucide="save" class="w-3.5 h-3.5 mr-1.5 fill-black"></i> 保存并重�?(SAVE & RECALC)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+
+    <script>
+        // Init Icons
+        lucide.createIcons();
+
+        // Constants & Global State
+        const EXCHANGE_RATE = 7.2;
+        const M3_PER_MCF = 28.3168;
+        const HOURS_PER_YEAR = 8000;
+        function normalizeLang(langCandidate) {
+            return String(langCandidate || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+        }
+        function resolveInitialLang() {
+            try {
+                const storedLang = window.localStorage.getItem('gasgx-lang') || window.localStorage.getItem('gas_lang');
+                if (storedLang) return normalizeLang(storedLang);
+            } catch (error) {
+                // Ignore storage failures in restricted environments.
+            }
+            return normalizeLang(document.documentElement.lang || 'zh');
+        }
+        let currentLang = resolveInitialLang();
+        let mainChart;
+
+        // Colors pool for new machines
+        const colorPool = ['#38bdf8', '#5DD62C', '#fbbf24', '#a78bfa', '#f472b6', '#f87171', '#2dd4bf', '#fb923c', '#818cf8'];
+
+        // Machine Models DB (Mutable)
+        let machines = [
+            { id: "WL220", name: "WL220 (N6S9)", power: 220, price: 170000, m1k: 2190, gas_100: 59, isMWM: false, color: '#38bdf8' },
+            { id: "WL300", name: "WL300 (15N)", power: 300, price: 250000, m1k: 4072.5, gas_100: 78, isMWM: false, color: '#5DD62C' },
+            { id: "WL350", name: "WL350 (K19)", power: 350, price: 330000, m1k: 3935, gas_100: 92, isMWM: false, color: '#fbbf24' },
+            { id: "WL700", name: "WL700 (K38)", power: 700, price: 750000, m1k: 7870, gas_100: 184, isMWM: false, color: '#a78bfa' },
+            { id: "WL1000", name: "WL1000 (K50)", power: 1000, price: 1450000, m1k: 12210, gas_100: 251, isMWM: false, color: '#f472b6' },
+            { id: "MWM3016", name: "MWM TCG3016", power: 1000, price: 2500000, annual_maint: 380000, gas_100: 240, isMWM: true, color: '#f87171' }
+        ];
+
+        // i18n Dictionary
+        const dict = {
+            zh: {
+                navConfig: "机型配置",
+                sysOnline: "SYSTEM_ONLINE",
+                roceActive: "ROCE Core Active",
+                panelParams: "Params Control",
+                panelConfig: "Machine Config",
+                panelConfigDesc: "Manage model presets used in ROCE calculation.",
+                lblTarget: "目标装机规模",
+                lblElec: "售电单价 (USD)",
+                lblGas: "天然气成�?(USD/mcf)",
+                lblDown: "融资首付比例",
+                txtDownDesc: "* 余款�?年期18%平息核算月供",
+                txtAlert: "模型已扣除维保、月供与燃料成本�?br><strong class='text-white'>预警协议�?/strong>红色高亮行代表净现金流断�?Negative CF)�?,
+                kpiRoce: "最佳资本回�?(ROCE)",
+                kpiCash: "最高月净造血",
+                kpiPayback: "最快回本周�?,
+                chartTitle: "ROCE �?现金流综合矩�?,
+                tableTitle: "全栈财务数据解析 (RMB: �?",
+                colModel: "机型矩阵",
+                colUnits: "节点规模",
+                colDown: "首付金额",
+                colLease: "刚性月�?,
+                colCash: "月净现金�?,
+                colPayback: "回本速度",
+                colRoce: "首年 ROCE",
+                
+                // units
+                unitU: "�?,
+                unitW: "�?,
+                unitM: "个月",
+                unitHalt: "全线亏损",
+                unitNull: "�?,
+                unitErr: "无法回本",
+                
+                // modal
+                modTitle: "编辑机型数据�?(DB Config)",
+                mColName: "机型名称/型号",
+                mColPower: "功率(kW)",
+                mColPrice: "机器单价(�?",
+                mColGas: "满载耗气(m³/h)",
+                mColMaint: "维保费用(�?",
+                mColMType: "计费模式",
+                btnAdd: "新增机型配置",
+                btnCancel: "取消 (CANCEL)",
+                btnSave: "保存并重�?(SAVE & RECALC)",
+                opt1k: "/ 千小�?,
+                optYr: "/ 包年"
+            },
+            en: {
+                navConfig: "DB Config",
+                sysOnline: "SYS_ONLINE",
+                roceActive: "ROCE CORE",
+                panelParams: "Params Control",
+                panelConfig: "Machine Config",
+                panelConfigDesc: "Manage model presets used in ROCE calculation.",
+                lblTarget: "Target Capacity",
+                lblElec: "Elec Price (USD)",
+                lblGas: "Gas Cost (USD/mcf)",
+                lblDown: "Down Payment %",
+                txtDownDesc: "* Balance financed 3yrs @ 18% flat",
+                txtAlert: "Model deducts O&M, lease & fuel.<br><strong class='text-white'>Alert Protocol:</strong> Red rows = Negative Cash Flow.",
+                kpiRoce: "Best ROCE",
+                kpiCash: "Max Monthly Cash",
+                kpiPayback: "Fastest Payback",
+                chartTitle: "ROCE & Cashflow Matrix",
+                tableTitle: "Financial Analytics Stack (10k RMB)",
+                colModel: "Model Matrix",
+                colUnits: "Nodes",
+                colDown: "Down Pmt",
+                colLease: "Mo. Lease",
+                colCash: "Net Cash/Mo",
+                colPayback: "Payback",
+                colRoce: "Year 1 ROCE",
+                
+                // units
+                unitU: "U",
+                unitW: "w",
+                unitM: " Mo",
+                unitHalt: "SYS_HALT",
+                unitNull: "NULL",
+                unitErr: "ERR_INF",
+
+                // modal
+                modTitle: "Edit Machine Database (DB Config)",
+                mColName: "Model Name",
+                mColPower: "Power(kW)",
+                mColPrice: "Price(RMB)",
+                mColGas: "Gas @100%(m³/h)",
+                mColMaint: "Maint Cost(RMB)",
+                mColMType: "Billing Mode",
+                btnAdd: "Add Machine Config",
+                btnCancel: "CANCEL",
+                btnSave: "SAVE & RECALC",
+                opt1k: "/ 1k hours",
+                optYr: "/ Annual"
+            }
+        };
+
+        // Chart Global Config
+        Chart.defaults.color = '#94A3B8';
+        Chart.defaults.font.family = "'JetBrains Mono', 'Fira Code', monospace";
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.08)';
+
+        // Elements
+        const inputs = {
+            kw: document.getElementById('input_kw'),
+            elec: document.getElementById('input_elec'),
+            gas: document.getElementById('input_gas'),
+            down: document.getElementById('input_down')
+        };
+        const labels = {
+            kw: document.getElementById('val_kw'),
+            elec: document.getElementById('val_elec'),
+            elec_rmb: document.getElementById('val_elec_rmb'),
+            gas: document.getElementById('val_gas'),
+            down: document.getElementById('val_down')
+        };
+        
+        const app = {
+            currentLang,
+            setLanguage(langCandidate) {
+                const nextLang = normalizeLang(langCandidate);
+                currentLang = nextLang;
+                this.currentLang = nextLang;
+                applyTranslations();
+                updateUI();
+            },
+            init() {
+                this.setLanguage(resolveInitialLang());
+            }
+        };
+
+        // i18n Translation Runner
+        function applyTranslations() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[currentLang][key]) {
+                    el.innerHTML = dict[currentLang][key];
+                }
+            });
+            // Update modal selects if open
+            document.querySelectorAll('.select-mtype').forEach(sel => {
+                const val = sel.value;
+                sel.innerHTML = `
+                    <option value="1k">${dict[currentLang].opt1k}</option>
+                    <option value="yr">${dict[currentLang].optYr}</option>
+                `;
+                sel.value = val;
+            });
+        }
+// Calculation Engine
+        function calculateMetrics() {
+            const target_kw = parseFloat(inputs.kw.value);
+            const elec_price_usd = parseFloat(inputs.elec.value);
+            const gas_price_usd = parseFloat(inputs.gas.value);
+            const down_ratio = parseFloat(inputs.down.value) / 100;
+
+            const gas_price_m3_usd = gas_price_usd / M3_PER_MCF;
+            let results = [];
+
+            machines.forEach(m => {
+                const units = Math.ceil(target_kw / m.power);
+                const actual_kw = units * m.power;
+                
+                const total_equip_price = units * m.price;
+                const down_payment = total_equip_price * down_ratio;
+                const financed_amount = total_equip_price - down_payment;
+                
+                const total_repayment = financed_amount * 1.18;
+                const monthly_lease = down_ratio < 1 ? (total_repayment / 36) : 0;
+                
+                const gas_per_kwh_m3 = m.gas_100 / m.power;
+                const gas_cost_kwh_usd = gas_per_kwh_m3 * gas_price_m3_usd;
+                const net_profit_kwh_usd = elec_price_usd - gas_cost_kwh_usd;
+                const net_profit_kwh_rmb = net_profit_kwh_usd * EXCHANGE_RATE;
+                
+                const monthly_gen = (actual_kw * HOURS_PER_YEAR) / 12;
+                const monthly_op_profit = monthly_gen * net_profit_kwh_rmb; 
+                
+                let monthly_maint = 0;
+                if (m.isMWM) {
+                    monthly_maint = units * ((m.annual_maint || 0) / 12);
+                } else {
+                    monthly_maint = units * ((m.m1k || 0) * (HOURS_PER_YEAR / 12) / 1000);
+                }
+                
+                const monthly_net_cash = monthly_op_profit - monthly_maint - monthly_lease;
+                
+                let roce = 0;
+                let payback_months = Infinity;
+                const out_of_pocket = down_ratio === 0 ? total_equip_price : down_payment; 
+                
+                if (monthly_net_cash > 0) {
+                    roce = (monthly_net_cash * 12) / out_of_pocket;
+                    payback_months = out_of_pocket / monthly_net_cash;
+                } else {
+                    roce = (monthly_net_cash * 12) / out_of_pocket; 
+                    payback_months = -1; 
+                }
+
+                results.push({
+                    ...m,
+                    units,
+                    down_payment: down_payment / 10000,
+                    monthly_lease: monthly_lease / 10000,
+                    monthly_net_cash: monthly_net_cash / 10000,
+                    payback_months,
+                    roce: roce * 100
+                });
+            });
+            return results;
+        }
+
+        // Render UI
+        function updateUI() {
+            const t = dict[currentLang];
+
+            // Labels
+            labels.kw.innerText = parseInt(inputs.kw.value).toLocaleString() + " kW";
+            labels.elec.innerText = "$" + parseFloat(inputs.elec.value).toFixed(3);
+            labels.elec_rmb.innerText = `�?¥${(parseFloat(inputs.elec.value) * EXCHANGE_RATE).toFixed(3)}`;
+            labels.gas.innerText = "$" + parseFloat(inputs.gas.value).toFixed(2);
+            labels.down.innerText = inputs.down.value + "%";
+
+            const data = calculateMetrics();
+            const positiveData = data.filter(d => d.monthly_net_cash > 0);
+            
+            // KPIs
+            if (positiveData.length > 0) {
+                const bestRoce = positiveData.reduce((p, c) => (p.roce > c.roce) ? p : c);
+                const bestCash = positiveData.reduce((p, c) => (p.monthly_net_cash > c.monthly_net_cash) ? p : c);
+                const bestPayback = positiveData.reduce((p, c) => (p.payback_months < c.payback_months) ? p : c);
+
+                document.getElementById('kpi_roce_model').innerText = bestRoce.name;
+                document.getElementById('kpi_roce_val').innerText = bestRoce.roce.toFixed(0) + '%';
+                
+                document.getElementById('kpi_cash_model').innerText = bestCash.name;
+                document.getElementById('kpi_cash_val').innerText = bestCash.monthly_net_cash.toFixed(1) + ' ' + t.unitW;
+
+                document.getElementById('kpi_payback_model').innerText = bestPayback.name;
+                document.getElementById('kpi_payback_val').innerText = bestPayback.payback_months.toFixed(1) + t.unitM;
+            } else {
+                document.getElementById('kpi_roce_model').innerText = t.unitHalt;
+                document.getElementById('kpi_roce_val').innerText = "0%";
+                document.getElementById('kpi_cash_model').innerText = t.unitNull;
+                document.getElementById('kpi_cash_val').innerText = "0.0 " + t.unitW;
+                document.getElementById('kpi_payback_model').innerText = t.unitErr;
+                document.getElementById('kpi_payback_val').innerText = "�?;
+            }
+
+            // Table
+            const tbody = document.getElementById('table_body');
+            tbody.innerHTML = '';
+            data.forEach(d => {
+                const isDanger = d.monthly_net_cash < 0;
+                const rowClass = isDanger ? 'table-row bg-red-900/20' : 'table-row';
+                const textClass = isDanger ? 'text-red-400' : 'text-slate-300';
+                const hlClass = isDanger ? 'text-red-500' : 'text-white';
+                
+                const rowHtml = `
+                    <tr class="${rowClass}">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-1.5 h-4 mr-3 rounded-sm" style="background-color: ${d.color}"></div>
+                                <span class="font-bold ${hlClass} tracking-wide text-sm">${d.name}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm ${textClass} data-numbers">${d.units} <span class="text-xs text-slate-500">${t.unitU}</span></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm ${textClass} data-numbers">${d.down_payment.toFixed(1)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm ${textClass} data-numbers">${d.monthly_lease.toFixed(1)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-bold data-numbers ${isDanger ? 'text-red-500' : 'text-[#38bdf8] drop-shadow-[0_0_5px_rgba(56,189,248,0.3)]'}">${d.monthly_net_cash.toFixed(1)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm data-numbers ${isDanger ? 'text-red-500' : 'text-[#a78bfa]'}">${d.payback_months === -1 ? 'ERR' : d.payback_months.toFixed(1)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-bold data-numbers ${isDanger ? 'text-red-500' : 'text-gasgx'}">${d.roce.toFixed(0)}%</td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', rowHtml);
+            });
+
+            updateChart(data, t);
+        }
+
+        // Chart Update
+        function updateChart(data, t) {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            const labels = data.map(d => d.name);
+            const roceData = data.map(d => d.roce);
+            const cashData = data.map(d => d.monthly_net_cash);
+            const bgColors = data.map(d => d.color);
+
+            if (mainChart) mainChart.destroy();
+
+            const titleRoce = currentLang === 'zh' ? '首年 ROCE (%)' : 'Year 1 ROCE (%)';
+            const titleCash = currentLang === 'zh' ? '月净造血 (�?' : 'Mo. Cash (10k)';
+
+            mainChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: titleRoce,
+                            data: roceData,
+                            backgroundColor: bgColors.map(c => c + '33'),
+                            borderColor: bgColors,
+                            borderWidth: 1,
+                            borderRadius: 2,
+                            yAxisID: 'y',
+                            order: 2
+                        },
+                        {
+                            label: titleCash,
+                            data: cashData,
+                            type: 'line',
+                            borderColor: '#ffffff',
+                            backgroundColor: '#ffffff',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#0B0E14',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            tension: 0.1,
+                            yAxisID: 'y1',
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 6, font: { family: "'JetBrains Mono', monospace" } } },
+                        tooltip: {
+                            backgroundColor: 'rgba(11, 14, 20, 0.95)',
+                            titleFont: { size: 13, family: "'JetBrains Mono', monospace" },
+                            bodyFont: { size: 12, family: "'JetBrains Mono', monospace" },
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            padding: 10,
+                            cornerRadius: 4,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.datasetIndex === 0) {
+                                        label += context.parsed.y.toFixed(0) + '%';
+                                    } else {
+                                        label += context.parsed.y.toFixed(1) + ' ' + t.unitW;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            grid: { display: false },
+                            ticks: { font: { family: "'JetBrains Mono', monospace", size: 10 } }
+                        },
+                        y: {
+                            type: 'linear', display: true, position: 'left',
+                            title: { display: true, text: 'ROCE (%)', font: { size: 11, family: "'Inter', sans-serif" } },
+                            grid: { color: 'rgba(255,255,255,0.05)', borderDash: [2, 4] }
+                        },
+                        y1: {
+                            type: 'linear', display: true, position: 'right',
+                            title: { display: true, text: 'Cash Flow', font: { size: 11, family: "'Inter', sans-serif" } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ==========================================
+        // Modal & Data Edit Logic
+        // ==========================================
+        const modal = document.getElementById('configModal');
+        const modalTbody = document.getElementById('modal_table_body');
+
+        function openConfigModal() {
+            renderModalTable();
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+
+        function closeConfigModal() {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function renderModalTable() {
+            modalTbody.innerHTML = '';
+            const t = dict[currentLang];
+            machines.forEach((m, index) => {
+                const maintVal = m.isMWM ? m.annual_maint : m.m1k;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/30 transition";
+                tr.innerHTML = `
+                    <td class="p-3"><input type="text" class="cyber-input text-gasgx font-bold" value="${m.name}" data-idx="${index}" data-field="name"></td>
+                    <td class="p-3"><input type="number" class="cyber-input" value="${m.power}" data-idx="${index}" data-field="power"></td>
+                    <td class="p-3"><input type="number" class="cyber-input" value="${m.price}" data-idx="${index}" data-field="price"></td>
+                    <td class="p-3"><input type="number" class="cyber-input" value="${m.gas_100}" data-idx="${index}" data-field="gas"></td>
+                    <td class="p-3"><input type="number" class="cyber-input text-[#38bdf8]" value="${maintVal}" data-idx="${index}" data-field="maint"></td>
+                    <td class="p-3">
+                        <select class="cyber-select select-mtype text-slate-300" data-idx="${index}" data-field="type">
+                            <option value="1k" ${!m.isMWM ? 'selected' : ''}>${t.opt1k}</option>
+                            <option value="yr" ${m.isMWM ? 'selected' : ''}>${t.optYr}</option>
+                        </select>
+                    </td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteMachineRow(${index})" class="text-slate-500 hover:text-red-500 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                `;
+                modalTbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        function addMachineRow() {
+            const newColor = colorPool[machines.length % colorPool.length];
+            machines.push({
+                id: "NEW_" + Date.now(),
+                name: "New Model",
+                power: 1000,
+                price: 1000000,
+                gas_100: 200,
+                m1k: 5000,
+                annual_maint: 0,
+                isMWM: false,
+                color: newColor
+            });
+            renderModalTable();
+            // Scroll to bottom
+            const container = modalTbody.parentElement.parentElement;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function deleteMachineRow(index) {
+            if (machines.length <= 1) {
+                alert(currentLang==='zh' ? "至少保留一个机型配置�? : "At least one model must remain.");
+                return;
+            }
+            machines.splice(index, 1);
+            renderModalTable();
+        }
+
+        function saveConfigModal() {
+            // Read all inputs from DOM
+            const rows = modalTbody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const idx = row.querySelector('[data-field="name"]').getAttribute('data-idx');
+                const name = row.querySelector('[data-field="name"]').value;
+                const power = parseFloat(row.querySelector('[data-field="power"]').value) || 1;
+                const price = parseFloat(row.querySelector('[data-field="price"]').value) || 0;
+                const gas = parseFloat(row.querySelector('[data-field="gas"]').value) || 0;
+                const maint = parseFloat(row.querySelector('[data-field="maint"]').value) || 0;
+                const type = row.querySelector('[data-field="type"]').value;
+                
+                machines[idx].name = name;
+                machines[idx].id = name.substring(0, 10); // Keep ID short for logic mapping if needed
+                machines[idx].power = power;
+                machines[idx].price = price;
+                machines[idx].gas_100 = gas;
+                
+                if (type === 'yr') {
+                    machines[idx].isMWM = true;
+                    machines[idx].annual_maint = maint;
+                    machines[idx].m1k = 0;
+                } else {
+                    machines[idx].isMWM = false;
+                    machines[idx].m1k = maint;
+                    machines[idx].annual_maint = 0;
+                }
+            });
+
+            closeConfigModal();
+            updateUI();
+        }
+
+        // Event Listeners for interactive sliders
+        Object.values(inputs).forEach(input => {
+            input.addEventListener('input', updateUI);
+        });
+
+        document.addEventListener('gasgx:lang-changed', (event) => {
+            const lang = event && event.detail ? event.detail.lang : undefined;
+            app.setLanguage(lang);
+        });
+
+        const bootAppWithSharedShell = () => {
+            window.app = app;
+            const start = () => {
+                if (app.__sharedBooted) return;
+                app.__sharedBooted = true;
+                app.init();
+            };
+
+            if (window.GasGxSharedUI && window.GasGxSharedUI.mounted) {
+                start();
+            } else {
+                document.addEventListener('gasgx:shared-ui-ready', start, { once: true });
+            }
+        };
+
+        bootAppWithSharedShell();
+
+    </script>
+</body>
+</html>
