@@ -524,6 +524,99 @@
         return path === "/news" || path === "/news/index.html";
     }
 
+    function isUseCasesNavigationItem(item) {
+        const path = normalizeSiteShellNavPath(item && item.path);
+        return path === "/use-cases" || path === "/use-cases/index.html";
+    }
+
+    function normalizeUseCasesSeedGroupKey(value) {
+        const safe = typeof value === "string" ? value.trim().toLowerCase() : "";
+        if (safe === "application" || safe === "applications") return "application";
+        if (safe === "solution" || safe === "solutions") return "solution";
+        return "";
+    }
+
+    function createUseCasesSectionsFromChildren(children) {
+        const safeChildren = Array.isArray(children) ? cloneSiteShellValue(children) : [];
+        const grouped = {
+            application: [],
+            solution: []
+        };
+
+        safeChildren.forEach((child, index) => {
+            const explicitGroup = normalizeUseCasesSeedGroupKey(child && (child.groupKey || child.group));
+            const groupKey = explicitGroup || (index < 4 ? "application" : "solution");
+            if (!grouped[groupKey]) grouped[groupKey] = [];
+            grouped[groupKey].push({
+                title: cloneSiteShellValue(child && child.title || {}),
+                path: child && child.path ? child.path : "",
+                visible: !child || child.visible !== false,
+                target: child && child.target ? child.target : "",
+                rel: child && child.rel ? child.rel : ""
+            });
+        });
+
+        const sections = [];
+        if (grouped.application.length) {
+            sections.push({
+                header: { zh: "应用场景", en: "Use Cases" },
+                visible: true,
+                items: grouped.application
+            });
+        }
+        if (grouped.solution.length) {
+            sections.push({
+                header: { zh: "解决方案", en: "Solutions" },
+                visible: true,
+                items: grouped.solution
+            });
+        }
+        return sections;
+    }
+
+    function ensureUseCasesNavigationItem(item, fallbackItem) {
+        const base = fallbackItem && typeof fallbackItem === "object" ? cloneSiteShellValue(fallbackItem) : {};
+        const source = item && typeof item === "object" ? cloneSiteShellValue(item) : {};
+
+        let sections = [];
+        if (Array.isArray(source.sections) && source.sections.length) {
+            sections = cloneSiteShellValue(source.sections);
+        } else if (Array.isArray(source.children) && source.children.length) {
+            sections = createUseCasesSectionsFromChildren(source.children);
+        } else if (Array.isArray(base.sections) && base.sections.length) {
+            sections = cloneSiteShellValue(base.sections);
+        } else if (Array.isArray(base.children) && base.children.length) {
+            sections = createUseCasesSectionsFromChildren(base.children);
+        }
+
+        return Object.assign({}, base, source, {
+            type: "mega",
+            path: source && source.path ? source.path : (base && base.path ? base.path : "/use-cases"),
+            gridCols: source && source.gridCols ? source.gridCols : (base && base.gridCols ? base.gridCols : "grid-cols-2"),
+            title: Object.assign({}, base && base.title || {}, source && source.title || {}),
+            sections: sections
+        });
+    }
+
+    function ensureUseCasesNavigation(navigation, fallbackNavigation) {
+        const working = Array.isArray(navigation) ? cloneSiteShellValue(navigation) : [];
+        const fallbackList = Array.isArray(fallbackNavigation) ? cloneSiteShellValue(fallbackNavigation) : [];
+        const fallbackUseCases = fallbackList.find((item) => isUseCasesNavigationItem(item));
+
+        let found = false;
+        const normalized = working.map((item) => {
+            if (!isUseCasesNavigationItem(item)) return item;
+            found = true;
+            return ensureUseCasesNavigationItem(item, fallbackUseCases);
+        });
+
+        if (!found && fallbackUseCases) {
+            normalized.push(ensureUseCasesNavigationItem(fallbackUseCases, fallbackUseCases));
+        }
+
+        return normalized;
+    }
+
     function ensureNewsNavigationChildren(children, fallbackChildren) {
         const working = Array.isArray(children) ? cloneSiteShellValue(children) : [];
         const fallbackList = Array.isArray(fallbackChildren) ? cloneSiteShellValue(fallbackChildren) : [];
@@ -658,8 +751,12 @@
     function mergeSiteShellConfig(baseConfig, sourceConfig) {
         const base = baseConfig && typeof baseConfig === "object" ? cloneSiteShellValue(baseConfig) : {};
         const source = sourceConfig && typeof sourceConfig === "object" ? sourceConfig : {};
-        const navigation = ensureNewsNavigation(
+        const navigationWithNews = ensureNewsNavigation(
             Array.isArray(source.navigation) ? source.navigation : (Array.isArray(base.navigation) ? base.navigation : []),
+            Array.isArray(base.navigation) ? base.navigation : []
+        );
+        const navigation = ensureUseCasesNavigation(
+            navigationWithNews,
             Array.isArray(base.navigation) ? base.navigation : []
         );
         return Object.assign({}, base, source, {

@@ -293,6 +293,103 @@ function isNewsNavigationHomeItemSeed(item) {
     return path === '/news' || path === '/news/index.html';
 }
 
+function isUseCasesNavigationItemSeed(item) {
+    const path = normalizeNavigationPath(item?.path);
+    return path === '/use-cases' || path === '/use-cases/index.html';
+}
+
+function normalizeUseCasesGroupKey(value) {
+    const safe = normalizeText(value).toLowerCase();
+    if (safe === 'application' || safe === 'applications') return 'application';
+    if (safe === 'solution' || safe === 'solutions') return 'solution';
+    return '';
+}
+
+function createUseCasesSectionsFromChildren(children = []) {
+    const safeChildren = Array.isArray(children) ? deepClone(children) : [];
+    const groups = {
+        application: [],
+        solution: [],
+    };
+
+    safeChildren.forEach((child, index) => {
+        const groupKey = normalizeUseCasesGroupKey(child?.groupKey || child?.group) || (index < 4 ? 'application' : 'solution');
+        groups[groupKey] = groups[groupKey] || [];
+        groups[groupKey].push({
+            title: toLocalizedLabel(child?.title, child?.label || ''),
+            path: normalizeText(child?.path),
+            visible: child?.visible !== false,
+            target: normalizeText(child?.target),
+            rel: normalizeText(child?.rel),
+        });
+    });
+
+    const sections = [];
+    if (groups.application?.length) {
+        sections.push({
+            header: { zh: '应用场景', en: 'Use Cases' },
+            visible: true,
+            items: groups.application,
+        });
+    }
+    if (groups.solution?.length) {
+        sections.push({
+            header: { zh: '解决方案', en: 'Solutions' },
+            visible: true,
+            items: groups.solution,
+        });
+    }
+    return sections;
+}
+
+function ensureUseCasesNavigationItemSeed(item, fallbackItem = null) {
+    const base = deepClone(isPlainObject(fallbackItem) ? fallbackItem : {});
+    const source = deepClone(isPlainObject(item) ? item : {});
+
+    let sections = [];
+    if (Array.isArray(source.sections) && source.sections.length) {
+        sections = deepClone(source.sections);
+    } else if (Array.isArray(source.children) && source.children.length) {
+        sections = createUseCasesSectionsFromChildren(source.children);
+    } else if (Array.isArray(base.sections) && base.sections.length) {
+        sections = deepClone(base.sections);
+    } else if (Array.isArray(base.children) && base.children.length) {
+        sections = createUseCasesSectionsFromChildren(base.children);
+    }
+
+    return {
+        ...base,
+        ...source,
+        type: 'mega',
+        path: normalizeText(source?.path || base?.path || '/use-cases') || '/use-cases',
+        gridCols: normalizeText(source?.gridCols || base?.gridCols || 'grid-cols-2') || 'grid-cols-2',
+        title: {
+            ...(base?.title || {}),
+            ...(source?.title || {}),
+        },
+        sections,
+    };
+}
+
+function ensureUseCasesNavigationItems(sourceNavigation, fallbackNavigation = []) {
+    const working = Array.isArray(sourceNavigation) ? deepClone(sourceNavigation) : [];
+    const fallbackList = Array.isArray(fallbackNavigation) ? deepClone(fallbackNavigation) : [];
+    const fallbackUseCases = fallbackList.find((item) => isUseCasesNavigationItemSeed(item));
+
+    let found = false;
+    const normalized = working.map((item) => {
+        if (!isUseCasesNavigationItemSeed(item)) return item;
+        found = true;
+        return ensureUseCasesNavigationItemSeed(item, fallbackUseCases);
+    });
+
+    if (!found && fallbackUseCases) {
+        normalized.push(ensureUseCasesNavigationItemSeed(fallbackUseCases, fallbackUseCases));
+    }
+
+    return normalized;
+}
+
 function ensureNewsNavigationChildren(children, fallbackChildren = []) {
     const working = Array.isArray(children) ? deepClone(children) : [];
     const fallbackList = Array.isArray(fallbackChildren) ? deepClone(fallbackChildren) : [];
@@ -579,8 +676,12 @@ function normalizeFooterConfig(source, fallback) {
 export function normalizeSiteShellConfig(config, fallback = EMPTY_SITE_SHELL_CONFIG) {
     const safeSource = isPlainObject(config) ? config : {};
     const safeFallback = isPlainObject(fallback) ? fallback : EMPTY_SITE_SHELL_CONFIG;
-    const navigationSeeds = ensureNewsNavigationItems(
+    const navigationWithNews = ensureNewsNavigationItems(
         Array.isArray(safeSource.navigation) ? safeSource.navigation : Array.isArray(safeFallback.navigation) ? safeFallback.navigation : [],
+        Array.isArray(safeFallback.navigation) ? safeFallback.navigation : [],
+    );
+    const navigationSeeds = ensureUseCasesNavigationItems(
+        navigationWithNews,
         Array.isArray(safeFallback.navigation) ? safeFallback.navigation : [],
     );
     return {
