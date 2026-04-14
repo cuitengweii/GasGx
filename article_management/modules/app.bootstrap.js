@@ -1379,7 +1379,6 @@ function articleRows(rows, recycleMode = false) {
                     ${renderArticleMediaThumb(row)}
                     <div class="ams-article-text">
                         <strong title="${esc(fullTitle)}">${esc(titlePreview)}</strong>
-                        <div class="ams-footnote">${esc(row.subheading || '')}</div>
                     </div>
                 </div>
             </td>

@@ -7631,7 +7631,7 @@ function customerActivityTimelinePanelMarkup(customerId = '') {
     const rows = customerActivityTimelineRows(customerId)
         .filter((item) => filter === 'all' ? true : text(item.actor_type) === filter);
     return `
-        <details class="ams-card ams-sales-activity-panel ams-fold-card ams-stage-module-fold">
+        <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold">
             <summary class="ams-fold-summary">
                 <span>用户行为轨迹</span>
                 <em>${esc(`${rows.length} 条`)}</em>
@@ -7643,9 +7643,9 @@ function customerActivityTimelinePanelMarkup(customerId = '') {
                         <button class="ams-btn ${filter === actorType ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" data-customer-activity-filter="${esc(actorType)}">${esc(actorType === 'all' ? '全部' : SALES_ACTIVITY_ACTOR_LABELS[actorType])}</button>
                     `).join('')}
                 </div>
-            </div>
-            <div class="ams-sales-activity-list">
-                ${rows.length ? rows.map((item) => salesActivityTimelineItemMarkup(item)).join('') : '<div class="ams-empty">当前客户还没有可展示的销售活动。</div>'}
+                <div class="ams-sales-activity-list">
+                    ${rows.length ? rows.map((item) => salesActivityTimelineItemMarkup(item)).join('') : '<div class="ams-empty">当前客户还没有可展示的销售活动。</div>'}
+                </div>
             </div>
         </details>
     `;
@@ -12358,7 +12358,7 @@ function salesStageContactsCardMarkup(stageKey = '', deal = null) {
         owner_email: deal.owner_email,
     });
     return `
-        <details class="ams-card ams-quote-editor-panel ams-instance-editor-panel ams-fold-card ams-stage-module-fold">
+        <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold">
             <summary class="ams-fold-summary">
                 <span>节点双负责人</span>
                 <em>售前 / 售后</em>

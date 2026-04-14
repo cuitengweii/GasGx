@@ -1496,6 +1496,15 @@ textarea {
     min-width: 0;
 }
 
+.ams-article-text strong {
+    display: block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.35;
+}
+
 .ams-media-thumb-wrap {
     position: relative;
     width: 108px;
