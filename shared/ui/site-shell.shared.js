@@ -45,6 +45,12 @@
         MAIN_AUTH_AVATAR_URI_MAP[key] = buildPixelAvatarDataUri(MAIN_AUTH_AVATAR_PRESETS[key]);
     });
     const MAIN_AUTH_FALLBACK_AVATAR = MAIN_AUTH_AVATAR_URI_MAP[MAIN_AUTH_DEFAULT_AVATAR_KEY];
+    const COOKIE_CONSENT_STORAGE_KEY = "ggx_cookie_consent_v1";
+    const COOKIE_CONSENT_COOKIE_NAME = "ggx_cookie_consent";
+    const COOKIE_CONSENT_BANNER_ID = "ggx-cookie-consent-banner";
+    const COOKIE_CONSENT_MAX_AGE_SECONDS = 31536000;
+    const COOKIE_PREFS_STORAGE_KEY = "ggx_cookie_preferences_v1";
+    const COOKIE_PREFS_MODAL_ID = "ggx-cookie-prefs-modal";
     const SHARED_TEXT = {
         en: {
             tagline: "Natural Gas Power Mining Assistant",
@@ -1589,6 +1595,237 @@
 </footer>`;
     }
 
+    function readCookieByName(name) {
+        if (typeof document === "undefined") return null;
+        const cookieStr = document.cookie || "";
+        const entries = cookieStr.split(";");
+        for (let i = 0; i < entries.length; i += 1) {
+            const entry = entries[i].trim();
+            if (!entry) continue;
+            const eqIndex = entry.indexOf("=");
+            const key = eqIndex >= 0 ? entry.slice(0, eqIndex).trim() : entry;
+            if (key !== name) continue;
+            const rawValue = eqIndex >= 0 ? entry.slice(eqIndex + 1) : "";
+            try {
+                return decodeURIComponent(rawValue);
+            } catch (_error) {
+                return rawValue;
+            }
+        }
+        return null;
+    }
+
+    function readCookieConsentChoice() {
+        const cookieValue = readCookieByName(COOKIE_CONSENT_COOKIE_NAME);
+        if (cookieValue === "accepted" || cookieValue === "declined") {
+            try {
+                if (typeof window !== "undefined") window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, cookieValue);
+            } catch (_error) {
+                // Ignore storage errors.
+            }
+            return cookieValue;
+        }
+        if (typeof window === "undefined") return null;
+        try {
+            const value = window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY);
+            return value === "accepted" || value === "declined" ? value : null;
+        } catch (_error) {
+            return null;
+        }
+    }
+
+    function writeCookieConsentChoice(value) {
+        if (value !== "accepted" && value !== "declined") return;
+
+        if (typeof window !== "undefined") {
+            try {
+                window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, value);
+            } catch (_error) {
+                // Ignore storage errors (privacy mode / blocked storage).
+            }
+        }
+
+        if (typeof document !== "undefined") {
+            try {
+                const encodedValue = encodeURIComponent(value);
+                document.cookie = `${COOKIE_CONSENT_COOKIE_NAME}=${encodedValue}; Max-Age=${COOKIE_CONSENT_MAX_AGE_SECONDS}; Path=/; SameSite=Lax`;
+            } catch (_error) {
+                // Ignore cookie write errors.
+            }
+        }
+    }
+
+    function readCookiePreferences() {
+        if (typeof window === "undefined") {
+            return { analytics: false, advertising: false };
+        }
+        try {
+            const raw = window.localStorage.getItem(COOKIE_PREFS_STORAGE_KEY);
+            if (!raw) return { analytics: false, advertising: false };
+            const parsed = JSON.parse(raw);
+            return {
+                analytics: parsed && parsed.analytics === true,
+                advertising: parsed && parsed.advertising === true
+            };
+        } catch (_error) {
+            return { analytics: false, advertising: false };
+        }
+    }
+
+    function writeCookiePreferences(preferences) {
+        if (typeof window === "undefined") return;
+        try {
+            window.localStorage.setItem(COOKIE_PREFS_STORAGE_KEY, JSON.stringify({
+                analytics: !!(preferences && preferences.analytics),
+                advertising: !!(preferences && preferences.advertising)
+            }));
+        } catch (_error) {
+            // Ignore storage errors.
+        }
+    }
+
+    function closeCookiePreferencesModal() {
+        if (typeof document === "undefined") return;
+        const modal = document.getElementById(COOKIE_PREFS_MODAL_ID);
+        if (modal && modal.parentNode) {
+            modal.parentNode.removeChild(modal);
+        }
+    }
+
+    function openCookiePreferencesModal(onSave) {
+        if (typeof document === "undefined") return;
+        closeCookiePreferencesModal();
+        const prefs = readCookiePreferences();
+        const host = document.body || document.documentElement;
+        if (!host) return;
+
+        const modal = document.createElement("section");
+        modal.id = COOKIE_PREFS_MODAL_ID;
+        modal.className = "ggx-cookie-prefs-modal";
+        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-modal", "true");
+        modal.setAttribute("aria-label", "Optional Cookie Preferences");
+        modal.innerHTML = `
+            <div class="ggx-cookie-prefs-backdrop" data-ggx-cookie-close="1"></div>
+            <div class="ggx-cookie-prefs-card">
+                <h4 class="ggx-cookie-prefs-title">Optional Cookies</h4>
+                <p class="ggx-cookie-prefs-subtitle">Strictly necessary cookies are always enabled. Choose optional categories below.</p>
+                <label class="ggx-cookie-prefs-item">
+                    <span>
+                        <strong>Performance & Analytics</strong>
+                        <small>Help us understand traffic and improve product experience.</small>
+                    </span>
+                    <input type="checkbox" data-ggx-pref-key="analytics" ${prefs.analytics ? "checked" : ""}>
+                </label>
+                <label class="ggx-cookie-prefs-item">
+                    <span>
+                        <strong>Advertising Cookies</strong>
+                        <small>Allow targeted content and partner campaign optimization.</small>
+                    </span>
+                    <input type="checkbox" data-ggx-pref-key="advertising" ${prefs.advertising ? "checked" : ""}>
+                </label>
+                <div class="ggx-cookie-prefs-actions">
+                    <button type="button" class="ggx-cookie-consent-btn ggx-cookie-consent-btn-secondary" data-ggx-cookie-save="1">Save Preferences</button>
+                </div>
+            </div>
+        `;
+
+        host.appendChild(modal);
+
+        modal.addEventListener("click", function (event) {
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+            if (target.getAttribute("data-ggx-cookie-close") === "1") {
+                closeCookiePreferencesModal();
+                return;
+            }
+            if (target.getAttribute("data-ggx-cookie-save") === "1") {
+                const analyticsInput = modal.querySelector("[data-ggx-pref-key='analytics']");
+                const advertisingInput = modal.querySelector("[data-ggx-pref-key='advertising']");
+                const nextPrefs = {
+                    analytics: !!(analyticsInput && analyticsInput.checked),
+                    advertising: !!(advertisingInput && advertisingInput.checked)
+                };
+                writeCookiePreferences(nextPrefs);
+                closeCookiePreferencesModal();
+                if (typeof onSave === "function") onSave(nextPrefs);
+            }
+        });
+    }
+
+    function hideCookieConsentBanner() {
+        if (typeof document === "undefined") return;
+        const banner = document.getElementById(COOKIE_CONSENT_BANNER_ID);
+        if (!banner) return;
+
+        banner.classList.remove("ggx-cookie-consent-visible");
+        banner.classList.add("ggx-cookie-consent-hidden");
+
+        window.setTimeout(function () {
+            if (banner.parentNode) banner.parentNode.removeChild(banner);
+        }, 220);
+    }
+
+    function mountCookieConsentBanner() {
+        if (typeof document === "undefined") return;
+        if (isNewsPath()) return;
+        if (document.getElementById(COOKIE_CONSENT_BANNER_ID)) return;
+        if (readCookieConsentChoice()) return;
+
+        const host = document.body || document.documentElement;
+        if (!host) return;
+
+        const banner = document.createElement("section");
+        banner.id = COOKIE_CONSENT_BANNER_ID;
+        banner.className = "ggx-cookie-consent ggx-cookie-consent-hidden";
+        banner.setAttribute("role", "dialog");
+        banner.setAttribute("aria-live", "polite");
+        banner.setAttribute("aria-label", "Cookie Consent");
+        banner.innerHTML = `
+            <div class="ggx-cookie-consent-panel">
+                <h3 class="ggx-cookie-consent-title">Review Your Cookie Preferences</h3>
+                <p class="ggx-cookie-consent-text">
+                    As described in our <a href="/about/app_privacy_policy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>, we use cookies and other tracking technologies (collectively, “Cookies”) when you visit our website.
+                    When these Cookies are set by our partners, they may result in the collection of information about your use of our website by those partners.
+                    Residents of the states of California, Connecticut, Maryland, Texas (Constellation Home or Connect customers), and Nebraska have the right to opt out of the use of these Cookies to the extent they are considered “sales” or “sharing” (i.e., targeted advertising) of personal information under applicable privacy laws.
+                    We offer all individuals the ability to make choices regarding our use of Cookies when we use Cookies to provide you with a more personalized experience, analyze performance and traffic, and for advertising.
+                    You can review your options by clicking on “Optional Cookies” below. Please note you cannot opt out of Strictly Necessary Cookies as they are deployed in order to ensure proper functioning of our website.
+                </p>
+                <div class="ggx-cookie-consent-actions">
+                    <button type="button" class="ggx-cookie-consent-btn ggx-cookie-consent-btn-outline" data-ggx-consent-action="optional">Optional Cookies</button>
+                    <button type="button" class="ggx-cookie-consent-btn ggx-cookie-consent-btn-secondary" data-ggx-consent-action="decline">Reject All</button>
+                    <button type="button" class="ggx-cookie-consent-btn ggx-cookie-consent-btn-primary" data-ggx-consent-action="accept">Accept Cookies</button>
+                </div>
+            </div>
+        `;
+
+        host.appendChild(banner);
+
+        const acceptBtn = banner.querySelector("[data-ggx-consent-action='accept']");
+        const declineBtn = banner.querySelector("[data-ggx-consent-action='decline']");
+        const optionalBtn = banner.querySelector("[data-ggx-consent-action='optional']");
+        const onChoice = function (choice) {
+            writeCookieConsentChoice(choice);
+            hideCookieConsentBanner();
+        };
+
+        if (acceptBtn) acceptBtn.addEventListener("click", function () { onChoice("accepted"); });
+        if (declineBtn) declineBtn.addEventListener("click", function () { onChoice("declined"); });
+        if (optionalBtn) {
+            optionalBtn.addEventListener("click", function () {
+                openCookiePreferencesModal(function (preferences) {
+                    const enabledOptional = !!(preferences.analytics || preferences.advertising);
+                    onChoice(enabledOptional ? "accepted" : "declined");
+                });
+            });
+        }
+
+        window.requestAnimationFrame(function () {
+            banner.classList.remove("ggx-cookie-consent-hidden");
+            banner.classList.add("ggx-cookie-consent-visible");
+        });
+    }
+
     function isNewsPath(pathnameCandidate) {
         const pathname = String(pathnameCandidate || (window.location && window.location.pathname) || "/").toLowerCase();
         return pathname === "/news" || pathname.startsWith("/news/");
@@ -2345,6 +2582,7 @@
             refreshShellNavigation(true);
             syncLanguageUI(getCurrentLang());
             syncPublishedSiteShellConfig();
+            mountCookieConsentBanner();
             return;
         }
 
@@ -2364,6 +2602,7 @@
         refreshShellNavigation(true);
         syncLanguageUI(initialLang);
         state.mounted = true;
+        mountCookieConsentBanner();
 
         document.dispatchEvent(new CustomEvent("gasgx:shared-ui-ready"));
 
@@ -2375,6 +2614,7 @@
             refreshShellNavigation(true);
             syncLanguageUI(getCurrentLang());
             syncPublishedSiteShellConfig();
+            mountCookieConsentBanner();
         }, 0);
     }
 
@@ -2420,12 +2660,14 @@
 
         bindActionDelegation();
         renderFooterOnlySlot();
+        mountCookieConsentBanner();
 
         fetchPublishedSiteShellConfig()
             .then((config) => {
                 if (!config) return null;
                 applySiteShellConfig(config);
                 renderFooterOnlySlot();
+                mountCookieConsentBanner();
                 document.dispatchEvent(new CustomEvent("gasgx:site-shell-config-updated"));
                 return config;
             })
@@ -2459,15 +2701,21 @@
     if (document.readyState === "loading") {
         if (shouldAutoMountShell()) {
             mount();
+        } else {
+            mountCookieConsentBanner();
         }
         document.addEventListener("DOMContentLoaded", function () {
             if (shouldAutoMountShell()) {
                 mount();
+            } else {
+                mountCookieConsentBanner();
             }
         }, { once: true });
     } else {
         if (shouldAutoMountShell()) {
             mount();
+        } else {
+            mountCookieConsentBanner();
         }
     }
 })();

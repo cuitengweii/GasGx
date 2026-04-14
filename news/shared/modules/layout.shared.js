@@ -829,6 +829,8 @@ const COOKIE_CONSENT_STORAGE_KEY = 'ggx_news_cookie_consent_v1';
 const COOKIE_CONSENT_BANNER_ID = 'gsh-cookie-consent-banner';
 const COOKIE_CONSENT_COOKIE_NAME = 'ggx_cookie_consent';
 const COOKIE_CONSENT_MAX_AGE_SECONDS = 31536000;
+const COOKIE_PREFS_STORAGE_KEY = 'ggx_cookie_preferences_v1';
+const COOKIE_PREFS_MODAL_ID = 'gsh-cookie-prefs-modal';
 
 function readCookieByName(name) {
     if (typeof document === 'undefined') return null;
@@ -891,6 +893,103 @@ function writeCookieConsentChoice(value) {
     }
 }
 
+function readCookiePreferences() {
+    if (typeof window === 'undefined') {
+        return { analytics: false, advertising: false };
+    }
+    try {
+        const raw = window.localStorage.getItem(COOKIE_PREFS_STORAGE_KEY);
+        if (!raw) return { analytics: false, advertising: false };
+        const parsed = JSON.parse(raw);
+        return {
+            analytics: parsed && parsed.analytics === true,
+            advertising: parsed && parsed.advertising === true
+        };
+    } catch (_error) {
+        return { analytics: false, advertising: false };
+    }
+}
+
+function writeCookiePreferences(preferences) {
+    if (typeof window === 'undefined') return;
+    try {
+        window.localStorage.setItem(COOKIE_PREFS_STORAGE_KEY, JSON.stringify({
+            analytics: !!(preferences && preferences.analytics),
+            advertising: !!(preferences && preferences.advertising)
+        }));
+    } catch (_error) {
+        // Ignore storage errors.
+    }
+}
+
+function closeCookiePreferencesModal() {
+    if (typeof document === 'undefined') return;
+    const modal = document.getElementById(COOKIE_PREFS_MODAL_ID);
+    if (modal && modal.parentNode) {
+        modal.parentNode.removeChild(modal);
+    }
+}
+
+function openCookiePreferencesModal(onSave) {
+    if (typeof document === 'undefined') return;
+    closeCookiePreferencesModal();
+    const prefs = readCookiePreferences();
+    const host = document.body || document.documentElement;
+    if (!host) return;
+
+    const modal = document.createElement('section');
+    modal.id = COOKIE_PREFS_MODAL_ID;
+    modal.className = 'gsh-cookie-prefs-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Optional Cookie Preferences');
+    modal.innerHTML = `
+        <div class="gsh-cookie-prefs-backdrop" data-gsh-cookie-close="1"></div>
+        <div class="gsh-cookie-prefs-card">
+            <h4 class="gsh-cookie-prefs-title">Optional Cookies</h4>
+            <p class="gsh-cookie-prefs-subtitle">Strictly necessary cookies are always enabled. Choose optional categories below.</p>
+            <label class="gsh-cookie-prefs-item">
+                <span>
+                    <strong>Performance & Analytics</strong>
+                    <small>Help us understand traffic and improve product experience.</small>
+                </span>
+                <input type="checkbox" data-gsh-pref-key="analytics" ${prefs.analytics ? 'checked' : ''}>
+            </label>
+            <label class="gsh-cookie-prefs-item">
+                <span>
+                    <strong>Advertising Cookies</strong>
+                    <small>Allow targeted content and partner campaign optimization.</small>
+                </span>
+                <input type="checkbox" data-gsh-pref-key="advertising" ${prefs.advertising ? 'checked' : ''}>
+            </label>
+            <div class="gsh-cookie-prefs-actions">
+                <button type="button" class="gsh-cookie-consent-btn gsh-cookie-consent-btn-secondary" data-gsh-cookie-save="1">Save Preferences</button>
+            </div>
+        </div>
+    `;
+    host.appendChild(modal);
+
+    modal.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (target.getAttribute('data-gsh-cookie-close') === '1') {
+            closeCookiePreferencesModal();
+            return;
+        }
+        if (target.getAttribute('data-gsh-cookie-save') === '1') {
+            const analyticsInput = modal.querySelector('[data-gsh-pref-key="analytics"]');
+            const advertisingInput = modal.querySelector('[data-gsh-pref-key="advertising"]');
+            const nextPrefs = {
+                analytics: !!(analyticsInput && analyticsInput.checked),
+                advertising: !!(advertisingInput && advertisingInput.checked)
+            };
+            writeCookiePreferences(nextPrefs);
+            closeCookiePreferencesModal();
+            if (typeof onSave === 'function') onSave(nextPrefs);
+        }
+    });
+}
+
 function hideCookieConsentBanner() {
     if (typeof document === 'undefined') return;
     const banner = document.getElementById(COOKIE_CONSENT_BANNER_ID);
@@ -920,13 +1019,18 @@ function mountCookieConsentBanner() {
     banner.setAttribute('aria-label', 'Cookie Consent');
     banner.innerHTML = `
         <div class="gsh-cookie-consent-panel">
+            <h3 class="gsh-cookie-consent-title">Review Your Cookie Preferences</h3>
             <p class="gsh-cookie-consent-text">
-                We use cookies to improve site performance and user experience.
-                See our <a href="/about/app_privacy_policy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+                As described in our <a href="/about/app_privacy_policy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>, we use cookies and other tracking technologies (collectively, “Cookies”) when you visit our website.
+                When these Cookies are set by our partners, they may result in the collection of information about your use of our website by those partners.
+                Residents of the states of California, Connecticut, Maryland, Texas (Constellation Home or Connect customers), and Nebraska have the right to opt out of the use of these Cookies to the extent they are considered “sales” or “sharing” (i.e., targeted advertising) of personal information under applicable privacy laws.
+                We offer all individuals the ability to make choices regarding our use of Cookies when we use Cookies to provide you with a more personalized experience, analyze performance and traffic, and for advertising.
+                You can review your options by clicking on “Optional Cookies” below. Please note you cannot opt out of Strictly Necessary Cookies as they are deployed in order to ensure proper functioning of our website.
             </p>
             <div class="gsh-cookie-consent-actions">
-                <button type="button" class="gsh-cookie-consent-btn gsh-cookie-consent-btn-secondary" data-gsh-consent-action="decline">Decline</button>
-                <button type="button" class="gsh-cookie-consent-btn gsh-cookie-consent-btn-primary" data-gsh-consent-action="accept">Accept</button>
+                <button type="button" class="gsh-cookie-consent-btn gsh-cookie-consent-btn-outline" data-gsh-consent-action="optional">Optional Cookies</button>
+                <button type="button" class="gsh-cookie-consent-btn gsh-cookie-consent-btn-secondary" data-gsh-consent-action="decline">Reject All</button>
+                <button type="button" class="gsh-cookie-consent-btn gsh-cookie-consent-btn-primary" data-gsh-consent-action="accept">Accept Cookies</button>
             </div>
         </div>
     `;
@@ -935,6 +1039,7 @@ function mountCookieConsentBanner() {
 
     const acceptBtn = banner.querySelector('[data-gsh-consent-action="accept"]');
     const declineBtn = banner.querySelector('[data-gsh-consent-action="decline"]');
+    const optionalBtn = banner.querySelector('[data-gsh-consent-action="optional"]');
     const onChoice = (choice) => {
         writeCookieConsentChoice(choice);
         hideCookieConsentBanner();
@@ -945,6 +1050,14 @@ function mountCookieConsentBanner() {
     }
     if (declineBtn) {
         declineBtn.addEventListener('click', () => onChoice('declined'));
+    }
+    if (optionalBtn) {
+        optionalBtn.addEventListener('click', () => {
+            openCookiePreferencesModal((preferences) => {
+                const enabledOptional = !!(preferences.analytics || preferences.advertising);
+                onChoice(enabledOptional ? 'accepted' : 'declined');
+            });
+        });
     }
 
     window.requestAnimationFrame(() => {
@@ -1011,21 +1124,36 @@ function ensureRuntimeNavStyles() {
         .gsh-footer .ggx-connect-grid{display:flex;flex-wrap:wrap;gap:.42rem;justify-content:center;align-items:center}
         @media (min-width:768px){.gsh-footer .ggx-footer-meta-tag{max-width:42rem}}
         @media (min-width:1024px){.gsh-footer .ggx-footer-top-row{flex-wrap:nowrap}.gsh-footer .ggx-connect-grid{flex-wrap:nowrap}}
-        .gsh-cookie-consent{position:fixed;left:0;right:0;bottom:16px;padding:0 16px;display:flex;justify-content:center;pointer-events:none;z-index:85}
-        .gsh-cookie-consent-panel{width:min(980px,100%);pointer-events:auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;background:rgba(8,8,8,.94);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px 16px;backdrop-filter:blur(10px);box-shadow:0 18px 45px rgba(0,0,0,.55)}
-        .gsh-cookie-consent-text{margin:0;flex:1 1 420px;color:#b6b6b6;font-size:12px;line-height:1.55}
-        .gsh-cookie-consent-text a{color:#5dd62c;text-decoration:none}
-        .gsh-cookie-consent-text a:hover{color:#fff}
-        .gsh-cookie-consent-actions{display:flex;align-items:center;gap:8px}
-        .gsh-cookie-consent-btn{border-radius:999px;padding:8px 14px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border:1px solid transparent;cursor:pointer;transition:all .2s ease}
-        .gsh-cookie-consent-btn-secondary{color:#d1d5db;background:rgba(255,255,255,.02);border-color:rgba(255,255,255,.2)}
-        .gsh-cookie-consent-btn-secondary:hover{color:#fff;border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.06)}
-        .gsh-cookie-consent-btn-primary{color:#081204;background:#5dd62c;border-color:#5dd62c}
-        .gsh-cookie-consent-btn-primary:hover{background:#ffffff;border-color:#ffffff}
+        .gsh-cookie-consent{position:fixed;left:0;right:0;bottom:0;padding:0;display:flex;justify-content:center;pointer-events:none;z-index:190}
+        .gsh-cookie-consent-panel{width:min(1720px,100%);pointer-events:auto;display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px;background:rgba(239,239,239,.98);border:1px solid rgba(17,24,39,.28);border-radius:0;padding:18px 22px;backdrop-filter:blur(8px);box-shadow:0 -10px 35px rgba(0,0,0,.28)}
+        .gsh-cookie-consent-title{margin:0;flex:1 1 100%;color:#2b2b2b;font-size:38px;line-height:1.1;font-weight:700}
+        .gsh-cookie-consent-text{margin:0;flex:1 1 780px;color:#3f3f3f;font-size:13px;line-height:1.58}
+        .gsh-cookie-consent-text a{color:#2f6eb8;text-decoration:underline;font-weight:700}
+        .gsh-cookie-consent-text a:hover{color:#1e4f8a}
+        .gsh-cookie-consent-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto}
+        .gsh-cookie-consent-btn{border-radius:4px;padding:11px 18px;font-size:12px;font-weight:700;letter-spacing:.01em;border:1px solid transparent;cursor:pointer;transition:all .2s ease;white-space:nowrap}
+        .gsh-cookie-consent-btn-outline{color:#2f6eb8;background:#fff;border-color:#2f6eb8}
+        .gsh-cookie-consent-btn-outline:hover{background:#eff6ff}
+        .gsh-cookie-consent-btn-secondary{color:#fff;background:#2f6eb8;border-color:#2f6eb8}
+        .gsh-cookie-consent-btn-secondary:hover{background:#255b97;border-color:#255b97}
+        .gsh-cookie-consent-btn-primary{color:#fff;background:#1d5fa8;border-color:#1d5fa8}
+        .gsh-cookie-consent-btn-primary:hover{background:#174d89;border-color:#174d89}
         .gsh-cookie-consent-hidden{opacity:0;transform:translateY(16px)}
         .gsh-cookie-consent-visible{opacity:1;transform:translateY(0)}
         .gsh-cookie-consent-hidden,.gsh-cookie-consent-visible{transition:opacity .2s ease,transform .2s ease}
-        @media (max-width:640px){.gsh-cookie-consent{bottom:10px;padding:0 10px}.gsh-cookie-consent-panel{padding:12px}.gsh-cookie-consent-actions{width:100%}.gsh-cookie-consent-btn{flex:1}}
+        .gsh-cookie-prefs-modal{position:fixed;inset:0;z-index:195;display:flex;align-items:center;justify-content:center;padding:16px}
+        .gsh-cookie-prefs-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+        .gsh-cookie-prefs-card{position:relative;z-index:1;width:min(620px,100%);background:#121212;border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:18px;color:#e5e7eb;display:flex;flex-direction:column;gap:12px;box-shadow:0 18px 45px rgba(0,0,0,.55)}
+        .gsh-cookie-prefs-title{margin:0;font-size:20px;line-height:1.2;color:#fff}
+        .gsh-cookie-prefs-subtitle{margin:0;color:#b6b6b6;font-size:12px;line-height:1.5}
+        .gsh-cookie-prefs-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px;border:1px solid rgba(93,214,44,.25);border-radius:10px;background:rgba(10,10,10,.55)}
+        .gsh-cookie-prefs-item span{display:flex;flex-direction:column;gap:4px}
+        .gsh-cookie-prefs-item strong{font-size:13px;color:#fff}
+        .gsh-cookie-prefs-item small{font-size:11px;line-height:1.45;color:#9ca3af}
+        .gsh-cookie-prefs-item input{width:18px;height:18px;accent-color:#5dd62c;margin-top:2px}
+        .gsh-cookie-prefs-actions{display:flex;justify-content:flex-end}
+        @media (max-width:1100px){.gsh-cookie-consent-panel{border-radius:0;padding:16px}.gsh-cookie-consent-title{font-size:28px}.gsh-cookie-consent-actions{width:100%;margin-left:0}}
+        @media (max-width:640px){.gsh-cookie-consent-title{font-size:22px}.gsh-cookie-consent-text{font-size:12px}.gsh-cookie-consent-btn{flex:1 1 100%;padding:10px 14px}.gsh-cookie-prefs-card{padding:14px}.gsh-cookie-prefs-actions .gsh-cookie-consent-btn{width:100%}}
     `;
 
     document.head.appendChild(style);
