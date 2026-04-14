@@ -1125,17 +1125,17 @@ function ensureRuntimeNavStyles() {
         @media (min-width:768px){.gsh-footer .ggx-footer-meta-tag{max-width:42rem}}
         @media (min-width:1024px){.gsh-footer .ggx-footer-top-row{flex-wrap:nowrap}.gsh-footer .ggx-connect-grid{flex-wrap:nowrap}}
         .gsh-cookie-consent{position:fixed;left:0;right:0;bottom:0;padding:0;display:flex;justify-content:center;pointer-events:none;z-index:190}
-        .gsh-cookie-consent-panel{width:min(1720px,100%);pointer-events:auto;display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px;background:rgba(239,239,239,.98);border:1px solid rgba(17,24,39,.28);border-radius:0;padding:18px 22px;backdrop-filter:blur(8px);box-shadow:0 -10px 35px rgba(0,0,0,.28)}
-        .gsh-cookie-consent-title{margin:0;flex:1 1 100%;color:#2b2b2b;font-size:38px;line-height:1.1;font-weight:700}
-        .gsh-cookie-consent-text{margin:0;flex:1 1 780px;color:#3f3f3f;font-size:13px;line-height:1.58}
+        .gsh-cookie-consent-panel{width:min(1720px,100%);pointer-events:auto;display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px;background:rgba(8,8,8,.96);border:1px solid rgba(93,214,44,.28);border-radius:0;padding:18px 22px;backdrop-filter:blur(8px);box-shadow:0 -10px 35px rgba(0,0,0,.55)}
+        .gsh-cookie-consent-title{margin:0;flex:1 1 100%;color:#f3f4f6;font-size:38px;line-height:1.1;font-weight:700}
+        .gsh-cookie-consent-text{margin:0;flex:1 1 780px;color:#c7c7c7;font-size:13px;line-height:1.58}
         .gsh-cookie-consent-text a{color:#5dd62c;text-decoration:underline;font-weight:700}
         .gsh-cookie-consent-text a:hover{color:#3fa91f}
         .gsh-cookie-consent-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto}
         .gsh-cookie-consent-btn{border-radius:4px;padding:11px 18px;font-size:12px;font-weight:700;letter-spacing:.01em;border:1px solid transparent;cursor:pointer;transition:all .2s ease;white-space:nowrap}
         .gsh-cookie-consent-btn-outline{color:#5dd62c;background:#0f160c;border-color:#5dd62c}
         .gsh-cookie-consent-btn-outline:hover{background:#162112}
-        .gsh-cookie-consent-btn-secondary{color:#081204;background:#7ef34a;border-color:#7ef34a}
-        .gsh-cookie-consent-btn-secondary:hover{background:#8dff5e;border-color:#8dff5e}
+        .gsh-cookie-consent-btn-secondary{color:#d1d5db;background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.24)}
+        .gsh-cookie-consent-btn-secondary:hover{color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.38)}
         .gsh-cookie-consent-btn-primary{color:#081204;background:#5dd62c;border-color:#5dd62c}
         .gsh-cookie-consent-btn-primary:hover{background:#6fe63e;border-color:#6fe63e}
         .gsh-cookie-consent-hidden{opacity:0;transform:translateY(16px)}
