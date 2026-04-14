@@ -1265,6 +1265,8 @@
         document.querySelectorAll("#ggx-site-header-slot .ggx-lang-option").forEach((button) => {
             const active = button.dataset.ggxLang === lang;
             button.classList.toggle("is-active", active);
+            button.setAttribute("aria-pressed", active ? "true" : "false");
+            button.dataset.ggxSelected = active ? "1" : "0";
         });
 
         document.querySelectorAll("#ggx-site-header-slot .ggx-lang-btn-mobile").forEach((button) => {
@@ -1272,6 +1274,7 @@
             button.classList.toggle("text-gas-green", active);
             button.classList.toggle("font-semibold", active);
             button.classList.toggle("text-gray-400", !active);
+            button.setAttribute("aria-pressed", active ? "true" : "false");
         });
 
         if (document.documentElement) {
@@ -1287,7 +1290,7 @@
 
         const app = window.app;
         if (app && typeof app.setLanguage === "function") {
-            app.setLanguage(lang);
+            app.setLanguage(lang, { __fromShell: true });
         } else {
             document.dispatchEvent(new CustomEvent("gasgx:lang-changed", { detail: { lang: lang } }));
         }
@@ -1379,12 +1382,21 @@
         }
 
         const originalSetLanguage = app.setLanguage.bind(app);
-        app.setLanguage = function (langValue) {
+        app.setLanguage = function (langValue, options) {
             const normalizedLang = normalizeLang(langValue || getCurrentLang());
-            const result = originalSetLanguage(normalizedLang);
-            persistLang(normalizedLang);
+            const fromShell = !!(options && typeof options === "object" && options.__fromShell === true);
+            const storedLang = readStoredLang() ? normalizeLang(readStoredLang()) : null;
+
+            // Main-site language is centrally controlled by the header language switcher.
+            // Ignore page-local default language resets (for example setLanguage('en') during page init).
+            const finalLang = (!isNewsPath() && storedLang && !fromShell)
+                ? storedLang
+                : normalizedLang;
+
+            const result = originalSetLanguage(finalLang);
+            persistLang(finalLang);
             refreshShellNavigation(true);
-            syncLanguageUI(normalizedLang);
+            syncLanguageUI(finalLang);
             return result;
         };
         app.__ggxSetLanguageWrapped = true;
