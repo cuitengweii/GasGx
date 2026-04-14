@@ -165,7 +165,7 @@
                             <span id="val_elec" class="text-sm font-bold text-gasgx data-numbers">$0.065</span>
                         </div>
                         <input type="range" id="input_elec" min="0.03" max="0.12" step="0.005" value="0.065">
-                        <div class="text-[11px] text-slate-500 mt-1.5 data-numbers flex justify-end" id="val_elec_rmb">鈮?楼0.468</div>
+                        <div class="text-[11px] text-slate-500 mt-1.5 data-numbers flex justify-end" id="val_elec_rmb">≈ ¥0.468</div>
                     </div>
 
                     <div class="mb-7">
@@ -596,7 +596,7 @@
             // Labels
             labels.kw.innerText = parseInt(inputs.kw.value).toLocaleString() + " kW";
             labels.elec.innerText = "$" + parseFloat(inputs.elec.value).toFixed(3);
-            labels.elec_rmb.innerText = `鈮?楼${(parseFloat(inputs.elec.value) * EXCHANGE_RATE).toFixed(3)}`;
+            labels.elec_rmb.innerText = `≈ ¥${(parseFloat(inputs.elec.value) * EXCHANGE_RATE).toFixed(3)}`;
             labels.gas.innerText = "$" + parseFloat(inputs.gas.value).toFixed(2);
             labels.down.innerText = inputs.down.value + "%";
 
