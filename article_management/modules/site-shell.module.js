@@ -199,12 +199,15 @@ export function toLocalizedLabel(value, fallback = '') {
 }
 
 export function createSiteShellNavChild(seed = {}) {
+    const rawGroupKey = String(seed.groupKey || seed.group || '').trim().toLowerCase();
+    const groupKey = rawGroupKey === 'application' || rawGroupKey === 'solution' ? rawGroupKey : '';
     return {
         title: toLocalizedLabel(seed.title, seed.label || ''),
         path: normalizeText(seed.path),
         visible: seed.visible !== false,
         target: normalizeText(seed.target),
         rel: normalizeText(seed.rel),
+        groupKey,
     };
 }
 
