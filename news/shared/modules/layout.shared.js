@@ -136,7 +136,13 @@ function renderNewsHomeHeader({ idPrefix, appGlobal }) {
                 </div>
                 <div class="flex-1 overflow-hidden relative h-full flex items-center">
                     <div id="${idPrefix}-live-data-container" class="animate-marquee whitespace-nowrap flex items-center gap-12 px-4">
-                        <div class="text-xs font-mono text-gray-600">Initializing Data Stream...</div>
+                        <div class="flex items-center gap-2 text-xs font-mono text-gray-400"><span class="text-purple-400 font-bold">Hashrate</span><span class="text-white font-bold">919 EH/s</span><span class="text-gas-green text-[10px] ml-1">(ATH)</span></div>
+                        <div class="flex items-center gap-2 text-xs font-mono text-gray-400"><span class="text-purple-400 font-bold">Block Time</span><span class="text-white font-bold">10506.53 min</span></div>
+                        <div class="flex items-center gap-2 text-xs font-mono text-gray-400"><span class="text-purple-400 font-bold">BTC</span><span class="text-white font-bold">$71,473</span><span class="text-red-500 text-[10px] ml-1">(24h -1.3%)</span></div>
+                        <div class="flex items-center gap-2 text-xs font-mono text-gray-400"><span class="text-purple-400 font-bold">Henry Hub Gas</span><span class="text-white font-bold">$2.65 / MMBtu</span></div>
+                        <div class="flex items-center gap-2 text-xs font-mono text-gray-400"><span class="text-purple-400 font-bold">Power Cost</span><span class="text-white font-bold">$0.036 / kWh</span></div>
+                        <div class="flex items-center gap-2 text-xs font-mono text-gray-400"><span class="text-purple-400 font-bold">Break-even</span><span class="text-white font-bold">&lt; 43 J/TH</span></div>
+                        <div class="flex items-center gap-2 text-xs font-mono text-gray-400"><span class="text-purple-400 font-bold">Spark Spread</span><span class="text-white font-bold">29.2 $ / MWh</span></div>
                     </div>
                 </div>
             </div>
@@ -1092,6 +1098,9 @@ function ensureRuntimeNavStyles() {
         .gsh-mobile-subnav{margin:.35rem 0 .25rem 1.8rem;padding-left:.75rem;border-left:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;gap:.2rem}
         .gsh-mobile-subnav-link{color:#9ca3af;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;text-decoration:none;padding:4px 0;transition:color .2s ease}
         .gsh-mobile-subnav-link:hover,.gsh-mobile-subnav-link-active{color:#5dd62c}
+        .animate-marquee{display:flex;align-items:center;min-width:max-content;animation:gsh-marquee-scroll 38s linear infinite}
+        .animate-marquee:hover{animation-play-state:paused}
+        @keyframes gsh-marquee-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
         .gsh-footer a{text-decoration:none}
         .gsh-footer ul{list-style:none;margin:0;padding:0}
         .gsh-footer .footer-link{color:#94a3b8;transition:all .2s;font-size:.8rem;white-space:nowrap}

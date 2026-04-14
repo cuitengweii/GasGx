@@ -230,6 +230,49 @@ function applySharedNavState({ page, idPrefix, currentUser, displayName, activeT
     });
 }
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+async function loadLegacyLiveTicker(idPrefix) {
+    const container = document.getElementById(`${idPrefix}-live-data-container`);
+    if (!container || !window.supabase || typeof window.supabase.createClient !== 'function') return;
+
+    try {
+        const client = window.supabase.createClient(DEFAULT_MAIN_AUTH.supabaseUrl, DEFAULT_MAIN_AUTH.supabaseKey);
+        const { data } = await client
+            .from('homepage_scrolling_data')
+            .select('*')
+            .order('sort_order', { ascending: true });
+
+        if (!Array.isArray(data) || data.length === 0) return;
+
+        const html = data
+            .map((item) => {
+                const color = item.status === 'positive'
+                    ? 'text-green-400'
+                    : item.status === 'negative'
+                        ? 'text-red-500'
+                        : 'text-gray-500';
+                const label = escapeHtml(item.label || '--');
+                const value = escapeHtml(item.display_value || '--');
+                const unit = item.unit ? `<span class="text-gray-600 text-[10px]">${escapeHtml(item.unit)}</span>` : '';
+                const extra = item.secondary_text ? `<span class="${color} text-[10px]">${escapeHtml(item.secondary_text)}</span>` : '';
+                return `<div class="flex items-center gap-2 text-xs font-mono text-gray-400 whitespace-nowrap"><span class="text-purple-400 font-bold">${label}</span><span class="text-white font-bold">${value}</span>${unit}${extra}</div>`;
+            })
+            .join('');
+
+        container.innerHTML = `<div class="flex items-center gap-12">${html}</div>`.repeat(2);
+    } catch (error) {
+        console.error('Legacy shell ticker load failed:', error);
+    }
+}
+
 function clearLegacyAuthStorage(authConfig) {
     if (!authConfig) return;
     const helper = window.GasGxMainAuthShared;
@@ -336,6 +379,7 @@ function mountLegacyShell() {
     mountSharedHeader(headerSlot, { page, idPrefix, appGlobal });
     mountSharedFooter(footerSlot, { variant: footerVariant });
     ensureMobileToggleBridge(page, appGlobal, idPrefix);
+    loadLegacyLiveTicker(idPrefix);
     initAuthBridge({ page, idPrefix, activeTitle, activePath });
 }
 

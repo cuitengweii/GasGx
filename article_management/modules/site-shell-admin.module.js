@@ -604,6 +604,7 @@ function renderMenuChild(child, topIndex, childIndex) {
                     </div>
                 </div>
                 <div class="ams-site-tree-actions">
+                    <button class="ams-btn ams-btn-muted" type="button" data-site-action="toggle-expand" data-site-toggle-path="${esc(key)}">${expanded ? '收起编辑' : '编辑'}</button>
                     <button class="ams-btn ams-btn-muted" type="button" data-site-action="move-array-item" data-site-array-path="navigation.${topIndex}.children" data-site-index="${childIndex}" data-site-direction="-1" ${childIndex <= 0 ? 'disabled' : ''}>上移</button>
                     <button class="ams-btn ams-btn-muted" type="button" data-site-action="move-array-item" data-site-array-path="navigation.${topIndex}.children" data-site-index="${childIndex}" data-site-direction="1">下移</button>
                     <button class="ams-btn ams-btn-danger" type="button" data-site-action="delete-array-item" data-site-array-path="navigation.${topIndex}.children" data-site-index="${childIndex}">删除</button>
@@ -629,6 +630,7 @@ function renderMegaItem(item, topIndex, sectionIndex, itemIndex) {
                     </div>
                 </div>
                 <div class="ams-site-tree-actions">
+                    <button class="ams-btn ams-btn-muted" type="button" data-site-action="toggle-expand" data-site-toggle-path="${esc(key)}">${expanded ? '收起编辑' : '编辑'}</button>
                     <button class="ams-btn ams-btn-muted" type="button" data-site-action="move-array-item" data-site-array-path="navigation.${topIndex}.sections.${sectionIndex}.items" data-site-index="${itemIndex}" data-site-direction="-1" ${itemIndex <= 0 ? 'disabled' : ''}>上移</button>
                     <button class="ams-btn ams-btn-muted" type="button" data-site-action="move-array-item" data-site-array-path="navigation.${topIndex}.sections.${sectionIndex}.items" data-site-index="${itemIndex}" data-site-direction="1">下移</button>
                     <button class="ams-btn ams-btn-danger" type="button" data-site-action="delete-array-item" data-site-array-path="navigation.${topIndex}.sections.${sectionIndex}.items" data-site-index="${itemIndex}">删除</button>

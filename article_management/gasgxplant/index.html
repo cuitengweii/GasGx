@@ -1,0 +1,1740 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GasGx 发动机巡检工作台 - 赛博工业版</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <!-- 引入科技感无衬线英文字体与等宽数据字体 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* --------------------------------------------------------
+       GasGx-UI-v6.0 - 宏观架构与全量规范版 
+       设计语言: 赛博工业 (Cyber-Industrial) / 科技风 (Tech-Driven)
+       -------------------------------------------------------- */
+    :root {
+      /* 核心底色 */
+      --bg-main: #0B0E14;        /* 全局深色底色 */
+      --bg-card: #12161F;        /* 面板底色 */
+      --bg-input: #1A202C;       /* 输入框/内部块底色 */
+      
+      /* 线条与边框 */
+      --border-line: #2A3441;    /* 统一边框色 */
+      --border-light: #374558;   /* 较浅的分割线 */
+      
+      /* 核心品牌色 (极光绿) 与状态色 */
+      --accent-aurora: #5DD62C;  /* 规范指定极光绿 */
+      --accent-hover: rgba(93, 214, 44, 0.15); /* 统一交互底色 */
+      --accent-glow: rgba(93, 214, 44, 0.3);
+      --warn: #FF9F0A;           /* 赛博风警示黄 */
+      --danger: #FF453A;         /* 赛博风危险红 */
+      --info: #0A84FF;           /* 科技蓝 */
+      
+      /* 字体颜色 */
+      --text-main: #E2E8F0;      /* 主文本色 */
+      --text-muted: #8B9BB4;     /* 弱化文本色 */
+      --text-dark: #000000;      /* 反色文本 (用于极光绿背景上) */
+
+      --shadow-glow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border-line);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    /* 滚动条全局覆写 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-main);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-aurora);
+    }
+
+    body {
+      margin: 0;
+      color: var(--text-main);
+      /* 全局字体建议：英文无衬线优先，中文系统黑体垫底 */
+      font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: var(--bg-main);
+      /* 赛博工业网格/光晕背景 */
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(93, 214, 44, 0.05), transparent 30%),
+        radial-gradient(circle at 90% 80%, rgba(10, 132, 255, 0.04), transparent 30%);
+      min-height: 100vh;
+    }
+
+    /* 数据/仪表盘特效数字专用类 */
+    .data-numbers {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      letter-spacing: 0.5px;
+    }
+
+    .wrap {
+      max-width: 1680px;
+      margin: 0 auto;
+      padding: 24px 24px 40px;
+    }
+
+    .header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border-line);
+      padding-bottom: 16px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      line-height: 1.2;
+      color: #FFFFFF;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .title::before {
+      content: "";
+      display: block;
+      width: 6px;
+      height: 28px;
+      background: var(--accent-aurora);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--text-muted);
+      font-size: 13px;
+      max-width: 920px;
+      line-height: 1.5;
+    }
+
+    .hint {
+      background: rgba(10, 132, 255, 0.1);
+      border: 1px solid var(--info);
+      color: var(--info);
+      font-size: 12px;
+      border-radius: 4px;
+      padding: 6px 12px;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .header-tools {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .lang-switch {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--border-line);
+      border-radius: 4px;
+      overflow: hidden;
+      background: var(--bg-input);
+    }
+
+    .lang-switch button {
+      border: 0;
+      border-right: 1px solid var(--border-line);
+      border-radius: 0;
+      padding: 6px 10px;
+      font-size: 12px;
+      min-width: 52px;
+      background: transparent;
+      color: var(--text-muted);
+    }
+
+    .lang-switch button:last-child {
+      border-right: 0;
+    }
+
+    .lang-switch button.active {
+      color: var(--text-dark);
+      background: var(--accent-aurora);
+      font-weight: 700;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-line);
+      border-radius: 6px;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .controls {
+      padding: 18px;
+      position: sticky;
+      top: 16px;
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* 全局表单组件覆写 */
+    input[type="text"],
+    input[type="datetime-local"],
+    select {
+      width: 100%;
+      border: 1px solid var(--border-line);
+      border-radius: 4px;
+      padding: 8px 12px;
+      outline: none;
+      color: var(--text-main);
+      background: var(--bg-input);
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    input[type="datetime-local"].data-numbers {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* 使用 datetime-local 时的图标反色处理以适应暗色背景 */
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) opacity(0.6);
+      cursor: pointer;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--accent-aurora);
+      box-shadow: 0 0 0 2px var(--accent-hover);
+      background: rgba(93, 214, 44, 0.05);
+    }
+
+    .inline-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+    }
+
+    .inline-grid > div {
+      min-width: 0;
+    }
+
+    .inline-grid label {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    /* 全局按钮规范 */
+    button {
+      border: 1px solid var(--border-line);
+      border-radius: 4px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--text-main);
+      background: var(--bg-input);
+      transition: all 0.2s ease;
+      font-family: inherit;
+      font-size: 13px;
+    }
+
+    button:hover {
+      border-color: var(--accent-aurora);
+      background: var(--accent-hover);
+      color: var(--accent-aurora);
+    }
+
+    .btn-primary {
+      background: rgba(93, 214, 44, 0.1);
+      color: var(--accent-aurora);
+      border-color: var(--accent-aurora);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-aurora);
+      color: var(--text-dark);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .preset-btn {
+      text-align: left;
+      font-size: 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-line);
+      color: var(--text-muted);
+      min-height: 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px;
+    }
+
+    .preset-btn:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-aurora);
+    }
+
+    .preset-btn.active {
+      background: var(--accent-hover);
+      border-color: var(--accent-aurora);
+      color: var(--accent-aurora);
+      box-shadow: inset 2px 0 0 var(--accent-aurora);
+    }
+
+    .preset-btn.active .preset-title {
+      color: var(--accent-aurora);
+    }
+
+    .preset-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .preset-desc {
+      font-size: 11px;
+      opacity: 0.8;
+      line-height: 1.3;
+    }
+
+    .param-tools {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+
+    .param-tools button {
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+
+    .param-wrap {
+      border: 1px solid var(--border-line);
+      border-radius: 4px;
+      padding: 8px;
+      max-height: 300px;
+      overflow: auto;
+      background: var(--bg-input);
+    }
+
+    .cat {
+      margin-bottom: 12px;
+    }
+
+    .cat-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 4px;
+    }
+
+    .param-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      padding: 6px 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    /* 悬停统一交互底色 */
+    .param-item:hover {
+      background: var(--accent-hover);
+    }
+
+    .param-item input[type="checkbox"] {
+      accent-color: var(--accent-aurora);
+      cursor: pointer;
+    }
+
+    .param-item small {
+      margin-left: auto;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .error {
+      margin-top: 12px;
+      min-height: 18px;
+      color: var(--danger);
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .main {
+      display: grid;
+      gap: 16px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border-radius: 6px;
+      border: 1px solid var(--border-line);
+      padding: 16px;
+      background: var(--bg-input);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    
+    .card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--border-light);
+    }
+
+    .card .k {
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card .v {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .card .s {
+      color: var(--text-muted);
+      font-size: 11px;
+      margin-top: 8px;
+    }
+
+    .card.score::before { background: var(--accent-aurora); box-shadow: 0 0 10px var(--accent-aurora); }
+    .card.score .v { color: var(--accent-aurora); text-shadow: 0 0 12px var(--accent-glow); }
+    
+    .card.warn::before { background: var(--warn); box-shadow: 0 0 10px rgba(255,159,10,0.3); }
+    .card.warn .v { color: var(--warn); }
+    
+    .card.danger::before { background: var(--danger); box-shadow: 0 0 10px rgba(255,69,58,0.3); }
+    .card.danger .v { color: var(--danger); }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .box {
+      padding: 16px;
+    }
+
+    .box h3 {
+      margin: 0 0 12px;
+      font-size: 14px;
+      letter-spacing: 1px;
+      color: var(--text-main);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .box h3::before {
+      content: ">_";
+      color: var(--accent-aurora);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+    }
+
+    .list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      max-height: 240px;
+      overflow: auto;
+    }
+
+    .list li {
+      border-bottom: 1px solid var(--border-light);
+      padding: 10px 4px;
+      font-size: 13px;
+      line-height: 1.5;
+      transition: background 0.2s;
+    }
+
+    .list li:hover {
+      background: var(--accent-hover);
+    }
+
+    .list li:last-child {
+      border-bottom: none;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 2px;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-right: 8px;
+      vertical-align: middle;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .badge.warn {
+      color: var(--warn);
+      background: rgba(255, 159, 10, 0.1);
+      border: 1px solid rgba(255, 159, 10, 0.3);
+    }
+
+    .badge.critical {
+      color: var(--danger);
+      background: rgba(255, 69, 58, 0.1);
+      border: 1px solid rgba(255, 69, 58, 0.3);
+    }
+
+    .badge.info {
+      color: var(--accent-aurora);
+      background: rgba(93, 214, 44, 0.1);
+      border: 1px solid rgba(93, 214, 44, 0.3);
+    }
+
+    .chart-box {
+      padding: 16px;
+    }
+
+    .chart-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+    
+    .chart-head strong {
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 14px;
+    }
+
+    .meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .meta span {
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    #chart {
+      width: 100%;
+      height: 480px;
+    }
+
+    .table-box {
+      padding: 0;
+      overflow: auto;
+      border: 1px solid var(--border-line);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 900px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--border-line);
+      padding: 10px 16px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    /* 表格行交互底色 */
+    tbody tr {
+      transition: background 0.2s ease;
+    }
+    tbody tr:hover {
+      background: var(--accent-hover);
+    }
+
+    th {
+      color: var(--text-muted);
+      background: var(--bg-input);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(4, 7, 11, 0.52);
+      backdrop-filter: blur(2px);
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .loading-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .loading-panel {
+      background: rgba(18, 22, 31, 0.98);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 14px 16px;
+      min-width: 260px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .loading-spinner {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(93, 214, 44, 0.25);
+      border-top-color: var(--accent-aurora);
+      animation: spin 0.8s linear infinite;
+      flex: 0 0 auto;
+    }
+
+    #loadingText {
+      font-size: 13px;
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 1400px) {
+      .cards {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .controls {
+        max-height: none;
+        position: static;
+      }
+      .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .split {
+        grid-template-columns: 1fr;
+      }
+      .header-tools {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="header">
+      <div>
+        <h1 class="title"><span id="titleText">发动机巡检工作台</span> <span id="readyTag" style="font-size: 14px; font-weight: 500; font-family: 'JetBrains Mono', monospace; color: var(--accent-aurora);">[ SYS.OP.READY ]</span></h1>
+        <p id="subtitleText" class="subtitle">
+          面向工程师的快速排障界面：按设备与时间范围筛选，结合生命体征评分、异常信号、告警事件与多参数曲线，尽快定位问题来源。
+        </p>
+      </div>
+      <div class="header-tools">
+        <span id="headerHint" class="hint">THRESHOLD_MAPPING: NORMALIZED_ON // 阈值按现场规则实时调优</span>
+        <div id="langSwitch" class="lang-switch" aria-label="language switch">
+          <button type="button" data-lang="zh">中文</button>
+          <button type="button" data-lang="en">EN</button>
+          <button type="button" data-lang="ru">RU</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="layout">
+      <!-- 控制面板 -->
+      <aside class="panel controls">
+        <div class="field">
+          <label id="labelDevice" for="deviceSelect">选择监控终端 (Device UUID)</label>
+          <select id="deviceSelect" class="data-numbers"></select>
+        </div>
+
+        <div class="field inline-grid">
+          <div>
+            <label id="labelStart" for="startInput">起始时间窗</label>
+            <input id="startInput" type="datetime-local" class="data-numbers" />
+          </div>
+          <div>
+            <label id="labelEnd" for="endInput">结束时间窗</label>
+            <input id="endInput" type="datetime-local" class="data-numbers" />
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button data-hours="6">RECENT 6H</button>
+          <button data-hours="24">RECENT 24H</button>
+          <button data-hours="72">RECENT 72H</button>
+          <button data-hours="168">RECENT 7D</button>
+        </div>
+
+        <div class="field" style="margin-top: 24px;">
+          <label id="labelPresets">快速巡检预设集</label>
+          <div id="presetGrid" class="preset-grid"></div>
+        </div>
+
+        <div class="field">
+          <label id="labelParamSearch" for="paramSearch">遥测参数筛选 (Telemetry Search)</label>
+          <input id="paramSearch" type="text" placeholder="输入关键字 (如 Temp / Pressure)" />
+          <div class="param-tools">
+            <button id="selectAllBtn" type="button">SELECT_ALL</button>
+            <button id="clearBtn" type="button">CLEAR</button>
+            <button id="coreBtn" type="button">CORE_VITALS</button>
+          </div>
+          <div id="paramWrap" class="param-wrap"></div>
+        </div>
+
+        <div class="btn-row" style="margin-top: 24px;">
+          <button id="refreshBtn" class="btn-primary" style="flex: 1;" type="button">执行诊断与曲线生成</button>
+          <button id="normalizeBtn" type="button">数据标准化: ON</button>
+        </div>
+
+        <div id="errorMsg" class="error"></div>
+      </aside>
+
+      <!-- 主视图 -->
+      <section class="main">
+        <!-- 核心指标卡片 -->
+        <div id="cards" class="cards"></div>
+
+        <!-- 诊断列表与告警列表 -->
+        <div class="split">
+          <article class="panel box">
+            <h3 id="titleFindings">系统级诊断结论</h3>
+            <ul id="findingList" class="list"></ul>
+          </article>
+          <article class="panel box">
+            <h3 id="titleAlarms">异常波形与告警事件</h3>
+            <ul id="alarmList" class="list"></ul>
+          </article>
+        </div>
+
+        <!-- 曲线视图 -->
+        <article class="panel chart-box">
+          <div class="chart-head">
+            <strong id="titleChart">多参数聚合波形分析</strong>
+            <div class="meta">
+              <span id="metaDevice">DEV: -</span>
+              <span id="metaRange">RANGE: -</span>
+              <span id="metaPoints">POINTS: 0</span>
+            </div>
+          </div>
+          <div id="chart"></div>
+        </article>
+
+        <!-- 数据矩阵表 -->
+        <article class="panel table-box">
+          <table>
+            <thead>
+              <tr>
+                <th id="thCategory">分类 (Cat)</th>
+                <th id="thKey">参数键名 (Telemetry Key)</th>
+                <th id="thLatest">最新切片值 (Latest)</th>
+                <th id="thDelta">波动增量 (Delta)</th>
+                <th id="thRange">安全区间 (Min~Max)</th>
+                <th id="thSamples">样本容量 (N)</th>
+                <th id="thTimestamp">时间戳 (Timestamp)</th>
+                <th id="thNote">备注说明 (Note)</th>
+              </tr>
+            </thead>
+            <tbody id="metricBody"></tbody>
+          </table>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <div id="loadingOverlay" class="loading-overlay" hidden>
+    <div class="loading-panel">
+      <div class="loading-spinner"></div>
+      <div id="loadingText">LOADING...</div>
+    </div>
+  </div>
+
+  <script>
+    const I18N = {
+      zh: {
+        page_title: "GasGx 发动机巡检工作台 - 赛博工业",
+        title_main: "发动机巡检工作台",
+        subtitle: "面向工程师的快速排障界面：按设备与时间范围筛选，结合生命体征评分、异常信号、告警事件与多参数曲线，尽快定位问题来源。",
+        hint: "THRESHOLD_MAPPING: NORMALIZED_ON // 阈值按现场规则实时调优",
+        label_device: "选择监控终端 (Device UUID)",
+        label_start: "起始时间窗",
+        label_end: "结束时间窗",
+        label_presets: "快速巡检预设集",
+        label_param_search: "遥测参数筛选 (Telemetry Search)",
+        param_placeholder: "输入关键字 (如 Temp / Pressure)",
+        btn_recent_6h: "最近 6 小时",
+        btn_recent_24h: "最近 24 小时",
+        btn_recent_72h: "最近 72 小时",
+        btn_recent_7d: "最近 7 天",
+        btn_select_all: "全选",
+        btn_clear: "清空",
+        btn_core: "核心生命体征",
+        btn_refresh: "执行诊断与曲线生成",
+        btn_refresh_loading: "正在加载...",
+        btn_normalize_on: "数据标准化: 开",
+        btn_normalize_off: "数据标准化: 关",
+        section_findings: "系统级诊断结论",
+        section_alarms: "异常波形与告警事件",
+        title_chart: "多参数聚合波形分析",
+        th_category: "分类 (Cat)",
+        th_key: "参数键名 (Telemetry Key)",
+        th_latest: "最新切片值 (Latest)",
+        th_delta: "波动增量 (Delta)",
+        th_range: "安全区间 (Min~Max)",
+        th_samples: "样本容量 (N)",
+        th_timestamp: "时间戳 (Timestamp)",
+        th_note: "备注说明 (Note)",
+        meta_dev: "设备",
+        meta_range: "时间",
+        meta_points: "点位",
+        card_health_key: "系统健康度评估",
+        card_status_key: "终端运行态",
+        card_alarm_key: "未处理告警事件",
+        card_delay_key: "数据切片延迟",
+        card_anomaly_key: "统计学异常偏移",
+        card_health_sub_prefix: "安全等级",
+        card_status_sub: "基础运转/功率正常",
+        card_alarm_sub: "需优先排查干预项",
+        card_delay_sub: "距上一次同步的心跳差",
+        card_anomaly_sub: "超 Z-Score 阈值信号",
+        no_param_match: "未匹配到相关遥测参数。",
+        no_findings: "当前数据窗口内全部核心遥测正常。",
+        no_alarm: "当前窗口无异常信号输入。",
+        current: "当前值",
+        threshold: "阈值",
+        average: "均值",
+        err_prefix: "系统错误",
+        fatal_prefix: "致命错误",
+        loading_chart: "正在加载曲线...",
+        loading_init: "正在初始化遥测链路...",
+        empty_no_select: "当前未选择参数",
+        empty_no_data: "当前时间窗暂无可绘制数据",
+        empty_offline: "连接中断 / 服务离线",
+        device_err: "ERR",
+        device_delay: "DELAY",
+      },
+      en: {
+        page_title: "GasGx Engine Inspection Workstation - Cyber Industrial",
+        title_main: "Engine Inspection Workstation",
+        subtitle: "Engineer-first troubleshooting panel: filter by device and time range, then inspect health score, anomaly signals, alarms, and multi-parameter trends.",
+        hint: "THRESHOLD_MAPPING: NORMALIZED_ON // Tune thresholds by site rules",
+        label_device: "Select Device (Device UUID)",
+        label_start: "Start Time",
+        label_end: "End Time",
+        label_presets: "Quick Inspection Presets",
+        label_param_search: "Telemetry Parameter Filter",
+        param_placeholder: "Type keywords (e.g. Temp / Pressure)",
+        btn_recent_6h: "Recent 6H",
+        btn_recent_24h: "Recent 24H",
+        btn_recent_72h: "Recent 72H",
+        btn_recent_7d: "Recent 7D",
+        btn_select_all: "SELECT_ALL",
+        btn_clear: "CLEAR",
+        btn_core: "CORE_VITALS",
+        btn_refresh: "Run Diagnostics & Trends",
+        btn_refresh_loading: "Loading...",
+        btn_normalize_on: "Normalize: ON",
+        btn_normalize_off: "Normalize: OFF",
+        section_findings: "System Diagnostics",
+        section_alarms: "Anomalies & Alarm Events",
+        title_chart: "Multi-Parameter Trend Analysis",
+        th_category: "Category",
+        th_key: "Telemetry Key",
+        th_latest: "Latest",
+        th_delta: "Delta",
+        th_range: "Min~Max",
+        th_samples: "Samples",
+        th_timestamp: "Timestamp",
+        th_note: "Note",
+        meta_dev: "DEV",
+        meta_range: "RANGE",
+        meta_points: "POINTS",
+        card_health_key: "Health Score",
+        card_status_key: "Running Status",
+        card_alarm_key: "Open Alarms",
+        card_delay_key: "Data Delay",
+        card_anomaly_key: "Statistical Anomalies",
+        card_health_sub_prefix: "Level",
+        card_status_sub: "Runtime baseline",
+        card_alarm_sub: "Priority check",
+        card_delay_sub: "Heartbeat gap",
+        card_anomaly_sub: "Z-Score signals",
+        no_param_match: "No telemetry parameter matched your keyword.",
+        no_findings: "No critical finding in this time window.",
+        no_alarm: "No anomaly signal or alarm in this window.",
+        current: "Current",
+        threshold: "Threshold",
+        average: "Avg",
+        err_prefix: "System Error",
+        fatal_prefix: "Fatal",
+        loading_chart: "Loading trends...",
+        loading_init: "Initializing telemetry link...",
+        empty_no_select: "No parameter selected",
+        empty_no_data: "No points in selected range",
+        empty_offline: "Connection lost / service offline",
+        device_err: "ERR",
+        device_delay: "DELAY",
+      },
+      ru: {
+        page_title: "GasGx Станция диагностики двигателя - Cyber Industrial",
+        title_main: "Станция диагностики двигателя",
+        subtitle: "Инженерный режим быстрой диагностики: фильтр по устройству и периоду, затем анализ оценки ресурса, аномалий, тревог и трендов.",
+        hint: "THRESHOLD_MAPPING: NORMALIZED_ON // Настройка порогов по правилам площадки",
+        label_device: "Выбор устройства (Device UUID)",
+        label_start: "Начало периода",
+        label_end: "Конец периода",
+        label_presets: "Быстрые пресеты диагностики",
+        label_param_search: "Фильтр телеметрии",
+        param_placeholder: "Введите ключевое слово (например Temp / Pressure)",
+        btn_recent_6h: "Последние 6ч",
+        btn_recent_24h: "Последние 24ч",
+        btn_recent_72h: "Последние 72ч",
+        btn_recent_7d: "Последние 7д",
+        btn_select_all: "ВЫБРАТЬ ВСЕ",
+        btn_clear: "ОЧИСТИТЬ",
+        btn_core: "КЛЮЧЕВЫЕ",
+        btn_refresh: "Диагностика и графики",
+        btn_refresh_loading: "Загрузка...",
+        btn_normalize_on: "Нормализация: ВКЛ",
+        btn_normalize_off: "Нормализация: ВЫКЛ",
+        section_findings: "Системные выводы",
+        section_alarms: "Аномалии и тревоги",
+        title_chart: "Многопараметрические тренды",
+        th_category: "Категория",
+        th_key: "Ключ телеметрии",
+        th_latest: "Текущее",
+        th_delta: "Изменение",
+        th_range: "Мин~Макс",
+        th_samples: "Выборка",
+        th_timestamp: "Метка времени",
+        th_note: "Примечание",
+        meta_dev: "УСТР",
+        meta_range: "ПЕРИОД",
+        meta_points: "ТОЧКИ",
+        card_health_key: "Оценка ресурса",
+        card_status_key: "Состояние работы",
+        card_alarm_key: "Не закрытые тревоги",
+        card_delay_key: "Задержка данных",
+        card_anomaly_key: "Статистические аномалии",
+        card_health_sub_prefix: "Уровень",
+        card_status_sub: "Базовые признаки работы",
+        card_alarm_sub: "Требуют приоритетной проверки",
+        card_delay_sub: "Интервал от heartbeat",
+        card_anomaly_sub: "Сигналы выше Z-Score",
+        no_param_match: "Параметры по ключевому слову не найдены.",
+        no_findings: "Критические отклонения за период не обнаружены.",
+        no_alarm: "В этом окне нет аномалий и тревог.",
+        current: "Текущее",
+        threshold: "Порог",
+        average: "Среднее",
+        err_prefix: "Системная ошибка",
+        fatal_prefix: "Критическая ошибка",
+        loading_chart: "Загрузка графиков...",
+        loading_init: "Инициализация телеметрии...",
+        empty_no_select: "Параметры не выбраны",
+        empty_no_data: "Нет данных в выбранном диапазоне",
+        empty_offline: "Потеря соединения / сервис недоступен",
+        device_err: "ТРЕВОГ",
+        device_delay: "ЗАДЕРЖКА",
+      },
+    };
+
+    const BACKEND_TRANSLATION = {
+      "优": { en: "Good", ru: "Хорошо" },
+      "注意": { en: "Attention", ru: "Внимание" },
+      "风险": { en: "Risk", ru: "Риск" },
+      "危险": { en: "Danger", ru: "Опасно" },
+      "运行中": { en: "Running", ru: "Работает" },
+      "待机/停机": { en: "Idle/Stopped", ru: "Ожидание/Останов" },
+      "通讯异常": { en: "Communication Fault", ru: "Сбой связи" },
+      "温度系统": { en: "Thermal", ru: "Температура" },
+      "压力系统": { en: "Pressure", ru: "Давление" },
+      "发电电气": { en: "Electrical", ru: "Электрика" },
+      "寿命计数": { en: "Lifecycle", ru: "Ресурс" },
+      "流量系统": { en: "Flow", ru: "Поток" },
+      "其他监测": { en: "Other", ru: "Прочее" },
+      "机油压力异常": { en: "Oil pressure abnormal", ru: "Аномальное давление масла" },
+      "机油压力偏离": { en: "Oil pressure drift", ru: "Отклонение давления масла" },
+      "冷却温度过高": { en: "Coolant temperature high", ru: "Высокая температура охлаждения" },
+      "冷却温度偏高": { en: "Coolant temperature elevated", ru: "Повышенная температура охлаждения" },
+      "机油温度过高": { en: "Oil temperature high", ru: "Высокая температура масла" },
+      "机油温度偏高": { en: "Oil temperature elevated", ru: "Повышенная температура масла" },
+      "启动电压异常": { en: "Starting voltage abnormal", ru: "Аномальное напряжение запуска" },
+      "启动电压偏离": { en: "Starting voltage drift", ru: "Отклонение напряжения запуска" },
+      "输出频率异常": { en: "Output frequency abnormal", ru: "Аномальная выходная частота" },
+      "输出频率偏移": { en: "Output frequency drift", ru: "Смещение выходной частоты" },
+      "功率因数过低": { en: "Power factor too low", ru: "Слишком низкий cosφ" },
+      "功率因数偏低": { en: "Power factor low", ru: "Пониженный cosφ" },
+      "转速不稳定": { en: "Speed instability", ru: "Нестабильные обороты" },
+      "故障计数非零": { en: "Fault counter non-zero", ru: "Счётчик отказов не равен нулю" },
+      "存在未清除告警": { en: "Open alarms detected", ru: "Обнаружены незакрытые тревоги" },
+      "数据刷新延迟": { en: "Data refresh delayed", ru: "Задержка обновления данных" },
+      "优先检查润滑系统、油泵和过滤器。": { en: "Check lubrication system, oil pump, and filter first.", ru: "Сначала проверьте систему смазки, масляный насос и фильтр." },
+      "建议复核机油黏度与负载工况。": { en: "Recheck oil viscosity and load condition.", ru: "Проверьте вязкость масла и режим нагрузки." },
+      "检查冷却液循环、散热器和风扇。": { en: "Inspect coolant circulation, radiator, and fan.", ru: "Проверьте циркуляцию ОЖ, радиатор и вентилятор." },
+      "观察是否持续升温，必要时降载。": { en: "Observe whether temperature keeps rising; reduce load if needed.", ru: "Проверьте рост температуры; при необходимости снизьте нагрузку." },
+      "检查润滑回路和机油冷却环节。": { en: "Inspect lubrication loop and oil cooling path.", ru: "Проверьте контур смазки и охлаждение масла." },
+      "建议结合机油压力联判。": { en: "Evaluate together with oil pressure.", ru: "Оценивайте вместе с давлением масла." },
+      "检查蓄电池和充电回路，避免启动失败。": { en: "Inspect battery and charging circuit to avoid start failure.", ru: "Проверьте АКБ и цепь зарядки, чтобы избежать срыва запуска." },
+      "建议检查充放电状态并做电池容量测试。": { en: "Check charge/discharge status and perform battery capacity test.", ru: "Проверьте режим заряда/разряда и тест ёмкости АКБ." },
+      "检查调速器和负载突变情况。": { en: "Inspect governor and load step changes.", ru: "Проверьте регулятор оборотов и скачки нагрузки." },
+      "建议观察短时波动是否持续。": { en: "Observe whether short-term fluctuation persists.", ru: "Проверьте, сохраняются ли кратковременные колебания." },
+      "检查负载侧无功补偿和运行工况。": { en: "Inspect reactive compensation and load-side conditions.", ru: "Проверьте компенсацию реактивной мощности и режим нагрузки." },
+      "建议评估负载结构与补偿策略。": { en: "Evaluate load profile and compensation strategy.", ru: "Оцените структуру нагрузки и стратегию компенсации." },
+      "建议联查调速器与燃气供给。": { en: "Check governor together with gas supply.", ru: "Проверьте регулятор и подачу газа совместно." },
+      "建议立即查看故障明细并追溯变化点。": { en: "Review fault details immediately and trace change points.", ru: "Сразу проверьте детали отказов и точки изменений." },
+      "优先处理在线告警，确认是否为通讯离线或真实故障。": { en: "Handle active alarms first; confirm if communication offline or real fault.", ru: "Сначала обработайте активные тревоги и уточните: потеря связи или реальная неисправность." },
+      "可能存在通讯中断，请检查采集链路和设备在线状态。": { en: "Possible communication interruption; check acquisition link and device online status.", ru: "Возможен обрыв связи; проверьте канал сбора и онлайн-статус устройства." },
+      "温度值按 x0.1 映射": { en: "Temperature normalized by x0.1", ru: "Температура нормализована x0.1" },
+      "频率值按 x0.01 映射": { en: "Frequency normalized by x0.01", ru: "Частота нормализована x0.01" },
+      "电池电压按 x0.1 映射": { en: "Battery voltage normalized by x0.1", ru: "Напряжение АКБ нормализовано x0.1" },
+      "压力值按 x0.01 映射": { en: "Pressure normalized by x0.01", ru: "Давление нормализовано x0.01" },
+      "功率因数按 x0.01 映射": { en: "Power factor normalized by x0.01", ru: "Коэффициент мощности нормализован x0.01" },
+    };
+
+    const PRESET_TRANSLATION = {
+      "core-health": {
+        en: { name: "Core Vitals", description: "Quickly evaluate lubrication, thermal, electrical and power stability." },
+        ru: { name: "Ключевые метрики", description: "Быстрая оценка смазки, температуры, электрики и стабильности генерации." },
+      },
+      "start-system": {
+        en: { name: "Start System", description: "Locate startup issues, rpm rise faults, and fault counter growth." },
+        ru: { name: "Система запуска", description: "Поиск проблем запуска, раскрутки и роста счётчика отказов." },
+      },
+      "thermal-risk": {
+        en: { name: "Thermal Risk", description: "Inspect cooling, thermal load, and overheating trends." },
+        ru: { name: "Риск перегрева", description: "Проверка охлаждения, тепловой нагрузки и перегрева." },
+      },
+      "load-quality": {
+        en: { name: "Load & Quality", description: "Inspect output fluctuation, power shortage, and quality anomalies." },
+        ru: { name: "Нагрузка и качество", description: "Проверка колебаний выдачи, дефицита мощности и качества энергии." },
+      },
+      "air-fuel": {
+        en: { name: "Air/Boost & Actuator", description: "Observe intake pressure, boost status, and actuator behavior." },
+        ru: { name: "Воздух/Наддув и приводы", description: "Контроль давления впуска, наддува и поведения исполнительных узлов." },
+      },
+    };
+
+    const PARAM_TRANSLATION = {
+      "出水口压力": { en: "Outlet pressure", ru: "Давление на выходе" },
+      "进水口压力": { en: "Inlet pressure", ru: "Давление на входе" },
+      "出水口温度": { en: "Outlet temperature", ru: "Температура на выходе" },
+      "进水口温度": { en: "Inlet temperature", ru: "Температура на входе" },
+      "发动机舱室温": { en: "Engine room temp", ru: "Температура моторного отсека" },
+      "服务器机舱温度": { en: "Control cabin temp", ru: "Температура серверного отсека" },
+      "室外温度": { en: "Ambient temperature", ru: "Температура наружного воздуха" },
+      "液体流量": { en: "Liquid flow", ru: "Расход жидкости" },
+      "燃气流量": { en: "Gas flow", ru: "Расход газа" },
+      "发电机组A燃气压力": { en: "Gen-A gas pressure", ru: "Давление газа ГУ-A" },
+      "发电机组B燃气压力": { en: "Gen-B gas pressure", ru: "Давление газа ГУ-B" },
+      "发电机组A燃气温度": { en: "Gen-A gas temp", ru: "Температура газа ГУ-A" },
+      "发电机组B燃气温度": { en: "Gen-B gas temp", ru: "Температура газа ГУ-B" },
+      "循环泵频率": { en: "Circulation pump freq", ru: "Частота цирк. насоса" },
+      "风扇变频器频率": { en: "Fan inverter freq", ru: "Частота инвертора вентилятора" },
+      "管道调节阀开度": { en: "Valve opening", ru: "Открытие клапана" },
+      "A发动机A温度": { en: "Engine A zone-A temp", ru: "Темп. Двигатель A зона-A" },
+      "A发动机B温度": { en: "Engine A zone-B temp", ru: "Темп. Двигатель A зона-B" },
+      "B发动机A温度": { en: "Engine B zone-A temp", ru: "Темп. Двигатель B зона-A" },
+      "B发动机B温度": { en: "Engine B zone-B temp", ru: "Темп. Двигатель B зона-B" },
+    };
+
+    const state = {
+      devices: [],
+      parameters: [],
+      presets: [],
+      selected: new Set(),
+      presetId: "",
+      normalize: true,
+      latestInspection: null,
+      latestTrend: null,
+      lang: localStorage.getItem("gasgxplant_lang") || "zh",
+      loadingCount: 0,
+    };
+
+    const el = (id) => document.getElementById(id);
+    const chart = echarts.init(el("chart"));
+
+    function t(key) {
+      return (I18N[state.lang] && I18N[state.lang][key]) || I18N.zh[key] || key;
+    }
+
+    function mapBackendText(value) {
+      if (value === null || value === undefined) return value;
+      if (state.lang === "zh") return String(value);
+      const mapped = BACKEND_TRANSLATION[String(value)];
+      return mapped?.[state.lang] || String(value);
+    }
+
+    function mapParameterName(name) {
+      if (name === null || name === undefined) return name;
+      if (state.lang === "zh") return String(name);
+      const mapped = PARAM_TRANSLATION[String(name)];
+      return mapped?.[state.lang] || String(name);
+    }
+
+    function setLoading(visible, text = t("loading_chart")) {
+      const overlay = el("loadingOverlay");
+      if (visible) {
+        state.loadingCount += 1;
+        el("loadingText").textContent = text;
+        overlay.hidden = false;
+        overlay.classList.add("show");
+        return;
+      }
+      state.loadingCount = Math.max(0, state.loadingCount - 1);
+      if (state.loadingCount === 0) {
+        overlay.classList.remove("show");
+        overlay.hidden = true;
+      }
+    }
+
+    function escapeHtml(value) {
+      if (value === null || value === undefined) return "-";
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function formatInputDate(date) {
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function setRangeByHours(hours) {
+      const end = new Date();
+      const start = new Date(end.getTime() - hours * 3600 * 1000);
+      el("startInput").value = formatInputDate(start);
+      el("endInput").value = formatInputDate(end);
+    }
+
+    function updateNormalizeButtonText() {
+      el("normalizeBtn").textContent = state.normalize ? t("btn_normalize_on") : t("btn_normalize_off");
+    }
+
+    function updateMeta(data) {
+      const deviceUuid = el("deviceSelect").value;
+      const device = state.devices.find((d) => d.device_uuid === deviceUuid);
+      el("metaDevice").textContent = `${t("meta_dev")}: ${device ? device.device_name : deviceUuid || "-"}`;
+      el("metaRange").textContent = `${t("meta_range")}: ${data?.start || "..."} ~ ${data?.end || "..."}`;
+      el("metaPoints").textContent = `${t("meta_points")}: ${data?.total_points || 0}`;
+    }
+
+    function applyLanguage(rerender = true) {
+      document.title = t("page_title");
+      document.documentElement.lang = state.lang === "zh" ? "zh-CN" : state.lang;
+
+      el("titleText").textContent = t("title_main");
+      el("subtitleText").textContent = t("subtitle");
+      el("headerHint").textContent = t("hint");
+      el("labelDevice").textContent = t("label_device");
+      el("labelStart").textContent = t("label_start");
+      el("labelEnd").textContent = t("label_end");
+      el("labelPresets").textContent = t("label_presets");
+      el("labelParamSearch").textContent = t("label_param_search");
+      el("paramSearch").placeholder = t("param_placeholder");
+
+      const quickKey = { 6: "btn_recent_6h", 24: "btn_recent_24h", 72: "btn_recent_72h", 168: "btn_recent_7d" };
+      document.querySelectorAll("[data-hours]").forEach((btn) => {
+        const k = quickKey[Number(btn.dataset.hours || "0")];
+        if (k) btn.textContent = t(k);
+      });
+
+      el("selectAllBtn").textContent = t("btn_select_all");
+      el("clearBtn").textContent = t("btn_clear");
+      el("coreBtn").textContent = t("btn_core");
+      if (!el("refreshBtn").disabled) el("refreshBtn").textContent = t("btn_refresh");
+      updateNormalizeButtonText();
+
+      el("titleFindings").textContent = t("section_findings");
+      el("titleAlarms").textContent = t("section_alarms");
+      el("titleChart").textContent = t("title_chart");
+      el("thCategory").textContent = t("th_category");
+      el("thKey").textContent = t("th_key");
+      el("thLatest").textContent = t("th_latest");
+      el("thDelta").textContent = t("th_delta");
+      el("thRange").textContent = t("th_range");
+      el("thSamples").textContent = t("th_samples");
+      el("thTimestamp").textContent = t("th_timestamp");
+      el("thNote").textContent = t("th_note");
+      updateMeta(state.latestTrend || { start: "-", end: "-", total_points: 0 });
+
+      document.querySelectorAll("#langSwitch button[data-lang]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.lang === state.lang);
+      });
+
+      if (!rerender) return;
+      if (state.devices.length) renderDeviceOptions();
+      renderPresetButtons();
+      renderParameterList();
+      if (state.latestInspection) {
+        renderCards(state.latestInspection);
+        renderFindings(state.latestInspection);
+        renderMetricTable(state.latestInspection);
+      }
+      if (state.latestTrend) {
+        renderTrendChart(state.latestTrend);
+      }
+    }
+
+    async function api(url, loadingText = t("loading_chart")) {
+      setLoading(true, loadingText);
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          let msg = `HTTP ${res.status}`;
+          try {
+            const err = await res.json();
+            if (err?.error) msg = err.error;
+          } catch (_) {}
+          throw new Error(msg);
+        }
+        return await res.json();
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function buildQuery(base, entries) {
+      const sp = new URLSearchParams(entries);
+      return `${base}?${sp.toString()}`;
+    }
+
+    function getSelectedParameterNames() {
+      return Array.from(state.selected);
+    }
+
+    function renderDeviceOptions() {
+      const current = el("deviceSelect").value;
+      const options = state.devices.map((item) => {
+        const stale = item.record_age_minutes == null ? "" : `| ${t("device_delay")}:${item.record_age_minutes}m`;
+        const alarms = item.open_alarm_count ? `| ${t("device_err")}:${item.open_alarm_count}` : "";
+        return `<option value="${escapeHtml(item.device_uuid)}">${escapeHtml(item.device_name)} [${item.device_uuid.slice(0, 8)}] ${alarms} ${stale}</option>`;
+      });
+      el("deviceSelect").innerHTML = options.join("");
+      if (current) el("deviceSelect").value = current;
+    }
+
+    function ensureSelectedParameters(minCount = 6) {
+      const availableNames = new Set(state.parameters.map((item) => item.data_name));
+      Array.from(state.selected).forEach((name) => {
+        if (!availableNames.has(name)) state.selected.delete(name);
+      });
+
+      if (state.selected.size > 0) return;
+
+      if (state.presetId) {
+        applyPresetSelection(state.presetId);
+      }
+      if (state.selected.size > 0) return;
+
+      state.parameters
+        .slice()
+        .sort((a, b) => (b.sample_count || 0) - (a.sample_count || 0))
+        .slice(0, minCount)
+        .forEach((item) => state.selected.add(item.data_name));
+
+      renderParameterList();
+    }
+
+    function renderPresetButtons() {
+      const box = el("presetGrid");
+      box.innerHTML = state.presets.map((item) => `
+        <button class="preset-btn ${state.presetId === item.id ? "active" : ""}" data-preset-id="${escapeHtml(item.id)}" type="button">
+          <span class="preset-title">${escapeHtml((PRESET_TRANSLATION[item.id] && PRESET_TRANSLATION[item.id][state.lang] && PRESET_TRANSLATION[item.id][state.lang].name) || mapBackendText(item.name))}</span>
+          <span class="preset-desc">${escapeHtml((PRESET_TRANSLATION[item.id] && PRESET_TRANSLATION[item.id][state.lang] && PRESET_TRANSLATION[item.id][state.lang].description) || mapBackendText(item.description))}</span>
+        </button>
+      `).join("");
+    }
+
+    function renderParameterList() {
+      const keyword = el("paramSearch").value.trim().toLowerCase();
+      const grouped = {};
+      state.parameters.forEach((item) => {
+        const cat = mapBackendText(item.category || "其他监测");
+        if (!grouped[cat]) grouped[cat] = [];
+        if (keyword && !item.data_name.toLowerCase().includes(keyword)) return;
+        grouped[cat].push(item);
+      });
+
+      const categories = Object.keys(grouped);
+      el("paramWrap").innerHTML = categories.length
+        ? categories.map((cat) => {
+            const rows = grouped[cat];
+            return `
+              <div class="cat">
+                <div class="cat-title">
+                  <span>${escapeHtml(cat)}</span>
+                  <span class="muted data-numbers">[${rows.length}]</span>
+                </div>
+                ${rows.map((row) => {
+                  const checked = state.selected.has(row.data_name) ? "checked" : "";
+                  return `
+                    <label class="param-item">
+                      <input type="checkbox" value="${escapeHtml(row.data_name)}" ${checked} />
+                      <span class="data-numbers">${escapeHtml(mapParameterName(row.data_name))}</span>
+                      <small class="data-numbers">${escapeHtml(row.data_unit || "raw")}</small>
+                    </label>
+                  `;
+                }).join("")}
+              </div>
+            `;
+          }).join("")
+        : `<div class="muted" style="padding:10px; font-size:12px;">${escapeHtml(t("no_param_match"))}</div>`;
+    }
+
+    async function loadDevices() {
+      const data = await api("/api/devices");
+      state.devices = data.items || [];
+      renderDeviceOptions();
+      if (!state.devices.length) throw new Error("No device data");
+    }
+
+    async function loadPresets() {
+      const data = await api("/api/presets");
+      state.presets = data.items || [];
+      if (!state.presetId && state.presets.length) {
+        state.presetId = "core-health";
+      }
+      renderPresetButtons();
+    }
+
+    async function loadParameters() {
+      const deviceUuid = el("deviceSelect").value;
+      if (!deviceUuid) return;
+      const data = await api(`/api/parameters?device_uuid=${encodeURIComponent(deviceUuid)}`);
+      state.parameters = data.items || [];
+      ensureSelectedParameters();
+      renderParameterList();
+    }
+
+    function applyPresetSelection(presetId) {
+      const preset = state.presets.find((x) => x.id === presetId);
+      if (!preset) return;
+      state.presetId = presetId;
+      const available = new Set(state.parameters.map((p) => p.data_name));
+      state.selected.clear();
+      preset.parameters.forEach((name) => {
+        if (available.has(name)) state.selected.add(name);
+        else {
+          const fuzzy = state.parameters.find((p) => p.data_name.toLowerCase().includes(name.toLowerCase()));
+          if (fuzzy) state.selected.add(fuzzy.data_name);
+        }
+      });
+      renderPresetButtons();
+      renderParameterList();
+    }
+
+    function renderCards(inspection) {
+      const health = inspection.health || {};
+      const scoreClass = health.health_score < 50 ? "danger" : health.health_score < 70 ? "warn" : "score";
+      const cards = [
+        { key: t("card_health_key"), value: health.health_score ?? "-", sub: `${t("card_health_sub_prefix")}: ${mapBackendText(health.health_level || "-")}`, cls: scoreClass },
+        { key: t("card_status_key"), value: mapBackendText(health.running_status || "-"), sub: t("card_status_sub"), cls: "score" },
+        { key: t("card_alarm_key"), value: health.open_alarm_count ?? 0, sub: t("card_alarm_sub"), cls: (health.open_alarm_count || 0) > 0 ? "warn" : "" },
+        { key: t("card_delay_key"), value: health.record_age_minutes == null ? "-" : `${health.record_age_minutes}m`, sub: t("card_delay_sub"), cls: (health.record_age_minutes || 0) > 20 ? "danger" : "" },
+        { key: t("card_anomaly_key"), value: (health.anomalies || []).length, sub: t("card_anomaly_sub"), cls: (health.anomalies || []).length > 2 ? "warn" : "" },
+      ];
+      el("cards").innerHTML = cards.map((card) => `
+        <div class="card ${card.cls}">
+          <div class="k">${escapeHtml(card.key)}</div>
+          <div class="v data-numbers">${escapeHtml(card.value)}</div>
+          <div class="s">${escapeHtml(card.sub)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderFindings(inspection) {
+      const health = inspection.health || {};
+      const findings = health.findings || [];
+      const anomalies = health.anomalies || [];
+
+      if (!findings.length) {
+        el("findingList").innerHTML = `<li><span class="badge info">OK</span> ${escapeHtml(t("no_findings"))}</li>`;
+      } else {
+        el("findingList").innerHTML = findings.map((f) => `
+          <li>
+            <span class="badge ${f.severity === "critical" ? "critical" : "warn"}">${f.severity === "critical" ? "CRIT" : "WARN"}</span>
+            <strong>${escapeHtml(mapBackendText(f.title))}</strong><br/>
+            ${escapeHtml(t("current"))}: <span class="data-numbers">${escapeHtml(f.value)}</span> | ${escapeHtml(t("threshold"))}: <span class="data-numbers">${escapeHtml(f.threshold)}</span><br/>
+            <span class="muted">${escapeHtml(mapBackendText(f.advice || ""))}</span>
+          </li>
+        `).join("");
+      }
+
+      const alarmItems = [];
+      anomalies.forEach((a) => {
+        alarmItems.push(`
+          <li>
+            <span class="badge ${a.severity === "critical" ? "critical" : "warn"}">ANOMALY</span>
+            <span class="data-numbers">${escapeHtml(mapParameterName(a.name))}</span> | Z-Score: <span class="data-numbers">${escapeHtml(a.z_score)}</span> | ${escapeHtml(t("current"))} <span class="data-numbers">${escapeHtml(a.latest)}</span> (${escapeHtml(t("average"))} <span class="data-numbers">${escapeHtml(a.avg)}</span>)
+          </li>
+        `);
+      });
+      (inspection.alarms || []).slice(0, 12).forEach((alarm) => {
+        alarmItems.push(`
+          <li>
+            <span class="badge ${alarm.alarm_level >= 4 ? "critical" : "warn"}">ALARM</span>
+            <span class="data-numbers">${escapeHtml(mapBackendText(alarm.alarm_name || "unknown"))}</span> | ${escapeHtml(mapBackendText(alarm.alarm_message || ""))}<br/>
+            <span class="muted data-numbers">${escapeHtml(alarm.happen_time || "-")}</span>
+          </li>
+        `);
+      });
+      el("alarmList").innerHTML = alarmItems.length
+        ? alarmItems.join("")
+        : `<li><span class="badge info">NULL</span> ${escapeHtml(t("no_alarm"))}</li>`;
+    }
+
+    function renderMetricTable(inspection) {
+      const metrics = inspection.metrics || [];
+      el("metricBody").innerHTML = metrics.map((m) => `
+        <tr>
+          <td>${escapeHtml(mapBackendText(m.category || "-"))}</td>
+          <td class="data-numbers">${escapeHtml(mapParameterName(m.name || "-"))}</td>
+          <td class="data-numbers" style="color: var(--accent-aurora); font-weight: 700;">${escapeHtml(m.latest)} ${escapeHtml(m.unit || "")}</td>
+          <td class="data-numbers ${String(m.delta).startsWith('-') ? 'muted' : ''}">${escapeHtml(m.delta)}</td>
+          <td class="data-numbers muted">[${escapeHtml(m.min)}, ${escapeHtml(m.max)}]</td>
+          <td class="data-numbers">${escapeHtml(m.sample_count)}</td>
+          <td class="data-numbers muted">${escapeHtml(m.latest_time || "-")}</td>
+          <td class="muted">${escapeHtml(mapBackendText(m.normalize_note || "-"))}</td>
+        </tr>
+      `).join("");
+    }
+
+    async function loadInspection() {
+      const deviceUuid = el("deviceSelect").value;
+      const data = await api(buildQuery("/api/inspection", {
+        device_uuid: deviceUuid,
+        start: el("startInput").value,
+        end: el("endInput").value,
+      }));
+      state.latestInspection = data;
+      renderCards(data);
+      renderFindings(data);
+      renderMetricTable(data);
+    }
+
+    function drawEmpty(text) {
+      chart.setOption({
+        title: { text, left: "center", top: "middle", textStyle: { color: "#8B9BB4", fontSize: 14, fontFamily: 'JetBrains Mono' } },
+        xAxis: { show: false },
+        yAxis: { show: false },
+        tooltip: {},
+        series: [],
+      }, true);
+    }
+
+    function renderTrendChart(data) {
+      const series = (data.series || []).map((s) => ({
+        name: s.unit ? `${mapParameterName(s.name)} (${s.unit})` : mapParameterName(s.name),
+        type: "line",
+        showSymbol: false,
+        smooth: true,
+        sampling: "lttb",
+        emphasis: { focus: "series" },
+        lineStyle: { width: 2 },
+        data: (s.points || []).map((p) => [p.time, p.value]),
+      }));
+
+      if (!series.length || series.every((s) => !s.data.length)) {
+        drawEmpty(t("empty_no_data"));
+      } else {
+        chart.setOption({
+          color: ["#5DD62C", "#0A84FF", "#FF9F0A", "#BF5AF2", "#FF453A", "#30D158", "#64D2FF", "#FFD60A"],
+          textStyle: { fontFamily: "'Inter', 'JetBrains Mono', 'PingFang SC', sans-serif" },
+          tooltip: {
+            trigger: "axis",
+            backgroundColor: "rgba(18, 22, 31, 0.9)",
+            borderColor: "#2A3441",
+            textStyle: { color: "#E2E8F0" },
+            axisPointer: { lineStyle: { color: "#5DD62C" } },
+          },
+          legend: {
+            type: "scroll",
+            top: 0,
+            textStyle: { color: "#8B9BB4" },
+            pageIconColor: "#5DD62C",
+            pageTextStyle: { color: "#8B9BB4" },
+          },
+          grid: { left: 45, right: 15, top: 45, bottom: 45 },
+          xAxis: {
+            type: "time",
+            axisLine: { lineStyle: { color: "#2A3441" } },
+            axisLabel: { color: "#8B9BB4", fontFamily: "JetBrains Mono" },
+            splitLine: { show: false },
+          },
+          yAxis: {
+            type: "value",
+            scale: true,
+            axisLine: { show: false },
+            splitLine: { lineStyle: { color: "#1A202C", type: "dashed" } },
+            axisLabel: { color: "#8B9BB4", fontFamily: "JetBrains Mono" },
+          },
+          dataZoom: [
+            { type: "inside", throttle: 60 },
+            {
+              type: "slider",
+              height: 12,
+              bottom: 8,
+              borderColor: "#2A3441",
+              backgroundColor: "#0B0E14",
+              fillerColor: "rgba(93, 214, 44, 0.2)",
+              handleStyle: { color: "#5DD62C", borderColor: "#5DD62C" },
+              textStyle: { color: "#8B9BB4" },
+            },
+          ],
+          series,
+        }, true);
+      }
+      updateMeta(data);
+    }
+
+    async function loadTrends() {
+      const deviceUuid = el("deviceSelect").value;
+      ensureSelectedParameters();
+      const parameters = getSelectedParameterNames();
+      if (!parameters.length) {
+        drawEmpty(t("empty_no_select"));
+        return;
+      }
+
+      chart.showLoading("default", {
+        text: t("loading_chart"),
+        color: "#5DD62C",
+        textColor: "#E2E8F0",
+        maskColor: "rgba(11,14,20,0.35)",
+      });
+      try {
+        const data = await api(buildQuery("/api/trends", {
+          device_uuid: deviceUuid,
+          start: el("startInput").value,
+          end: el("endInput").value,
+          parameters: parameters.join(","),
+          normalize: state.normalize ? "true" : "false",
+        }), t("loading_chart"));
+        state.latestTrend = data;
+        renderTrendChart(data);
+      } finally {
+        chart.hideLoading();
+      }
+    }
+
+    async function refreshAll() {
+      try {
+        el("errorMsg").textContent = "";
+        el("refreshBtn").disabled = true;
+        el("refreshBtn").textContent = t("btn_refresh_loading");
+        await Promise.all([loadInspection(), loadTrends()]);
+      } catch (err) {
+        el("errorMsg").textContent = `${t("err_prefix")}: ${mapBackendText(err.message || String(err))}`;
+      } finally {
+        el("refreshBtn").disabled = false;
+        el("refreshBtn").textContent = t("btn_refresh");
+      }
+    }
+
+    function bindEvents() {
+      el("refreshBtn").addEventListener("click", refreshAll);
+      el("deviceSelect").addEventListener("change", async () => {
+        state.selected.clear();
+        await loadParameters();
+        await refreshAll();
+      });
+      el("paramSearch").addEventListener("input", renderParameterList);
+      el("paramWrap").addEventListener("change", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement) || target.type !== "checkbox") return;
+        if (target.checked) state.selected.add(target.value);
+        else state.selected.delete(target.value);
+      });
+
+      document.querySelectorAll("[data-hours]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const hours = Number(btn.dataset.hours || "24");
+          setRangeByHours(hours);
+          await refreshAll();
+        });
+      });
+
+      el("presetGrid").addEventListener("click", async (event) => {
+        const target = event.target.closest("[data-preset-id]");
+        if (!target) return;
+        const presetId = target.getAttribute("data-preset-id");
+        applyPresetSelection(presetId);
+        await refreshAll();
+      });
+
+      el("selectAllBtn").addEventListener("click", () => {
+        state.parameters.forEach((p) => state.selected.add(p.data_name));
+        renderParameterList();
+      });
+      el("clearBtn").addEventListener("click", () => {
+        state.selected.clear();
+        renderParameterList();
+      });
+      el("coreBtn").addEventListener("click", async () => {
+        applyPresetSelection("core-health");
+        await refreshAll();
+      });
+      el("normalizeBtn").addEventListener("click", async () => {
+        state.normalize = !state.normalize;
+        updateNormalizeButtonText();
+        await loadTrends();
+      });
+
+      document.querySelectorAll("#langSwitch button[data-lang]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const lang = btn.dataset.lang;
+          if (!I18N[lang]) return;
+          state.lang = lang;
+          localStorage.setItem("gasgxplant_lang", lang);
+          applyLanguage(true);
+        });
+      });
+      window.addEventListener("resize", () => chart.resize());
+    }
+
+    async function bootstrap() {
+      applyLanguage(false);
+      setRangeByHours(24);
+      drawEmpty(t("loading_init"));
+      bindEvents();
+      await loadDevices();
+      await loadPresets();
+      await loadParameters();
+      applyPresetSelection("core-health");
+      ensureSelectedParameters();
+      await refreshAll();
+    }
+
+    bootstrap().catch((err) => {
+      el("errorMsg").textContent = `${t("fatal_prefix")}: ${mapBackendText(err.message || String(err))}`;
+      drawEmpty(t("empty_offline"));
+    });
+  </script>
+</body>
+</html>
