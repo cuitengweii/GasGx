@@ -152,7 +152,7 @@
                 </div>
             </div>
 
-            <div class="hidden sm:flex items-center">
+            <div id="ggx-lang-picker-wrap" class="hidden sm:flex items-center">
                 <div id="ggx-lang-picker" class="ggx-lang-picker">
                     <button id="lang-menu-btn" data-ggx-action="toggle-lang-menu" class="ggx-lang-trigger" title="Language" aria-label="Language menu" aria-expanded="false" aria-haspopup="true">
                         <i class="fa-solid fa-globe"></i>
@@ -177,7 +177,7 @@
 </header>
 
 <div id="mobile-menu-container" class="fixed inset-0 z-[250] bg-[#111] transform translate-x-full pt-20 px-4 pb-8 overflow-y-auto xl:hidden">
-    <div class="flex justify-center mb-6 border-b border-white/10 pb-4">
+    <div id="ggx-mobile-lang-switch-wrap" class="flex justify-center mb-6 border-b border-white/10 pb-4">
         <div class="ggx-lang-switch ggx-lang-switch-mobile">
             <button id="ggx-mob-lang-en" data-ggx-action="set-lang" data-ggx-lang="en" class="ggx-lang-btn ggx-lang-btn-mobile text-gas-green font-semibold">EN</button>
             <span class="ggx-lang-sep">/</span>
@@ -342,6 +342,7 @@
             },
             features: {
                 backToTopEnabled: true,
+                languageSwitcherEnabled: true,
                 chatbotEnabled: false,
                 chatApiUrl: ""
             },
@@ -709,6 +710,9 @@
 
         return Object.assign({}, runtimeConfig, {
             backToTopEnabled: typeof featureConfig.backToTopEnabled === "boolean" ? featureConfig.backToTopEnabled : runtimeConfig.backToTopEnabled,
+            languageSwitcherEnabled: typeof featureConfig.languageSwitcherEnabled === "boolean"
+                ? featureConfig.languageSwitcherEnabled
+                : (typeof runtimeConfig.languageSwitcherEnabled === "boolean" ? runtimeConfig.languageSwitcherEnabled : true),
             chatbotEnabled: typeof featureConfig.chatbotEnabled === "boolean" ? featureConfig.chatbotEnabled : runtimeConfig.chatbotEnabled,
             chatApiUrl: typeof featureConfig.chatApiUrl === "string" && featureConfig.chatApiUrl.trim()
                 ? featureConfig.chatApiUrl.trim()
@@ -785,11 +789,22 @@
         }
     }
 
+    function syncLanguageSwitcherVisibility() {
+        const runtimeConfig = getSharedRuntimeConfig();
+        const enabled = runtimeConfig.languageSwitcherEnabled !== false;
+        const desktopWrap = document.getElementById("ggx-lang-picker-wrap");
+        const mobileWrap = document.getElementById("ggx-mobile-lang-switch-wrap");
+        if (desktopWrap) desktopWrap.hidden = !enabled;
+        if (mobileWrap) mobileWrap.hidden = !enabled;
+        if (!enabled) closeLangMenu();
+    }
+
     function refreshShellStructure() {
         syncSiteBrandUI();
         mountSlot("ggx-site-footer-slot", buildFooterTemplate());
         syncRuntimeFeatureSlots();
         refreshShellNavigation(true);
+        syncLanguageSwitcherVisibility();
         syncLanguageUI(getCurrentLang());
     }
 
@@ -2592,6 +2607,7 @@
             ensureMainAuthBridge();
             runAppIntegrationHooks();
             refreshShellNavigation(true);
+            syncLanguageSwitcherVisibility();
             syncLanguageUI(getCurrentLang());
             syncPublishedSiteShellConfig();
             mountCookieConsentBanner();
@@ -2602,6 +2618,7 @@
         mountSlot("ggx-site-footer-slot", buildFooterTemplate());
         syncSiteBrandUI();
         syncRuntimeFeatureSlots();
+        syncLanguageSwitcherVisibility();
 
         ensureMainAuthBridge();
         bindActionDelegation();

@@ -140,6 +140,7 @@ const EMPTY_SITE_SHELL_CONFIG = Object.freeze({
         },
         features: {
             backToTopEnabled: true,
+            languageSwitcherEnabled: true,
             chatbotEnabled: false,
             chatApiUrl: '',
         },
@@ -512,6 +513,7 @@ function normalizeSiteFeatures(source, fallback) {
     const safeFallback = isPlainObject(fallback) ? fallback : {};
     return {
         backToTopEnabled: normalizeBoolean(safeSource.backToTopEnabled, normalizeBoolean(safeFallback.backToTopEnabled, true)),
+        languageSwitcherEnabled: normalizeBoolean(safeSource.languageSwitcherEnabled, normalizeBoolean(safeFallback.languageSwitcherEnabled, true)),
         chatbotEnabled: normalizeBoolean(safeSource.chatbotEnabled, normalizeBoolean(safeFallback.chatbotEnabled, false)),
         chatApiUrl: normalizeText(safeSource.chatApiUrl || safeFallback.chatApiUrl || ''),
     };
