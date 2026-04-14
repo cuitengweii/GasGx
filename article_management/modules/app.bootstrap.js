@@ -11,7 +11,7 @@ import {
     signInWithPassword,
     signOut,
     updateCurrentPassword,
-} from './auth.module.js?v=20260329auth01';
+} from './auth.module.js?v=20260414auth02';
 import {
     ADMIN_ENTRY_KIND,
     SALES_ENTRY_KIND,
@@ -43,7 +43,7 @@ import {
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
 import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260327sales03';
-import { renderQuoteBrandsPage, renderQuoteCustomersPage, renderQuoteInstancesPage, renderQuoteProductsPage, renderQuoteRequirementsPage } from './quote-system.module.js?v=20260327quote57';
+import { renderQuoteBrandsPage, renderQuoteCustomersPage, renderQuoteInstancesPage, renderQuoteProductsPage, renderQuoteRequirementsPage } from './quote-system.module.js?v=20260414quote59';
 import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260321site08';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js?v=20260321admin01';
 
@@ -225,6 +225,39 @@ function showToast(message, isError = false, options = {}) {
     toastNode.classList.add('show');
     if (options.persist) return;
     showToast.timer = setTimeout(() => clearToastState(), prominent ? 1800 : 2600);
+}
+
+const entryRedirectGuard = {
+    target: '',
+    at: 0,
+};
+
+function tryRedirectToSalesDashboard() {
+    const target = adminConsoleUrl('dashboard', {}, { entryKind: SALES_ENTRY_KIND });
+    try {
+        const currentUrl = new URL(window.location.href);
+        const targetUrl = new URL(target, currentUrl.origin);
+        const currentKey = `${currentUrl.origin}${currentUrl.pathname}${currentUrl.search}`;
+        const targetKey = `${targetUrl.origin}${targetUrl.pathname}${targetUrl.search}`;
+        const now = Date.now();
+
+        if (currentKey === targetKey) {
+            showToast('Current domain cannot switch to sales console route. Please verify /article_management/sales/index.html deployment.', true, { prominent: true });
+            return false;
+        }
+        if (entryRedirectGuard.target === targetKey && now - entryRedirectGuard.at < 4000) {
+            showToast('Redirect loop prevented. Please verify sales console route mapping on production.', true, { prominent: true });
+            return false;
+        }
+
+        entryRedirectGuard.target = targetKey;
+        entryRedirectGuard.at = now;
+        window.location.assign(targetUrl.toString());
+        return true;
+    } catch (_error) {
+        showToast('Unable to switch console entry automatically. Please verify production route config.', true, { prominent: true });
+        return false;
+    }
 }
 
 async function withButtonBusy(button, busyText, task) {
@@ -2875,7 +2908,11 @@ async function renderPage() {
         return;
     }
     if (!state.entryAllowed) {
-        window.location.assign(adminConsoleUrl('dashboard', {}, { entryKind: SALES_ENTRY_KIND }));
+        if (!tryRedirectToSalesDashboard()) {
+            state.renderedUserId = null;
+            state.authView = 'login';
+            renderLogin();
+        }
         return;
     }
 
@@ -2996,7 +3033,10 @@ async function boot() {
             state.authView = 'login';
             renderLogin();
         } else if (!state.entryAllowed) {
-            window.location.assign(adminConsoleUrl('dashboard', {}, { entryKind: SALES_ENTRY_KIND }));
+            if (!tryRedirectToSalesDashboard()) {
+                state.authView = 'login';
+                renderLogin();
+            }
         } else {
             state.authView = 'login';
             await renderPage();
@@ -3017,7 +3057,10 @@ async function boot() {
                 return;
             }
             if (!state.entryAllowed) {
-                window.location.assign(adminConsoleUrl('dashboard', {}, { entryKind: SALES_ENTRY_KIND }));
+                if (!tryRedirectToSalesDashboard()) {
+                    state.authView = 'login';
+                    renderLogin();
+                }
                 return;
             }
             state.authView = 'login';

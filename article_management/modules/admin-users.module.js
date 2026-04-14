@@ -11,7 +11,7 @@ import {
     saveAdminUserEntry,
     sendPasswordResetEmail,
     updateCurrentPassword,
-} from './auth.module.js?v=20260327admin02';
+} from './auth.module.js?v=20260414auth02';
 
 let adminUsersCreatePanelExpanded = false;
 

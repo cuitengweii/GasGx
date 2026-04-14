@@ -2,6 +2,7 @@ import { ADMIN_EMAILS, SUPABASE_KEY, SUPABASE_URL, client } from './supabase.cli
 import { ADMIN_ENTRY_KIND, SALES_ENTRY_KIND, adminConsolePath, detectAdminEntryKind, normalizeEntryKind } from './admin-entry.module.js';
 
 const ADMIN_USERS_TABLE = 'admin_users';
+const AUTH_TIMEOUT_MS = 15000;
 
 export const ADMIN_ROLE_SALES = 'sales';
 export const ADMIN_ROLE_PRE_SALES = 'pre_sales';
@@ -77,7 +78,25 @@ function buildStaticAdminRows() {
 
 function shouldFallbackToStatic(error) {
     const text = String(error?.message || '').toLowerCase();
-    return text.includes('relation') || text.includes('does not exist') || text.includes('permission denied') || text.includes('rls') || text.includes('infinite recursion');
+    return text.includes('relation')
+        || text.includes('does not exist')
+        || text.includes('permission denied')
+        || text.includes('rls')
+        || text.includes('infinite recursion');
+}
+
+async function withRequestTimeout(promise, message, timeoutMs = AUTH_TIMEOUT_MS) {
+    let timer = null;
+    const timeoutPromise = new Promise((_, reject) => {
+        timer = globalThis.setTimeout(() => {
+            reject(new Error(message || 'Request timed out.'));
+        }, timeoutMs);
+    });
+    try {
+        return await Promise.race([promise, timeoutPromise]);
+    } finally {
+        if (timer) globalThis.clearTimeout(timer);
+    }
 }
 
 function getRecoveryRedirectUrl() {
@@ -109,10 +128,13 @@ export async function fetchAdminUsers(forceRefresh = false) {
         return adminDirectoryCache.rows;
     }
 
-    const { data, error } = await client
-        .from(ADMIN_USERS_TABLE)
-        .select('id, email, full_name, role, is_active, created_at, updated_at')
-        .order('created_at', { ascending: true });
+    const { data, error } = await withRequestTimeout(
+        client
+            .from(ADMIN_USERS_TABLE)
+            .select('id, email, full_name, role, is_active, created_at, updated_at')
+            .order('created_at', { ascending: true }),
+        'Loading admin access timed out. Please check connectivity to Supabase.',
+    );
 
     if (error) throw error;
 
@@ -165,7 +187,10 @@ export async function getCurrentSession() {
     const {
         data: { session },
         error,
-    } = await client.auth.getSession();
+    } = await withRequestTimeout(
+        client.auth.getSession(),
+        'Session initialization timed out. Please refresh and try again.',
+    );
     if (error) throw error;
     return session || null;
 }
@@ -174,7 +199,10 @@ export async function signInWithPassword(email, password) {
     const normalized = normalizeEmail(email);
     if (!normalized || !password) throw new Error('邮箱和密码不能为空。');
 
-    const { data, error } = await client.auth.signInWithPassword({ email: normalized, password });
+    const { data, error } = await withRequestTimeout(
+        client.auth.signInWithPassword({ email: normalized, password }),
+        'Sign-in request timed out. Please check network and try again.',
+    );
     if (error) {
         const raw = String(error.message || '');
         const lowered = raw.toLowerCase();
@@ -198,9 +226,12 @@ export async function sendPasswordResetEmail(email) {
     const normalized = normalizeEmail(email);
     if (!normalized) throw new Error('请输入邮箱。');
 
-    const { error } = await client.auth.resetPasswordForEmail(normalized, {
-        redirectTo: getRecoveryRedirectUrl(),
-    });
+    const { error } = await withRequestTimeout(
+        client.auth.resetPasswordForEmail(normalized, {
+            redirectTo: getRecoveryRedirectUrl(),
+        }),
+        'Password reset request timed out. Please try again.',
+    );
     if (error) throw error;
     return true;
 }
@@ -224,7 +255,10 @@ export async function updateCurrentPassword(nextPassword) {
     if (!password) throw new Error('请输入新密码。');
     if (password.length < 8) throw new Error('新密码至少需要 8 位。');
 
-    const { error } = await client.auth.updateUser({ password });
+    const { error } = await withRequestTimeout(
+        client.auth.updateUser({ password }),
+        'Password update request timed out. Please try again.',
+    );
     if (error) throw error;
     return true;
 }
@@ -236,14 +270,17 @@ export async function provisionAdminUserAccount({ email, password, fullName = ''
     if (!cleanPassword || cleanPassword.length < 8) throw new Error('初始密码至少需要 8 位。');
 
     const provisionClient = createProvisionClient();
-    const { data, error } = await provisionClient.auth.signUp({
-        email: normalized,
-        password: cleanPassword,
-        options: {
-            data: fullName ? { full_name: String(fullName).trim() } : undefined,
-            emailRedirectTo: getRecoveryRedirectUrl(),
-        },
-    });
+    const { data, error } = await withRequestTimeout(
+        provisionClient.auth.signUp({
+            email: normalized,
+            password: cleanPassword,
+            options: {
+                data: fullName ? { full_name: String(fullName).trim() } : undefined,
+                emailRedirectTo: getRecoveryRedirectUrl(),
+            },
+        }),
+        'Account provisioning timed out. Please try again.',
+    );
     if (error) throw error;
     return data;
 }
@@ -291,7 +328,10 @@ export async function setAdminUserActive(id, isActive, actorId = null) {
 }
 
 export async function signOut() {
-    const { error } = await client.auth.signOut();
+    const { error } = await withRequestTimeout(
+        client.auth.signOut(),
+        'Sign-out request timed out. Please try again.',
+    );
     if (error) throw error;
 }
 

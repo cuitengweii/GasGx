@@ -39,7 +39,7 @@ import {
     pickLocalized,
     sortMediaItems,
     sortItems,
-} from '../../shared/quote-system/quote-data.module.js?v=20260329lang01';
+} from '../../shared/quote-system/quote-data.module.js?v=20260414lang02';
 
 const TABLE_BRANDS = 'quote_brands';
 const TABLE_PRODUCTS = 'quote_products';

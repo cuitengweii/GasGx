@@ -12,7 +12,7 @@ import {
     signInWithPassword,
     signOut,
     updateCurrentPassword,
-} from './auth.module.js?v=20260329auth01';
+} from './auth.module.js?v=20260414auth02';
 import {
     ADMIN_ENTRY_KIND,
     SALES_ENTRY_KIND,
@@ -29,7 +29,7 @@ import {
     renderQuotePipelinePage,
     renderQuoteProductsPage,
     renderQuoteSalesDashboardPage,
-} from './quote-system.module.js?v=20260329quote58';
+} from './quote-system.module.js?v=20260414quote59';
 
 const root = document.getElementById('ams-root');
 const toastNode = document.getElementById('ams-toast');
