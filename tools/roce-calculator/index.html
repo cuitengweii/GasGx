@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GasGx 动力经济核算中枢 v6.2</title>
+    <title>GasGx 鍔ㄥ姏缁忔祹鏍哥畻涓灑 v6.2</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
@@ -23,11 +23,11 @@
                 extend: {
                     colors: {
                         gasgx: {
-                            DEFAULT: '#5DD62C', // 主题亮绿
-                            hover: 'rgba(93, 214, 44, 0.15)', // 规范悬停�?
-                            dark: '#0B0E14', // 底层背景
-                            card: '#151A22', // 卡片/弹窗背景
-                            border: 'rgba(255, 255, 255, 0.08)' // 全局边框
+                            DEFAULT: '#5DD62C', // 涓婚浜豢
+                            hover: 'rgba(93, 214, 44, 0.15)', // 瑙勮寖鎮仠鑹?
+                            dark: '#0B0E14', // 搴曞眰鑳屾櫙
+                            card: '#151A22', // 鍗＄墖/寮圭獥鑳屾櫙
+                            border: 'rgba(255, 255, 255, 0.08)' // 鍏ㄥ眬杈规
                         }
                     }
                 }
@@ -141,7 +141,7 @@
 
                     <div class="mb-7">
                         <div class="flex justify-between mb-2">
-                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wide" data-i18n="lblTarget">目标装机规模</label>
+                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wide" data-i18n="lblTarget">鐩爣瑁呮満瑙勬ā</label>
                             <span id="val_kw" class="text-sm font-bold text-gasgx data-numbers">10000 kW</span>
                         </div>
                         <input type="range" id="input_kw" min="1000" max="50000" step="1000" value="10000">
@@ -149,16 +149,16 @@
 
                     <div class="mb-7">
                         <div class="flex justify-between mb-2">
-                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wide" data-i18n="lblElec">售电单价 (USD)</label>
+                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wide" data-i18n="lblElec">鍞數鍗曚环 (USD)</label>
                             <span id="val_elec" class="text-sm font-bold text-gasgx data-numbers">$0.065</span>
                         </div>
                         <input type="range" id="input_elec" min="0.03" max="0.12" step="0.005" value="0.065">
-                        <div class="text-[11px] text-slate-500 mt-1.5 data-numbers flex justify-end" id="val_elec_rmb">�?¥0.468</div>
+                        <div class="text-[11px] text-slate-500 mt-1.5 data-numbers flex justify-end" id="val_elec_rmb">鈮?楼0.468</div>
                     </div>
 
                     <div class="mb-7">
                         <div class="flex justify-between mb-2">
-                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wide" data-i18n="lblGas">天然气成�?(USD/mcf)</label>
+                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wide" data-i18n="lblGas">澶╃劧姘旀垚鏈?(USD/mcf)</label>
                             <span id="val_gas" class="text-sm font-bold text-gasgx data-numbers">$2.50</span>
                         </div>
                         <input type="range" id="input_gas" min="1.0" max="6.0" step="0.1" value="2.5">
@@ -166,12 +166,12 @@
 
                     <div class="mb-5">
                         <div class="flex justify-between mb-2">
-                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wide" data-i18n="lblDown">融资首付比例</label>
+                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wide" data-i18n="lblDown">铻嶈祫棣栦粯姣斾緥</label>
                             <span id="val_down" class="text-sm font-bold text-gasgx data-numbers">30%</span>
                         </div>
                         <input type="range" id="input_down" min="10" max="100" step="10" value="30">
                         <div class="text-[11px] text-slate-500 mt-2 leading-relaxed" data-i18n="txtDownDesc">
-                            * 余款�?年期18%平息核算月供
+                            * 浣欐鎸?骞存湡18%骞虫伅鏍哥畻鏈堜緵
                         </div>
                     </div>
                 </div>
@@ -179,8 +179,8 @@
                 <div class="bg-gasgx-hover border border-gasgx/30 rounded-lg p-4 flex items-start">
                     <i data-lucide="terminal" class="w-4 h-4 text-gasgx mr-3 flex-shrink-0 mt-0.5"></i>
                     <p class="text-xs text-gasgx/90 leading-relaxed font-medium" data-i18n="txtAlert">
-                        模型已扣除维保、月供与燃料成本�?br>
-                        <strong class="text-white">预警协议�?/strong>红色高亮行代表净现金流断�?Negative CF)�?
+                        妯″瀷宸叉墸闄ょ淮淇濄€佹湀渚涗笌鐕冩枡鎴愭湰銆?br>
+                        <strong class="text-white">棰勮鍗忚锛?/strong>绾㈣壊楂樹寒琛屼唬琛ㄥ噣鐜伴噾娴佹柇瑁?Negative CF)銆?
                     </p>
                 </div>
                 <div class="cyber-card rounded-xl p-4">
@@ -191,7 +191,7 @@
                         </div>
                         <button onclick="openConfigModal()" class="shrink-0 text-xs font-bold text-gasgx hover:text-white transition px-3 py-2 border border-gasgx/50 hover:bg-gasgx/20 rounded uppercase flex items-center shadow-[0_0_8px_rgba(93,214,44,0.2)]">
                             <i data-lucide="database" class="w-3.5 h-3.5 mr-1.5"></i>
-                            <span data-i18n="navConfig">机型配置</span>
+                            <span data-i18n="navConfig">鏈哄瀷閰嶇疆</span>
                         </button>
                     </div>
                 </div>
@@ -205,7 +205,7 @@
                         <div class="absolute top-0 right-0 w-16 h-16 bg-gasgx/5 rounded-bl-full -z-10 group-hover:bg-gasgx/10 transition-colors"></div>
                         <div class="flex items-center text-slate-400 mb-4">
                             <i data-lucide="target" class="w-4 h-4 mr-2 text-gasgx"></i>
-                            <span class="text-xs font-bold uppercase tracking-wider" data-i18n="kpiRoce">最佳资本回�?(ROCE)</span>
+                            <span class="text-xs font-bold uppercase tracking-wider" data-i18n="kpiRoce">鏈€浣宠祫鏈洖鎶?(ROCE)</span>
                         </div>
                         <div class="flex items-end justify-between">
                             <h3 id="kpi_roce_model" class="text-2xl font-bold text-white truncate max-w-[150px]">--</h3>
@@ -216,7 +216,7 @@
                         <div class="absolute top-0 right-0 w-16 h-16 bg-[#38bdf8]/5 rounded-bl-full -z-10 group-hover:bg-[#38bdf8]/10 transition-colors"></div>
                         <div class="flex items-center text-slate-400 mb-4">
                             <i data-lucide="database" class="w-4 h-4 mr-2 text-[#38bdf8]"></i>
-                            <span class="text-xs font-bold uppercase tracking-wider" data-i18n="kpiCash">最高月净造血</span>
+                            <span class="text-xs font-bold uppercase tracking-wider" data-i18n="kpiCash">鏈€楂樻湀鍑€閫犺</span>
                         </div>
                         <div class="flex items-end justify-between">
                             <h3 id="kpi_cash_model" class="text-2xl font-bold text-white truncate max-w-[150px]">--</h3>
@@ -227,7 +227,7 @@
                         <div class="absolute top-0 right-0 w-16 h-16 bg-[#a78bfa]/5 rounded-bl-full -z-10 group-hover:bg-[#a78bfa]/10 transition-colors"></div>
                         <div class="flex items-center text-slate-400 mb-4">
                             <i data-lucide="clock" class="w-4 h-4 mr-2 text-[#a78bfa]"></i>
-                            <span class="text-xs font-bold uppercase tracking-wider" data-i18n="kpiPayback">最快回本周�?/span>
+                            <span class="text-xs font-bold uppercase tracking-wider" data-i18n="kpiPayback">鏈€蹇洖鏈懆鏈?/span>
                         </div>
                         <div class="flex items-end justify-between">
                             <h3 id="kpi_payback_model" class="text-2xl font-bold text-white truncate max-w-[150px]">--</h3>
@@ -240,7 +240,7 @@
                 <div class="cyber-card rounded-xl p-6 relative">
                     <h3 class="text-sm font-bold text-white mb-6 uppercase tracking-wider flex items-center">
                         <i data-lucide="bar-chart" class="w-4 h-4 mr-2 text-slate-400"></i>
-                        <span data-i18n="chartTitle">ROCE �?现金流综合矩�?/span>
+                        <span data-i18n="chartTitle">ROCE 涓?鐜伴噾娴佺患鍚堢煩闃?/span>
                     </h3>
                     <div class="h-[300px] w-full">
                         <canvas id="mainChart"></canvas>
@@ -252,20 +252,20 @@
                     <div class="px-6 py-4 border-b cyber-divider bg-[#1e2532]/50 flex justify-between items-center">
                         <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center">
                             <i data-lucide="server" class="w-4 h-4 mr-2 text-slate-400"></i>
-                            <span data-i18n="tableTitle">全栈财务数据解析 (RMB: �?</span>
+                            <span data-i18n="tableTitle">鍏ㄦ爤璐㈠姟鏁版嵁瑙ｆ瀽 (RMB: 涓?</span>
                         </h3>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-[#10141a]">
-                                    <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colModel">机型矩阵</th>
-                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colUnits">节点规模</th>
-                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colDown">首付金额</th>
-                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colLease">刚性月�?/th>
-                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colCash">月净现金�?/th>
-                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colPayback">回本速度</th>
-                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colRoce">首年 ROCE</th>
+                                    <th scope="col" class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colModel">鏈哄瀷鐭╅樀</th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colUnits">鑺傜偣瑙勬ā</th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colDown">棣栦粯閲戦</th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colLease">鍒氭€ф湀渚?/th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colCash">鏈堝噣鐜伴噾娴?/th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colPayback">鍥炴湰閫熷害</th>
+                                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider border-b cyber-divider" data-i18n="colRoce">棣栧勾 ROCE</th>
                                 </tr>
                             </thead>
                             <tbody id="table_body" class="bg-transparent">
@@ -284,7 +284,7 @@
             <div class="p-5 border-b cyber-divider flex justify-between items-center bg-[#151A22]">
                 <h3 class="text-lg font-bold text-white flex items-center">
                     <i data-lucide="database" class="w-5 h-5 mr-2 text-gasgx"></i> 
-                    <span data-i18n="modTitle">编辑机型数据�?(DB Config)</span>
+                    <span data-i18n="modTitle">缂栬緫鏈哄瀷鏁版嵁婧?(DB Config)</span>
                 </h3>
                 <button onclick="closeConfigModal()" class="text-slate-400 hover:text-white transition"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
@@ -294,12 +294,12 @@
                     <table class="w-full text-left border-collapse min-w-[800px]">
                         <thead>
                             <tr class="text-xs text-slate-400 uppercase border-b cyber-divider bg-[#151A22]">
-                                <th class="p-3 font-semibold w-1/4" data-i18n="mColName">机型名称/型号</th>
-                                <th class="p-3 font-semibold" data-i18n="mColPower">功率(kW)</th>
-                                <th class="p-3 font-semibold" data-i18n="mColPrice">机器单价(�?</th>
-                                <th class="p-3 font-semibold" data-i18n="mColGas">满载耗气(m³/h)</th>
-                                <th class="p-3 font-semibold" data-i18n="mColMaint">维保费用(�?</th>
-                                <th class="p-3 font-semibold" data-i18n="mColMType">计费模式</th>
+                                <th class="p-3 font-semibold w-1/4" data-i18n="mColName">鏈哄瀷鍚嶇О/鍨嬪彿</th>
+                                <th class="p-3 font-semibold" data-i18n="mColPower">鍔熺巼(kW)</th>
+                                <th class="p-3 font-semibold" data-i18n="mColPrice">鏈哄櫒鍗曚环(鍏?</th>
+                                <th class="p-3 font-semibold" data-i18n="mColGas">婊¤浇鑰楁皵(m鲁/h)</th>
+                                <th class="p-3 font-semibold" data-i18n="mColMaint">缁翠繚璐圭敤(鍏?</th>
+                                <th class="p-3 font-semibold" data-i18n="mColMType">璁¤垂妯″紡</th>
                                 <th class="p-3 font-semibold text-center w-12"></th>
                             </tr>
                         </thead>
@@ -309,14 +309,14 @@
                     </table>
                 </div>
                 <button onclick="addMachineRow()" class="mt-4 text-xs font-bold text-gasgx hover:text-white hover:bg-gasgx/10 border border-dashed border-gasgx/50 p-3 rounded w-full transition uppercase tracking-wider flex justify-center items-center">
-                    <i data-lucide="plus" class="w-4 h-4 mr-1"></i> <span data-i18n="btnAdd">新增机型配置</span>
+                    <i data-lucide="plus" class="w-4 h-4 mr-1"></i> <span data-i18n="btnAdd">鏂板鏈哄瀷閰嶇疆</span>
                 </button>
             </div>
             
             <div class="p-5 border-t cyber-divider flex justify-end space-x-3 bg-[#151A22] rounded-b-xl">
-                <button onclick="closeConfigModal()" class="px-5 py-2 rounded text-xs font-bold text-slate-400 hover:text-white border border-slate-700 hover:bg-slate-800 transition" data-i18n="btnCancel">取消 (CANCEL)</button>
+                <button onclick="closeConfigModal()" class="px-5 py-2 rounded text-xs font-bold text-slate-400 hover:text-white border border-slate-700 hover:bg-slate-800 transition" data-i18n="btnCancel">鍙栨秷 (CANCEL)</button>
                 <button onclick="saveConfigModal()" class="px-5 py-2 rounded text-xs font-bold bg-gasgx text-black hover:brightness-110 transition shadow-[0_0_12px_rgba(93,214,44,0.3)] flex items-center" data-i18n="btnSave">
-                    <i data-lucide="save" class="w-3.5 h-3.5 mr-1.5 fill-black"></i> 保存并重�?(SAVE & RECALC)
+                    <i data-lucide="save" class="w-3.5 h-3.5 mr-1.5 fill-black"></i> 淇濆瓨骞堕噸绠?(SAVE & RECALC)
                 </button>
             </div>
         </div>
@@ -364,53 +364,53 @@
         ];
 
         // i18n Dictionary
-        const dict = {
+                const dict = {
             zh: {
                 navConfig: "机型配置",
                 sysOnline: "SYSTEM_ONLINE",
-                roceActive: "ROCE Core Active",
-                panelParams: "Params Control",
-                panelConfig: "Machine Config",
-                panelConfigDesc: "Manage model presets used in ROCE calculation.",
+                roceActive: "ROCE 核心运行",
+                panelParams: "参数控制",
+                panelConfig: "机型配置",
+                panelConfigDesc: "管理用于 ROCE 计算的机型预设。",
                 lblTarget: "目标装机规模",
                 lblElec: "售电单价 (USD)",
-                lblGas: "天然气成�?(USD/mcf)",
+                lblGas: "天然气成本 (USD/mcf)",
                 lblDown: "融资首付比例",
-                txtDownDesc: "* 余款�?年期18%平息核算月供",
-                txtAlert: "模型已扣除维保、月供与燃料成本�?br><strong class='text-white'>预警协议�?/strong>红色高亮行代表净现金流断�?Negative CF)�?,
-                kpiRoce: "最佳资本回�?(ROCE)",
-                kpiCash: "最高月净造血",
-                kpiPayback: "最快回本周�?,
-                chartTitle: "ROCE �?现金流综合矩�?,
-                tableTitle: "全栈财务数据解析 (RMB: �?",
+                txtDownDesc: "* 余款按3年期18%平息核算月供",
+                txtAlert: "模型已扣除维保、月供与燃料成本。<br><strong class='text-white'>预警协议：</strong>红色高亮行代表净现金流断裂 (Negative CF)。",
+                kpiRoce: "最佳资本回报 (ROCE)",
+                kpiCash: "最高月净现金",
+                kpiPayback: "最快回本周期",
+                chartTitle: "ROCE 与现金流综合矩阵",
+                tableTitle: "全栈财务数据解析 (单位: 万人民币)",
                 colModel: "机型矩阵",
                 colUnits: "节点规模",
                 colDown: "首付金额",
-                colLease: "刚性月�?,
-                colCash: "月净现金�?,
+                colLease: "月供",
+                colCash: "月净现金流",
                 colPayback: "回本速度",
                 colRoce: "首年 ROCE",
-                
+
                 // units
-                unitU: "�?,
-                unitW: "�?,
+                unitU: "台",
+                unitW: "万",
                 unitM: "个月",
                 unitHalt: "全线亏损",
-                unitNull: "�?,
+                unitNull: "无",
                 unitErr: "无法回本",
-                
+
                 // modal
-                modTitle: "编辑机型数据�?(DB Config)",
+                modTitle: "编辑机型数据库 (DB Config)",
                 mColName: "机型名称/型号",
                 mColPower: "功率(kW)",
-                mColPrice: "机器单价(�?",
+                mColPrice: "机器单价(元)",
                 mColGas: "满载耗气(m³/h)",
-                mColMaint: "维保费用(�?",
+                mColMaint: "维保费用(元)",
                 mColMType: "计费模式",
                 btnAdd: "新增机型配置",
                 btnCancel: "取消 (CANCEL)",
-                btnSave: "保存并重�?(SAVE & RECALC)",
-                opt1k: "/ 千小�?,
+                btnSave: "保存并重算 (SAVE & RECALC)",
+                opt1k: "/ 千小时",
                 optYr: "/ 包年"
             },
             en: {
@@ -438,7 +438,7 @@
                 colCash: "Net Cash/Mo",
                 colPayback: "Payback",
                 colRoce: "Year 1 ROCE",
-                
+
                 // units
                 unitU: "U",
                 unitW: "w",
@@ -462,7 +462,6 @@
                 optYr: "/ Annual"
             }
         };
-
         // Chart Global Config
         Chart.defaults.color = '#94A3B8';
         Chart.defaults.font.family = "'JetBrains Mono', 'Fira Code', monospace";
@@ -585,7 +584,7 @@
             // Labels
             labels.kw.innerText = parseInt(inputs.kw.value).toLocaleString() + " kW";
             labels.elec.innerText = "$" + parseFloat(inputs.elec.value).toFixed(3);
-            labels.elec_rmb.innerText = `�?¥${(parseFloat(inputs.elec.value) * EXCHANGE_RATE).toFixed(3)}`;
+            labels.elec_rmb.innerText = `鈮?楼${(parseFloat(inputs.elec.value) * EXCHANGE_RATE).toFixed(3)}`;
             labels.gas.innerText = "$" + parseFloat(inputs.gas.value).toFixed(2);
             labels.down.innerText = inputs.down.value + "%";
 
@@ -612,7 +611,7 @@
                 document.getElementById('kpi_cash_model').innerText = t.unitNull;
                 document.getElementById('kpi_cash_val').innerText = "0.0 " + t.unitW;
                 document.getElementById('kpi_payback_model').innerText = t.unitErr;
-                document.getElementById('kpi_payback_val').innerText = "�?;
+                document.getElementById('kpi_payback_val').innerText = "--";
             }
 
             // Table
@@ -656,8 +655,8 @@
 
             if (mainChart) mainChart.destroy();
 
-            const titleRoce = currentLang === 'zh' ? '首年 ROCE (%)' : 'Year 1 ROCE (%)';
-            const titleCash = currentLang === 'zh' ? '月净造血 (�?' : 'Mo. Cash (10k)';
+            const titleRoce = currentLang === 'zh' ? '棣栧勾 ROCE (%)' : 'Year 1 ROCE (%)';
+            const titleCash = currentLang === 'zh' ? '鏈堝噣閫犺 (涓?' : 'Mo. Cash (10k)';
 
             mainChart = new Chart(ctx, {
                 type: 'bar',
@@ -806,7 +805,7 @@
 
         function deleteMachineRow(index) {
             if (machines.length <= 1) {
-                alert(currentLang==='zh' ? "至少保留一个机型配置�? : "At least one model must remain.");
+                alert(currentLang === 'zh' ? "至少保留一个机型配置。" : "At least one model must remain.");
                 return;
             }
             machines.splice(index, 1);
