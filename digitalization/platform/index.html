@@ -1035,6 +1035,9 @@
                 document.body.classList.toggle('en-mode', lang === 'en');
                 document.body.dataset.lang = lang;
                 document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+                document.title = lang === 'zh'
+                    ? 'GasGx 智维云 - 全球分布式燃气算力电站 O&M 领航者'
+                    : 'GasGx Digitalization Platform - Global Distributed Gas Hashrate Power Station O&M';
                 persistLang(lang);
                 return lang;
             }
