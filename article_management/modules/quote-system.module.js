@@ -103,6 +103,7 @@ const moduleState = {
     dealStageFilter: 'all',
     dealStatusFilter: 'all',
     customerListMode: 'active',
+    dashboardRange: 'quarter',
     brandCreateMode: false,
     customerCreateMode: false,
     requirementCreateMode: false,
@@ -7705,7 +7706,7 @@ function customerActivityTimelinePanelMarkup(customerId = '') {
     const rows = customerActivityTimelineRows(customerId)
         .filter((item) => filter === 'all' ? true : text(item.actor_type) === filter);
     return `
-        <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold">
+        <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold" data-customer-activity-panel="${esc(customerId)}">
             <summary class="ams-fold-summary">
                 <span>用户行为轨迹</span>
                 <em>${esc(`${rows.length} 条`)}</em>
@@ -7723,6 +7724,25 @@ function customerActivityTimelinePanelMarkup(customerId = '') {
             </div>
         </details>
     `;
+}
+
+function bindCustomerActivityPanel(panel = null, customerId = '') {
+    if (!panel || !customerId) return;
+    panel.querySelectorAll('[data-customer-activity-filter]').forEach((button) => {
+        if (button.dataset.bound === '1') return;
+        button.dataset.bound = '1';
+        button.addEventListener('click', () => {
+            const nextFilter = text(button.dataset.customerActivityFilter, DEFAULT_CUSTOMER_ACTIVITY_FILTER);
+            if (!['all', 'customer', 'sales', 'system'].includes(nextFilter)) return;
+            if (moduleState.customerActivityFilter === nextFilter) return;
+            const keepOpen = panel.open === true;
+            moduleState.customerActivityFilter = nextFilter;
+            panel.outerHTML = customerActivityTimelinePanelMarkup(customerId);
+            const nextPanel = document.querySelector(`[data-customer-activity-panel="${customerId}"]`);
+            if (nextPanel && keepOpen) nextPanel.open = true;
+            bindCustomerActivityPanel(nextPanel, customerId);
+        });
+    });
 }
 
 function instanceInsightsMarkup() {
@@ -9690,6 +9710,10 @@ function bindCustomerEditor(input) {
             window.location.assign(adminPageUrl('quote-requirements', { requirement: requirementId }));
         });
     });
+
+    document.querySelectorAll('[data-customer-activity-panel]').forEach((panel) => {
+        bindCustomerActivityPanel(panel, text(panel.dataset.customerActivityPanel));
+    });
 }
 
 function bindRequirementEditor(input) {
@@ -11319,6 +11343,348 @@ function salesOverviewStageGuideLanes() {
             stages: DEAL_STAGE_DEFINITIONS.slice(10),
         },
     ];
+}
+
+const DASHBOARD_RANGE_OPTIONS = Object.freeze([
+    { value: 'month', label: '本月' },
+    { value: 'quarter', label: '本季度' },
+    { value: 'year', label: '本年' },
+]);
+
+function startOfDashboardRange(range = 'quarter', baseDate = new Date()) {
+    const current = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+    if (range === 'month') return new Date(current.getFullYear(), current.getMonth(), 1);
+    if (range === 'year') return new Date(current.getFullYear(), 0, 1);
+    return new Date(current.getFullYear(), Math.floor(current.getMonth() / 3) * 3, 1);
+}
+
+function endOfDashboardRange(range = 'quarter', baseDate = new Date()) {
+    const start = startOfDashboardRange(range, baseDate);
+    if (range === 'month') return new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59, 999);
+    if (range === 'year') return new Date(start.getFullYear() + 1, 0, 0, 23, 59, 59, 999);
+    return new Date(start.getFullYear(), start.getMonth() + 3, 0, 23, 59, 59, 999);
+}
+
+function dateMs(value = '') {
+    const stamp = Date.parse(text(value));
+    return Number.isFinite(stamp) ? stamp : 0;
+}
+
+function fmtCompactNumber(value = 0) {
+    const number = safeNumber(value, 0);
+    if (Math.abs(number) >= 100000000) return `${(number / 100000000).toFixed(1)}亿`;
+    if (Math.abs(number) >= 10000) return `${(number / 10000).toFixed(1)}万`;
+    return number.toLocaleString('zh-CN', { maximumFractionDigits: 0 });
+}
+
+function fmtPercent(value = 0, digits = 0) {
+    return `${(safeNumber(value, 0) * 100).toFixed(digits)}%`;
+}
+
+function dashboardPeriodLabel(range = 'quarter') {
+    const now = new Date();
+    if (range === 'month') return `${now.getMonth() + 1} 月`;
+    if (range === 'year') return `${now.getFullYear()} 年`;
+    return `${Math.floor(now.getMonth() / 3) + 1} 季度`;
+}
+
+function dashboardDealRecords(deal = null) {
+    if (!deal?.id) return [];
+    const existing = text(moduleState.dealLoadedId) === text(deal.id)
+        ? moduleState.dealStageRecords
+        : [];
+    return existing.length ? mergeDealStageRecords(deal, existing) : mergeDealStageRecords(deal, []);
+}
+
+function dashboardRecordByStage(deal = null, stageKey = '') {
+    return stageRecordByKey(stageKey, dashboardDealRecords(deal)) || createDealStageRecord({ stage_key: stageKey });
+}
+
+function dashboardDealAnchorDate(deal = null) {
+    if (!deal?.id) return 0;
+    const contractRecord = dashboardRecordByStage(deal, 'contract_signed');
+    return dateMs(stageMetaValue(contractRecord, 'contract_date'))
+        || dateMs(contractRecord.completed_at)
+        || dateMs(deal.updated_at)
+        || dateMs(deal.created_at);
+}
+
+function dashboardDealsInRange(deals = [], range = 'quarter', now = new Date()) {
+    const start = startOfDashboardRange(range, now).getTime();
+    const end = endOfDashboardRange(range, now).getTime();
+    return deals.filter((deal) => {
+        const anchor = dashboardDealAnchorDate(deal);
+        return anchor >= start && anchor <= end;
+    });
+}
+
+function dashboardPreviousDeals(deals = [], range = 'quarter', now = new Date()) {
+    const currentStart = startOfDashboardRange(range, now);
+    const previousEnd = new Date(currentStart.getTime() - 1);
+    const previousStart = startOfDashboardRange(range, previousEnd);
+    return deals.filter((deal) => {
+        const anchor = dashboardDealAnchorDate(deal);
+        return anchor >= previousStart.getTime() && anchor <= previousEnd.getTime();
+    });
+}
+
+function dashboardRevenueForDeals(deals = []) {
+    return deals.reduce((total, deal) => {
+        const contractRecord = dashboardRecordByStage(deal, 'contract_signed');
+        return total + safeNumber(stageMetaValue(contractRecord, 'contract_amount'), 0);
+    }, 0);
+}
+
+function dashboardCashForDeals(deals = []) {
+    return deals.reduce((total, deal) => {
+        const depositRecord = dashboardRecordByStage(deal, 'deposit_paid');
+        const balanceRecord = dashboardRecordByStage(deal, 'balance_confirmed');
+        return total
+            + safeNumber(stageMetaValue(depositRecord, 'deposit_received'), 0)
+            + safeNumber(stageMetaValue(balanceRecord, 'balance_confirmed_amount'), 0);
+    }, 0);
+}
+
+function dashboardStageIndex(stageKey = '') {
+    return Math.max(0, stageOrderIndex(stageKey));
+}
+
+function dashboardDelta(current = 0, previous = 0) {
+    if (!previous && !current) return 0;
+    if (!previous) return current > 0 ? 1 : 0;
+    return (current - previous) / previous;
+}
+
+function dashboardToneForRate(rate = 0, warningThreshold = 0.8) {
+    if (rate < warningThreshold) return 'is-danger';
+    if (rate < 1) return 'is-warning';
+    return 'is-good';
+}
+
+function dashboardTopRegions(deals = []) {
+    const map = new Map();
+    deals.forEach((deal) => {
+        const customer = moduleState.customers.find((item) => item.id === text(deal.customer_id)) || {};
+        const key = text(customer.country, '未标注地区');
+        map.set(key, safeNumber(map.get(key), 0) + 1);
+    });
+    return [...map.entries()]
+        .map(([label, value]) => ({ label, value }))
+        .sort((left, right) => right.value - left.value)
+        .slice(0, 5);
+}
+
+function dashboardTopProducts(deals = []) {
+    const map = new Map();
+    deals.forEach((deal) => {
+        dealQuotes(deal.id).forEach((quote) => {
+            const key = text(productLabelById(quote.product_id), '未绑定产品');
+            map.set(key, safeNumber(map.get(key), 0) + 1);
+        });
+    });
+    return [...map.entries()]
+        .map(([label, value]) => ({ label, value }))
+        .sort((left, right) => right.value - left.value)
+        .slice(0, 5);
+}
+
+function dashboardTopChannels(deals = []) {
+    const map = new Map();
+    deals.forEach((deal) => {
+        dealRequirements(deal.id).forEach((requirement) => {
+            const key = optionLabel(REQUIREMENT_SELECT_OPTIONS.source_channel, requirement.answers?.source_channel || 'other');
+            map.set(key, safeNumber(map.get(key), 0) + 1);
+        });
+    });
+    return [...map.entries()]
+        .map(([label, value]) => ({ label, value }))
+        .sort((left, right) => right.value - left.value)
+        .slice(0, 5);
+}
+
+function dashboardOwnerRanking(deals = []) {
+    const map = new Map();
+    deals.forEach((deal) => {
+        const key = text(deal.owner_name || deal.owner_email, '未分配');
+        const current = map.get(key) || { label: key, deals: 0, revenue: 0 };
+        current.deals += 1;
+        current.revenue += dashboardRevenueForDeals([deal]);
+        map.set(key, current);
+    });
+    return [...map.values()]
+        .sort((left, right) => right.revenue - left.revenue || right.deals - left.deals)
+        .slice(0, 5);
+}
+
+function dashboardTrendBuckets(range = 'quarter', deals = [], now = new Date()) {
+    const bucketCount = range === 'year' ? 12 : range === 'month' ? 4 : 3;
+    const labels = [];
+    const items = [];
+    const rangeStart = startOfDashboardRange(range, now);
+    for (let index = 0; index < bucketCount; index += 1) {
+        let bucketStart;
+        let bucketEnd;
+        if (range === 'year') {
+            bucketStart = new Date(rangeStart.getFullYear(), index, 1);
+            bucketEnd = new Date(rangeStart.getFullYear(), index + 1, 0, 23, 59, 59, 999);
+            labels.push(`${index + 1}月`);
+        } else if (range === 'month') {
+            bucketStart = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), index * 7 + 1);
+            bucketEnd = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), (index + 1) * 7, 23, 59, 59, 999);
+            if (index === bucketCount - 1) bucketEnd = endOfDashboardRange(range, now);
+            labels.push(`W${index + 1}`);
+        } else {
+            bucketStart = new Date(rangeStart.getFullYear(), rangeStart.getMonth() + index, 1);
+            bucketEnd = new Date(rangeStart.getFullYear(), rangeStart.getMonth() + index + 1, 0, 23, 59, 59, 999);
+            labels.push(`${bucketStart.getMonth() + 1}月`);
+        }
+        const bucketDeals = deals.filter((deal) => {
+            const anchor = dashboardDealAnchorDate(deal);
+            return anchor >= bucketStart.getTime() && anchor <= bucketEnd.getTime();
+        });
+        items.push({
+            label: labels[index],
+            revenue: dashboardRevenueForDeals(bucketDeals),
+            deals: bucketDeals.length,
+        });
+    }
+    return items;
+}
+
+function dashboardSummarySentence(metrics = {}) {
+    const direction = metrics.revenueDelta >= 0 ? '增长' : '下滑';
+    const leadRegion = metrics.topRegions[0]?.label || '暂无明显区域';
+    const weakestStage = metrics.funnelDropLabel || '漏斗暂未识别明显短板';
+    const avgTicketDirection = metrics.avgOrderDelta >= 0 ? '回升' : '下降';
+    return `${dashboardPeriodLabel(metrics.range)}销售额${direction}${fmtPercent(Math.abs(metrics.revenueDelta), 0)}，主要由${leadRegion}带动；客单值${avgTicketDirection}${fmtPercent(Math.abs(metrics.avgOrderDelta), 0)}，当前最需要关注 ${weakestStage}。`;
+}
+
+function buildDashboardMetrics(input = null) {
+    const now = new Date();
+    const range = DASHBOARD_RANGE_OPTIONS.some((item) => item.value === moduleState.dashboardRange) ? moduleState.dashboardRange : 'quarter';
+    const allDeals = visibleDealsForInput(input, { includeClosed: true, includeArchived: false });
+    const currentDeals = dashboardDealsInRange(allDeals, range, now);
+    const previousDeals = dashboardPreviousDeals(allDeals, range, now);
+    const revenue = dashboardRevenueForDeals(currentDeals);
+    const previousRevenue = dashboardRevenueForDeals(previousDeals);
+    const orderCount = currentDeals.length;
+    const previousOrderCount = previousDeals.length;
+    const avgOrder = orderCount ? revenue / orderCount : 0;
+    const previousAvgOrder = previousOrderCount ? previousRevenue / previousOrderCount : 0;
+    const cash = dashboardCashForDeals(currentDeals);
+    const quotedDeals = currentDeals.filter((deal) => dashboardStageIndex(deal.current_stage) >= dashboardStageIndex('quote_draft')).length;
+    const signedDeals = currentDeals.filter((deal) => dashboardStageIndex(deal.current_stage) >= dashboardStageIndex('contract_signed')).length;
+    const conversionRate = quotedDeals ? signedDeals / quotedDeals : 0;
+    const daysPassed = Math.max(1, Math.ceil((now.getTime() - startOfDashboardRange(range, now).getTime()) / 86400000));
+    const totalDays = Math.max(daysPassed, Math.ceil((endOfDashboardRange(range, now).getTime() - startOfDashboardRange(range, now).getTime()) / 86400000));
+    const timeProgress = Math.min(1, daysPassed / totalDays);
+    const stagePressure = timeProgress ? conversionRate / timeProgress : conversionRate;
+    const activePipelineDeals = visibleDealsForInput(input, { includeClosed: false, includeArchived: false });
+    const topRegions = dashboardTopRegions(currentDeals);
+    const topProducts = dashboardTopProducts(currentDeals);
+    const topChannels = dashboardTopChannels(currentDeals);
+    const ownerRanking = dashboardOwnerRanking(currentDeals);
+    const trend = dashboardTrendBuckets(range, currentDeals, now);
+    const funnel = [
+        { label: '线索', value: new Set(currentDeals.map((deal) => text(deal.customer_id)).filter(Boolean)).size || 0 },
+        { label: '需求', value: currentDeals.filter((deal) => dealRequirements(deal.id).length > 0).length },
+        { label: '报价', value: currentDeals.filter((deal) => dealQuotes(deal.id).length > 0).length },
+        { label: '签约', value: signedDeals },
+        { label: '回款', value: currentDeals.filter((deal) => dashboardCashForDeals([deal]) > 0).length },
+    ];
+    let funnelDropLabel = '漏斗结构健康';
+    let largestDrop = 0;
+    for (let index = 1; index < funnel.length; index += 1) {
+        const previous = funnel[index - 1].value;
+        const current = funnel[index].value;
+        const drop = previous > 0 ? (previous - current) / previous : 0;
+        if (drop > largestDrop) {
+            largestDrop = drop;
+            funnelDropLabel = `${funnel[index - 1].label} → ${funnel[index].label} 流失 ${fmtPercent(drop, 0)}`;
+        }
+    }
+    const newCustomers = currentDeals.filter((deal) => {
+        const customer = moduleState.customers.find((item) => item.id === text(deal.customer_id));
+        const createdMs = dateMs(customer?.created_at);
+        return createdMs >= startOfDashboardRange(range, now).getTime();
+    }).length;
+    const customerMix = {
+        newCount: newCustomers,
+        oldCount: Math.max(0, currentDeals.length - newCustomers),
+    };
+    return {
+        range,
+        revenue,
+        previousRevenue,
+        revenueDelta: dashboardDelta(revenue, previousRevenue),
+        orderCount,
+        orderDelta: dashboardDelta(orderCount, previousOrderCount),
+        avgOrder,
+        avgOrderDelta: dashboardDelta(avgOrder, previousAvgOrder),
+        cash,
+        cashRate: revenue ? cash / revenue : 0,
+        conversionRate,
+        timeProgress,
+        stagePressure,
+        activePipelineDeals: activePipelineDeals.length,
+        pausedDeals: activePipelineDeals.filter((deal) => normalizeDealStatus(deal.deal_status) === 'paused').length,
+        topRegions,
+        topProducts,
+        topChannels,
+        ownerRanking,
+        trend,
+        funnel,
+        funnelDropLabel,
+        customerMix,
+        summary: '',
+    };
+}
+
+function dashboardListMarkup(items = [], options = {}) {
+    if (!items.length) return '<div class="ams-empty">当前筛选范围内还没有足够数据。</div>';
+    const total = Math.max(1, items.reduce((sum, item) => sum + safeNumber(item.value, 0), 0));
+    return items.map((item, index) => `
+        <div class="ams-dashboard-rank-row">
+            <div class="ams-dashboard-rank-main">
+                <span class="ams-dashboard-rank-index">${esc(index + 1)}</span>
+                <strong>${esc(item.label)}</strong>
+            </div>
+            <div class="ams-dashboard-rank-meta">
+                <span>${esc(item.value)}</span>
+                <em style="--dash-ratio:${Math.max(0.08, safeNumber(item.value, 0) / total)}"></em>
+            </div>
+        </div>
+    `).join('');
+}
+
+function dashboardOwnerMarkup(items = []) {
+    if (!items.length) return '<div class="ams-empty">暂无销售负责人数据。</div>';
+    return items.map((item, index) => `
+        <div class="ams-dashboard-owner-row">
+            <div>
+                <span class="ams-dashboard-rank-index">${esc(index + 1)}</span>
+                <strong>${esc(item.label)}</strong>
+            </div>
+            <div class="ams-dashboard-owner-stats">
+                <span>${esc(`${item.deals} 单`)}</span>
+                <em>${esc(`¥${fmtCompactNumber(item.revenue)}`)}</em>
+            </div>
+        </div>
+    `).join('');
+}
+
+function bindSalesDashboardEvents(input) {
+    document.querySelectorAll('[data-dashboard-range]').forEach((button) => {
+        if (button.dataset.bound === '1') return;
+        button.dataset.bound = '1';
+        button.addEventListener('click', () => {
+            const nextRange = text(button.dataset.dashboardRange);
+            if (!DASHBOARD_RANGE_OPTIONS.some((item) => item.value === nextRange)) return;
+            if (moduleState.dashboardRange === nextRange) return;
+            moduleState.dashboardRange = nextRange;
+            void renderQuoteSalesDashboardPage(input);
+        });
+    });
 }
 
 function visibleStageDeals(stageKey = '', input = null, options = {}) {
@@ -13341,6 +13707,10 @@ export async function renderQuoteSalesDashboardPage(input) {
         .filter((deal) => text(deal.next_action) || text(deal.next_action_due_at))
         .sort((left, right) => text(left.next_action_due_at || left.updated_at).localeCompare(text(right.next_action_due_at || right.updated_at)))
         .slice(0, 6);
+    const metrics = buildDashboardMetrics(input);
+    metrics.summary = dashboardSummarySentence(metrics);
+    const progressTone = dashboardToneForRate(metrics.stagePressure, 0.85);
+    const maxTrendRevenue = Math.max(1, ...metrics.trend.map((item) => safeNumber(item.revenue, 0)));
     const dashboardCustomerId = text(upcomingDeals[0]?.customer_id || activeDeals[0]?.customer_id);
     if (dashboardCustomerId) {
         await appendSalesActivity({
@@ -13361,12 +13731,150 @@ export async function renderQuoteSalesDashboardPage(input) {
         });
     }
 
-    renderSalesPageFrame(input, '销售总览', '查看当前销售链路分布、待办动作和项目推进压力。', `
+    renderSalesPageFrame(input, '销售总览', '30 秒看清销售健康度、增长动因和当前堵点。', `
+        <section class="ams-dashboard-command">
+            <div class="ams-dashboard-command-main">
+                <div class="ams-dashboard-command-kicker">AI 自动总结</div>
+                <h2>${esc(metrics.summary)}</h2>
+                <p>把首页当成驾驶舱来用：先看总盘，再顺着异常卡片、趋势和维度榜单往下钻。</p>
+            </div>
+            <div class="ams-dashboard-command-side">
+                <div class="ams-dashboard-filter-group" role="tablist" aria-label="总览时间范围">
+                    ${DASHBOARD_RANGE_OPTIONS.map((option) => `<button type="button" class="ams-dashboard-filter ${moduleState.dashboardRange === option.value ? 'is-active' : ''}" data-dashboard-range="${esc(option.value)}">${esc(option.label)}</button>`).join('')}
+                </div>
+                <div class="ams-dashboard-command-pulse ${progressTone}">
+                    <span>节奏达成</span>
+                    <strong>${esc(fmtPercent(metrics.stagePressure, 0))}</strong>
+                    <em>时间进度 ${esc(fmtPercent(metrics.timeProgress, 0))} / 签约转化 ${esc(fmtPercent(metrics.conversionRate, 0))}</em>
+                </div>
+            </div>
+        </section>
+        <section class="ams-dashboard-metric-grid">
+            <article class="ams-dashboard-metric-card ${dashboardToneForRate(metrics.revenueDelta >= 0 ? 1 : 0, 1)}">
+                <span>销售额 GMV</span>
+                <strong>¥${esc(fmtCompactNumber(metrics.revenue))}</strong>
+                <p>${esc(`${dashboardPeriodLabel(metrics.range)}签约额 · 环比 ${fmtPercent(metrics.revenueDelta, 0)}`)}</p>
+            </article>
+            <article class="ams-dashboard-metric-card">
+                <span>订单量 Orders</span>
+                <strong>${esc(metrics.orderCount)}</strong>
+                <p>${esc(`客单值 ¥${fmtCompactNumber(metrics.avgOrder)} · 环比 ${fmtPercent(metrics.orderDelta, 0)}`)}</p>
+            </article>
+            <article class="ams-dashboard-metric-card">
+                <span>回款进度 Cash-in</span>
+                <strong>¥${esc(fmtCompactNumber(metrics.cash))}</strong>
+                <p>${esc(`回款率 ${fmtPercent(metrics.cashRate, 0)} · 当前推进中 ${metrics.activePipelineDeals} 单`)}</p>
+            </article>
+            <article class="ams-dashboard-metric-card ${progressTone}">
+                <span>转化率 CVR</span>
+                <strong>${esc(fmtPercent(metrics.conversionRate, 0))}</strong>
+                <p>${esc(`报价转签约 · 暂停 ${metrics.pausedDeals} 单 · ${metrics.funnelDropLabel}`)}</p>
+            </article>
+        </section>
+        <section class="ams-dashboard-dual-grid">
+            <article class="ams-card ams-dashboard-trend-card">
+                <div class="ams-section-head">
+                    <div>
+                        <span class="ams-section-kicker">Trend pulse</span>
+                        <h3>销售趋势</h3>
+                        <p>用阶段签约额看风向，不在首页堆细表。</p>
+                    </div>
+                </div>
+                <div class="ams-dashboard-trend-chart">
+                    ${metrics.trend.map((item) => `
+                        <div class="ams-dashboard-trend-bar">
+                            <span class="ams-dashboard-trend-value">¥${esc(fmtCompactNumber(item.revenue))}</span>
+                            <em style="height:${Math.max(14, (safeNumber(item.revenue, 0) / maxTrendRevenue) * 100)}%"></em>
+                            <strong>${esc(item.label)}</strong>
+                        </div>
+                    `).join('')}
+                </div>
+            </article>
+            <article class="ams-card ams-dashboard-progress-card">
+                <div class="ams-section-head">
+                    <div>
+                        <span class="ams-section-kicker">Progress radar</span>
+                        <h3>目标节奏</h3>
+                        <p>时间跑得比签约快时，首页要直接报警。</p>
+                    </div>
+                </div>
+                <div class="ams-dashboard-progress-stack">
+                    <div class="ams-dashboard-progress-item">
+                        <div><strong>时间进度</strong><span>${esc(fmtPercent(metrics.timeProgress, 0))}</span></div>
+                        <b><i style="width:${Math.max(6, metrics.timeProgress * 100)}%"></i></b>
+                    </div>
+                    <div class="ams-dashboard-progress-item">
+                        <div><strong>签约转化</strong><span>${esc(fmtPercent(metrics.conversionRate, 0))}</span></div>
+                        <b><i style="width:${Math.max(6, metrics.conversionRate * 100)}%"></i></b>
+                    </div>
+                    <div class="ams-dashboard-progress-item">
+                        <div><strong>回款率</strong><span>${esc(fmtPercent(metrics.cashRate, 0))}</span></div>
+                        <b><i style="width:${Math.max(6, metrics.cashRate * 100)}%"></i></b>
+                    </div>
+                </div>
+            </article>
+        </section>
+        <section class="ams-dashboard-split-grid">
+            <article class="ams-card ams-dashboard-split-card">
+                <div class="ams-section-head"><div><span class="ams-section-kicker">Region</span><h3>地域分布</h3><p>哪里是票仓，哪里开始变慢。</p></div></div>
+                <div class="ams-dashboard-rank-list">${dashboardListMarkup(metrics.topRegions)}</div>
+            </article>
+            <article class="ams-card ams-dashboard-split-card">
+                <div class="ams-section-head"><div><span class="ams-section-kicker">Products</span><h3>产品排行</h3><p>看爆款集中在哪个产品线。</p></div></div>
+                <div class="ams-dashboard-rank-list">${dashboardListMarkup(metrics.topProducts)}</div>
+            </article>
+            <article class="ams-card ams-dashboard-split-card">
+                <div class="ams-section-head"><div><span class="ams-section-kicker">Channels</span><h3>渠道来源</h3><p>识别订单入口，不靠感觉判断渠道效果。</p></div></div>
+                <div class="ams-dashboard-rank-list">${dashboardListMarkup(metrics.topChannels)}</div>
+            </article>
+            <article class="ams-card ams-dashboard-split-card">
+                <div class="ams-section-head"><div><span class="ams-section-kicker">Team board</span><h3>销售团队排行</h3><p>让负责人贡献一眼可见。</p></div></div>
+                <div class="ams-dashboard-owner-list">${dashboardOwnerMarkup(metrics.ownerRanking)}</div>
+            </article>
+        </section>
+        <section class="ams-dashboard-dual-grid">
+            <article class="ams-card ams-dashboard-funnel-card">
+                <div class="ams-section-head">
+                    <div>
+                        <span class="ams-section-kicker">Efficiency</span>
+                        <h3>销售漏斗</h3>
+                        <p>${esc(metrics.funnelDropLabel)}</p>
+                    </div>
+                </div>
+                <div class="ams-dashboard-funnel">
+                    ${metrics.funnel.map((item, index) => `
+                        <div class="ams-dashboard-funnel-step" style="--funnel-width:${Math.max(38, 100 - (index * 12))}%">
+                            <span>${esc(item.label)}</span>
+                            <strong>${esc(item.value)}</strong>
+                        </div>
+                    `).join('')}
+                </div>
+            </article>
+            <article class="ams-card ams-dashboard-mix-card">
+                <div class="ams-section-head">
+                    <div>
+                        <span class="ams-section-kicker">Customer mix</span>
+                        <h3>新老客构成</h3>
+                        <p>新客过多说明留存偏弱，老客过多说明增长乏力。</p>
+                    </div>
+                </div>
+                <div class="ams-dashboard-mix">
+                    <div class="ams-dashboard-mix-ring">
+                        <span>销售推进池</span>
+                        <em>${esc(`总计 ${metrics.customerMix.newCount + metrics.customerMix.oldCount} 单`)}</em>
+                    </div>
+                    <div class="ams-dashboard-mix-stats">
+                        <div><strong>${esc(metrics.customerMix.newCount)}</strong><span>新客订单</span></div>
+                        <div><strong>${esc(metrics.customerMix.oldCount)}</strong><span>老客订单</span></div>
+                    </div>
+                </div>
+            </article>
+        </section>
         <section class="ams-card ams-dashboard-stage-panel">
             <div class="ams-section-head">
                 <div>
                     <span class="ams-section-kicker">Pipeline guide</span>
-                    <h3>阶段分布</h3>
+                    <h3>销售推进池</h3>
                     <p>先用这里判断当前流程位于哪一段，再点击进入对应阶段页处理。</p>
                 </div>
             </div>
@@ -13431,4 +13939,5 @@ export async function renderQuoteSalesDashboardPage(input) {
         showPipeline: false,
     });
     bindSalesPageChrome(input);
+    bindSalesDashboardEvents(input);
 }
