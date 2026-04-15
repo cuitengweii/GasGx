@@ -51,6 +51,12 @@
     const COOKIE_CONSENT_MAX_AGE_SECONDS = 31536000;
     const COOKIE_PREFS_STORAGE_KEY = "ggx_cookie_preferences_v2";
     const COOKIE_PREFS_MODAL_ID = "ggx-cookie-prefs-modal";
+    const COOKIE_CONSENT_DELAY_MS = 60 * 1000;
+    const COOKIE_CONSENT_USAGE_STORAGE_KEY = "ggx_cookie_consent_usage_ms_v1";
+    let cookieConsentDelayTimer = null;
+    let cookieConsentUsageTrackingBound = false;
+    let cookieConsentSessionStartTs = 0;
+    let cookieConsentAccumulatedMs = null;
     const SHARED_TEXT = {
         en: {
             tagline: "Natural Gas Power Mining Assistant",
@@ -125,7 +131,7 @@
         <nav id="desktop-nav" class="hidden xl:flex items-center justify-center gap-1 xl:gap-2 2xl:gap-6 h-full flex-1 min-w-0 px-1"></nav>
 
         <div class="flex items-center gap-2 xl:gap-4 w-auto shrink-0 justify-end ml-2 xl:ml-4">
-            <div class="hidden md:flex relative items-center">
+            <div class="hidden xl:flex relative items-center">
                 <button id="auth-login-btn" data-ggx-action="auth-sign-in" class="flex items-center gap-2 text-xs font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-4 py-1.5 shadow-glow hover:shadow-glow-strong transform hover:scale-105 active:scale-95">
                     <i class="fa-brands fa-google"></i>
                     <span data-ggx-text="auth-login">Login</span>
@@ -1817,6 +1823,97 @@
         return null;
     }
 
+    function clearCookieConsentDelayTimer() {
+        if (typeof window === "undefined") return;
+        if (cookieConsentDelayTimer) {
+            window.clearTimeout(cookieConsentDelayTimer);
+            cookieConsentDelayTimer = null;
+        }
+    }
+
+    function readCookieConsentUsageMs() {
+        if (typeof window === "undefined") return 0;
+        try {
+            const raw = window.localStorage.getItem(COOKIE_CONSENT_USAGE_STORAGE_KEY);
+            const parsed = Number.parseInt(raw || "0", 10);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+        } catch (_error) {
+            return 0;
+        }
+    }
+
+    function writeCookieConsentUsageMs(value) {
+        if (typeof window === "undefined") return;
+        const safeValue = Math.max(0, Math.round(Number(value) || 0));
+        try {
+            window.localStorage.setItem(COOKIE_CONSENT_USAGE_STORAGE_KEY, String(safeValue));
+        } catch (_error) {
+            // Ignore storage errors.
+        }
+    }
+
+    function getCookieConsentAccumulatedMs() {
+        if (cookieConsentAccumulatedMs === null) {
+            cookieConsentAccumulatedMs = readCookieConsentUsageMs();
+        }
+        return cookieConsentAccumulatedMs;
+    }
+
+    function appendCookieConsentUsageMs(deltaMs) {
+        const safeDelta = Math.max(0, Math.round(Number(deltaMs) || 0));
+        if (!safeDelta) return;
+        cookieConsentAccumulatedMs = getCookieConsentAccumulatedMs() + safeDelta;
+        writeCookieConsentUsageMs(cookieConsentAccumulatedMs);
+    }
+
+    function pauseCookieConsentUsageSession() {
+        if (cookieConsentSessionStartTs <= 0) return;
+        const elapsedMs = Math.max(0, Date.now() - cookieConsentSessionStartTs);
+        cookieConsentSessionStartTs = 0;
+        appendCookieConsentUsageMs(elapsedMs);
+    }
+
+    function resumeCookieConsentUsageSession() {
+        if (typeof document === "undefined" || document.hidden) return;
+        if (cookieConsentSessionStartTs > 0) return;
+        cookieConsentSessionStartTs = Date.now();
+    }
+
+    function getCookieConsentTotalUsageMs() {
+        const activeElapsedMs = cookieConsentSessionStartTs > 0
+            ? Math.max(0, Date.now() - cookieConsentSessionStartTs)
+            : 0;
+        return getCookieConsentAccumulatedMs() + activeElapsedMs;
+    }
+
+    function bindCookieConsentUsageTracking() {
+        if (cookieConsentUsageTrackingBound || typeof document === "undefined" || typeof window === "undefined") return;
+        cookieConsentUsageTrackingBound = true;
+
+        if (!document.hidden) {
+            resumeCookieConsentUsageSession();
+        }
+
+        document.addEventListener("visibilitychange", function () {
+            if (document.hidden) {
+                pauseCookieConsentUsageSession();
+                clearCookieConsentDelayTimer();
+                return;
+            }
+            resumeCookieConsentUsageSession();
+            mountCookieConsentBanner();
+        });
+
+        window.addEventListener("pagehide", function () {
+            pauseCookieConsentUsageSession();
+            clearCookieConsentDelayTimer();
+        });
+
+        window.addEventListener("beforeunload", function () {
+            pauseCookieConsentUsageSession();
+        });
+    }
+
     function readCookieConsentChoice() {
         const cookieValue = readCookieByName(COOKIE_CONSENT_COOKIE_NAME);
         if (cookieValue === "accepted" || cookieValue === "declined") {
@@ -1972,7 +2069,29 @@
         if (typeof document === "undefined") return;
         if (isNewsPath()) return;
         if (document.getElementById(COOKIE_CONSENT_BANNER_ID)) return;
-        if (readCookieConsentChoice()) return;
+        if (readCookieConsentChoice()) {
+            clearCookieConsentDelayTimer();
+            return;
+        }
+
+        bindCookieConsentUsageTracking();
+        if (!document.hidden) {
+            resumeCookieConsentUsageSession();
+        }
+        const totalUsageMs = getCookieConsentTotalUsageMs();
+        if (totalUsageMs < COOKIE_CONSENT_DELAY_MS) {
+            clearCookieConsentDelayTimer();
+            if (!document.hidden && typeof window !== "undefined") {
+                const remainingMs = Math.max(300, COOKIE_CONSENT_DELAY_MS - totalUsageMs);
+                cookieConsentDelayTimer = window.setTimeout(function () {
+                    cookieConsentDelayTimer = null;
+                    mountCookieConsentBanner();
+                }, remainingMs);
+            }
+            return;
+        }
+
+        clearCookieConsentDelayTimer();
 
         const host = document.body || document.documentElement;
         if (!host) return;
@@ -2007,6 +2126,8 @@
         const declineBtn = banner.querySelector("[data-ggx-consent-action='decline']");
         const optionalBtn = banner.querySelector("[data-ggx-consent-action='optional']");
         const onChoice = function (choice) {
+            pauseCookieConsentUsageSession();
+            clearCookieConsentDelayTimer();
             writeCookieConsentChoice(choice);
             hideCookieConsentBanner();
         };

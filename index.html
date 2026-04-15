@@ -1294,7 +1294,7 @@ window.app = {
             currentLang: 'en', isMobileMenuOpen: false,
             rotationTimer: null, projection: null, projectionAir: null, geoGenerator: null, svg: null, width: 0, height: 0, countries: [], activeData: null, lastElapsed: 0, dragVelocity: { x: 0, y: 0 }, friction: 0.95, autoRotateSpeed: 0.2,
             rafPending: false, frameIntervalMs: 16, perfLite: false, visibilityBound: false, hudLine: null, hudDot: null,
-            countrySelection: null, iconSelection: null, labelSelection: null, isDrawerOpen: false, resizeBound: false, drawerEscapeBound: false,
+            countrySelection: null, iconSelection: null, labelSelection: null, isDrawerOpen: false, resizeBound: false, drawerEscapeBound: false, drawerSwipeBound: false, drawerSwipeState: null, drawerSwipeSuppressClickUntil: 0,
             onboardingBound: false, onboardingResizeBound: false, onboardingActive: false, onboardingStepIndex: 0, onboardingSteps: [], onboardingVersion: '20260415c', onboardingStorageBaseKey: 'gasgx-home-guide', onboardingSyncTimer: null, onboardingGlobeDemoTimer: null, onboardingGlobeDemoPhase: 0, onboardingLastStepKey: '', onboardingInfoPrimed: false,
 
             init() {
@@ -1333,6 +1333,7 @@ window.app = {
                     });
                     this.drawerEscapeBound = true;
                 }
+                this.bindDrawerSwipeGesture();
                 this.initializeOnboarding();
             },
 
@@ -1401,9 +1402,101 @@ window.app = {
             },
             toggleDrawer(forceState) {
                 if (!this.isMobileDrawerMode()) return;
+                if (Date.now() < this.drawerSwipeSuppressClickUntil) return;
                 this.isDrawerOpen = typeof forceState === 'boolean' ? forceState : !this.isDrawerOpen;
                 this.syncDrawerState();
                 if (this.activeData) this.updateInfoBox(true);
+            },
+            bindDrawerSwipeGesture() {
+                if (this.drawerSwipeBound) return;
+                const toggle = document.getElementById('mobile-drawer-toggle');
+                const sidebar = document.getElementById('ranking-sidebar');
+                if (!toggle || !sidebar) return;
+
+                const getTouchY = (touchList) => {
+                    if (!touchList || !touchList.length) return null;
+                    return touchList[0].clientY;
+                };
+
+                const beginSwipe = (clientY) => {
+                    if (!this.isMobileDrawerMode() || typeof clientY !== 'number') return;
+                    this.drawerSwipeState = {
+                        startY: clientY,
+                        lastY: clientY,
+                        moved: false,
+                        startedOpen: !!this.isDrawerOpen
+                    };
+                };
+
+                const moveSwipe = (clientY) => {
+                    const state = this.drawerSwipeState;
+                    if (!state || typeof clientY !== 'number') return;
+                    const deltaY = clientY - state.startY;
+                    state.lastY = clientY;
+                    if (Math.abs(deltaY) > 6) state.moved = true;
+                    if (!state.moved) return;
+
+                    const peekHeight = this.getMobileDrawerPeekHeight();
+                    const sidebarHeight = Math.max(0, Math.ceil(sidebar.getBoundingClientRect().height || 0));
+                    const closedTranslate = Math.max(0, sidebarHeight - peekHeight);
+                    const startTranslate = state.startedOpen ? 0 : closedTranslate;
+                    const targetTranslate = Math.max(0, Math.min(closedTranslate, startTranslate + deltaY));
+                    sidebar.style.transition = 'none';
+                    sidebar.style.transform = `translateY(${targetTranslate}px)`;
+                };
+
+                const endSwipe = (clientY) => {
+                    const state = this.drawerSwipeState;
+                    this.drawerSwipeState = null;
+                    if (!state) return;
+                    sidebar.style.transition = '';
+
+                    const finalY = typeof clientY === 'number' ? clientY : state.lastY;
+                    const deltaY = finalY - state.startY;
+                    const threshold = 36;
+
+                    if (!state.moved) {
+                        this.syncDrawerState();
+                        return;
+                    }
+
+                    this.drawerSwipeSuppressClickUntil = Date.now() + 320;
+                    if (state.startedOpen) {
+                        this.toggleDrawer(deltaY > threshold ? false : true);
+                    } else {
+                        this.toggleDrawer(deltaY < -threshold ? true : false);
+                    }
+                };
+
+                toggle.addEventListener('touchstart', (event) => {
+                    const clientY = getTouchY(event.touches);
+                    beginSwipe(clientY);
+                }, { passive: true });
+
+                toggle.addEventListener('touchmove', (event) => {
+                    const clientY = getTouchY(event.touches);
+                    moveSwipe(clientY);
+                    const state = this.drawerSwipeState;
+                    if (state && state.moved) event.preventDefault();
+                }, { passive: false });
+
+                toggle.addEventListener('touchend', (event) => {
+                    const clientY = getTouchY(event.changedTouches);
+                    endSwipe(clientY);
+                }, { passive: true });
+
+                toggle.addEventListener('touchcancel', () => {
+                    endSwipe(null);
+                }, { passive: true });
+
+                toggle.addEventListener('click', (event) => {
+                    if (Date.now() < this.drawerSwipeSuppressClickUntil) {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                    }
+                }, true);
+
+                this.drawerSwipeBound = true;
             },
             getOnboardingCopy() {
                 if (this.currentLang === 'zh') {
