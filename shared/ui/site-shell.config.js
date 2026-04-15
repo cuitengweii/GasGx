@@ -287,35 +287,35 @@
                                                                 "zh": "综合性能 TOP 榜",
                                                                 "en": "Top Performance"
                                                         },
-                                                        "path": "/rankings/performance"
+                                                        "path": "/rankings#rank-top-performance"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "高效率榜",
                                                                 "en": "High Efficiency"
                                                         },
-                                                        "path": "/rankings/efficiency"
+                                                        "path": "/rankings#rank-high-efficiency"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "天然气内燃机发电效率排行榜",
                                                                 "en": "Elec. Efficiency Rank"
                                                         },
-                                                        "path": "/rankings/engine-efficiency"
+                                                        "path": "/rankings#rank-high-efficiency"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "天然气内燃机热效率排行榜",
                                                                 "en": "Thermal Efficiency Rank"
                                                         },
-                                                        "path": "/rankings/thermal-efficiency"
+                                                        "path": "/rankings#rank-thermal-efficiency"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "天然气内燃机耗气量排行榜",
                                                                 "en": "Gas Consumption Rank"
                                                         },
-                                                        "path": "/rankings/gas-consumption"
+                                                        "path": "/rankings#rank-gas-consumption"
                                                 }
                                         ]
                                 },
@@ -330,28 +330,28 @@
                                                                 "zh": "最佳 ROI 榜",
                                                                 "en": "Best ROI"
                                                         },
-                                                        "path": "/rankings/roi"
+                                                        "path": "/rankings#rank-best-roi"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "最低发电成本 LCOE 榜",
                                                                 "en": "Lowest LCOE"
                                                         },
-                                                        "path": "/rankings/lcoe"
+                                                        "path": "/rankings#rank-lowest-lcoe"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "天然气内燃机折旧排行榜",
                                                                 "en": "Depreciation Rank"
                                                         },
-                                                        "path": "/rankings/depreciation"
+                                                        "path": "/rankings#rank-best-roi"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "天然气内燃机投资回报率排行榜",
                                                                 "en": "ROI Rank"
                                                         },
-                                                        "path": "/rankings/engine-roi"
+                                                        "path": "/rankings#rank-best-roi"
                                                 }
                                         ]
                                 },
@@ -366,28 +366,28 @@
                                                                 "zh": "高可靠机组榜",
                                                                 "en": "High Reliability"
                                                         },
-                                                        "path": "/rankings/reliability"
+                                                        "path": "/rankings#rank-high-reliability"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "最长 MTBF 榜",
                                                                 "en": "Longest MTBF"
                                                         },
-                                                        "path": "/rankings/mtbf"
+                                                        "path": "/rankings#rank-high-reliability"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "天然气内燃机保养时间排行榜",
                                                                 "en": "Maintenance Interval Rank"
                                                         },
-                                                        "path": "/rankings/maintenance-interval"
+                                                        "path": "/rankings#rank-maintenance-interval"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "天然气内燃机备件保障排行榜",
                                                                 "en": "Spare Parts Rank"
                                                         },
-                                                        "path": "/rankings/spare-parts"
+                                                        "path": "/rankings#rank-maintenance-interval"
                                                 }
                                         ]
                                 },
@@ -402,14 +402,14 @@
                                                                 "zh": "天然气内燃机排放排行榜",
                                                                 "en": "Emission Rank"
                                                         },
-                                                        "path": "/rankings/emissions"
+                                                        "path": "/rankings#rank-emission"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "天然气内燃机噪音排行榜",
                                                                 "en": "Noise Rank"
                                                         },
-                                                        "path": "/rankings/noise"
+                                                        "path": "/rankings#rank-noise"
                                                 }
                                         ]
                                 },
@@ -424,14 +424,14 @@
                                                                 "zh": "天然气内燃机发电机排行榜",
                                                                 "en": "Generator Rank"
                                                         },
-                                                        "path": "/rankings/generator"
+                                                        "path": "/rankings#rank-generator"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "天然气内燃机控制系统排行榜",
                                                                 "en": "Control System Rank"
                                                         },
-                                                        "path": "/rankings/control-system"
+                                                        "path": "/rankings#rank-control-system"
                                                 }
                                         ]
                                 },
@@ -446,28 +446,28 @@
                                                                 "zh": "美国市场榜",
                                                                 "en": "USA Market"
                                                         },
-                                                        "path": "/rankings/usa"
+                                                        "path": "/rankings#rank-usa-market"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "加拿大市场榜",
                                                                 "en": "Canada Market"
                                                         },
-                                                        "path": "/rankings/canada"
+                                                        "path": "/rankings#rank-canada-market"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "中东市场榜",
                                                                 "en": "Middle East Market"
                                                         },
-                                                        "path": "/rankings/middle-east"
+                                                        "path": "/rankings#rank-middle-east-market"
                                                 },
                                                 {
                                                         "title": {
                                                                 "zh": "俄罗斯市场榜",
                                                                 "en": "Russia Market"
                                                         },
-                                                        "path": "/rankings/russia"
+                                                        "path": "/rankings#rank-russia-market"
                                                 }
                                         ]
                                 }

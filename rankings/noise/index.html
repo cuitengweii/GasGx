@@ -92,11 +92,49 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 0.75rem;
             overflow: hidden;
-            transition: all 0.3s ease;
+            transition: transform 0.35s ease, filter 0.35s ease, opacity 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+            transform-origin: center center;
         }
         .ranking-card:hover {
             border-color: rgba(93, 214, 44, 0.3);
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .ranking-card-anchor-highlight {
+            border-color: rgba(93, 214, 44, 0.9) !important;
+            box-shadow: 0 0 0 2px rgba(93, 214, 44, 0.28), 0 0 28px rgba(93, 214, 44, 0.45) !important;
+            animation: rankingAnchorPulse 1.8s ease-out 1;
+        }
+        .ranking-card-anchor-active {
+            border-color: rgba(93, 214, 44, 0.72) !important;
+            box-shadow: 0 0 0 2px rgba(93, 214, 44, 0.20), 0 0 18px rgba(93, 214, 44, 0.24) !important;
+        }
+        .ranking-focus-mode .ranking-card {
+            filter: saturate(0.88) brightness(0.82);
+            opacity: 0.78;
+            transform: scale(0.985);
+        }
+        .ranking-focus-mode .ranking-card.ranking-card-anchor-float {
+            filter: none !important;
+            opacity: 1 !important;
+            transform: perspective(1200px) translateY(-18px) scale(1.035) !important;
+            box-shadow: 0 28px 56px rgba(0, 0, 0, 0.50), 0 10px 20px rgba(0, 0, 0, 0.32), 0 0 0 2px rgba(93, 214, 44, 0.26), 0 0 24px rgba(93, 214, 44, 0.30) !important;
+            position: relative;
+            z-index: 6;
+        }
+        @keyframes rankingAnchorPulse {
+            0% { transform: translateY(0) scale(1); }
+            20% { transform: translateY(-1px) scale(1.01); }
+            100% { transform: translateY(0) scale(1); }
+        }
+        @media (max-width: 768px) {
+            .ranking-focus-mode .ranking-card {
+                filter: saturate(0.92) brightness(0.9);
+                opacity: 0.84;
+            }
+            .ranking-focus-mode .ranking-card.ranking-card-anchor-float {
+                transform: translateY(-10px) scale(1.02) !important;
+                box-shadow: 0 18px 34px rgba(0, 0, 0, 0.42), 0 0 0 2px rgba(93, 214, 44, 0.24), 0 0 18px rgba(93, 214, 44, 0.24) !important;
+            }
         }
         .ranking-table th {
             background-color: #222;
@@ -175,7 +213,7 @@
             
             <div id="tab-1" class="tab-pane block opacity-100 transition-opacity duration-300">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="ranking-card">
+                    <div id="rank-top-performance" class="ranking-card">
                         <div class="px-6 py-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
                             <h5 class="text-gas-green font-bold text-lg"><i class="fa-solid fa-trophy mr-2"></i><span data-i18n="rank_top">Comprehensive Top</span></h5>
                         </div>
@@ -198,7 +236,7 @@
                         </div>
                     </div>
 
-                    <div class="ranking-card">
+                    <div id="rank-high-efficiency" class="ranking-card">
                         <div class="px-6 py-4 border-b border-white/5 bg-white/5">
                             <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-bolt mr-2 text-yellow-400"></i><span data-i18n="rank_elec_eff">Elec. Efficiency</span></h5>
                         </div>
@@ -216,7 +254,7 @@
                         </div>
                     </div>
 
-                    <div class="ranking-card">
+                    <div id="rank-thermal-efficiency" class="ranking-card">
                         <div class="px-6 py-4 border-b border-white/5 bg-white/5">
                             <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-fire mr-2 text-orange-500"></i><span data-i18n="rank_therm_eff">Thermal Efficiency</span></h5>
                         </div>
@@ -234,7 +272,7 @@
                         </div>
                     </div>
 
-                    <div class="ranking-card">
+                    <div id="rank-gas-consumption" class="ranking-card">
                         <div class="px-6 py-4 border-b border-white/5 bg-white/5">
                             <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-arrow-trend-down mr-2 text-blue-400"></i><span data-i18n="rank_gas_con">Gas Consumption</span></h5>
                         </div>
@@ -256,7 +294,7 @@
 
             <div id="tab-2" class="tab-pane hidden opacity-0 transition-opacity duration-300">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="ranking-card">
+                    <div id="rank-best-roi" class="ranking-card">
                         <div class="px-6 py-4 border-b border-white/5 bg-white/5">
                             <h5 class="text-gas-green font-bold text-lg"><i class="fa-solid fa-coins mr-2"></i><span data-i18n="rank_roi">Best ROI</span></h5>
                         </div>
@@ -274,7 +312,7 @@
                         </div>
                     </div>
 
-                    <div class="ranking-card">
+                    <div id="rank-lowest-lcoe" class="ranking-card">
                         <div class="px-6 py-4 border-b border-white/5 bg-white/5">
                             <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-percent mr-2"></i><span data-i18n="rank_lcoe">Lowest LCOE</span></h5>
                         </div>
@@ -296,7 +334,7 @@
 
             <div id="tab-3" class="tab-pane hidden opacity-0 transition-opacity duration-300">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="ranking-card">
+                    <div id="rank-high-reliability" class="ranking-card">
                         <div class="px-6 py-4 border-b border-white/5 bg-white/5">
                             <h5 class="text-gas-green font-bold text-lg"><i class="fa-solid fa-shield-halved mr-2"></i><span data-i18n="rank_reliability">Reliability Score</span></h5>
                         </div>
@@ -314,7 +352,7 @@
                         </div>
                     </div>
 
-                    <div class="ranking-card">
+                    <div id="rank-maintenance-interval" class="ranking-card">
                         <div class="px-6 py-4 border-b border-white/5 bg-white/5">
                             <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-wrench mr-2"></i><span data-i18n="rank_maintenance">Maintenance Interval</span></h5>
                         </div>
@@ -336,7 +374,7 @@
 
             <div id="tab-4" class="tab-pane hidden opacity-0 transition-opacity duration-300">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="ranking-card">
+                    <div id="rank-emission" class="ranking-card">
                         <div class="px-6 py-4 border-b border-white/5 bg-white/5">
                             <h5 class="text-gas-green font-bold text-lg"><i class="fa-solid fa-leaf mr-2"></i><span data-i18n="rank_emission">Low Emissions (NOx)</span></h5>
                         </div>
@@ -353,7 +391,7 @@
                         </div>
                     </div>
 
-                    <div class="ranking-card">
+                    <div id="rank-noise" class="ranking-card">
                         <div class="px-6 py-4 border-b border-white/5 bg-white/5">
                             <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-volume-xmark mr-2"></i><span data-i18n="rank_noise">Lowest Noise</span></h5>
                         </div>
@@ -374,7 +412,7 @@
 
             <div id="tab-5" class="tab-pane hidden opacity-0 transition-opacity duration-300">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="ranking-card">
+                    <div id="rank-generator" class="ranking-card">
                         <div class="px-6 py-4 border-b border-white/5 bg-white/5">
                             <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-gears mr-2"></i><span data-i18n="rank_alternator">Alternator Pairing</span></h5>
                         </div>
@@ -391,7 +429,7 @@
                         </div>
                     </div>
 
-                    <div class="ranking-card">
+                    <div id="rank-control-system" class="ranking-card">
                         <div class="px-6 py-4 border-b border-white/5 bg-white/5">
                             <h5 class="text-white font-bold text-lg"><i class="fa-solid fa-microchip mr-2"></i><span data-i18n="rank_control">Control Systems</span></h5>
                         </div>
@@ -412,7 +450,7 @@
 
             <div id="tab-6" class="tab-pane hidden opacity-0 transition-opacity duration-300">
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                    <div class="ranking-card">
+                    <div id="rank-usa-market" class="ranking-card">
                         <div class="px-4 py-3 border-b border-white/5 bg-white/5"><h5 class="font-bold"><span data-i18n="market_usa">🇺🇸 USA Market</span></h5></div>
                         <div class="p-4">
                             <ul class="space-y-2 text-sm text-gray-400">
@@ -423,7 +461,7 @@
                             </ul>
                         </div>
                     </div>
-                    <div class="ranking-card">
+                    <div id="rank-canada-market" class="ranking-card">
                         <div class="px-4 py-3 border-b border-white/5 bg-white/5"><h5 class="font-bold"><span data-i18n="market_canada">🇨🇦 Canada Market</span></h5></div>
                         <div class="p-4">
                             <ul class="space-y-2 text-sm text-gray-400">
@@ -434,7 +472,7 @@
                             </ul>
                         </div>
                     </div>
-                    <div class="ranking-card">
+                    <div id="rank-middle-east-market" class="ranking-card">
                         <div class="px-4 py-3 border-b border-white/5 bg-white/5"><h5 class="font-bold"><span data-i18n="market_me">🇦🇪 Middle East</span></h5></div>
                         <div class="p-4">
                             <ul class="space-y-2 text-sm text-gray-400">
@@ -445,7 +483,7 @@
                             </ul>
                         </div>
                     </div>
-                    <div class="ranking-card">
+                    <div id="rank-russia-market" class="ranking-card">
                         <div class="px-4 py-3 border-b border-white/5 bg-white/5"><h5 class="font-bold"><span data-i18n="market_russia">🇷🇺 Russia Market</span></h5></div>
                         <div class="p-4">
                             <ul class="space-y-2 text-sm text-gray-400">
@@ -620,6 +658,7 @@ init() {
                 
                 // [新增] 初始化时检查 URL 并切换 Tab
                 this.handleUrlRouting();
+                window.addEventListener('hashchange', () => this.handleHashRouting());
 
                 // ... 原有的 scroll 逻辑 ...
                 window.onscroll = () => {
@@ -639,16 +678,24 @@ init() {
                     // Tab 1: 性能
                     'performance': 'tab-1',
                     'efficiency': 'tab-1',
+                    'engine-efficiency': 'tab-1',
+                    'thermal-efficiency': 'tab-1',
+                    'gas-consumption': 'tab-1',
                     'top': 'tab-1',
                     
                     // Tab 2: 经济性
                     'economics': 'tab-2',
                     'roi': 'tab-2',
                     'lcoe': 'tab-2',
+                    'depreciation': 'tab-2',
+                    'engine-roi': 'tab-2',
                     
                     // Tab 3: 可靠性
                     'reliability': 'tab-3',
                     'maintenance': 'tab-3',
+                    'mtbf': 'tab-3',
+                    'maintenance-interval': 'tab-3',
+                    'spare-parts': 'tab-3',
                     
                     // Tab 4: 环保/品质
                     'quality': 'tab-4',
@@ -658,12 +705,39 @@ init() {
                     // Tab 5: 系统
                     'system': 'tab-5',
                     'control': 'tab-5',
+                    'generator': 'tab-5',
+                    'control-system': 'tab-5',
                     
                     // Tab 6: 区域
                     'regional': 'tab-6',
                     'regions': 'tab-6',
                     'usa': 'tab-6',
+                    'canada': 'tab-6',
+                    'middle-east': 'tab-6',
                     'russia': 'tab-6'
+                };
+                const routeTargetMap = {
+                    'performance': 'rank-top-performance',
+                    'efficiency': 'rank-high-efficiency',
+                    'engine-efficiency': 'rank-high-efficiency',
+                    'thermal-efficiency': 'rank-thermal-efficiency',
+                    'gas-consumption': 'rank-gas-consumption',
+                    'roi': 'rank-best-roi',
+                    'lcoe': 'rank-lowest-lcoe',
+                    'depreciation': 'rank-best-roi',
+                    'engine-roi': 'rank-best-roi',
+                    'reliability': 'rank-high-reliability',
+                    'mtbf': 'rank-high-reliability',
+                    'maintenance-interval': 'rank-maintenance-interval',
+                    'spare-parts': 'rank-maintenance-interval',
+                    'emissions': 'rank-emission',
+                    'noise': 'rank-noise',
+                    'generator': 'rank-generator',
+                    'control-system': 'rank-control-system',
+                    'usa': 'rank-usa-market',
+                    'canada': 'rank-canada-market',
+                    'middle-east': 'rank-middle-east-market',
+                    'russia': 'rank-russia-market'
                 };
 
                 // 2. 获取 URL 路径的最后一部分
@@ -675,6 +749,15 @@ init() {
                 // 3. 优先匹配路径
                 if (routeMap[lastSegment]) {
                     this.switchTab(routeMap[lastSegment]);
+                    const targetId = routeTargetMap[lastSegment];
+                    if (targetId) {
+                        setTimeout(() => {
+                            const target = document.getElementById(targetId);
+                            if (target) {
+                                this.highlightAnchorTarget(target);
+                            }
+                        }, 80);
+                    }
                 } 
                 // 4. (可选) 如果路径没匹配到，检查 URL 参数 ?tab=xxx 作为备选
                 else {
@@ -687,6 +770,67 @@ init() {
                         this.switchTab('tab-1');
                     }
                 }
+                this.handleHashRouting();
+            },
+
+            handleHashRouting() {
+                const hash = (window.location.hash || '').toLowerCase();
+                if (!hash) return;
+
+                const hashTabMap = {
+                    '#rank-top-performance': 'tab-1',
+                    '#rank-high-efficiency': 'tab-1',
+                    '#rank-thermal-efficiency': 'tab-1',
+                    '#rank-gas-consumption': 'tab-1',
+                    '#rank-best-roi': 'tab-2',
+                    '#rank-lowest-lcoe': 'tab-2',
+                    '#rank-high-reliability': 'tab-3',
+                    '#rank-maintenance-interval': 'tab-3',
+                    '#rank-emission': 'tab-4',
+                    '#rank-noise': 'tab-4',
+                    '#rank-generator': 'tab-5',
+                    '#rank-control-system': 'tab-5',
+                    '#rank-usa-market': 'tab-6',
+                    '#rank-canada-market': 'tab-6',
+                    '#rank-middle-east-market': 'tab-6',
+                    '#rank-russia-market': 'tab-6'
+                };
+
+                const tabId = hashTabMap[hash];
+                if (tabId) this.switchTab(tabId);
+
+                setTimeout(() => {
+                    const target = document.getElementById(hash.slice(1));
+                    if (target) {
+                        this.highlightAnchorTarget(target);
+                    }
+                }, 80);
+            },
+            highlightAnchorTarget(target) {
+                const allCards = document.querySelectorAll('.ranking-card');
+                allCards.forEach((card) => {
+                    card.classList.remove('ranking-card-anchor-highlight', 'ranking-card-anchor-active', 'ranking-card-anchor-float');
+                });
+
+                const content = document.getElementById('tab-content-container');
+                if (content) content.classList.add('ranking-focus-mode');
+
+                target.classList.add('ranking-card-anchor-active', 'ranking-card-anchor-float', 'ranking-card-anchor-highlight');
+
+                const isMobile = window.matchMedia('(max-width: 768px)').matches;
+                const block = isMobile ? 'center' : 'nearest';
+                target.scrollIntoView({ behavior: 'smooth', block, inline: 'nearest' });
+
+                window.setTimeout(() => {
+                    target.classList.remove('ranking-card-anchor-highlight');
+                }, 1400);
+            },
+            closeRankingPopup() {
+                const content = document.getElementById('tab-content-container');
+                if (content) content.classList.remove('ranking-focus-mode');
+                document.querySelectorAll('.ranking-card-anchor-highlight, .ranking-card-anchor-active, .ranking-card-anchor-float').forEach((card) => {
+                    card.classList.remove('ranking-card-anchor-highlight', 'ranking-card-anchor-active', 'ranking-card-anchor-float');
+                });
             },
 
             // --- Starfield Effect ---
