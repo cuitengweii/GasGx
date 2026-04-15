@@ -90,28 +90,29 @@
                 --shadow-inset: inset 0 2px 6px rgba(0,0,0,0.6);
                 --glass-bg: rgba(32, 32, 32, 0.7);
             }
-            body {
-                background-color: var(--bg-main); color: var(--text-primary);
+            .ecm-page {
+                background-color: var(--bg-main);
+                color: var(--text-primary);
                 font-family: 'Inter', 'PingFang SC', sans-serif;
                 -webkit-font-smoothing: antialiased;
                 transition: background-color 0.3s ease, color 0.3s ease;
-                margin: 0; padding: 0; overflow-y: auto;
+                overflow-y: auto;
             }
-            .data-numbers { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
-            .gx-bg-main { background-color: var(--bg-main); }
-            .gx-bg-card { background-color: var(--bg-card); }
-            .gx-bg-tab { background-color: var(--bg-tab); }
-            .gx-border { border-color: var(--border-line); }
-            .gx-text-primary { color: var(--text-primary); }
-            .gx-text-secondary { color: var(--text-secondary); }
-            .gx-text-accent { color: var(--accent); }
-            .gx-border-accent { border-color: var(--accent); }
-            .gx-shadow-inner { box-shadow: var(--shadow-inset); }
-            ::-webkit-scrollbar { width: 6px; height: 6px; }
-            ::-webkit-scrollbar-track { background: var(--bg-main); }
-            ::-webkit-scrollbar-thumb { background: var(--border-line); border-radius: 3px; }
-            ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
-            option { background-color: var(--bg-card); color: var(--text-primary); }
+            .ecm-page .data-numbers { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+            .ecm-page .gx-bg-main { background-color: var(--bg-main); }
+            .ecm-page .gx-bg-card { background-color: var(--bg-card); }
+            .ecm-page .gx-bg-tab { background-color: var(--bg-tab); }
+            .ecm-page .gx-border { border-color: var(--border-line); }
+            .ecm-page .gx-text-primary { color: var(--text-primary); }
+            .ecm-page .gx-text-secondary { color: var(--text-secondary); }
+            .ecm-page .gx-text-accent { color: var(--accent); }
+            .ecm-page .gx-border-accent { border-color: var(--accent); }
+            .ecm-page .gx-shadow-inner { box-shadow: var(--shadow-inset); }
+            .ecm-page ::-webkit-scrollbar { width: 6px; height: 6px; }
+            .ecm-page ::-webkit-scrollbar-track { background: var(--bg-main); }
+            .ecm-page ::-webkit-scrollbar-thumb { background: var(--border-line); border-radius: 3px; }
+            .ecm-page ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+            .ecm-page option { background-color: var(--bg-card); color: var(--text-primary); }
             `}</style>
         );
 
@@ -588,7 +589,7 @@
             };
 
             return (
-                <div data-theme={theme} className="flex flex-col min-h-[calc(100vh-12rem)] w-full max-w-[1800px] mx-auto p-1 sm:p-2 gap-2 gx-bg-main transition-colors duration-300">
+                <div data-theme={theme} className="ecm-page flex flex-col min-h-[calc(100vh-12rem)] w-full max-w-[1800px] mx-auto p-1 sm:p-2 gap-2 gx-bg-main transition-colors duration-300">
                     <GlobalStyles />
                     <div className="flex flex-col gx-bg-card gx-border border rounded-lg shadow-lg overflow-hidden shrink-0">
                         <div className="px-3 sm:px-4 py-2 gx-border border-b flex flex-col md:flex-row md:items-center md:justify-between gap-2 select-none">
