@@ -6,6 +6,24 @@
     <title>GasGx ECM Controller</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            green: '#5DD62C',
+                            subtext: '#94a3b8'
+                        }
+                    },
+                    boxShadow: {
+                        glow: '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 20px rgba(93, 214, 44, 0.6)'
+                    }
+                }
+            }
+        };
+    </script>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 React 和 ReactDOM (生产版本) -->
@@ -20,6 +38,17 @@
         <div id="root"></div>
     </main>
     <div id="ggx-site-footer-slot"></div>
+    <div
+        id="ggx-shell-tailwind-safelist"
+        class="hidden
+            text-gas-green text-gas-subtext text-gas-green/80
+            bg-gas-green bg-gas-green/10
+            border-gas-green border-gas-green/20 border-gas-green/30 border-gas-green/35 border-gas-green/40 border-gas-green/45 border-gas-green/60
+            shadow-glow hover:shadow-glow-strong
+            hover:text-gas-green hover:bg-gas-green hover:border-gas-green
+            border-l-2"
+        aria-hidden="true"
+    ></div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
@@ -542,16 +571,16 @@
             const InputRow = ({ item, type = 'text' }) => {
                 const displayLabel = item.l[lang] || item.l['en'];
                 return (
-                    <div className="flex items-center justify-between py-1.5 px-2 gx-border border-b last:border-0 hover:bg-[rgba(var(--accent-rgb),0.05)] transition-colors">
-                        <span className="text-[12px] gx-text-primary whitespace-nowrap overflow-hidden text-ellipsis mr-2">{displayLabel}</span>
+                    <div className="flex items-center justify-between py-1.5 px-2 gx-border border-b last:border-0 hover:bg-[rgba(var(--accent-rgb),0.05)] transition-colors gap-2">
+                        <span className="text-[12px] gx-text-primary mr-2 leading-tight">{displayLabel}</span>
                         <div className="flex-shrink-0">
                             {type === 'select' ? (
-                                <select className="data-numbers w-[65px] px-1 py-0.5 text-[12px] gx-bg-main gx-border border gx-text-accent gx-shadow-inner rounded focus:outline-none focus:border-[var(--accent)] transition-colors">
+                                <select className="data-numbers w-[74px] sm:w-[65px] px-1 py-0.5 text-[12px] gx-bg-main gx-border border gx-text-accent gx-shadow-inner rounded focus:outline-none focus:border-[var(--accent)] transition-colors">
                                     <option>{item.v}</option>
                                     <option>{item.v === 'ON' ? 'OFF' : 'ON'}</option>
                                 </select>
                             ) : (
-                                <input type="text" defaultValue={item.v} className="data-numbers w-[65px] px-1.5 py-0.5 text-[12px] text-right gx-bg-main gx-border border gx-text-primary gx-shadow-inner rounded focus:outline-none focus:border-[var(--accent)] transition-colors" />
+                                <input type="text" defaultValue={item.v} className="data-numbers w-[74px] sm:w-[65px] px-1.5 py-0.5 text-[12px] text-right gx-bg-main gx-border border gx-text-primary gx-shadow-inner rounded focus:outline-none focus:border-[var(--accent)] transition-colors" />
                             )}
                         </div>
                     </div>
@@ -559,18 +588,18 @@
             };
 
             return (
-                <div data-theme={theme} className="flex flex-col min-h-[calc(100vh-12rem)] min-w-[1024px] p-2 gap-2 gx-bg-main transition-colors duration-300">
+                <div data-theme={theme} className="flex flex-col min-h-[calc(100vh-12rem)] w-full max-w-[1800px] mx-auto p-1 sm:p-2 gap-2 gx-bg-main transition-colors duration-300">
                     <GlobalStyles />
                     <div className="flex flex-col gx-bg-card gx-border border rounded-lg shadow-lg overflow-hidden shrink-0">
-                        <div className="px-4 py-2 gx-border border-b flex items-center justify-between select-none">
+                        <div className="px-3 sm:px-4 py-2 gx-border border-b flex flex-col md:flex-row md:items-center md:justify-between gap-2 select-none">
                             <div className="flex items-center gap-3">
                                 <div className="p-1.5 bg-[rgba(var(--accent-rgb),0.2)] rounded border gx-border-accent">
                                     <Settings2 size={16} className="gx-text-accent" />
                                 </div>
-                                <span className="font-semibold text-sm tracking-widest gx-text-primary">{t('appTitle')} <span className="gx-text-secondary font-normal text-xs ml-2">PRO</span></span>
+                                <span className="font-semibold text-xs sm:text-sm tracking-wide sm:tracking-widest gx-text-primary">{t('appTitle')} <span className="gx-text-secondary font-normal text-[10px] sm:text-xs ml-2">PRO</span></span>
                             </div>
                             
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
                                 <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded hover:bg-[rgba(128,128,128,0.1)] gx-text-secondary transition-colors">
                                     {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
                                 </button>
@@ -584,8 +613,8 @@
                             </div>
                         </div>
 
-                        <div className="px-4 py-2 flex items-center justify-between">
-                            <div className="flex items-center gap-4">
+                        <div className="px-3 sm:px-4 py-2 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+                            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                                 <div className="flex items-center gap-2">
                                     <label className="text-[12px] gx-text-secondary">{t('port')}</label>
                                     <select className="data-numbers gx-bg-main gx-border border gx-text-primary rounded px-2 py-0.5 text-[12px] w-[80px] gx-shadow-inner"><option>COM4</option></select>
@@ -601,14 +630,14 @@
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2 bg-[rgba(128,128,128,0.1)] gx-border border rounded-md px-2 py-1">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full xl:w-auto">
+                                <div className="flex flex-wrap items-center gap-2 bg-[rgba(128,128,128,0.1)] gx-border border rounded-md px-2 py-1 w-full sm:w-auto">
                                     <label className="text-[12px] gx-text-secondary flex items-center gap-1">
                                         <Activity size={14}/> {t('mode')}
                                     </label>
                                     <select 
                                         value={simMode} onChange={(e) => setSimMode(e.target.value)}
-                                        className={`data-numbers gx-bg-main border rounded-sm px-2 py-0.5 text-[11px] focus:outline-none transition-colors gx-shadow-inner ${
+                                        className={`data-numbers gx-bg-main border rounded-sm px-2 py-0.5 text-[11px] focus:outline-none transition-colors gx-shadow-inner w-full sm:w-auto ${
                                             simMode === 'NORMAL' ? 'gx-border gx-text-accent' : 'border-[var(--status-warning)] text-[var(--status-warning)]'
                                         }`}
                                     >
@@ -619,7 +648,7 @@
                                 </div>
                                 <button 
                                     onClick={handleSimulationToggle}
-                                    className={`flex items-center gap-1.5 px-4 py-1 border rounded text-[12px] font-bold transition-all ${
+                                    className={`flex items-center justify-center gap-1.5 px-4 py-2 sm:py-1 border rounded text-[12px] font-bold transition-all w-full sm:w-auto ${
                                         isSimulating ? 'bg-[rgba(255,51,102,0.1)] border-[var(--status-danger)] text-[var(--status-danger)] hover:bg-[rgba(255,51,102,0.2)]' : 'bg-[rgba(var(--accent-rgb),0.1)] border-[var(--accent)] text-[var(--accent)] hover:bg-[rgba(var(--accent-rgb),0.2)]'
                                     }`}
                                 >
@@ -634,26 +663,26 @@
                         <div className="gx-bg-card border border-[var(--status-warning)] rounded-lg p-3 mx-0 shadow-[0_0_15px_rgba(255,153,0,0.1)] flex flex-col gap-1.5 shrink-0">
                             <div className="flex items-center gap-2 mb-0.5">
                                 <AlertTriangle size={16} className="text-[var(--status-warning)]" />
-                                <span className="text-[13px] font-bold text-[var(--status-warning)] tracking-wide">
+                                <span className="text-[12px] sm:text-[13px] font-bold text-[var(--status-warning)] tracking-wide break-words">
                                     {t('expert')}: {activeSimModes[simMode].label}
                                 </span>
                             </div>
-                            <div className="text-[12px] gx-text-primary pl-6 flex items-start">
+                            <div className="text-[12px] gx-text-primary sm:pl-6 flex items-start">
                                 <span className="gx-text-secondary whitespace-nowrap mr-2">{t('cause')}</span> {activeSimModes[simMode].desc}
                             </div>
-                            <div className="text-[12px] gx-text-accent pl-6 flex items-start">
+                            <div className="text-[12px] gx-text-accent sm:pl-6 flex items-start">
                                 <span className="gx-text-secondary whitespace-nowrap mr-2">{t('sol')}</span> {activeSimModes[simMode].sol}
                             </div>
                         </div>
                     )}
 
-                    <div className="flex-1 flex overflow-hidden gap-2">
-                        <div className="w-[65%] flex flex-col gx-bg-card gx-border border rounded-lg overflow-hidden">
-                            <div className="flex gx-border border-b gx-bg-tab">
+                    <div className="flex-1 flex flex-col xl:flex-row gap-2">
+                        <div className="w-full xl:w-[65%] flex flex-col gx-bg-card gx-border border rounded-lg overflow-hidden min-h-[320px]">
+                            <div className="flex gx-border border-b gx-bg-tab overflow-x-auto">
                                 {Object.entries(t('tabs')).map(([key, name]) => (
                                     <button
                                         key={key} onClick={() => setActiveTab(key)}
-                                        className={`px-5 py-2 text-[12px] transition-colors gx-border border-r ${
+                                        className={`px-3 sm:px-5 py-2 text-[12px] transition-colors gx-border border-r whitespace-nowrap shrink-0 ${
                                             activeTab === key ? 'gx-bg-card gx-text-accent font-semibold border-t-2 border-t-[var(--accent)]' : 'gx-text-secondary hover:gx-text-primary hover:bg-[rgba(128,128,128,0.1)]'
                                         }`}
                                     >
@@ -661,9 +690,9 @@
                                     </button>
                                 ))}
                             </div>
-                            <div className="flex-1 grid grid-cols-4 divide-x divide-[var(--border-line)] overflow-y-auto">
+                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x divide-[var(--border-line)] overflow-y-auto">
                                 {currentConfig.params.map((col, colIdx) => (
-                                    <div key={colIdx} className="p-1 flex flex-col">
+                                    <div key={colIdx} className="p-1 flex flex-col border-b sm:border-b-0 border-[var(--border-line)]">
                                         {col.map((p, pIdx) => (
                                             <InputRow key={pIdx} item={p} type={p.type} />
                                         ))}
@@ -672,10 +701,10 @@
                             </div>
                         </div>
 
-                        <div className="w-[35%] flex flex-col gx-bg-card gx-border border rounded-lg overflow-hidden">
+                        <div className="w-full xl:w-[35%] flex flex-col gx-bg-card gx-border border rounded-lg overflow-hidden min-h-[320px]">
                             <CurveChart def={currentConfig.chartDef} />
                             <div className="flex-1 overflow-auto">
-                                <table className="w-full text-[12px] text-center border-collapse">
+                                <table className="min-w-[460px] w-full text-[12px] text-center border-collapse">
                                     <thead className="gx-bg-tab gx-text-secondary sticky top-0 shadow-sm">
                                         <tr>
                                             {currentConfig.tableHeaders.map((header, idx) => (
@@ -697,8 +726,8 @@
                         </div>
                     </div>
 
-                    <div className="shrink-0 gx-border border rounded-lg p-3" style={{ backgroundColor: 'var(--glass-bg)', backdropFilter: 'blur(12px)' }}>
-                        <div className="grid grid-cols-6 gap-x-4 gap-y-1.5">
+                    <div className="shrink-0 gx-border border rounded-lg p-2 sm:p-3 overflow-x-auto" style={{ backgroundColor: 'var(--glass-bg)', backdropFilter: 'blur(12px)' }}>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-3 sm:gap-x-4 gap-y-1.5 min-w-[760px] sm:min-w-0">
                             {[
                                 { l: { en:'CurSpd', zh:'当前转速', ru:'Тек.Скор' }, k: 'CurSpd' }, { l: { en:'SetSpd', zh:'目标转速', ru:'Зад.Скор' }, k: 'SetSpd' },
                                 { l: { en:'IgtSpd', zh:'点火转速', ru:'Скор.Зажиг' }, k: 'IgtSpd' }, { l: { en:'SyncVolt', zh:'同步电压', ru:'Напр.Синх' }, k: 'SyncVolt' },
@@ -748,12 +777,12 @@
         const syncEcmHeaderBrand = () => {
             const brandTextNode = document.getElementById('ggx-header-brand-text');
             if (brandTextNode) {
-                brandTextNode.textContent = 'GasGx ECM';
+                brandTextNode.textContent = 'GasGx';
             }
 
             const homeLink = document.getElementById('ggx-header-home-link');
             if (homeLink) {
-                homeLink.setAttribute('href', '/digitalization/ecm/');
+                homeLink.setAttribute('href', '/index.html');
             }
         };
 
