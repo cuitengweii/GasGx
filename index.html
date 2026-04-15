@@ -268,6 +268,73 @@
             }
         }
 
+        @media (max-width: 1279px) {
+            #mobile-drawer-toggle {
+                position: relative;
+                overflow: visible;
+                border-width: 1px !important;
+                border-color: rgba(93, 214, 44, 0.68) !important;
+                background: linear-gradient(180deg, rgba(14, 24, 13, 0.94) 0%, rgba(10, 12, 11, 0.98) 100%) !important;
+                box-shadow:
+                    0 0 0 1px rgba(93, 214, 44, 0.12) inset,
+                    0 10px 24px rgba(0, 0, 0, 0.48),
+                    0 0 14px rgba(93, 214, 44, 0.2) !important;
+            }
+
+            #mobile-drawer-toggle::before {
+                content: "";
+                position: absolute;
+                left: 50%;
+                top: -14px;
+                width: 2px;
+                height: 10px;
+                transform: translateX(-50%);
+                pointer-events: none;
+                background: linear-gradient(180deg, rgba(124, 255, 78, 0), rgba(124, 255, 78, 0.95));
+                box-shadow: 0 0 10px rgba(124, 255, 78, 0.7);
+                animation: ggx-ranking-arrow-beam 1.3s ease-in-out infinite;
+            }
+
+            #mobile-drawer-toggle::after {
+                content: "";
+                position: absolute;
+                left: 50%;
+                top: -23px;
+                width: 9px;
+                height: 9px;
+                transform: translateX(-50%) rotate(45deg);
+                pointer-events: none;
+                border-left: 1px solid #7CFF4E;
+                border-top: 1px solid #7CFF4E;
+                filter: drop-shadow(0 0 6px rgba(124, 255, 78, 0.95));
+                animation: ggx-ranking-arrow-float 1.3s ease-in-out infinite;
+            }
+        }
+
+        @keyframes ggx-ranking-arrow-beam {
+            0%, 100% {
+                opacity: 0.42;
+                transform: translateX(-50%) translateY(1px);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-2px);
+            }
+        }
+
+        @keyframes ggx-ranking-arrow-float {
+            0%, 100% {
+                opacity: 0.55;
+                transform: translateX(-50%) translateY(2px) rotate(45deg);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-4px) rotate(45deg);
+            }
+        }
+
         .ggx-onboarding-layer {
             position: fixed;
             inset: 0;
@@ -286,11 +353,252 @@
 
         .ggx-onboarding-highlight {
             position: fixed;
-            border: 2px solid #ff4d5e;
+            border: 1px solid rgba(255, 255, 255, 0.88);
             border-radius: 10px;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.18), 0 0 16px rgba(255, 77, 94, 0.35);
+            background:
+                linear-gradient(#7ee7ff, #7ee7ff) left top / 22px 2px no-repeat,
+                linear-gradient(#7ee7ff, #7ee7ff) left top / 2px 22px no-repeat,
+                linear-gradient(#7ee7ff, #7ee7ff) right top / 22px 2px no-repeat,
+                linear-gradient(#7ee7ff, #7ee7ff) right top / 2px 22px no-repeat,
+                linear-gradient(#7ee7ff, #7ee7ff) left bottom / 22px 2px no-repeat,
+                linear-gradient(#7ee7ff, #7ee7ff) left bottom / 2px 22px no-repeat,
+                linear-gradient(#7ee7ff, #7ee7ff) right bottom / 22px 2px no-repeat,
+                linear-gradient(#7ee7ff, #7ee7ff) right bottom / 2px 22px no-repeat;
+            box-shadow:
+                0 0 0 9999px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(126, 231, 255, 0.75) inset,
+                0 0 18px rgba(126, 231, 255, 0.65),
+                0 0 36px rgba(255, 255, 255, 0.25);
             pointer-events: none;
             transition: all 0.24s ease;
+            animation: ggx-onboarding-highlight-pulse 1.6s ease-in-out infinite;
+        }
+
+        .ggx-onboarding-gesture {
+            position: fixed;
+            width: 32px;
+            height: 32px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #f9fbff;
+            background: rgba(8, 12, 18, 0.84);
+            border: 1px solid rgba(244, 248, 255, 0.72);
+            box-shadow:
+                0 0 0 1px rgba(156, 193, 255, 0.22) inset,
+                0 0 18px rgba(195, 223, 255, 0.35);
+            z-index: 525;
+            pointer-events: auto;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .ggx-onboarding-gesture i {
+            position: relative;
+            z-index: 2;
+            font-size: 15px;
+            line-height: 1;
+            color: #ffffff;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        }
+
+        .ggx-onboarding-gesture::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 44px;
+            height: 2px;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0),
+                rgba(255, 255, 255, 0.92),
+                rgba(255, 255, 255, 0));
+            pointer-events: none;
+        }
+
+        .ggx-onboarding-gesture::after {
+            content: "";
+            position: absolute;
+            inset: -5px;
+            border-radius: 9999px;
+            border: 1px dashed rgba(248, 251, 255, 0.65);
+            animation: ggx-onboarding-gesture-ring 1.3s linear infinite;
+        }
+
+        .ggx-onboarding-gesture.is-visible {
+            opacity: 1;
+        }
+
+        .ggx-onboarding-gesture.is-tap {
+            animation: ggx-onboarding-gesture-tap 1.25s ease-in-out infinite;
+        }
+
+        .ggx-onboarding-gesture.is-tap::before {
+            width: 30px;
+            height: 30px;
+            border-radius: 9999px;
+            border: 1px solid rgba(248, 251, 255, 0.45);
+            background: transparent;
+            animation: ggx-onboarding-gesture-tap-ripple 1.25s ease-in-out infinite;
+            opacity: 0.7;
+        }
+
+        .ggx-onboarding-gesture.is-drag {
+            animation: ggx-onboarding-gesture-drag 1.55s ease-in-out infinite;
+        }
+
+        .ggx-onboarding-gesture.is-drag::before {
+            opacity: 0.85;
+            animation: ggx-onboarding-gesture-track-h 1.55s ease-in-out infinite;
+        }
+
+        .ggx-onboarding-gesture.is-swipe {
+            animation: ggx-onboarding-gesture-swipe 1.45s ease-in-out infinite;
+        }
+
+        .ggx-onboarding-gesture.is-swipe::before {
+            width: 2px;
+            height: 44px;
+            opacity: 0.85;
+            background: linear-gradient(180deg,
+                rgba(255, 255, 255, 0),
+                rgba(255, 255, 255, 0.92),
+                rgba(255, 255, 255, 0));
+            animation: ggx-onboarding-gesture-track-v 1.45s ease-in-out infinite;
+        }
+
+        .ggx-onboarding-gesture.is-circle {
+            animation: ggx-onboarding-gesture-circle 1.8s linear infinite;
+        }
+
+        @keyframes ggx-onboarding-gesture-ring {
+            0% {
+                transform: scale(0.9);
+                opacity: 0.85;
+            }
+
+            100% {
+                transform: scale(1.15);
+                opacity: 0.15;
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-tap {
+            0%, 100% {
+                transform: translate(0, -1px) scale(1);
+            }
+
+            45% {
+                transform: translate(0, 5px) scale(0.88);
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-tap-ripple {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(0.9);
+                opacity: 0.35;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.16);
+                opacity: 0.95;
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-drag {
+            0%, 100% {
+                transform: translate(-16px, 0);
+            }
+
+            50% {
+                transform: translate(16px, 0);
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-swipe {
+            0%, 100% {
+                transform: translate(0, 12px);
+            }
+
+            50% {
+                transform: translate(0, -12px);
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-track-h {
+            0%, 100% {
+                opacity: 0.35;
+                transform: translate(-50%, -50%) scaleX(0.86);
+            }
+
+            50% {
+                opacity: 0.92;
+                transform: translate(-50%, -50%) scaleX(1.08);
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-track-v {
+            0%, 100% {
+                opacity: 0.35;
+                transform: translate(-50%, -50%) scaleY(0.86);
+            }
+
+            50% {
+                opacity: 0.92;
+                transform: translate(-50%, -50%) scaleY(1.08);
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-circle {
+            0% {
+                transform: translate(0, -12px);
+            }
+
+            25% {
+                transform: translate(12px, 0);
+            }
+
+            50% {
+                transform: translate(0, 12px);
+            }
+
+            75% {
+                transform: translate(-12px, 0);
+            }
+
+            100% {
+                transform: translate(0, -12px);
+            }
+        }
+
+        @keyframes ggx-onboarding-highlight-pulse {
+            0% {
+                box-shadow:
+                    0 0 0 9999px rgba(0, 0, 0, 0.22),
+                    0 0 0 1px rgba(126, 231, 255, 0.62) inset,
+                    0 0 12px rgba(126, 231, 255, 0.52),
+                    0 0 24px rgba(255, 255, 255, 0.2);
+            }
+
+            50% {
+                box-shadow:
+                    0 0 0 9999px rgba(0, 0, 0, 0.22),
+                    0 0 0 1px rgba(126, 231, 255, 0.96) inset,
+                    0 0 22px rgba(126, 231, 255, 0.86),
+                    0 0 42px rgba(255, 255, 255, 0.36);
+            }
+
+            100% {
+                box-shadow:
+                    0 0 0 9999px rgba(0, 0, 0, 0.22),
+                    0 0 0 1px rgba(126, 231, 255, 0.62) inset,
+                    0 0 12px rgba(126, 231, 255, 0.52),
+                    0 0 24px rgba(255, 255, 255, 0.2);
+            }
         }
 
         .ggx-onboarding-card {
@@ -450,7 +758,7 @@
 
             <div id="ranking-sidebar" class="absolute bottom-0 left-0 w-full xl:static xl:w-[280px] xl:h-full bg-[#121212] xl:bg-[#0a0a0a] border-t xl:border-t-0 xl:border-r border-white/10 flex flex-col z-[200] shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] rounded-t-2xl xl:rounded-none transition-transform duration-300 transform translate-y-[calc(100%-72px)] xl:translate-y-0 h-[58vh] xl:h-auto xl:order-first">
 
-                <button id="mobile-drawer-toggle" type="button" class="xl:hidden mx-3 mt-3 mb-2 min-h-11 rounded-full border border-white/10 bg-[#171717] px-4 py-3 text-left shadow-[0_8px_20px_rgba(0,0,0,0.35)] active:scale-[0.99] [touch-action:manipulation] flex items-center justify-between gap-3" onclick="window.app.toggleDrawer()" aria-expanded="false" aria-controls="ranking-sidebar" aria-label="Expand ranking panel">
+                <button id="mobile-drawer-toggle" type="button" class="xl:hidden mx-3 mt-3 mb-2 min-h-11 rounded-full border border-white/10 bg-[#171717] px-4 py-3 text-left shadow-[0_8px_20px_rgba(0,0,0,0.35)] active:scale-[0.99] [touch-action:manipulation] flex items-center justify-between gap-3 relative overflow-visible" onclick="window.app.toggleDrawer()" aria-expanded="false" aria-controls="ranking-sidebar" aria-label="Expand ranking panel">
                     <span class="min-w-0">
                         <span class="flex items-center gap-1 text-gas-green font-bold text-[10px] uppercase tracking-widest">
                             <i class="fa-solid fa-trophy"></i>
@@ -555,6 +863,7 @@
 <div id="ggx-onboarding-layer" class="ggx-onboarding-layer hidden" aria-live="polite" aria-modal="true" role="dialog">
     <div class="ggx-onboarding-backdrop"></div>
     <div id="ggx-onboarding-highlight" class="ggx-onboarding-highlight"></div>
+    <div id="ggx-onboarding-gesture" class="ggx-onboarding-gesture" aria-hidden="true"><i class="fa-solid fa-hand-point-up"></i></div>
     <div id="ggx-onboarding-card" class="ggx-onboarding-card">
         <div id="ggx-onboarding-step" class="ggx-onboarding-step">Step 1 / 3</div>
         <h3 id="ggx-onboarding-title" class="ggx-onboarding-title">Quick Tour</h3>
@@ -973,7 +1282,7 @@ window.app = {
             rotationTimer: null, projection: null, projectionAir: null, geoGenerator: null, svg: null, width: 0, height: 0, countries: [], activeData: null, lastElapsed: 0, dragVelocity: { x: 0, y: 0 }, friction: 0.95, autoRotateSpeed: 0.2,
             rafPending: false, frameIntervalMs: 16, perfLite: false, visibilityBound: false, hudLine: null, hudDot: null,
             countrySelection: null, iconSelection: null, labelSelection: null, isDrawerOpen: false, resizeBound: false, drawerEscapeBound: false,
-            onboardingBound: false, onboardingResizeBound: false, onboardingActive: false, onboardingStepIndex: 0, onboardingSteps: [], onboardingVersion: '20260415a', onboardingStorageBaseKey: 'gasgx-home-guide',
+            onboardingBound: false, onboardingResizeBound: false, onboardingActive: false, onboardingStepIndex: 0, onboardingSteps: [], onboardingVersion: '20260415c', onboardingStorageBaseKey: 'gasgx-home-guide', onboardingSyncTimer: null, onboardingGlobeDemoTimer: null, onboardingGlobeDemoPhase: 0, onboardingLastStepKey: '', onboardingInfoPrimed: false,
 
             init() {
                 this.updateStaticText();
@@ -1088,14 +1397,34 @@ window.app = {
                         reopen: '新手引导',
                         steps: [
                             {
+                                key: 'login',
+                                title: '先看登录入口',
+                                text: '右上角 Login 用于进入账户中心与后续个性化功能。首次使用建议先登录，便于保存与同步操作状态。'
+                            },
+                            {
+                                key: 'navEntry',
+                                title: '这是右上角导航入口',
+                                text: '右上角菜单入口可打开全站导航，快速跳转到产品、工具、资源与支持页面。'
+                            },
+                            {
                                 key: 'hotspots',
-                                title: '先看热点国家',
-                                text: '顶部这一片热点国家图标代表可重点关注的国家。点击任意国家图标即可快速定位并查看详细分析。'
+                                title: '先点地球触点',
+                                text: '先点击地球上的发光触点节点，系统会快速定位到对应国家并展开分析入口。'
                             },
                             {
                                 key: 'globe',
-                                title: '这是主操作区',
-                                text: '中间地球支持拖拽旋转，点击国家后会高亮并展示政策、得分与维度信息，是你做初筛的核心区域。'
+                                title: '这是可旋转地球',
+                                text: '这个区域是完整地球操作区。按住拖动可旋转查看更多国家，手势会示范“绕圈旋转”的操作方式。'
+                            },
+                            {
+                                key: 'infoPanel',
+                                title: '点击后会展示详情卡片',
+                                text: '触点被点击后会弹出这张国家详情卡片，展示政策状态、评分和分析入口。'
+                            },
+                            {
+                                key: 'detailModal',
+                                title: '这里是完整分析弹窗',
+                                text: '点击卡片里的 analysis_10 后，会打开完整分析弹窗，查看10维度、优劣势和建议。'
                             },
                             {
                                 key: 'ranking',
@@ -1114,14 +1443,34 @@ window.app = {
                     reopen: 'Guide',
                     steps: [
                         {
+                            key: 'login',
+                            title: 'Start with the Login entry',
+                            text: 'Use the top-right Login button to access your account and personalized workflows. Sign in first for a smoother experience.'
+                        },
+                        {
+                            key: 'navEntry',
+                            title: 'This is the top-right navigation entry',
+                            text: 'Use the top-right menu entry to open site navigation and jump to products, tools, resources, and support pages quickly.'
+                        },
+                        {
                             key: 'hotspots',
-                            title: 'Start with highlighted hotspots',
-                            text: 'These hotspot country markers surface key regions first. Tap any marker to focus and inspect country details quickly.'
+                            title: 'Start from a globe touchpoint',
+                            text: 'Tap a glowing touchpoint on the globe to quickly jump into country-specific analysis.'
                         },
                         {
                             key: 'globe',
-                            title: 'This is the main interaction area',
-                            text: 'Drag the globe to rotate. Tap a country to highlight it and review policy status, score, and dimension analysis.'
+                            title: 'This globe is fully rotatable',
+                            text: 'Use drag rotation on the full globe area. The gesture demonstrates a circular motion to show that you can rotate continuously.'
+                        },
+                        {
+                            key: 'infoPanel',
+                            title: 'Tap to reveal the detail panel',
+                            text: 'After tapping a touchpoint, this country detail panel appears with policy status, score, and analysis entry.'
+                        },
+                        {
+                            key: 'detailModal',
+                            title: 'This is the full analysis modal',
+                            text: 'Tap analysis_10 to open the full modal and inspect all 10 dimensions, pros, risks, and advice.'
                         },
                         {
                             key: 'ranking',
@@ -1159,10 +1508,23 @@ window.app = {
                 const nextBtn = document.getElementById('ggx-onboarding-next');
                 const skipBtn = document.getElementById('ggx-onboarding-skip');
                 const backdrop = document.querySelector('#ggx-onboarding-layer .ggx-onboarding-backdrop');
+                const gesture = document.getElementById('ggx-onboarding-gesture');
                 if (prevBtn) prevBtn.addEventListener('click', () => this.prevOnboardingStep());
                 if (nextBtn) nextBtn.addEventListener('click', () => this.nextOnboardingStep());
                 if (skipBtn) skipBtn.addEventListener('click', () => this.skipOnboarding());
-                if (backdrop) backdrop.addEventListener('click', () => this.skipOnboarding());
+                if (backdrop) {
+                    backdrop.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        this.nextOnboardingStep();
+                    });
+                }
+                if (gesture) {
+                    gesture.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        this.nextOnboardingStep();
+                    });
+                }
                 this.onboardingBound = true;
             },
             initializeOnboarding() {
@@ -1185,6 +1547,17 @@ window.app = {
                 if (!map) return null;
                 const mapRect = map.getBoundingClientRect();
                 const toRect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height });
+                const getVisibleRect = (selectors) => {
+                    for (const selector of selectors) {
+                        const node = document.querySelector(selector);
+                        if (!node) continue;
+                        const rect = node.getBoundingClientRect();
+                        if (rect.width > 0 && rect.height > 0) {
+                            return toRect(rect.left, rect.top, rect.width, rect.height);
+                        }
+                    }
+                    return null;
+                };
                 const clampRect = (rect) => {
                     const margin = 8;
                     const left = Math.max(margin, rect.left);
@@ -1194,24 +1567,165 @@ window.app = {
                     return toRect(left, top, Math.max(40, right - left), Math.max(40, bottom - top));
                 };
 
+                if (stepKey === 'login') {
+                    const loginRect = getVisibleRect([
+                        '#ggx-site-header-slot #auth-login-btn',
+                        '#ggx-site-header-slot #auth-user-profile',
+                        '#ggx-site-header-slot #mob-header-auth-link',
+                        '#ggx-site-header-slot #mob-auth-login-btn',
+                        '#ggx-site-header-slot #mob-auth-user-profile'
+                    ]);
+                    if (loginRect) {
+                        return clampRect(toRect(
+                            loginRect.left - 8,
+                            loginRect.top - 6,
+                            loginRect.width + 16,
+                            loginRect.height + 12
+                        ));
+                    }
+                    return clampRect(toRect(window.innerWidth - 172, 10, 112, 48));
+                }
+
+                if (stepKey === 'navEntry') {
+                    const navRect = getVisibleRect([
+                        '#ggx-site-header-slot #mobile-menu-btn',
+                        '#ggx-site-header-slot #desktop-nav'
+                    ]);
+                    if (navRect) {
+                        const width = navRect.width > 140 ? 140 : navRect.width;
+                        const left = navRect.width > 140 ? navRect.right - width : navRect.left;
+                        return clampRect(toRect(left - 4, navRect.top - 4, width + 8, navRect.height + 8));
+                    }
+                    return clampRect(toRect(window.innerWidth - 62, 12, 44, 44));
+                }
+
                 if (stepKey === 'hotspots') {
+                    const markers = Array.from(document.querySelectorAll('#map-container .btc-icon-group'));
+                    if (markers.length) {
+                        const mapCenterX = mapRect.left + (mapRect.width * 0.56);
+                        const mapLowerBandTop = mapRect.top + (mapRect.height * 0.42);
+                        const mapLowerBandBottom = mapRect.bottom - (mapRect.height * 0.1);
+                        let best = null;
+                        let bestScore = Number.POSITIVE_INFINITY;
+
+                        markers.forEach((marker) => {
+                            const rect = marker.getBoundingClientRect();
+                            if (!rect || rect.width <= 0 || rect.height <= 0) return;
+                            const cx = rect.left + (rect.width / 2);
+                            const cy = rect.top + (rect.height / 2);
+                            const inMap = cx >= mapRect.left && cx <= mapRect.right && cy >= mapRect.top && cy <= mapRect.bottom;
+                            if (!inMap) return;
+                            const onGlobeBand = cy >= mapLowerBandTop && cy <= mapLowerBandBottom;
+                            const score = Math.abs(cx - mapCenterX) + (onGlobeBand ? 0 : 1800);
+                            if (score < bestScore) {
+                                bestScore = score;
+                                best = { cx, cy };
+                            }
+                        });
+
+                        if (best) {
+                            return clampRect(toRect(best.cx - 24, best.cy - 22, 118, 96));
+                        }
+                    }
+
                     return clampRect(
                         toRect(
-                            mapRect.left + (mapRect.width * 0.57),
-                            mapRect.top + (mapRect.height * 0.24),
-                            mapRect.width * 0.34,
-                            mapRect.height * 0.2
+                            mapRect.left + (mapRect.width * 0.56),
+                            mapRect.top + (mapRect.height * 0.5),
+                            mapRect.width * 0.18,
+                            mapRect.height * 0.12
                         )
                     );
                 }
 
+                if (stepKey === 'infoPanel') {
+                    const infoBox = document.getElementById('map-info-box');
+                    if (infoBox) {
+                        const infoRect = infoBox.getBoundingClientRect();
+                        const isVisible = infoRect.width > 20 && infoRect.height > 20
+                            && infoRect.top < window.innerHeight
+                            && infoRect.left < window.innerWidth
+                            && parseFloat(window.getComputedStyle(infoBox).opacity || '0') > 0.05;
+                        if (isVisible) {
+                            return clampRect(toRect(
+                                infoRect.left - 6,
+                                infoRect.top - 6,
+                                infoRect.width + 12,
+                                infoRect.height + 12
+                            ));
+                        }
+                    }
+
+                    if (window.innerWidth < 768) {
+                        return clampRect(toRect(
+                            mapRect.left + (mapRect.width * 0.03),
+                            mapRect.top + (mapRect.height * 0.56),
+                            mapRect.width * 0.94,
+                            Math.min(mapRect.height * 0.34, 270)
+                        ));
+                    }
+
+                    return clampRect(toRect(
+                        mapRect.left + (mapRect.width * 0.56),
+                        mapRect.top + (mapRect.height * 0.26),
+                        Math.min(340, mapRect.width * 0.36),
+                        Math.min(250, mapRect.height * 0.44)
+                    ));
+                }
+
+                if (stepKey === 'detailModal') {
+                    const modal = document.getElementById('detail-modal');
+                    if (modal && !modal.classList.contains('hidden')) {
+                        const modalCard = modal.firstElementChild;
+                        if (modalCard) {
+                            const modalRect = modalCard.getBoundingClientRect();
+                            if (modalRect.width > 40 && modalRect.height > 40) {
+                                return clampRect(toRect(
+                                    modalRect.left - 6,
+                                    modalRect.top - 6,
+                                    modalRect.width + 12,
+                                    modalRect.height + 12
+                                ));
+                            }
+                        }
+                    }
+
+                    const isNarrow = window.innerWidth < 768;
+                    const fallbackWidth = isNarrow ? (window.innerWidth - 24) : Math.min(window.innerWidth * 0.72, 980);
+                    const fallbackHeight = isNarrow ? (window.innerHeight - 108) : Math.min(window.innerHeight * 0.84, 860);
+                    const fallbackLeft = isNarrow ? 12 : ((window.innerWidth - fallbackWidth) / 2);
+                    const fallbackTop = isNarrow ? 48 : Math.max(16, (window.innerHeight - fallbackHeight) / 2);
+                    return clampRect(toRect(fallbackLeft, fallbackTop, fallbackWidth, fallbackHeight));
+                }
+
                 if (stepKey === 'globe') {
+                    const sphere = document.querySelector('#map-container .globe-sphere');
+                    if (sphere) {
+                        const sphereRect = sphere.getBoundingClientRect();
+                        if (sphereRect.width > 10 && sphereRect.height > 10) {
+                            return clampRect(
+                                toRect(
+                                    sphereRect.left - 8,
+                                    sphereRect.top - 8,
+                                    sphereRect.width + 16,
+                                    sphereRect.height + 16
+                                )
+                            );
+                        }
+                    }
+                    const isNarrow = window.innerWidth < 768;
+                    const centerX = mapRect.left + (mapRect.width / 2);
+                    const centerY = mapRect.top + (mapRect.height * (isNarrow ? 0.62 : 0.57));
+                    const diameter = Math.min(
+                        mapRect.width * (isNarrow ? 0.9 : 0.76),
+                        mapRect.height * (isNarrow ? 0.68 : 0.8)
+                    );
                     return clampRect(
                         toRect(
-                            mapRect.left + (mapRect.width * 0.2),
-                            mapRect.top + (mapRect.height * 0.38),
-                            mapRect.width * 0.6,
-                            mapRect.height * 0.38
+                            centerX - (diameter / 2),
+                            centerY - (diameter / 2),
+                            diameter,
+                            diameter
                         )
                     );
                 }
@@ -1241,9 +1755,110 @@ window.app = {
                 if (this.isMobileDrawerMode()) this.toggleDrawer(false);
                 this.onboardingStepIndex = 0;
                 this.onboardingActive = true;
+                this.onboardingLastStepKey = '';
+                this.onboardingInfoPrimed = false;
                 const layer = document.getElementById('ggx-onboarding-layer');
                 if (layer) layer.classList.remove('hidden');
+                if (this.onboardingSyncTimer) clearInterval(this.onboardingSyncTimer);
+                this.onboardingSyncTimer = setInterval(() => {
+                    if (!this.onboardingActive) return;
+                    this.renderOnboardingStep();
+                }, 360);
                 this.renderOnboardingStep();
+            },
+            startOnboardingGlobeDemo() {
+                if (this.onboardingGlobeDemoTimer) return;
+                if (!this.projection || !this.projectionAir) return;
+
+                if (this.rotationTimer) {
+                    this.rotationTimer.stop();
+                    this.rotationTimer = null;
+                }
+                this.onboardingGlobeDemoPhase = 0;
+                this.onboardingGlobeDemoOrigin = this.projection.rotate().slice();
+                this.onboardingGlobeDemoTimer = setInterval(() => {
+                    if (!this.onboardingActive || !this.projection || !this.projectionAir) return;
+                    const origin = Array.isArray(this.onboardingGlobeDemoOrigin) ? this.onboardingGlobeDemoOrigin : this.projection.rotate().slice();
+                    this.onboardingGlobeDemoPhase += 0.06;
+                    // Demonstrate true four-way rotation (left/right + up/down) around the current globe pose.
+                    const lonOffset = Math.sin(this.onboardingGlobeDemoPhase) * 16;
+                    const latOffset = Math.cos(this.onboardingGlobeDemoPhase * 1.25) * 7.5;
+                    const nextRot = [
+                        origin[0] + lonOffset,
+                        Math.max(-82, Math.min(82, origin[1] + latOffset)),
+                        origin[2] || 0
+                    ];
+                    this.projection.rotate(nextRot);
+                    this.projectionAir.rotate(nextRot);
+                    this.scheduleRedraw();
+                }, 42);
+            },
+            stopOnboardingGlobeDemo() {
+                if (this.onboardingGlobeDemoTimer) {
+                    clearInterval(this.onboardingGlobeDemoTimer);
+                    this.onboardingGlobeDemoTimer = null;
+                }
+                this.onboardingGlobeDemoOrigin = null;
+                if (!this.activeData && !document.hidden && typeof this.startRotation === 'function' && !this.rotationTimer) {
+                    this.startRotation();
+                }
+            },
+            ensureOnboardingInfoPreview() {
+                if (this.activeData && this.activeData.data && this.activeData.data.en) {
+                    this.onboardingInfoPrimed = true;
+                    return;
+                }
+                if (!Array.isArray(this.countries) || !this.countries.length) return;
+                const fallbackCountry = (Array.isArray(GAS_DATA) && GAS_DATA.length && GAS_DATA.some((item) => item.en === 'Canada'))
+                    ? 'Canada'
+                    : (Array.isArray(GAS_DATA) && GAS_DATA.length ? GAS_DATA[0].en : null);
+                if (!fallbackCountry) return;
+                this.highlightCountry(fallbackCountry, false);
+                this.onboardingInfoPrimed = true;
+            },
+            renderOnboardingGesture(stepKey, rect) {
+                const gesture = document.getElementById('ggx-onboarding-gesture');
+                if (!gesture || !rect) return;
+
+                const icon = gesture.querySelector('i');
+                if (icon) icon.className = 'fa-solid fa-hand-point-up';
+                gesture.classList.remove('is-tap', 'is-drag', 'is-swipe', 'is-circle', 'is-visible');
+
+                let mode = 'is-tap';
+                const size = 32;
+                const gap = 12;
+                const clampPoint = (x, y) => ({
+                    x: Math.max(8, Math.min(window.innerWidth - size - 8, x)),
+                    y: Math.max(8, Math.min(window.innerHeight - size - 8, y))
+                });
+                const centered = clampPoint(
+                    rect.left + (rect.width / 2) - (size / 2),
+                    rect.top + (rect.height / 2) - (size / 2)
+                );
+                const below = clampPoint(
+                    rect.left + (rect.width / 2) - (size / 2),
+                    rect.bottom + gap
+                );
+
+                let point = centered;
+                if (stepKey === 'globe') {
+                    mode = 'is-circle';
+                } else if (stepKey === 'login' || stepKey === 'navEntry') {
+                    mode = 'is-tap';
+                    point = below;
+                } else if (stepKey === 'hotspots') {
+                    mode = 'is-tap';
+                    point = clampPoint(
+                        rect.right - size - 6,
+                        rect.bottom - size - 6
+                    );
+                } else {
+                    mode = 'is-tap';
+                }
+
+                gesture.style.left = `${point.x}px`;
+                gesture.style.top = `${point.y}px`;
+                gesture.classList.add(mode, 'is-visible');
             },
             renderOnboardingStep() {
                 if (!this.onboardingActive || !this.onboardingSteps.length) return;
@@ -1260,6 +1875,34 @@ window.app = {
                 const skipBtn = document.getElementById('ggx-onboarding-skip');
                 const highlight = document.getElementById('ggx-onboarding-highlight');
                 const card = document.getElementById('ggx-onboarding-card');
+                const stepChanged = this.onboardingLastStepKey !== step.key;
+                this.onboardingLastStepKey = step.key;
+
+                if (step.key === 'infoPanel') {
+                    if (stepChanged) this.onboardingInfoPrimed = false;
+                    this.ensureOnboardingInfoPreview();
+                }
+
+                if (step.key === 'detailModal') {
+                    if (stepChanged) {
+                        this.ensureOnboardingInfoPreview();
+                        if (this.activeData && this.activeData.data && this.activeData.data.en) {
+                            this.openDetailModal(this.activeData.data.en);
+                        }
+                    }
+                } else if (stepChanged) {
+                    const detailModal = document.getElementById('detail-modal');
+                    if (detailModal && !detailModal.classList.contains('hidden')) {
+                        detailModal.classList.add('hidden');
+                    }
+                }
+
+                if (step.key === 'globe') {
+                    if (stepChanged && this.activeData) this.resetMap();
+                    this.startOnboardingGlobeDemo();
+                } else {
+                    this.stopOnboardingGlobeDemo();
+                }
 
                 if (stepEl) stepEl.innerText = `${copy.stepLabel} ${index + 1} / ${total}`;
                 if (titleEl) titleEl.innerText = step.title;
@@ -1277,6 +1920,13 @@ window.app = {
                     highlight.style.top = `${rect.top - 6}px`;
                     highlight.style.width = `${rect.width + 12}px`;
                     highlight.style.height = `${rect.height + 12}px`;
+                }
+
+                if (rect) {
+                    this.renderOnboardingGesture(step.key, rect);
+                } else {
+                    const gesture = document.getElementById('ggx-onboarding-gesture');
+                    if (gesture) gesture.classList.remove('is-visible', 'is-tap', 'is-drag', 'is-swipe', 'is-circle');
                 }
 
                 if (card && rect) {
@@ -1308,6 +1958,15 @@ window.app = {
                 this.onboardingActive = false;
                 const layer = document.getElementById('ggx-onboarding-layer');
                 if (layer) layer.classList.add('hidden');
+                const gesture = document.getElementById('ggx-onboarding-gesture');
+                if (gesture) gesture.classList.remove('is-visible', 'is-tap', 'is-drag', 'is-swipe', 'is-circle');
+                this.stopOnboardingGlobeDemo();
+                this.onboardingLastStepKey = '';
+                this.onboardingInfoPrimed = false;
+                if (this.onboardingSyncTimer) {
+                    clearInterval(this.onboardingSyncTimer);
+                    this.onboardingSyncTimer = null;
+                }
                 if (markSeen) this.markOnboardingSeen();
             },
             getText(dataObj) {
