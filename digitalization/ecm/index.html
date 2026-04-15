@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx ECM Controller</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 和 ReactDOM (生产版本) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- 引入 Babel 以在浏览器中编译 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-[#0F0F0F]">
+    <div id="ggx-site-header-slot"></div>
+    <main class="pt-20 px-2">
+        <div id="root"></div>
+    </main>
+    <div id="ggx-site-footer-slot"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- 内联微型图标组件 (替代 lucide-react，确保单文件独立运行) ---
+        const IconBase = ({ d, size=16, className="", style={}, children }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
+                {d && <path d={d} />}
+                {children}
+            </svg>
+        );
+        const Settings2 = (p) => <IconBase {...p}><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="7" r="3"/><circle cx="9" cy="17" r="3"/></IconBase>;
+        const Play = (p) => <IconBase {...p}><polygon points="5 3 19 12 5 21 5 3"/></IconBase>;
+        const PowerOff = (p) => <IconBase {...p}><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></IconBase>;
+        const AlertTriangle = (p) => <IconBase {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconBase>;
+        const Activity = (p) => <IconBase {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></IconBase>;
+        const Sun = (p) => <IconBase {...p}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></IconBase>;
+        const Moon = (p) => <IconBase {...p}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></IconBase>;
+
+
+        // --- 全局昼夜主题与滚动条注入 ---
+        const GlobalStyles = () => (
+            <style>{`
+            :root {
+                --bg-main: #F5F7FA; --bg-card: #FFFFFF; --bg-tab: #F0F2F5;
+                --text-primary: #1A1A1A; --text-secondary: #666666;
+                --border-line: #E4E7ED;
+                --accent: #00B853; --accent-rgb: 0, 184, 83;
+                --status-warning: #FF9900; --status-danger: #FF3366;
+                --shadow-inset: inset 0 2px 4px rgba(0,0,0,0.05);
+                --glass-bg: rgba(255, 255, 255, 0.8);
+            }
+            [data-theme='dark'] {
+                --bg-main: #0F0F0F; --bg-card: #202020; --bg-tab: #1A1A1A;
+                --text-primary: #E0E0E0; --text-secondary: #888888;
+                --border-line: #333333;
+                --accent: #5DD62C; --accent-rgb: 93, 214, 44;
+                --status-warning: #FF9900; --status-danger: #FF3366;
+                --shadow-inset: inset 0 2px 6px rgba(0,0,0,0.6);
+                --glass-bg: rgba(32, 32, 32, 0.7);
+            }
+            body {
+                background-color: var(--bg-main); color: var(--text-primary);
+                font-family: 'Inter', 'PingFang SC', sans-serif;
+                -webkit-font-smoothing: antialiased;
+                transition: background-color 0.3s ease, color 0.3s ease;
+                margin: 0; padding: 0; overflow-y: auto;
+            }
+            .data-numbers { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+            .gx-bg-main { background-color: var(--bg-main); }
+            .gx-bg-card { background-color: var(--bg-card); }
+            .gx-bg-tab { background-color: var(--bg-tab); }
+            .gx-border { border-color: var(--border-line); }
+            .gx-text-primary { color: var(--text-primary); }
+            .gx-text-secondary { color: var(--text-secondary); }
+            .gx-text-accent { color: var(--accent); }
+            .gx-border-accent { border-color: var(--accent); }
+            .gx-shadow-inner { box-shadow: var(--shadow-inset); }
+            ::-webkit-scrollbar { width: 6px; height: 6px; }
+            ::-webkit-scrollbar-track { background: var(--bg-main); }
+            ::-webkit-scrollbar-thumb { background: var(--border-line); border-radius: 3px; }
+            ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+            option { background-color: var(--bg-card); color: var(--text-primary); }
+            `}</style>
+        );
+
+        // --- 全局国际化字典 (i18n) ---
+        const dict = {
+            en: {
+                appTitle: 'GasGx ECM', port: 'PORT', baud: 'BAUD',
+                start: 'IGNITION SEQ', stop: 'EMERGENCY STOP', mode: 'SIMULATION MODE',
+                sysSts: 'SYS_STS', phase: 'PHASE',
+                noError: 'System Normal', errPrefix: 'ERR:',
+                tabs: { speed: 'Speed', ignition: 'Ignition', lambda: 'Lambda', waterTem: 'WaterTemp', oilPress: 'OilPress' },
+                expert: 'Expert System | Simulating', cause: '[CAUSE]', sol: '[SOLUTION]', chartMap: 'Map Curve'
+            },
+            zh: {
+                appTitle: '欧特讯控制中枢', port: '串口', baud: '波特率',
+                start: '启动测试', stop: '急停关机', mode: '诊断推演模式',
+                sysSts: '系统状态', phase: '阶段',
+                noError: '系统无故障', errPrefix: '故障:',
+                tabs: { speed: '调速控制', ignition: '点火系统', lambda: '空燃比', waterTem: '水温曲线', oilPress: '油压曲线' },
+                expert: '专家系统介入 | 正在预演', cause: '【故障表象】', sol: '【排查方案】', chartMap: '标定曲线'
+            },
+            ru: {
+                appTitle: 'ЦУ Газ-Двигатель', port: 'ПОРТ', baud: 'БОД',
+                start: 'ЗАПУСК', stop: 'АВАР. СТОП', mode: 'РЕЖИМ СИМУЛЯЦИИ',
+                sysSts: 'СТАТУС', phase: 'ФАЗА',
+                noError: 'Система в норме', errPrefix: 'ОШИБКА:',
+                tabs: { speed: 'Скорость', ignition: 'Зажигание', lambda: 'Лямбда', waterTem: 'Темп.Воды', oilPress: 'Давл.Масла' },
+                expert: 'Экспертная система | Сценарий', cause: '[ПРИЧИНА]', sol: '[РЕШЕНИЕ]', chartMap: 'Кривая (MAP)'
+            }
+        };
+
+        const normalizeShellLang = (langCandidate) => {
+            const value = String(langCandidate || '').toLowerCase();
+            return value.startsWith('zh') ? 'zh' : 'en';
+        };
+
+        const resolveInitialLang = () => {
+            try {
+                const primary = window.localStorage.getItem('gasgx-lang');
+                if (primary) return normalizeShellLang(primary);
+                const fallback = window.localStorage.getItem('gas_lang');
+                if (fallback) return normalizeShellLang(fallback);
+            } catch (error) {
+                // Ignore localStorage failures in restricted environments.
+            }
+            return normalizeShellLang(document.documentElement.lang || 'zh-CN');
+        };
+
+        const App = () => {
+            const [lang, setLang] = useState(resolveInitialLang);
+            const [theme, setTheme] = useState('dark');
+            const [activeTab, setActiveTab] = useState('lambda');
+            const [baudRate, setBaudRate] = useState('9600');
+            
+            const [isSimulating, setIsSimulating] = useState(false);
+            const [simMode, setSimMode] = useState('NORMAL');
+            
+            const tickRef = useRef(0);
+            const phaseRef = useRef('STOP');
+
+            const getStopStateText = () => lang === 'en' ? 'STOP' : (lang === 'zh' ? '停机' : 'СТОП');
+
+            const INITIAL_ENGINE_STATE = {
+                CurSpd: 0, SetSpd: 1500, IgtSpd: 0, SyncVolt: 0.0,
+                SpdState: getStopStateText(), BaseI: 0, CurPos1: 185, SetPos1: 185,
+                StopKey: 1, IdleKey: 0, MAP: 101.3, MAT: 25.0,
+                CurPos2: 162, SetPos2: 162, lambda: 1.0, fltrSpd: 0,
+                AState: 'OPEN', LoadI: 0, OilPressure: 0, WaterTemp: 20.0, ExhaustTemp: 25,
+                FaultMsg: ''
+            };
+
+            const [engineState, setEngineState] = useState(INITIAL_ENGINE_STATE);
+            const t = (key) => dict[lang][key] || key;
+
+            useEffect(() => {
+                const app = (window.app && typeof window.app === 'object') ? window.app : {};
+                app.currentLang = normalizeShellLang(lang);
+                app.setLanguage = function (langCandidate) {
+                    const nextLang = normalizeShellLang(langCandidate || this.currentLang);
+                    this.currentLang = nextLang;
+                    setLang((prev) => (prev === nextLang ? prev : nextLang));
+                    return this.currentLang;
+                };
+                app.init = function () {
+                    this.setLanguage(this.currentLang || resolveInitialLang());
+                };
+                window.app = app;
+
+                const handleLangChanged = (event) => {
+                    const nextLang = normalizeShellLang(event && event.detail ? event.detail.lang : undefined);
+                    app.setLanguage(nextLang);
+                };
+
+                document.addEventListener('gasgx:lang-changed', handleLangChanged);
+                return () => {
+                    document.removeEventListener('gasgx:lang-changed', handleLangChanged);
+                };
+            }, []);
+
+            useEffect(() => {
+                const normalized = normalizeShellLang(lang);
+                if (normalized !== lang) {
+                    setLang(normalized);
+                    return;
+                }
+
+                if (window.app && typeof window.app === 'object') {
+                    window.app.currentLang = normalized;
+                }
+                document.documentElement.lang = normalized === 'zh' ? 'zh-CN' : 'en';
+            }, [lang]);
+
+            // --- 21 种硬核推演模式智库 ---
+            const getSimModes = (l) => {
+                const isZH = l === 'zh';
+                const isEN = l === 'en';
+                return {
+                    NORMAL: { label: isZH?'[00] 标准运行 (STD)':'[00] Normal (STD)', desc: '', sol: '' },
+                    START_FAIL: { 
+                        label: isZH?'[01] 启动失败 (ERR_START)':(isEN?'[01] Start Fail':'[01] Ошибка запуска'), 
+                        desc: isZH?'马达拖动转速无法突破200RPM，无法进入怠速。':(isEN?'RPM stuck < 200 during crank, cannot idle.':'Обороты застряли < 200, нет холостого хода.'), 
+                        sol: isZH?'检查启动马达供电电压；检查燃气主阀是否打开。':(isEN?'Check starter voltage; check main gas valve.':'Проверьте напряжение стартера; газовый клапан.') 
+                    },
+                    OVERSPEED: { 
+                        label: isZH?'[02] 飞车失控 (ERR_SPD)':(isEN?'[02] Overspeed':'[02] Разнос двигателя'), 
+                        desc: isZH?'节气门执行器卡死全开，转速失去控制瞬间飙升。':(isEN?'Throttle actuator jammed fully open, RPM spiking.':'Привод дросселя заклинил, скачок оборотов.'), 
+                        sol: isZH?'危险！立即手动切断燃气总阀！':(isEN?'DANGER! Manually shut off gas valve NOW!':'ОПАСНО! Немедленно перекройте газ!') 
+                    },
+                    HIGH_TEMP_OIL: { 
+                        label: isZH?'[03] 高温低压 (ERR_TEMP)':(isEN?'[03] High Temp/Low Press':'[03] Выс. темп / Низк. давл'), 
+                        desc: isZH?'水温异常攀升引起机油变稀，机油压力随之下降。':(isEN?'Coolant temp rising, thinning oil and dropping pressure.':'Рост температуры ОЖ, падение давления масла.'), 
+                        sol: isZH?'检查冷却液循环（水泵、节温器）及机油泵。':(isEN?'Check coolant circulation and oil pump.':'Проверьте насосы ОЖ и масла.') 
+                    },
+                    COOLANT_LEAK: { 
+                        label: isZH?'[04] 冷却液暴漏 (ERR_LEAK)':(isEN?'[04] Coolant Leak':'[04] Утечка ОЖ'), 
+                        desc: isZH?'水温极速攀升，系统极短时间内触发高温极限停机。':(isEN?'Extreme rapid temp rise causing instant trip.':'Резкий скачок температуры, аварийная остановка.'), 
+                        sol: isZH?'立刻停机检查散热器、水管接头是否破裂。':(isEN?'Check radiator and hose joints for burst.':'Проверьте радиатор и шланги на прорыв.') 
+                    },
+                    OIL_PUMP_FAIL: { 
+                        label: isZH?'[05] 机油泵失效 (ERR_OIL_PUMP)':(isEN?'[05] Oil Pump Fail':'[05] Отказ масляного насоса'), 
+                        desc: isZH?'机油压力断崖式下跌至 0，存在严重拉缸风险。':(isEN?'Oil pressure drops to zero instantly. High friction risk.':'Давление масла падает до нуля. Риск задиров.'), 
+                        sol: isZH?'立即停机！检查机油泵传动齿轮及油底壳油位。':(isEN?'STOP IMMEDIATELY! Check pump gear and oil level.':'СТОП! Проверьте привод насоса и уровень масла.') 
+                    },
+                    SENSOR_FAIL_MAP: { 
+                        label: isZH?'[06] 歧管传感断线 (ERR_MAP)':(isEN?'[06] MAP Sensor Fail':'[06] Отказ датчика ДАД'), 
+                        desc: isZH?'MAP信号丢失导致退回开环，转速剧烈游车震荡。':(isEN?'MAP signal lost, system open-loop, severe hunting.':'Потеря сигнала ДАД, раскачка оборотов.'), 
+                        sol: isZH?'检查MAP传感器线束连接与5V参考供电。':(isEN?'Check sensor wiring and 5V reference.':'Проверьте проводку датчика и питание 5В.') 
+                    },
+                    SYNC_LOSS: { 
+                        label: isZH?'[07] 同步信号丢失 (ERR_SYNC)':(isEN?'[07] Sync Loss':'[07] Потеря синхронизации'), 
+                        desc: isZH?'曲轴同步电压跌落，ECU无法判定相位，立刻停机。':(isEN?'Cam/Crank sync lost, ECU halts ignition immediately.':'Потеря синхр. КВ/РВ, немедленная остановка.'), 
+                        sol: isZH?'检查转速传感器(MPU)探头间隙；排查高压干扰。':(isEN?'Check MPU gap; shield from high voltage noise.':'Проверьте зазор датчика; изоляцию ВВ-проводов.') 
+                    },
+                    CAN_BUS_OFF: { 
+                        label: isZH?'[08] CAN总线瘫痪 (ERR_CAN)':(isEN?'[08] CAN Bus Off':'[08] Отказ шины CAN'), 
+                        desc: isZH?'通讯丢失，关键传感器数据冻结或显示 ERR。':(isEN?'Communication lost, parameters freeze or ERR.':'Потеря связи, данные зависли или ERR.'), 
+                        sol: isZH?'检查120欧终端电阻；排查CANH/CANL是否短路。':(isEN?'Check 120 ohm resistors and CAN line shorts.':'Проверьте резисторы 120 Ом и замыкания CAN.') 
+                    },
+                    LOAD_SURGE: { 
+                        label: isZH?'[09] 突加突卸 (ERR_LOAD)':(isEN?'[09] Load Surge':'[09] Броски нагрузки'), 
+                        desc: isZH?'电网负载非预期剧烈波动，引发转速和排温大幅震荡。':(isEN?'Unexpected severe load jumps causing RPM instability.':'Резкие скачки нагрузки, нестабильность оборотов.'), 
+                        sol: isZH?'检查并网端设备启停状态；降低调速响应增益。':(isEN?'Check grid equipment switching; lower PID gain.':'Проверьте сеть; снизьте усиление ПИД.') 
+                    },
+                    OVERLOAD: { 
+                        label: isZH?'[10] 严重过载 (ERR_OVERLD)':(isEN?'[10] Extreme Overload':'[10] Сильная перегрузка'), 
+                        desc: isZH?'负载电流远超发电机额定值，转速被强行拖拽下降。':(isEN?'Current exceeds rating, engine bogged down heavily.':'Ток превышает номинал, падение оборотов.'), 
+                        sol: isZH?'紧急切断非核心负载分支断路器。':(isEN?'Emergency trip non-essential load breakers.':'Отключите неприоритетную нагрузку.') 
+                    },
+                    MISFIRE: { 
+                        label: isZH?'[11] 多缸缺火 (ERR_MISFIRE)':(isEN?'[11] Misfire Detected':'[11] Пропуск зажигания'), 
+                        desc: isZH?'周期掉速，未燃气导致Lambda虚高变稀，排温下降。':(isEN?'RPM drops, unburnt O2 causes false lean Lambda.':'Пропуски, ложная бедная смесь (много О2).'), 
+                        sol: isZH?'检查点火初级波形、火花塞积碳与高压线圈。':(isEN?'Check ignition wave, spark plugs and coils.':'Проверьте свечи, катушки и осциллограммы.') 
+                    },
+                    IGNITION_COIL_SHORT: { 
+                        label: isZH?'[12] 线圈级联短路 (ERR_COIL)':(isEN?'[12] Coil Short Circuit':'[12] КЗ катушки'), 
+                        desc: isZH?'点火驱动模块过载，同步电压杂波极大，频繁报错。':(isEN?'Ignition driver overload, severe electrical noise.':'Перегрузка драйвера, сильные помехи.'), 
+                        sol: isZH?'用万用表排查各缸点火线圈初级阻抗是否击穿。':(isEN?'Measure primary resistance of all ignition coils.':'Измерьте сопротивление первичек катушек.') 
+                    },
+                    RICH_MIXTURE: { 
+                        label: isZH?'[13] 混合气过浓 (ERR_RICH)':(isEN?'[13] Rich Mixture':'[13] Богатая смесь'), 
+                        desc: isZH?'Lambda跌破0.9，排气管后燃导致排温极速超限。':(isEN?'Lambda < 0.9, afterburn causes extreme exhaust temp.':'Лямбда < 0.9, догорание в выхлопе (перегрев).'), 
+                        sol: isZH?'检查燃气调压阀压力；校准氧传感器；检查燃气比例阀。':(isEN?'Check gas regulator pressure and O2 sensor.':'Проверьте давление газа и кислородный датчик.') 
+                    },
+                    LEAN_BURN_LIMIT: { 
+                        label: isZH?'[14] 稀燃极限突破 (ERR_LEAN)':(isEN?'[14] Lean Burn Limit':'[14] Предел бедной смеси'), 
+                        desc: isZH?'Lambda超过1.6，燃烧极不稳定，转速剧烈喘振。':(isEN?'Lambda > 1.6, combustion unstable, severe surging.':'Лямбда > 1.6, нестабильное горение, помпаж.'), 
+                        sol: isZH?'查验进气管路漏气点；清理燃气滤清器；检查旁通阀。':(isEN?'Check for intake air leaks; clean gas filters.':'Проверьте впуск на утечки; очистите фильтры.') 
+                    },
+                    KNOCK_DETECTED: { 
+                        label: isZH?'[15] 爆震频发 (ERR_KNOCK)':(isEN?'[15] Heavy Knocking':'[15] Детонация'), 
+                        desc: isZH?'气缸内产生剧烈爆震，系统疯狂退角导致动力输出不足。':(isEN?'Severe knocking, ECU retards timing losing power.':'Детонация, ЭБУ задерживает УОЗ (потеря мощн.).'), 
+                        sol: isZH?'检查燃气甲烷值(MN)是否过低；检查中冷器水温。':(isEN?'Check gas Methane Number (MN); check intercooler temp.':'Проверьте метановое число; темп. интеркулера.') 
+                    },
+                    LOW_GAS_PRESS: { 
+                        label: isZH?'[16] 燃气压力不足 (ERR_LOWGAS)':(isEN?'[16] Low Gas Press':'[16] Низк. давл. газа'), 
+                        desc: isZH?'燃气阀门全开(450)但转速仍持续掉落，Lambda严重偏稀。':(isEN?'Gas valve 100% open but RPM dropping, very lean.':'Клапан газа открыт (100%), но обороты падают.'), 
+                        sol: isZH?'检查外部供气管网管压；清洗阻火器及燃气主滤芯。':(isEN?'Check supply grid pressure; clean flame arrestor.':'Проверьте давление в сети; очистите фильтры.') 
+                    },
+                    EXHAUST_BLOCK: { 
+                        label: isZH?'[17] 排气管路堵塞 (ERR_EXH_BLK)':(isEN?'[17] Exhaust Blocked':'[17] Блокировка выхлопа'), 
+                        desc: isZH?'排温与背压畸高，MAP增压困难，发动机严重发闷无力。':(isEN?'High backpressure/temp, low MAP, engine struggling.':'Высокое противодавление, ДАД низкий, двигатель "задыхается".'), 
+                        sol: isZH?'检查尾气三元催化器(SCR/DOC)或消音器是否堵塞。':(isEN?'Inspect catalyst (SCR/DOC) or silencer for blockage.':'Проверьте катализатор или глушитель на засор.') 
+                    },
+                    ACTUATOR_JAM: { 
+                        label: isZH?'[18] 燃气阀卡滞 (ERR_JAM)':(isEN?'[18] Gas Valve Jammed':'[18] Заклинивание газ. клапана'), 
+                        desc: isZH?'目标开度变化但反馈位置停滞，带载立刻掉速或飞车。':(isEN?'Target changes but actual pos stuck, causes instability.':'Цель меняется, но факт. позиция зависла.'), 
+                        sol: isZH?'断电后手动拨动执行器；测量执行器驱动线圈。':(isEN?'Power off and manually move actuator; check coils.':'Обесточьте и проверьте ход привода вручную.') 
+                    },
+                    THROTTLE_LAG: { 
+                        label: isZH?'[19] 节气门迟缓 (ERR_LAG)':(isEN?'[19] Throttle Lag':'[19] Задержка дросселя'), 
+                        desc: isZH?'实际位置响应极慢，跟踪不上目标位置，负载突变易熄火。':(isEN?'Actual position responds very slowly, lags target.':'Фактическая позиция сильно отстает от заданной.'), 
+                        sol: isZH?'清洗节气门体油泥积碳；检查驱动电压是否因老化压降。':(isEN?'Clean throttle body deposits; check driver voltage.':'Очистите дроссель от нагара; проверьте напряжение.') 
+                    },
+                    WATER_IN_OIL: { 
+                        label: isZH?'[20] 机油乳化进水 (ERR_EMULSION)':(isEN?'[20] Water in Oil':'[20] Вода в масле'), 
+                        desc: isZH?'机油压力波动不稳且偏低，水温由于漏水逐步上升。':(isEN?'Oil pressure fluctuates low, water temp rising.':'Колебания давл. масла, темп. воды растет.'), 
+                        sol: isZH?'立即抽样检查机油是否变白乳化；排查气缸垫破损。':(isEN?'Check oil dipstick for milky emulsion; head gasket leak.':'Проверьте щуп на эмульсию; пробой прокладки ГБЦ.') 
+                    }
+                };
+            };
+
+            // --- 物理模拟器核心引擎 (增强版) ---
+            useEffect(() => {
+                let interval;
+                if (isSimulating) {
+                    if (phaseRef.current === 'STOP') {
+                        phaseRef.current = 'CRANK'; tickRef.current = 0;
+                        setEngineState(p => ({ ...p, FaultMsg: '', StopKey: 0 }));
+                    }
+
+                    interval = setInterval(() => {
+                        tickRef.current += 1;
+                        const ticks = tickRef.current;
+                        const mode = simMode;
+
+                        setEngineState(prev => {
+                            let nextState = { ...prev };
+                            let nextSpd = prev.CurSpd; let nextOil = prev.OilPressure; let nextWater = prev.WaterTemp;
+                            
+                            if (phaseRef.current === 'CRANK') {
+                                nextState.SpdState = 'CRANK';
+                                if (mode === 'START_FAIL') {
+                                    nextSpd = 150 + Math.random() * 30;
+                                    nextOil = Math.min(50, nextOil + 5);
+                                } else {
+                                    nextSpd += 80; nextOil = Math.min(100, nextOil + 20);
+                                    if (nextSpd >= 400) phaseRef.current = 'IDLE';
+                                }
+                            } else if (phaseRef.current === 'IDLE') {
+                                nextState.SpdState = 'IDLE'; nextSpd = 800 + (Math.random() * 10 - 5);
+                                nextOil = Math.min(300, nextOil + 15); nextState.IdleKey = 1; nextWater += 0.5;
+                                if (ticks > 15) phaseRef.current = 'RAMP';
+                            } else if (phaseRef.current === 'RAMP') {
+                                nextState.SpdState = 'RAMP'; nextSpd += 100;
+                                nextOil = mode === 'HIGH_TEMP_OIL' ? Math.min(130, nextOil + 2) : Math.min(450, nextOil + 20);
+                                nextWater += 0.8;
+                                if (nextSpd >= 1500) phaseRef.current = 'RATED';
+                            } else if (phaseRef.current === 'RATED') {
+                                nextState.SpdState = 'RATED'; nextSpd = 1500 + (Math.random() * 4 - 2);
+                                let load = 250 + Math.sin(ticks / 5) * 50;
+                                
+                                // --- 21大物理模式逻辑分发 ---
+                                if (mode === 'CAN_BUS_OFF') {
+                                    nextState.MAP = 'ERR'; nextState.lambda = 'ERR'; nextState.LoadI = 'ERR';
+                                    nextState.SyncVolt = 'ERR'; nextState.AState = 'ERR'; nextState.CurPos2 = 'ERR';
+                                } else {
+                                    nextState.LoadI = Math.round(load); nextState.BaseI = 380;
+                                    nextState.SyncVolt = (2.45 + Math.random() * 0.1).toFixed(2);
+                                    nextState.AState = 'PID'; nextState.lambda = load > 200 ? '1.30' : '1.25';
+                                    nextState.MAP = (140 + load * 0.1).toFixed(1);
+                                    nextState.CurPos1 = Math.round(400 + Math.random() * 10); nextState.SetPos1 = 405;
+                                    nextState.CurPos2 = Math.round(300 + load * 0.2); nextState.SetPos2 = nextState.CurPos2;
+                                    nextState.ExhaustTemp = Math.round(450 + load * 0.3);
+
+                                    if (mode === 'HIGH_TEMP_OIL') { nextOil = 130 + (Math.random() * 5); nextWater += 1.5; }
+                                    else if (mode === 'COOLANT_LEAK') { nextOil = 400 + (Math.random()*10-5); nextWater += 3.5; }
+                                    else if (mode === 'OIL_PUMP_FAIL') { nextOil = Math.max(0, nextOil - 100); nextWater += 1.0; }
+                                    else if (mode === 'WATER_IN_OIL') { nextOil = 200 + Math.random()*50; nextWater += 0.8; }
+                                    else {
+                                        nextOil = 450 + (Math.random() * 10 - 5); nextWater = Math.min(82, nextWater + 0.1); 
+                                        
+                                        if (mode === 'OVERSPEED') {
+                                            nextState.CurPos1 = 1000; nextState.SetPos1 = 1000; nextSpd += 120 + Math.random() * 50; 
+                                        } else if (mode === 'SENSOR_FAIL_MAP') {
+                                            nextState.MAP = 'ERR'; nextState.lambda = '0.00'; nextState.AState = 'FLT'; nextState.SyncVolt = '0.00'; nextSpd += (Math.random() * 100 - 50);
+                                        } else if (mode === 'SYNC_LOSS') {
+                                            nextState.SyncVolt = '0.00';
+                                        } else if (mode === 'IGNITION_COIL_SHORT') {
+                                            nextState.SyncVolt = (Math.random() * 5).toFixed(2); nextSpd -= 50; 
+                                        } else if (mode === 'LOAD_SURGE') {
+                                            if (ticks % 8 < 4) { nextState.LoadI = Math.round(load + 400); nextSpd -= 60; nextState.ExhaustTemp += 20; nextState.MAP = (190 + Math.random() * 10).toFixed(1); }
+                                            else { nextState.LoadI = 0; nextSpd += 80; nextState.ExhaustTemp -= 10; nextState.MAP = '105.0'; }
+                                        } else if (mode === 'OVERLOAD') {
+                                            nextState.LoadI = 850 + Math.random() * 50; nextSpd -= 150; nextState.ExhaustTemp += 50;
+                                        } else if (mode === 'MISFIRE') {
+                                            if (ticks % 4 === 0) nextSpd -= 80; nextState.ExhaustTemp = Math.max(300, nextState.ExhaustTemp - 30); nextState.lambda = (parseFloat(nextState.lambda) + 0.15).toFixed(2);
+                                        } else if (mode === 'RICH_MIXTURE') {
+                                            nextState.lambda = '0.88'; nextState.ExhaustTemp += 25; nextState.CurPos2 = Math.min(450, nextState.CurPos2 + 80);
+                                        } else if (mode === 'LEAN_BURN_LIMIT') {
+                                            nextState.lambda = '1.68'; nextSpd += (Math.random() * 80 - 40); nextState.ExhaustTemp -= 10;
+                                        } else if (mode === 'KNOCK_DETECTED') {
+                                            nextState.MAP = '180.5'; nextSpd -= 40; 
+                                        } else if (mode === 'LOW_GAS_PRESS') {
+                                            nextState.CurPos2 = 450; nextSpd -= 80; nextState.lambda = '1.55'; 
+                                        } else if (mode === 'EXHAUST_BLOCK') {
+                                            nextState.ExhaustTemp += 100; nextState.MAP = '180.0'; nextSpd -= 60;
+                                        } else if (mode === 'ACTUATOR_JAM') {
+                                            nextState.CurPos2 = 180; if (load > 200) nextSpd -= 40;
+                                        } else if (mode === 'THROTTLE_LAG') {
+                                            nextState.CurPos1 = prev.CurPos1 + (nextState.SetPos1 - prev.CurPos1) * 0.05; if (Math.abs(nextState.SetPos1 - nextState.CurPos1) > 50) nextSpd -= 50;
+                                        }
+                                    }
+                                }
+                            } else if (phaseRef.current === 'FAULT') {
+                                nextState.SpdState = 'STOP'; nextState.StopKey = 1; nextSpd = Math.max(0, prev.CurSpd - 200);
+                                nextOil = Math.max(0, nextOil - 50); nextState.LoadI = 0; nextState.BaseI = 0;
+                                nextState.SyncVolt = '0.00'; nextState.AState = 'OPEN'; nextState.MAP = '101.3';
+                                nextState.CurPos1 = 185; nextState.CurPos2 = 162;
+                                if (nextSpd === 0) setIsSimulating(false);
+                            }
+
+                            let faultMsg = '';
+                            if (phaseRef.current === 'RATED' || (phaseRef.current === 'IDLE' && ticks > 25)) {
+                                if (nextWater > 95) faultMsg = t('errPrefix') + ' T>95℃';
+                                else if (nextOil < 150 && mode !== 'START_FAIL') faultMsg = t('errPrefix') + ' P<150kPa';
+                                else if (nextSpd > 1750) faultMsg = t('errPrefix') + ' OVERSPEED';
+                                else if (nextState.ExhaustTemp > 650) faultMsg = t('errPrefix') + ' EXH>650℃';
+                                else if (mode === 'SYNC_LOSS' && ticks % 4 === 0) faultMsg = t('errPrefix') + ' NO SYNC';
+                                else if (mode === 'CAN_BUS_OFF' && ticks % 5 === 0) faultMsg = t('errPrefix') + ' CAN FLT';
+                                else if (mode === 'SENSOR_FAIL_MAP' && ticks % 12 === 0) faultMsg = t('errPrefix') + ' COM LOST';
+                                else if ((mode === 'LOAD_SURGE' || mode === 'OVERLOAD') && nextState.LoadI > 650 && ticks % 8 === 0) faultMsg = t('errPrefix') + ' OVERLOAD';
+                                else if (mode === 'IGNITION_COIL_SHORT' && ticks % 10 === 0) faultMsg = t('errPrefix') + ' COIL FLT';
+                            }
+                            if (faultMsg && phaseRef.current !== 'FAULT') {
+                                phaseRef.current = 'FAULT'; nextState.FaultMsg = faultMsg;
+                            }
+
+                            return { ...nextState, CurSpd: Math.round(nextSpd), IgtSpd: Math.round(nextSpd), fltrSpd: Math.round(nextSpd), OilPressure: Math.round(nextOil), WaterTemp: Number(nextWater.toFixed(1)) };
+                        });
+                    }, 500);
+                } else {
+                    phaseRef.current = 'STOP';
+                    interval = setInterval(() => {
+                        setEngineState(prev => {
+                            if (prev.CurSpd === 0) return prev;
+                            const nextSpd = Math.max(0, prev.CurSpd - 150);
+                            return { ...prev, CurSpd: nextSpd, IgtSpd: nextSpd, fltrSpd: nextSpd, SpdState: getStopStateText(), StopKey: 1, LoadI: 0, OilPressure: Math.max(0, prev.OilPressure - 100), MAP: 101.3, AState: 'OPEN' };
+                        });
+                    }, 500);
+                }
+                return () => clearInterval(interval);
+            }, [isSimulating, simMode, lang]);
+
+            const handleSimulationToggle = () => {
+                if (!isSimulating) {
+                    setEngineState({...INITIAL_ENGINE_STATE, SpdState: getStopStateText()});
+                    tickRef.current = 0; phaseRef.current = 'STOP';
+                }
+                setIsSimulating(!isSimulating);
+            };
+
+            const isAlarm = (key, val) => {
+                if (val === 'ERR' || val === 'FLT') return true;
+                if (key === 'WaterTemp' && val >= 90) return true;
+                if (key === 'OilPressure' && val <= 200 && engineState.CurSpd > 600 && phaseRef.current !== 'FAULT') return true;
+                if (key === 'CurSpd' && val >= 1750) return true;
+                if (key === 'SyncVolt' && val === '0.00' && engineState.CurSpd > 600) return true;
+                if (key === 'ExhaustTemp' && val > 650) return true;
+                if (key === 'lambda' && val !== 'ERR' && (parseFloat(val) > 1.6 || parseFloat(val) < 0.95) && engineState.CurSpd > 1400) return true;
+                return false;
+            };
+
+            // --- 全面翻译的参数标定表 ---
+            const tabConfigs = {
+                speed: {
+                    params: [
+                        [ { l: { en:'Speed P', zh:'比例参数P', ru:'Пропорц. P' }, v: '1500' }, { l: { en:'Speed I', zh:'积分参数I', ru:'Интеграл. I' }, v: '300' }, { l: { en:'Speed D', zh:'微分参数D', ru:'Производн. D' }, v: '200' }, { l: { en:'Rated RPM', zh:'额定转速', ru:'Номин. RPM' }, v: '1500' } ],
+                        [ { l: { en:'Idle RPM', zh:'怠速转速', ru:'RPM Холост.' }, v: '800' }, { l: { en:'Overspeed', zh:'超速保护', ru:'Превыш. Скор' }, v: '1750' }, { l: { en:'Start Fuel', zh:'启动油量', ru:'Старт. Топл.' }, v: '25' }, { l: { en:'Droop %', zh:'调速率', ru:'Статизм %' }, v: '0' } ],
+                        [ { l: { en:'Pos Src', zh:'位置反馈源', ru:'Ист. Поз.' }, v: 'ADC1', type: 'select' }, { l: { en:'Max Pos', zh:'最大开度', ru:'Макс. Откр' }, v: '100' }, { l: { en:'Min Pos', zh:'最小开度', ru:'Мин. Откр' }, v: '5' } ],
+                        [ { l: { en:'Teeth', zh:'齿数', ru:'Зубья' }, v: '118' }, { l: { en:'Sync Mode', zh:'同步模式', ru:'Режим Синх.' }, v: 'Auto', type: 'select' } ]
+                    ],
+                    tableHeaders: ['RPM Set', 'P', 'I', 'D', 'Limit'],
+                    tableData: [['800', '1200', '200', '100', '60'], ['1000', '1300', '250', '150', '70'], ['1200', '1400', '280', '180', '80'], ['1500', '1500', '300', '200', '100']]
+                },
+                ignition: {
+                    params: [
+                        [ { l: { en:'Global Adv', zh:'全局提前角', ru:'Общий УОЗ' }, v: '15' }, { l: { en:'Energy %', zh:'点火能量', ru:'Энергия %' }, v: '85' }, { l: { en:'Min Cyl', zh:'最少缸数', ru:'Мин. Цил.' }, v: '6' } ],
+                        [ { l: { en:'Start Adv', zh:'启动提前角', ru:'УОЗ Старт' }, v: '5' }, { l: { en:'Idle Adv', zh:'怠速提前角', ru:'УОЗ Холост.' }, v: '10' }, { l: { en:'Max Adv', zh:'最大提前角', ru:'Макс. УОЗ' }, v: '35' } ],
+                        [ { l: { en:'Knock Thr', zh:'爆震阈值', ru:'Порог Детон.' }, v: '2.5' }, { l: { en:'Retard Step', zh:'退角步长', ru:'Шаг Задерж.' }, v: '1.0' }, { l: { en:'Recov Dly', zh:'恢复延迟', ru:'Задерж. Восст' }, v: '50' } ],
+                        [ { l: { en:'Ign Enable', zh:'点火使能', ru:'Акт. Зажиг.' }, v: 'ON', type: 'select' } ]
+                    ],
+                    tableHeaders: ['RPM', 'MAP (kPa)', 'Adv Base', 'Energy', '-'],
+                    tableData: [['800', '40', '10.0', '100', '-'], ['1500', '50', '18.0', '90', '-'], ['1500', '100', '15.0', '85', '-'], ['1500', '150', '12.0', '85', '-']]
+                },
+                lambda: {
+                    params: [
+                        [ { l: { en:'Ratio', zh:'互感器变比', ru:'Коэф. ТТ' }, v: '600' }, { l: { en:'I Offset', zh:'电流偏移', ru:'Смещ. Тока' }, v: '20' }, { l: { en:'I Filter', zh:'电流滤波', ru:'Фильтр Тока' }, v: '5' }, { l: { en:'Lambda P', zh:'空燃比P', ru:'Лямбда P' }, v: '100' }, { l: { en:'Lambda I', zh:'空燃比I', ru:'Лямбда I' }, v: '60' }, { l: { en:'Lambda D', zh:'空燃比D', ru:'Лямбда D' }, v: '10' } ],
+                        [ { l: { en:'Stable', zh:'转速稳定率', ru:'Стабильность' }, v: '80' }, { l: { en:'Pos P', zh:'位置P', ru:'Поз P' }, v: '1000' }, { l: { en:'Pos I', zh:'位置I', ru:'Поз I' }, v: '200' }, { l: { en:'Pos D', zh:'位置D', ru:'Поз D' }, v: '300' }, { l: { en:'Max I', zh:'最大电流', ru:'Макс. Ток' }, v: '2.80' }, { l: { en:'Period2', zh:'电机周期', ru:'Период Двиг.' }, v: '3' } ],
+                        [ { l: { en:'Start Pos', zh:'启动位置', ru:'Старт Поз' }, v: '420' }, { l: { en:'Idle Pos', zh:'怠速位置', ru:'Хол. Поз' }, v: '185' }, { l: { en:'Min Pos', zh:'最小位置', ru:'Мин. Поз' }, v: '162' }, { l: { en:'Max Pos', zh:'最大位置', ru:'Макс. Поз' }, v: '450' } ],
+                        [ { l: { en:'Manual SW', zh:'自检开关', ru:'Ручн. ВКЛ' }, v: 'OFF', type: 'select' }, { l: { en:'Manual Pos', zh:'手动位置', ru:'Ручн. Поз' }, v: '500' }, { l: { en:'PID SW', zh:'PID开关', ru:'ПИД ВКЛ' }, v: 'ON', type: 'select' }, { l: { en:'Period1 S', zh:'PID周期', ru:'Период ПИД' }, v: '1' } ]
+                    ],
+                    tableHeaders: ['Current (A)', 'Lambda', 'SetPos', 'MaxPos', 'SpdLmt'],
+                    tableData: [['0', '1.20', '330', '350', '350'], ['30', '1.30', '230', '240', '1000'], ['100', '1.30', '270', '290', '1000'], ['200', '1.30', '320', '330', '1000'], ['300', '1.32', '340', '350', '1000'], ['400', '1.32', '360', '370', '1000']]
+                },
+                waterTem: {
+                    params: [
+                        [ { l: { en:'Warn Tmp', zh:'水温告警值', ru:'Пред. Темп' }, v: '90' }, { l: { en:'Shut Tmp', zh:'水温停机值', ru:'Авар. Темп' }, v: '95' } ],
+                        [ { l: { en:'Sens Typ', zh:'传感器类型', ru:'Тип Датчика' }, v: 'PT100', type: 'select' }, { l: { en:'Offset', zh:'修正偏差', ru:'Смещение' }, v: '0.0' } ],
+                        [ { l: { en:'Fan On', zh:'风扇启温度', ru:'Вент. ВКЛ' }, v: '80' }, { l: { en:'Fan Off', zh:'风扇停温度', ru:'Вент. ВЫКЛ' }, v: '75' } ],
+                        [ { l: { en:'Protect', zh:'使能保护', ru:'Защита ВКЛ' }, v: 'ON', type: 'select' } ]
+                    ],
+                    tableHeaders: ['ADC (Ω)', 'Temp (℃)'],
+                    tableData: [['100.0', '0.0'], ['107.8', '20.0'], ['115.5', '40.0'], ['123.2', '60.0'], ['130.9', '80.0'], ['138.5', '100.0'], ['146.1', '120.0']],
+                    chartDef: { xLabel: 'Ω', yLabel: '℃', xMax: 150, yMax: 130, points: [[100, 0], [107.8, 20], [115.5, 40], [123.2, 60], [130.9, 80], [138.5, 100], [146.1, 120]], color: 'var(--status-danger)' }
+                },
+                oilPress: {
+                    params: [
+                        [ { l: { en:'Warn Prs', zh:'油压告警值', ru:'Пред. Давл' }, v: '200' }, { l: { en:'Shut Prs', zh:'油压停机值', ru:'Авар. Давл' }, v: '150' } ],
+                        [ { l: { en:'Sens Typ', zh:'传感器类型', ru:'Тип Датчика' }, v: '4-20mA', type: 'select' }, { l: { en:'Offset', zh:'修正偏差', ru:'Смещение' }, v: '0.0' } ],
+                        [ { l: { en:'Idle Dly', zh:'怠速保护延', ru:'Задерж. Хол' }, v: '10' }, { l: { en:'Rated Dly', zh:'额定保护延', ru:'Задерж. Ном' }, v: '3' } ],
+                        [ { l: { en:'Protect', zh:'使能保护', ru:'Защита ВКЛ' }, v: 'ON', type: 'select' } ]
+                    ],
+                    tableHeaders: ['RPM', 'OilPress (kPa)'],
+                    tableData: [['0', '0'], ['400', '150'], ['800', '300'], ['1200', '400'], ['1500', '450'], ['1800', '500']],
+                    chartDef: { xLabel: 'RPM', yLabel: 'kPa', xMax: 2000, yMax: 600, points: [[0,0], [400,150], [800,300], [1200,400], [1500,450], [1800,500]], color: 'var(--status-info)' }
+                }
+            };
+
+            const currentConfig = tabConfigs[activeTab];
+            const activeSimModes = getSimModes(lang);
+
+            const CurveChart = ({ def }) => {
+                if (!def) return null;
+                const { points, xMax, yMax, color, xLabel, yLabel } = def;
+                const w = 300, h = 120, padding = 25;
+                const mapX = (x) => padding + ((x - (def.xLabel==='Ω'?90:0)) / (xMax - (def.xLabel==='Ω'?90:0))) * (w - padding * 2);
+                const mapY = (y) => h - padding - (y / yMax) * (h - padding * 2);
+                const pathD = `M ${points.map(p => `${mapX(p[0])},${mapY(p[1])}`).join(' L ')}`;
+                return (
+                    <div className="h-[160px] gx-bg-main gx-border border-b flex flex-col p-2 relative">
+                        <span className="text-[11px] gx-text-secondary font-bold absolute top-2 left-3 flex items-center gap-1">
+                            <Activity size={12} style={{color}} /> {yLabel} / {xLabel} {t('chartMap')}
+                        </span>
+                        <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-full mt-3">
+                            {[0.25, 0.5, 0.75, 1].map(r => (
+                                <line key={`h${r}`} x1={padding} y1={h - padding - (h - padding*2)*r} x2={w-padding} y2={h - padding - (h - padding*2)*r} stroke="var(--border-line)" strokeWidth="1" strokeDasharray="4,4"/>
+                            ))}
+                            <line x1={padding} y1={padding} x2={padding} y2={h-padding} stroke="var(--text-secondary)" strokeWidth="1"/>
+                            <line x1={padding} y1={h-padding} x2={w-padding} y2={h-padding} stroke="var(--text-secondary)" strokeWidth="1"/>
+                            <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            {points.map((p, i) => <circle key={i} cx={mapX(p[0])} cy={mapY(p[1])} r="3" fill="var(--bg-card)" stroke={color} strokeWidth="2"/>)}
+                        </svg>
+                    </div>
+                );
+            };
+
+            const InputRow = ({ item, type = 'text' }) => {
+                const displayLabel = item.l[lang] || item.l['en'];
+                return (
+                    <div className="flex items-center justify-between py-1.5 px-2 gx-border border-b last:border-0 hover:bg-[rgba(var(--accent-rgb),0.05)] transition-colors">
+                        <span className="text-[12px] gx-text-primary whitespace-nowrap overflow-hidden text-ellipsis mr-2">{displayLabel}</span>
+                        <div className="flex-shrink-0">
+                            {type === 'select' ? (
+                                <select className="data-numbers w-[65px] px-1 py-0.5 text-[12px] gx-bg-main gx-border border gx-text-accent gx-shadow-inner rounded focus:outline-none focus:border-[var(--accent)] transition-colors">
+                                    <option>{item.v}</option>
+                                    <option>{item.v === 'ON' ? 'OFF' : 'ON'}</option>
+                                </select>
+                            ) : (
+                                <input type="text" defaultValue={item.v} className="data-numbers w-[65px] px-1.5 py-0.5 text-[12px] text-right gx-bg-main gx-border border gx-text-primary gx-shadow-inner rounded focus:outline-none focus:border-[var(--accent)] transition-colors" />
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div data-theme={theme} className="flex flex-col min-h-[calc(100vh-12rem)] min-w-[1024px] p-2 gap-2 gx-bg-main transition-colors duration-300">
+                    <GlobalStyles />
+                    <div className="flex flex-col gx-bg-card gx-border border rounded-lg shadow-lg overflow-hidden shrink-0">
+                        <div className="px-4 py-2 gx-border border-b flex items-center justify-between select-none">
+                            <div className="flex items-center gap-3">
+                                <div className="p-1.5 bg-[rgba(var(--accent-rgb),0.2)] rounded border gx-border-accent">
+                                    <Settings2 size={16} className="gx-text-accent" />
+                                </div>
+                                <span className="font-semibold text-sm tracking-widest gx-text-primary">{t('appTitle')} <span className="gx-text-secondary font-normal text-xs ml-2">PRO</span></span>
+                            </div>
+                            
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded hover:bg-[rgba(128,128,128,0.1)] gx-text-secondary transition-colors">
+                                    {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                                </button>
+                                <div className="flex items-center gap-1.5 ml-2">
+                                    <div className={`w-2 h-2 rounded-full ${isSimulating ? 'bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]' : 'bg-[#555555]'}`}></div>
+                                    <span className="data-numbers text-[10px] gx-text-secondary">{t('sysSts')}</span>
+                                </div>
+                                <span className={`data-numbers text-[11px] px-2 py-0.5 border rounded ${isSimulating ? 'bg-[rgba(var(--accent-rgb),0.15)] gx-text-accent gx-border-accent' : 'bg-[rgba(128,128,128,0.1)] gx-text-secondary gx-border'}`}>
+                                    {t('phase')}: {phaseRef.current}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="px-4 py-2 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                    <label className="text-[12px] gx-text-secondary">{t('port')}</label>
+                                    <select className="data-numbers gx-bg-main gx-border border gx-text-primary rounded px-2 py-0.5 text-[12px] w-[80px] gx-shadow-inner"><option>COM4</option></select>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-[12px] gx-text-secondary">{t('baud')}</label>
+                                    <select 
+                                        value={baudRate} onChange={(e) => setBaudRate(e.target.value)}
+                                        className="data-numbers gx-bg-main gx-border border gx-text-primary rounded px-2 py-0.5 text-[12px] w-[80px] gx-shadow-inner hover:border-[var(--accent)] transition-colors cursor-pointer"
+                                    >
+                                        <option value="9600">9600</option><option value="19200">19200</option><option value="38400">38400</option><option value="57600">57600</option><option value="115200">115200</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2 bg-[rgba(128,128,128,0.1)] gx-border border rounded-md px-2 py-1">
+                                    <label className="text-[12px] gx-text-secondary flex items-center gap-1">
+                                        <Activity size={14}/> {t('mode')}
+                                    </label>
+                                    <select 
+                                        value={simMode} onChange={(e) => setSimMode(e.target.value)}
+                                        className={`data-numbers gx-bg-main border rounded-sm px-2 py-0.5 text-[11px] focus:outline-none transition-colors gx-shadow-inner ${
+                                            simMode === 'NORMAL' ? 'gx-border gx-text-accent' : 'border-[var(--status-warning)] text-[var(--status-warning)]'
+                                        }`}
+                                    >
+                                        {Object.entries(activeSimModes).map(([key, info]) => (
+                                            <option key={key} value={key}>{info.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <button 
+                                    onClick={handleSimulationToggle}
+                                    className={`flex items-center gap-1.5 px-4 py-1 border rounded text-[12px] font-bold transition-all ${
+                                        isSimulating ? 'bg-[rgba(255,51,102,0.1)] border-[var(--status-danger)] text-[var(--status-danger)] hover:bg-[rgba(255,51,102,0.2)]' : 'bg-[rgba(var(--accent-rgb),0.1)] border-[var(--accent)] text-[var(--accent)] hover:bg-[rgba(var(--accent-rgb),0.2)]'
+                                    }`}
+                                >
+                                    {isSimulating ? <PowerOff size={14} /> : <Play size={14} />}
+                                    {isSimulating ? t('stop') : t('start')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {simMode !== 'NORMAL' && activeSimModes[simMode] && (
+                        <div className="gx-bg-card border border-[var(--status-warning)] rounded-lg p-3 mx-0 shadow-[0_0_15px_rgba(255,153,0,0.1)] flex flex-col gap-1.5 shrink-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                                <AlertTriangle size={16} className="text-[var(--status-warning)]" />
+                                <span className="text-[13px] font-bold text-[var(--status-warning)] tracking-wide">
+                                    {t('expert')}: {activeSimModes[simMode].label}
+                                </span>
+                            </div>
+                            <div className="text-[12px] gx-text-primary pl-6 flex items-start">
+                                <span className="gx-text-secondary whitespace-nowrap mr-2">{t('cause')}</span> {activeSimModes[simMode].desc}
+                            </div>
+                            <div className="text-[12px] gx-text-accent pl-6 flex items-start">
+                                <span className="gx-text-secondary whitespace-nowrap mr-2">{t('sol')}</span> {activeSimModes[simMode].sol}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex-1 flex overflow-hidden gap-2">
+                        <div className="w-[65%] flex flex-col gx-bg-card gx-border border rounded-lg overflow-hidden">
+                            <div className="flex gx-border border-b gx-bg-tab">
+                                {Object.entries(t('tabs')).map(([key, name]) => (
+                                    <button
+                                        key={key} onClick={() => setActiveTab(key)}
+                                        className={`px-5 py-2 text-[12px] transition-colors gx-border border-r ${
+                                            activeTab === key ? 'gx-bg-card gx-text-accent font-semibold border-t-2 border-t-[var(--accent)]' : 'gx-text-secondary hover:gx-text-primary hover:bg-[rgba(128,128,128,0.1)]'
+                                        }`}
+                                    >
+                                        {name}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex-1 grid grid-cols-4 divide-x divide-[var(--border-line)] overflow-y-auto">
+                                {currentConfig.params.map((col, colIdx) => (
+                                    <div key={colIdx} className="p-1 flex flex-col">
+                                        {col.map((p, pIdx) => (
+                                            <InputRow key={pIdx} item={p} type={p.type} />
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="w-[35%] flex flex-col gx-bg-card gx-border border rounded-lg overflow-hidden">
+                            <CurveChart def={currentConfig.chartDef} />
+                            <div className="flex-1 overflow-auto">
+                                <table className="w-full text-[12px] text-center border-collapse">
+                                    <thead className="gx-bg-tab gx-text-secondary sticky top-0 shadow-sm">
+                                        <tr>
+                                            {currentConfig.tableHeaders.map((header, idx) => (
+                                                <th key={idx} className="gx-border border-b py-2 px-1 font-medium whitespace-pre-line">{header}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {currentConfig.tableData.map((row, idx) => (
+                                            <tr key={idx} className="gx-border border-b hover:bg-[rgba(var(--accent-rgb),0.1)] transition-colors group">
+                                                {row.map((cell, cellIdx) => (
+                                                    <td key={cellIdx} className="data-numbers py-1.5 px-1 gx-border border-r gx-text-primary group-hover:gx-text-accent">{cell}</td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="shrink-0 gx-border border rounded-lg p-3" style={{ backgroundColor: 'var(--glass-bg)', backdropFilter: 'blur(12px)' }}>
+                        <div className="grid grid-cols-6 gap-x-4 gap-y-1.5">
+                            {[
+                                { l: { en:'CurSpd', zh:'当前转速', ru:'Тек.Скор' }, k: 'CurSpd' }, { l: { en:'SetSpd', zh:'目标转速', ru:'Зад.Скор' }, k: 'SetSpd' },
+                                { l: { en:'IgtSpd', zh:'点火转速', ru:'Скор.Зажиг' }, k: 'IgtSpd' }, { l: { en:'SyncVolt', zh:'同步电压', ru:'Напр.Синх' }, k: 'SyncVolt' },
+                                { l: { en:'SpdState', zh:'调速状态', ru:'Стат.Скор' }, k: 'SpdState' }, { l: { en:'BaseI', zh:'基准电流', ru:'Баз.Ток' }, k: 'BaseI' },
+                                
+                                { l: { en:'CurPos1', zh:'调速位置', ru:'Поз.Скор' }, k: 'CurPos1' }, { l: { en:'SetPos1', zh:'调速目标', ru:'Зад.Поз1' }, k: 'SetPos1' },
+                                { l: { en:'StopKey', zh:'启停开关', ru:'КлючОст' }, k: 'StopKey' }, { l: { en:'IdleKey', zh:'高低开关', ru:'КлючХХ' }, k: 'IdleKey' },
+                                { l: { en:'MAP', zh:'歧管压力', ru:'ДАД(MAP)' }, k: 'MAP' }, { l: { en:'MAT', zh:'歧管温度', ru:'ДТВ(MAT)' }, k: 'MAT' },
+                                
+                                { l: { en:'CurPos2', zh:'燃气位置', ru:'Поз.Газ' }, k: 'CurPos2' }, { l: { en:'SetPos2', zh:'燃气目标', ru:'Зад.Поз2' }, k: 'SetPos2' },
+                                { l: { en:'Lambda', zh:'空燃比', ru:'Лямбда' }, k: 'lambda' }, { l: { en:'FltrSpd', zh:'滤波转速', ru:'Филтр.Скор' }, k: 'fltrSpd' },
+                                { l: { en:'AState', zh:'空燃比状态', ru:'Стат.Лямб' }, k: 'AState' }, { l: { en:'LoadI', zh:'发电电流', ru:'ТокНагр' }, k: 'LoadI' },
+                                
+                                { l: { en:'OilPress', zh:'机油压力', ru:'Давл.Мас' }, k: 'OilPressure' }, { l: { en:'WaterTemp', zh:'冷却水温', ru:'Темп.Вод' }, k: 'WaterTemp' },
+                                { l: { en:'Exhaust', zh:'排气温度', ru:'Выхлоп' }, k: 'ExhaustTemp' }, null, null, null
+                            ].map((item, index) => {
+                                if (!item) return <div key={index} className="py-1"></div>;
+                                const val = engineState[item.k];
+                                const alarm = isAlarm(item.k, val);
+                                const highlight = isSimulating && !alarm && ['CurSpd','MAP','lambda','LoadI','OilPressure','WaterTemp','ExhaustTemp'].includes(item.k);
+                                
+                                let valClass = "gx-text-primary"; 
+                                if (alarm) valClass = "text-[var(--status-danger)] drop-shadow-[0_0_6px_rgba(255,51,102,0.6)] animate-pulse font-bold";
+                                else if (highlight) valClass = "gx-text-accent font-medium";
+
+                                return (
+                                    <div key={index} className="flex items-center justify-between py-0.5 border-b border-[var(--border-line)] group">
+                                        <div className="flex items-baseline overflow-hidden">
+                                            <span className="text-[12px] gx-text-secondary whitespace-nowrap group-hover:text-[var(--text-primary)] transition-colors">
+                                                {item.l[lang] || item.l['en']}
+                                            </span>
+                                        </div>
+                                        <div className={`data-numbers text-[13px] ml-2 transition-all duration-300 ${valClass}`}>{val}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+        const syncEcmHeaderBrand = () => {
+            const brandTextNode = document.getElementById('ggx-header-brand-text');
+            if (brandTextNode) {
+                brandTextNode.textContent = 'GasGx ECM';
+            }
+
+            const homeLink = document.getElementById('ggx-header-home-link');
+            if (homeLink) {
+                homeLink.setAttribute('href', '/digitalization/ecm/');
+            }
+        };
+
+        document.addEventListener('gasgx:shared-ui-ready', syncEcmHeaderBrand);
+        document.addEventListener('gasgx:site-shell-config-updated', syncEcmHeaderBrand);
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', syncEcmHeaderBrand, { once: true });
+        } else {
+            syncEcmHeaderBrand();
+        }
+    </script>
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+</body>
+</html>
