@@ -541,7 +541,7 @@ async function renderPage() {
         };
 
         const delayedLoadingTimer = window.setTimeout(() => {
-            setContent(loadingPanelMarkup('正在打开页面...', '正在准备当前页面所需的客户、流程和报价数据。'));
+            setContent(loadingPanelMarkup('正在进入销售流水线...', '正在准备当前页面所需的客户、流程和报价数据。'));
         }, 180);
 
         try {

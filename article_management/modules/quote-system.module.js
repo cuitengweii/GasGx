@@ -746,7 +746,21 @@ function normalizeDealStageKey(value = '') {
 }
 
 function normalizeDealStatus(value = '') {
-    const current = text(value, 'active');
+    const normalized = text(value, 'active').toLowerCase();
+    const alias = {
+        canceled: 'cancelled',
+        cancel: 'cancelled',
+        voided: 'cancelled',
+        void: 'cancelled',
+        invalid: 'cancelled',
+        archived: 'completed',
+        archive: 'completed',
+        closed: 'completed',
+        done: 'completed',
+        finished: 'completed',
+        complete: 'completed',
+    };
+    const current = alias[normalized] || normalized;
     return DEAL_STATUS_OPTIONS.some((option) => option.value === current) ? current : 'active';
 }
 
@@ -932,13 +946,14 @@ function flushStageCommunicationDraft(stageKey = '', author = '') {
 }
 
 function createDealDraft(seed = {}) {
+    const archivedFlag = seed.is_archived ?? seed.isArchived;
     return {
         id: text(seed.id),
         customer_id: text(seed.customer_id || seed.customerId),
         title: text(seed.title),
         current_stage: normalizeDealStageKey(seed.current_stage || seed.currentStage),
         deal_status: normalizeDealStatus(seed.deal_status || seed.dealStatus),
-        is_archived: seed.is_archived === true,
+        is_archived: archivedFlag === true || archivedFlag === 'true' || archivedFlag === 1 || archivedFlag === '1',
         archived_at: text(seed.archived_at || seed.archivedAt),
         archived_by: text(seed.archived_by || seed.archivedBy),
         owner_name: text(seed.owner_name || seed.ownerName),
@@ -1424,7 +1439,8 @@ function isSalesOnlyUser(input = null) {
 }
 
 function isDealArchived(deal = {}) {
-    return deal?.is_archived === true;
+    const archivedFlag = deal?.is_archived;
+    return archivedFlag === true || archivedFlag === 'true' || archivedFlag === 1 || archivedFlag === '1';
 }
 
 function isCustomerPipelineVisible(customerId = '') {
@@ -1459,6 +1475,20 @@ function salesStageCount(stageKey = '', input = null) {
         return moduleState.customers.filter((customer) => customer.is_active !== false && !customer.is_deleted).length;
     }
     return visibleDealsForInput(input).filter((deal) => normalizeDealStageKey(deal.current_stage) === normalizeDealStageKey(stageKey)).length;
+}
+
+function salesStageCustomerCount(stageKey = '', input = null) {
+    const normalizedStage = normalizeDealStageKey(stageKey);
+    if (normalizedStage === 'customer_profile') {
+        return moduleState.customers.filter((customer) => customer.is_active !== false && !customer.is_deleted).length;
+    }
+    const customerIds = new Set(
+        visibleDealsForInput(input)
+            .filter((deal) => normalizeDealStageKey(deal.current_stage) === normalizedStage)
+            .map((deal) => text(deal.customer_id))
+            .filter(Boolean),
+    );
+    return customerIds.size;
 }
 
 function pipelineStageUrl(stageKey = '', deal = null) {
@@ -1568,11 +1598,16 @@ function salesPipelineMarkup(input, options = {}) {
                                 : isDisabled
                                     ? 'is-muted'
                                     : '';
+                    const useCustomerCount = isSalesConsole(input) && text(options.page) === 'quote-customers';
+                    const stageCount = useCustomerCount
+                        ? salesStageCustomerCount(stage.key, input)
+                        : salesStageCount(stage.key, input);
+                    const countUnit = useCustomerCount ? '客' : '条';
                     const badgeLabel = pipelineMode === 'detail' && activeDeal?.id
                         ? dealStageStatusLabel(stageStatus)
                         : isDisabled
                             ? '需销售线'
-                            : `${salesStageCount(stage.key, input)} 条`;
+                            : `${stageCount} ${countUnit}`;
                     const description = pipelineMode === 'detail' && activeDeal?.id
                         ? dealStageStatusLabel(stageStatus)
                         : stage.key === 'customer_profile'
@@ -1595,6 +1630,9 @@ function salesPipelineMarkup(input, options = {}) {
                     `;
                     if (isDisabled) {
                         return `<div class="ams-customer-pipeline-node ams-sales-pipeline-stage ${className}">${body}</div>`;
+                    }
+                    if (pipelineMode === 'overview') {
+                        return `<button class="ams-customer-pipeline-node ams-sales-pipeline-stage is-link ${className}" type="button" data-sales-pipeline-filter="${esc(stage.key)}">${body}</button>`;
                     }
                     return `<a class="ams-customer-pipeline-node ams-sales-pipeline-stage is-link ${className}" href="${esc(jump.href)}">${body}</a>`;
                 }).join('')}
@@ -1654,7 +1692,15 @@ function renderSalesPageFrame(input, title, sub, body, options = {}) {
 
 function bindSalesPageChrome(input) {
     if (!isSalesConsole(input)) return;
-    return;
+    document.querySelectorAll('[data-sales-pipeline-filter]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const nextStage = normalizeDealStageKey(button.dataset.salesPipelineFilter || '');
+            const currentStage = currentSalesStageParam('customer_profile');
+            if (!nextStage || nextStage === currentStage) return;
+            window.history.replaceState({}, '', adminPageUrl('quote-customers', { stage: nextStage }));
+            void renderQuoteCustomersPage(input);
+        });
+    });
 }
 
 function replaceStageRecord(stageKey = '', updater) {
@@ -6955,9 +7001,25 @@ function customerActivePipelineDeals(customerId = '') {
     return customerDeals(customerId).filter((deal) => !isDealArchived(deal));
 }
 
-function customerStageCounts(customerId = '') {
+function customerVisibleStageDeals(customerId = '', input = null, stageKey = '') {
+    const scopedStage = normalizeDealStageKey(stageKey || 'customer_profile');
+    const baseDeals = input
+        ? visibleDealsForInput(input, { includeClosed: false, includeArchived: false })
+            .filter((deal) => text(deal.customer_id) === text(customerId))
+        : customerActivePipelineDeals(customerId);
+    return baseDeals
+        .filter((deal) => scopedStage === 'customer_profile' || normalizeDealStageKey(deal.current_stage) === scopedStage);
+}
+
+function customerMatchesStageFilter(customerId = '', stageKey = 'customer_profile', input = null) {
+    const normalizedStage = normalizeDealStageKey(stageKey || 'customer_profile');
+    if (normalizedStage === 'customer_profile') return true;
+    return customerVisibleStageDeals(customerId, input, normalizedStage).length > 0;
+}
+
+function customerStageCounts(customerId = '', input = null, stageScope = 'customer_profile') {
     const counts = new Map(DEAL_STAGE_DEFINITIONS.map((stage) => [stage.key, 0]));
-    customerActivePipelineDeals(customerId).forEach((deal) => {
+    customerVisibleStageDeals(customerId, input, stageScope).forEach((deal) => {
         const key = normalizeDealStageKey(deal.current_stage);
         counts.set(key, (counts.get(key) || 0) + 1);
     });
@@ -7045,9 +7107,13 @@ async function ensureCustomerRequirementFlow(user, customer) {
     };
 }
 
-function salesCustomerStageStripMarkup(customerId = '') {
-    const stageCounts = customerStageCounts(customerId);
-    const deal = customerActivePipelineDeals(customerId)[0] || customerDeals(customerId)[0] || null;
+function salesCustomerStageStripMarkup(customerId = '', input = null, stageScope = 'customer_profile') {
+    const normalizedScope = normalizeDealStageKey(stageScope || 'customer_profile');
+    const stageCounts = customerStageCounts(customerId, input, normalizedScope);
+    const deal = customerVisibleStageDeals(customerId, input, normalizedScope)[0]
+        || customerVisibleStageDeals(customerId, input)[0]
+        || customerDeals(customerId)[0]
+        || null;
     const dealRecords = deal ? dealCurrentRecords(deal) : [];
     return `
         <div class="ams-sales-customer-stage-strip">
@@ -7063,15 +7129,16 @@ function salesCustomerStageStripMarkup(customerId = '') {
                 const stageStatus = normalizeDealStageStatus(stageRecord.stage_status);
                 const clickable = Boolean(
                     deal?.id
+                    && count > 0
                     && ['completed', 'active', 'blocked'].includes(stageStatus),
                 );
-                  const tone = stageStatus === 'completed'
-                      ? (count > 0 ? 'is-completed' : 'is-muted')
-                      : stageStatus === 'active'
-                          ? 'is-active'
-                          : stageStatus === 'blocked'
-                              ? 'is-warning'
-                            : 'is-muted';
+                const tone = count <= 0
+                    ? 'is-muted'
+                    : stageStatus === 'completed'
+                        ? 'is-completed'
+                        : stageStatus === 'blocked'
+                            ? 'is-warning'
+                            : 'is-active';
                 const body = `
                     ${count > 0 ? '<span class="ams-sales-customer-stage-pin" aria-hidden="true">📌</span>' : ''}
                     <strong>${esc(stage.shortLabel || stage.label)}</strong>
@@ -7086,12 +7153,19 @@ function salesCustomerStageStripMarkup(customerId = '') {
     `;
 }
 
-function renderSalesCustomerArchiveList() {
-    const rows = filteredCustomers();
+function renderSalesCustomerArchiveList(input = null) {
+    const stageFilter = currentSalesStageParam('customer_profile');
+    const listMode = moduleState.customerListMode || 'active';
+    const rows = filteredCustomers().filter((customer) => {
+        if (listMode !== 'active') return true;
+        return customerMatchesStageFilter(customer.id, stageFilter, input);
+    });
     return rows.length
         ? rows
             .map((customer) => {
-                const deals = customerActivePipelineDeals(customer.id);
+                const scopedInput = listMode === 'active' ? input : null;
+                const scopedStage = listMode === 'active' ? stageFilter : 'customer_profile';
+                const deals = customerVisibleStageDeals(customer.id, scopedInput, scopedStage);
                 const quoteSummary = summarizeCustomerQuotes(customer.id);
                 const requirementSummary = summarizeCustomerRequirements(customer.id);
                 const notePreview = text(customer.notes).replace(/\s+/g, ' ').trim();
@@ -7131,11 +7205,11 @@ function renderSalesCustomerArchiveList() {
                                         `}
                             </div>
                         </div>
-                        ${salesCustomerStageStripMarkup(customer.id)}
+                        ${salesCustomerStageStripMarkup(customer.id, scopedInput, scopedStage)}
                     </article>
                 `;
-            })
-            .join('')
+              })
+              .join('')
         : `<div class="ams-empty">${
             moduleState.customerListMode === 'deleted'
                 ? '当前没有已作废客户。'
@@ -10770,7 +10844,7 @@ export async function renderQuoteCustomersPage(input) {
                     <label>搜索客户</label>
                     <input id="ams-quote-customer-search" class="ams-input" value="${esc(moduleState.customerSearch)}" placeholder="搜索公司 / 联系人 / 邮箱 / 电话">
                 </div>
-                <div class="ams-quote-list ${salesConsole ? 'ams-sales-customer-archive-list' : ''}">${salesConsole ? renderSalesCustomerArchiveList() : renderCustomerList()}</div>
+                    <div class="ams-quote-list ${salesConsole ? 'ams-sales-customer-archive-list' : ''}">${salesConsole ? renderSalesCustomerArchiveList(input) : renderCustomerList()}</div>
             </aside>
             ${salesConsole ? '' : `<section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
                 ${
@@ -10823,7 +10897,7 @@ export async function renderQuoteCustomersPage(input) {
         ${salesConsole ? '' : customerRelationshipGraphMarkup(activeCustomerId)}
     `, {
         deal: salesConsole ? null : currentDeal,
-        currentStage: 'customer_profile',
+        currentStage: currentSalesStageParam('customer_profile'),
         page: 'quote-customers',
         pipelineMode: 'overview',
         hidePageHeader: salesConsole,
@@ -13044,6 +13118,10 @@ export async function renderQuotePipelinePage(input) {
     }
 
     const stageKey = currentSalesStageParam('requirement_capture');
+    window.history.replaceState({}, '', adminPageUrl('quote-customers', { stage: stageKey }));
+    await renderQuoteCustomersPage(input);
+    return;
+
     if (stageKey === 'customer_profile') {
         await renderQuoteCustomersPage(input);
         return;
