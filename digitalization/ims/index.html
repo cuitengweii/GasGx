@@ -91,6 +91,51 @@
             filter: drop-shadow(0 0 8px var(--accent-aurora));
             transform: scale(1.02);
         }
+        .engine-core {
+            filter: drop-shadow(0 0 24px rgba(93, 214, 44, 0.12));
+        }
+        .engine-outline {
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .engine-label {
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+        }
+        .tech-panel {
+            fill: rgba(170, 215, 206, 0.04);
+            stroke: rgba(229, 249, 244, 0.58);
+            stroke-width: 1.8;
+        }
+        .tech-panel-strong {
+            fill: rgba(196, 240, 230, 0.11);
+            stroke: rgba(246, 253, 250, 0.98);
+            stroke-width: 2.3;
+        }
+        .tech-stroke {
+            fill: none;
+            stroke: rgba(207, 255, 244, 0.78);
+            stroke-width: 1.35;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 5 5;
+        }
+        .tech-stroke-strong {
+            fill: none;
+            stroke: rgba(239, 252, 248, 0.95);
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 7 5;
+        }
+        .tech-stroke-faint {
+            fill: none;
+            stroke: rgba(207, 255, 244, 0.18);
+            stroke-width: 0.9;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 3 5;
+        }
         .hotspot-ring {
             animation: pulse 2s infinite;
         }
@@ -217,10 +262,124 @@
                     <svg viewBox="0 0 800 500" class="w-full h-full text-gray-700">
                         <defs>
                             <radialGradient id="grad-aurora"><stop offset="0%" stop-color="var(--accent-aurora)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+                            <linearGradient id="engine-metal" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#20242B"/>
+                                <stop offset="45%" stop-color="#0F1318"/>
+                                <stop offset="100%" stop-color="#1A212A"/>
+                            </linearGradient>
+                            <linearGradient id="engine-edge" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#3D4653"/>
+                                <stop offset="50%" stop-color="#8A94A3"/>
+                                <stop offset="100%" stop-color="#313843"/>
+                            </linearGradient>
+                            <filter id="engine-glow">
+                                <feGaussianBlur stdDeviation="6" result="softGlow"/>
+                                <feMerge>
+                                    <feMergeNode in="softGlow"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
                         </defs>
-                        <!-- 发动机主体轮廓 (抽象化) -->
-                        <rect x="250" y="150" width="300" height="200" rx="20" fill="none" stroke="currentColor" stroke-width="2" class="engine-part"/>
-                        <path d="M250,200 L150,150 M250,300 L150,350 M550,200 L650,150 M550,300 L650,350" stroke="currentColor" stroke-width="1" stroke-dasharray="4"/>
+                        <g class="engine-core" filter="url(#engine-glow)" transform="translate(52 44) scale(0.82)">
+                            <ellipse cx="410" cy="254" rx="225" ry="126" fill="url(#grad-aurora)" opacity="0.08"/>
+
+                            <path d="M165,338 H657 L694,322 L718,333 L719,366 H165 Z" class="tech-panel engine-outline"/>
+                            <path d="M166,340 H718" class="tech-stroke-faint" opacity="0.5"/>
+                            <path d="M188,338 V366 M282,338 V366 M376,338 V366 M470,338 V366 M564,338 V366 M658,327 V366" class="tech-stroke-faint" opacity="0.45"/>
+                            <path d="M205,306 H628" class="tech-stroke-faint" opacity="0.45"/>
+
+                            <circle cx="177" cy="160" r="52" class="tech-panel-strong"/>
+                            <circle cx="177" cy="160" r="42" fill="none" stroke="rgba(245,252,249,0.92)" stroke-width="2"/>
+                            <circle cx="177" cy="160" r="66" fill="none" stroke="rgba(190,244,232,0.18)" stroke-width="1.2" stroke-dasharray="8 8"/>
+                            <circle cx="177" cy="160" r="30" fill="none" stroke="rgba(235,250,246,0.62)" stroke-width="1.2" stroke-dasharray="2 6"/>
+                            <path d="M192,112 L252,102 L280,122 L276,155 L228,171 L195,156 Z" class="tech-panel-strong engine-outline"/>
+                            <path d="M204,105 L219,95 H249 L268,108" class="tech-stroke-faint"/>
+                            <path d="M211,122 L253,118 M211,134 L260,130 M213,146 L254,142" class="tech-stroke-faint"/>
+                            <path d="M148,124 L134,103 H153 L171,118" class="tech-stroke-strong"/>
+                            <path d="M229,98 L247,84 H265 L274,95" class="tech-stroke-faint"/>
+                            <path d="M226,182 L240,216 L235,309" class="tech-stroke-strong"/>
+                            <path d="M206,187 V327" class="tech-stroke-faint"/>
+                            <rect x="141" y="213" width="67" height="66" class="tech-panel"/>
+                            <path d="M152,225 H197 M152,238 H197 M152,251 H197 M168,213 V279 M184,213 V279" class="tech-stroke-faint"/>
+                            <path d="M129,319 L154,286 H207 V319" class="tech-stroke"/>
+                            <path d="M163,276 V366 M185,295 V366 M212,290 V366 M229,248 C239,268 240,299 232,324" class="tech-stroke-faint"/>
+                            <path d="M143,326 L126,356 M157,319 L157,365 M188,321 L188,365 M206,314 L220,364" class="tech-stroke-faint"/>
+                            <circle cx="137" cy="130" r="2.4" fill="rgba(226,255,248,0.7)"/>
+                            <circle cx="142" cy="184" r="2.4" fill="rgba(226,255,248,0.7)"/>
+                            <circle cx="212" cy="205" r="2.4" fill="rgba(226,255,248,0.7)"/>
+
+                            <path d="M252,110 H598 L634,136" class="tech-stroke-strong"/>
+                            <path d="M264,96 H581 L616,122" class="tech-stroke"/>
+                            <path d="M276,84 H563 L596,110" class="tech-stroke-faint"/>
+                            <path d="M277,116 H606" class="tech-stroke-faint"/>
+                            <path d="M286,127 V314 M332,125 V310 M378,123 V305 M424,120 V299 M470,118 V293 M516,117 V286 M562,120 V279 M608,128 V270" class="tech-stroke-faint"/>
+                            <path d="M285,126 Q297,114 309,126 M332,125 Q343,112 355,124 M378,123 Q389,111 401,121 M424,120 Q435,110 447,119 M470,118 Q481,110 493,118 M516,117 Q527,111 539,118 M562,120 Q573,113 585,123" class="tech-stroke-faint"/>
+
+                            <path d="M268,140 H598 V170 L632,170 L657,196 V299 L630,322 H260 L236,298 V184 Z" class="tech-panel-strong engine-outline"/>
+                            <path d="M247,188 L296,156 H545 L589,184" class="tech-stroke-strong"/>
+                            <path d="M247,197 H613" class="tech-stroke-faint" opacity="0.4"/>
+                            <path d="M272,324 H634" class="tech-stroke-faint" opacity="0.4"/>
+
+                            <g>
+                                <path d="M296,177 L328,165 L345,218 L313,230 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M332,176 L365,166 L381,218 L349,230 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M368,175 L401,166 L415,218 L384,229 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M404,175 L437,168 L449,218 L419,229 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M440,176 L473,170 L484,218 L454,229 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M476,178 L509,173 L518,218 L489,228 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M512,180 L544,177 L552,218 L524,228 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M548,183 L579,182 L586,218 L560,227 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M306,183 L317,220 M378,181 L389,220 M450,183 L461,220 M521,187 L532,220" class="tech-stroke-faint" opacity="0.42"/>
+                            </g>
+
+                            <g>
+                                <rect x="288" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="324" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="360" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="396" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="432" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="468" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="504" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="540" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <path d="M288,252 H572" class="tech-stroke-faint" opacity="0.42"/>
+                                <path d="M304,232 V311 M376,232 V311 M448,232 V311 M520,232 V311" class="tech-stroke-faint" opacity="0.42"/>
+                            </g>
+
+                            <g>
+                                <rect x="282" y="203" width="296" height="16" rx="4" fill="rgba(190,244,232,0.05)" stroke="rgba(230,249,244,0.38)" stroke-width="1.4"/>
+                                <path d="M300,203 V291 M372,203 V291 M444,203 V291 M516,203 V291" class="tech-stroke-faint" opacity="0.38"/>
+                            </g>
+
+                            <g>
+                                <rect x="296" y="301" width="44" height="26" rx="6" class="tech-panel"/>
+                                <rect x="344" y="301" width="44" height="26" rx="6" class="tech-panel"/>
+                                <rect x="392" y="301" width="44" height="26" rx="6" class="tech-panel"/>
+                                <rect x="440" y="301" width="44" height="26" rx="6" class="tech-panel"/>
+                                <rect x="488" y="301" width="44" height="26" rx="6" class="tech-panel"/>
+                                <circle cx="318" cy="314" r="9" fill="none" stroke="rgba(233,250,246,0.76)" stroke-width="1.5"/>
+                                <circle cx="366" cy="314" r="9" fill="none" stroke="rgba(233,250,246,0.76)" stroke-width="1.5"/>
+                                <circle cx="414" cy="314" r="9" fill="none" stroke="rgba(233,250,246,0.76)" stroke-width="1.5"/>
+                                <circle cx="462" cy="314" r="9" fill="none" stroke="rgba(233,250,246,0.76)" stroke-width="1.5"/>
+                                <circle cx="510" cy="314" r="9" fill="none" stroke="rgba(233,250,246,0.76)" stroke-width="1.5"/>
+                            </g>
+
+                            <path d="M629,189 H683 L714,220 V317 H629 Z" class="tech-panel-strong engine-outline"/>
+                            <path d="M646,181 H700 L735,206 V309 H700 L700,286 H678 L678,226 H646 Z" fill="rgba(210,244,237,0.09)" stroke="rgba(242,252,249,0.88)" stroke-width="2" class="engine-outline"/>
+                            <path d="M657,178 H714 L742,199 V308 H714" class="tech-stroke-strong"/>
+                            <path d="M615,186 C638,199 651,228 651,257 C651,288 637,311 614,323" class="tech-stroke"/>
+                            <path d="M649,198 V316 M686,216 V316 M701,206 V309" class="tech-stroke-faint" opacity="0.5"/>
+                            <path d="M629,251 H678 M700,228 H735 M700,286 H735" class="tech-stroke-faint" opacity="0.46"/>
+
+                            <path d="M241,160 C258,170 267,189 267,211" class="tech-stroke-faint"/>
+                            <path d="M585,171 C603,179 615,192 629,209" class="tech-stroke-faint"/>
+
+                            <circle cx="172" cy="364" r="6" fill="rgba(93,214,44,0.95)"/>
+                            <circle cx="650" cy="228" r="6" fill="rgba(93,214,44,0.95)"/>
+                            <circle cx="172" cy="364" r="6" fill="#5DD62C" opacity="0.38" class="hotspot-ring"/>
+                            <circle cx="650" cy="228" r="6" fill="#5DD62C" opacity="0.38" class="hotspot-ring"/>
+                            <text x="438" y="406" text-anchor="middle" fill="rgba(238,252,248,0.48)" font-size="10" class="engine-label">GAS ENGINE DIGITAL TWIN</text>
+                        </g>
+                        <path d="M304,187 L180,140 M246,339 L180,360 M560,150 L620,140 M582,228 L620,360" stroke="currentColor" stroke-width="1" stroke-dasharray="4"/>
                         <!-- 爆炸分解出的部件 -->
                         <g class="engine-part">
                             <rect x="100" y="100" width="80" height="80" rx="10" fill="#1A1A1A" stroke="var(--accent-aurora)" stroke-width="1"/>
@@ -242,7 +401,10 @@
                             <circle cx="660" cy="340" r="4" fill="var(--accent-aurora)" class="hotspot-ring"/>
                         </g>
                         <!-- 连接线 -->
-                        <line x1="250" y1="250" x2="180" y2="140" stroke="var(--accent-aurora)" stroke-width="0.5"/>
+                        <line x1="304" y1="187" x2="180" y2="140" stroke="var(--accent-aurora)" stroke-width="0.8"/>
+                        <line x1="246" y1="339" x2="180" y2="360" stroke="#64748B" stroke-width="0.8"/>
+                        <line x1="560" y1="150" x2="620" y2="140" stroke="#94A3B8" stroke-width="0.8"/>
+                        <line x1="582" y1="228" x2="620" y2="360" stroke="var(--accent-aurora)" stroke-width="0.8"/>
                     </svg>
                 </div>
                 <!-- 侧边生命周期面板 -->

@@ -133,6 +133,54 @@
         .ui-dot-r { background-color: #ff5f56; }
         .ui-dot-y { background-color: #ffbd2e; }
         .ui-dot-g { background-color: #27c93f; }
+        .scada-nav-button {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: #94a3b8;
+            border: 1px solid transparent;
+            transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+        .scada-nav-button:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+        .scada-nav-button:focus-visible {
+            outline: 2px solid rgba(93, 214, 44, 0.65);
+            outline-offset: 2px;
+        }
+        .scada-nav-button.is-active {
+            color: #5DD62C;
+            background-color: rgba(93, 214, 44, 0.12);
+            border-color: rgba(93, 214, 44, 0.18);
+            box-shadow: inset 0 0 0 1px rgba(93, 214, 44, 0.08);
+        }
+        .scada-nav-button.is-active svg {
+            opacity: 1;
+        }
+        .scada-nav-button svg {
+            opacity: 0.9;
+            flex-shrink: 0;
+        }
+        .scada-tab-panel[hidden] {
+            display: none !important;
+        }
+        .scada-tab-panel.is-visible {
+            animation: scadaPanelFade 0.28s ease;
+        }
+        @keyframes scadaPanelFade {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
         /* 中英文切换核心样式 */
         body:not(.en-mode) .lang-en { display: none !important; }
@@ -225,21 +273,142 @@
                 </div>
                 <div class="p-4 flex gap-4 h-full bg-[#12121A]">
                     <div class="w-16 h-full flex flex-col gap-2 border-r border-white/5 pr-2">
-                        <div class="h-4 bg-accent/20 rounded border border-accent/30"></div>
-                        <div class="h-4 bg-white/5 rounded"></div>
-                        <div class="h-4 bg-white/5 rounded"></div>
-                        <div class="h-4 bg-white/5 rounded"></div>
+                        <div class="h-8 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center">
+                            <div class="w-4 h-4 rounded bg-accent/20 border border-accent/40"></div>
+                        </div>
+                        <div class="h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                            <div class="w-4 h-4 rounded bg-white/10"></div>
+                        </div>
+                        <div class="h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                            <div class="w-4 h-4 rounded bg-white/10"></div>
+                        </div>
+                        <div class="mt-auto pt-2">
+                            <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                <div class="h-full w-[78%] bg-accent/70 rounded-full"></div>
+                            </div>
+                            <div class="mt-2 text-[8px] font-mono text-gray-500">SYNC</div>
+                        </div>
                     </div>
                     <div class="flex-1 flex flex-col gap-3">
-                        <div class="flex gap-3">
-                            <div class="flex-1 h-12 bg-white/5 rounded flex items-center px-3 border border-white/5"><div class="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin"></div><div class="ml-2 w-16 h-2 bg-white/10 rounded"></div></div>
-                            <div class="flex-1 h-12 bg-white/5 rounded flex items-center px-3 border border-white/5"><div class="w-full h-4 bg-red-500/20 border border-red-500/50 rounded"></div></div>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="rounded-lg border border-white/5 bg-white/5 px-3 py-2">
+                                <div class="text-[9px] text-gray-500 uppercase tracking-widest">
+                                    <span class="lang-zh">在线节点</span><span class="lang-en">Online Nodes</span>
+                                </div>
+                                <div class="mt-1 text-lg font-mono font-bold text-white">247<span class="text-[10px] text-gray-500"> / 250</span></div>
+                                <div class="text-[9px] text-accent">
+                                    <span class="lang-zh">98.8% 实时同步</span><span class="lang-en">98.8% live sync</span>
+                                </div>
+                            </div>
+                            <div class="rounded-lg border border-white/5 bg-white/5 px-3 py-2">
+                                <div class="text-[9px] text-gray-500 uppercase tracking-widest">
+                                    <span class="lang-zh">AI 风险队列</span><span class="lang-en">AI Risk Queue</span>
+                                </div>
+                                <div class="mt-1 text-lg font-mono font-bold text-white">03<span class="text-[10px] text-red-400 ml-1">critical</span></div>
+                                <div class="text-[9px] text-gray-400">
+                                    <span class="lang-zh">14 天预警窗口</span><span class="lang-en">up to 14-day lead time</span>
+                                </div>
+                            </div>
+                            <div class="rounded-lg border border-white/5 bg-white/5 px-3 py-2">
+                                <div class="text-[9px] text-gray-500 uppercase tracking-widest">
+                                    <span class="lang-zh">工单闭环</span><span class="lang-en">Dispatch Loop</span>
+                                </div>
+                                <div class="mt-1 text-lg font-mono font-bold text-white">14<span class="text-[10px] text-gray-500 ml-1">min</span></div>
+                                <div class="text-[9px] text-accent">
+                                    <span class="lang-zh">从预警到派单</span><span class="lang-en">alert to assignment</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex-1 bg-black/50 rounded border border-white/5 p-2 flex flex-col gap-1">
-                            <div class="h-3 w-full bg-white/10 rounded mb-1"></div>
-                            <div class="h-3 w-full bg-white/5 rounded"></div>
-                            <div class="h-3 w-full bg-white/5 rounded"></div>
-                            <div class="h-3 w-full bg-white/5 rounded"></div>
+                        <div class="grid grid-cols-5 gap-3 flex-1">
+                            <div class="col-span-3 rounded-lg border border-white/5 bg-black/50 px-3 py-2.5">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="text-[10px] font-semibold text-white">
+                                        <span class="lang-zh">跨洲机组态势</span><span class="lang-en">Cross-Region Fleet</span>
+                                    </div>
+                                    <div class="text-[8px] font-mono text-accent border border-accent/20 bg-accent/10 px-1.5 py-0.5 rounded">
+                                        <span class="lang-zh">实时</span><span class="lang-en">LIVE</span>
+                                    </div>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <div>
+                                        <div class="flex items-center justify-between text-[9px] text-white">
+                                            <span><span class="lang-zh">德州二叠纪盆地</span><span class="lang-en">Texas Permian</span></span>
+                                            <span class="font-mono text-accent">48.2 MW</span>
+                                        </div>
+                                        <div class="mt-1 h-1.5 rounded-full bg-white/5 overflow-hidden"><div class="h-full w-[86%] rounded-full bg-accent"></div></div>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center justify-between text-[9px] text-white">
+                                            <span><span class="lang-zh">西德州伴生气</span><span class="lang-en">West Texas Flare</span></span>
+                                            <span class="font-mono text-blue-400">31.6 MW</span>
+                                        </div>
+                                        <div class="mt-1 h-1.5 rounded-full bg-white/5 overflow-hidden"><div class="h-full w-[72%] rounded-full bg-blue-400"></div></div>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center justify-between text-[9px] text-white">
+                                            <span><span class="lang-zh">偏远井口站点</span><span class="lang-en">Remote Wellheads</span></span>
+                                            <span class="font-mono text-yellow-400">18.4 MW</span>
+                                        </div>
+                                        <div class="mt-1 h-1.5 rounded-full bg-white/5 overflow-hidden"><div class="h-full w-[54%] rounded-full bg-yellow-400"></div></div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 pt-2">
+                                    <div class="rounded-md border border-white/5 bg-white/5 px-2 py-1">
+                                        <div class="text-[8px] text-gray-500 uppercase">SLA</div>
+                                        <div class="text-[10px] font-mono text-white">99.8%</div>
+                                    </div>
+                                    <div class="rounded-md border border-white/5 bg-white/5 px-2 py-1">
+                                        <div class="text-[8px] text-gray-500 uppercase">
+                                            <span class="lang-zh">待派单</span><span class="lang-en">Open Jobs</span>
+                                        </div>
+                                        <div class="text-[10px] font-mono text-white">09</div>
+                                    </div>
+                                    <div class="rounded-md border border-white/5 bg-white/5 px-2 py-1">
+                                        <div class="text-[8px] text-gray-500 uppercase">
+                                            <span class="lang-zh">待机损失</span><span class="lang-en">Loss Shield</span>
+                                        </div>
+                                        <div class="text-[10px] font-mono text-accent">$18.6k</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-span-2 rounded-lg border border-white/5 bg-black/50 px-3 py-2.5">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="text-[10px] font-semibold text-white">
+                                        <span class="lang-zh">AI 优先处理</span><span class="lang-en">AI Priority Queue</span>
+                                    </div>
+                                    <div class="text-[8px] font-mono text-gray-500">
+                                        <span class="lang-zh">预测性维护</span><span class="lang-en">Predictive</span>
+                                    </div>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <div class="rounded-lg border border-red-500/20 bg-red-500/10 p-2">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <div class="text-[9px] font-semibold text-white">
+                                                <span class="lang-zh">#10 缸火花塞衰减</span><span class="lang-en">Cyl #10 spark plug drift</span>
+                                            </div>
+                                            <span class="text-[8px] font-bold text-red-400"><span class="lang-zh">高优先</span><span class="lang-en">HIGH</span></span>
+                                        </div>
+                                        <div class="mt-1 text-[8px] font-mono text-gray-400"><span class="lang-zh">SITE_042 / 36 小时窗口</span><span class="lang-en">SITE_042 / 36h window</span></div>
+                                    </div>
+                                    <div class="rounded-lg border border-blue-500/20 bg-blue-500/10 p-2">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <div class="text-[9px] font-semibold text-white">
+                                                <span class="lang-zh">备件与工程师已匹配</span><span class="lang-en">Parts & engineer matched</span>
+                                            </div>
+                                            <span class="text-[8px] font-bold text-blue-400"><span class="lang-zh">已就绪</span><span class="lang-en">READY</span></span>
+                                        </div>
+                                        <div class="mt-1 text-[8px] font-mono text-gray-400"><span class="lang-zh">预计 02:15 到场 / TX_MID_01</span><span class="lang-en">ETA 02:15 / TX_MID_01</span></div>
+                                    </div>
+                                    <div class="rounded-lg border border-accent/20 bg-accent/10 p-2">
+                                        <div class="text-[9px] font-semibold text-accent">
+                                            <span class="lang-zh">今日收益保护</span><span class="lang-en">Revenue Protected Today</span>
+                                        </div>
+                                        <div class="mt-1 text-[8px] text-white leading-relaxed">
+                                            <span class="lang-zh">预计减少 6.4 小时非计划停机，单日保护收益约 $18.6k。</span><span class="lang-en">Avoiding 6.4 hours of unplanned downtime, shielding about $18.6k in daily revenue.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

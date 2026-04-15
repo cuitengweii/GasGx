@@ -1,0 +1,2499 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx - Natural Gas Power Mining</title>
+    <meta id="home-meta-description" name="description" content="GasGx provides a global view of natural gas-powered mining opportunities, policy status, and country rankings.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json" as="fetch" crossorigin>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!--
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson-client@3"></script>
+    -->
+    <!-- D3 + TopoJSON are loaded on demand in JS -->
+
+    <script>
+        // Lazy-load D3 and TopoJSON only when the globe is initialized.
+        window.loadD3Deps = function () {
+            if (window._d3DepsPromise) return window._d3DepsPromise;
+
+            const loadScript = (src) => new Promise((resolve, reject) => {
+                const existing = document.querySelector(`script[src="${src}"]`);
+                if (existing) {
+                    existing.addEventListener('load', () => resolve());
+                    existing.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)));
+                    if (existing.dataset.loaded === 'true') resolve();
+                    return;
+                }
+                const script = document.createElement('script');
+                script.src = src;
+                script.async = true;
+                script.onload = () => { script.dataset.loaded = 'true'; resolve(); };
+                script.onerror = () => reject(new Error(`Failed to load ${src}`));
+                document.head.appendChild(script);
+            });
+
+            window._d3DepsPromise = Promise.all([
+                loadScript('https://d3js.org/d3.v7.min.js'),
+                loadScript('https://unpkg.com/topojson-client@3')
+            ]);
+
+            return window._d3DepsPromise;
+        };
+
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: {
+                            bg: '#0F0F0F',      
+                            card: '#202020',    
+                            green: '#5DD62C',   
+                            darkGreen: '#337418',
+                            text: '#F8F8F8',    
+                            subtext: '#94a3b8',
+                            legal: '#5DD62C', 
+                            grey: '#9ca3af',  
+                            illegal: '#ef4444', 
+                            rank1: '#FFD700', 
+                            rank2: '#C0C0C0', 
+                            rank3: '#CD7F32'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 10px rgba(93, 214, 44, 0.3)',
+                        'glow-strong': '0 0 20px rgba(93, 214, 44, 0.6)',
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 10px rgba(93, 214, 44, 0.4)' },
+                            '50%': { boxShadow: '0 0 20px rgba(93, 214, 44, 0.8)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            background-color: #0F0F0F;
+            color: #F8F8F8;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F0F0F; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5DD62C; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+        @keyframes floatPulse { 0% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(93, 214, 44, 0); } 100% { box-shadow: 0 0 0 0 rgba(93, 214, 44, 0); } }
+        .float-btn { animation: floatPulse 2s infinite; }
+        @keyframes modalPop { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .modal-animate { animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* --- MAP & GLOBE STYLES --- */
+        #map-container { background: radial-gradient(circle at 50% 50%, #0b1019 0%, #050505 50%, #000000 100%); position: relative; overflow: hidden; cursor: grab; }
+        #map-container:active { cursor: grabbing; }
+        #starfield { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        
+        .country { transition: fill 0.3s ease, stroke 0.3s ease; fill-opacity: 0.9; stroke-opacity: 0.6; stroke-width: 0.5px; stroke-linejoin: round; filter: url(#solid-bevel); cursor: pointer; }
+        .country:hover { fill-opacity: 1; stroke: #fff; filter: url(#active-glow); }
+        .map-has-highlight .country { fill-opacity: 0.3; stroke-opacity: 0.2; filter: grayscale(100%); }
+        .map-has-highlight .country:hover { fill-opacity: 0.8; stroke: #ddd; }
+        .map-has-highlight .country.highlighted { fill-opacity: 1 !important; stroke: #fff !important; stroke-width: 2px !important; stroke-opacity: 1 !important; filter: url(#active-glow) drop-shadow(0 0 15px rgba(93, 214, 44, 0.5)) !important; z-index: 100; }
+        
+        .globe-sphere { fill: url(#globeGradient); pointer-events: none; opacity: 1; }
+        .globe-halo { fill: url(#galaxyHaloGradient); pointer-events: none; opacity: 0.9; filter: blur(5px); }
+        .globe-elements-group { pointer-events: none; transition: opacity 0.2s; will-change: transform; }
+        #map-container.perf-lite .country { filter: none; stroke-width: 0.4px; }
+        #map-container.perf-lite .globe-halo { filter: blur(2px); opacity: 0.75; }
+        
+        .btc-icon-group { pointer-events: auto; cursor: pointer; }
+        .btc-icon-group:hover .icon-outer-ring { stroke: #fff; stroke-width: 2px; }
+        .beam-line { fill: none; stroke-width: 1.5px; stroke-opacity: 0.9; stroke-dasharray: 3,2; filter: drop-shadow(0 0 3px #5DD62C); }
+        .country-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; text-shadow: 0 0 8px rgba(0,0,0,0.8); opacity: 1; }
+        
+        .icon-outer-ring { transform-origin: 16px 16px; animation: spinReverse 12s linear infinite; transition: stroke 0.3s; }
+        .icon-inner-ring { transform-origin: 16px 16px; }
+        .icon-lightning { filter: drop-shadow(0 0 4px #5DD62C); animation: pulseFlash 3s infinite; }
+        @keyframes spinReverse { from {transform: rotate(360deg);} to {transform: rotate(0deg);} }
+        @keyframes pulseFlash { 0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 2px #5DD62C); } 50% { opacity: 1; filter: drop-shadow(0 0 8px #fff); } }
+
+        /* --- INFO BOX OPTIMIZATION --- */
+        .map-info-box { 
+            position: absolute; 
+            pointer-events: none; 
+            background: rgba(10, 15, 20, 0.90); 
+            border: 1px solid rgba(93, 214, 44, 0.4); 
+            border-left: 3px solid #5DD62C; 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px); 
+            padding: 14px 18px; 
+            border-radius: 4px; 
+            font-size: 11px; 
+            color: #fff; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
+            z-index: 150; 
+            opacity: 0; 
+            transition: opacity 0.3s ease; 
+            width: 320px; 
+            max-width: 90vw; /* Prevent overflow on small screens */
+        }
+        .map-info-box.active { opacity: 1; pointer-events: auto; }
+
+        /* --- MOBILE SPECIFIC STYLES --- */
+        @media (max-width: 768px), (max-height: 720px) {
+            /* Map Info Box Mobile Optimization */
+            .map-info-box.mobile-fixed {
+                top: auto !important;
+                left: 50% !important;
+                transform: translateX(-50%);
+                width: min(94vw, 360px) !important;
+                max-height: min(32vh, 260px);
+                overflow-y: auto;
+                padding: 12px 14px;
+                border-left: 1px solid rgba(93, 214, 44, 0.4); 
+                border-top: 3px solid #5DD62C;
+                border-radius: 16px;
+                box-shadow: 0 16px 40px rgba(0, 0, 0, 0.72);
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .map-info-box.mobile-fixed .map-info-box__header,
+            .map-info-box.mobile-fixed .map-info-box__summary {
+                gap: 0.65rem;
+            }
+
+            .map-info-box.mobile-fixed .map-info-box__header {
+                align-items: flex-start;
+            }
+
+            .map-info-box.mobile-fixed .map-info-box__summary {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .map-info-box.mobile-fixed .map-info-box__summary-copy {
+                margin-right: 0;
+            }
+
+            .map-info-box.mobile-fixed .map-info-box__action {
+                width: 100%;
+                max-width: none !important;
+                justify-content: center;
+                min-height: 2.5rem;
+                font-size: 11px;
+            }
+
+            /* Hide detailed star ratings on mobile to save space */
+            .map-info-box .dim-row {
+                display: none;
+            }
+            /* Remove the separator line above the hidden stars */
+            .map-info-box .pt-2.border-t {
+                border-top: none;
+                padding-top: 0;
+            }
+
+            /* Hide HUD connecting lines on mobile */
+            #hud-layer { display: none; }
+        }
+
+        /* Raise z-index to 350 so it stays above the header (300) */
+        #detail-modal { z-index: 350; transition: opacity 0.3s ease; }
+        #detail-modal.hidden { pointer-events: none; opacity: 0; }
+        #detail-modal:not(.hidden) { pointer-events: auto; opacity: 1; }
+        
+        .dim-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; font-size: 10px; color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px; }
+        .dim-stars { display: flex; gap: 2px; }
+        .btc-star { width: 9px; height: 9px; fill: #5DD62C; }
+        .btc-star.inactive { fill: #444; }
+        
+        .list-item-hover { transition: all 0.3s; border-right: 2px solid transparent; }
+        .list-item-hover:hover { background: rgba(255, 255, 255, 0.05); }
+        .list-item-active { background: linear-gradient(90deg, rgba(93, 214, 44, 0.15) 0%, transparent 100%); border-left-color: #5DD62C !important; }
+        .list-item-dimmed { opacity: 0.3; }
+        .text-rank-1 { color: #FFD700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+        .text-rank-2 { color: #C0C0C0; text-shadow: 0 0 5px rgba(192, 192, 192, 0.5); }
+        .text-rank-3 { color: #CD7F32; text-shadow: 0 0 5px rgba(205, 127, 50, 0.5); }
+
+        #ranking-sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 190;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease;
+        }
+
+        body.ggx-drawer-open #ranking-sidebar-backdrop {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        @media (min-width: 1280px) {
+            #ranking-sidebar-backdrop {
+                display: none;
+            }
+        }
+
+        @media (max-width: 1279px) {
+            #ranking-sidebar {
+                position: fixed !important;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                height: min(58dvh, calc(100dvh - 84px)) !important;
+                max-height: min(58dvh, calc(100dvh - 84px));
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+                z-index: 220;
+            }
+
+            #mobile-drawer-toggle {
+                position: relative;
+                overflow: visible;
+                border-width: 1px !important;
+                border-color: rgba(93, 214, 44, 0.68) !important;
+                background: linear-gradient(180deg, rgba(14, 24, 13, 0.94) 0%, rgba(10, 12, 11, 0.98) 100%) !important;
+                box-shadow:
+                    0 0 0 1px rgba(93, 214, 44, 0.12) inset,
+                    0 10px 24px rgba(0, 0, 0, 0.48),
+                    0 0 14px rgba(93, 214, 44, 0.2) !important;
+                margin-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+            }
+
+            #mobile-drawer-toggle::before {
+                content: "";
+                position: absolute;
+                left: 50%;
+                top: -14px;
+                width: 2px;
+                height: 10px;
+                transform: translateX(-50%);
+                pointer-events: none;
+                background: linear-gradient(180deg, rgba(124, 255, 78, 0), rgba(124, 255, 78, 0.95));
+                box-shadow: 0 0 10px rgba(124, 255, 78, 0.7);
+                animation: ggx-ranking-arrow-beam 1.3s ease-in-out infinite;
+            }
+
+            #mobile-drawer-toggle::after {
+                content: "";
+                position: absolute;
+                left: 50%;
+                top: -23px;
+                width: 9px;
+                height: 9px;
+                transform: translateX(-50%) rotate(45deg);
+                pointer-events: none;
+                border-left: 1px solid #7CFF4E;
+                border-top: 1px solid #7CFF4E;
+                filter: drop-shadow(0 0 6px rgba(124, 255, 78, 0.95));
+                animation: ggx-ranking-arrow-float 1.3s ease-in-out infinite;
+            }
+        }
+
+        @keyframes ggx-ranking-arrow-beam {
+            0%, 100% {
+                opacity: 0.42;
+                transform: translateX(-50%) translateY(1px);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-2px);
+            }
+        }
+
+        @keyframes ggx-ranking-arrow-float {
+            0%, 100% {
+                opacity: 0.55;
+                transform: translateX(-50%) translateY(2px) rotate(45deg);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-4px) rotate(45deg);
+            }
+        }
+
+        .ggx-onboarding-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 520;
+            pointer-events: none;
+        }
+
+        .ggx-onboarding-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.16);
+            backdrop-filter: blur(0.8px);
+            -webkit-backdrop-filter: blur(0.8px);
+            pointer-events: auto;
+        }
+
+        .ggx-onboarding-highlight {
+            position: fixed;
+            border: 1px solid rgba(255, 255, 255, 0.88);
+            border-radius: 10px;
+            background:
+                linear-gradient(#ffffff, #ffffff) left top / 22px 2px no-repeat,
+                linear-gradient(#ffffff, #ffffff) left top / 2px 22px no-repeat,
+                linear-gradient(#ffffff, #ffffff) right top / 22px 2px no-repeat,
+                linear-gradient(#ffffff, #ffffff) right top / 2px 22px no-repeat,
+                linear-gradient(#ffffff, #ffffff) left bottom / 22px 2px no-repeat,
+                linear-gradient(#ffffff, #ffffff) left bottom / 2px 22px no-repeat,
+                linear-gradient(#ffffff, #ffffff) right bottom / 22px 2px no-repeat,
+                linear-gradient(#ffffff, #ffffff) right bottom / 2px 22px no-repeat;
+            box-shadow:
+                0 0 0 9999px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(255, 255, 255, 0.75) inset,
+                0 0 18px rgba(255, 255, 255, 0.65),
+                0 0 36px rgba(255, 255, 255, 0.25);
+            pointer-events: none;
+            transition: all 0.24s ease;
+            animation: ggx-onboarding-highlight-pulse 1.6s ease-in-out infinite;
+        }
+
+        .ggx-onboarding-gesture {
+            position: fixed;
+            width: 32px;
+            height: 32px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #f9fbff;
+            background: rgba(8, 12, 18, 0.84);
+            border: 1px solid rgba(244, 248, 255, 0.72);
+            box-shadow:
+                0 0 0 1px rgba(156, 193, 255, 0.22) inset,
+                0 0 18px rgba(195, 223, 255, 0.35);
+            z-index: 525;
+            pointer-events: auto;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .ggx-onboarding-gesture i {
+            position: relative;
+            z-index: 2;
+            font-size: 15px;
+            line-height: 1;
+            color: #ffffff;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        }
+
+        .ggx-onboarding-gesture::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 44px;
+            height: 2px;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            background: linear-gradient(90deg,
+                rgba(255, 255, 255, 0),
+                rgba(255, 255, 255, 0.92),
+                rgba(255, 255, 255, 0));
+            pointer-events: none;
+        }
+
+        .ggx-onboarding-gesture::after {
+            content: "";
+            position: absolute;
+            inset: -5px;
+            border-radius: 9999px;
+            border: 1px dashed rgba(248, 251, 255, 0.65);
+            animation: ggx-onboarding-gesture-ring 1.3s linear infinite;
+        }
+
+        .ggx-onboarding-gesture.is-visible {
+            opacity: 1;
+        }
+
+        .ggx-onboarding-gesture.is-tap {
+            animation: ggx-onboarding-gesture-tap 1.25s ease-in-out infinite;
+        }
+
+        .ggx-onboarding-gesture.is-tap::before {
+            width: 30px;
+            height: 30px;
+            border-radius: 9999px;
+            border: 1px solid rgba(248, 251, 255, 0.45);
+            background: transparent;
+            animation: ggx-onboarding-gesture-tap-ripple 1.25s ease-in-out infinite;
+            opacity: 0.7;
+        }
+
+        .ggx-onboarding-gesture.is-drag {
+            animation: ggx-onboarding-gesture-drag 1.55s ease-in-out infinite;
+        }
+
+        .ggx-onboarding-gesture.is-drag::before {
+            opacity: 0.85;
+            animation: ggx-onboarding-gesture-track-h 1.55s ease-in-out infinite;
+        }
+
+        .ggx-onboarding-gesture.is-swipe {
+            animation: ggx-onboarding-gesture-swipe 1.45s ease-in-out infinite;
+        }
+
+        .ggx-onboarding-gesture.is-swipe::before {
+            width: 2px;
+            height: 44px;
+            opacity: 0.85;
+            background: linear-gradient(180deg,
+                rgba(255, 255, 255, 0),
+                rgba(255, 255, 255, 0.92),
+                rgba(255, 255, 255, 0));
+            animation: ggx-onboarding-gesture-track-v 1.45s ease-in-out infinite;
+        }
+
+        .ggx-onboarding-gesture.is-circle {
+            animation: ggx-onboarding-gesture-circle 1.8s linear infinite;
+        }
+
+        @keyframes ggx-onboarding-gesture-ring {
+            0% {
+                transform: scale(0.9);
+                opacity: 0.85;
+            }
+
+            100% {
+                transform: scale(1.15);
+                opacity: 0.15;
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-tap {
+            0%, 100% {
+                transform: translate(0, -1px) scale(1);
+            }
+
+            45% {
+                transform: translate(0, 5px) scale(0.88);
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-tap-ripple {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(0.9);
+                opacity: 0.35;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.16);
+                opacity: 0.95;
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-drag {
+            0%, 100% {
+                transform: translate(-16px, 0);
+            }
+
+            50% {
+                transform: translate(16px, 0);
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-swipe {
+            0%, 100% {
+                transform: translate(0, 12px);
+            }
+
+            50% {
+                transform: translate(0, -12px);
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-track-h {
+            0%, 100% {
+                opacity: 0.35;
+                transform: translate(-50%, -50%) scaleX(0.86);
+            }
+
+            50% {
+                opacity: 0.92;
+                transform: translate(-50%, -50%) scaleX(1.08);
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-track-v {
+            0%, 100% {
+                opacity: 0.35;
+                transform: translate(-50%, -50%) scaleY(0.86);
+            }
+
+            50% {
+                opacity: 0.92;
+                transform: translate(-50%, -50%) scaleY(1.08);
+            }
+        }
+
+        @keyframes ggx-onboarding-gesture-circle {
+            0% {
+                transform: translate(0, -12px);
+            }
+
+            25% {
+                transform: translate(12px, 0);
+            }
+
+            50% {
+                transform: translate(0, 12px);
+            }
+
+            75% {
+                transform: translate(-12px, 0);
+            }
+
+            100% {
+                transform: translate(0, -12px);
+            }
+        }
+
+        @keyframes ggx-onboarding-highlight-pulse {
+            0% {
+                box-shadow:
+                    0 0 0 9999px rgba(0, 0, 0, 0.22),
+                    0 0 0 1px rgba(255, 255, 255, 0.62) inset,
+                    0 0 12px rgba(255, 255, 255, 0.52),
+                    0 0 24px rgba(255, 255, 255, 0.2);
+            }
+
+            50% {
+                box-shadow:
+                    0 0 0 9999px rgba(0, 0, 0, 0.22),
+                    0 0 0 1px rgba(255, 255, 255, 0.96) inset,
+                    0 0 22px rgba(255, 255, 255, 0.86),
+                    0 0 42px rgba(255, 255, 255, 0.36);
+            }
+
+            100% {
+                box-shadow:
+                    0 0 0 9999px rgba(0, 0, 0, 0.22),
+                    0 0 0 1px rgba(255, 255, 255, 0.62) inset,
+                    0 0 12px rgba(255, 255, 255, 0.52),
+                    0 0 24px rgba(255, 255, 255, 0.2);
+            }
+        }
+
+        .ggx-onboarding-card {
+            position: fixed;
+            left: 50%;
+            bottom: 16px;
+            transform: translateX(-50%);
+            width: min(92vw, 420px);
+            border-radius: 14px;
+            border: 1px solid rgba(93, 214, 44, 0.36);
+            background: rgba(12, 12, 12, 0.96);
+            box-shadow: 0 16px 42px rgba(0, 0, 0, 0.6);
+            padding: 14px;
+            pointer-events: auto;
+        }
+
+        .ggx-onboarding-step {
+            color: #9ca3af;
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .ggx-onboarding-title {
+            margin-top: 6px;
+            color: #5DD62C;
+            font-size: 17px;
+            line-height: 1.2;
+            font-weight: 700;
+        }
+
+        .ggx-onboarding-text {
+            margin-top: 8px;
+            color: #d1d5db;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .ggx-onboarding-actions {
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .ggx-onboarding-btn {
+            border: 1px solid transparent;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ggx-onboarding-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .ggx-onboarding-btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #d1d5db;
+        }
+
+        .ggx-onboarding-btn-secondary:hover:not(:disabled) {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .ggx-onboarding-btn-primary {
+            background: #5DD62C;
+            border-color: #5DD62C;
+            color: #081204;
+        }
+
+        .ggx-onboarding-btn-primary:hover:not(:disabled) {
+            background: #70ea3f;
+            border-color: #70ea3f;
+        }
+
+        #ggx-onboarding-reopen {
+            position: fixed;
+            right: 14px;
+            bottom: 6.8rem;
+            z-index: 205;
+            border-radius: 9999px;
+            border: 1px solid rgba(93, 214, 44, 0.35);
+            background: rgba(10, 16, 8, 0.92);
+            color: #5DD62C;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 8px 12px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+        }
+
+        #ggx-onboarding-reopen:hover {
+            background: rgba(16, 24, 13, 0.98);
+            color: #a3ff7f;
+        }
+
+        @media (min-width: 1280px) {
+            #ggx-onboarding-reopen {
+                bottom: 5.5rem;
+            }
+        }
+
+        /* Home-only shell overrides: align mobile header menu with /news/index.html style */
+        body.home-shell-news-style #ggx-site-header-slot .gas-card {
+            background: rgba(5, 5, 5, 0.78) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+    </style>
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+    <link rel="stylesheet" href="/shared/ui/loading.shared.css">
+</head>
+<body class="flex flex-col min-h-screen relative home-shell-news-style">
+
+    <div id="ggx-site-header-slot"></div>
+
+    <main class="flex-grow pt-16 w-full relative h-[100dvh] flex flex-col overflow-hidden">
+        <div class="relative w-full flex-grow flex md:flex-row bg-[#000] overflow-hidden">
+            
+            <div class="w-full h-full relative bg-[#000] overflow-hidden z-0 flex-1">
+                <div id="map-container" class="w-full h-full">
+                    <canvas id="starfield"></canvas>
+                    <svg id="hud-layer" style="position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 50;"></svg>
+                    <svg style="position: absolute; width: 0; height: 0;">
+                        <defs>
+                            <filter id="solid-bevel" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/><feOffset in="blur" dx="2" dy="3" result="shadow"/><feFlood flood-color="#000" flood-opacity="0.8" result="shadowColor"/><feComposite in="shadowColor" in2="shadow" operator="in" result="coloredShadow"/><feGaussianBlur in="SourceAlpha" stdDeviation="1" result="blur2"/><feSpecularLighting in="blur2" surfaceScale="5" specularConstant="0.7" specularExponent="15" lighting-color="#ffffff" result="specOut"><fePointLight x="-5000" y="-10000" z="10000"/></feSpecularLighting><feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut"/><feMerge><feMergeNode in="coloredShadow"/><feMergeNode in="SourceGraphic"/><feMergeNode in="specOut"/></feMerge></filter>
+                            <filter id="active-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" result="blur-strong"/><feFlood flood-color="#5DD62C" flood-opacity="0.8" result="color-strong"/><feComposite in="color-strong" in2="blur-strong" operator="in" result="glow-outer"/><feGaussianBlur stdDeviation="2" result="blur-inner"/><feFlood flood-color="#ffffff" flood-opacity="0.9" result="color-inner"/><feComposite in="color-inner" in2="blur-inner" operator="in" result="glow-inner"/><feMerge><feMergeNode in="glow-outer"/><feMergeNode in="glow-inner"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                            <radialGradient id="galaxyHaloGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%"><stop offset="50%" stop-color="#000" stop-opacity="1"/><stop offset="53%" stop-color="#1e40af" stop-opacity="0.9"/><stop offset="60%" stop-color="#3b82f6" stop-opacity="0.5"/><stop offset="70%" stop-color="#7c3aed" stop-opacity="0.25"/><stop offset="85%" stop-color="#000" stop-opacity="0"/></radialGradient>
+                            <radialGradient id="globeGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%"><stop offset="80%" stop-color="#0a0a0a" stop-opacity="1"/><stop offset="100%" stop-color="#181818" stop-opacity="1"/></radialGradient>
+                            <filter id="line-glow"><feGaussianBlur stdDeviation="1" result="blur"/><feFlood flood-color="#5DD62C" flood-opacity="0.6" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                        </defs>
+                    </svg>
+                    <div id="map-info-box" class="map-info-box"></div>
+                    <div id="map-loading" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div class="flex flex-col items-center gap-3">                        <div class="gas-loading-spinner"></div><span id="map-loading-text" class="text-sm text-gray-400">Loading Mining Data...</span></div>
+                    </div>
+                </div>
+                <div class="absolute top-6 right-6 flex gap-3 pointer-events-none z-10">
+                    <div class="bg-black/80 backdrop-blur-md border border-gas-green/30 rounded-lg px-3 py-1.5 text-right shadow-[0_0_15px_rgba(93,214,44,0.1)]">
+                        <div class="text-[9px] text-gray-400 uppercase tracking-wider" data-i18n="analysis_scope">Analysis Scope</div>
+                        <div class="text-lg font-bold text-white font-mono"><span id="analysis-scope-value">25+</span> <span class="text-[10px] text-gas-green" data-i18n="countries_label">Countries</span></div>
+                    </div>
+                </div>
+                <div class="absolute bottom-20 left-4 text-[9px] text-gray-600 pointer-events-none xl:left-[20px] xl:bottom-4 z-10 transition-all duration-300" id="rotate-hint">
+                    <i class="fa-solid fa-hand-pointer mr-1"></i> <span data-i18n="drag_to_rotate">Drag to Rotate</span>
+                </div>
+            </div>
+
+            <div id="ranking-sidebar" class="absolute bottom-0 left-0 w-full xl:static xl:w-[280px] xl:h-full bg-[#121212] xl:bg-[#0a0a0a] border-t xl:border-t-0 xl:border-r border-white/10 flex flex-col z-[200] shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] rounded-t-2xl xl:rounded-none transition-transform duration-300 transform translate-y-[calc(100%-72px)] xl:translate-y-0 h-[58vh] xl:h-auto xl:order-first">
+
+                <button id="mobile-drawer-toggle" type="button" class="xl:hidden mx-3 mt-3 mb-2 min-h-11 rounded-full border border-white/10 bg-[#171717] px-4 py-3 text-left shadow-[0_8px_20px_rgba(0,0,0,0.35)] active:scale-[0.99] [touch-action:manipulation] flex items-center justify-between gap-3 relative overflow-visible" onclick="window.app.toggleDrawer()" aria-expanded="false" aria-controls="ranking-sidebar" aria-label="Expand ranking panel">
+                    <span class="min-w-0">
+                        <span class="flex items-center gap-1 text-gas-green font-bold text-[10px] uppercase tracking-widest">
+                            <i class="fa-solid fa-trophy"></i>
+                            <span data-i18n="top_producers">Total Score Ranking</span>
+                        </span>
+                        <span id="drawer-action-label" class="block text-[10px] text-gray-500 mt-1">Tap to expand ranking</span>
+                    </span>
+                    <i id="drawer-icon" class="fa-solid fa-chevron-up text-gray-500 text-xs transition-transform duration-300"></i>
+                </button>
+
+                <div class="hidden xl:flex px-3 pb-2 xl:py-3 border-b border-white/5 bg-[#121212] xl:bg-[#121212] justify-between items-center">
+                    <h2 class="text-gas-green font-bold text-[10px] uppercase tracking-widest flex items-center gap-1">
+                        <i class="fa-solid fa-trophy"></i>
+                        <span data-i18n="top_producers">Total Score Ranking</span>
+                    </h2>
+                </div>
+
+                <div id="country-list" class="flex-1 p-1 space-y-0.5 overflow-y-auto custom-scrollbar bg-[#080808]"></div>
+                
+                <div class="p-2 border-t border-white/5 bg-[#050505] text-[9px] text-gray-500 flex flex-col gap-1.5 pl-3 pb-3">
+                    <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm bg-gas-legal shadow-[0_0_5px_#5DD62C]"></div> <span data-i18n="legend_legal">Legal / High Score</span></div>
+                    <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm bg-gas-grey"></div> <span data-i18n="legend_restricted">Restricted</span></div>
+                    <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-sm bg-gas-illegal"></div> <span data-i18n="legend_banned">Banned</span></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+    <button id="ranking-sidebar-backdrop" type="button" onclick="window.app.toggleDrawer(false)" aria-label="Close ranking panel"></button>
+    <button id="ggx-onboarding-reopen" type="button" onclick="window.app.startOnboarding(true)">Guide</button>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <button onclick="window.app.captureAndShare()" class="float-btn fixed right-6 bottom-40 w-12 h-12 bg-[#202020] border border-gas-green text-gas-green rounded-full shadow-lg flex items-center justify-center hover:bg-gas-green hover:text-black transition-all z-50 group">
+    <i class="fa-solid fa-camera text-xl"></i>
+</button>
+    <div id="ggx-back-to-top-slot"></div>
+
+    <div id="detail-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 lg:p-8">
+        <div class="bg-[#1a1a1a] border border-gas-green/50 w-full max-w-4xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative">
+            <div class="bg-[#121212] border-b border-white/10 p-6 flex justify-between items-start shrink-0">
+                <div>
+                    <h2 id="modal-title" class="text-3xl font-bold text-white mb-2">COUNTRY NAME</h2>
+                    <div class="flex gap-4 text-sm">
+                        <div class="flex items-center gap-2"><span class="text-gray-400" data-i18n="rank">Rank:</span> <span id="modal-rank" class="text-gas-green font-mono font-bold text-lg">#1</span></div>
+                        <div class="flex items-center gap-2"><span class="text-gray-400" data-i18n="score">Total Score:</span> <span id="modal-score" class="text-white font-mono font-bold text-lg">42</span></div>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('detail-modal').classList.add('hidden')" class="text-gray-400 hover:text-white transition-colors p-2" aria-label="Close details modal"><i class="fa-solid fa-xmark text-2xl"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-[#222] p-4 rounded-xl border border-white/5"><div class="text-xs text-gray-400 mb-1" data-i18n="gas_production">Gas Production</div><div id="modal-vol" class="text-xl font-bold text-white font-mono">-- Bcm</div></div>
+                            <div class="bg-[#222] p-4 rounded-xl border border-white/5"><div class="text-xs text-gray-400 mb-1" data-i18n="policy_status">Policy Status</div><div id="modal-policy" class="text-sm font-bold text-white">--</div></div>
+                        </div>
+                        <div class="bg-[#181818] p-5 rounded-xl border border-white/5"><h3 class="text-sm font-bold text-white mb-4 border-b border-white/5 pb-2" data-i18n="analysis_10">10-Dimension Analysis</h3><div id="modal-dims-container" class="space-y-2"></div></div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="bg-[#142810] p-5 rounded-xl border border-gas-green/30"><h3 class="text-gas-green font-bold text-sm mb-3 flex items-center gap-2"><i class="fa-solid fa-thumbs-up"></i> <span data-i18n="pros">Advantages</span></h3><p id="modal-pros" class="text-sm text-gray-300 leading-relaxed">--</p></div>
+                        <div class="bg-[#2a1212] p-5 rounded-xl border border-red-900/50"><h3 class="text-red-400 font-bold text-sm mb-3 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="cons">Risks & Disadvantages</span></h3><p id="modal-cons" class="text-sm text-gray-300 leading-relaxed">--</p></div>
+                        <div class="bg-[#222] p-5 rounded-xl border-l-4 border-white/20"><h3 class="text-white font-bold text-sm mb-3 flex items-center gap-2"><i class="fa-solid fa-lightbulb text-yellow-400"></i> <span data-i18n="advice">Investment Advice</span></h3><p id="modal-advice" class="text-sm text-gray-400 leading-relaxed italic">--</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="shareModal" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#202020] border border-gas-green/30 rounded-xl p-6 max-w-sm w-full shadow-2xl transform transition-all scale-95 opacity-0" id="shareModalContent">
+            <div class="text-center mb-6"><div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-check text-2xl text-gas-green"></i></div><h3 id="capture-modal-title" class="text-xl font-bold text-white mb-2">Snapshot Generated!</h3><p id="capture-modal-description" class="text-sm text-gray-400">Full page captured successfully.</p></div>
+            <button id="capture-modal-close" onclick="window.app.closeModal()" class="w-full py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors text-sm font-medium">Close</button>
+        </div>
+    </div>
+    
+<div id="qrModal" class="fixed inset-0 z-[400] bg-black/90 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-opacity duration-300 opacity-0" onclick="window.closeQrModal(event)">
+    <div class="bg-[#1a1a1a] border border-gas-green/50 rounded-2xl p-6 max-w-sm w-full shadow-[0_0_30px_rgba(93,214,44,0.2)] transform scale-95 transition-all duration-300 flex flex-col items-center relative" id="qrModalContent">
+        
+        <button onclick="window.closeQrModal(event, true)" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+
+        <div class="mb-4 text-center">
+            <div id="qrIconContainer" class="text-3xl text-gas-green mb-2">
+                </div>
+            <h3 id="qrTitle" class="text-xl font-bold text-white tracking-wide">
+                </h3>
+            <p id="qr-modal-subtitle" class="text-xs text-gray-500 mt-1">Scan to follow us</p>
+        </div>
+
+        <div class="w-48 h-48 bg-white p-2 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+            <img id="qrImageDisplay" src="" alt="QR Code" class="w-full h-full object-contain">
+        </div>
+
+        <p id="qr-modal-hint" class="text-[10px] text-gray-400 text-center max-w-[200px]">
+            Long press or screenshot to save the QR code.
+        </p>
+    </div>
+</div>
+<div id="ggx-chatbot-slot"></div>
+<div id="ggx-onboarding-layer" class="ggx-onboarding-layer hidden" aria-live="polite" aria-modal="true" role="dialog">
+    <div class="ggx-onboarding-backdrop"></div>
+    <div id="ggx-onboarding-highlight" class="ggx-onboarding-highlight"></div>
+    <div id="ggx-onboarding-gesture" class="ggx-onboarding-gesture" aria-hidden="true"><i class="fa-solid fa-hand-point-up"></i></div>
+    <div id="ggx-onboarding-card" class="ggx-onboarding-card">
+        <div id="ggx-onboarding-step" class="ggx-onboarding-step">Step 1 / 3</div>
+        <h3 id="ggx-onboarding-title" class="ggx-onboarding-title">Quick Tour</h3>
+        <p id="ggx-onboarding-text" class="ggx-onboarding-text">Use highlighted areas to explore GasGx quickly.</p>
+        <div class="ggx-onboarding-actions">
+            <button id="ggx-onboarding-prev" type="button" class="ggx-onboarding-btn ggx-onboarding-btn-secondary">Prev</button>
+            <button id="ggx-onboarding-next" type="button" class="ggx-onboarding-btn ggx-onboarding-btn-primary">Next</button>
+            <button id="ggx-onboarding-skip" type="button" class="ggx-onboarding-btn ggx-onboarding-btn-secondary">Skip</button>
+        </div>
+    </div>
+</div>
+<script src="/shared/ui/site-shell.config.js?v=20260322news02"></script>
+<script src="/shared/ui/site-shell.shared.js?v=20260322news02"></script>
+<script src="/shared/i18n/index.i18n.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        (() => {
+            const HOME_SHELL_SITE_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
+            const SUPABASE_URL = HOME_SHELL_SITE_AUTH.supabaseUrl || 'https://mkpcliytqudclkwtewru.supabase.co';
+            const SUPABASE_KEY = HOME_SHELL_SITE_AUTH.supabaseKey || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
+            const MAIN_AUTH_STORAGE_KEY = HOME_SHELL_SITE_AUTH.storageKey || 'gasgx-main-auth';
+            const SIGN_IN_URL = HOME_SHELL_SITE_AUTH.signInUrl || '/account/user.html';
+            const SIGN_OUT_REDIRECT_URL = HOME_SHELL_SITE_AUTH.signOutRedirectUrl || '/account/user.html';
+            const ACCOUNT_URL = HOME_SHELL_SITE_AUTH.accountUrl || '/account/account.html';
+            const FALLBACK_AVATAR = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2232%22 fill=%22%23121812%22/%3E%3Cpath d=%22M32 33c7.18 0 13-5.82 13-13S39.18 7 32 7 19 12.82 19 20s5.82 13 13 13Zm0 4c-9.94 0-18 6.27-18 14v2h36v-2c0-7.73-8.06-14-18-14Z%22 fill=%22%235DD62C%22/%3E%3C/svg%3E';
+
+            let supabaseClient = null;
+            let currentUser = null;
+
+            function getEls() {
+                return {
+                    loginBtn: document.getElementById('auth-login-btn'),
+                    userProfile: document.getElementById('auth-user-profile'),
+                    userAvatar: document.getElementById('auth-user-avatar'),
+                    dropdownUsername: document.getElementById('dropdown-username'),
+                    mobLoginBtn: document.getElementById('mob-auth-login-btn'),
+                    mobUserProfile: document.getElementById('mob-auth-user-profile'),
+                    mobUserAvatar: document.getElementById('mob-auth-user-avatar'),
+                    mobUsername: document.getElementById('mob-auth-username')
+                };
+            }
+
+            function setFlexVisibility(node, visible) {
+                if (!node) return;
+                node.classList.toggle('hidden', !visible);
+                node.classList.toggle('flex', visible);
+            }
+
+            function resolveDisplayName(user, profileName) {
+                if (!user) return 'Sign In';
+                if (profileName && String(profileName).trim()) return String(profileName).trim();
+
+                const meta = user.user_metadata || {};
+                const fromMeta = meta.full_name || meta.name;
+                if (fromMeta && String(fromMeta).trim()) return String(fromMeta).trim();
+
+                if (typeof user.email === 'string' && user.email.includes('@')) {
+                    return user.email.split('@')[0];
+                }
+                return 'Sign In';
+            }
+
+            function resolveAvatar(user) {
+                if (!user) return FALLBACK_AVATAR;
+                const meta = user.user_metadata || {};
+                const avatarKey = meta?.preferences?.avatarKey || meta?.avatar_key;
+                if (avatarKey && window.GasGxSharedUI && typeof window.GasGxSharedUI.resolveAvatarUriByKey === 'function') {
+                    return window.GasGxSharedUI.resolveAvatarUriByKey(String(avatarKey).trim().toLowerCase());
+                }
+                return meta.avatar_url || meta.picture || FALLBACK_AVATAR;
+            }
+
+            function applyAuthState(user, displayName) {
+                const els = getEls();
+                if (user) {
+                    setFlexVisibility(els.loginBtn, false);
+                    setFlexVisibility(els.userProfile, true);
+                    setFlexVisibility(els.mobLoginBtn, false);
+                    setFlexVisibility(els.mobUserProfile, true);
+
+                    const avatar = resolveAvatar(user);
+                    if (els.userAvatar) els.userAvatar.src = avatar;
+                    if (els.mobUserAvatar) els.mobUserAvatar.src = avatar;
+                    if (els.dropdownUsername) els.dropdownUsername.innerText = displayName;
+                    if (els.mobUsername) els.mobUsername.innerText = displayName;
+                } else {
+                    setFlexVisibility(els.loginBtn, true);
+                    setFlexVisibility(els.userProfile, false);
+                    setFlexVisibility(els.mobLoginBtn, true);
+                    setFlexVisibility(els.mobUserProfile, false);
+                }
+            }
+
+            async function fetchProfileName(userId) {
+                if (!supabaseClient || !userId) return null;
+                try {
+                    const { data: profile } = await supabaseClient
+                        .from('profiles')
+                        .select('full_name')
+                        .eq('id', userId)
+                        .single();
+                    return profile && profile.full_name ? profile.full_name : null;
+                } catch (error) {
+                    console.log('Home shell profile fetch warning:', error);
+                    return null;
+                }
+            }
+
+            async function applyUserFromSession(user) {
+                currentUser = user || null;
+                if (!currentUser) {
+                    applyAuthState(null, 'Sign In');
+                    return;
+                }
+
+                const profileName = await fetchProfileName(currentUser.id);
+                const displayName = resolveDisplayName(currentUser, profileName);
+                applyAuthState(currentUser, displayName);
+            }
+
+            window.AuthApp = {
+                signIn: async () => {
+                    window.location.href = currentUser ? ACCOUNT_URL : SIGN_IN_URL;
+                },
+                signOut: async () => {
+                    if (supabaseClient) {
+                        try {
+                            await supabaseClient.auth.signOut();
+                        } catch (error) {
+                            console.error('Logout failed:', error);
+                        }
+                    }
+                    currentUser = null;
+                    applyAuthState(null, 'Sign In');
+                    window.location.href = SIGN_OUT_REDIRECT_URL;
+                }
+            };
+
+            async function initSupabaseAuth() {
+                if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+                    applyAuthState(null, 'Sign In');
+                    return;
+                }
+
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                    auth: { storageKey: MAIN_AUTH_STORAGE_KEY }
+                });
+
+                try {
+                    const {
+                        data: { session }
+                    } = await supabaseClient.auth.getSession();
+
+                    await applyUserFromSession(session ? session.user : null);
+                } catch (error) {
+                    console.error('Home shell auth init failed:', error);
+                    applyAuthState(null, 'Sign In');
+                }
+
+                supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+                    await applyUserFromSession(session ? session.user : null);
+                });
+            }
+
+            async function bootHomeShellBridge() {
+                await initSupabaseAuth();
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bootHomeShellBridge, { once: true });
+            } else {
+                bootHomeShellBridge();
+            }
+
+            document.addEventListener('gasgx:shared-ui-ready', () => {
+                applyHomePageConfig(window.app?.currentLang || 'en');
+                if (currentUser) {
+                    applyAuthState(currentUser, resolveDisplayName(currentUser));
+                } else {
+                    applyAuthState(null, 'Sign In');
+                }
+            });
+
+            document.addEventListener('gasgx:site-shell-config-updated', () => {
+                if (window.app && typeof window.app.updateStaticText === 'function') {
+                    window.app.updateStaticText();
+                } else {
+                    applyHomePageConfig('en');
+                }
+            });
+        })();
+    </script>
+
+    <script>
+        // FULL GAS DATA (Un-truncated)
+        const GAS_DATA = [
+            { cn: "美国", en: "United States of America", status: "legal", score: 42, vol: 967.3, dims: [5,4,4,5,4,4,4,4,4,4], mining: { cn: "合法/受监管", en: "Legal/Regulated" }, pros: { cn: "天然气资源极其丰富，能充分满足发电需求；成本极具竞争力；监管环境稳定。", en: "Abundant gas resources; Competitive costs; Stable regulatory environment." }, cons: { cn: "暂无明显劣势，整体投资环境良好。", en: "No significant disadvantages." }, advice: { cn: "强烈推荐：适合大规模投资布局。", en: "Highly Recommended: Suitable for large-scale investment." } },
+            { cn: "加拿大", en: "Canada", status: "legal", score: 39, vol: 178.7, dims: [3,3,4,5,4,4,4,4,4,4], mining: { cn: "合法/受监管", en: "Legal/Regulated" }, pros: { cn: "资源丰富；发电经济性较好；电力基础设施完善。", en: "Rich resources; Good economics; Perfect infrastructure." }, cons: { cn: "暂无明显劣势。", en: "No significant disadvantages." }, advice: { cn: "推荐：风险可控，建议优先考虑。", en: "Recommended: Controllable risk, prioritize." } },
+            { cn: "澳大利亚", en: "Australia", status: "legal", score: 37, vol: 142.1, dims: [3,2,4,5,4,4,4,4,3,4], mining: { cn: "合法/受监管", en: "Legal/Regulated" }, pros: { cn: "资源丰富；政策友好；运营稳定性高。", en: "Rich resources; Friendly policy; High stability." }, cons: { cn: "天然气成本较高，需控制成本。", en: "Higher gas costs, need cost control." }, advice: { cn: "推荐：适合有成本控制能力的投资者。", en: "Recommended: Suitable for cost-sensitive investors." } },
+            { cn: "墨西哥", en: "Mexico", status: "legal", score: 35, vol: 27.1, dims: [2,1,4,5,4,4,4,4,3,4], mining: { cn: "合法/受监管", en: "Legal/Regulated" }, pros: { cn: "政策环境稳定；并网发电便利。", en: "Stable policy; Easy grid connection." }, cons: { cn: "资源一般；可能依赖进口。", en: "Average resources; May rely on imports." }, advice: { cn: "谨慎推荐：需综合评估经济性。", en: "Cautiously Recommended: Evaluate economics carefully." } },
+            { cn: "挪威", en: "Norway", status: "legal", score: 34.5, vol: 112.0, dims: [3,1,4,5,3.5,4,4,4,2,4], mining: { cn: "合法/受监管", en: "Legal/Regulated" }, pros: { cn: "政策环境极其稳定", en: "Extremely stable policy environment" }, cons: { cn: "电价较高，挖矿成本压力大", en: "High electricity prices, high mining costs" }, advice: { cn: "适合追求极高稳定性的高净值投资者", en: "Suitable for high net worth investors seeking stability" } },
+            { cn: "英国", en: "United Kingdom", status: "legal", score: 33.5, vol: 32.5, dims: [2,1,4,5,3.5,4,4,4,2,4], mining: { cn: "合法/受监管", en: "Legal/Regulated" }, pros: { cn: "金融市场成熟", en: "Mature financial market" }, cons: { cn: "能源成本极高", en: "Extremely high energy costs" }, advice: { cn: "适合技术验证型项目", en: "Suitable for pilot projects" } },
+            { cn: "荷兰", en: "Netherlands", status: "legal", score: 33.5, vol: 32.9, dims: [2,1,4,5,3.5,4,4,4,2,4], mining: { cn: "合法/受监管", en: "Legal/Regulated" }, pros: { cn: "基础设施一流", en: "Top-tier infrastructure" }, cons: { cn: "环保法规极其严格", en: "Strict environmental regulations" }, advice: { cn: "需高度关注合规成本", en: "Watch compliance costs closely" } },
+            { cn: "新西兰", en: "New Zealand", status: "legal", score: 33, vol: 7.0, dims: [1,1,4,5,4,4,4,4,2,4], mining: { cn: "合法/受监管", en: "Legal/Regulated" }, pros: { cn: "政策友好", en: "Friendly policy" }, cons: { cn: "资源匮乏，规模受限", en: "Scarce resources, limited scale" }, advice: { cn: "适合小型试点项目", en: "Suitable for small pilots" } },
+            { cn: "俄罗斯", en: "Russian Federation", status: "grey", score: 32.5, vol: 701.0, dims: [5,5,2,4,2,2,2,3,4.5,3], mining: { cn: "受限/分地区管控", en: "Restricted/Regional Control" }, pros: { cn: "天然气极度丰富且廉价。", en: "Extremely abundant and cheap gas." }, cons: { cn: "地缘政治风险高，制裁影响资金流转。", en: "High geopolitical risk; Sanctions affect funds." }, advice: { cn: "高风险高回报，仅适合有强力本地资源的资方。", en: "High risk high return, only for locals." } },
+            { cn: "马来西亚", en: "Malaysia", status: "legal", score: 31, vol: 75.0, dims: [2,2,4,4,3,3,3,3,3,4], mining: { cn: "合法/受监管", en: "Legal/Regulated" }, pros: { cn: "合规环境较好。", en: "Good compliance environment." }, cons: { cn: "热带气候需增加散热成本。", en: "Tropical climate increases cooling costs." }, advice: { cn: "适合布局，需优化散热方案。", en: "Suitable, optimize cooling." } },
+            { cn: "土库曼斯坦", en: "Turkmenistan", status: "legal", score: 31, vol: 83.6, dims: [3,4,4,3,3,3,2,3,4,2], mining: { cn: "合法/受监管", en: "Legal/Regulated" }, pros: { cn: "资源丰富，成本低", en: "Rich resources, low cost" }, cons: { cn: "政策透明度低，市场准入难", en: "Low transparency, hard entry" }, advice: { cn: "适合有政府关系的投资者", en: "Need government connections" } },
+            { cn: "泰国", en: "Thailand", status: "legal", score: 30, vol: 38.4, dims: [2,1,4,4,3,3,3,3,3,4], mining: { cn: "合法/受监管", en: "Legal/Regulated" }, pros: { cn: "政策逐渐明朗", en: "Policy clarifying" }, cons: { cn: "能源依赖进口，成本较高", en: "Import reliance, high cost" }, advice: { cn: "观望为主", en: "Wait and see" } },
+            { cn: "阿联酋", en: "United Arab Emirates", status: "legal", score: 29.5, vol: 62.9, dims: [2,2,4,5,3,1,3,3,3.5,3], mining: { cn: "合法/局部", en: "Legal/Partial" }, pros: { cn: "自贸区政策友好，资本充裕", en: "Friendly free zones, rich capital" }, cons: { cn: "高温气候，散热成本极高", en: "Extreme heat, high cooling cost" }, advice: { cn: "适合液冷矿场项目", en: "Suitable for hydro cooling" } },
+            { cn: "沙特阿拉伯", en: "Saudi Arabia", status: "grey", score: 29, vol: 114.0, dims: [3,3,3,4,3,1,3,2,4,3], mining: { cn: "合法/灰色地带", en: "Legal/Grey Area" }, pros: { cn: "能源极其廉价", en: "Extremely cheap energy" }, cons: { cn: "监管不明确，高温环境", en: "Unclear regs, high heat" }, advice: { cn: "等待政策进一步明朗", en: "Wait for clarity" } },
+            { cn: "卡塔尔", en: "Qatar", status: "grey", score: 28.5, vol: 167.5, dims: [3,3,2,4,3,1,2,2,4.5,4], mining: { cn: "受限", en: "Restricted" }, pros: { cn: "LNG大国，能源无限", en: "LNG giant, unlimited energy" }, cons: { cn: "对加密货币持谨慎态度", en: "Cautious on crypto" }, advice: { cn: "政策风险较大", en: "High policy risk" } },
+            { cn: "阿根廷", en: "Argentina", status: "legal", score: 28, vol: 41.2, dims: [2,2,4,3,2,3,3,3,3,3], mining: { cn: "合法/受监管", en: "Legal/Regulated" }, pros: { cn: "资源丰富", en: "Rich resources" }, cons: { cn: "经济通胀高", en: "High inflation" }, advice: { cn: "需做足汇率对冲", en: "Hedge currency risk" } },
+            { cn: "乌兹别克斯坦", en: "Uzbekistan", status: "legal", score: 28, vol: 46.9, dims: [2,3,4,3,2,3,2,3,4,2], mining: { cn: "受监管", en: "Regulated" }, pros: { cn: "政府鼓励合法挖矿", en: "Govt encourages legal mining" }, cons: { cn: "冬季限电严重", en: "Severe winter power cuts" }, advice: { cn: "适合作为补充基地", en: "Suitable as secondary base" } },
+            { cn: "印度", en: "India", status: "legal", score: 27, vol: 27.7, dims: [2,1,4,3,3,3,3,3,2,3], mining: { cn: "合法/政策不明", en: "Legal/Unclear" }, pros: { cn: "市场巨大", en: "Huge market" }, cons: { cn: "税收极高 (30% + 1% TDS)", en: "High tax (30% + TDS)" }, advice: { cn: "目前税收环境下利润空间极小", en: "Minimal profit margins" } },
+            { cn: "巴西", en: "Brazil", status: "legal", score: 24.5, vol: 25.4, dims: [2,1,4,3,2.5,3,2,2,3,2], mining: { cn: "合法/受监管", en: "Legal/Regulated" }, pros: { cn: "可再生能源丰富", en: "Rich renewables" }, cons: { cn: "税收复杂", en: "Complex taxes" }, advice: { cn: "需寻找绿色能源激励项目", en: "Seek green incentives" } },
+            { cn: "伊朗", en: "Iran, Islamic Republic of", status: "grey", score: 24, vol: 237.6, dims: [4,5,2,2,1,2,1,1,5,1], mining: { cn: "受限/需牌照", en: "Restricted/License" }, pros: { cn: "电费全球最低", en: "Lowest power cost" }, cons: { cn: "制裁、强制关停风险高", en: "Sanctions, shutdown risk" }, advice: { cn: "极高风险，不推荐一般投资者", en: "High risk, not recommended" } },
+            { cn: "中国", en: "China", status: "illegal", score: 18, vol: 179.3, dims: [3,2,1,5,3,3,2,2,2,3], mining: { cn: "全国性禁止", en: "Nationally Banned" }, pros: { cn: "基建全球领先。", en: "World-leading infrastructure." }, cons: { cn: "全面禁止挖矿。", en: "Mining completely banned." }, advice: { cn: "绝对不推荐。", en: "Absolutely Not Recommended." } }
+        ];
+
+        const DIMENSION_DEFS = [
+            { cn: "资源丰富度", en: "Resource" }, { cn: "成本竞争力", en: "Cost" }, { cn: "挖矿政策", en: "Policy" }, { cn: "电力基建", en: "Grid" }, { cn: "政策稳定性", en: "Stability" }, { cn: "气候适应性", en: "Climate" }, { cn: "监管透明度", en: "Transp." }, { cn: "市场准入", en: "Entry" }, { cn: "运营成本", en: "OpEx" }, { cn: "投资安全", en: "Safety" }
+        ];
+
+        const BASE_INDEX_I18N = window.GASGX_INDEX_I18N || {};
+
+        // App runtime data (navigation comes from shared config only).
+        const AppData = {
+            navigation: Array.isArray(window.GASGX_SITE_SHELL_CONFIG?.navigation)
+                ? window.GASGX_SITE_SHELL_CONFIG.navigation
+                : [],
+            statusColors: { 'legal': '#5DD62C', 'grey': '#9ca3af', 'illegal': '#ef4444' },
+            i18n: JSON.parse(JSON.stringify(BASE_INDEX_I18N))
+        };
+
+        const DEFAULT_HOME_PAGE_CONFIG = {
+            meta: {
+                title: { zh: 'GasGx - 天然气发电挖矿', en: 'GasGx - Natural Gas Power Mining' },
+                description: {
+                    zh: 'GasGx 提供全球天然气发电挖矿机会、政策状态与国家排名的总览。',
+                    en: 'GasGx provides a global view of natural gas-powered mining opportunities, policy status, and country rankings.'
+                }
+            },
+            heroCard: {
+                label: { zh: '分析范围', en: 'Analysis Scope' },
+                value: '25+',
+                unit: { zh: '国家', en: 'Countries' }
+            },
+            map: {
+                loadingText: { zh: '正在加载挖矿数据...', en: 'Loading Mining Data...' },
+                rotateHint: { zh: '拖拽旋转', en: 'Drag to Rotate' }
+            },
+            ranking: {
+                title: { zh: '总分排行', en: 'Total Score Ranking' },
+                legendLegal: { zh: '合法 / 高分', en: 'Legal / High Score' },
+                legendRestricted: { zh: '受限', en: 'Restricted' },
+                legendBanned: { zh: '禁止', en: 'Banned' }
+            },
+            capture: {
+                modalTitle: { zh: '截图已生成！', en: 'Snapshot Generated!' },
+                modalDescription: { zh: '整页截图已成功生成。', en: 'Full page captured successfully.' },
+                closeLabel: { zh: '关闭', en: 'Close' },
+                qrSubtitle: { zh: '扫码关注我们', en: 'Scan to follow us' },
+                qrHint: { zh: '长按或截图保存二维码。', en: 'Long press or screenshot to save the QR code.' },
+                watermarkTagline: { zh: '天然气发电挖矿助手', en: 'Natural Gas Power Mining Assistant' },
+                downloadFileName: 'GasGx-Map-Capture.png'
+            }
+        };
+
+        function cloneJson(value) {
+            return JSON.parse(JSON.stringify(value || null));
+        }
+
+        function mergeLocalizedValue(baseValue, sourceValue) {
+            const base = baseValue && typeof baseValue === 'object' ? baseValue : {};
+            const source = sourceValue && typeof sourceValue === 'object' ? sourceValue : {};
+            return {
+                zh: typeof source.zh === 'string' && source.zh.trim() ? source.zh.trim() : (typeof base.zh === 'string' ? base.zh : ''),
+                en: typeof source.en === 'string' && source.en.trim() ? source.en.trim() : (typeof base.en === 'string' ? base.en : '')
+            };
+        }
+
+        function mergeHomePageConfig(baseConfig, sourceConfig) {
+            const base = baseConfig && typeof baseConfig === 'object' ? cloneJson(baseConfig) : {};
+            const source = sourceConfig && typeof sourceConfig === 'object' ? sourceConfig : {};
+            return Object.assign({}, base, source, {
+                meta: Object.assign({}, base.meta || {}, source.meta || {}, {
+                    title: mergeLocalizedValue(base.meta && base.meta.title, source.meta && source.meta.title),
+                    description: mergeLocalizedValue(base.meta && base.meta.description, source.meta && source.meta.description)
+                }),
+                heroCard: Object.assign({}, base.heroCard || {}, source.heroCard || {}, {
+                    label: mergeLocalizedValue(base.heroCard && base.heroCard.label, source.heroCard && source.heroCard.label),
+                    unit: mergeLocalizedValue(base.heroCard && base.heroCard.unit, source.heroCard && source.heroCard.unit)
+                }),
+                map: Object.assign({}, base.map || {}, source.map || {}, {
+                    loadingText: mergeLocalizedValue(base.map && base.map.loadingText, source.map && source.map.loadingText),
+                    rotateHint: mergeLocalizedValue(base.map && base.map.rotateHint, source.map && source.map.rotateHint)
+                }),
+                ranking: Object.assign({}, base.ranking || {}, source.ranking || {}, {
+                    title: mergeLocalizedValue(base.ranking && base.ranking.title, source.ranking && source.ranking.title),
+                    legendLegal: mergeLocalizedValue(base.ranking && base.ranking.legendLegal, source.ranking && source.ranking.legendLegal),
+                    legendRestricted: mergeLocalizedValue(base.ranking && base.ranking.legendRestricted, source.ranking && source.ranking.legendRestricted),
+                    legendBanned: mergeLocalizedValue(base.ranking && base.ranking.legendBanned, source.ranking && source.ranking.legendBanned)
+                }),
+                capture: Object.assign({}, base.capture || {}, source.capture || {}, {
+                    modalTitle: mergeLocalizedValue(base.capture && base.capture.modalTitle, source.capture && source.capture.modalTitle),
+                    modalDescription: mergeLocalizedValue(base.capture && base.capture.modalDescription, source.capture && source.capture.modalDescription),
+                    closeLabel: mergeLocalizedValue(base.capture && base.capture.closeLabel, source.capture && source.capture.closeLabel),
+                    qrSubtitle: mergeLocalizedValue(base.capture && base.capture.qrSubtitle, source.capture && source.capture.qrSubtitle),
+                    qrHint: mergeLocalizedValue(base.capture && base.capture.qrHint, source.capture && source.capture.qrHint),
+                    watermarkTagline: mergeLocalizedValue(base.capture && base.capture.watermarkTagline, source.capture && source.capture.watermarkTagline)
+                })
+            });
+        }
+
+        function normalizeLang(lang) {
+            return String(lang || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+        }
+
+        function getLocalizedValue(value, langCandidate, fallback = '') {
+            if (typeof value === 'string') return value || fallback;
+            const lang = normalizeLang(langCandidate);
+            const source = value && typeof value === 'object' ? value : {};
+            return source[lang] || source.en || source.zh || fallback;
+        }
+
+        function getHomePageConfig() {
+            const config = window.GASGX_SITE_SHELL_CONFIG;
+            const source = config && config.pages && typeof config.pages.home === 'object'
+                ? config.pages.home
+                : {};
+            return mergeHomePageConfig(DEFAULT_HOME_PAGE_CONFIG, source);
+        }
+
+        function buildHomePageI18n(homeConfig) {
+            const result = cloneJson(BASE_INDEX_I18N) || { zh: {}, en: {} };
+            ['zh', 'en'].forEach((lang) => {
+                if (!result[lang] || typeof result[lang] !== 'object') result[lang] = {};
+                Object.assign(result[lang], {
+                    analysis_scope: getLocalizedValue(homeConfig.heroCard && homeConfig.heroCard.label, lang, result[lang].analysis_scope || ''),
+                    countries_label: getLocalizedValue(homeConfig.heroCard && homeConfig.heroCard.unit, lang, result[lang].countries_label || ''),
+                    drag_to_rotate: getLocalizedValue(homeConfig.map && homeConfig.map.rotateHint, lang, result[lang].drag_to_rotate || ''),
+                    top_producers: getLocalizedValue(homeConfig.ranking && homeConfig.ranking.title, lang, result[lang].top_producers || ''),
+                    legend_legal: getLocalizedValue(homeConfig.ranking && homeConfig.ranking.legendLegal, lang, result[lang].legend_legal || ''),
+                    legend_restricted: getLocalizedValue(homeConfig.ranking && homeConfig.ranking.legendRestricted, lang, result[lang].legend_restricted || ''),
+                    legend_banned: getLocalizedValue(homeConfig.ranking && homeConfig.ranking.legendBanned, lang, result[lang].legend_banned || '')
+                });
+            });
+            return result;
+        }
+
+        function applyHomePageConfig(langCandidate) {
+            const lang = normalizeLang(langCandidate || 'en');
+            const homeConfig = getHomePageConfig();
+            AppData.i18n = buildHomePageI18n(homeConfig);
+
+            document.title = getLocalizedValue(homeConfig.meta && homeConfig.meta.title, lang, document.title);
+            const metaDescription = document.getElementById('home-meta-description') || document.querySelector('meta[name="description"]');
+            if (metaDescription) {
+                metaDescription.setAttribute('content', getLocalizedValue(homeConfig.meta && homeConfig.meta.description, lang, metaDescription.getAttribute('content') || ''));
+            }
+
+            const scopeValue = document.getElementById('analysis-scope-value');
+            if (scopeValue && homeConfig.heroCard && typeof homeConfig.heroCard.value === 'string' && homeConfig.heroCard.value.trim()) {
+                scopeValue.innerText = homeConfig.heroCard.value.trim();
+            }
+
+            const loadingText = document.getElementById('map-loading-text');
+            if (loadingText) loadingText.innerText = getLocalizedValue(homeConfig.map && homeConfig.map.loadingText, lang, loadingText.innerText || '');
+
+            const captureTitle = document.getElementById('capture-modal-title');
+            if (captureTitle) captureTitle.innerText = getLocalizedValue(homeConfig.capture && homeConfig.capture.modalTitle, lang, captureTitle.innerText || '');
+
+            const captureDescription = document.getElementById('capture-modal-description');
+            if (captureDescription) captureDescription.innerText = getLocalizedValue(homeConfig.capture && homeConfig.capture.modalDescription, lang, captureDescription.innerText || '');
+
+            const captureClose = document.getElementById('capture-modal-close');
+            if (captureClose) captureClose.innerText = getLocalizedValue(homeConfig.capture && homeConfig.capture.closeLabel, lang, captureClose.innerText || '');
+
+            const qrSubtitle = document.getElementById('qr-modal-subtitle');
+            if (qrSubtitle) qrSubtitle.innerText = getLocalizedValue(homeConfig.capture && homeConfig.capture.qrSubtitle, lang, qrSubtitle.innerText || '');
+
+            const qrHint = document.getElementById('qr-modal-hint');
+            if (qrHint) qrHint.innerText = getLocalizedValue(homeConfig.capture && homeConfig.capture.qrHint, lang, qrHint.innerText || '');
+
+            return homeConfig;
+        }
+
+        function ensureHtml2CanvasLoaded() {
+            if (typeof window.html2canvas === 'function') return Promise.resolve(window.html2canvas);
+            if (window._html2CanvasPromise) return window._html2CanvasPromise;
+
+            window._html2CanvasPromise = new Promise((resolve, reject) => {
+                const src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+                const existing = document.querySelector(`script[src="${src}"]`);
+
+                if (existing) {
+                    existing.addEventListener('load', () => resolve(window.html2canvas));
+                    existing.addEventListener('error', () => reject(new Error('Failed to load html2canvas')));
+                    if (typeof window.html2canvas === 'function') resolve(window.html2canvas);
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = src;
+                script.async = true;
+                script.onload = () => resolve(window.html2canvas);
+                script.onerror = () => reject(new Error('Failed to load html2canvas'));
+                document.head.appendChild(script);
+            });
+
+            return window._html2CanvasPromise;
+        }
+
+window.app = {
+            currentLang: 'en', isMobileMenuOpen: false,
+            rotationTimer: null, projection: null, projectionAir: null, geoGenerator: null, svg: null, width: 0, height: 0, countries: [], activeData: null, lastElapsed: 0, dragVelocity: { x: 0, y: 0 }, friction: 0.95, autoRotateSpeed: 0.2,
+            rafPending: false, frameIntervalMs: 16, perfLite: false, visibilityBound: false, hudLine: null, hudDot: null,
+            countrySelection: null, iconSelection: null, labelSelection: null, isDrawerOpen: false, resizeBound: false, drawerEscapeBound: false, drawerSwipeBound: false, drawerSwipeState: null, drawerSwipeSuppressClickUntil: 0,
+            onboardingBound: false, onboardingResizeBound: false, onboardingActive: false, onboardingStepIndex: 0, onboardingSteps: [], onboardingVersion: '20260415c', onboardingStorageBaseKey: 'gasgx-home-guide', onboardingSyncTimer: null, onboardingGlobeDemoTimer: null, onboardingGlobeDemoPhase: 0, onboardingLastStepKey: '', onboardingInfoPrimed: false,
+
+            init() {
+                this.updateStaticText();
+                this.init3DGlobe();
+                this.renderLeaderboard();
+                this.syncDrawerState();
+                if (!this.visibilityBound) {
+                    document.addEventListener('visibilitychange', () => {
+                        if (document.hidden) {
+                            if (this.rotationTimer) this.rotationTimer.stop();
+                        } else if (!this.activeData && typeof this.startRotation === 'function') {
+                            this.startRotation();
+                        }
+                    });
+                    this.visibilityBound = true;
+                }
+                if (!this.resizeBound) {
+                    const refreshMobileLayout = () => {
+                        this.syncDrawerState();
+                        if (this.activeData) this.updateInfoBox(true);
+                    };
+                    window.addEventListener('resize', refreshMobileLayout);
+                    window.addEventListener('orientationchange', refreshMobileLayout);
+                    this.resizeBound = true;
+                }
+                if (!this.drawerEscapeBound) {
+                    document.addEventListener('keydown', (event) => {
+                        if (event.key === 'Escape' && this.onboardingActive) {
+                            this.skipOnboarding();
+                            return;
+                        }
+                        if (event.key === 'Escape' && this.isMobileDrawerMode() && this.isDrawerOpen) {
+                            this.toggleDrawer(false);
+                        }
+                    });
+                    this.drawerEscapeBound = true;
+                }
+                this.bindDrawerSwipeGesture();
+                this.initializeOnboarding();
+            },
+
+            // Language & Nav
+            setLanguage(lang) {
+                this.currentLang = lang;
+                ['zh', 'en'].forEach(l => {
+                    const btn = document.getElementById(`btn-lang-${l}`); const mobBtn = document.getElementById(`mob-btn-lang-${l}`);
+                    if (btn) btn.className = `ggx-lang-option ${l === lang ? "is-active" : ""}`;
+                    if (mobBtn) mobBtn.className = `ggx-lang-btn ggx-lang-btn-mobile ${l === lang ? "text-gas-green font-semibold" : "text-gray-500 hover:text-gray-300"}`;
+                });
+                this.updateStaticText(); this.renderLeaderboard(); this.refreshCountryLabels(); this.redrawGlobe(); this.syncDrawerState(); this.updateInfoBox(true);
+                this.updateOnboardingReopenLabel();
+                if (this.onboardingActive) this.renderOnboardingStep();
+                const modal = document.getElementById('detail-modal'); if (!modal.classList.contains('hidden') && this.activeData) { this.openDetailModal(this.activeData.data.en); }
+            },
+            t(key) {
+                const dict = AppData.i18n[this.currentLang] || AppData.i18n.en || {};
+                return dict[key] || key;
+            },
+            isMobileDrawerMode() {
+                return window.innerWidth < 1280;
+            },
+            getDrawerActionLabel(isOpen) {
+                return this.currentLang === 'zh'
+                    ? (isOpen ? '点击收起排行' : '点击展开排行')
+                    : (isOpen ? 'Tap to collapse ranking' : 'Tap to expand ranking');
+            },
+            getMobileDrawerPeekHeight() {
+                const toggle = document.getElementById('mobile-drawer-toggle');
+                if (!toggle) return 72;
+                const rect = toggle.getBoundingClientRect();
+                const sidebar = document.getElementById('ranking-sidebar');
+                const rawPeek = Math.max(72, Math.ceil(rect.height + 24));
+                if (!sidebar) return rawPeek;
+                const sidebarHeight = Math.ceil(sidebar.getBoundingClientRect().height || 0);
+                if (sidebarHeight <= 0) return rawPeek;
+                return Math.min(rawPeek, Math.max(72, sidebarHeight - 12));
+            },
+            syncDrawerState() {
+                const sidebar = document.getElementById('ranking-sidebar');
+                const icon = document.getElementById('drawer-icon');
+                const actionLabel = document.getElementById('drawer-action-label');
+                const toggle = document.getElementById('mobile-drawer-toggle');
+                if (!sidebar) return;
+
+                if (!this.isMobileDrawerMode()) {
+                    sidebar.style.transform = 'translateY(0)';
+                    sidebar.dataset.drawerOpen = '1';
+                    if (toggle) toggle.setAttribute('aria-expanded', 'true');
+                    if (toggle) toggle.setAttribute('aria-label', 'Ranking panel is open');
+                    if (icon) icon.style.transform = 'rotate(180deg)';
+                    if (actionLabel) actionLabel.innerText = this.getDrawerActionLabel(true);
+                    document.body.classList.remove('ggx-drawer-open');
+                    return;
+                }
+
+                const peekHeight = this.getMobileDrawerPeekHeight();
+                sidebar.style.transform = this.isDrawerOpen ? 'translateY(0)' : `translateY(calc(100% - ${peekHeight}px))`;
+                sidebar.dataset.drawerOpen = this.isDrawerOpen ? '1' : '0';
+                if (toggle) toggle.setAttribute('aria-expanded', this.isDrawerOpen ? 'true' : 'false');
+                if (toggle) toggle.setAttribute('aria-label', this.isDrawerOpen ? 'Collapse ranking panel' : 'Expand ranking panel');
+                if (icon) icon.style.transform = this.isDrawerOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+                if (actionLabel) actionLabel.innerText = this.getDrawerActionLabel(this.isDrawerOpen);
+                document.body.classList.toggle('ggx-drawer-open', this.isDrawerOpen);
+            },
+            toggleDrawer(forceState) {
+                if (!this.isMobileDrawerMode()) return;
+                if (Date.now() < this.drawerSwipeSuppressClickUntil) return;
+                this.isDrawerOpen = typeof forceState === 'boolean' ? forceState : !this.isDrawerOpen;
+                this.syncDrawerState();
+                if (this.activeData) this.updateInfoBox(true);
+            },
+            bindDrawerSwipeGesture() {
+                if (this.drawerSwipeBound) return;
+                const toggle = document.getElementById('mobile-drawer-toggle');
+                const sidebar = document.getElementById('ranking-sidebar');
+                if (!toggle || !sidebar) return;
+
+                const getTouchY = (touchList) => {
+                    if (!touchList || !touchList.length) return null;
+                    return touchList[0].clientY;
+                };
+
+                const beginSwipe = (clientY) => {
+                    if (!this.isMobileDrawerMode() || typeof clientY !== 'number') return;
+                    this.drawerSwipeState = {
+                        startY: clientY,
+                        lastY: clientY,
+                        moved: false,
+                        startedOpen: !!this.isDrawerOpen
+                    };
+                };
+
+                const moveSwipe = (clientY) => {
+                    const state = this.drawerSwipeState;
+                    if (!state || typeof clientY !== 'number') return;
+                    const deltaY = clientY - state.startY;
+                    state.lastY = clientY;
+                    if (Math.abs(deltaY) > 6) state.moved = true;
+                    if (!state.moved) return;
+
+                    const peekHeight = this.getMobileDrawerPeekHeight();
+                    const sidebarHeight = Math.max(0, Math.ceil(sidebar.getBoundingClientRect().height || 0));
+                    const closedTranslate = Math.max(0, sidebarHeight - peekHeight);
+                    const startTranslate = state.startedOpen ? 0 : closedTranslate;
+                    const targetTranslate = Math.max(0, Math.min(closedTranslate, startTranslate + deltaY));
+                    sidebar.style.transition = 'none';
+                    sidebar.style.transform = `translateY(${targetTranslate}px)`;
+                };
+
+                const endSwipe = (clientY) => {
+                    const state = this.drawerSwipeState;
+                    this.drawerSwipeState = null;
+                    if (!state) return;
+                    sidebar.style.transition = '';
+
+                    const finalY = typeof clientY === 'number' ? clientY : state.lastY;
+                    const deltaY = finalY - state.startY;
+                    const threshold = 36;
+
+                    if (!state.moved) {
+                        this.syncDrawerState();
+                        return;
+                    }
+
+                    this.drawerSwipeSuppressClickUntil = Date.now() + 320;
+                    if (state.startedOpen) {
+                        this.toggleDrawer(deltaY > threshold ? false : true);
+                    } else {
+                        this.toggleDrawer(deltaY < -threshold ? true : false);
+                    }
+                };
+
+                toggle.addEventListener('touchstart', (event) => {
+                    const clientY = getTouchY(event.touches);
+                    beginSwipe(clientY);
+                }, { passive: true });
+
+                toggle.addEventListener('touchmove', (event) => {
+                    const clientY = getTouchY(event.touches);
+                    moveSwipe(clientY);
+                    const state = this.drawerSwipeState;
+                    if (state && state.moved) event.preventDefault();
+                }, { passive: false });
+
+                toggle.addEventListener('touchend', (event) => {
+                    const clientY = getTouchY(event.changedTouches);
+                    endSwipe(clientY);
+                }, { passive: true });
+
+                toggle.addEventListener('touchcancel', () => {
+                    endSwipe(null);
+                }, { passive: true });
+
+                toggle.addEventListener('click', (event) => {
+                    if (Date.now() < this.drawerSwipeSuppressClickUntil) {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                    }
+                }, true);
+
+                this.drawerSwipeBound = true;
+            },
+            getOnboardingCopy() {
+                if (this.currentLang === 'zh') {
+                    return {
+                        stepLabel: '步骤',
+                        skip: '跳过引导',
+                        prev: '上一步',
+                        next: '下一步',
+                        done: '完成',
+                        reopen: '新手引导',
+                        steps: [
+                            {
+                                key: 'login',
+                                title: '先看登录入口',
+                                text: '右上角 Login 用于进入账户中心与后续个性化功能。首次使用建议先登录，便于保存与同步操作状态。'
+                            },
+                            {
+                                key: 'navEntry',
+                                title: '这是右上角导航入口',
+                                text: '右上角菜单入口可打开全站导航，快速跳转到产品、工具、资源与支持页面。'
+                            },
+                            {
+                                key: 'hotspots',
+                                title: '先点地球触点',
+                                text: '先点击地球上的发光触点节点，系统会快速定位到对应国家并展开分析入口。'
+                            },
+                            {
+                                key: 'globe',
+                                title: '这是可旋转地球',
+                                text: '这个区域是完整地球操作区。按住拖动可旋转查看更多国家，手势会示范“绕圈旋转”的操作方式。'
+                            },
+                            {
+                                key: 'infoPanel',
+                                title: '点击后会展示详情卡片',
+                                text: '触点被点击后会弹出这张国家详情卡片，展示政策状态、评分和分析入口。'
+                            },
+                            {
+                                key: 'detailModal',
+                                title: '这里是完整分析弹窗',
+                                text: '点击卡片里的 analysis_10 后，会打开完整分析弹窗，查看10维度、优劣势和建议。'
+                            },
+                            {
+                                key: 'ranking',
+                                title: '这里看总分排行',
+                                text: '底部 Total Score Ranking 可展开国家排名列表，适合先按分数筛选，再回到地图做对比。'
+                            }
+                        ]
+                    };
+                }
+                return {
+                    stepLabel: 'Step',
+                    skip: 'Skip',
+                    prev: 'Prev',
+                    next: 'Next',
+                    done: 'Done',
+                    reopen: 'Guide',
+                    steps: [
+                        {
+                            key: 'login',
+                            title: 'Start with the Login entry',
+                            text: 'Use the top-right Login button to access your account and personalized workflows. Sign in first for a smoother experience.'
+                        },
+                        {
+                            key: 'navEntry',
+                            title: 'This is the top-right navigation entry',
+                            text: 'Use the top-right menu entry to open site navigation and jump to products, tools, resources, and support pages quickly.'
+                        },
+                        {
+                            key: 'hotspots',
+                            title: 'Start from a globe touchpoint',
+                            text: 'Tap a glowing touchpoint on the globe to quickly jump into country-specific analysis.'
+                        },
+                        {
+                            key: 'globe',
+                            title: 'This globe is fully rotatable',
+                            text: 'Use drag rotation on the full globe area. The gesture demonstrates a circular motion to show that you can rotate continuously.'
+                        },
+                        {
+                            key: 'infoPanel',
+                            title: 'Tap to reveal the detail panel',
+                            text: 'After tapping a touchpoint, this country detail panel appears with policy status, score, and analysis entry.'
+                        },
+                        {
+                            key: 'detailModal',
+                            title: 'This is the full analysis modal',
+                            text: 'Tap analysis_10 to open the full modal and inspect all 10 dimensions, pros, risks, and advice.'
+                        },
+                        {
+                            key: 'ranking',
+                            title: 'Use Total Score Ranking',
+                            text: 'Open the bottom ranking panel to scan countries by score first, then compare them on the globe.'
+                        }
+                    ]
+                };
+            },
+            getOnboardingStorageKey() {
+                return `${this.onboardingStorageBaseKey}:${this.onboardingVersion}`;
+            },
+            shouldAutoShowOnboarding() {
+                try {
+                    return localStorage.getItem(this.getOnboardingStorageKey()) !== '1';
+                } catch (error) {
+                    return true;
+                }
+            },
+            markOnboardingSeen() {
+                try {
+                    localStorage.setItem(this.getOnboardingStorageKey(), '1');
+                } catch (error) {
+                    console.log('Guide storage warning:', error);
+                }
+            },
+            updateOnboardingReopenLabel() {
+                const copy = this.getOnboardingCopy();
+                const reopenBtn = document.getElementById('ggx-onboarding-reopen');
+                if (reopenBtn) reopenBtn.innerText = copy.reopen;
+            },
+            bindOnboardingEvents() {
+                if (this.onboardingBound) return;
+                const prevBtn = document.getElementById('ggx-onboarding-prev');
+                const nextBtn = document.getElementById('ggx-onboarding-next');
+                const skipBtn = document.getElementById('ggx-onboarding-skip');
+                const backdrop = document.querySelector('#ggx-onboarding-layer .ggx-onboarding-backdrop');
+                const gesture = document.getElementById('ggx-onboarding-gesture');
+                if (prevBtn) prevBtn.addEventListener('click', () => this.prevOnboardingStep());
+                if (nextBtn) nextBtn.addEventListener('click', () => this.nextOnboardingStep());
+                if (skipBtn) skipBtn.addEventListener('click', () => this.skipOnboarding());
+                if (backdrop) {
+                    backdrop.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        this.nextOnboardingStep();
+                    });
+                }
+                if (gesture) {
+                    gesture.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        this.nextOnboardingStep();
+                    });
+                }
+                this.onboardingBound = true;
+            },
+            initializeOnboarding() {
+                this.bindOnboardingEvents();
+                this.updateOnboardingReopenLabel();
+                if (!this.onboardingResizeBound) {
+                    const refreshGuide = () => {
+                        if (this.onboardingActive) this.renderOnboardingStep();
+                    };
+                    window.addEventListener('resize', refreshGuide);
+                    window.addEventListener('orientationchange', refreshGuide);
+                    this.onboardingResizeBound = true;
+                }
+                if (this.shouldAutoShowOnboarding()) {
+                    setTimeout(() => this.startOnboarding(false), 780);
+                }
+            },
+            getOnboardingRect(stepKey) {
+                const map = document.getElementById('map-container');
+                if (!map) return null;
+                const mapRect = map.getBoundingClientRect();
+                const toRect = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height });
+                const getVisibleRect = (selectors) => {
+                    for (const selector of selectors) {
+                        const node = document.querySelector(selector);
+                        if (!node) continue;
+                        const rect = node.getBoundingClientRect();
+                        if (rect.width > 0 && rect.height > 0) {
+                            return toRect(rect.left, rect.top, rect.width, rect.height);
+                        }
+                    }
+                    return null;
+                };
+                const clampRect = (rect) => {
+                    const margin = 8;
+                    const left = Math.max(margin, rect.left);
+                    const top = Math.max(margin, rect.top);
+                    const right = Math.min(window.innerWidth - margin, rect.right);
+                    const bottom = Math.min(window.innerHeight - margin, rect.bottom);
+                    return toRect(left, top, Math.max(40, right - left), Math.max(40, bottom - top));
+                };
+
+                if (stepKey === 'login') {
+                    const loginRect = getVisibleRect([
+                        '#ggx-site-header-slot #auth-login-btn',
+                        '#ggx-site-header-slot #auth-user-profile',
+                        '#ggx-site-header-slot #mob-header-auth-link',
+                        '#ggx-site-header-slot #mob-auth-login-btn',
+                        '#ggx-site-header-slot #mob-auth-user-profile'
+                    ]);
+                    if (loginRect) {
+                        return clampRect(toRect(
+                            loginRect.left - 8,
+                            loginRect.top - 6,
+                            loginRect.width + 16,
+                            loginRect.height + 12
+                        ));
+                    }
+                    return clampRect(toRect(window.innerWidth - 172, 10, 112, 48));
+                }
+
+                if (stepKey === 'navEntry') {
+                    const navRect = getVisibleRect([
+                        '#ggx-site-header-slot #mobile-menu-btn',
+                        '#ggx-site-header-slot #desktop-nav'
+                    ]);
+                    if (navRect) {
+                        const width = navRect.width > 140 ? 140 : navRect.width;
+                        const left = navRect.width > 140 ? navRect.right - width : navRect.left;
+                        return clampRect(toRect(left - 4, navRect.top - 4, width + 8, navRect.height + 8));
+                    }
+                    return clampRect(toRect(window.innerWidth - 62, 12, 44, 44));
+                }
+
+                if (stepKey === 'hotspots') {
+                    const markers = Array.from(document.querySelectorAll('#map-container .btc-icon-group'));
+                    if (markers.length) {
+                        const mapCenterX = mapRect.left + (mapRect.width * 0.56);
+                        const mapLowerBandTop = mapRect.top + (mapRect.height * 0.42);
+                        const mapLowerBandBottom = mapRect.bottom - (mapRect.height * 0.1);
+                        let best = null;
+                        let bestScore = Number.POSITIVE_INFINITY;
+
+                        markers.forEach((marker) => {
+                            const rect = marker.getBoundingClientRect();
+                            if (!rect || rect.width <= 0 || rect.height <= 0) return;
+                            const cx = rect.left + (rect.width / 2);
+                            const cy = rect.top + (rect.height / 2);
+                            const inMap = cx >= mapRect.left && cx <= mapRect.right && cy >= mapRect.top && cy <= mapRect.bottom;
+                            if (!inMap) return;
+                            const onGlobeBand = cy >= mapLowerBandTop && cy <= mapLowerBandBottom;
+                            const score = Math.abs(cx - mapCenterX) + (onGlobeBand ? 0 : 1800);
+                            if (score < bestScore) {
+                                bestScore = score;
+                                best = { cx, cy };
+                            }
+                        });
+
+                        if (best) {
+                            return clampRect(toRect(best.cx - 24, best.cy - 22, 118, 96));
+                        }
+                    }
+
+                    return clampRect(
+                        toRect(
+                            mapRect.left + (mapRect.width * 0.56),
+                            mapRect.top + (mapRect.height * 0.5),
+                            mapRect.width * 0.18,
+                            mapRect.height * 0.12
+                        )
+                    );
+                }
+
+                if (stepKey === 'infoPanel') {
+                    const infoBox = document.getElementById('map-info-box');
+                    if (infoBox) {
+                        const infoRect = infoBox.getBoundingClientRect();
+                        const isVisible = infoRect.width > 20 && infoRect.height > 20
+                            && infoRect.top < window.innerHeight
+                            && infoRect.left < window.innerWidth
+                            && parseFloat(window.getComputedStyle(infoBox).opacity || '0') > 0.05;
+                        if (isVisible) {
+                            return clampRect(toRect(
+                                infoRect.left - 6,
+                                infoRect.top - 6,
+                                infoRect.width + 12,
+                                infoRect.height + 12
+                            ));
+                        }
+                    }
+
+                    if (window.innerWidth < 768) {
+                        return clampRect(toRect(
+                            mapRect.left + (mapRect.width * 0.03),
+                            mapRect.top + (mapRect.height * 0.56),
+                            mapRect.width * 0.94,
+                            Math.min(mapRect.height * 0.34, 270)
+                        ));
+                    }
+
+                    return clampRect(toRect(
+                        mapRect.left + (mapRect.width * 0.56),
+                        mapRect.top + (mapRect.height * 0.26),
+                        Math.min(340, mapRect.width * 0.36),
+                        Math.min(250, mapRect.height * 0.44)
+                    ));
+                }
+
+                if (stepKey === 'detailModal') {
+                    const modal = document.getElementById('detail-modal');
+                    if (modal && !modal.classList.contains('hidden')) {
+                        const modalCard = modal.firstElementChild;
+                        if (modalCard) {
+                            const modalRect = modalCard.getBoundingClientRect();
+                            if (modalRect.width > 40 && modalRect.height > 40) {
+                                return clampRect(toRect(
+                                    modalRect.left - 6,
+                                    modalRect.top - 6,
+                                    modalRect.width + 12,
+                                    modalRect.height + 12
+                                ));
+                            }
+                        }
+                    }
+
+                    const isNarrow = window.innerWidth < 768;
+                    const fallbackWidth = isNarrow ? (window.innerWidth - 24) : Math.min(window.innerWidth * 0.72, 980);
+                    const fallbackHeight = isNarrow ? (window.innerHeight - 108) : Math.min(window.innerHeight * 0.84, 860);
+                    const fallbackLeft = isNarrow ? 12 : ((window.innerWidth - fallbackWidth) / 2);
+                    const fallbackTop = isNarrow ? 48 : Math.max(16, (window.innerHeight - fallbackHeight) / 2);
+                    return clampRect(toRect(fallbackLeft, fallbackTop, fallbackWidth, fallbackHeight));
+                }
+
+                if (stepKey === 'globe') {
+                    const sphere = document.querySelector('#map-container .globe-sphere');
+                    if (sphere) {
+                        const sphereRect = sphere.getBoundingClientRect();
+                        if (sphereRect.width > 10 && sphereRect.height > 10) {
+                            return clampRect(
+                                toRect(
+                                    sphereRect.left - 8,
+                                    sphereRect.top - 8,
+                                    sphereRect.width + 16,
+                                    sphereRect.height + 16
+                                )
+                            );
+                        }
+                    }
+                    const isNarrow = window.innerWidth < 768;
+                    const centerX = mapRect.left + (mapRect.width / 2);
+                    const centerY = mapRect.top + (mapRect.height * (isNarrow ? 0.62 : 0.57));
+                    const diameter = Math.min(
+                        mapRect.width * (isNarrow ? 0.9 : 0.76),
+                        mapRect.height * (isNarrow ? 0.68 : 0.8)
+                    );
+                    return clampRect(
+                        toRect(
+                            centerX - (diameter / 2),
+                            centerY - (diameter / 2),
+                            diameter,
+                            diameter
+                        )
+                    );
+                }
+
+                if (stepKey === 'ranking') {
+                    const mobileToggle = document.getElementById('mobile-drawer-toggle');
+                    if (this.isMobileDrawerMode() && mobileToggle) {
+                        const rect = mobileToggle.getBoundingClientRect();
+                        return clampRect(toRect(rect.left, rect.top, rect.width, rect.height));
+                    }
+                    const rankingSidebar = document.getElementById('ranking-sidebar');
+                    if (rankingSidebar) {
+                        const rect = rankingSidebar.getBoundingClientRect();
+                        return clampRect(toRect(rect.left, rect.top, rect.width, rect.height));
+                    }
+                }
+                return clampRect(toRect(mapRect.left, mapRect.top, mapRect.width, mapRect.height));
+            },
+            startOnboarding(forceShow = false) {
+                if (this.onboardingActive) return;
+                if (!forceShow && !this.shouldAutoShowOnboarding()) return;
+
+                const copy = this.getOnboardingCopy();
+                this.onboardingSteps = copy.steps || [];
+                if (!this.onboardingSteps.length) return;
+
+                if (this.isMobileDrawerMode()) this.toggleDrawer(false);
+                this.onboardingStepIndex = 0;
+                this.onboardingActive = true;
+                this.onboardingLastStepKey = '';
+                this.onboardingInfoPrimed = false;
+                const layer = document.getElementById('ggx-onboarding-layer');
+                if (layer) layer.classList.remove('hidden');
+                if (this.onboardingSyncTimer) clearInterval(this.onboardingSyncTimer);
+                this.onboardingSyncTimer = setInterval(() => {
+                    if (!this.onboardingActive) return;
+                    this.renderOnboardingStep();
+                }, 360);
+                this.renderOnboardingStep();
+            },
+            startOnboardingGlobeDemo() {
+                if (this.onboardingGlobeDemoTimer) return;
+                if (!this.projection || !this.projectionAir) return;
+
+                if (this.rotationTimer) {
+                    this.rotationTimer.stop();
+                    this.rotationTimer = null;
+                }
+                this.onboardingGlobeDemoPhase = 0;
+                this.onboardingGlobeDemoOrigin = this.projection.rotate().slice();
+                this.onboardingGlobeDemoTimer = setInterval(() => {
+                    if (!this.onboardingActive || !this.projection || !this.projectionAir) return;
+                    const origin = Array.isArray(this.onboardingGlobeDemoOrigin) ? this.onboardingGlobeDemoOrigin : this.projection.rotate().slice();
+                    this.onboardingGlobeDemoPhase += 0.06;
+                    // Demonstrate true four-way rotation (left/right + up/down) around the current globe pose.
+                    const lonOffset = Math.sin(this.onboardingGlobeDemoPhase) * 16;
+                    const latOffset = Math.cos(this.onboardingGlobeDemoPhase * 1.25) * 7.5;
+                    const nextRot = [
+                        origin[0] + lonOffset,
+                        Math.max(-82, Math.min(82, origin[1] + latOffset)),
+                        origin[2] || 0
+                    ];
+                    this.projection.rotate(nextRot);
+                    this.projectionAir.rotate(nextRot);
+                    this.scheduleRedraw();
+                }, 42);
+            },
+            stopOnboardingGlobeDemo() {
+                if (this.onboardingGlobeDemoTimer) {
+                    clearInterval(this.onboardingGlobeDemoTimer);
+                    this.onboardingGlobeDemoTimer = null;
+                }
+                this.onboardingGlobeDemoOrigin = null;
+                if (!this.activeData && !document.hidden && typeof this.startRotation === 'function' && !this.rotationTimer) {
+                    this.startRotation();
+                }
+            },
+            ensureOnboardingInfoPreview() {
+                if (this.activeData && this.activeData.data && this.activeData.data.en) {
+                    this.onboardingInfoPrimed = true;
+                    return;
+                }
+                if (!Array.isArray(this.countries) || !this.countries.length) return;
+                const fallbackCountry = (Array.isArray(GAS_DATA) && GAS_DATA.length && GAS_DATA.some((item) => item.en === 'Canada'))
+                    ? 'Canada'
+                    : (Array.isArray(GAS_DATA) && GAS_DATA.length ? GAS_DATA[0].en : null);
+                if (!fallbackCountry) return;
+                this.highlightCountry(fallbackCountry, false);
+                this.onboardingInfoPrimed = true;
+            },
+            renderOnboardingGesture(stepKey, rect) {
+                const gesture = document.getElementById('ggx-onboarding-gesture');
+                if (!gesture || !rect) return;
+
+                const icon = gesture.querySelector('i');
+                if (icon) icon.className = 'fa-solid fa-hand-point-up';
+                gesture.classList.remove('is-tap', 'is-drag', 'is-swipe', 'is-circle', 'is-visible');
+
+                let mode = 'is-tap';
+                const size = 32;
+                const gap = 12;
+                const clampPoint = (x, y) => ({
+                    x: Math.max(8, Math.min(window.innerWidth - size - 8, x)),
+                    y: Math.max(8, Math.min(window.innerHeight - size - 8, y))
+                });
+                const centered = clampPoint(
+                    rect.left + (rect.width / 2) - (size / 2),
+                    rect.top + (rect.height / 2) - (size / 2)
+                );
+                const below = clampPoint(
+                    rect.left + (rect.width / 2) - (size / 2),
+                    rect.bottom + gap
+                );
+
+                let point = centered;
+                if (stepKey === 'globe') {
+                    mode = 'is-circle';
+                } else if (stepKey === 'login' || stepKey === 'navEntry') {
+                    mode = 'is-tap';
+                    point = below;
+                } else if (stepKey === 'hotspots') {
+                    mode = 'is-tap';
+                    point = clampPoint(
+                        rect.right - size - 6,
+                        rect.bottom - size - 6
+                    );
+                } else {
+                    mode = 'is-tap';
+                }
+
+                gesture.style.left = `${point.x}px`;
+                gesture.style.top = `${point.y}px`;
+                gesture.classList.add(mode, 'is-visible');
+            },
+            renderOnboardingStep() {
+                if (!this.onboardingActive || !this.onboardingSteps.length) return;
+                const copy = this.getOnboardingCopy();
+                const total = this.onboardingSteps.length;
+                const index = Math.max(0, Math.min(this.onboardingStepIndex, total - 1));
+                const step = this.onboardingSteps[index];
+
+                const stepEl = document.getElementById('ggx-onboarding-step');
+                const titleEl = document.getElementById('ggx-onboarding-title');
+                const textEl = document.getElementById('ggx-onboarding-text');
+                const prevBtn = document.getElementById('ggx-onboarding-prev');
+                const nextBtn = document.getElementById('ggx-onboarding-next');
+                const skipBtn = document.getElementById('ggx-onboarding-skip');
+                const highlight = document.getElementById('ggx-onboarding-highlight');
+                const card = document.getElementById('ggx-onboarding-card');
+                const stepChanged = this.onboardingLastStepKey !== step.key;
+                this.onboardingLastStepKey = step.key;
+
+                if (step.key === 'infoPanel') {
+                    if (stepChanged) this.onboardingInfoPrimed = false;
+                    this.ensureOnboardingInfoPreview();
+                }
+
+                if (step.key === 'detailModal') {
+                    if (stepChanged) {
+                        this.ensureOnboardingInfoPreview();
+                        if (this.activeData && this.activeData.data && this.activeData.data.en) {
+                            this.openDetailModal(this.activeData.data.en);
+                        }
+                    }
+                } else if (stepChanged) {
+                    const detailModal = document.getElementById('detail-modal');
+                    if (detailModal && !detailModal.classList.contains('hidden')) {
+                        detailModal.classList.add('hidden');
+                    }
+                }
+
+                if (step.key === 'globe') {
+                    if (stepChanged && this.activeData) this.resetMap();
+                    this.startOnboardingGlobeDemo();
+                } else {
+                    this.stopOnboardingGlobeDemo();
+                }
+
+                if (stepEl) stepEl.innerText = `${copy.stepLabel} ${index + 1} / ${total}`;
+                if (titleEl) titleEl.innerText = step.title;
+                if (textEl) textEl.innerText = step.text;
+                if (prevBtn) {
+                    prevBtn.innerText = copy.prev;
+                    prevBtn.disabled = index === 0;
+                }
+                if (skipBtn) skipBtn.innerText = copy.skip;
+                if (nextBtn) nextBtn.innerText = index === total - 1 ? copy.done : copy.next;
+
+                const rect = this.getOnboardingRect(step.key);
+                if (highlight && rect) {
+                    highlight.style.left = `${rect.left - 6}px`;
+                    highlight.style.top = `${rect.top - 6}px`;
+                    highlight.style.width = `${rect.width + 12}px`;
+                    highlight.style.height = `${rect.height + 12}px`;
+                }
+
+                if (rect) {
+                    this.renderOnboardingGesture(step.key, rect);
+                } else {
+                    const gesture = document.getElementById('ggx-onboarding-gesture');
+                    if (gesture) gesture.classList.remove('is-visible', 'is-tap', 'is-drag', 'is-swipe', 'is-circle');
+                }
+
+                if (card && rect) {
+                    const cardAtTop = rect.top > (window.innerHeight * 0.56);
+                    card.style.top = cardAtTop ? '16px' : 'auto';
+                    card.style.bottom = cardAtTop ? 'auto' : '16px';
+                }
+            },
+            nextOnboardingStep() {
+                if (!this.onboardingActive) return;
+                if (this.onboardingStepIndex >= this.onboardingSteps.length - 1) {
+                    this.finishOnboarding(true);
+                    return;
+                }
+                this.onboardingStepIndex += 1;
+                this.renderOnboardingStep();
+            },
+            prevOnboardingStep() {
+                if (!this.onboardingActive) return;
+                if (this.onboardingStepIndex <= 0) return;
+                this.onboardingStepIndex -= 1;
+                this.renderOnboardingStep();
+            },
+            skipOnboarding() {
+                this.finishOnboarding(true);
+            },
+            finishOnboarding(markSeen = true) {
+                if (!this.onboardingActive) return;
+                this.onboardingActive = false;
+                const layer = document.getElementById('ggx-onboarding-layer');
+                if (layer) layer.classList.add('hidden');
+                const gesture = document.getElementById('ggx-onboarding-gesture');
+                if (gesture) gesture.classList.remove('is-visible', 'is-tap', 'is-drag', 'is-swipe', 'is-circle');
+                const detailModal = document.getElementById('detail-modal');
+                if (detailModal && !detailModal.classList.contains('hidden')) {
+                    detailModal.classList.add('hidden');
+                }
+                if (this.activeData) {
+                    this.resetMap();
+                }
+                this.stopOnboardingGlobeDemo();
+                this.onboardingLastStepKey = '';
+                this.onboardingInfoPrimed = false;
+                if (this.onboardingSyncTimer) {
+                    clearInterval(this.onboardingSyncTimer);
+                    this.onboardingSyncTimer = null;
+                }
+                if (markSeen) this.markOnboardingSeen();
+            },
+            getText(dataObj) {
+                if (!dataObj) return "";
+                if (typeof dataObj === 'string') return dataObj;
+                if (this.currentLang === 'zh') return dataObj.zh || dataObj.cn || dataObj.en || "";
+                return dataObj.en || dataObj.zh || dataObj.cn || "";
+            },
+            getName(data) { 
+                const text = this.getText(data);
+                // Fix for United States display name being too long for sidebar
+                if (text === 'United States of America') return 'United States';
+                if (text === 'Iran, Islamic Republic of') return 'Iran';
+                return text;
+            },
+            scheduleRedraw() {
+                if (this.rafPending) return;
+                this.rafPending = true;
+                requestAnimationFrame(() => {
+                    this.rafPending = false;
+                    this.redrawGlobe();
+                });
+            },
+            refreshCountryLabels() {
+                if (!this.labelSelection) return;
+                const self = this;
+                this.labelSelection.text(function() { return self.getName(d3.select(this.parentNode).datum().data); });
+            },
+
+            // Rendering
+            updateStaticText() {
+                applyHomePageConfig(this.currentLang);
+                const taglineEl = document.getElementById('header-tagline');
+                if(taglineEl) taglineEl.innerText = this.t('tagline');
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(key !== 'tagline') el.innerText = this.t(key);
+                });
+            },
+            captureAndShare() {
+                const homeConfig = getHomePageConfig();
+                window.scrollTo(0, 0);
+                const watermark = document.createElement('div'); watermark.id = 'temp-watermark';
+                Object.assign(watermark.style, { position: 'absolute', top: 0, left: 0, width: '100%', height: document.body.scrollHeight + 'px', zIndex: 9999, pointerEvents: 'none', display: 'flex', flexWrap: 'wrap', alignContent: 'space-around', justifyContent: 'space-around', overflow: 'hidden', opacity: '0.15' });
+                const watermarkTagline = getLocalizedValue(homeConfig.capture && homeConfig.capture.watermarkTagline, this.currentLang, 'Natural Gas Power Mining Assistant');
+                const textHtml = `<div style="text-align:center; transform: rotate(-30deg); margin: 100px;"><div style="font-size: 24px; font-weight: bold; color: #5DD62C;">www.gasgx.com</div><div style="font-size: 16px; color: #fff;">${watermarkTagline}</div></div>`;
+                watermark.innerHTML = textHtml.repeat(Math.ceil(document.body.scrollHeight / 400) * 3); document.body.appendChild(watermark);
+                ensureHtml2CanvasLoaded()
+                    .then(() => window.html2canvas(document.body, { backgroundColor: '#0F0F0F', useCORS: true, scale: 2 }))
+                    .then(canvas => { const link = document.createElement('a'); link.download = homeConfig.capture && homeConfig.capture.downloadFileName ? homeConfig.capture.downloadFileName : 'GasGx-Map-Capture.png'; link.href = canvas.toDataURL(); link.click(); document.body.removeChild(watermark); document.getElementById('shareModal').classList.remove('hidden'); setTimeout(()=>document.getElementById('shareModalContent').classList.remove('scale-95', 'opacity-0'),10); })
+                    .catch(err => { console.error(err); if(document.getElementById('temp-watermark')) document.body.removeChild(watermark); });
+            },
+            closeModal() { const el = document.getElementById('shareModalContent'); el.classList.add('scale-95', 'opacity-0'); setTimeout(()=>document.getElementById('shareModal').classList.add('hidden'),300); },
+
+            // Map Functions
+            createStarfield() {
+                const canvas = document.getElementById('starfield'); if (!canvas) return; const ctx = canvas.getContext('2d');
+                if (!this.width || this.width <= 0) this.width = canvas.clientWidth || 800; if (!this.height || this.height <= 0) this.height = canvas.clientHeight || 600;
+                canvas.width = this.width; canvas.height = this.height;
+                const galaxyCanvas = document.createElement('canvas'); galaxyCanvas.width = this.width; galaxyCanvas.height = this.height; const gCtx = galaxyCanvas.getContext('2d');
+                const gradient = gCtx.createLinearGradient(0, 0, this.width, this.height); gradient.addColorStop(0, 'rgba(0,0,0,0)'); gradient.addColorStop(0.3, 'rgba(20, 10, 40, 0)'); gradient.addColorStop(0.5, 'rgba(75, 50, 120, 0.15)'); gradient.addColorStop(0.7, 'rgba(20, 40, 80, 0.1)'); gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                gCtx.save(); gCtx.translate(this.width/2, this.height/2); gCtx.rotate(-Math.PI / 6); gCtx.translate(-this.width/2, -this.height/2); gCtx.fillStyle = gradient; gCtx.fillRect(-this.width/2, -this.height/2, this.width*2, this.height*2); gCtx.restore();
+                const cpuCores = navigator.hardwareConcurrency || 4;
+                const starCount = this.perfLite ? 480 : (cpuCores <= 4 ? 720 : 960);
+                const stars = []; for(let i=0; i<starCount; i++) { stars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, radius: Math.random() < 0.95 ? Math.random() * 0.8 : Math.random() * 1.5 + 0.5, alpha: Math.random() * 0.7 + 0.3, phase: Math.random() * Math.PI * 2 }); }
+                this.stars = stars; this.starCtx = ctx; this.galaxyImage = galaxyCanvas;
+            },
+            drawStars(rotation) {
+                if (!this.starCtx || !this.galaxyImage) return; const ctx = this.starCtx; ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); ctx.drawImage(this.galaxyImage, 0, 0);
+                const offsetX = (rotation[0] % 360) * 0.2; const offsetY = (rotation[1] % 180) * 0.2; ctx.fillStyle = "white"; const time = Date.now();
+                this.stars.forEach(star => { let x = (star.x + offsetX) % ctx.canvas.width; if(x < 0) x += ctx.canvas.width; let y = (star.y - offsetY) % ctx.canvas.height; if(y < 0) y += ctx.canvas.height; const twinkle = Math.sin(time * 0.002 + star.phase) * 0.3; ctx.globalAlpha = Math.max(0.1, Math.min(1, star.alpha + twinkle)); ctx.beginPath(); ctx.arc(x, y, star.radius, 0, Math.PI * 2); ctx.fill(); }); ctx.globalAlpha = 1.0;
+            },
+            highlightCountry(countryName, rotate = true) {
+                const data = GAS_DATA.find(d => d.en === countryName); const feature = this.countries.find(f => f.properties.name === countryName);
+                if (!feature || !data) return; if(this.rotationTimer) this.rotationTimer.stop();
+                document.querySelectorAll('.list-item-hover').forEach(el => { el.classList.remove('list-item-active'); el.classList.add('list-item-dimmed'); });
+                const activeItem = document.getElementById(`list-item-${countryName.replace(/\s+/g, '-')}`); if (activeItem) { activeItem.classList.add('list-item-active'); activeItem.classList.remove('list-item-dimmed'); const listContainer = document.getElementById('country-list'); if (listContainer) { const containerRect = listContainer.getBoundingClientRect(); const itemRect = activeItem.getBoundingClientRect(); listContainer.scrollTo({ top: listContainer.scrollTop + (itemRect.top - containerRect.top) - (containerRect.height / 2) + (itemRect.height / 2), behavior: 'smooth' }); } }
+                d3.select('#map-container').classed('map-has-highlight', true); d3.selectAll('.country').classed('highlighted', false); d3.select(`#country-${countryName.replace(/\s+/g, '-')}`).classed('highlighted', true);
+                this.activeData = { data: data, geo: feature }; 
+                if (this.isMobileDrawerMode()) this.toggleDrawer(false);
+                this.updateInfoBox(true); 
+                if (rotate) { const p = d3.geoCentroid(feature); const r = d3.interpolate(this.projection.rotate(), [-p[0], -p[1]]); d3.transition().duration(1500).ease(d3.easeCubicOut).tween("rotate", () => (t) => { const rot = r(t); this.projection.rotate(rot); this.projectionAir.rotate(rot); this.scheduleRedraw(); }); } else { this.redrawGlobe(); }
+            },
+            resetMap() {
+                this.activeData = null; d3.select('#map-container').classed('map-has-highlight', false); d3.selectAll('.country').classed('highlighted', false);
+                const infoBox = document.getElementById('map-info-box'); if (infoBox) { infoBox.style.opacity = 0; infoBox.style.pointerEvents = 'none'; infoBox.dataset.contentKey = ''; }
+                if (this.hudLine) this.hudLine.setAttribute('display', 'none');
+                if (this.hudDot) this.hudDot.setAttribute('display', 'none');
+                document.querySelectorAll('.list-item-hover').forEach(el => { el.classList.remove('list-item-active'); el.classList.remove('list-item-dimmed'); });
+                this.startRotation();
+            },
+            updateInfoBox(forceContent = false) {
+                if (!this.activeData) return; 
+                const infoBox = document.getElementById('map-info-box'); 
+                const hudLayer = document.getElementById('hud-layer'); 
+                if (!infoBox || !hudLayer) return;
+                
+                const data = this.activeData.data; 
+                const color = AppData.statusColors[data.status]; 
+
+                const contentKey = `${data.en}|${this.currentLang}`;
+                if (forceContent || infoBox.dataset.contentKey !== contentKey) {
+                    const generateStars = (score) => { let html = ''; for(let i=0; i<5; i++) { const active = i < Math.floor(score); html += `<svg class="btc-star ${active?'':'inactive'}" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`; } return html; };
+                    let dimHtml = ''; data.dims.forEach((score, idx) => { dimHtml += `<div class="dim-row"><span>${this.getText(DIMENSION_DEFS[idx])}</span><div class="dim-stars">${generateStars(score)}</div></div>`; });
+                    infoBox.innerHTML = `<div class="map-info-box__header flex items-center justify-between mb-3 pb-2 border-b" style="border-color:${color}50"><div class="font-bold text-white text-sm uppercase tracking-wider">${this.getName(data)}</div><div class="text-xs font-mono font-bold" style="color:${color}">Score: ${data.score}</div></div><div class="map-info-box__summary mb-3 flex justify-between items-center bg-white/5 p-2 rounded border border-white/5"><div class="map-info-box__summary-copy flex-1 mr-2"><div class="text-[10px] text-gray-400 mb-0.5">${this.t('policy_status')}</div><div class="text-xs font-bold text-white flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full" style="background:${color}"></div>${this.getText(data.mining)}</div></div><button onclick="window.app.openDetailModal('${data.en}')" class="map-info-box__action shrink-0 px-2 py-1.5 bg-gas-green hover:bg-white text-black text-[10px] font-bold rounded transition-colors flex items-center gap-1 pointer-events-auto h-auto whitespace-normal leading-tight text-left max-w-[120px]" style="cursor: pointer;"><i class="fa-solid fa-file-lines"></i> ${this.t('analysis_10')}</button></div><div class="mb-3 space-y-1 text-xs"><div class="flex justify-between"><span class="text-gray-400">${this.t('gas_production')}:</span> <span class="text-white font-mono">${data.vol} Bcm</span></div></div><div class="pt-2 border-t border-white/10">${dimHtml}</div>`;
+                    infoBox.dataset.contentKey = contentKey;
+                }
+                
+                // --- FIX: Responsive Positioning ---
+                const isMobile = this.width < 768;
+                const mapContainer = document.getElementById('map-container');
+                const rankingSidebar = document.getElementById('ranking-sidebar');
+                
+                if (isMobile) {
+                    infoBox.classList.add('mobile-fixed');
+                    const containerRect = mapContainer ? mapContainer.getBoundingClientRect() : null;
+                    const sidebarRect = rankingSidebar ? rankingSidebar.getBoundingClientRect() : null;
+                    const reservedBottom = containerRect && sidebarRect
+                        ? Math.max(0, containerRect.bottom - sidebarRect.top)
+                        : 0;
+                    infoBox.style.width = 'min(94vw, 360px)';
+                    infoBox.style.maxHeight = 'min(32vh, 260px)';
+                    infoBox.style.left = '50%';
+                    infoBox.style.top = 'auto';
+                    infoBox.style.bottom = `${Math.max(12, Math.round(reservedBottom + 12))}px`;
+                    infoBox.style.transform = 'translateX(-50%)';
+                    // No lines on mobile
+                    if (this.hudLine) this.hudLine.setAttribute('display', 'none');
+                    if (this.hudDot) this.hudDot.setAttribute('display', 'none');
+                } else {
+                    infoBox.classList.remove('mobile-fixed');
+                    infoBox.style.maxHeight = 'none';
+                    // Desktop: Relative to Globe
+                    const cx = this.width / 2; 
+                    const cy = this.height / 2 + 50; 
+                    const centroid = d3.geoCentroid(this.activeData.geo); 
+                    const airPos = this.projectionAir(centroid); 
+                    
+                    const dist = d3.geoDistance(centroid, this.projectionAir.invert([cx, cy]));
+                    if (dist > 1.57 || !airPos) { 
+                        infoBox.style.opacity = 0; 
+                        infoBox.style.pointerEvents = 'none';
+                        if (this.hudLine) this.hudLine.setAttribute('display', 'none');
+                        if (this.hudDot) this.hudDot.setAttribute('display', 'none');
+                        return; 
+                    } 
+
+                    const boxWidth = 320; 
+                    infoBox.style.width = boxWidth + 'px';
+                    infoBox.style.bottom = 'auto';
+
+                    const isRight = airPos[0] > cx; 
+                    let boxX = isRight ? (cx + this.projection.scale() + 40) : (cx - this.projection.scale() - 40 - boxWidth); 
+                    
+                    // Desktop Edge Clamping
+                    if (boxX < 10) boxX = 10; 
+                    if (boxX + boxWidth > this.width - 10) boxX = this.width - boxWidth - 10; 
+                    
+                    let boxY = airPos[1] - 100; 
+                    if (boxY > this.height - 300) boxY = this.height - 300; 
+                    else if (boxY < 80) boxY = 80;
+                    
+                    infoBox.style.left = boxX + 'px'; 
+                    infoBox.style.top = boxY + 'px';
+
+                    // Draw connecting line (Desktop only)
+                    let connectY = boxY + 60; if (boxY < airPos[1] - 100) connectY = boxY + 290;
+                    const pathD = `M ${airPos[0]} ${airPos[1]} L ${(airPos[0] + (isRight?boxX:boxX+boxWidth))/2} ${airPos[1]} L ${(airPos[0] + (isRight?boxX:boxX+boxWidth))/2} ${connectY} L ${isRight?boxX:boxX+boxWidth} ${connectY}`;
+                    if (!this.hudLine) {
+                        this.hudLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        this.hudLine.setAttribute('stroke-width', '1.5');
+                        this.hudLine.setAttribute('fill', 'none');
+                        this.hudLine.setAttribute('filter', 'url(#line-glow)');
+                        hudLayer.appendChild(this.hudLine);
+                    }
+                    if (!this.hudDot) {
+                        this.hudDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        this.hudDot.setAttribute('r', '3');
+                        this.hudDot.setAttribute('fill', '#fff');
+                        hudLayer.appendChild(this.hudDot);
+                    }
+                    this.hudLine.setAttribute('display', 'block');
+                    this.hudLine.setAttribute('d', pathD);
+                    this.hudLine.setAttribute('stroke', color);
+                    this.hudDot.setAttribute('display', 'block');
+                    this.hudDot.setAttribute('cx', airPos[0]);
+                    this.hudDot.setAttribute('cy', airPos[1]);
+                }
+                
+                infoBox.style.borderColor = color; 
+                infoBox.classList.add('active'); 
+                infoBox.style.opacity = 1;
+            },
+            openDetailModal(countryName) {
+                const data = GAS_DATA.find(d => d.en === countryName); if(!data) return;
+                document.getElementById('modal-title').innerText = this.getName(data); document.getElementById('modal-score').innerText = data.score; document.getElementById('modal-rank').innerText = `#${GAS_DATA.findIndex(d => d.en === countryName) + 1}`; document.getElementById('modal-vol').innerText = `${data.vol} Bcm`; document.getElementById('modal-policy').innerText = this.getText(data.mining); document.getElementById('modal-policy').style.color = AppData.statusColors[data.status];
+                const dimsContainer = document.getElementById('modal-dims-container'); dimsContainer.innerHTML = '';
+                data.dims.forEach((score, idx) => { let html = ''; for(let i=0; i<5; i++) html += `<svg class="w-3 h-3 ${i<Math.floor(score)?'fill-gas-green':'fill-gray-700'}" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`; dimsContainer.innerHTML += `<div class="flex justify-between items-center text-xs py-2 border-b border-white/5 last:border-0"><span class="text-gray-400">${this.getText(DIMENSION_DEFS[idx])}</span><div class="flex gap-1">${html}</div></div>`; });
+                document.getElementById('modal-pros').innerText = this.getText(data.pros) || this.t('no_data'); document.getElementById('modal-cons').innerText = this.getText(data.cons) || this.t('no_data'); document.getElementById('modal-advice').innerText = this.getText(data.advice) || this.t('no_data'); document.getElementById('detail-modal').classList.remove('hidden');
+            },
+            async init3DGlobe() {
+                const container = document.getElementById('map-container');
+                const loading = document.getElementById('map-loading');
+                const loadingText = document.getElementById('map-loading-text');
+                if (!container) return;
+
+                if (loading) loading.style.display = 'flex';
+                if (loadingText) loadingText.innerText = 'Loading map engine...';
+                try {
+                    if (typeof window.loadD3Deps === 'function') {
+                        await window.loadD3Deps();
+                    }
+                } catch (error) {
+                    console.error('Failed to load D3 dependencies:', error);
+                    if (loadingText) loadingText.innerText = 'Failed to load map engine.';
+                    return;
+                }
+
+                this.width = container.clientWidth; this.height = container.clientHeight;
+                const cpuCores = navigator.hardwareConcurrency || 4;
+                this.perfLite = this.width < 1024 || cpuCores <= 4;
+                this.frameIntervalMs = this.perfLite ? 20 : 16;
+                container.classList.toggle('perf-lite', this.perfLite);
+                this.svg = d3.select("#map-container").append("svg").attr("width", this.width).attr("height", this.height).style("position", "absolute");
+                this.svg.on("click", () => this.resetMap());
+                
+                // --- FIX: Responsive Globe Scaling ---
+                const isMobile = this.width < 768;
+                // Use minimum dimension to ensure globe fits on narrow screens
+                const baseSize = Math.min(this.width, this.height);
+                // Smaller scale on mobile (0.42), Standard on Desktop (height/2.2)
+                const globeScale = isMobile ? (baseSize * 0.42) : (this.height / 2.2);
+                const globeCenterY = this.height / 2 + (isMobile ? 0 : 50);
+
+                this.projection = d3.geoOrthographic().scale(globeScale).translate([this.width / 2, globeCenterY]).rotate([100, -40]).clipAngle(90);
+                this.projectionAir = d3.geoOrthographic().scale(globeScale * 1.35).translate([this.width / 2, globeCenterY]).rotate([100, -40]).clipAngle(90);
+                
+                this.geoGenerator = d3.geoPath().projection(this.projection);
+                this.createStarfield();
+                try {
+                    if (loadingText) loadingText.innerText = getLocalizedValue(getHomePageConfig().map && getHomePageConfig().map.loadingText, this.currentLang, 'Loading mining data...');
+                    const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
+                    this.countries = topojson.feature(world, world.objects.countries).features;
+                    if (loading) loading.style.display = 'none';
+                    // Update halo size to match new scale
+                    this.svg.append("circle").attr("cx", this.width/2).attr("cy", globeCenterY).attr("r", globeScale * 1.25).attr("class", "globe-halo");
+                    this.svg.append("path").datum({type: "Sphere"}).attr("class", "globe-sphere").attr("d", this.geoGenerator);
+                    const g = this.svg.append("g");
+                    this.countrySelection = g.selectAll("path").data(this.countries).enter().append("path").attr("d", this.geoGenerator).attr("class", "country").attr("id", d => `country-${d.properties.name.replace(/\s+/g, '-')}`)
+                        .attr("fill", d => { const data = GAS_DATA.find(item => item.en === d.properties.name); return data ? AppData.statusColors[data.status] : "#1a2e15"; })
+                        .attr("stroke", d => { const data = GAS_DATA.find(item => item.en === d.properties.name); return data ? AppData.statusColors[data.status] : "#335533"; })
+                        .on("click", (e, d) => { e.stopPropagation(); this.highlightCountry(d.properties.name, true); });
+                    const floatingGroup = this.svg.append("g").attr("class", "globe-elements-group");
+                    GAS_DATA.forEach(countryData => {
+                        const countryGeo = this.countries.find(c => c.properties.name === countryData.en); if (!countryGeo) return;
+                        const group = floatingGroup.append("g").datum({ coordinates: d3.geoCentroid(countryGeo), data: countryData }).attr("class", "btc-icon-group").on("click", (e, d) => { e.stopPropagation(); this.highlightCountry(countryData.en, true); });
+                        group.append("path").attr("class", "beam-line").attr("stroke", AppData.statusColors[countryData.status]);
+                        const widget = group.append("g").attr("transform", "translate(-16, -32)");
+                        widget.append("circle").attr("cx", 16).attr("cy", 16).attr("r", 14).attr("fill", "#111").attr("stroke", "none");
+                        widget.append("circle").attr("class", "icon-inner-ring").attr("cx", 16).attr("cy", 16).attr("r", 8).attr("fill", "none").attr("stroke", AppData.statusColors[countryData.status]).attr("stroke-width", 1.5).attr("opacity", 0.7);
+                        widget.append("circle").attr("class", "icon-outer-ring").attr("cx", 16).attr("cy", 16).attr("r", 14).attr("fill", "none").attr("stroke", AppData.statusColors[countryData.status]).attr("stroke-width", 1).attr("stroke-dasharray", "4, 4").attr("opacity", 0.9);
+                        widget.append("path").attr("class", "icon-lightning").attr("d", "M16 5 L19 14 H16 L18 24 L11 14 H14 L12 5 Z").attr("fill", "#fff").attr("transform", "scale(0.8) translate(3,3)"); 
+                        group.append("text").attr("class", "country-label").attr("text-anchor", "middle").attr("dy", "12").attr("fill", countryData.status === 'legal' ? '#ffffff' : '#5DD62C').text(this.getName(countryData));
+                    });
+                    this.iconSelection = this.svg.selectAll(".btc-icon-group");
+                    this.labelSelection = this.svg.selectAll(".country-label");
+                    this.refreshCountryLabels();
+                    const drag = d3.drag().on("start", () => { if(this.rotationTimer) this.rotationTimer.stop(); this.dragVelocity = { x: 0, y: 0 }; })
+                        .on("drag", (event) => {
+                            const k = 75 / this.projection.scale(); this.dragVelocity.x = event.dx * k; this.dragVelocity.y = -event.dy * k; 
+                            const rotate = this.projection.rotate(); const newRot = [rotate[0] + this.dragVelocity.x, Math.max(-85, Math.min(85, rotate[1] + this.dragVelocity.y))];
+                            this.projection.rotate(newRot); this.projectionAir.rotate(newRot); this.scheduleRedraw();
+                        })
+                        .on("end", () => { if (!this.activeData) this.startInertiaRotation(); });
+                    this.svg.call(drag);
+                    this.startInertiaRotation = () => { if (this.rotationTimer) this.rotationTimer.stop(); this.lastElapsed = 0; this.rotationTimer = d3.timer((elapsed) => { if (elapsed - this.lastElapsed < this.frameIntervalMs) return; this.lastElapsed = elapsed; const rotate = this.projection.rotate(); this.dragVelocity.x *= this.friction; this.dragVelocity.y *= this.friction; if (Math.abs(this.dragVelocity.x) < 0.05 && Math.abs(this.dragVelocity.y) < 0.05) { this.dragVelocity.x = this.dragVelocity.x * 0.9 + this.autoRotateSpeed * 0.1; this.dragVelocity.y *= 0.9; } const newRot = [rotate[0] + this.dragVelocity.x, Math.max(-85, Math.min(85, rotate[1] + this.dragVelocity.y))]; this.projection.rotate(newRot); this.projectionAir.rotate(newRot); this.scheduleRedraw(); }); };
+                    this.startRotation = () => { this.dragVelocity = { x: this.autoRotateSpeed, y: 0 }; this.startInertiaRotation(); };
+                    this.startRotation();
+                } catch (error) {
+                    console.error("Map Error:", error);
+                    if (loadingText) loadingText.innerText = 'Failed to load map data.';
+                }
+            },
+            redrawGlobe() {
+                if(!this.svg) return;
+                const countrySelection = this.countrySelection || this.svg.selectAll("path.country");
+                const iconSelection = this.iconSelection || this.svg.selectAll(".btc-icon-group");
+                countrySelection.attr("d", this.geoGenerator);
+                this.drawStars(this.projection.rotate());
+                
+                // Update Halo position
+                const isMobile = this.width < 768;
+                const globeCenterY = this.height / 2 + (isMobile ? 0 : 50);
+                this.svg.select(".globe-halo").attr("cy", globeCenterY);
+                const center = this.projection.invert([this.width / 2, globeCenterY]);
+
+                iconSelection.each(function(d) {
+                    const geoAngle = d3.geoDistance(d.coordinates, center);
+                    if (geoAngle > 1.57) { d3.select(this).style("display", "none"); } 
+                    else {
+                        d3.select(this).style("display", "block");
+                        const surfacePos = window.app.projection(d.coordinates); const airPos = window.app.projectionAir(d.coordinates);
+                        if (surfacePos && airPos) { d3.select(this).attr("transform", `translate(${airPos[0]}, ${airPos[1]})`); d3.select(this).select(".beam-line").attr("d", `M${surfacePos[0] - airPos[0]},${surfacePos[1] - airPos[1]} L0,0`); }
+                    }
+                });
+                this.updateInfoBox();
+            },
+            renderLeaderboard() {
+                const list = document.getElementById('country-list'); if(!list) return;
+                const sortedData = [...GAS_DATA].sort((a,b) => b.score - a.score); 
+                list.innerHTML = sortedData.map((item, index) => {
+                    let rankIcon = `<div class="text-[9px] font-mono text-gray-600 w-4 text-center">#${index+1}</div>`;
+                    if (index === 0) rankIcon = `<i class="fa-solid fa-crown text-rank-1 w-4 text-center text-xs"></i>`;
+                    if (index === 1) rankIcon = `<i class="fa-solid fa-medal text-rank-2 w-4 text-center text-xs"></i>`;
+                    if (index === 2) rankIcon = `<i class="fa-solid fa-medal text-rank-3 w-4 text-center text-xs"></i>`;
+                    return `<div id="list-item-${item.en.replace(/\s+/g, '-')}" onclick="window.app.highlightCountry('${item.en}', true)" class="list-item-hover flex items-center gap-2 p-2 rounded bg-transparent border-l-2 border-transparent cursor-pointer mb-1">${rankIcon}<div class="flex-1 min-w-0"><div class="flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full" style="background:${AppData.statusColors[item.status]}; box-shadow: 0 0 5px ${AppData.statusColors[item.status]}"></div><div class="text-xs font-bold text-gray-300 group-hover:text-white truncate">${this.getName(item)}</div></div></div><div class="text-right shrink-0"><div class="text-xs font-mono font-bold text-white group-hover:text-gas-green flex flex-col items-end"><span>${item.score}</span><span class="text-[8px] text-gray-600 font-normal">Score</span></div></div></div>`;
+                }).join('');
+            }
+        };
+
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', () => window.app.init()); } else { window.app.init(); }
+    </script>
+    <script>
+    // --- QR modal logic ---
+    
+    // 1. Define data
+    const qrData = {
+        'tiktok': {
+            title: 'TikTok',
+            icon: '<i class="fa-brands fa-tiktok"></i>',
+            img: '/image/tiktok_qr.png' 
+        },
+        'linkedin': {
+            title: 'LinkedIn',
+            icon: '<i class="fa-brands fa-linkedin"></i>',
+            img: '/image/linkedin_qr.png'
+        },
+        'facebook': {
+            title: 'Facebook',
+            icon: '<i class="fa-brands fa-facebook"></i>',
+            img: '/image/facebook_qr.png'
+        },
+        'x': {
+            title: 'X (Twitter)',
+            icon: '<i class="fa-brands fa-x-twitter"></i>',
+            img: '/image/x_qr.png'
+        },
+        'wechat': {
+            title: 'WeChat',
+            icon: '<i class="fa-brands fa-weixin"></i>',
+            img: '/image/wechat_qr.png'
+        }
+    };
+
+    // 2. Open modal (bound to window to keep global access)
+    window.openQrModal = function(type) {
+        console.log("Opening modal for:", type);
+        const data = qrData[type];
+        if (!data) {
+            console.error("No data found for type:", type);
+            return;
+        }
+
+        const modal = document.getElementById('qrModal');
+        const content = document.getElementById('qrModalContent');
+        const imgEl = document.getElementById('qrImageDisplay');
+        const titleEl = document.getElementById('qrTitle');
+        const iconEl = document.getElementById('qrIconContainer');
+
+        if(!modal || !content || !imgEl) {
+            console.error("Modal elements not found!");
+            return;
+        }
+
+        // Set content
+        imgEl.src = data.img;
+        titleEl.innerText = data.title;
+        iconEl.innerHTML = data.icon;
+
+        // Show modal
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }, 10);
+    };
+
+    // 3. 鍏抽棴寮圭獥鍑芥暟
+    window.closeQrModal = function(e, force = false) {
+        const content = document.getElementById('qrModalContent');
+        // 濡傛灉鐐瑰嚮鐨勬槸鍐呭鍖哄煙涓斾笉鏄己鍒跺叧闂紝鍒欎笉鎿嶄綔
+        if (!force && content && content.contains(e.target)) return;
+
+        const modal = document.getElementById('qrModal');
+        if(!modal) return;
+        
+        // 闅愯棌鍔ㄧ敾
+        modal.classList.add('opacity-0');
+        if(content) {
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+        }
+
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    };
+</script>
+</body>
+</html>

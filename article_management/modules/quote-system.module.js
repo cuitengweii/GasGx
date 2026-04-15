@@ -12111,7 +12111,6 @@ function quoteStageActionCardMarkup(stageKey = '', deal = null, instance = {}) {
             `)}
         `);
     }
-    const quoteConfirmedRecord = salesStageStatusRecord('quote_confirmed', deal);
     return salesStageActionCardMarkup(
         normalizedStageKey === 'quote_confirmed'
             ? '客户确认报价后，再统一从这里锁定商务基线并推进到签约合同。'

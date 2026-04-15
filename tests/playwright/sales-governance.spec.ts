@@ -14,6 +14,17 @@ function hasCustomerCreds() {
   return Boolean(customerEmail && customerPassword);
 }
 
+function usesSharedDevIdentity() {
+  return Boolean(
+    adminEmail
+    && customerEmail
+    && adminPassword
+    && customerPassword
+    && adminEmail === customerEmail
+    && adminPassword === customerPassword,
+  );
+}
+
 async function confirmDialog(page: import('@playwright/test').Page, required = true) {
   const submit = page.locator('[data-sales-confirm-submit]:visible').last();
   const visible = await submit.isVisible({ timeout: 10000 }).catch(() => false);
@@ -46,6 +57,61 @@ async function openCustomerSalesEntry(page: import('@playwright/test').Page, ent
 
   await page.waitForURL((url) => url.pathname.endsWith('/account/sales.html'), { timeout: 30000 });
   await expect(page.locator('#sales-pipeline-root')).toBeVisible({ timeout: 20000 });
+}
+
+async function ensureAdminConsoleReady(page: import('@playwright/test').Page) {
+  const loginOnce = async () => {
+    await expect(page.locator('#ams-login-form')).toBeVisible({ timeout: 10000 });
+    await page.fill('#ams-login-email', adminEmail);
+    await page.fill('#ams-login-password', adminPassword);
+    await expect(page.locator('#ams-login-email')).toHaveValue(adminEmail);
+    await expect(page.locator('#ams-login-password')).toHaveValue(adminPassword);
+    await page.locator('#ams-login-form button[type="submit"]').click();
+  };
+
+  await page.goto('/article_management/sales/index.html?page=quote-customers');
+
+  const waitForConsoleEntry = async () => {
+    await page.waitForFunction(() => {
+      return Boolean(
+        document.querySelector('#ams-login-form')
+        || document.querySelector('.ams-app-sales')
+        || document.querySelector('#ams-entry-signout'),
+      );
+    }, { timeout: 20000 });
+  };
+
+  await waitForConsoleEntry();
+  const loginVisible = await page.locator('#ams-login-form').isVisible({ timeout: 5000 }).catch(() => false);
+  if (loginVisible) {
+    await loginOnce();
+  }
+
+  const shellVisible = await page.locator('.ams-app-sales').isVisible({ timeout: 20000 }).catch(() => false);
+  if (shellVisible) return;
+
+  const deniedVisible = await page.locator('#ams-entry-signout').isVisible({ timeout: 3000 }).catch(() => false);
+  if (deniedVisible) {
+    throw new Error('Admin console entry is denied for the provided GX_ADMIN_* credentials.');
+  }
+
+  const startupVisible = await page.locator('.ams-loading').isVisible({ timeout: 1000 }).catch(() => false);
+  if (startupVisible) {
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitForConsoleEntry();
+  }
+
+  const secondLoginVisible = await page.locator('#ams-login-form').isVisible({ timeout: 3000 }).catch(() => false);
+  if (secondLoginVisible) {
+    await loginOnce();
+  }
+
+  const timeoutToastVisible = await page.getByText('Loading admin access timed out. Please check connectivity to Supabase.').isVisible({ timeout: 2000 }).catch(() => false);
+  if (timeoutToastVisible && await page.locator('#ams-login-form').isVisible({ timeout: 2000 }).catch(() => false)) {
+    await loginOnce();
+  }
+
+  await expect(page.locator('.ams-app-sales')).toBeVisible({ timeout: 20000 });
 }
 
 async function openAdminCustomerFlowStage(
@@ -179,6 +245,7 @@ test.describe('Sales governance guards', () => {
 
   test('customer account cannot access sales admin console', async ({ page }) => {
     test.skip(!hasCustomerCreds(), 'Missing GX_CUSTOMER_EMAIL or GX_CUSTOMER_PASSWORD');
+    test.skip(usesSharedDevIdentity(), 'GX_CUSTOMER_* and GX_ADMIN_* use the same account in dev mode, so role-isolation cannot be asserted.');
 
     await page.goto('/account/user.html');
     await expect(page.locator('#auth-form')).toBeVisible();
@@ -198,12 +265,7 @@ test.describe('Sales governance guards', () => {
     const uniqueTag = `E2E-GUARD-${Date.now()}`;
     const phone = `+86-13${String(Date.now()).slice(-9)}`;
 
-    await page.goto('/article_management/sales/index.html?page=quote-customers');
-    await expect(page.locator('#ams-login-form')).toBeVisible();
-    await page.fill('#ams-login-email', adminEmail);
-    await page.fill('#ams-login-password', adminPassword);
-    await page.locator('#ams-login-form button[type="submit"]').click();
-    await expect(page.locator('.ams-app-sales')).toBeVisible({ timeout: 20000 });
+    await ensureAdminConsoleReady(page);
 
     const entry = await openOrCreateCustomerRequirementFlow(page, uniqueTag);
 

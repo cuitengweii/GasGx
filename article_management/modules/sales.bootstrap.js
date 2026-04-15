@@ -564,6 +564,11 @@ async function renderPage() {
 }
 
 async function boot() {
+    const bootFallbackTimer = window.setTimeout(() => {
+        if (state.user || root.querySelector('#ams-login-form, .ams-app-sales, .ams-auth-card')) return;
+        state.authView = isPasswordRecoveryMode() ? 'reset' : 'login';
+        renderLogin();
+    }, 1200);
     try {
         const session = await getCurrentSession();
         state.session = session;
@@ -601,6 +606,8 @@ async function boot() {
         state.authView = isPasswordRecoveryMode() ? 'reset' : 'login';
         renderLogin();
         showToast(error.message || '初始化失败。', true);
+    } finally {
+        window.clearTimeout(bootFallbackTimer);
     }
 }
 
