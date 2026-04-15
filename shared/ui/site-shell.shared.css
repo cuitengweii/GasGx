@@ -7,6 +7,60 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+#ggx-site-header-slot #ggx-header-home-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 0;
+    max-width: 170px;
+}
+
+#ggx-site-header-slot #ggx-header-brand-text {
+    display: block;
+    min-height: 0;
+    line-height: 1;
+    max-width: 100%;
+}
+
+#ggx-site-header-slot #ggx-header-brand-text.ggx-header-brand-custom {
+    font-size: 0 !important;
+    line-height: 0 !important;
+    letter-spacing: 0 !important;
+}
+
+#ggx-site-header-slot .ggx-brand-custom-link,
+#ggx-site-footer-slot .ggx-brand-custom-link {
+    text-decoration: none;
+}
+
+#ggx-site-header-slot .ggx-brand-logo-fit,
+#ggx-site-footer-slot .ggx-brand-logo-fit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+#ggx-site-header-slot .ggx-brand-logo-fit-header {
+    overflow: visible;
+    transform-origin: left center;
+}
+
+#ggx-site-header-slot .ggx-brand-logo-fit .gasgx-logo {
+    width: auto;
+    justify-content: flex-start;
+}
+
+#ggx-site-header-slot .ggx-brand-logo-fit .logo-title {
+    font-size: 1.45rem !important;
+    line-height: 1 !important;
+    letter-spacing: -0.03em !important;
+    white-space: nowrap;
+}
+
+#ggx-site-header-slot .ggx-brand-logo-fit .t-gas,
+#ggx-site-header-slot .ggx-brand-logo-fit .t-gx {
+    line-height: 1;
+}
+
 #ggx-site-header-slot .mega-menu {
     display: none;
     position: absolute;
@@ -368,6 +422,19 @@
 
 #ggx-site-footer-slot .ggx-footer-logo:hover {
     color: #5DD62C;
+}
+
+#ggx-site-footer-slot .ggx-brand-logo-fit .gasgx-logo {
+    width: 100%;
+    max-width: 180px;
+    justify-content: flex-start;
+}
+
+#ggx-site-footer-slot .ggx-brand-logo-fit .logo-title {
+    font-size: clamp(1.2rem, 2vw, 2rem) !important;
+    line-height: 1 !important;
+    letter-spacing: -0.03em !important;
+    white-space: nowrap;
 }
 
 #ggx-site-footer-slot .ggx-footer-meta-tag {

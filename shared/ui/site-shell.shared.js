@@ -23,6 +23,7 @@
     });
     const SITE_SHELL_CONFIG_TABLE = "site_shell_configs";
     const SITE_SHELL_CONFIG_SCOPE = "global";
+    const BRAND_LOGO_STYLE_ELEMENT_ID = "ggx-brand-logo-style";
     const MAIN_AUTH_DEFAULT_AVATAR_KEY = "pixel-01";
     const MAIN_AUTH_AVATAR_PRESETS = Object.freeze({
         "pixel-01": { bg: "#0d1410", panel: "#213429", accent: "#5DD62C", eye: "#dfffd1" },
@@ -57,6 +58,8 @@
     let cookieConsentUsageTrackingBound = false;
     let cookieConsentSessionStartTs = 0;
     let cookieConsentAccumulatedMs = null;
+    let headerBrandFitScheduled = false;
+    let headerBrandResizeBound = false;
     const SHARED_TEXT = {
         en: {
             tagline: "Natural Gas Power Mining Assistant",
@@ -344,7 +347,8 @@
                 name: "GasGx",
                 homeHref: "/index.html",
                 footerMeta: "Energy-compute infrastructure for mining operators.",
-                copyright: "© 2026 GasGx. All rights reserved."
+                copyright: "© 2026 GasGx. All rights reserved.",
+                logoAnimationEnabled: true
             },
             features: {
                 backToTopEnabled: true,
@@ -900,15 +904,127 @@
 
     function syncSiteBrandUI() {
         const brand = getSiteBrandConfig();
+        applyBrandLogoCss(brand);
         const headerLink = document.getElementById("ggx-header-home-link");
         if (headerLink && typeof brand.homeHref === "string" && brand.homeHref.trim()) {
             headerLink.setAttribute("href", brand.homeHref.trim());
         }
 
         const headerBrand = document.getElementById("ggx-header-brand-text");
-        if (headerBrand && typeof brand.name === "string" && brand.name.trim()) {
-            headerBrand.textContent = brand.name.trim();
+        if (headerBrand) {
+            const customLogoHtml = getBrandLogoHtml(brand);
+            if (customLogoHtml) {
+                headerBrand.classList.add("ggx-header-brand-custom");
+                headerBrand.innerHTML = `<span class="ggx-brand-logo-fit ggx-brand-logo-fit-header">${customLogoHtml}</span>`;
+                scheduleHeaderBrandFit();
+            } else if (typeof brand.name === "string" && brand.name.trim()) {
+                headerBrand.classList.remove("ggx-header-brand-custom");
+                headerBrand.textContent = brand.name.trim();
+            }
         }
+    }
+
+    function fitHeaderBrandLogo() {
+        if (typeof document === "undefined") return;
+        const headerBrand = document.getElementById("ggx-header-brand-text");
+        if (!headerBrand || !headerBrand.classList.contains("ggx-header-brand-custom")) return;
+        const fitWrapper = headerBrand.querySelector(".ggx-brand-logo-fit-header");
+        const logo = fitWrapper && fitWrapper.querySelector(".gasgx-logo");
+        if (!fitWrapper || !logo) return;
+
+        fitWrapper.style.width = "";
+        fitWrapper.style.height = "";
+        logo.style.transform = "";
+        logo.style.transformOrigin = "left center";
+
+        const rect = logo.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+
+        const maxWidth = 165;
+        const maxHeight = 28;
+        const scale = Math.min(1, maxWidth / rect.width, maxHeight / rect.height);
+        const scaledWidth = Math.max(1, Math.round(rect.width * scale));
+        const scaledHeight = Math.max(1, Math.round(rect.height * scale));
+
+        logo.style.transform = `scale(${scale})`;
+        fitWrapper.style.width = `${scaledWidth}px`;
+        fitWrapper.style.height = `${scaledHeight}px`;
+    }
+
+    function scheduleHeaderBrandFit() {
+        if (typeof window === "undefined") return;
+        if (!headerBrandResizeBound) {
+            window.addEventListener("resize", fitHeaderBrandLogo);
+            headerBrandResizeBound = true;
+        }
+        if (headerBrandFitScheduled) return;
+        headerBrandFitScheduled = true;
+        window.requestAnimationFrame(() => {
+            headerBrandFitScheduled = false;
+            fitHeaderBrandLogo();
+            if (document.fonts && typeof document.fonts.ready?.then === "function") {
+                document.fonts.ready.then(() => {
+                    fitHeaderBrandLogo();
+                }).catch(() => {});
+            }
+        });
+    }
+
+    function getBrandLogoHtml(brand) {
+        if (!brand || typeof brand.logoHtml !== "string") return "";
+        return brand.logoHtml.trim();
+    }
+
+    function getBrandLogoCss(brand) {
+        if (!brand || typeof brand.logoCss !== "string") return "";
+        return brand.logoCss.trim();
+    }
+
+    function isBrandLogoAnimationEnabled(brand) {
+        if (!brand || typeof brand.logoAnimationEnabled !== "boolean") return true;
+        return brand.logoAnimationEnabled;
+    }
+
+    function applyBrandLogoCss(brand) {
+        if (typeof document === "undefined") return;
+        const cssText = getBrandLogoCss(brand);
+        const animationOverride = isBrandLogoAnimationEnabled(brand)
+            ? ""
+            : `
+#ggx-site-header-slot .ggx-brand-logo-fit .t-gas,
+#ggx-site-header-slot .ggx-brand-logo-fit .t-gx,
+#ggx-site-footer-slot .ggx-brand-logo-fit .t-gas,
+#ggx-site-footer-slot .ggx-brand-logo-fit .t-gx {
+    animation: none !important;
+    transform: none !important;
+    text-shadow: none !important;
+    opacity: 1 !important;
+}
+`;
+        let styleElement = document.getElementById(BRAND_LOGO_STYLE_ELEMENT_ID);
+        if (!cssText && !animationOverride) {
+            if (styleElement && styleElement.parentNode) {
+                styleElement.parentNode.removeChild(styleElement);
+            }
+            return;
+        }
+        if (!styleElement) {
+            styleElement = document.createElement("style");
+            styleElement.id = BRAND_LOGO_STYLE_ELEMENT_ID;
+            document.head.appendChild(styleElement);
+        }
+        styleElement.textContent = `${cssText}\n${animationOverride}`.trim();
+    }
+
+    function buildBrandAnchorHtml(brandConfig, anchorClassName, fallbackText, extraAttrs) {
+        const href = escapeHtml(normalizePath(brandConfig.homeHref || "/index.html"));
+        const className = escapeHtml(anchorClassName || "");
+        const attrs = extraAttrs ? ` ${extraAttrs}` : "";
+        const customLogoHtml = getBrandLogoHtml(brandConfig);
+        if (customLogoHtml) {
+            return `<a href="${href}" class="${className} ggx-brand-custom-link"${attrs}><span class="ggx-brand-logo-fit">${customLogoHtml}</span></a>`;
+        }
+        return `<a href="${href}" class="${className}"${attrs}>${escapeHtml(fallbackText || "GasGx")}</a>`;
     }
 
     function syncRuntimeFeatureSlots() {
@@ -1839,7 +1955,7 @@
     <div class="max-w-[1800px] mx-auto px-6">
         <div class="flex flex-col md:flex-row justify-between items-start mb-8 pb-6 border-b border-white/5">
             <div class="mb-6 md:mb-0">
-                <div class="flex items-center gap-2 mb-2"><a href="${escapeHtml(normalizePath(brandConfig.homeHref || "/index.html"))}" class="text-2xl font-bold text-gas-green hover:text-white transition-colors">${escapeHtml(brandConfig.name || "GasGx")}</a></div>
+                <div class="flex items-center gap-2 mb-2">${buildBrandAnchorHtml(brandConfig, "text-2xl font-bold text-gas-green hover:text-white transition-colors", brandConfig.name || "GasGx")}</div>
                 <p class="text-sm text-gray-400 font-medium" data-ggx-text="footer-tagline">Making natural gas power mining easier</p>
             </div>
             <div class="flex flex-col md:items-end space-y-2">
@@ -1852,7 +1968,7 @@
             <div class="ggx-footer-meta">
                 <div class="ggx-footer-top-row">
                     <div class="ggx-footer-brand-inline">
-                        <a href="${escapeHtml(normalizePath(brandConfig.homeHref || "/index.html"))}" class="ggx-footer-logo" aria-label="${escapeHtml((brandConfig.name || "GasGx") + " Home")}">${escapeHtml(brandConfig.name || "GasGx")}</a>
+                        ${buildBrandAnchorHtml(brandConfig, "ggx-footer-logo", brandConfig.name || "GasGx", `aria-label="${escapeHtml((brandConfig.name || "GasGx") + " Home")}"`)}
                         <p class="ggx-footer-meta-tag text-sm text-gray-400">${escapeHtml(brandConfig.footerMeta || "Energy-compute infrastructure for mining operators.")}</p>
                     </div>
                     ${partnerContainer}

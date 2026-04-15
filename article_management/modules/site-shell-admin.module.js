@@ -981,6 +981,10 @@ function renderGeneralPage() {
                             <div class="ams-site-field-grid ams-site-field-grid-wide">
                                 ${renderTextField('site.features.chatApiUrl', '聊天接口地址', features.chatApiUrl, 'http://localhost:8000/chat')}
                             </div>
+                            <div class="ams-site-inline-actions">
+                                <button class="ams-btn" type="button" data-site-action="open-logo-manager">打开 Logo 工作台</button>
+                            </div>
+                            <div class="ams-footnote">在独立 Logo 工作台中切换主站 Logo 样式、动效开关并恢复原版，改动会同步到头部和页脚。</div>
                         `)}
                         ${renderFooterSection('site:auth', '主站认证跳转', mainAuth.signInUrl || '/account/user.html', `
                             <div class="ams-site-field-grid ams-site-field-grid-wide">
@@ -1337,6 +1341,13 @@ async function handleAction(target, deps) {
         await ensureLoaded(true);
         deps.setContent(deps.pageRenderer());
         bindEditor(deps);
+        return;
+    }
+
+    if (action === 'open-logo-manager') {
+        const targetUrl = `${window.location.origin}/article_management/logo/index.html`;
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        return;
     }
 }
 

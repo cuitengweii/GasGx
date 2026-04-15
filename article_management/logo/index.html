@@ -1,0 +1,574 @@
+﻿<!DOCTYPE html>
+<html lang="zh" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx Logo 120款字体与动效组合大全</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- 预加载 20 款 Google 字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Audiowide&family=Bebas+Neue&family=Black+Ops+One&family=Cinzel:wght@700&family=Exo+2:wght@900&family=Inter:wght@900&family=Monoton&family=Montserrat:wght@900&family=Orbitron:wght@900&family=Pacifico&family=Permanent+Marker&family=Press+Start+2P&family=Rajdhani:wght@700&family=Righteous&family=Russo+One&family=Space+Grotesk:wght@700&family=Syncopate:wght@700&family=Teko:wght@700&family=VT323&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gas: { bg: '#0F0F0F', card: '#131313', green: '#5DD62C', darkCard: '#0a0a0a' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #0F0F0F; color: #F8F8F8; font-family: 'Inter', sans-serif; }
+        
+        .card-container { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-container:hover { border-color: rgba(93, 214, 44, 0.5); box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 25px rgba(93, 214, 44, 0.15); transform: translateY(-4px); z-index: 10; background-color: #1a1a1a;}
+        
+        .copy-btn { opacity: 0; transform: translateY(8px); transition: all 0.2s ease; }
+        .card-container:hover .copy-btn { opacity: 1; transform: translateY(0); }
+
+        /* 基础展示结构 */
+        .gasgx-logo-preview { display: inline-flex; align-items: center; justify-content: center; text-align: center; width: 100%;}
+        .gasgx-logo-preview .logo-title { font-size: 3.2rem; line-height: 1; margin: 0; position: relative; letter-spacing: -0.02em; }
+        
+        /* 针对不同字体做微调，保证预览观感一致 */
+        .font-Bebas { font-size: 4.2rem !important; letter-spacing: 0.05em !important; }
+        .font-Teko { font-size: 4.2rem !important; }
+        .font-Syncopate { font-size: 2rem !important; letter-spacing: -0.05em !important; }
+        .font-Audiowide { font-size: 2.5rem !important; }
+        .font-PressStart { font-size: 1.4rem !important; letter-spacing: -0.05em !important; line-height: 1.5 !important; }
+        .font-Monoton { font-size: 2.8rem !important; font-weight: 400 !important; }
+        .font-Creepster { font-size: 3.2rem !important; }
+        .font-Pacifico { font-size: 2.8rem !important; }
+        .font-BlackOps { font-size: 2.6rem !important; }
+        .font-VT323 { font-size: 4rem !important; }
+        .font-Abril { font-size: 3rem !important; }
+        
+        /* 全局共享动效关键帧 */
+        @keyframes gasgxFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        @keyframes gasgxFloatDelay { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+        @keyframes gasgxPulseGlow_Green { 0% { text-shadow: 0 0 5px #5DD62C, 0 0 10px #5DD62C; opacity: 0.8; } 100% { text-shadow: 0 0 10px #5DD62C, 0 0 20px #5DD62C, 0 0 35px #5DD62C; opacity: 1; } }
+        @keyframes gasgxPulseGlow_White { 0% { text-shadow: 0 0 5px #FFFFFF, 0 0 10px #FFFFFF; opacity: 0.8; } 100% { text-shadow: 0 0 10px #FFFFFF, 0 0 20px #FFFFFF, 0 0 35px #FFFFFF; opacity: 1; } }
+        @keyframes gasgxGlitch { 0%, 100% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } }
+        @keyframes gasgxFlicker { 0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; } 20%, 24%, 55% { opacity: 0.15; } }
+        @keyframes gasgxHeartbeat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.04); } 30% { transform: scale(1); } 45% { transform: scale(1.04); } }
+
+        body[data-logo-anim='off'] .gasgx-logo-preview .t-gas,
+        body[data-logo-anim='off'] .gasgx-logo-preview .t-gx {
+            animation: none !important;
+            transform: none !important;
+            text-shadow: none !important;
+            opacity: 1 !important;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+
+    <div class="max-w-[1600px] mx-auto">
+        <div class="mb-16 text-center pt-8">
+            <h1 class="text-4xl md:text-5xl font-black mb-4 text-white uppercase tracking-tight">GasGx <span class="text-gas-green">Typography & Effects</span> Matrix</h1>
+            <p class="text-gray-400 max-w-3xl mx-auto text-sm md:text-base">
+                这里按每款字体分组展示，为你准备了 20 款字体和 6 种配色/动效组合，共 120 种 Logo 样式。选择喜欢的一款后，点击右上角“更换”，即可同步替换全站头部和底部 Logo。
+            </p>
+            <div class="mt-6 flex flex-col items-center gap-3">
+                <div id="page-status" class="text-sm text-gray-400 min-h-[20px]">请选择一个样式，或恢复默认文字 Logo。</div>
+                <div class="flex flex-wrap items-center justify-center gap-3">
+                    <label for="logo-animation-toggle" class="inline-flex cursor-pointer items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white">
+                        <span>Logo 动效</span>
+                        <button id="logo-animation-toggle" type="button" role="switch" aria-checked="true" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gas-green transition-colors">
+                            <span class="sr-only">切换 Logo 动效</span>
+                            <span id="logo-animation-thumb" class="inline-block h-5 w-5 translate-x-5 rounded-full bg-black transition-transform"></span>
+                        </button>
+                        <span id="logo-animation-label" class="text-gas-green">开启</span>
+                    </label>
+                    <button onclick="restoreDefaultLogo()" id="restore-default-btn" class="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-semibold text-white transition hover:border-gas-green/50 hover:text-gas-green">
+                        恢复原版
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 按字体分组渲染卡片 -->
+        <div id="gallery-container"></div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 bg-gas-green text-black px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(93,214,44,0.5)] transition-all duration-300 opacity-0 scale-95 pointer-events-none">
+        Logo 已更新
+    </div>
+
+    <script type="module">
+        import { getCurrentSession, assertAdminUser } from '../modules/auth.module.js';
+        import { loadSiteShellConfig, savePublishedSiteShellConfig } from '../modules/site-shell.module.js';
+
+        // 1. 定义 20 款字体
+        const fonts = [
+            { id: 'Inter', name: 'Inter (Modern Sans)', family: "'Inter', sans-serif", weight: 900, importUrl: 'Inter:wght@900', class: '' },
+            { id: 'Orbitron', name: 'Orbitron (Futuristic)', family: "'Orbitron', sans-serif", weight: 900, importUrl: 'Orbitron:wght@900', class: '' },
+            { id: 'Russo', name: 'Russo One (Heavy Block)', family: "'Russo One', sans-serif", weight: 400, importUrl: 'Russo+One', class: '' },
+            { id: 'Audiowide', name: 'Audiowide (Tech Rounded)', family: "'Audiowide', sans-serif", weight: 400, importUrl: 'Audiowide', class: 'font-Audiowide' },
+            { id: 'Space', name: 'Space Grotesk (Geometric)', family: "'Space Grotesk', sans-serif", weight: 700, importUrl: 'Space+Grotesk:wght@700', class: '' },
+            { id: 'Bebas', name: 'Bebas Neue (Poster)', family: "'Bebas Neue', sans-serif", weight: 400, importUrl: 'Bebas+Neue', class: 'font-Bebas' },
+            { id: 'Righteous', name: 'Righteous (Sporty)', family: "'Righteous', cursive", weight: 400, importUrl: 'Righteous', class: '' },
+            { id: 'Montserrat', name: 'Montserrat (International)', family: "'Montserrat', sans-serif", weight: 900, importUrl: 'Montserrat:wght@900', class: '' },
+            { id: 'Teko', name: 'Teko (Industrial)', family: "'Teko', sans-serif", weight: 700, importUrl: 'Teko:wght@700', class: 'font-Teko' },
+            { id: 'Syncopate', name: 'Syncopate (Wide)', family: "'Syncopate', sans-serif", weight: 700, importUrl: 'Syncopate:wght@700', class: 'font-Syncopate' },
+            { id: 'Cinzel', name: 'Cinzel (Classic Serif)', family: "'Cinzel', serif", weight: 700, importUrl: 'Cinzel:wght@700', class: '' },
+            { id: 'PressStart', name: 'Press Start 2P (8-bit)', family: "'Press Start 2P', cursive", weight: 400, importUrl: 'Press+Start+2P', class: 'font-PressStart' },
+            { id: 'Monoton', name: 'Monoton (Retro Neon)', family: "'Monoton', cursive", weight: 400, importUrl: 'Monoton', class: 'font-Monoton' },
+            { id: 'BlackOps', name: 'Black Ops One (Military)', family: "'Black Ops One', cursive", weight: 400, importUrl: 'Black+Ops+One', class: 'font-BlackOps' },
+            { id: 'Exo2', name: 'Exo 2 (Aerospace)', family: "'Exo 2', sans-serif", weight: 900, importUrl: 'Exo+2:wght@900', class: '' },
+            { id: 'Abril', name: 'Abril Fatface (Art Display)', family: "'Abril Fatface', serif", weight: 400, importUrl: 'Abril+Fatface', class: 'font-Abril' },
+            { id: 'Rajdhani', name: 'Rajdhani (Digital Square)', family: "'Rajdhani', sans-serif", weight: 700, importUrl: 'Rajdhani:wght@700', class: '' },
+            { id: 'Pacifico', name: 'Pacifico (Smooth Script)', family: "'Pacifico', cursive", weight: 400, importUrl: 'Pacifico', class: 'font-Pacifico' },
+            { id: 'Permanent', name: 'Permanent Marker (Hand Drawn)', family: "'Permanent Marker', cursive", weight: 400, importUrl: 'Permanent+Marker', class: '' },
+            { id: 'VT323', name: 'VT323 (Terminal)', family: "'VT323', monospace", weight: 400, importUrl: 'VT323', class: 'font-VT323' }
+        ];
+
+        // 2. Define 6 effect/color variants
+        const variants = [
+            {
+                id: 'v1', name: 'Classic', desc: 'White gas + green glow',
+                gasColor: '#FFFFFF', gasStroke: 'none', gasAnim: 'gasgxFloat 3s ease-in-out infinite',
+                gxColor: '#5DD62C', gxStroke: 'none', gxAnim: 'gasgxPulseGlow_Green 2s alternate infinite ease-in-out',
+                tagColor: '#ffffff'
+            },
+            {
+                id: 'v2', name: 'Glitch', desc: 'Full green cyber glitch',
+                gasColor: '#5DD62C', gasStroke: 'none', gasAnim: 'gasgxGlitch 2.5s infinite',
+                gxColor: '#5DD62C', gxStroke: 'none', gxAnim: 'gasgxGlitch 2.5s infinite reverse',
+                tagColor: '#5DD62C'
+            },
+            {
+                id: 'v3', name: 'Dark', desc: 'Outlined gas + neon gx',
+                gasColor: 'transparent', gasStroke: '1px #FFFFFF', gasAnim: 'gasgxFlicker 4s infinite',
+                gxColor: '#0F0F0F', gxStroke: '1.5px #5DD62C', gxAnim: 'gasgxPulseGlow_Green 1.5s alternate infinite ease-in-out',
+                tagColor: '#6b7280'
+            },
+            {
+                id: 'v4', name: 'White', desc: 'Clean white with heartbeat',
+                gasColor: '#FFFFFF', gasStroke: 'none', gasAnim: 'gasgxHeartbeat 1.5s infinite ease-in-out',
+                gxColor: '#FFFFFF', gxStroke: 'none', gxAnim: 'gasgxFloat 4s ease-in-out infinite',
+                tagColor: '#d1d5db'
+            },
+            {
+                id: 'v5', name: 'Inverse', desc: 'Green gas + white flicker',
+                gasColor: '#5DD62C', gasStroke: 'none', gasAnim: 'gasgxPulseGlow_Green 2s alternate infinite ease-in-out',
+                gxColor: '#FFFFFF', gxStroke: 'none', gxAnim: 'gasgxFlicker 3s infinite',
+                tagColor: '#5DD62C'
+            },
+            {
+                id: 'v6', name: 'Hollow', desc: 'Transparent outlined twin float',
+                gasColor: 'transparent', gasStroke: '1.5px #5DD62C', gasAnim: 'gasgxFloat 3.5s ease-in-out infinite',
+                gxColor: 'transparent', gxStroke: '1.5px #5DD62C', gxAnim: 'gasgxFloatDelay 3.5s ease-in-out infinite',
+                tagColor: '#34d399'
+            }
+        ];
+
+        // 关键帧字典
+        const keyframesMap = {
+            'gasgxFloat': `@keyframes gasgxFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }`,
+            'gasgxFloatDelay': `@keyframes gasgxFloatDelay { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }`,
+            'gasgxPulseGlow_Green': `@keyframes gasgxPulseGlow_Green { 0% { text-shadow: 0 0 5px #5DD62C, 0 0 10px #5DD62C; opacity: 0.8; } 100% { text-shadow: 0 0 10px #5DD62C, 0 0 20px #5DD62C, 0 0 35px #5DD62C; opacity: 1; } }`,
+            'gasgxPulseGlow_White': `@keyframes gasgxPulseGlow_White { 0% { text-shadow: 0 0 5px #FFFFFF, 0 0 10px #FFFFFF; opacity: 0.8; } 100% { text-shadow: 0 0 10px #FFFFFF, 0 0 20px #FFFFFF, 0 0 35px #FFFFFF; opacity: 1; } }`,
+            'gasgxGlitch': `@keyframes gasgxGlitch { 0%, 100% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } }`,
+            'gasgxFlicker': `@keyframes gasgxFlicker { 0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; } 20%, 24%, 55% { opacity: 0.15; } }`,
+            'gasgxHeartbeat': `@keyframes gasgxHeartbeat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.04); } 30% { transform: scale(1); } 45% { transform: scale(1.04); } }`
+        };
+
+        // 存储每个 logo 方案
+        const logoConfigMap = {};
+        let currentSavingId = null;
+        let restoreInProgress = false;
+        let animationToggleLoading = false;
+        let logoAnimationEnabled = true;
+
+        // 解析动画名
+        function getAnimName(animString) {
+            return animString.split(' ')[0];
+        }
+
+        function initGallery() {
+            const container = document.getElementById('gallery-container');
+            let globalStyleStr = '';
+            let styleIdCounter = 1;
+
+            // 外层循环：字体
+            fonts.forEach((font, fontIndex) => {
+                
+                // 创建字体分组块
+                const fontSection = document.createElement('div');
+                fontSection.className = 'mb-24 relative';
+                
+                // 字体标题
+                fontSection.innerHTML = `
+                    <div class="mb-8 pl-4 border-l-4 border-gas-green relative z-10">
+                        <h2 class="text-3xl md:text-5xl text-white tracking-wide" style="font-family: ${font.family}; font-weight: ${font.weight};">
+                            ${font.name.split(' ')[0]} <span class="text-sm md:text-xl text-gray-500 font-sans tracking-normal ml-2">${font.name.split(' ').slice(1).join(' ')}</span>
+                        </h2>
+                        <div class="flex items-center gap-3 mt-3 text-xs md:text-sm text-gray-400 font-mono">
+                            <span class="bg-[#1a1a1a] px-2 py-1 rounded">Weight: ${font.weight}</span>
+                            <span class="bg-[#1a1a1a] px-2 py-1 rounded">Family: ${font.name.split(' ')[0]}</span>
+                        </div>
+                    </div>
+                    <!-- 展示该字体下的 6 个变体 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-5" id="font-grid-${fontIndex}"></div>
+                `;
+                container.appendChild(fontSection);
+                
+                const grid = fontSection.querySelector(`#font-grid-${fontIndex}`);
+
+                // 内层循环：变体配置
+                variants.forEach((variant) => {
+                    const currentId = styleIdCounter++;
+                    const uid = `style-${currentId}`;
+                    
+                    // --- 1. 生成展示预览用 CSS ---
+                    let previewCss = `
+                        .${uid} .logo-title { font-family: ${font.family}; font-weight: ${font.weight}; }
+                        .${uid} .t-gas { 
+                            color: ${variant.gasColor}; 
+                            -webkit-text-stroke: ${variant.gasStroke}; 
+                            display: inline-block;
+                            animation: ${variant.gasAnim};
+                        }
+                        .${uid} .t-gx { 
+                            color: ${variant.gxColor}; 
+                            -webkit-text-stroke: ${variant.gxStroke}; 
+                            display: inline-block;
+                            animation: ${variant.gxAnim};
+                        }
+                    `;
+                    globalStyleStr += previewCss;
+
+                    // --- 2. 生成写入全站配置的 CSS ---
+                    const gasAnimKey = getAnimName(variant.gasAnim);
+                    const gxAnimKey = getAnimName(variant.gxAnim);
+                    
+                    let kf1 = keyframesMap[gasAnimKey] || '';
+                    let kf2 = (gasAnimKey !== gxAnimKey) ? (keyframesMap[gxAnimKey] || '') : '';
+
+                    const copyCss = `/* =========================================
+   GasGx Logo | Font: ${font.name.split(' ')[0]} | Effect: ${variant.name}
+========================================= */
+@import url('https://fonts.googleapis.com/css2?family=${font.importUrl}&display=swap');
+
+.gasgx-logo { 
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center; 
+    text-align: center; 
+}
+
+.gasgx-logo .logo-title { 
+    font-family: ${font.family}; 
+    font-weight: ${font.weight};
+    font-size: 4rem;
+    line-height: 1; 
+    margin: 0; 
+    position: relative; 
+    letter-spacing: -0.02em; 
+}
+
+/* transform animation needs inline-block */
+.gasgx-logo .t-gas { 
+    display: inline-block;
+    color: ${variant.gasColor}; 
+    ${variant.gasStroke !== 'none' ? `-webkit-text-stroke: ${variant.gasStroke};` : ''}
+    animation: ${variant.gasAnim};
+}
+
+.gasgx-logo .t-gx { 
+    display: inline-block;
+    color: ${variant.gxColor}; 
+    ${variant.gxStroke !== 'none' ? `-webkit-text-stroke: ${variant.gxStroke};` : ''}
+    animation: ${variant.gxAnim};
+}
+
+/* Dedicated keyframes */
+${kf1}
+${kf2}
+`;
+
+                    const copyHtml = `<!-- GasGx Logo HTML -->
+<div class="gasgx-logo">
+    <div class="logo-title">
+        <span class="t-gas">Gas</span><span class="t-gx">Gx</span>
+    </div>
+</div>`;
+                    
+                    // 保存方案
+                    logoConfigMap[currentId] = {
+                        css: copyCss,
+                        html: copyHtml,
+                        label: `${font.id}-${variant.id}`
+                    };
+
+                    // --- 3. 渲染卡片 ---
+                    const card = document.createElement('div');
+                    card.className = `card-container bg-gas-darkCard p-5 rounded-2xl border border-white/5 relative flex flex-col items-center justify-center h-[200px] overflow-hidden ${uid}`;
+                    card.innerHTML = `
+                        <div class="absolute top-3 left-3 z-10 w-full pr-8">
+                            <div class="flex items-center gap-1.5 mb-1 text-xs">
+                                <span class="w-2 h-2 rounded-full" style="background-color: ${variant.tagColor};"></span>
+                                <span class="font-bold text-gray-300">${variant.name.split(' ')[0]}</span>
+                            </div>
+                            <div class="text-[10px] text-gray-500 font-mono">${variant.desc}</div>
+                        </div>
+                        
+                        <button data-logo-action="${currentId}" onclick="replaceSiteLogo(${currentId})" class="copy-btn absolute top-3 right-3 bg-gas-green hover:bg-white text-black px-2.5 py-1.5 rounded-md text-[11px] font-bold shadow-[0_0_10px_rgba(93,214,44,0.3)] transition-colors z-20 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            更换
+                        </button>
+                        
+                        <div class="gasgx-logo-preview w-full mt-6">
+                            <div class="logo-title ${font.class}">
+                                <span class="t-gas">Gas</span><span class="t-gx">Gx</span>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            });
+
+            // 注入动态生成的预览 CSS
+            const styleTag = document.createElement('style');
+            styleTag.innerHTML = globalStyleStr;
+            document.head.appendChild(styleTag);
+        }
+
+        function applyPreviewAnimationState() {
+            document.body.dataset.logoAnim = logoAnimationEnabled ? 'on' : 'off';
+            const toggle = document.getElementById('logo-animation-toggle');
+            const thumb = document.getElementById('logo-animation-thumb');
+            const label = document.getElementById('logo-animation-label');
+            if (toggle) {
+                toggle.setAttribute('aria-checked', logoAnimationEnabled ? 'true' : 'false');
+                toggle.classList.toggle('bg-gas-green', logoAnimationEnabled);
+                toggle.classList.toggle('bg-white/20', !logoAnimationEnabled);
+                toggle.disabled = animationToggleLoading;
+            }
+            if (thumb) {
+                thumb.classList.toggle('translate-x-5', logoAnimationEnabled);
+                thumb.classList.toggle('translate-x-1', !logoAnimationEnabled);
+            }
+            if (label) {
+                label.textContent = logoAnimationEnabled ? '开启' : '关闭';
+                label.classList.toggle('text-gas-green', logoAnimationEnabled);
+                label.classList.toggle('text-gray-400', !logoAnimationEnabled);
+            }
+        }
+
+        function setAnimationToggleLoading(loading) {
+            animationToggleLoading = loading;
+            applyPreviewAnimationState();
+        }
+
+        function setPageStatus(message, isError = false) {
+            const status = document.getElementById('page-status');
+            if (!status) return;
+            status.textContent = String(message || '').trim();
+            status.classList.toggle('text-red-400', Boolean(isError));
+            status.classList.toggle('text-gray-400', !isError);
+            status.classList.toggle('text-gas-green', !isError && /成功|已恢复|已切换|处理中/.test(status.textContent));
+        }
+
+        function setActionLoading(id, loading, labelWhenIdle = '更换') {
+            currentSavingId = loading ? id : (currentSavingId === id ? null : currentSavingId);
+            const button = document.querySelector(`[data-logo-action="${id}"]`);
+            if (!button) return;
+            button.disabled = loading;
+            button.classList.toggle('opacity-70', loading);
+            button.classList.toggle('cursor-not-allowed', loading);
+            button.innerHTML = loading
+                ? `<svg class="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" opacity="0.25"></circle><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>处理中`
+                : `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>${labelWhenIdle}`;
+        }
+
+        function setRestoreLoading(loading) {
+            restoreInProgress = loading;
+            const button = document.getElementById('restore-default-btn');
+            if (!button) return;
+            button.disabled = loading;
+            button.classList.toggle('opacity-70', loading);
+            button.classList.toggle('cursor-not-allowed', loading);
+            button.textContent = loading ? '恢复中...' : '恢复原版';
+        }
+
+        async function replaceSiteLogo(id) {
+            const logoConfig = logoConfigMap[id];
+            if (!logoConfig) {
+                showToast('未找到这个 Logo 配置', true);
+                return;
+            }
+            if (restoreInProgress || currentSavingId !== null || animationToggleLoading) return;
+            try {
+                setActionLoading(id, true);
+                setPageStatus(`正在应用 ${logoConfig.label} 样式...`);
+                const session = await getCurrentSession();
+                const user = session?.user || null;
+                if (!user) {
+                    throw new Error('请先登录后台管理员账号后再更换 Logo。');
+                }
+
+                await assertAdminUser(user, { forceRefresh: true });
+
+                const loaded = await loadSiteShellConfig(true);
+                const config = loaded?.config && typeof loaded.config === 'object'
+                    ? JSON.parse(JSON.stringify(loaded.config))
+                    : {};
+
+                if (!config.site || typeof config.site !== 'object') config.site = {};
+                if (!config.site.brand || typeof config.site.brand !== 'object') config.site.brand = {};
+
+                config.site.brand.logoCss = logoConfig.css;
+                config.site.brand.logoHtml = logoConfig.html;
+                config.site.brand.logoAnimationEnabled = logoAnimationEnabled;
+                config.site.brand.logoPresetLabel = logoConfig.label;
+                config.site.brand.logoUpdatedAt = new Date().toISOString();
+
+                await savePublishedSiteShellConfig(config, user);
+                setPageStatus(`已切换为 ${logoConfig.label}，请刷新前台页面查看。`);
+                showToast('Logo 已更换，全站将使用该样式');
+            } catch (error) {
+                console.error(error);
+                setPageStatus(error?.message || '更换失败，请检查管理员登录状态', true);
+                showToast(error?.message || '更换失败，请检查管理员登录状态', true);
+            } finally {
+                setActionLoading(id, false);
+            }
+        }
+
+        async function restoreDefaultLogo() {
+            if (restoreInProgress || currentSavingId !== null || animationToggleLoading) return;
+            try {
+                setRestoreLoading(true);
+                setPageStatus('正在恢复默认文字 Logo...');
+                const session = await getCurrentSession();
+                const user = session?.user || null;
+                if (!user) {
+                    throw new Error('请先登录后台管理员账号后再恢复原版。');
+                }
+
+                await assertAdminUser(user, { forceRefresh: true });
+
+                const loaded = await loadSiteShellConfig(true);
+                const config = loaded?.config && typeof loaded.config === 'object'
+                    ? JSON.parse(JSON.stringify(loaded.config))
+                    : {};
+
+                if (!config.site || typeof config.site !== 'object') config.site = {};
+                if (!config.site.brand || typeof config.site.brand !== 'object') config.site.brand = {};
+
+                config.site.brand.logoCss = '';
+                config.site.brand.logoHtml = '';
+                config.site.brand.logoAnimationEnabled = logoAnimationEnabled;
+                config.site.brand.logoPresetLabel = '';
+                config.site.brand.logoUpdatedAt = new Date().toISOString();
+
+                await savePublishedSiteShellConfig(config, user);
+                setPageStatus('已恢复默认文字 Logo，请刷新前台页面查看。');
+                showToast('已恢复原版 Logo');
+            } catch (error) {
+                console.error(error);
+                setPageStatus(error?.message || '恢复失败，请检查管理员登录状态', true);
+                showToast(error?.message || '恢复失败，请检查管理员登录状态', true);
+            } finally {
+                setRestoreLoading(false);
+            }
+        }
+
+        async function updateLogoAnimationSetting(nextEnabled) {
+            if (animationToggleLoading || currentSavingId !== null || restoreInProgress) return;
+            const previous = logoAnimationEnabled;
+            logoAnimationEnabled = Boolean(nextEnabled);
+            applyPreviewAnimationState();
+            try {
+                setAnimationToggleLoading(true);
+                setPageStatus(`正在${logoAnimationEnabled ? '开启' : '关闭'} Logo 动效...`);
+
+                const session = await getCurrentSession();
+                const user = session?.user || null;
+                if (!user) {
+                    throw new Error('请先登录后台管理员账号后再切换 Logo 动效。');
+                }
+
+                await assertAdminUser(user, { forceRefresh: true });
+
+                const loaded = await loadSiteShellConfig(true);
+                const config = loaded?.config && typeof loaded.config === 'object'
+                    ? JSON.parse(JSON.stringify(loaded.config))
+                    : {};
+
+                if (!config.site || typeof config.site !== 'object') config.site = {};
+                if (!config.site.brand || typeof config.site.brand !== 'object') config.site.brand = {};
+
+                config.site.brand.logoAnimationEnabled = logoAnimationEnabled;
+                config.site.brand.logoUpdatedAt = new Date().toISOString();
+
+                await savePublishedSiteShellConfig(config, user);
+                setPageStatus(`Logo 动效已${logoAnimationEnabled ? '开启' : '关闭'}，请刷新前台页面查看。`);
+                showToast(`Logo 动效已${logoAnimationEnabled ? '开启' : '关闭'}`);
+            } catch (error) {
+                console.error(error);
+                logoAnimationEnabled = previous;
+                applyPreviewAnimationState();
+                setPageStatus(error?.message || '动效开关保存失败，请检查管理员登录状态', true);
+                showToast(error?.message || '动效开关保存失败，请检查管理员登录状态', true);
+            } finally {
+                setAnimationToggleLoading(false);
+            }
+        }
+
+        async function hydrateLogoControls() {
+            try {
+                const loaded = await loadSiteShellConfig(true);
+                const brand = loaded?.config?.site?.brand;
+                logoAnimationEnabled = typeof brand?.logoAnimationEnabled === 'boolean'
+                    ? brand.logoAnimationEnabled
+                    : true;
+            } catch (_error) {
+                logoAnimationEnabled = true;
+            }
+            applyPreviewAnimationState();
+
+            const toggle = document.getElementById('logo-animation-toggle');
+            if (toggle) {
+                toggle.addEventListener('click', () => {
+                    updateLogoAnimationSetting(!logoAnimationEnabled);
+                });
+            }
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            if (typeof message === 'string' && message.trim()) {
+                toast.textContent = message.trim();
+            }
+            toast.classList.toggle('bg-gas-green', !isError);
+            toast.classList.toggle('text-black', !isError);
+            toast.classList.toggle('bg-red-500', Boolean(isError));
+            toast.classList.toggle('text-white', Boolean(isError));
+            toast.classList.remove('opacity-0', 'scale-95');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'scale-95');
+            }, 2500);
+        }
+
+        // 初始化
+        window.replaceSiteLogo = replaceSiteLogo;
+        window.restoreDefaultLogo = restoreDefaultLogo;
+        document.addEventListener('DOMContentLoaded', async () => {
+            initGallery();
+            await hydrateLogoControls();
+        });
+    </script>
+</body>
+</html>
+

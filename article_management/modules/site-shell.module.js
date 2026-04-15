@@ -137,6 +137,11 @@ const EMPTY_SITE_SHELL_CONFIG = Object.freeze({
             homeHref: '/index.html',
             footerMeta: 'Energy-compute infrastructure for mining operators.',
             copyright: '© 2026 GasGx. All rights reserved.',
+            logoHtml: '',
+            logoCss: '',
+            logoAnimationEnabled: true,
+            logoPresetLabel: '',
+            logoUpdatedAt: '',
         },
         features: {
             backToTopEnabled: true,
@@ -609,6 +614,11 @@ function normalizeSiteBrandConfig(source, fallback) {
         homeHref: normalizeText(safeSource.homeHref || safeFallback.homeHref || '/index.html') || '/index.html',
         footerMeta: normalizeText(safeSource.footerMeta || safeFallback.footerMeta || 'Energy-compute infrastructure for mining operators.'),
         copyright: normalizeText(safeSource.copyright || safeFallback.copyright || '© 2026 GasGx. All rights reserved.'),
+        logoHtml: normalizeText(safeSource.logoHtml || safeFallback.logoHtml || ''),
+        logoCss: normalizeText(safeSource.logoCss || safeFallback.logoCss || ''),
+        logoAnimationEnabled: normalizeBoolean(safeSource.logoAnimationEnabled, normalizeBoolean(safeFallback.logoAnimationEnabled, true)),
+        logoPresetLabel: normalizeText(safeSource.logoPresetLabel || safeFallback.logoPresetLabel || ''),
+        logoUpdatedAt: normalizeText(safeSource.logoUpdatedAt || safeFallback.logoUpdatedAt || ''),
     };
 }
 
