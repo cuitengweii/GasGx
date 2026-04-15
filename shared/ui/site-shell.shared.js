@@ -408,8 +408,8 @@
     };
 
     const BACK_TO_TOP_TEMPLATE = `
-<button id="backToTopBtn" class="fixed bottom-60 right-6 bg-gas-green text-black w-10 h-10 rounded-full shadow-[0_0_15px_rgba(93,214,44,0.5)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 z-40 cursor-pointer" aria-label="Back to top">
-    <i class="fa-solid fa-arrow-up"></i>
+<button id="backToTopBtn" class="fixed bottom-60 right-6 w-10 h-10 rounded-full border border-gas-green bg-gas-green/[0.08] text-white shadow-[0_10px_24px_rgba(0,0,0,0.22),0_0_0_1px_rgba(93,214,44,0.2)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 hover:opacity-100 z-40 cursor-grab touch-none select-none" aria-label="Back to top">
+    <i class="fa-solid fa-arrow-up text-gas-green drop-shadow-[0_0_6px_rgba(93,214,44,0.45)]"></i>
 </button>`;
 
     const CHATBOT_TEMPLATE = `
@@ -2882,20 +2882,88 @@
     function initBackToTop() {
         const backToTopBtn = document.getElementById("backToTopBtn");
         if (!backToTopBtn || backToTopBtn.dataset.ggxBound === "1") return;
+        const minBottom = 24;
+        const topPadding = 96;
+        const dragThreshold = 6;
+        let activePointerId = null;
+        let dragStartY = 0;
+        let dragStartBottom = 0;
+        let suppressClick = false;
+
+        const getCurrentBottom = function () {
+            const rect = backToTopBtn.getBoundingClientRect();
+            return window.innerHeight - rect.bottom;
+        };
+
+        const getMaxBottom = function () {
+            return Math.max(minBottom, window.innerHeight - topPadding - backToTopBtn.offsetHeight);
+        };
+
+        const applyBottom = function (bottomValue) {
+            const boundedBottom = Math.min(Math.max(bottomValue, minBottom), getMaxBottom());
+            backToTopBtn.classList.remove("bottom-60");
+            backToTopBtn.style.bottom = `${boundedBottom}px`;
+        };
+
+        const handlePointerMove = function (event) {
+            if (event.pointerId !== activePointerId) return;
+            const deltaY = event.clientY - dragStartY;
+            if (Math.abs(deltaY) > dragThreshold) {
+                suppressClick = true;
+            }
+            applyBottom(dragStartBottom - deltaY);
+        };
+
+        const handlePointerEnd = function (event) {
+            if (event.pointerId !== activePointerId) return;
+            if (typeof backToTopBtn.releasePointerCapture === "function") {
+                backToTopBtn.releasePointerCapture(activePointerId);
+            }
+            activePointerId = null;
+            backToTopBtn.classList.remove("cursor-grabbing");
+            backToTopBtn.classList.add("cursor-grab");
+        };
 
         const updateButtonVisibility = function () {
             if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
                 backToTopBtn.classList.remove("translate-y-20", "opacity-0");
+                backToTopBtn.classList.remove("opacity-15");
+                backToTopBtn.classList.add("opacity-100");
             } else {
                 backToTopBtn.classList.add("translate-y-20", "opacity-0");
+                backToTopBtn.classList.remove("opacity-15", "opacity-100");
             }
         };
 
-        backToTopBtn.addEventListener("click", function () {
+        backToTopBtn.addEventListener("pointerdown", function (event) {
+            activePointerId = event.pointerId;
+            dragStartY = event.clientY;
+            dragStartBottom = getCurrentBottom();
+            suppressClick = false;
+            backToTopBtn.classList.remove("cursor-grab");
+            backToTopBtn.classList.add("cursor-grabbing");
+            if (typeof backToTopBtn.setPointerCapture === "function") {
+                backToTopBtn.setPointerCapture(activePointerId);
+            }
+        });
+
+        backToTopBtn.addEventListener("pointermove", handlePointerMove);
+        backToTopBtn.addEventListener("pointerup", handlePointerEnd);
+        backToTopBtn.addEventListener("pointercancel", handlePointerEnd);
+
+        backToTopBtn.addEventListener("click", function (event) {
+            if (suppressClick) {
+                event.preventDefault();
+                suppressClick = false;
+                return;
+            }
             window.scrollTo({ top: 0, behavior: "smooth" });
         });
 
         window.addEventListener("scroll", updateButtonVisibility, { passive: true });
+        window.addEventListener("resize", function () {
+            applyBottom(getCurrentBottom());
+        });
         updateButtonVisibility();
         backToTopBtn.dataset.ggxBound = "1";
     }
