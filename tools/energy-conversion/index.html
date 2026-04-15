@@ -1020,7 +1020,20 @@
             isMobileMenuOpen: false,
 
             init() {
-                this.updateStaticText();
+                // Sync language from shared shell/local storage/document lang at boot.
+                const sharedLang = window.GasGxSharedUI && typeof window.GasGxSharedUI.getCurrentLang === 'function'
+                    ? window.GasGxSharedUI.getCurrentLang()
+                    : '';
+                const storedLang = (() => {
+                    try {
+                        return window.localStorage.getItem('gasgx-lang') || window.localStorage.getItem('gas_lang') || '';
+                    } catch (_) {
+                        return '';
+                    }
+                })();
+                const htmlLang = (document.documentElement && document.documentElement.lang) || '';
+                const resolvedLang = String(sharedLang || storedLang || htmlLang || this.currentLang).toLowerCase().startsWith('zh') ? 'zh' : 'en';
+                this.setLanguage(resolvedLang);
                 
                 // Init Calculator
                 calcApp.calculate();
