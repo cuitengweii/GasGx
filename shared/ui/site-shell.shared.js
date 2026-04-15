@@ -349,6 +349,10 @@
             features: {
                 backToTopEnabled: true,
                 languageSwitcherEnabled: true,
+                languageOptions: {
+                    en: true,
+                    zh: true
+                },
                 chatbotEnabled: false,
                 chatApiUrl: ""
             },
@@ -807,6 +811,9 @@
         const featureConfig = siteConfig && typeof siteConfig.features === "object"
             ? siteConfig.features
             : {};
+        const languageOptionsConfig = featureConfig && typeof featureConfig.languageOptions === "object"
+            ? featureConfig.languageOptions
+            : {};
         const mainAuthConfig = siteConfig && typeof siteConfig.mainAuth === "object"
             ? siteConfig.mainAuth
             : {};
@@ -816,12 +823,44 @@
             languageSwitcherEnabled: typeof featureConfig.languageSwitcherEnabled === "boolean"
                 ? featureConfig.languageSwitcherEnabled
                 : (typeof runtimeConfig.languageSwitcherEnabled === "boolean" ? runtimeConfig.languageSwitcherEnabled : true),
+            languageOptions: {
+                en: typeof languageOptionsConfig.en === "boolean" ? languageOptionsConfig.en : true,
+                zh: typeof languageOptionsConfig.zh === "boolean" ? languageOptionsConfig.zh : true
+            },
             chatbotEnabled: typeof featureConfig.chatbotEnabled === "boolean" ? featureConfig.chatbotEnabled : runtimeConfig.chatbotEnabled,
             chatApiUrl: typeof featureConfig.chatApiUrl === "string" && featureConfig.chatApiUrl.trim()
                 ? featureConfig.chatApiUrl.trim()
                 : runtimeConfig.chatApiUrl,
             mainAuth: Object.assign({}, runtimeConfig.mainAuth || {}, mainAuthConfig)
         });
+    }
+
+    function getAllowedLanguages() {
+        const runtimeConfig = getSharedRuntimeConfig();
+        const options = runtimeConfig && typeof runtimeConfig.languageOptions === "object"
+            ? runtimeConfig.languageOptions
+            : {};
+        const allowEn = options.en !== false;
+        const allowZh = options.zh !== false;
+        if (!allowEn && !allowZh) {
+            return ["en"];
+        }
+        return [allowEn ? "en" : null, allowZh ? "zh" : null].filter(Boolean);
+    }
+
+    function getConfiguredLanguages() {
+        const runtimeConfig = getSharedRuntimeConfig();
+        const options = runtimeConfig && typeof runtimeConfig.languageOptions === "object"
+            ? runtimeConfig.languageOptions
+            : {};
+        const allowEn = options.en !== false;
+        const allowZh = options.zh !== false;
+        return [allowEn ? "en" : null, allowZh ? "zh" : null].filter(Boolean);
+    }
+
+    function setElementVisible(element, visible) {
+        if (!element) return;
+        element.style.display = visible ? "" : "none";
     }
 
     function fetchPublishedSiteShellConfig() {
@@ -895,11 +934,34 @@
     function syncLanguageSwitcherVisibility() {
         const runtimeConfig = getSharedRuntimeConfig();
         const enabled = runtimeConfig.languageSwitcherEnabled !== false;
+        const configuredLanguages = getConfiguredLanguages();
+        const hasConfiguredLanguage = configuredLanguages.length > 0;
+        const allowedLanguages = getAllowedLanguages();
+        const allowEn = allowedLanguages.indexOf("en") >= 0;
+        const allowZh = allowedLanguages.indexOf("zh") >= 0;
         const desktopWrap = document.getElementById("ggx-lang-picker-wrap");
         const mobileWrap = document.getElementById("ggx-mobile-lang-switch-wrap");
-        if (desktopWrap) desktopWrap.hidden = !enabled;
-        if (mobileWrap) mobileWrap.hidden = !enabled;
-        if (!enabled) closeLangMenu();
+        const desktopEn = document.getElementById("ggx-btn-lang-en");
+        const desktopZh = document.getElementById("ggx-btn-lang-zh");
+        const mobileEn = document.getElementById("ggx-mob-lang-en");
+        const mobileZh = document.getElementById("ggx-mob-lang-zh");
+        const mobileSep = document.querySelector("#ggx-mobile-lang-switch-wrap .ggx-lang-sep");
+        setElementVisible(desktopEn, allowEn);
+        setElementVisible(desktopZh, allowZh);
+        setElementVisible(mobileEn, allowEn);
+        setElementVisible(mobileZh, allowZh);
+        setElementVisible(mobileSep, allowEn && allowZh);
+        setElementVisible(desktopWrap, enabled && hasConfiguredLanguage);
+        setElementVisible(mobileWrap, enabled && hasConfiguredLanguage);
+        if (!enabled || !hasConfiguredLanguage) {
+            closeLangMenu();
+        }
+        if (enabled && hasConfiguredLanguage) {
+            const currentLang = getCurrentLang();
+            if (allowedLanguages.indexOf(currentLang) < 0) {
+                setLanguageFromShell(allowedLanguages[0] || "en");
+            }
+        }
     }
 
     function refreshShellStructure() {
@@ -1482,19 +1544,23 @@
 
     function setLanguageFromShell(langCandidate) {
         const lang = normalizeLang(langCandidate);
-        persistLang(lang);
+        const allowedLanguages = getAllowedLanguages();
+        const finalLang = allowedLanguages.indexOf(lang) >= 0
+            ? lang
+            : (allowedLanguages[0] || "en");
+        persistLang(finalLang);
 
         const app = window.app;
         if (app && typeof app.setLanguage === "function") {
-            app.setLanguage(lang, { __fromShell: true });
+            app.setLanguage(finalLang, { __fromShell: true });
         } else {
-            document.dispatchEvent(new CustomEvent("gasgx:lang-changed", { detail: { lang: lang } }));
+            document.dispatchEvent(new CustomEvent("gasgx:lang-changed", { detail: { lang: finalLang } }));
         }
 
-        syncLanguageUI(lang);
+        syncLanguageUI(finalLang);
         window.setTimeout(function () {
             refreshShellNavigation(true);
-            syncLanguageUI(lang);
+            syncLanguageUI(finalLang);
         }, 0);
     }
 

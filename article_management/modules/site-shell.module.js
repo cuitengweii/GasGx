@@ -141,6 +141,10 @@ const EMPTY_SITE_SHELL_CONFIG = Object.freeze({
         features: {
             backToTopEnabled: true,
             languageSwitcherEnabled: true,
+            languageOptions: {
+                en: true,
+                zh: true,
+            },
             chatbotEnabled: false,
             chatApiUrl: '',
         },
@@ -611,9 +615,15 @@ function normalizeSiteBrandConfig(source, fallback) {
 function normalizeSiteFeatures(source, fallback) {
     const safeSource = isPlainObject(source) ? source : {};
     const safeFallback = isPlainObject(fallback) ? fallback : {};
+    const sourceLanguageOptions = isPlainObject(safeSource.languageOptions) ? safeSource.languageOptions : {};
+    const fallbackLanguageOptions = isPlainObject(safeFallback.languageOptions) ? safeFallback.languageOptions : {};
     return {
         backToTopEnabled: normalizeBoolean(safeSource.backToTopEnabled, normalizeBoolean(safeFallback.backToTopEnabled, true)),
         languageSwitcherEnabled: normalizeBoolean(safeSource.languageSwitcherEnabled, normalizeBoolean(safeFallback.languageSwitcherEnabled, true)),
+        languageOptions: {
+            en: normalizeBoolean(sourceLanguageOptions.en, normalizeBoolean(fallbackLanguageOptions.en, true)),
+            zh: normalizeBoolean(sourceLanguageOptions.zh, normalizeBoolean(fallbackLanguageOptions.zh, true)),
+        },
         chatbotEnabled: normalizeBoolean(safeSource.chatbotEnabled, normalizeBoolean(safeFallback.chatbotEnabled, false)),
         chatApiUrl: normalizeText(safeSource.chatApiUrl || safeFallback.chatApiUrl || ''),
     };

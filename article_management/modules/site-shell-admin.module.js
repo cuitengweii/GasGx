@@ -411,6 +411,14 @@ function renderGeneralPreview(config) {
     const aboutContact = config.pages?.aboutContact || {};
     const brand = site.brand || {};
     const features = site.features || {};
+    const languageOptions = features.languageOptions || {};
+    const languageEnabled = features.languageSwitcherEnabled !== false;
+    const enabledLanguages = [];
+    if (languageOptions.en !== false) enabledLanguages.push('EN');
+    if (languageOptions.zh !== false) enabledLanguages.push('ZH');
+    const languageSummary = !languageEnabled
+        ? '关闭'
+        : (enabledLanguages.length ? enabledLanguages.join(' / ') : '未选择');
     const mainAuth = site.mainAuth || {};
     const providerRollout = mainAuth.providerRollout || {};
     const sharedText = config.sharedText || {};
@@ -439,7 +447,7 @@ function renderGeneralPreview(config) {
                     <strong>运行开关</strong>
                     <div class="ams-site-preview-list">
                         <span class="ams-site-preview-row"><span>返回顶部</span><em>${features.backToTopEnabled === false ? '关闭' : '开启'}</em></span>
-                        <span class="ams-site-preview-row"><span>Language Button</span><em>${features.languageSwitcherEnabled === false ? '关闭' : '开启'}</em></span>
+                        <span class="ams-site-preview-row"><span>Language Button</span><em>${esc(languageSummary)}</em></span>
                         <span class="ams-site-preview-row"><span>聊天机器人</span><em>${features.chatbotEnabled === true ? '开启' : '关闭'}</em></span>
                         <span class="ams-site-preview-row"><span>聊天接口</span><em>${esc(features.chatApiUrl || '默认')}</em></span>
                     </div>
@@ -966,6 +974,8 @@ function renderGeneralPage() {
                             <div class="ams-site-inline-actions">
                                 <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="site.features.backToTopEnabled" data-site-input-type="boolean" ${features.backToTopEnabled === false ? '' : 'checked'}><span>返回顶部</span></label>
                                 <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="site.features.languageSwitcherEnabled" data-site-input-type="boolean" ${features.languageSwitcherEnabled === false ? '' : 'checked'}><span>Language Button</span></label>
+                                <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="site.features.languageOptions.en" data-site-input-type="boolean" ${features.languageOptions?.en === false ? '' : 'checked'}><span>EN</span></label>
+                                <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="site.features.languageOptions.zh" data-site-input-type="boolean" ${features.languageOptions?.zh === false ? '' : 'checked'}><span>ZH</span></label>
                                 <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="site.features.chatbotEnabled" data-site-input-type="boolean" ${features.chatbotEnabled === true ? 'checked' : ''}><span>聊天机器人</span></label>
                             </div>
                             <div class="ams-site-field-grid ams-site-field-grid-wide">
