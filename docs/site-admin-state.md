@@ -443,3 +443,43 @@
 1. Move onboarding copy definitions into shared i18n/config to reduce page-level hardcoding.
 2. Run focused responsive + accessibility checks on mobile breakpoints and keyboard-only flows.
 3. Keep onboarding behavior strictly UI-scoped unless a later thread explicitly requires workflow/API coupling.
+
+## 2026-04-15 sales stage detail shell update
+
+### Latest milestone
+
+- Customer-flow stage detail pages now use one shared layout shell with a fixed right-side rail for:
+  - status
+  - customer info
+  - actions
+- Requirement, quote, contract, deposit, production, acceptance, balance, shipping, deployment, and support stages now keep stage-specific form content in the main column while moving primary operator actions into one consistent zone.
+
+### Effective behaviors
+
+- Operators should no longer need to relearn where the main action buttons live when switching between nodes.
+- Stage detail pages now keep:
+  - status and progress summary in a fixed status zone
+  - customer / line / contact summary in a fixed customer-info zone
+  - save / confirm / share / public-entry actions in a fixed action zone
+- Quote-confirmation term editing remains in the main content area, but save / confirm actions are routed through the shared action zone.
+
+### Solved in this thread
+
+- Added a shared side-rail shell to customer-flow detail rendering in `article_management/modules/quote-system.module.js`.
+- Removed scattered per-stage action entrances from requirement, quote, and execution-stage main content blocks where they made layouts diverge.
+- Added matching layout and responsive styling in `article_management/styles/main.css`.
+- Synced the fixed-shell rule into `docs/site-admin-decisions.md`.
+
+### Unfinished
+
+- The old helper functions for quote-stage inline action chips still exist in the module and should be cleaned up in a later focused refactor.
+- A full visual regression sweep is still needed across:
+  - wide desktop
+  - narrow desktop
+  - mobile width customer-flow pages
+
+### Next Step
+
+1. Run focused UI regression on customer-flow stages covering requirement, quote-confirmed, contract, deposit, and production nodes.
+2. Remove now-unused quote-stage action-chip helpers after regression confirms the shared shell is stable.
+3. If later requested, apply the same fixed shell rule to overview-mode stage detail pages outside the single-customer flow.

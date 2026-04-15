@@ -185,3 +185,13 @@
 - Scope boundary:
   - onboarding is UI-only (mask/highlight/step card)
   - no business data, route, or API behavior changes are coupled into the guide flow
+
+### Decision 24: Customer-flow stage detail pages must keep one fixed shell
+
+- Every customer-flow stage detail page now follows one stable reading order:
+  - status zone
+  - customer info zone
+  - action zone
+  - stage-specific progress content
+- Stage-specific business content may differ by node, but action entry placement must not drift between requirement, quote, contract, deposit, production, or later execution stages.
+- The fixed shell lives in `article_management/modules/quote-system.module.js`, and later stage-level UI changes should extend the shared side-rail/action-shell model instead of reintroducing per-node one-off layouts.
