@@ -137,11 +137,11 @@
                     <span data-ggx-text="auth-login">Login</span>
                 </button>
                 <div id="auth-user-profile" class="hidden items-center gap-2 group relative h-full">
-                    <a id="auth-account-link" href="/account/account.html" class="relative py-3" aria-label="Open account">
-                        <img id="auth-user-avatar" src="" alt="User" class="w-5 h-5 rounded-full border border-gas-green p-0 transition-transform group-hover:scale-105">
-                        <div class="absolute bottom-2 right-0 w-2 h-2 bg-gas-green rounded-full border border-[#151515]"></div>
+                    <a id="auth-account-link" href="/account/account.html" class="relative flex h-10 w-10 items-center justify-center rounded-full border border-transparent hover:border-gas-green/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gas-green/70 focus-visible:ring-offset-1 focus-visible:ring-offset-[#111]" aria-label="Open account">
+                        <img id="auth-user-avatar" src="" alt="User" class="w-6 h-6 rounded-full border border-gas-green p-0 transition-transform group-hover:scale-105">
+                        <div class="absolute bottom-1.5 right-1.5 w-2 h-2 bg-gas-green rounded-full border border-[#151515]"></div>
                     </a>
-                    <div class="absolute right-0 top-full pt-1 w-48 hidden group-hover:block z-[60]">
+                    <div class="absolute right-0 top-[calc(100%-2px)] pt-2 w-56 hidden group-hover:block group-focus-within:block z-[80]">
                         <div class="bg-[#151515] border border-white/10 rounded-xl shadow-2xl py-2 mt-1">
                             <a id="dropdown-account-link" href="/account/account.html" class="block px-4 py-2 border-b border-white/5 mb-1 hover:bg-white/5 transition-colors">
                                 <span data-ggx-text="account" class="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Account</span>
