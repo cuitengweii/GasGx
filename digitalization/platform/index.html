@@ -223,6 +223,125 @@
         </div>
 
         <!-- 3D 系统层级爆炸图 (仅大屏显示) -->
+        <div class="w-full max-w-md mx-auto lg:hidden">
+            <div class="rounded-2xl border border-white/10 bg-[#0d0d12] shadow-[0_18px_50px_rgba(0,0,0,0.45)] overflow-hidden">
+                <div class="h-7 bg-[#1a1a24] border-b border-white/10 flex items-center px-4 justify-between">
+                    <div class="flex gap-2">
+                        <div class="w-2 h-2 rounded-full bg-red-500"></div><div class="w-2 h-2 rounded-full bg-yellow-500"></div><div class="w-2 h-2 rounded-full bg-green-500"></div>
+                    </div>
+                    <span class="text-[9px] font-mono text-gray-500">gasgx.app / command-center</span>
+                </div>
+                <div class="p-4 bg-[#12121A] space-y-3">
+                    <div class="flex gap-3">
+                        <div class="w-14 rounded-xl bg-black/30 border border-white/5 p-2.5 flex flex-col gap-2">
+                            <div class="h-7 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center">
+                                <div class="w-3.5 h-3.5 rounded bg-accent/20 border border-accent/40"></div>
+                            </div>
+                            <div class="h-7 rounded-lg bg-white/5 flex items-center justify-center">
+                                <div class="w-3.5 h-3.5 rounded bg-white/10"></div>
+                            </div>
+                            <div class="h-7 rounded-lg bg-white/5 flex items-center justify-center">
+                                <div class="w-3.5 h-3.5 rounded bg-white/10"></div>
+                            </div>
+                            <div class="mt-auto pt-2">
+                                <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                    <div class="h-full w-[78%] bg-accent/70 rounded-full"></div>
+                                </div>
+                                <div class="mt-2 text-[8px] font-mono text-gray-500">SYNC</div>
+                            </div>
+                        </div>
+                        <div class="flex-1 grid grid-cols-3 gap-2">
+                            <div class="rounded-xl border border-white/5 bg-white/5 px-2.5 py-2">
+                                <div class="text-[9px] text-gray-500 uppercase tracking-widest"><span class="lang-zh">在线节点</span><span class="lang-en">Online Nodes</span></div>
+                                <div class="mt-1 text-base font-mono font-bold text-white">247<span class="text-[10px] text-gray-500"> / 250</span></div>
+                                <div class="text-[9px] text-accent mt-1"><span class="lang-zh">98.8% 实时同步</span><span class="lang-en">98.8% live sync</span></div>
+                            </div>
+                            <div class="rounded-xl border border-white/5 bg-white/5 px-2.5 py-2">
+                                <div class="text-[9px] text-gray-500 uppercase tracking-widest"><span class="lang-zh">AI 风险队列</span><span class="lang-en">AI Risk Queue</span></div>
+                                <div class="mt-1 text-base font-mono font-bold text-white">03<span class="text-[10px] text-red-400 ml-1">critical</span></div>
+                                <div class="text-[9px] text-gray-400 mt-1"><span class="lang-zh">14 天预警窗口</span><span class="lang-en">up to 14-day lead time</span></div>
+                            </div>
+                            <div class="rounded-xl border border-white/5 bg-white/5 px-2.5 py-2">
+                                <div class="text-[9px] text-gray-500 uppercase tracking-widest"><span class="lang-zh">工单闭环</span><span class="lang-en">Dispatch Loop</span></div>
+                                <div class="mt-1 text-base font-mono font-bold text-white">14<span class="text-[10px] text-gray-500 ml-1">min</span></div>
+                                <div class="text-[9px] text-accent mt-1"><span class="lang-zh">从预警到派单</span><span class="lang-en">alert to assignment</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-5 gap-2.5">
+                        <div class="col-span-3 rounded-xl border border-white/5 bg-black/40 px-3 py-2.5">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="text-[10px] font-semibold text-white"><span class="lang-zh">跨洲机组态势</span><span class="lang-en">Cross-Region Fleet</span></div>
+                                <div class="text-[8px] font-mono text-accent border border-accent/20 bg-accent/10 px-1.5 py-0.5 rounded"><span class="lang-zh">实时</span><span class="lang-en">LIVE</span></div>
+                            </div>
+                            <div class="space-y-2">
+                                <div>
+                                    <div class="flex items-center justify-between text-[9px] text-white">
+                                        <span><span class="lang-zh">德州二叠纪盆地</span><span class="lang-en">Texas Permian</span></span>
+                                        <span class="font-mono text-accent">48.2 MW</span>
+                                    </div>
+                                    <div class="mt-1 h-1.5 rounded-full bg-white/5 overflow-hidden"><div class="h-full w-[86%] rounded-full bg-accent"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between text-[9px] text-white">
+                                        <span><span class="lang-zh">西德州伴生气</span><span class="lang-en">West Texas Flare</span></span>
+                                        <span class="font-mono text-blue-400">31.6 MW</span>
+                                    </div>
+                                    <div class="mt-1 h-1.5 rounded-full bg-white/5 overflow-hidden"><div class="h-full w-[72%] rounded-full bg-blue-400"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between text-[9px] text-white">
+                                        <span><span class="lang-zh">偏远井口站点</span><span class="lang-en">Remote Wellheads</span></span>
+                                        <span class="font-mono text-yellow-400">18.4 MW</span>
+                                    </div>
+                                    <div class="mt-1 h-1.5 rounded-full bg-white/5 overflow-hidden"><div class="h-full w-[54%] rounded-full bg-yellow-400"></div></div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 pt-2">
+                                <div class="rounded-md border border-white/5 bg-white/5 px-2 py-1">
+                                    <div class="text-[8px] text-gray-500 uppercase">SLA</div>
+                                    <div class="text-[10px] font-mono text-white">99.8%</div>
+                                </div>
+                                <div class="rounded-md border border-white/5 bg-white/5 px-2 py-1">
+                                    <div class="text-[8px] text-gray-500 uppercase"><span class="lang-zh">待派单</span><span class="lang-en">Open Jobs</span></div>
+                                    <div class="text-[10px] font-mono text-white">09</div>
+                                </div>
+                                <div class="rounded-md border border-white/5 bg-white/5 px-2 py-1">
+                                    <div class="text-[8px] text-gray-500 uppercase"><span class="lang-zh">损失保护</span><span class="lang-en">Loss Shield</span></div>
+                                    <div class="text-[10px] font-mono text-accent">$18.6k</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-span-2 rounded-xl border border-white/5 bg-black/40 px-3 py-2.5">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="text-[10px] font-semibold text-white"><span class="lang-zh">AI 优先处理</span><span class="lang-en">AI Priority Queue</span></div>
+                                <div class="text-[8px] font-mono text-gray-500"><span class="lang-zh">预测性维护</span><span class="lang-en">Predictive</span></div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="rounded-lg border border-red-500/20 bg-red-500/10 p-2">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="text-[9px] font-semibold text-white"><span class="lang-zh">#10 缸火花塞衰减</span><span class="lang-en">Cyl #10 spark plug drift</span></div>
+                                        <span class="text-[8px] font-bold text-red-400"><span class="lang-zh">高优先</span><span class="lang-en">HIGH</span></span>
+                                    </div>
+                                    <div class="mt-1 text-[8px] font-mono text-gray-400"><span class="lang-zh">SITE_042 / 36 小时窗口</span><span class="lang-en">SITE_042 / 36h window</span></div>
+                                </div>
+                                <div class="rounded-lg border border-blue-500/20 bg-blue-500/10 p-2">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="text-[9px] font-semibold text-white"><span class="lang-zh">备件与工程师已匹配</span><span class="lang-en">Parts & engineer matched</span></div>
+                                        <span class="text-[8px] font-bold text-blue-400"><span class="lang-zh">已就绪</span><span class="lang-en">READY</span></span>
+                                    </div>
+                                    <div class="mt-1 text-[8px] font-mono text-gray-400"><span class="lang-zh">预计 02:15 到场 / TX_MID_01</span><span class="lang-en">ETA 02:15 / TX_MID_01</span></div>
+                                </div>
+                                <div class="rounded-lg border border-accent/20 bg-accent/10 p-2">
+                                    <div class="text-[9px] font-semibold text-accent"><span class="lang-zh">今日收益保护</span><span class="lang-en">Revenue Protected Today</span></div>
+                                    <div class="mt-1 text-[8px] text-white leading-relaxed"><span class="lang-zh">预计减少 6.4 小时非计划停机，单日保护约 $18.6k。</span><span class="lang-en">Avoiding 6.4 hours of unplanned downtime, shielding about $18.6k in daily revenue.</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="relative w-full max-w-3xl mx-auto h-[320px] hidden lg:block perspective-[1200px]">
             <!-- 底层：硬件网关 (Layer 0) -->
             <div class="absolute inset-x-10 bottom-0 h-32 bg-[#12121A]/80 border border-white/10 rounded-xl transform rotateX-[60deg] translateY(40px) shadow-[0_0_30px_rgba(93,214,44,0.1)] flex flex-col p-4 animate-float" style="animation-delay: 0s;">
@@ -318,6 +437,114 @@
                                     <span class="lang-zh">从预警到派单</span><span class="lang-en">alert to assignment</span>
                                 </div>
                             </div>
+                            </div>
+
+                            <template id="scada-panel-topology-template">
+                                <section class="scada-tab-panel space-y-6" data-scada-panel="topology" id="scada-panel-topology" role="tabpanel" aria-labelledby="scada-tab-topology" hidden aria-hidden="true">
+                                <div class="grid grid-cols-4 gap-4 mb-6">
+                                    <div class="bg-black/40 border border-white/5 p-4 rounded-xl">
+                                        <div class="text-[10px] text-gray-500 uppercase mb-1"><span class="lang-zh">接入站点</span><span class="lang-en">Connected Sites</span></div>
+                                        <div class="text-2xl font-mono text-white">28</div>
+                                        <div class="text-[10px] text-accent mt-2"><span class="lang-zh">覆盖 3 个区域集群</span><span class="lang-en">Across 3 regional clusters</span></div>
+                                    </div>
+                                    <div class="bg-black/40 border border-white/5 p-4 rounded-xl">
+                                        <div class="text-[10px] text-gray-500 uppercase mb-1"><span class="lang-zh">边缘网关</span><span class="lang-en">Edge Gateways</span></div>
+                                        <div class="text-2xl font-mono text-white">106</div>
+                                        <div class="text-[10px] text-gray-400 mt-2"><span class="lang-zh">J1939 / Modbus 全接入</span><span class="lang-en">Full J1939 / Modbus coverage</span></div>
+                                    </div>
+                                    <div class="bg-black/40 border border-white/5 p-4 rounded-xl">
+                                        <div class="text-[10px] text-gray-500 uppercase mb-1"><span class="lang-zh">健康链路</span><span class="lang-en">Healthy Uplinks</span></div>
+                                        <div class="text-2xl font-mono text-white">97.6<span class="text-sm text-accent">%</span></div>
+                                        <div class="text-[10px] text-accent mt-2"><span class="lang-zh">4G / Starlink 冗余</span><span class="lang-en">4G / Starlink redundant</span></div>
+                                    </div>
+                                    <div class="bg-black/40 border border-white/5 p-4 rounded-xl">
+                                        <div class="text-[10px] text-gray-500 uppercase mb-1"><span class="lang-zh">现场班组</span><span class="lang-en">Field Crews</span></div>
+                                        <div class="text-2xl font-mono text-white">14</div>
+                                        <div class="text-[10px] text-orange-400 mt-2"><span class="lang-zh">5 组可 2 小时到场</span><span class="lang-en">5 crews within 2 hours</span></div>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-6">
+                                    <div class="col-span-2 bg-black/40 border border-white/5 rounded-xl p-4">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <span class="text-sm font-bold text-white"><span class="lang-zh">远程站点拓扑</span><span class="lang-en">Remote Site Topology</span></span>
+                                            <span class="text-[10px] font-mono text-accent"><span class="lang-zh">3 个区域在线</span><span class="lang-en">3 regions online</span></span>
+                                        </div>
+                                        <div class="grid grid-cols-3 gap-4">
+                                            <div class="rounded-xl border border-white/5 bg-white/5 p-4">
+                                                <div class="flex items-start justify-between mb-3">
+                                                    <div>
+                                                        <div class="text-sm font-bold text-white"><span class="lang-zh">德州二叠纪盆地</span><span class="lang-en">Texas Permian</span></div>
+                                                        <div class="text-[10px] text-gray-500"><span class="lang-zh">12 站点 / 38 节点</span><span class="lang-en">12 sites / 38 nodes</span></div>
+                                                    </div>
+                                                    <span class="px-2 py-1 rounded bg-accent/10 border border-accent/20 text-[10px] text-accent font-mono">43 ms</span>
+                                                </div>
+                                                <div class="flex items-center gap-1.5 text-[9px] font-mono text-gray-300">
+                                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10"><span class="lang-zh">井口</span><span class="lang-en">Wellhead</span></span>
+                                                    <div class="h-px flex-1 bg-accent/40"></div>
+                                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10"><span class="lang-zh">网关</span><span class="lang-en">Edge</span></span>
+                                                    <div class="h-px flex-1 bg-accent/40"></div>
+                                                    <span class="px-2 py-1 rounded bg-accent/10 border border-accent/20 text-accent"><span class="lang-zh">云端</span><span class="lang-en">Cloud</span></span>
+                                                </div>
+                                                <div class="mt-3 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-[84%] rounded-full bg-accent"></div></div>
+                                            </div>
+                                            <div class="rounded-xl border border-white/5 bg-white/5 p-4">
+                                                <div class="flex items-start justify-between mb-3">
+                                                    <div>
+                                                        <div class="text-sm font-bold text-white"><span class="lang-zh">西德州伴生气</span><span class="lang-en">West Texas Flare</span></div>
+                                                        <div class="text-[10px] text-gray-500"><span class="lang-zh">9 站点 / 31 节点</span><span class="lang-en">9 sites / 31 nodes</span></div>
+                                                    </div>
+                                                    <span class="px-2 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-[10px] text-blue-400 font-mono">58 ms</span>
+                                                </div>
+                                                <div class="flex items-center gap-1.5 text-[9px] font-mono text-gray-300">
+                                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10"><span class="lang-zh">井口</span><span class="lang-en">Wellhead</span></span>
+                                                    <div class="h-px flex-1 bg-blue-400/40"></div>
+                                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10"><span class="lang-zh">网关</span><span class="lang-en">Edge</span></span>
+                                                    <div class="h-px flex-1 bg-blue-400/40"></div>
+                                                    <span class="px-2 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400"><span class="lang-zh">云端</span><span class="lang-en">Cloud</span></span>
+                                                </div>
+                                                <div class="mt-3 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-[72%] rounded-full bg-blue-400"></div></div>
+                                            </div>
+                                            <div class="rounded-xl border border-white/5 bg-white/5 p-4">
+                                                <div class="flex items-start justify-between mb-3">
+                                                    <div>
+                                                        <div class="text-sm font-bold text-white"><span class="lang-zh">偏远井口站点</span><span class="lang-en">Remote Wellheads</span></div>
+                                                        <div class="text-[10px] text-gray-500"><span class="lang-zh">7 站点 / 17 节点</span><span class="lang-en">7 sites / 17 nodes</span></div>
+                                                    </div>
+                                                    <span class="px-2 py-1 rounded bg-yellow-500/10 border border-yellow-500/20 text-[10px] text-yellow-400 font-mono">91 ms</span>
+                                                </div>
+                                                <div class="flex items-center gap-1.5 text-[9px] font-mono text-gray-300">
+                                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10"><span class="lang-zh">井口</span><span class="lang-en">Wellhead</span></span>
+                                                    <div class="h-px flex-1 bg-yellow-400/40"></div>
+                                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10"><span class="lang-zh">网关</span><span class="lang-en">Edge</span></span>
+                                                    <div class="h-px flex-1 bg-yellow-400/40"></div>
+                                                    <span class="px-2 py-1 rounded bg-yellow-500/10 border border-yellow-500/20 text-yellow-400"><span class="lang-zh">云端</span><span class="lang-en">Cloud</span></span>
+                                                </div>
+                                                <div class="mt-3 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-[82%] rounded-full bg-yellow-400"></div></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-span-1 bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col gap-4">
+                                        <div>
+                                            <div class="text-[10px] text-gray-500 mb-2"><span class="lang-zh">当前聚焦区域</span><span class="lang-en">FOCUS REGION</span></div>
+                                            <div class="text-xl font-bold text-white"><span class="lang-zh">德州二叠纪盆地集群</span><span class="lang-en">Texas Permian Cluster</span></div>
+                                            <div class="mt-2 inline-flex items-center gap-2 text-[10px] font-mono text-accent bg-accent/10 border border-accent/20 rounded px-2 py-1"><div class="w-1.5 h-1.5 rounded-full bg-accent"></div><span class="lang-zh">路由在线</span><span class="lang-en">ROUTE ONLINE</span></div>
+                                        </div>
+                                        <div class="rounded-xl border border-white/5 bg-white/5 p-4 text-xs font-mono space-y-3">
+                                            <div class="flex justify-between"><span class="text-gray-500"><span class="lang-zh">上行延迟</span><span class="lang-en">Uplink Latency</span></span><span class="text-white">43 ms</span></div>
+                                            <div class="flex justify-between"><span class="text-gray-500"><span class="lang-zh">离线缓存</span><span class="lang-en">Offline Cache</span></span><span class="text-white">12.8 min</span></div>
+                                            <div class="flex justify-between"><span class="text-gray-500"><span class="lang-zh">自动派单</span><span class="lang-en">Auto Dispatch</span></span><span class="text-white">5 crews</span></div>
+                                            <div class="flex justify-between"><span class="text-gray-500"><span class="lang-zh">供电稳定性</span><span class="lang-en">Power Stability</span></span><span class="text-accent">99.2%</span></div>
+                                        </div>
+                                        <div class="rounded-xl border border-white/5 bg-black/40 p-4 text-xs text-gray-300 leading-relaxed">
+                                            <span class="lang-zh">边缘网关持续回传井口燃气机组数据，云端完成 AI 诊断后自动派单，班组按最近备件库路径出发。</span>
+                                            <span class="lang-en">Edge gateways stream wellhead gen-set data continuously. After cloud AI finishes diagnosis, dispatch is issued automatically and crews route from the nearest parts depot.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                </section>
+                            </template>
                         </div>
                         <div class="grid grid-cols-5 gap-3 flex-1">
                             <div class="col-span-3 rounded-lg border border-white/5 bg-black/50 px-3 py-2.5">
@@ -408,6 +635,7 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
                             </div>
                         </div>
                     </div>
@@ -588,7 +816,7 @@
 
             <!-- 通过包裹 overflow-x-auto 实现复杂桌面 UI 在手机端的平滑滚动展示 -->
             <div class="w-full overflow-x-auto pb-6">
-                <div class="ui-window min-w-[1024px] h-[700px] flex flex-col shadow-[0_0_60px_rgba(93,214,44,0.1)] border border-white/10 mx-auto">
+                <div class="ui-window min-w-[1120px] h-[700px] flex flex-col shadow-[0_0_60px_rgba(93,214,44,0.1)] border border-white/10 mx-auto">
                     <div class="ui-header justify-between">
                         <div class="flex gap-2">
                             <div class="ui-dot ui-dot-r"></div><div class="ui-dot ui-dot-y"></div><div class="ui-dot ui-dot-g"></div>
@@ -597,92 +825,93 @@
                         <div class="w-16"></div>
                     </div>
                     
-                    <div class="flex-1 flex overflow-hidden">
+                    <div class="flex-1 flex overflow-hidden" data-scada-tabs data-default-tab="overview">
                         <div class="w-64 bg-[#0a0a0f] border-r border-white/5 p-4 flex flex-col">
                             <div class="text-accent font-bold tracking-tighter mb-8 pl-2">GASGX_</div>
-                            <div class="space-y-1">
-                                <div class="p-2 bg-accent/10 text-accent rounded text-sm font-bold flex items-center gap-3">
+                            <div class="space-y-1" role="tablist" aria-label="SCADA console views">
+                                <button type="button" class="scada-nav-button is-active text-sm font-bold" data-scada-tab="overview" role="tab" aria-selected="true" aria-controls="scada-panel-overview" id="scada-tab-overview">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
                                     <span class="lang-zh">舰队总览</span><span class="lang-en">Fleet Overview</span>
-                                </div>
-                                <div class="p-2 text-gray-400 hover:text-white rounded text-sm flex items-center gap-3 cursor-pointer">
+                                </button>
+                                <button type="button" class="scada-nav-button text-sm" data-scada-tab="topology" role="tab" aria-selected="false" aria-controls="scada-panel-topology" id="scada-tab-topology" tabindex="-1">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                                     <span class="lang-zh">站点拓扑</span><span class="lang-en">Site Topology</span>
-                                </div>
-                                <div class="p-2 text-gray-400 hover:text-white rounded text-sm flex items-center gap-3 cursor-pointer">
+                                </button>
+                                <button type="button" class="scada-nav-button text-sm" data-scada-tab="telemetry" role="tab" aria-selected="false" aria-controls="scada-panel-telemetry" id="scada-tab-telemetry" tabindex="-1">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20"/><path d="M12 2v20"/></svg>
                                     <span class="lang-zh">实时遥测</span><span class="lang-en">Live Telemetry</span>
-                                </div>
-                                <div class="p-2 text-gray-400 hover:text-white rounded text-sm flex items-center gap-3 cursor-pointer">
+                                </button>
+                                <button type="button" class="scada-nav-button text-sm" data-scada-tab="diagnostics" role="tab" aria-selected="false" aria-controls="scada-panel-diagnostics" id="scada-tab-diagnostics" tabindex="-1">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
                                     <span class="lang-zh">AI 诊断预警</span><span class="lang-en">AI Diagnostics</span>
-                                </div>
+                                </button>
                             </div>
                             <div class="mt-auto border-t border-white/5 pt-4">
-                                <div class="text-[10px] text-gray-500 font-mono mb-2">SYSTEM STATUS</div>
+                                <div class="text-[10px] text-gray-500 font-mono mb-2"><span class="lang-zh">绯荤粺鐘舵€?/span><span class="lang-en">System Status</span></div>
                                 <div class="flex items-center gap-2 text-xs text-white">
-                                    <div class="w-2 h-2 rounded-full bg-accent animate-pulse"></div> All Services Up
+                                    <div class="w-2 h-2 rounded-full bg-accent animate-pulse"></div><span class="lang-zh">鎵€鏈夋湇鍔″潎姝ｅ父</span><span class="lang-en">All Services Up</span>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="flex-1 p-6 bg-[#12121a] overflow-y-auto">
+                        <div class="flex-1 p-6 bg-[#12121a] overflow-y-auto" data-scada-content-host>
+                            <section class="scada-tab-panel is-visible" data-scada-panel="overview" id="scada-panel-overview" role="tabpanel" aria-labelledby="scada-tab-overview">
                             <div class="grid grid-cols-4 gap-4 mb-6">
                                 <div class="bg-black/40 border border-white/5 p-4 rounded-xl">
-                                    <div class="text-[10px] text-gray-500 uppercase mb-1">Total Power Output</div>
+                                    <div class="text-[10px] text-gray-500 uppercase mb-1"><span class="lang-zh">鎬诲彂鐢靛姛鐜?/span><span class="lang-en">Total Power Output</span></div>
                                     <div class="text-2xl font-mono text-white">142.5 <span class="text-sm text-accent">MW</span></div>
-                                    <div class="text-[10px] text-accent mt-2">↑ 2.4% vs last hour</div>
+                                    <div class="text-[10px] text-accent mt-2"><span class="lang-zh">杈冧笂涓€灏忔椂 +2.4%</span><span class="lang-en">Up 2.4% vs last hour</span></div>
                                 </div>
                                 <div class="bg-black/40 border border-white/5 p-4 rounded-xl">
-                                    <div class="text-[10px] text-gray-500 uppercase mb-1">Active Nodes</div>
+                                    <div class="text-[10px] text-gray-500 uppercase mb-1"><span class="lang-zh">鍦ㄧ嚎鑺傜偣</span><span class="lang-en">Active Nodes</span></div>
                                     <div class="text-2xl font-mono text-white">104 <span class="text-sm text-gray-500">/ 106</span></div>
-                                    <div class="text-[10px] text-red-400 mt-2">2 nodes offline</div>
+                                    <div class="text-[10px] text-red-400 mt-2"><span class="lang-zh">2 涓妭鐐圭绾?/span><span class="lang-en">2 nodes offline</span></div>
                                 </div>
                                 <div class="bg-black/40 border border-white/5 p-4 rounded-xl">
-                                    <div class="text-[10px] text-gray-500 uppercase mb-1">Avg Gas Pressure</div>
+                                    <div class="text-[10px] text-gray-500 uppercase mb-1"><span class="lang-zh">骞冲潎姘旀簮鍘嬪姏</span><span class="lang-en">Avg Gas Pressure</span></div>
                                     <div class="text-2xl font-mono text-white">2.84 <span class="text-sm text-gray-500">Bar</span></div>
                                     <div class="w-full h-1 bg-white/10 mt-2 rounded-full"><div class="w-[70%] h-full bg-accent rounded-full"></div></div>
                                 </div>
                                 <div class="bg-black/40 border border-white/5 p-4 rounded-xl">
-                                    <div class="text-[10px] text-gray-500 uppercase mb-1">Pending Work Orders</div>
+                                    <div class="text-[10px] text-gray-500 uppercase mb-1"><span class="lang-zh">寰呭鐞嗗伐鍗?/span><span class="lang-en">Pending Work Orders</span></div>
                                     <div class="text-2xl font-mono text-white">12</div>
-                                    <div class="text-[10px] text-orange-400 mt-2">3 critical priorities</div>
+                                    <div class="text-[10px] text-orange-400 mt-2"><span class="lang-zh">3 涓珮浼樺厛绾?/span><span class="lang-en">3 critical priorities</span></div>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-3 gap-6">
                                 <div class="col-span-2 bg-black/40 border border-white/5 rounded-xl flex flex-col">
                                     <div class="p-4 border-b border-white/5 flex justify-between items-center">
-                                        <span class="text-sm font-bold text-white">Node Telemetry Matrix</span>
+                                        <span class="text-sm font-bold text-white"><span class="lang-zh">鑺傜偣閬ユ祴鐭╅樀</span><span class="lang-en">Node Telemetry Matrix</span></span>
                                         <div class="flex gap-2">
-                                            <div class="px-2 py-1 bg-white/10 rounded text-[10px] text-white">All Sites</div>
+                                            <div class="px-2 py-1 bg-white/10 rounded text-[10px] text-white"><span class="lang-zh">鍏ㄩ儴绔欑偣</span><span class="lang-en">All Sites</span></div>
                                             <div class="px-2 py-1 bg-accent/10 rounded text-[10px] text-accent font-mono border border-accent/20">LIVE</div>
                                         </div>
                                     </div>
                                     <div class="p-0">
                                         <table class="w-full text-left text-xs">
                                             <thead class="text-gray-500 bg-white/5">
-                                                <tr><th class="p-3 font-normal">SITE_ID</th><th class="p-3 font-normal">STATUS</th><th class="p-3 font-normal">RPM</th><th class="p-3 font-normal">TEMP (IN/OUT)</th><th class="p-3 font-normal">POWER</th></tr>
+                                                <tr><th class="p-3 font-normal">SITE_ID</th><th class="p-3 font-normal"><span class="lang-zh">鐘舵€?/span><span class="lang-en">STATUS</span></th><th class="p-3 font-normal">RPM</th><th class="p-3 font-normal"><span class="lang-zh">娓╁害锛堣繘/鍑猴級</span><span class="lang-en">TEMP (IN/OUT)</span></th><th class="p-3 font-normal"><span class="lang-zh">鍔熺巼</span><span class="lang-en">POWER</span></th></tr>
                                             </thead>
                                             <tbody class="text-gray-300 font-mono divide-y divide-white/5">
                                                 <tr class="hover:bg-white/5">
                                                     <td class="p-3 text-white">TX_MID_01</td>
-                                                    <td class="p-3"><span class="text-accent flex items-center gap-1"><div class="w-1.5 h-1.5 bg-accent rounded-full animate-pulse"></div> RUN</span></td>
+                                                    <td class="p-3"><span class="text-accent flex items-center gap-1"><div class="w-1.5 h-1.5 bg-accent rounded-full animate-pulse"></div><span class="lang-zh">杩愯</span><span class="lang-en">RUN</span></span></td>
                                                     <td class="p-3">1500</td><td class="p-3">42° / 88°</td><td class="p-3">1.2 MW</td>
                                                 </tr>
                                                 <tr class="hover:bg-white/5">
                                                     <td class="p-3 text-white">TX_MID_02</td>
-                                                    <td class="p-3"><span class="text-accent flex items-center gap-1"><div class="w-1.5 h-1.5 bg-accent rounded-full animate-pulse"></div> RUN</span></td>
+                                                    <td class="p-3"><span class="text-accent flex items-center gap-1"><div class="w-1.5 h-1.5 bg-accent rounded-full animate-pulse"></div><span class="lang-zh">杩愯</span><span class="lang-en">RUN</span></span></td>
                                                     <td class="p-3">1502</td><td class="p-3">43° / 89°</td><td class="p-3">1.2 MW</td>
                                                 </tr>
                                                 <tr class="hover:bg-white/5 bg-red-500/5">
                                                     <td class="p-3 text-white">WY_NORTH_09</td>
-                                                    <td class="p-3"><span class="text-red-400 font-bold">TRIP_OIL</span></td>
+                                                    <td class="p-3"><span class="text-red-400 font-bold"><span class="lang-zh">娑︽粦娌硅烦闂?/span><span class="lang-en">TRIP_OIL</span></span></td>
                                                     <td class="p-3 text-red-400">0</td><td class="p-3">65° / 68°</td><td class="p-3 text-red-400">0 MW</td>
                                                 </tr>
                                                 <tr class="hover:bg-white/5">
                                                     <td class="p-3 text-white">WY_NORTH_10</td>
-                                                    <td class="p-3"><span class="text-accent flex items-center gap-1"><div class="w-1.5 h-1.5 bg-accent rounded-full animate-pulse"></div> RUN</span></td>
+                                                    <td class="p-3"><span class="text-accent flex items-center gap-1"><div class="w-1.5 h-1.5 bg-accent rounded-full animate-pulse"></div><span class="lang-zh">杩愯</span><span class="lang-en">RUN</span></span></td>
                                                     <td class="p-3">1500</td><td class="p-3">40° / 85°</td><td class="p-3">1.1 MW</td>
                                                 </tr>
                                             </tbody>
@@ -691,9 +920,9 @@
                                 </div>
                                 
                                 <div class="col-span-1 bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col">
-                                    <div class="text-[10px] text-gray-500 mb-4">SELECTED NODE</div>
+                                    <div class="text-[10px] text-gray-500 mb-4"><span class="lang-zh">褰撳墠鑺傜偣</span><span class="lang-en">Selected Node</span></div>
                                     <div class="text-xl font-bold text-white mb-1">TX_MID_01</div>
-                                    <div class="text-xs font-mono text-accent bg-accent/10 inline-block px-2 py-0.5 border border-accent/20 rounded mb-6 w-max">HEALTH: 94%</div>
+                                    <div class="text-xs font-mono text-accent bg-accent/10 inline-block px-2 py-0.5 border border-accent/20 rounded mb-6 w-max"><span class="lang-zh">鍋ュ悍搴︼細94%</span><span class="lang-en">Health: 94%</span></div>
                                     
                                     <div class="flex-1 flex flex-col items-center justify-center relative">
                                         <svg viewBox="0 0 100 50" class="w-full h-auto drop-shadow-[0_0_10px_rgba(93,214,44,0.3)]">
@@ -704,18 +933,19 @@
                                         </svg>
                                         <div class="absolute bottom-0 text-center">
                                             <div class="text-2xl font-mono text-white font-bold">1.2</div>
-                                            <div class="text-[9px] text-gray-500 uppercase">Output (MW)</div>
+                                            <div class="text-[9px] text-gray-500 uppercase"><span class="lang-zh">杈撳嚭鍔熺巼锛圡W锛?/span><span class="lang-en">Output (MW)</span></div>
                                         </div>
                                     </div>
                                     
                                     <div class="mt-6 grid grid-cols-2 gap-2 text-xs font-mono border-t border-white/10 pt-4">
-                                        <div><span class="text-gray-500 text-[10px] block">L1-L2 VOLT</span><span class="text-white">480 V</span></div>
-                                        <div><span class="text-gray-500 text-[10px] block">FREQUENCY</span><span class="text-white">60.0 Hz</span></div>
-                                        <div class="mt-2"><span class="text-gray-500 text-[10px] block">GAS VALVE</span><span class="text-white">42% OPEN</span></div>
-                                        <div class="mt-2"><span class="text-gray-500 text-[10px] block">SPARK TIMING</span><span class="text-white">-14° BTDC</span></div>
+                                        <div><span class="text-gray-500 text-[10px] block"><span class="lang-zh">绾跨數鍘?/span><span class="lang-en">L1-L2 Volt</span></span><span class="text-white">480 V</span></div>
+                                        <div><span class="text-gray-500 text-[10px] block"><span class="lang-zh">棰戠巼</span><span class="lang-en">Frequency</span></span><span class="text-white">60.0 Hz</span></div>
+                                        <div class="mt-2"><span class="text-gray-500 text-[10px] block"><span class="lang-zh">鐕冩皵闃€浣?/span><span class="lang-en">Gas Valve</span></span><span class="text-white"><span class="lang-zh">42% 寮€搴?/span><span class="lang-en">42% Open</span></span></div>
+                                        <div class="mt-2"><span class="text-gray-500 text-[10px] block"><span class="lang-zh">鐐圭伀鎻愬墠瑙?/span><span class="lang-en">Spark Timing</span></span><span class="text-white">-14° BTDC</span></div>
                                     </div>
                                 </div>
                             </div>
+                            </section>
                         </div>
                     </div>
                 </div>
@@ -1243,6 +1473,173 @@
                 document.addEventListener('DOMContentLoaded', boot, { once: true });
             } else {
                 boot();
+            }
+        })();
+    </script>
+    <script>
+        (function () {
+            function dual(zh, en) {
+                return '<span class="lang-zh">' + zh + '</span><span class="lang-en">' + en + '</span>';
+            }
+
+            function createPanel(name, labelId, innerMarkup) {
+                const panel = document.createElement('section');
+                panel.className = 'scada-tab-panel space-y-6';
+                panel.dataset.scadaPanel = name;
+                panel.id = 'scada-panel-' + name;
+                panel.setAttribute('role', 'tabpanel');
+                panel.setAttribute('aria-labelledby', labelId);
+                panel.setAttribute('aria-hidden', 'true');
+                panel.hidden = true;
+                panel.innerHTML = innerMarkup;
+                return panel;
+            }
+
+            function buildTelemetryPanel() {
+                return ''
+                    + '<div class="grid grid-cols-4 gap-4 mb-6">'
+                    + '  <div class="bg-black/40 border border-white/5 p-4 rounded-xl"><div class="text-[10px] text-gray-500 uppercase mb-1">' + dual('遥测吞吐', 'Telemetry Ingest') + '</div><div class="text-2xl font-mono text-white">3.2<span class="text-sm text-accent">B</span></div><div class="text-[10px] text-accent mt-2">' + dual('日均数据点', 'daily data points') + '</div></div>'
+                    + '  <div class="bg-black/40 border border-white/5 p-4 rounded-xl"><div class="text-[10px] text-gray-500 uppercase mb-1">' + dual('单节点信号数', 'Signals / Node') + '</div><div class="text-2xl font-mono text-white">124</div><div class="text-[10px] text-gray-400 mt-2">' + dual('高频采样中', 'high-frequency sampling') + '</div></div>'
+                    + '  <div class="bg-black/40 border border-white/5 p-4 rounded-xl"><div class="text-[10px] text-gray-500 uppercase mb-1">' + dual('中位链路时延', 'Median Uplink') + '</div><div class="text-2xl font-mono text-white">45 <span class="text-sm text-gray-500">ms</span></div><div class="text-[10px] text-accent mt-2">' + dual('缓存补传开启', 'edge replay enabled') + '</div></div>'
+                    + '  <div class="bg-black/40 border border-white/5 p-4 rounded-xl"><div class="text-[10px] text-gray-500 uppercase mb-1">' + dual('同步积压', 'Sync Backlog') + '</div><div class="text-2xl font-mono text-white">0.8<span class="text-sm text-accent">%</span></div><div class="text-[10px] text-orange-400 mt-2">' + dual('可自动追平', 'auto recoverable') + '</div></div>'
+                    + '</div>'
+                    + '<div class="grid grid-cols-3 gap-6">'
+                    + '  <div class="col-span-2 bg-black/40 border border-white/5 rounded-xl flex flex-col">'
+                    + '    <div class="p-4 border-b border-white/5 flex justify-between items-center"><span class="text-sm font-bold text-white">' + dual('2 分钟实时遥测回放', '2-Minute Live Telemetry Replay') + '</span><div class="flex gap-2"><div class="px-2 py-1 bg-white/10 rounded text-[10px] text-white font-mono">TX_MID_01</div><div class="px-2 py-1 bg-accent/10 rounded text-[10px] text-accent font-mono border border-accent/20">LIVE</div></div></div>'
+                    + '    <div class="p-4">'
+                    + '      <div class="relative h-64 bg-black/50 border border-white/5 rounded-xl overflow-hidden">'
+                    + '        <div class="absolute inset-x-0 top-0 h-full bg-[linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:100%_25%]"></div>'
+                    + '        <svg viewBox="0 0 800 260" class="absolute inset-0 w-full h-full"><path d="M0 210 C80 208, 120 180, 190 172 S320 190, 390 150 S520 110, 610 126 S720 146, 800 118" fill="none" stroke="#5DD62C" stroke-width="4" stroke-linecap="round"/><path d="M0 168 C90 158, 150 164, 220 150 S340 120, 430 138 S570 196, 650 184 S730 148, 800 154" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round"/><circle cx="610" cy="126" r="6" fill="#5DD62C"/><circle cx="650" cy="184" r="6" fill="#3b82f6"/></svg>'
+                    + '        <div class="absolute top-3 left-3 text-[10px] font-mono text-gray-400">POWER OUTPUT</div><div class="absolute top-3 right-3 text-[10px] font-mono text-blue-400">EGT BANK A</div>'
+                    + '        <div class="absolute bottom-3 inset-x-0 flex justify-between px-4 text-[10px] font-mono text-gray-500"><span>12:00</span><span>12:30</span><span>13:00</span><span>13:30</span><span>14:00</span></div>'
+                    + '      </div>'
+                    + '      <div class="grid grid-cols-3 gap-3 mt-4">'
+                    + '        <div class="rounded-lg border border-white/5 bg-white/5 p-3"><div class="text-[10px] text-gray-500 uppercase">' + dual('缸组平衡', 'Bank Balance') + '</div><div class="mt-2 text-sm font-mono text-white">+1.8%</div></div>'
+                    + '        <div class="rounded-lg border border-white/5 bg-white/5 p-3"><div class="text-[10px] text-gray-500 uppercase">' + dual('燃气阀开度', 'Gas Valve') + '</div><div class="mt-2 text-sm font-mono text-white">42% OPEN</div></div>'
+                    + '        <div class="rounded-lg border border-white/5 bg-white/5 p-3"><div class="text-[10px] text-gray-500 uppercase">' + dual('缓存重放', 'Replay Queue') + '</div><div class="mt-2 text-sm font-mono text-accent">14 packets</div></div>'
+                    + '      </div>'
+                    + '      <div class="mt-4 rounded-xl border border-white/5 bg-white/5 p-4"><div class="text-[10px] text-gray-500 uppercase mb-3">' + dual('事件流', 'Event Stream') + '</div><div class="space-y-2 text-[11px] font-mono text-gray-300"><div>&gt; HEARTBEAT_SYNC :: TX_MID_01 :: <span class="text-accent">OK</span></div><div>&gt; EGT_VARIANCE :: CYL_10 :: <span class="text-yellow-400">+12%</span></div><div>&gt; CACHE_REPLAY :: WY_NORTH_09 :: <span class="text-blue-400">14 packets restored</span></div></div></div>'
+                    + '    </div>'
+                    + '  </div>'
+                    + '  <div class="col-span-1 flex flex-col gap-6">'
+                    + '    <div class="bg-black/40 border border-white/5 rounded-xl p-4"><div class="text-[10px] text-gray-500 mb-4">' + dual('实时节点检查', 'LIVE NODE INSPECTOR') + '</div><div class="text-xl font-bold text-white">TX_MID_01</div><div class="mt-2 inline-flex items-center gap-2 rounded bg-accent/10 border border-accent/20 px-2 py-1 text-[10px] font-mono text-accent"><div class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></div>' + dual('12 秒前心跳', 'Heartbeat 12s ago') + '</div><div class="mt-6 space-y-3 text-xs font-mono"><div class="flex items-center justify-between"><span class="text-gray-500">RPM</span><span class="text-white">1500</span></div><div class="flex items-center justify-between"><span class="text-gray-500">MAP</span><span class="text-white">103 kPa</span></div><div class="flex items-center justify-between"><span class="text-gray-500">MN</span><span class="text-white">74.2</span></div><div class="flex items-center justify-between"><span class="text-gray-500">EGT_10</span><span class="text-yellow-400">623&deg;C</span></div><div class="flex items-center justify-between"><span class="text-gray-500">SPARK_V</span><span class="text-white">36.4 kV</span></div></div></div>'
+                    + '    <div class="bg-black/40 border border-white/5 rounded-xl p-4"><div class="text-[10px] text-gray-500 uppercase mb-3">' + dual('链路状态', 'Link State') + '</div><div class="space-y-3"><div class="rounded-lg border border-white/5 bg-white/5 p-3"><div class="flex justify-between text-[10px] font-mono"><span class="text-gray-500">PRIMARY</span><span class="text-accent">STARLINK</span></div><div class="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-[88%] rounded-full bg-accent"></div></div></div><div class="rounded-lg border border-white/5 bg-white/5 p-3"><div class="flex justify-between text-[10px] font-mono"><span class="text-gray-500">BACKUP</span><span class="text-blue-400">4G/LTE</span></div><div class="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full w-[72%] rounded-full bg-blue-400"></div></div></div><div class="rounded-lg border border-white/5 bg-white/5 p-3 text-[11px] text-gray-300 leading-relaxed">' + dual('边缘缓存负责断链兜底，恢复后自动补传，确保趋势分析不断档。', 'Edge cache protects packets during link drops and backfills automatically once the uplink is restored.') + '</div></div></div>'
+                    + '  </div>'
+                    + '</div>';
+            }
+
+            function buildDiagnosticsPanel() {
+                return ''
+                    + '<div class="grid grid-cols-4 gap-4 mb-6">'
+                    + '  <div class="bg-black/40 border border-white/5 p-4 rounded-xl"><div class="text-[10px] text-gray-500 uppercase mb-1">' + dual('活跃 PdM 案例', 'Active PdM Cases') + '</div><div class="text-2xl font-mono text-white">3</div><div class="text-[10px] text-red-400 mt-2">' + dual('1 个高风险', '1 high risk') + '</div></div>'
+                    + '  <div class="bg-black/40 border border-white/5 p-4 rounded-xl"><div class="text-[10px] text-gray-500 uppercase mb-1">' + dual('最早预警提前量', 'Earliest Warning') + '</div><div class="text-2xl font-mono text-white">12 <span class="text-sm text-gray-500">' + dual('天', 'days') + '</span></div><div class="text-[10px] text-accent mt-2">' + dual('预测窗口建立', 'prediction window established') + '</div></div>'
+                    + '  <div class="bg-black/40 border border-white/5 p-4 rounded-xl"><div class="text-[10px] text-gray-500 uppercase mb-1">' + dual('诊断置信度', 'Diagnosis Confidence') + '</div><div class="text-2xl font-mono text-white">92<span class="text-sm text-accent">%</span></div><div class="text-[10px] text-gray-400 mt-2">' + dual('机理模型 + 历史样本', 'physics + history') + '</div></div>'
+                    + '  <div class="bg-black/40 border border-white/5 p-4 rounded-xl"><div class="text-[10px] text-gray-500 uppercase mb-1">' + dual('自动生成工单', 'Auto-Created Orders') + '</div><div class="text-2xl font-mono text-white">7</div><div class="text-[10px] text-orange-400 mt-2">' + dual('2 单已派单', '2 already dispatched') + '</div></div>'
+                    + '</div>'
+                    + '<div class="grid grid-cols-3 gap-6">'
+                    + '  <div class="col-span-2 bg-black/40 border border-white/5 rounded-xl flex flex-col">'
+                    + '    <div class="p-4 border-b border-white/5 flex justify-between items-center"><span class="text-sm font-bold text-white">' + dual('AI 根因诊断队列', 'AI Root-Cause Queue') + '</span><div class="text-[10px] text-blue-400 font-mono">' + dual('模型已更新', 'MODEL UPDATED') + '</div></div>'
+                    + '    <div class="p-4 space-y-4">'
+                    + '      <div class="rounded-xl border border-red-500/20 bg-red-500/10 p-4"><div class="flex items-start justify-between gap-4"><div><div class="text-sm font-bold text-white">' + dual('#10 缸火花塞衰减', 'Cyl #10 Spark Plug Drift') + '</div><div class="text-[11px] text-gray-300 mt-2 leading-relaxed">' + dual('火花塞电压需求持续上扬，已逼近失火阈值。模型判定为火花塞老化而非瞬时燃气波动。', 'Spark voltage demand keeps rising toward the misfire threshold. The model attributes it to plug aging rather than a temporary gas fluctuation.') + '</div></div><div class="text-right"><div class="text-[10px] text-red-300 font-mono">RISK 0.93</div><div class="mt-2 inline-flex px-2 py-1 rounded bg-red-500/20 border border-red-500/30 text-[10px] font-mono text-red-300">' + dual('36 小时窗口', '36h window') + '</div></div></div></div>'
+                    + '      <div class="rounded-xl border border-blue-500/20 bg-blue-500/10 p-4"><div class="flex items-start justify-between gap-4"><div><div class="text-sm font-bold text-white">' + dual('EGT 偏差异常', 'EGT Deviation Anomaly') + '</div><div class="text-[11px] text-gray-300 mt-2 leading-relaxed">' + dual('右侧缸组热平衡失衡，#10 与相邻缸温差扩大到 +62°C，建议联查点火与进气阀。', 'Thermal balance on the right bank is drifting. Cyl #10 now differs from neighboring cylinders by +62°C, suggesting a combined ignition and intake-valve check.') + '</div></div><div class="text-right"><div class="text-[10px] text-blue-300 font-mono">CONF 0.88</div><div class="mt-2 inline-flex px-2 py-1 rounded bg-blue-500/20 border border-blue-500/30 text-[10px] font-mono text-blue-300">' + dual('计划停机处理', 'planned outage') + '</div></div></div></div>'
+                    + '      <div class="rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-4"><div class="flex items-start justify-between gap-4"><div><div class="text-sm font-bold text-white">' + dual('滤芯寿命即将耗尽', 'Filter Lifecycle Near End') + '</div><div class="text-[11px] text-gray-300 mt-2 leading-relaxed">' + dual('压降曲线斜率加速上升，剩余寿命约 11%。系统已联动 WMS 预留备件并合并到下一次保养工单。', 'Pressure-drop slope is accelerating, with about 11% life remaining. The system has already reserved parts in WMS and bundled them into the next maintenance order.') + '</div></div><div class="text-right"><div class="text-[10px] text-yellow-300 font-mono">ETA 11%</div><div class="mt-2 inline-flex px-2 py-1 rounded bg-yellow-500/20 border border-yellow-500/30 text-[10px] font-mono text-yellow-300">' + dual('按需保养', 'on-demand PM') + '</div></div></div></div>'
+                    + '    </div>'
+                    + '  </div>'
+                    + '  <div class="col-span-1 flex flex-col gap-6">'
+                    + '    <div class="bg-black/40 border border-white/5 rounded-xl p-4"><div class="text-[10px] text-gray-500 mb-4">' + dual('处置剧本', 'ACTION PLAYBOOK') + '</div><div class="space-y-3 text-xs"><div class="rounded-lg border border-white/5 bg-white/5 p-3"><div class="text-[10px] text-gray-500 uppercase mb-1">' + dual('下一动作', 'Next Action') + '</div><div class="text-white font-semibold">' + dual('更换 #10 缸火花塞并复核点火线圈', 'Replace Cyl #10 spark plug and verify ignition coil') + '</div></div><div class="rounded-lg border border-white/5 bg-white/5 p-3"><div class="text-[10px] text-gray-500 uppercase mb-1">' + dual('备件清单', 'Parts Reserved') + '</div><div class="text-white font-mono">SPARK_PLUG_JNT x2</div><div class="text-white font-mono">IGNITION_COIL_CAT x1</div></div><div class="rounded-lg border border-white/5 bg-white/5 p-3"><div class="text-[10px] text-gray-500 uppercase mb-1">' + dual('响应班组', 'Assigned Crew') + '</div><div class="text-white">' + dual('西德州 02 号机电班组', 'West Texas Crew 02') + '</div><div class="mt-1 text-[10px] text-accent font-mono">ETA 02:15</div></div></div></div>'
+                    + '    <div class="bg-black/40 border border-white/5 rounded-xl p-4"><div class="text-[10px] text-gray-500 uppercase mb-3">' + dual('收益保护', 'ROI SHIELD') + '</div><div class="space-y-3"><div class="flex items-center justify-between text-xs font-mono"><span class="text-gray-500">' + dual('避免停机', 'Downtime Avoided') + '</span><span class="text-accent">6.4h</span></div><div class="flex items-center justify-between text-xs font-mono"><span class="text-gray-500">' + dual('保护收益', 'Revenue Protected') + '</span><span class="text-accent">$18.6k</span></div><div class="flex items-center justify-between text-xs font-mono"><span class="text-gray-500">' + dual('误报率', 'False Positive') + '</span><span class="text-white">4.1%</span></div><div class="rounded-lg border border-accent/20 bg-accent/10 p-3 text-[11px] text-white leading-relaxed">' + dual('这不是故障发生后再派人，而是 AI 先于 ECU 限载和现场停机，把损失截断在事故前。', 'This is not dispatching after failure. GasGx AI intercepts losses before ECU derating and field shutdown actually happen.') + '</div></div></div>'
+                    + '  </div>'
+                    + '</div>';
+            }
+
+            function ensureScadaPanels(root) {
+                const host = root.querySelector('[data-scada-content-host]');
+                if (!host) return;
+
+                if (!host.querySelector('[data-scada-panel="topology"]')) {
+                    const topologyTemplate = document.getElementById('scada-panel-topology-template');
+                    if (topologyTemplate && topologyTemplate.content) {
+                        host.appendChild(topologyTemplate.content.cloneNode(true));
+                        topologyTemplate.remove();
+                    }
+                }
+
+                if (!host.querySelector('[data-scada-panel="telemetry"]')) {
+                    host.appendChild(createPanel('telemetry', 'scada-tab-telemetry', buildTelemetryPanel()));
+                }
+
+                if (!host.querySelector('[data-scada-panel="diagnostics"]')) {
+                    host.appendChild(createPanel('diagnostics', 'scada-tab-diagnostics', buildDiagnosticsPanel()));
+                }
+            }
+
+            function initScadaTabs() {
+                const root = document.querySelector('[data-scada-tabs]');
+                if (!root || root.dataset.scadaTabsBound === 'true') return;
+                root.dataset.scadaTabsBound = 'true';
+
+                ensureScadaPanels(root);
+
+                const buttons = Array.from(root.querySelectorAll('[data-scada-tab]'));
+                const panels = Array.from(root.querySelectorAll('[data-scada-panel]'));
+                const contentHost = root.querySelector('[data-scada-content-host]');
+
+                if (!buttons.length || !panels.length) return;
+
+                const activateTab = function (tabName) {
+                    buttons.forEach(function (button) {
+                        const active = button.dataset.scadaTab === tabName;
+                        button.classList.toggle('is-active', active);
+                        button.setAttribute('aria-selected', active ? 'true' : 'false');
+                        button.tabIndex = active ? 0 : -1;
+                    });
+
+                    panels.forEach(function (panel) {
+                        const active = panel.dataset.scadaPanel === tabName;
+                        panel.hidden = !active;
+                        panel.setAttribute('aria-hidden', active ? 'false' : 'true');
+                        panel.classList.toggle('is-visible', active);
+                    });
+
+                    if (contentHost) {
+                        contentHost.scrollTop = 0;
+                    }
+                };
+
+                buttons.forEach(function (button, index) {
+                    button.addEventListener('click', function () {
+                        activateTab(button.dataset.scadaTab);
+                    });
+
+                    button.addEventListener('keydown', function (event) {
+                        const keys = ['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft', 'Home', 'End'];
+                        if (!keys.includes(event.key)) return;
+
+                        event.preventDefault();
+                        let nextIndex = index;
+
+                        if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+                            nextIndex = (index + 1) % buttons.length;
+                        } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+                            nextIndex = (index - 1 + buttons.length) % buttons.length;
+                        } else if (event.key === 'Home') {
+                            nextIndex = 0;
+                        } else if (event.key === 'End') {
+                            nextIndex = buttons.length - 1;
+                        }
+
+                        buttons[nextIndex].focus();
+                        activateTab(buttons[nextIndex].dataset.scadaTab);
+                    });
+                });
+
+                activateTab(root.dataset.defaultTab || 'overview');
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initScadaTabs, { once: true });
+            } else {
+                initScadaTabs();
             }
         })();
     </script>
