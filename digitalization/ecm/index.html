@@ -6,6 +6,9 @@
     <title>GasGx ECM Controller</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+    
+    <!-- 寮曞叆 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -24,12 +27,10 @@
             }
         };
     </script>
-    <!-- 引入 Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 React 和 ReactDOM (生产版本) -->
+    <!-- 寮曞叆 React 鍜?ReactDOM (鐢熶骇鐗堟湰) -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- 引入 Babel 以在浏览器中编译 JSX -->
+    <!-- 寮曞叆 Babel 浠ュ湪娴忚鍣ㄤ腑缂栬瘧 JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-[#0F0F0F]">
@@ -53,7 +54,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- 内联微型图标组件 (替代 lucide-react，确保单文件独立运行) ---
+        // --- 鍐呰仈寰瀷鍥炬爣缁勪欢 (鏇夸唬 lucide-react锛岀‘淇濆崟鏂囦欢鐙珛杩愯) ---
         const IconBase = ({ d, size=16, className="", style={}, children }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} style={style}>
                 {d && <path d={d} />}
@@ -69,7 +70,7 @@
         const Moon = (p) => <IconBase {...p}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></IconBase>;
 
 
-        // --- 全局昼夜主题与滚动条注入 ---
+        // --- 鍏ㄥ眬鏄煎涓婚涓庢粴鍔ㄦ潯娉ㄥ叆 ---
         const GlobalStyles = () => (
             <style>{`
             :root {
@@ -116,7 +117,7 @@
             `}</style>
         );
 
-        // --- 全局国际化字典 (i18n) ---
+        // --- 鍏ㄥ眬鍥介檯鍖栧瓧鍏?(i18n) ---
         const dict = {
             en: {
                 appTitle: 'GasGx ECM', port: 'PORT', baud: 'BAUD',
@@ -127,20 +128,20 @@
                 expert: 'Expert System | Simulating', cause: '[CAUSE]', sol: '[SOLUTION]', chartMap: 'Map Curve'
             },
             zh: {
-                appTitle: 'GasGx ECM', port: '串口', baud: '波特率',
-                start: '启动测试', stop: '急停关机', mode: '诊断推演模式',
-                sysSts: '系统状态', phase: '阶段',
-                noError: '系统无故障', errPrefix: '故障:',
-                tabs: { speed: '调速控制', ignition: '点火系统', lambda: '空燃比', waterTem: '水温曲线', oilPress: '油压曲线' },
-                expert: '专家系统介入 | 正在预演', cause: '【故障表象】', sol: '【排查方案】', chartMap: '标定曲线'
+                appTitle: 'GasGx ECM', port: '涓插彛', baud: '娉㈢壒鐜?,
+                start: '鍚姩娴嬭瘯', stop: '鎬ュ仠鍏虫満', mode: '璇婃柇鎺ㄦ紨妯″紡',
+                sysSts: '绯荤粺鐘舵€?, phase: '闃舵',
+                noError: '绯荤粺鏃犳晠闅?, errPrefix: '鏁呴殰:',
+                tabs: { speed: '璋冮€熸帶鍒?, ignition: '鐐圭伀绯荤粺', lambda: '绌虹噧姣?, waterTem: '姘存俯鏇茬嚎', oilPress: '娌瑰帇鏇茬嚎' },
+                expert: '涓撳绯荤粺浠嬪叆 | 姝ｅ湪棰勬紨', cause: '銆愭晠闅滆〃璞°€?, sol: '銆愭帓鏌ユ柟妗堛€?, chartMap: '鏍囧畾鏇茬嚎'
             },
             ru: {
-                appTitle: 'ЦУ Газ-Двигатель', port: 'ПОРТ', baud: 'БОД',
-                start: 'ЗАПУСК', stop: 'АВАР. СТОП', mode: 'РЕЖИМ СИМУЛЯЦИИ',
-                sysSts: 'СТАТУС', phase: 'ФАЗА',
-                noError: 'Система в норме', errPrefix: 'ОШИБКА:',
-                tabs: { speed: 'Скорость', ignition: 'Зажигание', lambda: 'Лямбда', waterTem: 'Темп.Воды', oilPress: 'Давл.Масла' },
-                expert: 'Экспертная система | Сценарий', cause: '[ПРИЧИНА]', sol: '[РЕШЕНИЕ]', chartMap: 'Кривая (MAP)'
+                appTitle: '笑校 袚邪蟹-袛胁懈谐邪褌械谢褜', port: '袩袨袪孝', baud: '袘袨袛',
+                start: '袟袗袩校小袣', stop: '袗袙袗袪. 小孝袨袩', mode: '袪袝袞袠袦 小袠袦校袥携笑袠袠',
+                sysSts: '小孝袗孝校小', phase: '肖袗袟袗',
+                noError: '小懈褋褌械屑邪 胁 薪芯褉屑械', errPrefix: '袨楔袠袘袣袗:',
+                tabs: { speed: '小泻芯褉芯褋褌褜', ignition: '袟邪卸懈谐邪薪懈械', lambda: '袥褟屑斜写邪', waterTem: '孝械屑锌.袙芯写褘', oilPress: '袛邪胁谢.袦邪褋谢邪' },
+                expert: '协泻褋锌械褉褌薪邪褟 褋懈褋褌械屑邪 | 小褑械薪邪褉懈泄', cause: '[袩袪袠效袠袧袗]', sol: '[袪袝楔袝袧袠袝]', chartMap: '袣褉懈胁邪褟 (MAP)'
             }
         };
 
@@ -173,7 +174,7 @@
             const tickRef = useRef(0);
             const phaseRef = useRef('STOP');
 
-            const getStopStateText = () => lang === 'en' ? 'STOP' : (lang === 'zh' ? '停机' : 'СТОП');
+            const getStopStateText = () => lang === 'en' ? 'STOP' : (lang === 'zh' ? '鍋滄満' : '小孝袨袩');
 
             const INITIAL_ENGINE_STATE = {
                 CurSpd: 0, SetSpd: 1500, IgtSpd: 0, SyncVolt: 0.0,
@@ -225,116 +226,116 @@
                 document.documentElement.lang = normalized === 'zh' ? 'zh-CN' : 'en';
             }, [lang]);
 
-            // --- 21 种硬核推演模式智库 ---
+            // --- 21 绉嶇‖鏍告帹婕旀ā寮忔櫤搴?---
             const getSimModes = (l) => {
                 const isZH = l === 'zh';
                 const isEN = l === 'en';
                 return {
-                    NORMAL: { label: isZH?'[00] 标准运行 (STD)':'[00] Normal (STD)', desc: '', sol: '' },
+                    NORMAL: { label: isZH?'[00] 鏍囧噯杩愯 (STD)':'[00] Normal (STD)', desc: '', sol: '' },
                     START_FAIL: { 
-                        label: isZH?'[01] 启动失败 (ERR_START)':(isEN?'[01] Start Fail':'[01] Ошибка запуска'), 
-                        desc: isZH?'马达拖动转速无法突破200RPM，无法进入怠速。':(isEN?'RPM stuck < 200 during crank, cannot idle.':'Обороты застряли < 200, нет холостого хода.'), 
-                        sol: isZH?'检查启动马达供电电压；检查燃气主阀是否打开。':(isEN?'Check starter voltage; check main gas valve.':'Проверьте напряжение стартера; газовый клапан.') 
+                        label: isZH?'[01] 鍚姩澶辫触 (ERR_START)':(isEN?'[01] Start Fail':'[01] 袨褕懈斜泻邪 蟹邪锌褍褋泻邪'), 
+                        desc: isZH?'椹揪鎷栧姩杞€熸棤娉曠獊鐮?00RPM锛屾棤娉曡繘鍏ユ€犻€熴€?:(isEN?'RPM stuck < 200 during crank, cannot idle.':'袨斜芯褉芯褌褘 蟹邪褋褌褉褟谢懈 < 200, 薪械褌 褏芯谢芯褋褌芯谐芯 褏芯写邪.'), 
+                        sol: isZH?'妫€鏌ュ惎鍔ㄩ┈杈句緵鐢电數鍘嬶紱妫€鏌ョ噧姘斾富闃€鏄惁鎵撳紑銆?:(isEN?'Check starter voltage; check main gas valve.':'袩褉芯胁械褉褜褌械 薪邪锌褉褟卸械薪懈械 褋褌邪褉褌械褉邪; 谐邪蟹芯胁褘泄 泻谢邪锌邪薪.') 
                     },
                     OVERSPEED: { 
-                        label: isZH?'[02] 飞车失控 (ERR_SPD)':(isEN?'[02] Overspeed':'[02] Разнос двигателя'), 
-                        desc: isZH?'节气门执行器卡死全开，转速失去控制瞬间飙升。':(isEN?'Throttle actuator jammed fully open, RPM spiking.':'Привод дросселя заклинил, скачок оборотов.'), 
-                        sol: isZH?'危险！立即手动切断燃气总阀！':(isEN?'DANGER! Manually shut off gas valve NOW!':'ОПАСНО! Немедленно перекройте газ!') 
+                        label: isZH?'[02] 椋炶溅澶辨帶 (ERR_SPD)':(isEN?'[02] Overspeed':'[02] 袪邪蟹薪芯褋 写胁懈谐邪褌械谢褟'), 
+                        desc: isZH?'鑺傛皵闂ㄦ墽琛屽櫒鍗℃鍏ㄥ紑锛岃浆閫熷け鍘绘帶鍒剁灛闂撮鍗囥€?:(isEN?'Throttle actuator jammed fully open, RPM spiking.':'袩褉懈胁芯写 写褉芯褋褋械谢褟 蟹邪泻谢懈薪懈谢, 褋泻邪褔芯泻 芯斜芯褉芯褌芯胁.'), 
+                        sol: isZH?'鍗遍櫓锛佺珛鍗虫墜鍔ㄥ垏鏂噧姘旀€婚榾锛?:(isEN?'DANGER! Manually shut off gas valve NOW!':'袨袩袗小袧袨! 袧械屑械写谢械薪薪芯 锌械褉械泻褉芯泄褌械 谐邪蟹!') 
                     },
                     HIGH_TEMP_OIL: { 
-                        label: isZH?'[03] 高温低压 (ERR_TEMP)':(isEN?'[03] High Temp/Low Press':'[03] Выс. темп / Низк. давл'), 
-                        desc: isZH?'水温异常攀升引起机油变稀，机油压力随之下降。':(isEN?'Coolant temp rising, thinning oil and dropping pressure.':'Рост температуры ОЖ, падение давления масла.'), 
-                        sol: isZH?'检查冷却液循环（水泵、节温器）及机油泵。':(isEN?'Check coolant circulation and oil pump.':'Проверьте насосы ОЖ и масла.') 
+                        label: isZH?'[03] 楂樻俯浣庡帇 (ERR_TEMP)':(isEN?'[03] High Temp/Low Press':'[03] 袙褘褋. 褌械屑锌 / 袧懈蟹泻. 写邪胁谢'), 
+                        desc: isZH?'姘存俯寮傚父鏀€鍗囧紩璧锋満娌瑰彉绋€锛屾満娌瑰帇鍔涢殢涔嬩笅闄嶃€?:(isEN?'Coolant temp rising, thinning oil and dropping pressure.':'袪芯褋褌 褌械屑锌械褉邪褌褍褉褘 袨袞, 锌邪写械薪懈械 写邪胁谢械薪懈褟 屑邪褋谢邪.'), 
+                        sol: isZH?'妫€鏌ュ喎鍗存恫寰幆锛堟按娉点€佽妭娓╁櫒锛夊強鏈烘补娉点€?:(isEN?'Check coolant circulation and oil pump.':'袩褉芯胁械褉褜褌械 薪邪褋芯褋褘 袨袞 懈 屑邪褋谢邪.') 
                     },
                     COOLANT_LEAK: { 
-                        label: isZH?'[04] 冷却液暴漏 (ERR_LEAK)':(isEN?'[04] Coolant Leak':'[04] Утечка ОЖ'), 
-                        desc: isZH?'水温极速攀升，系统极短时间内触发高温极限停机。':(isEN?'Extreme rapid temp rise causing instant trip.':'Резкий скачок температуры, аварийная остановка.'), 
-                        sol: isZH?'立刻停机检查散热器、水管接头是否破裂。':(isEN?'Check radiator and hose joints for burst.':'Проверьте радиатор и шланги на прорыв.') 
+                        label: isZH?'[04] 鍐峰嵈娑叉毚婕?(ERR_LEAK)':(isEN?'[04] Coolant Leak':'[04] 校褌械褔泻邪 袨袞'), 
+                        desc: isZH?'姘存俯鏋侀€熸攢鍗囷紝绯荤粺鏋佺煭鏃堕棿鍐呰Е鍙戦珮娓╂瀬闄愬仠鏈恒€?:(isEN?'Extreme rapid temp rise causing instant trip.':'袪械蟹泻懈泄 褋泻邪褔芯泻 褌械屑锌械褉邪褌褍褉褘, 邪胁邪褉懈泄薪邪褟 芯褋褌邪薪芯胁泻邪.'), 
+                        sol: isZH?'绔嬪埢鍋滄満妫€鏌ユ暎鐑櫒銆佹按绠℃帴澶存槸鍚︾牬瑁傘€?:(isEN?'Check radiator and hose joints for burst.':'袩褉芯胁械褉褜褌械 褉邪写懈邪褌芯褉 懈 褕谢邪薪谐懈 薪邪 锌褉芯褉褘胁.') 
                     },
                     OIL_PUMP_FAIL: { 
-                        label: isZH?'[05] 机油泵失效 (ERR_OIL_PUMP)':(isEN?'[05] Oil Pump Fail':'[05] Отказ масляного насоса'), 
-                        desc: isZH?'机油压力断崖式下跌至 0，存在严重拉缸风险。':(isEN?'Oil pressure drops to zero instantly. High friction risk.':'Давление масла падает до нуля. Риск задиров.'), 
-                        sol: isZH?'立即停机！检查机油泵传动齿轮及油底壳油位。':(isEN?'STOP IMMEDIATELY! Check pump gear and oil level.':'СТОП! Проверьте привод насоса и уровень масла.') 
+                        label: isZH?'[05] 鏈烘补娉靛け鏁?(ERR_OIL_PUMP)':(isEN?'[05] Oil Pump Fail':'[05] 袨褌泻邪蟹 屑邪褋谢褟薪芯谐芯 薪邪褋芯褋邪'), 
+                        desc: isZH?'鏈烘补鍘嬪姏鏂礀寮忎笅璺岃嚦 0锛屽瓨鍦ㄤ弗閲嶆媺缂搁闄┿€?:(isEN?'Oil pressure drops to zero instantly. High friction risk.':'袛邪胁谢械薪懈械 屑邪褋谢邪 锌邪写邪械褌 写芯 薪褍谢褟. 袪懈褋泻 蟹邪写懈褉芯胁.'), 
+                        sol: isZH?'绔嬪嵆鍋滄満锛佹鏌ユ満娌规车浼犲姩榻胯疆鍙婃补搴曞３娌逛綅銆?:(isEN?'STOP IMMEDIATELY! Check pump gear and oil level.':'小孝袨袩! 袩褉芯胁械褉褜褌械 锌褉懈胁芯写 薪邪褋芯褋邪 懈 褍褉芯胁械薪褜 屑邪褋谢邪.') 
                     },
                     SENSOR_FAIL_MAP: { 
-                        label: isZH?'[06] 歧管传感断线 (ERR_MAP)':(isEN?'[06] MAP Sensor Fail':'[06] Отказ датчика ДАД'), 
-                        desc: isZH?'MAP信号丢失导致退回开环，转速剧烈游车震荡。':(isEN?'MAP signal lost, system open-loop, severe hunting.':'Потеря сигнала ДАД, раскачка оборотов.'), 
-                        sol: isZH?'检查MAP传感器线束连接与5V参考供电。':(isEN?'Check sensor wiring and 5V reference.':'Проверьте проводку датчика и питание 5В.') 
+                        label: isZH?'[06] 姝х浼犳劅鏂嚎 (ERR_MAP)':(isEN?'[06] MAP Sensor Fail':'[06] 袨褌泻邪蟹 写邪褌褔懈泻邪 袛袗袛'), 
+                        desc: isZH?'MAP淇″彿涓㈠け瀵艰嚧閫€鍥炲紑鐜紝杞€熷墽鐑堟父杞﹂渿鑽°€?:(isEN?'MAP signal lost, system open-loop, severe hunting.':'袩芯褌械褉褟 褋懈谐薪邪谢邪 袛袗袛, 褉邪褋泻邪褔泻邪 芯斜芯褉芯褌芯胁.'), 
+                        sol: isZH?'妫€鏌AP浼犳劅鍣ㄧ嚎鏉熻繛鎺ヤ笌5V鍙傝€冧緵鐢点€?:(isEN?'Check sensor wiring and 5V reference.':'袩褉芯胁械褉褜褌械 锌褉芯胁芯写泻褍 写邪褌褔懈泻邪 懈 锌懈褌邪薪懈械 5袙.') 
                     },
                     SYNC_LOSS: { 
-                        label: isZH?'[07] 同步信号丢失 (ERR_SYNC)':(isEN?'[07] Sync Loss':'[07] Потеря синхронизации'), 
-                        desc: isZH?'曲轴同步电压跌落，ECU无法判定相位，立刻停机。':(isEN?'Cam/Crank sync lost, ECU halts ignition immediately.':'Потеря синхр. КВ/РВ, немедленная остановка.'), 
-                        sol: isZH?'检查转速传感器(MPU)探头间隙；排查高压干扰。':(isEN?'Check MPU gap; shield from high voltage noise.':'Проверьте зазор датчика; изоляцию ВВ-проводов.') 
+                        label: isZH?'[07] 鍚屾淇″彿涓㈠け (ERR_SYNC)':(isEN?'[07] Sync Loss':'[07] 袩芯褌械褉褟 褋懈薪褏褉芯薪懈蟹邪褑懈懈'), 
+                        desc: isZH?'鏇茶酱鍚屾鐢靛帇璺岃惤锛孍CU鏃犳硶鍒ゅ畾鐩镐綅锛岀珛鍒诲仠鏈恒€?:(isEN?'Cam/Crank sync lost, ECU halts ignition immediately.':'袩芯褌械褉褟 褋懈薪褏褉. 袣袙/袪袙, 薪械屑械写谢械薪薪邪褟 芯褋褌邪薪芯胁泻邪.'), 
+                        sol: isZH?'妫€鏌ヨ浆閫熶紶鎰熷櫒(MPU)鎺㈠ご闂撮殭锛涙帓鏌ラ珮鍘嬪共鎵般€?:(isEN?'Check MPU gap; shield from high voltage noise.':'袩褉芯胁械褉褜褌械 蟹邪蟹芯褉 写邪褌褔懈泻邪; 懈蟹芯谢褟褑懈褞 袙袙-锌褉芯胁芯写芯胁.') 
                     },
                     CAN_BUS_OFF: { 
-                        label: isZH?'[08] CAN总线瘫痪 (ERR_CAN)':(isEN?'[08] CAN Bus Off':'[08] Отказ шины CAN'), 
-                        desc: isZH?'通讯丢失，关键传感器数据冻结或显示 ERR。':(isEN?'Communication lost, parameters freeze or ERR.':'Потеря связи, данные зависли или ERR.'), 
-                        sol: isZH?'检查120欧终端电阻；排查CANH/CANL是否短路。':(isEN?'Check 120 ohm resistors and CAN line shorts.':'Проверьте резисторы 120 Ом и замыкания CAN.') 
+                        label: isZH?'[08] CAN鎬荤嚎鐦棯 (ERR_CAN)':(isEN?'[08] CAN Bus Off':'[08] 袨褌泻邪蟹 褕懈薪褘 CAN'), 
+                        desc: isZH?'閫氳涓㈠け锛屽叧閿紶鎰熷櫒鏁版嵁鍐荤粨鎴栨樉绀?ERR銆?:(isEN?'Communication lost, parameters freeze or ERR.':'袩芯褌械褉褟 褋胁褟蟹懈, 写邪薪薪褘械 蟹邪胁懈褋谢懈 懈谢懈 ERR.'), 
+                        sol: isZH?'妫€鏌?20娆х粓绔數闃伙紱鎺掓煡CANH/CANL鏄惁鐭矾銆?:(isEN?'Check 120 ohm resistors and CAN line shorts.':'袩褉芯胁械褉褜褌械 褉械蟹懈褋褌芯褉褘 120 袨屑 懈 蟹邪屑褘泻邪薪懈褟 CAN.') 
                     },
                     LOAD_SURGE: { 
-                        label: isZH?'[09] 突加突卸 (ERR_LOAD)':(isEN?'[09] Load Surge':'[09] Броски нагрузки'), 
-                        desc: isZH?'电网负载非预期剧烈波动，引发转速和排温大幅震荡。':(isEN?'Unexpected severe load jumps causing RPM instability.':'Резкие скачки нагрузки, нестабильность оборотов.'), 
-                        sol: isZH?'检查并网端设备启停状态；降低调速响应增益。':(isEN?'Check grid equipment switching; lower PID gain.':'Проверьте сеть; снизьте усиление ПИД.') 
+                        label: isZH?'[09] 绐佸姞绐佸嵏 (ERR_LOAD)':(isEN?'[09] Load Surge':'[09] 袘褉芯褋泻懈 薪邪谐褉褍蟹泻懈'), 
+                        desc: isZH?'鐢电綉璐熻浇闈為鏈熷墽鐑堟尝鍔紝寮曞彂杞€熷拰鎺掓俯澶у箙闇囪崱銆?:(isEN?'Unexpected severe load jumps causing RPM instability.':'袪械蟹泻懈械 褋泻邪褔泻懈 薪邪谐褉褍蟹泻懈, 薪械褋褌邪斜懈谢褜薪芯褋褌褜 芯斜芯褉芯褌芯胁.'), 
+                        sol: isZH?'妫€鏌ュ苟缃戠璁惧鍚仠鐘舵€侊紱闄嶄綆璋冮€熷搷搴斿鐩娿€?:(isEN?'Check grid equipment switching; lower PID gain.':'袩褉芯胁械褉褜褌械 褋械褌褜; 褋薪懈蟹褜褌械 褍褋懈谢械薪懈械 袩袠袛.') 
                     },
                     OVERLOAD: { 
-                        label: isZH?'[10] 严重过载 (ERR_OVERLD)':(isEN?'[10] Extreme Overload':'[10] Сильная перегрузка'), 
-                        desc: isZH?'负载电流远超发电机额定值，转速被强行拖拽下降。':(isEN?'Current exceeds rating, engine bogged down heavily.':'Ток превышает номинал, падение оборотов.'), 
-                        sol: isZH?'紧急切断非核心负载分支断路器。':(isEN?'Emergency trip non-essential load breakers.':'Отключите неприоритетную нагрузку.') 
+                        label: isZH?'[10] 涓ラ噸杩囪浇 (ERR_OVERLD)':(isEN?'[10] Extreme Overload':'[10] 小懈谢褜薪邪褟 锌械褉械谐褉褍蟹泻邪'), 
+                        desc: isZH?'璐熻浇鐢垫祦杩滆秴鍙戠數鏈洪瀹氬€硷紝杞€熻寮鸿鎷栨嫿涓嬮檷銆?:(isEN?'Current exceeds rating, engine bogged down heavily.':'孝芯泻 锌褉械胁褘褕邪械褌 薪芯屑懈薪邪谢, 锌邪写械薪懈械 芯斜芯褉芯褌芯胁.'), 
+                        sol: isZH?'绱ф€ュ垏鏂潪鏍稿績璐熻浇鍒嗘敮鏂矾鍣ㄣ€?:(isEN?'Emergency trip non-essential load breakers.':'袨褌泻谢褞褔懈褌械 薪械锌褉懈芯褉懈褌械褌薪褍褞 薪邪谐褉褍蟹泻褍.') 
                     },
                     MISFIRE: { 
-                        label: isZH?'[11] 多缸缺火 (ERR_MISFIRE)':(isEN?'[11] Misfire Detected':'[11] Пропуск зажигания'), 
-                        desc: isZH?'周期掉速，未燃气导致Lambda虚高变稀，排温下降。':(isEN?'RPM drops, unburnt O2 causes false lean Lambda.':'Пропуски, ложная бедная смесь (много О2).'), 
-                        sol: isZH?'检查点火初级波形、火花塞积碳与高压线圈。':(isEN?'Check ignition wave, spark plugs and coils.':'Проверьте свечи, катушки и осциллограммы.') 
+                        label: isZH?'[11] 澶氱几缂虹伀 (ERR_MISFIRE)':(isEN?'[11] Misfire Detected':'[11] 袩褉芯锌褍褋泻 蟹邪卸懈谐邪薪懈褟'), 
+                        desc: isZH?'鍛ㄦ湡鎺夐€燂紝鏈噧姘斿鑷碙ambda铏氶珮鍙樼█锛屾帓娓╀笅闄嶃€?:(isEN?'RPM drops, unburnt O2 causes false lean Lambda.':'袩褉芯锌褍褋泻懈, 谢芯卸薪邪褟 斜械写薪邪褟 褋屑械褋褜 (屑薪芯谐芯 袨2).'), 
+                        sol: isZH?'妫€鏌ョ偣鐏垵绾ф尝褰€佺伀鑺卞绉⒊涓庨珮鍘嬬嚎鍦堛€?:(isEN?'Check ignition wave, spark plugs and coils.':'袩褉芯胁械褉褜褌械 褋胁械褔懈, 泻邪褌褍褕泻懈 懈 芯褋褑懈谢谢芯谐褉邪屑屑褘.') 
                     },
                     IGNITION_COIL_SHORT: { 
-                        label: isZH?'[12] 线圈级联短路 (ERR_COIL)':(isEN?'[12] Coil Short Circuit':'[12] КЗ катушки'), 
-                        desc: isZH?'点火驱动模块过载，同步电压杂波极大，频繁报错。':(isEN?'Ignition driver overload, severe electrical noise.':'Перегрузка драйвера, сильные помехи.'), 
-                        sol: isZH?'用万用表排查各缸点火线圈初级阻抗是否击穿。':(isEN?'Measure primary resistance of all ignition coils.':'Измерьте сопротивление первичек катушек.') 
+                        label: isZH?'[12] 绾垮湀绾ц仈鐭矾 (ERR_COIL)':(isEN?'[12] Coil Short Circuit':'[12] 袣袟 泻邪褌褍褕泻懈'), 
+                        desc: isZH?'鐐圭伀椹卞姩妯″潡杩囪浇锛屽悓姝ョ數鍘嬫潅娉㈡瀬澶э紝棰戠箒鎶ラ敊銆?:(isEN?'Ignition driver overload, severe electrical noise.':'袩械褉械谐褉褍蟹泻邪 写褉邪泄胁械褉邪, 褋懈谢褜薪褘械 锌芯屑械褏懈.'), 
+                        sol: isZH?'鐢ㄤ竾鐢ㄨ〃鎺掓煡鍚勭几鐐圭伀绾垮湀鍒濈骇闃绘姉鏄惁鍑荤┛銆?:(isEN?'Measure primary resistance of all ignition coils.':'袠蟹屑械褉褜褌械 褋芯锌褉芯褌懈胁谢械薪懈械 锌械褉胁懈褔械泻 泻邪褌褍褕械泻.') 
                     },
                     RICH_MIXTURE: { 
-                        label: isZH?'[13] 混合气过浓 (ERR_RICH)':(isEN?'[13] Rich Mixture':'[13] Богатая смесь'), 
-                        desc: isZH?'Lambda跌破0.9，排气管后燃导致排温极速超限。':(isEN?'Lambda < 0.9, afterburn causes extreme exhaust temp.':'Лямбда < 0.9, догорание в выхлопе (перегрев).'), 
-                        sol: isZH?'检查燃气调压阀压力；校准氧传感器；检查燃气比例阀。':(isEN?'Check gas regulator pressure and O2 sensor.':'Проверьте давление газа и кислородный датчик.') 
+                        label: isZH?'[13] 娣峰悎姘旇繃娴?(ERR_RICH)':(isEN?'[13] Rich Mixture':'[13] 袘芯谐邪褌邪褟 褋屑械褋褜'), 
+                        desc: isZH?'Lambda璺岀牬0.9锛屾帓姘旂鍚庣噧瀵艰嚧鎺掓俯鏋侀€熻秴闄愩€?:(isEN?'Lambda < 0.9, afterburn causes extreme exhaust temp.':'袥褟屑斜写邪 < 0.9, 写芯谐芯褉邪薪懈械 胁 胁褘褏谢芯锌械 (锌械褉械谐褉械胁).'), 
+                        sol: isZH?'妫€鏌ョ噧姘旇皟鍘嬮榾鍘嬪姏锛涙牎鍑嗘哀浼犳劅鍣紱妫€鏌ョ噧姘旀瘮渚嬮榾銆?:(isEN?'Check gas regulator pressure and O2 sensor.':'袩褉芯胁械褉褜褌械 写邪胁谢械薪懈械 谐邪蟹邪 懈 泻懈褋谢芯褉芯写薪褘泄 写邪褌褔懈泻.') 
                     },
                     LEAN_BURN_LIMIT: { 
-                        label: isZH?'[14] 稀燃极限突破 (ERR_LEAN)':(isEN?'[14] Lean Burn Limit':'[14] Предел бедной смеси'), 
-                        desc: isZH?'Lambda超过1.6，燃烧极不稳定，转速剧烈喘振。':(isEN?'Lambda > 1.6, combustion unstable, severe surging.':'Лямбда > 1.6, нестабильное горение, помпаж.'), 
-                        sol: isZH?'查验进气管路漏气点；清理燃气滤清器；检查旁通阀。':(isEN?'Check for intake air leaks; clean gas filters.':'Проверьте впуск на утечки; очистите фильтры.') 
+                        label: isZH?'[14] 绋€鐕冩瀬闄愮獊鐮?(ERR_LEAN)':(isEN?'[14] Lean Burn Limit':'[14] 袩褉械写械谢 斜械写薪芯泄 褋屑械褋懈'), 
+                        desc: isZH?'Lambda瓒呰繃1.6锛岀噧鐑ф瀬涓嶇ǔ瀹氾紝杞€熷墽鐑堝枠鎸€?:(isEN?'Lambda > 1.6, combustion unstable, severe surging.':'袥褟屑斜写邪 > 1.6, 薪械褋褌邪斜懈谢褜薪芯械 谐芯褉械薪懈械, 锌芯屑锌邪卸.'), 
+                        sol: isZH?'鏌ラ獙杩涙皵绠¤矾婕忔皵鐐癸紱娓呯悊鐕冩皵婊ゆ竻鍣紱妫€鏌ユ梺閫氶榾銆?:(isEN?'Check for intake air leaks; clean gas filters.':'袩褉芯胁械褉褜褌械 胁锌褍褋泻 薪邪 褍褌械褔泻懈; 芯褔懈褋褌懈褌械 褎懈谢褜褌褉褘.') 
                     },
                     KNOCK_DETECTED: { 
-                        label: isZH?'[15] 爆震频发 (ERR_KNOCK)':(isEN?'[15] Heavy Knocking':'[15] Детонация'), 
-                        desc: isZH?'气缸内产生剧烈爆震，系统疯狂退角导致动力输出不足。':(isEN?'Severe knocking, ECU retards timing losing power.':'Детонация, ЭБУ задерживает УОЗ (потеря мощн.).'), 
-                        sol: isZH?'检查燃气甲烷值(MN)是否过低；检查中冷器水温。':(isEN?'Check gas Methane Number (MN); check intercooler temp.':'Проверьте метановое число; темп. интеркулера.') 
+                        label: isZH?'[15] 鐖嗛渿棰戝彂 (ERR_KNOCK)':(isEN?'[15] Heavy Knocking':'[15] 袛械褌芯薪邪褑懈褟'), 
+                        desc: isZH?'姘旂几鍐呬骇鐢熷墽鐑堢垎闇囷紝绯荤粺鐤媯閫€瑙掑鑷村姩鍔涜緭鍑轰笉瓒炽€?:(isEN?'Severe knocking, ECU retards timing losing power.':'袛械褌芯薪邪褑懈褟, 协袘校 蟹邪写械褉卸懈胁邪械褌 校袨袟 (锌芯褌械褉褟 屑芯褖薪.).'), 
+                        sol: isZH?'妫€鏌ョ噧姘旂敳鐑峰€?MN)鏄惁杩囦綆锛涙鏌ヤ腑鍐峰櫒姘存俯銆?:(isEN?'Check gas Methane Number (MN); check intercooler temp.':'袩褉芯胁械褉褜褌械 屑械褌邪薪芯胁芯械 褔懈褋谢芯; 褌械屑锌. 懈薪褌械褉泻褍谢械褉邪.') 
                     },
                     LOW_GAS_PRESS: { 
-                        label: isZH?'[16] 燃气压力不足 (ERR_LOWGAS)':(isEN?'[16] Low Gas Press':'[16] Низк. давл. газа'), 
-                        desc: isZH?'燃气阀门全开(450)但转速仍持续掉落，Lambda严重偏稀。':(isEN?'Gas valve 100% open but RPM dropping, very lean.':'Клапан газа открыт (100%), но обороты падают.'), 
-                        sol: isZH?'检查外部供气管网管压；清洗阻火器及燃气主滤芯。':(isEN?'Check supply grid pressure; clean flame arrestor.':'Проверьте давление в сети; очистите фильтры.') 
+                        label: isZH?'[16] 鐕冩皵鍘嬪姏涓嶈冻 (ERR_LOWGAS)':(isEN?'[16] Low Gas Press':'[16] 袧懈蟹泻. 写邪胁谢. 谐邪蟹邪'), 
+                        desc: isZH?'鐕冩皵闃€闂ㄥ叏寮€(450)浣嗚浆閫熶粛鎸佺画鎺夎惤锛孡ambda涓ラ噸鍋忕█銆?:(isEN?'Gas valve 100% open but RPM dropping, very lean.':'袣谢邪锌邪薪 谐邪蟹邪 芯褌泻褉褘褌 (100%), 薪芯 芯斜芯褉芯褌褘 锌邪写邪褞褌.'), 
+                        sol: isZH?'妫€鏌ュ閮ㄤ緵姘旂缃戠鍘嬶紱娓呮礂闃荤伀鍣ㄥ強鐕冩皵涓绘护鑺€?:(isEN?'Check supply grid pressure; clean flame arrestor.':'袩褉芯胁械褉褜褌械 写邪胁谢械薪懈械 胁 褋械褌懈; 芯褔懈褋褌懈褌械 褎懈谢褜褌褉褘.') 
                     },
                     EXHAUST_BLOCK: { 
-                        label: isZH?'[17] 排气管路堵塞 (ERR_EXH_BLK)':(isEN?'[17] Exhaust Blocked':'[17] Блокировка выхлопа'), 
-                        desc: isZH?'排温与背压畸高，MAP增压困难，发动机严重发闷无力。':(isEN?'High backpressure/temp, low MAP, engine struggling.':'Высокое противодавление, ДАД низкий, двигатель "задыхается".'), 
-                        sol: isZH?'检查尾气三元催化器(SCR/DOC)或消音器是否堵塞。':(isEN?'Inspect catalyst (SCR/DOC) or silencer for blockage.':'Проверьте катализатор или глушитель на засор.') 
+                        label: isZH?'[17] 鎺掓皵绠¤矾鍫靛 (ERR_EXH_BLK)':(isEN?'[17] Exhaust Blocked':'[17] 袘谢芯泻懈褉芯胁泻邪 胁褘褏谢芯锌邪'), 
+                        desc: isZH?'鎺掓俯涓庤儗鍘嬬暩楂橈紝MAP澧炲帇鍥伴毦锛屽彂鍔ㄦ満涓ラ噸鍙戦椃鏃犲姏銆?:(isEN?'High backpressure/temp, low MAP, engine struggling.':'袙褘褋芯泻芯械 锌褉芯褌懈胁芯写邪胁谢械薪懈械, 袛袗袛 薪懈蟹泻懈泄, 写胁懈谐邪褌械谢褜 "蟹邪写褘褏邪械褌褋褟".'), 
+                        sol: isZH?'妫€鏌ュ熬姘斾笁鍏冨偓鍖栧櫒(SCR/DOC)鎴栨秷闊冲櫒鏄惁鍫靛銆?:(isEN?'Inspect catalyst (SCR/DOC) or silencer for blockage.':'袩褉芯胁械褉褜褌械 泻邪褌邪谢懈蟹邪褌芯褉 懈谢懈 谐谢褍褕懈褌械谢褜 薪邪 蟹邪褋芯褉.') 
                     },
                     ACTUATOR_JAM: { 
-                        label: isZH?'[18] 燃气阀卡滞 (ERR_JAM)':(isEN?'[18] Gas Valve Jammed':'[18] Заклинивание газ. клапана'), 
-                        desc: isZH?'目标开度变化但反馈位置停滞，带载立刻掉速或飞车。':(isEN?'Target changes but actual pos stuck, causes instability.':'Цель меняется, но факт. позиция зависла.'), 
-                        sol: isZH?'断电后手动拨动执行器；测量执行器驱动线圈。':(isEN?'Power off and manually move actuator; check coils.':'Обесточьте и проверьте ход привода вручную.') 
+                        label: isZH?'[18] 鐕冩皵闃€鍗℃粸 (ERR_JAM)':(isEN?'[18] Gas Valve Jammed':'[18] 袟邪泻谢懈薪懈胁邪薪懈械 谐邪蟹. 泻谢邪锌邪薪邪'), 
+                        desc: isZH?'鐩爣寮€搴﹀彉鍖栦絾鍙嶉浣嶇疆鍋滄粸锛屽甫杞界珛鍒绘帀閫熸垨椋炶溅銆?:(isEN?'Target changes but actual pos stuck, causes instability.':'笑械谢褜 屑械薪褟械褌褋褟, 薪芯 褎邪泻褌. 锌芯蟹懈褑懈褟 蟹邪胁懈褋谢邪.'), 
+                        sol: isZH?'鏂數鍚庢墜鍔ㄦ嫧鍔ㄦ墽琛屽櫒锛涙祴閲忔墽琛屽櫒椹卞姩绾垮湀銆?:(isEN?'Power off and manually move actuator; check coils.':'袨斜械褋褌芯褔褜褌械 懈 锌褉芯胁械褉褜褌械 褏芯写 锌褉懈胁芯写邪 胁褉褍褔薪褍褞.') 
                     },
                     THROTTLE_LAG: { 
-                        label: isZH?'[19] 节气门迟缓 (ERR_LAG)':(isEN?'[19] Throttle Lag':'[19] Задержка дросселя'), 
-                        desc: isZH?'实际位置响应极慢，跟踪不上目标位置，负载突变易熄火。':(isEN?'Actual position responds very slowly, lags target.':'Фактическая позиция сильно отстает от заданной.'), 
-                        sol: isZH?'清洗节气门体油泥积碳；检查驱动电压是否因老化压降。':(isEN?'Clean throttle body deposits; check driver voltage.':'Очистите дроссель от нагара; проверьте напряжение.') 
+                        label: isZH?'[19] 鑺傛皵闂ㄨ繜缂?(ERR_LAG)':(isEN?'[19] Throttle Lag':'[19] 袟邪写械褉卸泻邪 写褉芯褋褋械谢褟'), 
+                        desc: isZH?'瀹為檯浣嶇疆鍝嶅簲鏋佹參锛岃窡韪笉涓婄洰鏍囦綅缃紝璐熻浇绐佸彉鏄撶唲鐏€?:(isEN?'Actual position responds very slowly, lags target.':'肖邪泻褌懈褔械褋泻邪褟 锌芯蟹懈褑懈褟 褋懈谢褜薪芯 芯褌褋褌邪械褌 芯褌 蟹邪写邪薪薪芯泄.'), 
+                        sol: isZH?'娓呮礂鑺傛皵闂ㄤ綋娌规偿绉⒊锛涙鏌ラ┍鍔ㄧ數鍘嬫槸鍚﹀洜鑰佸寲鍘嬮檷銆?:(isEN?'Clean throttle body deposits; check driver voltage.':'袨褔懈褋褌懈褌械 写褉芯褋褋械谢褜 芯褌 薪邪谐邪褉邪; 锌褉芯胁械褉褜褌械 薪邪锌褉褟卸械薪懈械.') 
                     },
                     WATER_IN_OIL: { 
-                        label: isZH?'[20] 机油乳化进水 (ERR_EMULSION)':(isEN?'[20] Water in Oil':'[20] Вода в масле'), 
-                        desc: isZH?'机油压力波动不稳且偏低，水温由于漏水逐步上升。':(isEN?'Oil pressure fluctuates low, water temp rising.':'Колебания давл. масла, темп. воды растет.'), 
-                        sol: isZH?'立即抽样检查机油是否变白乳化；排查气缸垫破损。':(isEN?'Check oil dipstick for milky emulsion; head gasket leak.':'Проверьте щуп на эмульсию; пробой прокладки ГБЦ.') 
+                        label: isZH?'[20] 鏈烘补涔冲寲杩涙按 (ERR_EMULSION)':(isEN?'[20] Water in Oil':'[20] 袙芯写邪 胁 屑邪褋谢械'), 
+                        desc: isZH?'鏈烘补鍘嬪姏娉㈠姩涓嶇ǔ涓斿亸浣庯紝姘存俯鐢变簬婕忔按閫愭涓婂崌銆?:(isEN?'Oil pressure fluctuates low, water temp rising.':'袣芯谢械斜邪薪懈褟 写邪胁谢. 屑邪褋谢邪, 褌械屑锌. 胁芯写褘 褉邪褋褌械褌.'), 
+                        sol: isZH?'绔嬪嵆鎶芥牱妫€鏌ユ満娌规槸鍚﹀彉鐧戒钩鍖栵紱鎺掓煡姘旂几鍨牬鎹熴€?:(isEN?'Check oil dipstick for milky emulsion; head gasket leak.':'袩褉芯胁械褉褜褌械 褖褍锌 薪邪 褝屑褍谢褜褋懈褞; 锌褉芯斜芯泄 锌褉芯泻谢邪写泻懈 袚袘笑.') 
                     }
                 };
             };
 
-            // --- 物理模拟器核心引擎 (增强版) ---
+            // --- 鐗╃悊妯℃嫙鍣ㄦ牳蹇冨紩鎿?(澧炲己鐗? ---
             useEffect(() => {
                 let interval;
                 if (isSimulating) {
@@ -374,7 +375,7 @@
                                 nextState.SpdState = 'RATED'; nextSpd = 1500 + (Math.random() * 4 - 2);
                                 let load = 250 + Math.sin(ticks / 5) * 50;
                                 
-                                // --- 21大物理模式逻辑分发 ---
+                                // --- 21澶х墿鐞嗘ā寮忛€昏緫鍒嗗彂 ---
                                 if (mode === 'CAN_BUS_OFF') {
                                     nextState.MAP = 'ERR'; nextState.lambda = 'ERR'; nextState.LoadI = 'ERR';
                                     nextState.SyncVolt = 'ERR'; nextState.AState = 'ERR'; nextState.CurPos2 = 'ERR';
@@ -436,10 +437,10 @@
 
                             let faultMsg = '';
                             if (phaseRef.current === 'RATED' || (phaseRef.current === 'IDLE' && ticks > 25)) {
-                                if (nextWater > 95) faultMsg = t('errPrefix') + ' T>95℃';
+                                if (nextWater > 95) faultMsg = t('errPrefix') + ' T>95鈩?;
                                 else if (nextOil < 150 && mode !== 'START_FAIL') faultMsg = t('errPrefix') + ' P<150kPa';
                                 else if (nextSpd > 1750) faultMsg = t('errPrefix') + ' OVERSPEED';
-                                else if (nextState.ExhaustTemp > 650) faultMsg = t('errPrefix') + ' EXH>650℃';
+                                else if (nextState.ExhaustTemp > 650) faultMsg = t('errPrefix') + ' EXH>650鈩?;
                                 else if (mode === 'SYNC_LOSS' && ticks % 4 === 0) faultMsg = t('errPrefix') + ' NO SYNC';
                                 else if (mode === 'CAN_BUS_OFF' && ticks % 5 === 0) faultMsg = t('errPrefix') + ' CAN FLT';
                                 else if (mode === 'SENSOR_FAIL_MAP' && ticks % 12 === 0) faultMsg = t('errPrefix') + ' COM LOST';
@@ -485,55 +486,55 @@
                 return false;
             };
 
-            // --- 全面翻译的参数标定表 ---
+            // --- 鍏ㄩ潰缈昏瘧鐨勫弬鏁版爣瀹氳〃 ---
             const tabConfigs = {
                 speed: {
                     params: [
-                        [ { l: { en:'Speed P', zh:'比例参数P', ru:'Пропорц. P' }, v: '1500' }, { l: { en:'Speed I', zh:'积分参数I', ru:'Интеграл. I' }, v: '300' }, { l: { en:'Speed D', zh:'微分参数D', ru:'Производн. D' }, v: '200' }, { l: { en:'Rated RPM', zh:'额定转速', ru:'Номин. RPM' }, v: '1500' } ],
-                        [ { l: { en:'Idle RPM', zh:'怠速转速', ru:'RPM Холост.' }, v: '800' }, { l: { en:'Overspeed', zh:'超速保护', ru:'Превыш. Скор' }, v: '1750' }, { l: { en:'Start Fuel', zh:'启动油量', ru:'Старт. Топл.' }, v: '25' }, { l: { en:'Droop %', zh:'调速率', ru:'Статизм %' }, v: '0' } ],
-                        [ { l: { en:'Pos Src', zh:'位置反馈源', ru:'Ист. Поз.' }, v: 'ADC1', type: 'select' }, { l: { en:'Max Pos', zh:'最大开度', ru:'Макс. Откр' }, v: '100' }, { l: { en:'Min Pos', zh:'最小开度', ru:'Мин. Откр' }, v: '5' } ],
-                        [ { l: { en:'Teeth', zh:'齿数', ru:'Зубья' }, v: '118' }, { l: { en:'Sync Mode', zh:'同步模式', ru:'Режим Синх.' }, v: 'Auto', type: 'select' } ]
+                        [ { l: { en:'Speed P', zh:'姣斾緥鍙傛暟P', ru:'袩褉芯锌芯褉褑. P' }, v: '1500' }, { l: { en:'Speed I', zh:'绉垎鍙傛暟I', ru:'袠薪褌械谐褉邪谢. I' }, v: '300' }, { l: { en:'Speed D', zh:'寰垎鍙傛暟D', ru:'袩褉芯懈蟹胁芯写薪. D' }, v: '200' }, { l: { en:'Rated RPM', zh:'棰濆畾杞€?, ru:'袧芯屑懈薪. RPM' }, v: '1500' } ],
+                        [ { l: { en:'Idle RPM', zh:'鎬犻€熻浆閫?, ru:'RPM 啸芯谢芯褋褌.' }, v: '800' }, { l: { en:'Overspeed', zh:'瓒呴€熶繚鎶?, ru:'袩褉械胁褘褕. 小泻芯褉' }, v: '1750' }, { l: { en:'Start Fuel', zh:'鍚姩娌归噺', ru:'小褌邪褉褌. 孝芯锌谢.' }, v: '25' }, { l: { en:'Droop %', zh:'璋冮€熺巼', ru:'小褌邪褌懈蟹屑 %' }, v: '0' } ],
+                        [ { l: { en:'Pos Src', zh:'浣嶇疆鍙嶉婧?, ru:'袠褋褌. 袩芯蟹.' }, v: 'ADC1', type: 'select' }, { l: { en:'Max Pos', zh:'鏈€澶у紑搴?, ru:'袦邪泻褋. 袨褌泻褉' }, v: '100' }, { l: { en:'Min Pos', zh:'鏈€灏忓紑搴?, ru:'袦懈薪. 袨褌泻褉' }, v: '5' } ],
+                        [ { l: { en:'Teeth', zh:'榻挎暟', ru:'袟褍斜褜褟' }, v: '118' }, { l: { en:'Sync Mode', zh:'鍚屾妯″紡', ru:'袪械卸懈屑 小懈薪褏.' }, v: 'Auto', type: 'select' } ]
                     ],
                     tableHeaders: ['RPM Set', 'P', 'I', 'D', 'Limit'],
                     tableData: [['800', '1200', '200', '100', '60'], ['1000', '1300', '250', '150', '70'], ['1200', '1400', '280', '180', '80'], ['1500', '1500', '300', '200', '100']]
                 },
                 ignition: {
                     params: [
-                        [ { l: { en:'Global Adv', zh:'全局提前角', ru:'Общий УОЗ' }, v: '15' }, { l: { en:'Energy %', zh:'点火能量', ru:'Энергия %' }, v: '85' }, { l: { en:'Min Cyl', zh:'最少缸数', ru:'Мин. Цил.' }, v: '6' } ],
-                        [ { l: { en:'Start Adv', zh:'启动提前角', ru:'УОЗ Старт' }, v: '5' }, { l: { en:'Idle Adv', zh:'怠速提前角', ru:'УОЗ Холост.' }, v: '10' }, { l: { en:'Max Adv', zh:'最大提前角', ru:'Макс. УОЗ' }, v: '35' } ],
-                        [ { l: { en:'Knock Thr', zh:'爆震阈值', ru:'Порог Детон.' }, v: '2.5' }, { l: { en:'Retard Step', zh:'退角步长', ru:'Шаг Задерж.' }, v: '1.0' }, { l: { en:'Recov Dly', zh:'恢复延迟', ru:'Задерж. Восст' }, v: '50' } ],
-                        [ { l: { en:'Ign Enable', zh:'点火使能', ru:'Акт. Зажиг.' }, v: 'ON', type: 'select' } ]
+                        [ { l: { en:'Global Adv', zh:'鍏ㄥ眬鎻愬墠瑙?, ru:'袨斜褖懈泄 校袨袟' }, v: '15' }, { l: { en:'Energy %', zh:'鐐圭伀鑳介噺', ru:'协薪械褉谐懈褟 %' }, v: '85' }, { l: { en:'Min Cyl', zh:'鏈€灏戠几鏁?, ru:'袦懈薪. 笑懈谢.' }, v: '6' } ],
+                        [ { l: { en:'Start Adv', zh:'鍚姩鎻愬墠瑙?, ru:'校袨袟 小褌邪褉褌' }, v: '5' }, { l: { en:'Idle Adv', zh:'鎬犻€熸彁鍓嶈', ru:'校袨袟 啸芯谢芯褋褌.' }, v: '10' }, { l: { en:'Max Adv', zh:'鏈€澶ф彁鍓嶈', ru:'袦邪泻褋. 校袨袟' }, v: '35' } ],
+                        [ { l: { en:'Knock Thr', zh:'鐖嗛渿闃堝€?, ru:'袩芯褉芯谐 袛械褌芯薪.' }, v: '2.5' }, { l: { en:'Retard Step', zh:'閫€瑙掓闀?, ru:'楔邪谐 袟邪写械褉卸.' }, v: '1.0' }, { l: { en:'Recov Dly', zh:'鎭㈠寤惰繜', ru:'袟邪写械褉卸. 袙芯褋褋褌' }, v: '50' } ],
+                        [ { l: { en:'Ign Enable', zh:'鐐圭伀浣胯兘', ru:'袗泻褌. 袟邪卸懈谐.' }, v: 'ON', type: 'select' } ]
                     ],
                     tableHeaders: ['RPM', 'MAP (kPa)', 'Adv Base', 'Energy', '-'],
                     tableData: [['800', '40', '10.0', '100', '-'], ['1500', '50', '18.0', '90', '-'], ['1500', '100', '15.0', '85', '-'], ['1500', '150', '12.0', '85', '-']]
                 },
                 lambda: {
                     params: [
-                        [ { l: { en:'Ratio', zh:'互感器变比', ru:'Коэф. ТТ' }, v: '600' }, { l: { en:'I Offset', zh:'电流偏移', ru:'Смещ. Тока' }, v: '20' }, { l: { en:'I Filter', zh:'电流滤波', ru:'Фильтр Тока' }, v: '5' }, { l: { en:'Lambda P', zh:'空燃比P', ru:'Лямбда P' }, v: '100' }, { l: { en:'Lambda I', zh:'空燃比I', ru:'Лямбда I' }, v: '60' }, { l: { en:'Lambda D', zh:'空燃比D', ru:'Лямбда D' }, v: '10' } ],
-                        [ { l: { en:'Stable', zh:'转速稳定率', ru:'Стабильность' }, v: '80' }, { l: { en:'Pos P', zh:'位置P', ru:'Поз P' }, v: '1000' }, { l: { en:'Pos I', zh:'位置I', ru:'Поз I' }, v: '200' }, { l: { en:'Pos D', zh:'位置D', ru:'Поз D' }, v: '300' }, { l: { en:'Max I', zh:'最大电流', ru:'Макс. Ток' }, v: '2.80' }, { l: { en:'Period2', zh:'电机周期', ru:'Период Двиг.' }, v: '3' } ],
-                        [ { l: { en:'Start Pos', zh:'启动位置', ru:'Старт Поз' }, v: '420' }, { l: { en:'Idle Pos', zh:'怠速位置', ru:'Хол. Поз' }, v: '185' }, { l: { en:'Min Pos', zh:'最小位置', ru:'Мин. Поз' }, v: '162' }, { l: { en:'Max Pos', zh:'最大位置', ru:'Макс. Поз' }, v: '450' } ],
-                        [ { l: { en:'Manual SW', zh:'自检开关', ru:'Ручн. ВКЛ' }, v: 'OFF', type: 'select' }, { l: { en:'Manual Pos', zh:'手动位置', ru:'Ручн. Поз' }, v: '500' }, { l: { en:'PID SW', zh:'PID开关', ru:'ПИД ВКЛ' }, v: 'ON', type: 'select' }, { l: { en:'Period1 S', zh:'PID周期', ru:'Период ПИД' }, v: '1' } ]
+                        [ { l: { en:'Ratio', zh:'浜掓劅鍣ㄥ彉姣?, ru:'袣芯褝褎. 孝孝' }, v: '600' }, { l: { en:'I Offset', zh:'鐢垫祦鍋忕Щ', ru:'小屑械褖. 孝芯泻邪' }, v: '20' }, { l: { en:'I Filter', zh:'鐢垫祦婊ゆ尝', ru:'肖懈谢褜褌褉 孝芯泻邪' }, v: '5' }, { l: { en:'Lambda P', zh:'绌虹噧姣擯', ru:'袥褟屑斜写邪 P' }, v: '100' }, { l: { en:'Lambda I', zh:'绌虹噧姣擨', ru:'袥褟屑斜写邪 I' }, v: '60' }, { l: { en:'Lambda D', zh:'绌虹噧姣擠', ru:'袥褟屑斜写邪 D' }, v: '10' } ],
+                        [ { l: { en:'Stable', zh:'杞€熺ǔ瀹氱巼', ru:'小褌邪斜懈谢褜薪芯褋褌褜' }, v: '80' }, { l: { en:'Pos P', zh:'浣嶇疆P', ru:'袩芯蟹 P' }, v: '1000' }, { l: { en:'Pos I', zh:'浣嶇疆I', ru:'袩芯蟹 I' }, v: '200' }, { l: { en:'Pos D', zh:'浣嶇疆D', ru:'袩芯蟹 D' }, v: '300' }, { l: { en:'Max I', zh:'鏈€澶х數娴?, ru:'袦邪泻褋. 孝芯泻' }, v: '2.80' }, { l: { en:'Period2', zh:'鐢垫満鍛ㄦ湡', ru:'袩械褉懈芯写 袛胁懈谐.' }, v: '3' } ],
+                        [ { l: { en:'Start Pos', zh:'鍚姩浣嶇疆', ru:'小褌邪褉褌 袩芯蟹' }, v: '420' }, { l: { en:'Idle Pos', zh:'鎬犻€熶綅缃?, ru:'啸芯谢. 袩芯蟹' }, v: '185' }, { l: { en:'Min Pos', zh:'鏈€灏忎綅缃?, ru:'袦懈薪. 袩芯蟹' }, v: '162' }, { l: { en:'Max Pos', zh:'鏈€澶т綅缃?, ru:'袦邪泻褋. 袩芯蟹' }, v: '450' } ],
+                        [ { l: { en:'Manual SW', zh:'鑷寮€鍏?, ru:'袪褍褔薪. 袙袣袥' }, v: 'OFF', type: 'select' }, { l: { en:'Manual Pos', zh:'鎵嬪姩浣嶇疆', ru:'袪褍褔薪. 袩芯蟹' }, v: '500' }, { l: { en:'PID SW', zh:'PID寮€鍏?, ru:'袩袠袛 袙袣袥' }, v: 'ON', type: 'select' }, { l: { en:'Period1 S', zh:'PID鍛ㄦ湡', ru:'袩械褉懈芯写 袩袠袛' }, v: '1' } ]
                     ],
                     tableHeaders: ['Current (A)', 'Lambda', 'SetPos', 'MaxPos', 'SpdLmt'],
                     tableData: [['0', '1.20', '330', '350', '350'], ['30', '1.30', '230', '240', '1000'], ['100', '1.30', '270', '290', '1000'], ['200', '1.30', '320', '330', '1000'], ['300', '1.32', '340', '350', '1000'], ['400', '1.32', '360', '370', '1000']]
                 },
                 waterTem: {
                     params: [
-                        [ { l: { en:'Warn Tmp', zh:'水温告警值', ru:'Пред. Темп' }, v: '90' }, { l: { en:'Shut Tmp', zh:'水温停机值', ru:'Авар. Темп' }, v: '95' } ],
-                        [ { l: { en:'Sens Typ', zh:'传感器类型', ru:'Тип Датчика' }, v: 'PT100', type: 'select' }, { l: { en:'Offset', zh:'修正偏差', ru:'Смещение' }, v: '0.0' } ],
-                        [ { l: { en:'Fan On', zh:'风扇启温度', ru:'Вент. ВКЛ' }, v: '80' }, { l: { en:'Fan Off', zh:'风扇停温度', ru:'Вент. ВЫКЛ' }, v: '75' } ],
-                        [ { l: { en:'Protect', zh:'使能保护', ru:'Защита ВКЛ' }, v: 'ON', type: 'select' } ]
+                        [ { l: { en:'Warn Tmp', zh:'姘存俯鍛婅鍊?, ru:'袩褉械写. 孝械屑锌' }, v: '90' }, { l: { en:'Shut Tmp', zh:'姘存俯鍋滄満鍊?, ru:'袗胁邪褉. 孝械屑锌' }, v: '95' } ],
+                        [ { l: { en:'Sens Typ', zh:'浼犳劅鍣ㄧ被鍨?, ru:'孝懈锌 袛邪褌褔懈泻邪' }, v: 'PT100', type: 'select' }, { l: { en:'Offset', zh:'淇鍋忓樊', ru:'小屑械褖械薪懈械' }, v: '0.0' } ],
+                        [ { l: { en:'Fan On', zh:'椋庢墖鍚俯搴?, ru:'袙械薪褌. 袙袣袥' }, v: '80' }, { l: { en:'Fan Off', zh:'椋庢墖鍋滄俯搴?, ru:'袙械薪褌. 袙蝎袣袥' }, v: '75' } ],
+                        [ { l: { en:'Protect', zh:'浣胯兘淇濇姢', ru:'袟邪褖懈褌邪 袙袣袥' }, v: 'ON', type: 'select' } ]
                     ],
-                    tableHeaders: ['ADC (Ω)', 'Temp (℃)'],
+                    tableHeaders: ['ADC (惟)', 'Temp (鈩?'],
                     tableData: [['100.0', '0.0'], ['107.8', '20.0'], ['115.5', '40.0'], ['123.2', '60.0'], ['130.9', '80.0'], ['138.5', '100.0'], ['146.1', '120.0']],
-                    chartDef: { xLabel: 'Ω', yLabel: '℃', xMax: 150, yMax: 130, points: [[100, 0], [107.8, 20], [115.5, 40], [123.2, 60], [130.9, 80], [138.5, 100], [146.1, 120]], color: 'var(--status-danger)' }
+                    chartDef: { xLabel: '惟', yLabel: '鈩?, xMax: 150, yMax: 130, points: [[100, 0], [107.8, 20], [115.5, 40], [123.2, 60], [130.9, 80], [138.5, 100], [146.1, 120]], color: 'var(--status-danger)' }
                 },
                 oilPress: {
                     params: [
-                        [ { l: { en:'Warn Prs', zh:'油压告警值', ru:'Пред. Давл' }, v: '200' }, { l: { en:'Shut Prs', zh:'油压停机值', ru:'Авар. Давл' }, v: '150' } ],
-                        [ { l: { en:'Sens Typ', zh:'传感器类型', ru:'Тип Датчика' }, v: '4-20mA', type: 'select' }, { l: { en:'Offset', zh:'修正偏差', ru:'Смещение' }, v: '0.0' } ],
-                        [ { l: { en:'Idle Dly', zh:'怠速保护延', ru:'Задерж. Хол' }, v: '10' }, { l: { en:'Rated Dly', zh:'额定保护延', ru:'Задерж. Ном' }, v: '3' } ],
-                        [ { l: { en:'Protect', zh:'使能保护', ru:'Защита ВКЛ' }, v: 'ON', type: 'select' } ]
+                        [ { l: { en:'Warn Prs', zh:'娌瑰帇鍛婅鍊?, ru:'袩褉械写. 袛邪胁谢' }, v: '200' }, { l: { en:'Shut Prs', zh:'娌瑰帇鍋滄満鍊?, ru:'袗胁邪褉. 袛邪胁谢' }, v: '150' } ],
+                        [ { l: { en:'Sens Typ', zh:'浼犳劅鍣ㄧ被鍨?, ru:'孝懈锌 袛邪褌褔懈泻邪' }, v: '4-20mA', type: 'select' }, { l: { en:'Offset', zh:'淇鍋忓樊', ru:'小屑械褖械薪懈械' }, v: '0.0' } ],
+                        [ { l: { en:'Idle Dly', zh:'鎬犻€熶繚鎶ゅ欢', ru:'袟邪写械褉卸. 啸芯谢' }, v: '10' }, { l: { en:'Rated Dly', zh:'棰濆畾淇濇姢寤?, ru:'袟邪写械褉卸. 袧芯屑' }, v: '3' } ],
+                        [ { l: { en:'Protect', zh:'浣胯兘淇濇姢', ru:'袟邪褖懈褌邪 袙袣袥' }, v: 'ON', type: 'select' } ]
                     ],
                     tableHeaders: ['RPM', 'OilPress (kPa)'],
                     tableData: [['0', '0'], ['400', '150'], ['800', '300'], ['1200', '400'], ['1500', '450'], ['1800', '500']],
@@ -548,7 +549,7 @@
                 if (!def) return null;
                 const { points, xMax, yMax, color, xLabel, yLabel } = def;
                 const w = 300, h = 120, padding = 25;
-                const mapX = (x) => padding + ((x - (def.xLabel==='Ω'?90:0)) / (xMax - (def.xLabel==='Ω'?90:0))) * (w - padding * 2);
+                const mapX = (x) => padding + ((x - (def.xLabel==='惟'?90:0)) / (xMax - (def.xLabel==='惟'?90:0))) * (w - padding * 2);
                 const mapY = (y) => h - padding - (y / yMax) * (h - padding * 2);
                 const pathD = `M ${points.map(p => `${mapX(p[0])},${mapY(p[1])}`).join(' L ')}`;
                 return (
@@ -730,20 +731,20 @@
                     <div className="shrink-0 gx-border border rounded-lg p-2 sm:p-3 overflow-x-auto" style={{ backgroundColor: 'var(--glass-bg)', backdropFilter: 'blur(12px)' }}>
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-3 sm:gap-x-4 gap-y-1.5 min-w-[760px] sm:min-w-0">
                             {[
-                                { l: { en:'CurSpd', zh:'当前转速', ru:'Тек.Скор' }, k: 'CurSpd' }, { l: { en:'SetSpd', zh:'目标转速', ru:'Зад.Скор' }, k: 'SetSpd' },
-                                { l: { en:'IgtSpd', zh:'点火转速', ru:'Скор.Зажиг' }, k: 'IgtSpd' }, { l: { en:'SyncVolt', zh:'同步电压', ru:'Напр.Синх' }, k: 'SyncVolt' },
-                                { l: { en:'SpdState', zh:'调速状态', ru:'Стат.Скор' }, k: 'SpdState' }, { l: { en:'BaseI', zh:'基准电流', ru:'Баз.Ток' }, k: 'BaseI' },
+                                { l: { en:'CurSpd', zh:'褰撳墠杞€?, ru:'孝械泻.小泻芯褉' }, k: 'CurSpd' }, { l: { en:'SetSpd', zh:'鐩爣杞€?, ru:'袟邪写.小泻芯褉' }, k: 'SetSpd' },
+                                { l: { en:'IgtSpd', zh:'鐐圭伀杞€?, ru:'小泻芯褉.袟邪卸懈谐' }, k: 'IgtSpd' }, { l: { en:'SyncVolt', zh:'鍚屾鐢靛帇', ru:'袧邪锌褉.小懈薪褏' }, k: 'SyncVolt' },
+                                { l: { en:'SpdState', zh:'璋冮€熺姸鎬?, ru:'小褌邪褌.小泻芯褉' }, k: 'SpdState' }, { l: { en:'BaseI', zh:'鍩哄噯鐢垫祦', ru:'袘邪蟹.孝芯泻' }, k: 'BaseI' },
                                 
-                                { l: { en:'CurPos1', zh:'调速位置', ru:'Поз.Скор' }, k: 'CurPos1' }, { l: { en:'SetPos1', zh:'调速目标', ru:'Зад.Поз1' }, k: 'SetPos1' },
-                                { l: { en:'StopKey', zh:'启停开关', ru:'КлючОст' }, k: 'StopKey' }, { l: { en:'IdleKey', zh:'高低开关', ru:'КлючХХ' }, k: 'IdleKey' },
-                                { l: { en:'MAP', zh:'歧管压力', ru:'ДАД(MAP)' }, k: 'MAP' }, { l: { en:'MAT', zh:'歧管温度', ru:'ДТВ(MAT)' }, k: 'MAT' },
+                                { l: { en:'CurPos1', zh:'璋冮€熶綅缃?, ru:'袩芯蟹.小泻芯褉' }, k: 'CurPos1' }, { l: { en:'SetPos1', zh:'璋冮€熺洰鏍?, ru:'袟邪写.袩芯蟹1' }, k: 'SetPos1' },
+                                { l: { en:'StopKey', zh:'鍚仠寮€鍏?, ru:'袣谢褞褔袨褋褌' }, k: 'StopKey' }, { l: { en:'IdleKey', zh:'楂樹綆寮€鍏?, ru:'袣谢褞褔啸啸' }, k: 'IdleKey' },
+                                { l: { en:'MAP', zh:'姝х鍘嬪姏', ru:'袛袗袛(MAP)' }, k: 'MAP' }, { l: { en:'MAT', zh:'姝х娓╁害', ru:'袛孝袙(MAT)' }, k: 'MAT' },
                                 
-                                { l: { en:'CurPos2', zh:'燃气位置', ru:'Поз.Газ' }, k: 'CurPos2' }, { l: { en:'SetPos2', zh:'燃气目标', ru:'Зад.Поз2' }, k: 'SetPos2' },
-                                { l: { en:'Lambda', zh:'空燃比', ru:'Лямбда' }, k: 'lambda' }, { l: { en:'FltrSpd', zh:'滤波转速', ru:'Филтр.Скор' }, k: 'fltrSpd' },
-                                { l: { en:'AState', zh:'空燃比状态', ru:'Стат.Лямб' }, k: 'AState' }, { l: { en:'LoadI', zh:'发电电流', ru:'ТокНагр' }, k: 'LoadI' },
+                                { l: { en:'CurPos2', zh:'鐕冩皵浣嶇疆', ru:'袩芯蟹.袚邪蟹' }, k: 'CurPos2' }, { l: { en:'SetPos2', zh:'鐕冩皵鐩爣', ru:'袟邪写.袩芯蟹2' }, k: 'SetPos2' },
+                                { l: { en:'Lambda', zh:'绌虹噧姣?, ru:'袥褟屑斜写邪' }, k: 'lambda' }, { l: { en:'FltrSpd', zh:'婊ゆ尝杞€?, ru:'肖懈谢褌褉.小泻芯褉' }, k: 'fltrSpd' },
+                                { l: { en:'AState', zh:'绌虹噧姣旂姸鎬?, ru:'小褌邪褌.袥褟屑斜' }, k: 'AState' }, { l: { en:'LoadI', zh:'鍙戠數鐢垫祦', ru:'孝芯泻袧邪谐褉' }, k: 'LoadI' },
                                 
-                                { l: { en:'OilPress', zh:'机油压力', ru:'Давл.Мас' }, k: 'OilPressure' }, { l: { en:'WaterTemp', zh:'冷却水温', ru:'Темп.Вод' }, k: 'WaterTemp' },
-                                { l: { en:'Exhaust', zh:'排气温度', ru:'Выхлоп' }, k: 'ExhaustTemp' }, null, null, null
+                                { l: { en:'OilPress', zh:'鏈烘补鍘嬪姏', ru:'袛邪胁谢.袦邪褋' }, k: 'OilPressure' }, { l: { en:'WaterTemp', zh:'鍐峰嵈姘存俯', ru:'孝械屑锌.袙芯写' }, k: 'WaterTemp' },
+                                { l: { en:'Exhaust', zh:'鎺掓皵娓╁害', ru:'袙褘褏谢芯锌' }, k: 'ExhaustTemp' }, null, null, null
                             ].map((item, index) => {
                                 if (!item) return <div key={index} className="py-1"></div>;
                                 const val = engineState[item.k];
