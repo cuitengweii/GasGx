@@ -1,6 +1,6 @@
 
 import { renderSharedAuthState } from './layout.shared.js?v=20260413authmenu03';
-import { HEADER_NAVIGATION } from '../config/navigation.config.js';
+import { HEADER_NAVIGATION, loadNewsNavigationFromSiteShell } from '../config/navigation.config.js';
 import {
     DEFAULT_COVER,
     extractCoverFromArticleHtml as extractSharedCoverFromArticleHtml,
@@ -673,11 +673,13 @@ export function createChannelApp(channelKey) {
             visibleCount: config.layoutVariant === 'events' ? 6 : 8,
             pageSize: config.layoutVariant === 'events' ? 6 : 6,
             scrollBound: false,
+            navigation: HEADER_NAVIGATION,
         },
         async init() {
             this.applyTheme();
             await this.initAuth();
             this.renderNav();
+            this.loadNavigation();
             this.loadLiveData();
 
             await Promise.allSettled([
@@ -746,7 +748,7 @@ export function createChannelApp(channelKey) {
             renderSharedAuthState({
                 page: 'news-home',
                 idPrefix: 'ggx',
-                navigation: HEADER_NAVIGATION,
+                navigation: this.state.navigation,
                 currentUser: this.state.currentUser,
                 displayName: this.state.displayName,
                 accountUrl: '/account/account.html',
@@ -754,6 +756,18 @@ export function createChannelApp(channelKey) {
                 activeTitle: config.navTitle,
                 activePath: window.location.pathname,
             });
+        },
+
+        async loadNavigation() {
+            try {
+                const nav = await loadNewsNavigationFromSiteShell();
+                if (Array.isArray(nav) && nav.length) {
+                    this.state.navigation = nav;
+                    this.renderNav();
+                }
+            } catch (error) {
+                console.warn('[news-channel] load navigation failed:', error);
+            }
         },
 
         toggleMobileMenu() {

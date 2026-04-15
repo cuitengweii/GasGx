@@ -1,6 +1,6 @@
 
 import { renderSharedAuthState } from '../shared/modules/layout.shared.js?v=20260413authmenu03';
-import { HEADER_NAVIGATION } from '../shared/config/navigation.config.js';
+import { HEADER_NAVIGATION, loadNewsNavigationFromSiteShell } from '../shared/config/navigation.config.js';
 import {
     DEFAULT_COVER as SHARED_DEFAULT_COVER,
     extractCoverFromArticleHtml as extractSharedCoverFromArticleHtml,
@@ -256,6 +256,7 @@ export function createNewsHomeApp() {
             generatedPosterUrl: null,
             currentUser: null,
             displayName: null,
+            navigation: HEADER_NAVIGATION,
             currentPosterData: { title: '', content: '', time: '' },
             flashVisibleCount: FLASH_PAGE_SIZE,
             flashPollTimer: null,
@@ -272,6 +273,7 @@ export function createNewsHomeApp() {
         async init() {
             await this.initAuth();
             this.renderNav();
+            this.loadNavigation();
             this.loadHero();
             this.loadMarketPulse();
             this.loadLiveData();
@@ -370,13 +372,25 @@ export function createNewsHomeApp() {
             renderSharedAuthState({
                 page: 'news-home',
                 idPrefix: 'ggx',
-                navigation: HEADER_NAVIGATION,
+                navigation: this.state.navigation,
                 currentUser: this.state.currentUser,
                 displayName: this.state.displayName,
                 accountUrl: '/account/account.html',
                 signInUrl: '/account/user.html',
                 activeTitle: 'HOME',
             });
+        },
+
+        async loadNavigation() {
+            try {
+                const nav = await loadNewsNavigationFromSiteShell();
+                if (Array.isArray(nav) && nav.length) {
+                    this.state.navigation = nav;
+                    this.renderNav();
+                }
+            } catch (error) {
+                console.warn('[news-home] load navigation failed:', error);
+            }
         },
 
         toggleMobileMenu() {
