@@ -3684,7 +3684,7 @@ textarea {
     padding: 8px 14px 10px;
     max-width: 100%;
     min-width: 0;
-    scrollbar-width: thin;
+    scrollbar-width: none;
 }
 
 .ams-sales-pipeline-stage {
@@ -3733,8 +3733,7 @@ textarea {
 
 @media (max-width: 1560px) {
     .ams-sales-pipeline-track {
-        grid-template-columns: repeat(7, minmax(180px, 1fr));
-        overflow-x: auto;
+        grid-template-columns: repeat(13, minmax(0, 1fr));
     }
 }
 
