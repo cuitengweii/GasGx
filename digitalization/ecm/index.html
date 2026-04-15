@@ -87,23 +87,12 @@
         const PowerOff = (p) => <IconBase {...p}><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></IconBase>;
         const AlertTriangle = (p) => <IconBase {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconBase>;
         const Activity = (p) => <IconBase {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></IconBase>;
-        const Sun = (p) => <IconBase {...p}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></IconBase>;
-        const Moon = (p) => <IconBase {...p}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></IconBase>;
 
 
         // --- 全局昼夜主题与滚动条注入 ---
         const GlobalStyles = () => (
             <style>{`
             .ecm-page {
-                --bg-main: #F5F7FA; --bg-card: #FFFFFF; --bg-tab: #F0F2F5;
-                --text-primary: #1A1A1A; --text-secondary: #666666;
-                --border-line: #E4E7ED;
-                --accent: #00B853; --accent-rgb: 0, 184, 83;
-                --status-warning: #FF9900; --status-danger: #FF3366;
-                --shadow-inset: inset 0 2px 4px rgba(0,0,0,0.05);
-                --glass-bg: rgba(255, 255, 255, 0.8);
-            }
-            .ecm-page[data-theme='dark'] {
                 --bg-main: #0F0F0F; --bg-card: #202020; --bg-tab: #1A1A1A;
                 --text-primary: #E0E0E0; --text-secondary: #888888;
                 --border-line: #333333;
@@ -135,6 +124,86 @@
             .ecm-page ::-webkit-scrollbar-thumb { background: var(--border-line); border-radius: 3px; }
             .ecm-page ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
             .ecm-page option { background-color: var(--bg-card); color: var(--text-primary); }
+            .ecm-page .ecm-diagnostic-panel {
+                position: relative;
+                overflow: hidden;
+                border: 1px solid rgba(255, 76, 76, 0.72);
+                background:
+                    linear-gradient(180deg, rgba(255, 70, 70, 0.06), rgba(255, 70, 70, 0.015) 28%, transparent 70%),
+                    linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
+                box-shadow:
+                    inset 0 0 0 1px rgba(255, 76, 76, 0.1),
+                    0 0 0 1px rgba(255, 76, 76, 0.08),
+                    0 14px 34px rgba(0, 0, 0, 0.26);
+            }
+            .ecm-page .ecm-diagnostic-panel::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                border: 1px solid rgba(255, 92, 92, 0.86);
+                box-shadow:
+                    inset 0 0 18px rgba(255, 70, 70, 0.08),
+                    0 0 18px rgba(255, 56, 96, 0.12);
+                animation: ecm-diagnostic-pulse 1.9s ease-in-out infinite;
+                pointer-events: none;
+            }
+            .ecm-page .ecm-diagnostic-panel::after {
+                content: "";
+                position: absolute;
+                top: -34%;
+                left: -18%;
+                width: 36%;
+                height: 180%;
+                background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,128,128,0.16), rgba(255,255,255,0));
+                transform: rotate(18deg);
+                animation: ecm-diagnostic-sweep 3.6s linear infinite;
+                pointer-events: none;
+            }
+            .ecm-page .ecm-diagnostic-panel > * {
+                position: relative;
+                z-index: 1;
+            }
+            .ecm-page .ecm-diagnostic-step {
+                position: relative;
+                border: 1px solid rgba(255,255,255,0.08);
+                background: rgba(255,255,255,0.02);
+                transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+            }
+            .ecm-page .ecm-diagnostic-step.is-active {
+                border-color: rgba(255, 99, 99, 0.72);
+                background: linear-gradient(180deg, rgba(255, 76, 76, 0.16), rgba(255, 76, 76, 0.06));
+                box-shadow: inset 0 0 0 1px rgba(255, 112, 112, 0.15), 0 0 18px rgba(255, 76, 76, 0.08);
+                transform: translateY(-1px);
+            }
+            .ecm-page .ecm-diagnostic-step.is-done {
+                border-color: rgba(255, 153, 0, 0.35);
+                background: linear-gradient(180deg, rgba(255, 153, 0, 0.08), rgba(255, 153, 0, 0.02));
+            }
+            .ecm-page .ecm-diagnostic-metric {
+                border: 1px solid rgba(255,255,255,0.07);
+                background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
+            }
+            @keyframes ecm-diagnostic-pulse {
+                0%, 100% {
+                    box-shadow:
+                        inset 0 0 18px rgba(255, 70, 70, 0.08),
+                        0 0 18px rgba(255, 56, 96, 0.12);
+                    opacity: 0.78;
+                }
+                50% {
+                    box-shadow:
+                        inset 0 0 22px rgba(255, 82, 82, 0.14),
+                        0 0 26px rgba(255, 56, 96, 0.22);
+                    opacity: 1;
+                }
+            }
+            @keyframes ecm-diagnostic-sweep {
+                0% { transform: translateX(-170%) rotate(18deg); opacity: 0; }
+                12% { opacity: 0.55; }
+                48% { opacity: 0.24; }
+                100% { transform: translateX(360%) rotate(18deg); opacity: 0; }
+            }
             `}</style>
         );
 
@@ -185,7 +254,6 @@
 
         const App = () => {
             const [lang, setLang] = useState(resolveInitialLang);
-            const [theme, setTheme] = useState('dark');
             const [activeTab, setActiveTab] = useState('lambda');
             const [baudRate, setBaudRate] = useState('9600');
             
@@ -194,6 +262,24 @@
             
             const tickRef = useRef(0);
             const phaseRef = useRef('STOP');
+            const initialGaugeValuesRef = useRef({
+                rpm: 0,
+                water: 20,
+                exhaust: 25,
+                oil: 0
+            });
+            const initialGaugeHistoryRef = useRef({
+                rpm: [0],
+                water: [20],
+                exhaust: [25],
+                oil: [0]
+            });
+            const [smoothedGauges, setSmoothedGauges] = useState(initialGaugeValuesRef.current);
+            const [gaugeHistory, setGaugeHistory] = useState(initialGaugeHistoryRef.current);
+            const smoothedGaugesRef = useRef(initialGaugeValuesRef.current);
+            const gaugeTargetsRef = useRef(initialGaugeValuesRef.current);
+            const gaugeAnimationFrameRef = useRef(0);
+            const lastHistorySampleRef = useRef(0);
 
             const getStopStateText = () => lang === 'en' ? 'STOP' : (lang === 'zh' ? '停机' : 'СТОП');
 
@@ -208,6 +294,18 @@
 
             const [engineState, setEngineState] = useState(INITIAL_ENGINE_STATE);
             const t = (key) => dict[lang][key] || key;
+            const textPair = (zh, en) => (lang === 'zh' ? zh : en);
+            const toMetricNumber = (value) => {
+                const parsed = Number(value);
+                return Number.isFinite(parsed) ? parsed : null;
+            };
+            const formatMetricValue = (value, digits = 0) => {
+                if (value === 'ERR' || value === 'FLT') return String(value);
+                const numeric = toMetricNumber(value);
+                if (numeric === null) return String(value ?? '--');
+                if (digits > 0) return numeric.toFixed(digits);
+                return String(Math.round(numeric));
+            };
 
             useEffect(() => {
                 const app = (window.app && typeof window.app === 'object') ? window.app : {};
@@ -246,6 +344,88 @@
                 }
                 document.documentElement.lang = normalized === 'zh' ? 'zh-CN' : 'en';
             }, [lang]);
+
+            useEffect(() => {
+                gaugeTargetsRef.current = {
+                    rpm: Math.max(0, Math.min(2000, Number(engineState.CurSpd) || 0)),
+                    water: Math.max(0, Math.min(120, Number(engineState.WaterTemp) || 0)),
+                    exhaust: Math.max(0, Math.min(800, Number(engineState.ExhaustTemp) || 0)),
+                    oil: Math.max(0, Math.min(600, Number(engineState.OilPressure) || 0))
+                };
+
+                if (gaugeAnimationFrameRef.current) return;
+
+                let lastTime = 0;
+                const animate = (time) => {
+                    if (!lastTime) lastTime = time;
+                    const delta = Math.min(40, time - lastTime || 16);
+                    lastTime = time;
+
+                    let hasPending = false;
+                    const current = smoothedGaugesRef.current;
+                    const target = gaugeTargetsRef.current;
+                    const next = { ...current };
+
+                    Object.keys(target).forEach((key) => {
+                        const diff = target[key] - current[key];
+                        if (Math.abs(diff) < 0.2) {
+                            next[key] = target[key];
+                            return;
+                        }
+
+                        const smoothing = 1 - Math.exp(-delta / 180);
+                        next[key] = current[key] + diff * smoothing;
+                        hasPending = true;
+                    });
+
+                    smoothedGaugesRef.current = next;
+                    setSmoothedGauges(next);
+
+                    if (hasPending) {
+                        gaugeAnimationFrameRef.current = window.requestAnimationFrame(animate);
+                    } else {
+                        gaugeAnimationFrameRef.current = 0;
+                    }
+                };
+
+                gaugeAnimationFrameRef.current = window.requestAnimationFrame(animate);
+
+                return () => {
+                    if (gaugeAnimationFrameRef.current) {
+                        window.cancelAnimationFrame(gaugeAnimationFrameRef.current);
+                        gaugeAnimationFrameRef.current = 0;
+                    }
+                };
+            }, [engineState.CurSpd, engineState.WaterTemp, engineState.ExhaustTemp, engineState.OilPressure]);
+
+            useEffect(() => {
+                const now = Date.now();
+                if (now - lastHistorySampleRef.current < 180) return;
+                lastHistorySampleRef.current = now;
+
+                setGaugeHistory((prev) => {
+                    const next = {};
+                    Object.keys(smoothedGauges).forEach((key) => {
+                        const series = Array.isArray(prev[key]) ? prev[key] : [];
+                        next[key] = [...series.slice(-179), smoothedGauges[key]];
+                    });
+                    return next;
+                });
+            }, [smoothedGauges]);
+
+            useEffect(() => {
+                if (!isSimulating && phaseRef.current !== 'STOP') return;
+                if (!isSimulating) return;
+
+                lastHistorySampleRef.current = 0;
+                const resetHistory = {
+                    rpm: [smoothedGaugesRef.current.rpm],
+                    water: [smoothedGaugesRef.current.water],
+                    exhaust: [smoothedGaugesRef.current.exhaust],
+                    oil: [smoothedGaugesRef.current.oil]
+                };
+                setGaugeHistory(resetHistory);
+            }, [isSimulating, simMode]);
 
             // --- 21 种硬核推演模式智库 ---
             const getSimModes = (l) => {
@@ -565,6 +745,382 @@
 
             const currentConfig = tabConfigs[activeTab];
             const activeSimModes = getSimModes(lang);
+            const gaugeText = {
+                rpm: { en: 'RPM', zh: '转速表', ru: 'Обороты' },
+                water: { en: 'Water Temp', zh: '水温表', ru: 'Темп. воды' },
+                exhaust: { en: 'Exhaust Temp', zh: '排气温度表', ru: 'Темп. выхлопа' },
+                oil: { en: 'Oil Pressure', zh: '机油压力表', ru: 'Давл. масла' }
+            };
+            const gaugeData = [
+                {
+                    id: 'rpm',
+                    label: gaugeText.rpm[lang] || gaugeText.rpm.en,
+                    value: smoothedGauges.rpm,
+                    history: gaugeHistory.rpm,
+                    min: 0,
+                    max: 2000,
+                    unit: 'RPM',
+                    color: 'var(--accent)',
+                    ticks: [0, 500, 1000, 1500, 2000]
+                },
+                {
+                    id: 'water',
+                    label: gaugeText.water[lang] || gaugeText.water.en,
+                    value: smoothedGauges.water,
+                    history: gaugeHistory.water,
+                    min: 0,
+                    max: 120,
+                    unit: '°C',
+                    color: 'var(--status-warning)',
+                    ticks: [0, 30, 60, 90, 120]
+                },
+                {
+                    id: 'exhaust',
+                    label: gaugeText.exhaust[lang] || gaugeText.exhaust.en,
+                    value: smoothedGauges.exhaust,
+                    history: gaugeHistory.exhaust,
+                    min: 0,
+                    max: 800,
+                    unit: '°C',
+                    color: '#3BA7FF',
+                    ticks: [0, 200, 400, 600, 800]
+                },
+                {
+                    id: 'oil',
+                    label: gaugeText.oil[lang] || gaugeText.oil.en,
+                    value: smoothedGauges.oil,
+                    history: gaugeHistory.oil,
+                    min: 0,
+                    max: 600,
+                    unit: 'kPa',
+                    color: '#F97316',
+                    ticks: [0, 150, 300, 450, 600]
+                }
+            ];
+
+            const phaseMeta = {
+                STOP: {
+                    label: textPair('待机装载', 'Standby Armed'),
+                    badge: textPair('等待启动', 'Waiting'),
+                    summary: textPair('诊断场景已经装载，等待启动后开始采集异常链路。', 'Scenario armed. Waiting for startup to trace the failure chain.')
+                },
+                CRANK: {
+                    label: textPair('启动建立', 'Crank Build'),
+                    badge: textPair('建立基线', 'Baseline'),
+                    summary: textPair('ECM 正在建立启动基线，先看拖动能力、同步和初始供气是否正常。', 'ECM is building the start baseline, focusing on crank, sync and initial fuel delivery.')
+                },
+                IDLE: {
+                    label: textPair('怠速观察', 'Idle Observe'),
+                    badge: textPair('征兆出现', 'Symptom'),
+                    summary: textPair('系统已进入怠速观察窗口，轻微异常会在这里开始显形。', 'The unit is inside the idle observation window where early symptoms begin to show.')
+                },
+                RAMP: {
+                    label: textPair('升速放大', 'Ramp Escalation'),
+                    badge: textPair('异常放大', 'Escalating'),
+                    summary: textPair('推演正在升速带载，之前隐性的异常会在这一段被快速放大。', 'The scenario is ramping under load, which quickly amplifies earlier hidden faults.')
+                },
+                RATED: {
+                    label: textPair('额定判定', 'Rated Assessment'),
+                    badge: textPair('结果形成', 'Outcome'),
+                    summary: textPair('机组已来到额定工况，当前读数足够判断故障结果和保护趋势。', 'The unit is at rated condition, so the current values are enough to judge the fault outcome and trip trend.')
+                },
+                FAULT: {
+                    label: textPair('保护触发', 'Protection Trip'),
+                    badge: textPair('告警生效', 'Trip Active'),
+                    summary: textPair('保护逻辑已经接管，当前结果就是这轮诊断推演的结论。', 'Protection logic has taken over. The current result is the conclusion of this simulation run.')
+                }
+            };
+
+            const buildDiagnosticNarrative = () => {
+                const modeInfo = activeSimModes[simMode];
+                if (!modeInfo || simMode === 'NORMAL') return null;
+
+                const phase = phaseRef.current;
+                const phaseInfo = phaseMeta[phase] || phaseMeta.STOP;
+                const rpm = formatMetricValue(engineState.CurSpd);
+                const water = formatMetricValue(engineState.WaterTemp, 1);
+                const oil = formatMetricValue(engineState.OilPressure);
+                const exhaust = formatMetricValue(engineState.ExhaustTemp);
+                const map = formatMetricValue(engineState.MAP, 1);
+                const lambda = formatMetricValue(engineState.lambda, 2);
+                const load = formatMetricValue(engineState.LoadI);
+                const sync = formatMetricValue(engineState.SyncVolt, 2);
+                const gasPos = formatMetricValue(engineState.CurPos2);
+                const gasSet = formatMetricValue(engineState.SetPos2);
+                const throttle = formatMetricValue(engineState.CurPos1);
+                const throttleSet = formatMetricValue(engineState.SetPos1);
+                const activeIndexMap = { STOP: 0, CRANK: 0, IDLE: 1, RAMP: 2, RATED: 3, FAULT: 3 };
+                const activeStepIndex = activeIndexMap[phase] ?? 0;
+                const tripText = engineState.FaultMsg || phaseInfo.summary;
+                const metricLabels = {
+                    CurSpd: textPair('当前转速', 'RPM'),
+                    WaterTemp: textPair('冷却水温', 'Water Temp'),
+                    OilPressure: textPair('机油压力', 'Oil Pressure'),
+                    ExhaustTemp: textPair('排气温度', 'Exhaust Temp'),
+                    MAP: textPair('歧管压力', 'MAP'),
+                    lambda: textPair('空燃比', 'Lambda'),
+                    LoadI: textPair('负载电流', 'Load'),
+                    SyncVolt: textPair('同步电压', 'Sync Volt'),
+                    CurPos1: textPair('节气门反馈', 'Throttle Pos'),
+                    SetPos1: textPair('节气门目标', 'Throttle Set'),
+                    CurPos2: textPair('燃气阀反馈', 'Gas Valve Pos'),
+                    SetPos2: textPair('燃气阀目标', 'Gas Valve Set')
+                };
+                const metricUnits = {
+                    CurSpd: 'RPM',
+                    WaterTemp: '°C',
+                    OilPressure: 'kPa',
+                    ExhaustTemp: '°C',
+                    MAP: 'kPa',
+                    lambda: '',
+                    LoadI: 'A',
+                    SyncVolt: 'V',
+                    CurPos1: '',
+                    SetPos1: '',
+                    CurPos2: '',
+                    SetPos2: ''
+                };
+                const metricKeysToItems = (keys) => keys.map((key) => ({
+                    key,
+                    label: metricLabels[key] || key,
+                    value: formatMetricValue(engineState[key], key === 'WaterTemp' || key === 'MAP' || key === 'lambda' || key === 'SyncVolt' ? 2 : 0),
+                    unit: metricUnits[key] || ''
+                }));
+
+                let summary = textPair('异常链路已经装载，系统将按当前阶段推演故障放大过程。', 'The abnormal chain is armed and will evolve with the current phase.');
+                let observation = textPair('当前阶段会先暴露最早的异常征兆。', 'The current phase exposes the earliest abnormal symptom.');
+                let amplification = textPair('进入带载后，异常会被逐步放大并形成稳定结果。', 'Under load, the abnormality grows into a stable outcome.');
+                let result = phase === 'FAULT'
+                    ? tripText
+                    : textPair('保护尚未接管，但当前趋势已经足以指向故障结果。', 'Protection has not taken over yet, but the current trend already points to the outcome.');
+                let metrics = metricKeysToItems(['CurSpd', 'WaterTemp', 'OilPressure']);
+
+                switch (simMode) {
+                    case 'START_FAIL':
+                        summary = textPair(`当前拖动仅 ${rpm} RPM，启动链路始终无法跨过点火与怠速门槛。`, `Cranking is only ${rpm} RPM, so the start chain cannot cross the ignition and idle threshold.`);
+                        observation = textPair('先看马达拖动和主气路是否建立，若燃气阀未跟上，转速会一直卡在低位。', 'Watch starter drag and main gas delivery first. If the gas valve does not establish, RPM stays pinned low.');
+                        amplification = textPair('怠速没有建立，后续升速和带载过程都不会真正展开，系统会反复停在启动边缘。', 'Idle never stabilizes, so ramp and load phases never truly begin. The controller stays stuck on the edge of startup.');
+                        result = phase === 'FAULT' || phase === 'STOP'
+                            ? textPair('本轮结果：启动失败，优先检查启动电压和燃气主阀。', 'Outcome: start failure. Check starter voltage and the main gas valve first.')
+                            : textPair(`当前结果：转速仍被压在 ${rpm} RPM，启动失败趋势已经成立。`, `Current outcome: RPM is still held at ${rpm}, confirming a start-fail trend.`);
+                        metrics = metricKeysToItems(['CurSpd', 'CurPos2', 'lambda']);
+                        break;
+                    case 'OVERSPEED':
+                        summary = textPair(`当前转速 ${rpm} RPM，调速反馈已明显落后于失控的升速趋势。`, `Current speed is ${rpm} RPM, and governor feedback is already lagging an overspeed runaway.`);
+                        observation = textPair(`节气门反馈 ${throttle} 仍偏高，控制器已经很难把升速斜率压下来。`, `Throttle feedback stays high at ${throttle}, so the controller can barely suppress the speed rise.`);
+                        amplification = textPair('一旦进入额定区，飞车会越过 1750 RPM 保护线，系统会直接切入超速停机。', 'Once the unit reaches rated range, overspeed pushes past the 1750 RPM trip line and forces shutdown.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair(`当前结果：超速风险已形成，${rpm} RPM 已经接近或进入保护边界。`, `Current outcome: overspeed risk is formed, and ${rpm} RPM is at or near the protection boundary.`);
+                        metrics = metricKeysToItems(['CurSpd', 'CurPos1', 'MAP']);
+                        break;
+                    case 'HIGH_TEMP_OIL':
+                        summary = textPair(`水温 ${water}°C 持续抬升，机油压力已降到 ${oil} kPa，热衰减链路已经闭合。`, `Coolant has risen to ${water}°C and oil pressure has fallen to ${oil} kPa, closing the thermal decay chain.`);
+                        observation = textPair('先从冷却回路过热开始，油膜粘度下降后，润滑压力会跟着被拖低。', 'The chain begins with coolant overheating; as oil film viscosity drops, lubrication pressure follows down.');
+                        amplification = textPair('进入带载后，排温和缸体热负荷继续抬高，低油压会从“偏低”快速进入“危险”。', 'Under load, exhaust and block heat rise further, taking low oil pressure from marginal into dangerous.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：高温低压趋势明确，继续运行会优先触发温度或油压保护。', 'Current outcome: the high-temp/low-pressure trend is clear, and continued running will trip temperature or oil-pressure protection first.');
+                        metrics = metricKeysToItems(['WaterTemp', 'OilPressure', 'ExhaustTemp']);
+                        break;
+                    case 'COOLANT_LEAK':
+                        summary = textPair(`冷却能力正在塌陷，水温已冲到 ${water}°C，这类故障会在极短时间内把系统推到停机线。`, `Cooling capacity is collapsing and water temperature has already reached ${water}°C, which can force a trip in a very short window.`);
+                        observation = textPair('冷却液一旦快速流失，怠速阶段就会先看到水温异常爬升，热平衡无法建立。', 'Once coolant is lost rapidly, idle phase shows the first abnormal temperature rise and thermal balance never forms.');
+                        amplification = textPair('升速带载时热量输入进一步放大，温升速度会明显快于正常机组。', 'During ramp and load, heat input rises further, so temperature climbs much faster than on a healthy unit.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：高温极限已经很近，冷却液泄漏场景的强制停机趋势非常明确。', 'Current outcome: the high-temperature trip point is close, and the forced-shutdown trend of coolant leakage is already clear.');
+                        metrics = metricKeysToItems(['WaterTemp', 'OilPressure', 'CurSpd']);
+                        break;
+                    case 'OIL_PUMP_FAIL':
+                        summary = textPair(`机油压力当前仅 ${oil} kPa，润滑供给已经接近或进入失效区。`, `Oil pressure is only ${oil} kPa, placing lubrication supply at or inside the failure zone.`);
+                        observation = textPair('故障首先表现为油压突然断崖式下落，而转速和温度在初期还可能暂时“看起来正常”。', 'The first symptom is a cliff-like oil pressure collapse, while speed and temperature can still look deceptively normal at first.');
+                        amplification = textPair('继续升速后，摩擦和热负荷会迅速抬升，拉缸风险会比一般高温更快出现。', 'As speed rises, friction and heat climb rapidly, so scuffing risk emerges faster than with normal overheating.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：润滑失压趋势已成立，继续推演的结论会指向机油泵或油路失效。', 'Current outcome: lubrication pressure loss is established, and the scenario points toward oil pump or oil-path failure.');
+                        metrics = metricKeysToItems(['OilPressure', 'WaterTemp', 'CurSpd']);
+                        break;
+                    case 'SENSOR_FAIL_MAP':
+                        summary = textPair(`MAP 当前为 ${map}，闭环基准已经丢失，空燃比控制正在退回开环。`, `MAP currently reads ${map}, so the closed-loop reference is lost and mixture control is falling back to open loop.`);
+                        observation = textPair('传感器一旦断线，ECM 对进气负荷的判断就会发飘，怠速先出现游车和波动。', 'Once the sensor opens, ECM loses its intake-load reference, so idle becomes the first place where hunting appears.');
+                        amplification = textPair('进入升速后，错误负荷估计会同时扰乱供气和调速，波动会比单一失火更杂乱。', 'During ramp, the bad load estimate disturbs both fueling and speed control, creating oscillation messier than simple misfire.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：开环退化已经明显，后续会演化为转速震荡与通讯/采样类告警。', 'Current outcome: open-loop degradation is obvious and will evolve into speed hunting plus sensor/communication alarms.');
+                        metrics = metricKeysToItems(['MAP', 'lambda', 'CurSpd']);
+                        break;
+                    case 'SYNC_LOSS':
+                        summary = textPair(`同步电压当前 ${sync} V，ECU 已经难以稳定判定曲轴/相位。`, `Sync voltage is ${sync} V, so ECU is struggling to keep crank/phase determination stable.`);
+                        observation = textPair('同步链路一旦掉边沿，最先看到的是点火与喷气参考相位发散。', 'When the sync chain loses edges, the earliest symptom is drift in ignition and fueling reference phase.');
+                        amplification = textPair('到了带载阶段，只要再丢几个同步脉冲，系统就会直接进入无同步保护。', 'At load, only a few more missing sync pulses are needed before the controller enters no-sync protection.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：无同步风险已经成立，这轮推演会以点火中断或停机收尾。', 'Current outcome: the no-sync risk is established, and this run will end in ignition cut or shutdown.');
+                        metrics = metricKeysToItems(['SyncVolt', 'CurSpd', 'CurPos1']);
+                        break;
+                    case 'CAN_BUS_OFF':
+                        summary = textPair(`关键通讯量开始冻结，当前 MAP=${map}、负载=${load}，总线离线特征已经出现。`, `Key channels are freezing, with MAP=${map} and load=${load}, which is consistent with a CAN-off condition.`);
+                        observation = textPair('总线掉线时，不一定先表现为机械波动，而是数据先冻结、先报 ERR。', 'When the bus drops, the first symptom is often frozen data and ERR states rather than mechanical motion.');
+                        amplification = textPair('随着控制器拿不到实时传感器，后续调速和保护都会转为保守或失效状态。', 'As the controller loses live sensor data, governing and protection both fall back into conservative or failed states.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：通讯离线链路已形成，继续推演会以参数冻结和系统降级告警为主。', 'Current outcome: the communication-offline chain is formed, and continued simulation leads to frozen parameters and degraded control alarms.');
+                        metrics = metricKeysToItems(['MAP', 'LoadI', 'SyncVolt']);
+                        break;
+                    case 'LOAD_SURGE':
+                        summary = textPair(`负载电流 ${load} A 与转速 ${rpm} RPM 正在相互拉扯，负载突变冲击已经可见。`, `Load current ${load} A and speed ${rpm} RPM are already pulling against each other, showing impact from load surges.`);
+                        observation = textPair('这类故障不是单点损坏，而是负载突然切入/退出，让调速器不断追着扰动跑。', 'This is not a single component failure, but a repeating hit from abrupt load in/out events that the governor keeps chasing.');
+                        amplification = textPair('带载阶段最典型的表现是排温和转速同时摆动，控制器会呈现“追不稳”的感觉。', 'At load, the signature becomes simultaneous exhaust and speed swings, making the controller feel like it never settles.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：冲击负载链路已经成立，若继续加大波动，最终会落到过载/失稳告警。', 'Current outcome: the surge-load chain is established, and stronger swings will eventually land in overload or instability alarms.');
+                        metrics = metricKeysToItems(['LoadI', 'CurSpd', 'ExhaustTemp']);
+                        break;
+                    case 'OVERLOAD':
+                        summary = textPair(`当前负载 ${load} A 已显著超过额定余量，转速正被强行拖低到 ${rpm} RPM。`, `The present load ${load} A is well beyond rated margin, dragging speed down to ${rpm} RPM.`);
+                        observation = textPair('过载的第一个稳定特征不是停机，而是发电电流先顶住、转速先被拖垮。', 'The first stable sign of overload is not shutdown, but current pegging while speed gets dragged down.');
+                        amplification = textPair('继续带载后，排温和缸压都会跟着上升，保护逻辑会优先按过流/过温接管。', 'As load continues, exhaust temperature and cylinder pressure both rise, so protection tends to trip on current or thermal limit first.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：严重过载趋势明确，系统会以限载失败或停机保护结束这轮推演。', 'Current outcome: the overload trend is clear, and the run will end in load-limit failure or protective shutdown.');
+                        metrics = metricKeysToItems(['LoadI', 'CurSpd', 'ExhaustTemp']);
+                        break;
+                    case 'MISFIRE':
+                        summary = textPair(`当前空燃比 ${lambda}、转速 ${rpm} RPM、排温 ${exhaust}°C，典型缺火指征已经成形。`, `With lambda ${lambda}, speed ${rpm} RPM and exhaust ${exhaust}°C, the classic misfire signature is already visible.`);
+                        observation = textPair('缺火先表现为周期性掉速，而氧传感器会把未燃氧误判成“更稀”的混合气。', 'Misfire first appears as cyclic speed dips, while the O2 sensor misreads unburned oxygen as a leaner mixture.');
+                        amplification = textPair('进入升速后，掉火会让排温反常下降，但整机振动和输出波动会明显上升。', 'During ramp, misfire can make exhaust temperature fall abnormally while vibration and power fluctuation rise.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：缺火链路已经成立，优先应回到点火波形、火花塞和线圈逐缸排查。', 'Current outcome: the misfire chain is established, so diagnosis should return to ignition waveform, plugs and coils cylinder by cylinder.');
+                        metrics = metricKeysToItems(['lambda', 'CurSpd', 'ExhaustTemp']);
+                        break;
+                    case 'IGNITION_COIL_SHORT':
+                        summary = textPair(`同步/驱动噪声已抬头，当前同步电压 ${sync} V，线圈级联短路特征正在放大。`, `Drive noise is rising and sync voltage is ${sync} V, so the coil short-circuit signature is being amplified.`);
+                        observation = textPair('这类故障通常先从电气噪声开始，表现为同步电压杂波和点火驱动异常发热。', 'This fault usually begins as electrical noise, visible first in sync-voltage ripple and ignition-driver stress.');
+                        amplification = textPair('带载后，高压侧噪声会进一步污染同步参考，整机表现会比普通缺火更“电气化”。', 'Under load, high-voltage noise contaminates sync reference even more, making the behavior feel more electrical than a normal misfire.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：线圈/驱动短路趋势明显，继续推演会落到同步异常或点火故障停机。', 'Current outcome: coil or driver short-circuit is strongly indicated, and continued simulation will end in sync or ignition-fault shutdown.');
+                        metrics = metricKeysToItems(['SyncVolt', 'CurSpd', 'MAP']);
+                        break;
+                    case 'RICH_MIXTURE':
+                        summary = textPair(`当前 Lambda ${lambda}，混合气已经明显过浓，排温 ${exhaust}°C 也在跟着抬高。`, `Current lambda is ${lambda}, showing a rich mixture, and exhaust temperature ${exhaust}°C is rising with it.`);
+                        observation = textPair('过浓先把 Lambda 拉低，同时多余燃气会让排气歧管后燃风险迅速增加。', 'A rich mixture first drags lambda low, while excess gas sharply increases the chance of afterburn in the exhaust.');
+                        amplification = textPair('进入额定区后，后燃会把排温继续推高，热负荷会比表面看到的功率波动更危险。', 'At rated condition, afterburn keeps pushing exhaust temperature upward, making heat load more dangerous than the apparent power fluctuation.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：浓混合气趋势已经稳定，继续运行会优先走向排温超限保护。', 'Current outcome: the rich-mixture trend is stable, and continued running will most likely trip on exhaust over-temperature.');
+                        metrics = metricKeysToItems(['lambda', 'ExhaustTemp', 'CurPos2']);
+                        break;
+                    case 'LEAN_BURN_LIMIT':
+                        summary = textPair(`当前 Lambda ${lambda} 已越过稳定稀燃极限，转速 ${rpm} RPM 呈现明显波动。`, `Lambda ${lambda} has crossed the stable lean-burn limit, and speed ${rpm} RPM is already fluctuating visibly.`);
+                        observation = textPair('稀燃极限先表现为燃烧边界不稳定，机组会先出现轻微喘振和掉转。', 'The lean limit first shows up as unstable combustion, causing light surge and speed drop.');
+                        amplification = textPair('继续升速后，燃烧裕量更薄，任何进气或供气小扰动都会被放大成明显失稳。', 'As speed rises, combustion margin gets thinner, so any small intake or fuel disturbance grows into obvious instability.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：稀燃越界已经成立，优先检查进气漏气点和燃气滤清链路。', 'Current outcome: lean-burn limit exceedance is established, so intake leaks and gas filtration should be checked first.');
+                        metrics = metricKeysToItems(['lambda', 'CurSpd', 'ExhaustTemp']);
+                        break;
+                    case 'KNOCK_DETECTED':
+                        summary = textPair(`当前 MAP ${map} kPa 下仍伴随爆震趋势，ECU 退角后转速只剩 ${rpm} RPM，动力被明显压制。`, `At MAP ${map} kPa the knock trend persists, and after timing retard the engine is down to ${rpm} RPM with noticeably reduced power.`);
+                        observation = textPair('爆震通常先在高负荷、高缸压工况冒头，控制器会先通过退角来救场。', 'Knock usually emerges under high load and high cylinder pressure, and the controller first tries to save the engine by retarding timing.');
+                        amplification = textPair('如果退角之后转速和输出仍继续掉，说明根因不是点火策略本身，而是燃气品质或进气冷却能力。', 'If speed and power still fall after timing retard, the root cause is likely not the timing map itself but gas quality or intake cooling capacity.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：爆震抑制正在用功率损失换安全边界，这轮结论会指向燃气甲烷值或中冷问题。', 'Current outcome: knock suppression is trading power for safety margin, pointing this scenario toward methane number or intercooler issues.');
+                        metrics = metricKeysToItems(['MAP', 'CurSpd', 'ExhaustTemp']);
+                        break;
+                    case 'LOW_GAS_PRESS':
+                        summary = textPair(`燃气阀已拉到 ${gasPos}，但转速仍跌到 ${rpm} RPM，Lambda=${lambda}，供气不足特征非常典型。`, `Gas valve position is already ${gasPos}, but speed still falls to ${rpm} RPM with lambda=${lambda}, which is a classic low-gas-pressure signature.`);
+                        observation = textPair('这类故障先表现为执行器“已经很努力”，但转速和混合气仍然持续变稀。', 'This fault first appears as the actuator doing everything it can while speed and mixture still keep leaning out.');
+                        amplification = textPair('进入带载区后，供气侧的压降会比怠速阶段更明显，掉速会持续放大。', 'Once the unit moves into load, supply-side pressure drop becomes much more obvious than at idle, so speed decay grows.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：供气不足链路已成立，应优先回查外部管网压力和阻火/过滤部件。', 'Current outcome: the low-gas-pressure chain is established, so external gas pressure and arrestor/filter hardware should be checked first.');
+                        metrics = metricKeysToItems(['CurPos2', 'lambda', 'CurSpd']);
+                        break;
+                    case 'EXHAUST_BLOCK':
+                        summary = textPair(`排气温度 ${exhaust}°C 与 MAP ${map} kPa 同时异常，排气背压抬高的链路已经成形。`, `Exhaust temperature ${exhaust}°C and MAP ${map} kPa are abnormal together, forming a clear exhaust-backpressure signature.`);
+                        observation = textPair('背压增大时，最早能看到的是排温抬升和发动机“发闷”，但进气负荷并不会同步改善。', 'When backpressure rises, the earliest signs are higher exhaust temperature and a struggling engine, without a matching improvement in intake load.');
+                        amplification = textPair('带载后，排气阻塞会直接吞掉有效充量，动力下降会比普通过载更像“憋住了”。', 'Under load, exhaust blockage directly steals effective charge, making the power drop feel more like suffocation than simple overload.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：排气受阻趋势非常明确，最终会落到排温超限或带载无力的结果。', 'Current outcome: the exhaust-block trend is clear and will ultimately end in exhaust over-temperature or severe power loss under load.');
+                        metrics = metricKeysToItems(['ExhaustTemp', 'MAP', 'CurSpd']);
+                        break;
+                    case 'ACTUATOR_JAM':
+                        summary = textPair(`燃气阀反馈 ${gasPos} 与目标 ${gasSet} 已经明显脱节，执行器卡滞正在主导整个推演。`, `Gas-valve feedback ${gasPos} is now clearly detached from the target ${gasSet}, so actuator jamming is dominating the scenario.`);
+                        observation = textPair('这类故障最先看的不是转速，而是目标变化了，反馈却像被卡住一样不跟。', 'The first thing to watch here is not speed but the fact that the target moves while feedback stays stuck.');
+                        amplification = textPair('一旦进入带载，实际开度跟不上目标开度，转速和空燃比都会同步偏离。', 'Once load is applied, actual opening cannot follow the target, so speed and mixture both drift away together.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：执行器卡滞趋势已经成立，这轮诊断会指向机构阻滞或驱动线圈异常。', 'Current outcome: actuator jamming is established, pointing this diagnosis toward mechanical sticking or drive-coil issues.');
+                        metrics = metricKeysToItems(['CurPos2', 'SetPos2', 'CurSpd']);
+                        break;
+                    case 'THROTTLE_LAG':
+                        summary = textPair(`节气门反馈 ${throttle} 仍落后于目标 ${throttleSet}，响应迟滞已经明显。`, `Throttle feedback ${throttle} is still lagging the target ${throttleSet}, showing obvious response delay.`);
+                        observation = textPair('迟滞类问题最典型的感觉是“命令先到了，机械动作过一会儿才慢慢跟上”。', 'The signature of lag is that the command arrives first, while the mechanical motion trails behind slowly.');
+                        amplification = textPair('带载扰动一来，控制器已经开始修正下一步，但节气门还停留在上一拍，所以转速很容易被拖垮。', 'When load disturbances arrive, the controller is already issuing the next correction while the throttle is still on the last one, so speed gets dragged down easily.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：节气门迟滞链路已成立，后续应重点查积碳、摩擦阻尼和驱动供电衰减。', 'Current outcome: the throttle-lag chain is established, so carbon buildup, mechanical drag and weak drive voltage should be checked next.');
+                        metrics = metricKeysToItems(['CurPos1', 'SetPos1', 'CurSpd']);
+                        break;
+                    case 'WATER_IN_OIL':
+                        summary = textPair(`机油压力 ${oil} kPa 偏低且不稳，水温 ${water}°C 还在继续走高，乳化进水的复合特征已经出现。`, `Oil pressure at ${oil} kPa is low and unstable while water temperature ${water}°C keeps rising, matching a water-in-oil/emulsion pattern.`);
+                        observation = textPair('这类故障不是单一低油压，而是润滑与冷却两个系统同时慢慢偏离。', 'This fault is not just low oil pressure; lubrication and cooling both drift away together.');
+                        amplification = textPair('进入持续运行后，油膜稳定性会越来越差，低油压与升温会相互推高风险。', 'Under continued running, oil-film stability keeps worsening, and low pressure plus rising temperature reinforce each other.');
+                        result = phase === 'FAULT'
+                            ? tripText
+                            : textPair('当前结果：油水串通趋势已经形成，后续应优先核查乳化和缸垫/换热部件密封。', 'Current outcome: the oil-water crossover trend is formed, so emulsion and gasket or heat-exchanger sealing should be checked first.');
+                        metrics = metricKeysToItems(['OilPressure', 'WaterTemp', 'CurSpd']);
+                        break;
+                    default:
+                        summary = textPair(`当前阶段 ${phaseInfo.label} 已经把 ${modeInfo.label} 的主要异常链路拉出来了。`, `The current phase ${phaseInfo.label} has already pulled the main abnormal chain of ${modeInfo.label} into view.`);
+                        observation = textPair('先看第一批偏离基线的关键量，它们通常比最终告警更早说明问题。', 'Watch the first variables that drift away from baseline. They usually explain the problem before the final alarm does.');
+                        amplification = textPair('随着升速和带载推进，最早的征兆会演化成更稳定的故障结果。', 'As ramp and load continue, the earliest symptoms evolve into a more stable fault outcome.');
+                        result = phase === 'FAULT' ? tripText : textPair('当前结果已经接近最终判定，可以结合原因和排查方案同步回看。', 'The current result is close to final assessment and can already be read together with the cause and solution.');
+                        break;
+                }
+
+                const steps = [
+                    {
+                        title: textPair('基线装载', 'Baseline Armed'),
+                        detail: phase === 'STOP'
+                            ? textPair('诊断模式已切入，等待启动后开始采集异常演化。', 'Scenario is armed and waiting for startup to begin abnormal tracing.')
+                            : phaseInfo.summary
+                    },
+                    {
+                        title: textPair('异常征兆', 'Early Symptom'),
+                        detail: observation
+                    },
+                    {
+                        title: textPair('过程放大', 'Escalation'),
+                        detail: amplification
+                    },
+                    {
+                        title: textPair('结果判定', 'Outcome'),
+                        detail: result
+                    }
+                ].map((step, index) => ({
+                    ...step,
+                    state: index < activeStepIndex ? 'done' : (index === activeStepIndex ? 'active' : 'pending')
+                }));
+
+                return {
+                    title: modeInfo.label,
+                    phaseLabel: phaseInfo.label,
+                    phaseBadge: phaseInfo.badge,
+                    summary,
+                    result,
+                    tripText,
+                    metrics,
+                    steps
+                };
+            };
+
+            const diagnosticNarrative = buildDiagnosticNarrative();
 
             const CurveChart = ({ def }) => {
                 if (!def) return null;
@@ -591,6 +1147,107 @@
                 );
             };
 
+            const GaugeCard = ({ gauge }) => {
+                const cx = 118;
+                const cy = 98;
+                const radius = 56;
+                const startAngle = -210;
+                const endAngle = 30;
+                const ratio = (gauge.value - gauge.min) / (gauge.max - gauge.min || 1);
+                const clampedRatio = Math.max(0, Math.min(1, ratio));
+                const currentAngle = startAngle + (endAngle - startAngle) * clampedRatio;
+                const toPoint = (angle, r = radius) => {
+                    const rad = angle * Math.PI / 180;
+                    return {
+                        x: cx + Math.cos(rad) * r,
+                        y: cy + Math.sin(rad) * r
+                    };
+                };
+                const start = toPoint(startAngle);
+                const end = toPoint(endAngle);
+                const progress = toPoint(currentAngle);
+                const trackLargeArc = endAngle - startAngle > 180 ? 1 : 0;
+                const progressLargeArc = currentAngle - startAngle > 180 ? 1 : 0;
+                const trackPath = `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${trackLargeArc} 1 ${end.x} ${end.y}`;
+                const progressPath = `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${progressLargeArc} 1 ${progress.x} ${progress.y}`;
+                const needleBaseLeft = toPoint(currentAngle - 90, 5);
+                const needleBaseRight = toPoint(currentAngle + 90, 5);
+                const needleTip = toPoint(currentAngle, radius - 10);
+                const history = Array.isArray(gauge.history) && gauge.history.length ? gauge.history : [gauge.value];
+                const sparkWidth = 220;
+                const sparkHeight = 128;
+                const sparkMax = gauge.max - gauge.min || 1;
+                const sparkPoints = history.map((point, index) => {
+                    const x = history.length === 1 ? sparkWidth : (index / (history.length - 1)) * sparkWidth;
+                    const normalized = Math.max(0, Math.min(1, (point - gauge.min) / sparkMax));
+                    const y = sparkHeight - normalized * (sparkHeight - 6) - 3;
+                    return { x, y };
+                });
+                const sparkPath = sparkPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
+                const sparkAreaPath = sparkPoints.length
+                    ? `${sparkPath} L ${sparkPoints[sparkPoints.length - 1].x.toFixed(2)} ${sparkHeight} L ${sparkPoints[0].x.toFixed(2)} ${sparkHeight} Z`
+                    : '';
+
+                return (
+                    <div className="relative overflow-hidden rounded-2xl gx-border border px-3 py-3 gx-bg-card shadow-[0_18px_40px_rgba(0,0,0,0.24)] min-h-[392px]">
+                        <div className="absolute inset-x-0 top-0 h-16 opacity-90" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01) 48%, transparent 100%)' }}></div>
+                        <div className="relative flex items-center justify-between mb-0.5">
+                            <span className="text-[11px] uppercase tracking-[0.28em] gx-text-secondary">{gauge.label}</span>
+                            <span className="data-numbers text-[11px] px-2 py-1 rounded-full border" style={{ color: gauge.color, borderColor: `${gauge.color}66`, backgroundColor: `${gauge.color}12` }}>{gauge.unit}</span>
+                        </div>
+                        <svg viewBox="0 0 236 154" className="w-full h-[138px] -mt-2">
+                            <path d={trackPath} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="12" strokeLinecap="round" />
+                            <path d={progressPath} fill="none" stroke={gauge.color} strokeWidth="12" strokeLinecap="round" />
+                            {gauge.ticks.map((tick, index) => {
+                                const tickRatio = (tick - gauge.min) / (gauge.max - gauge.min || 1);
+                                const tickAngle = startAngle + (endAngle - startAngle) * tickRatio;
+                                const outer = toPoint(tickAngle, radius + 7);
+                                const inner = toPoint(tickAngle, radius - 9);
+                                const labelPoint = toPoint(tickAngle, radius + 18);
+                                return (
+                                    <g key={`${gauge.id}-${index}`}>
+                                        <line x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y} stroke="rgba(255,255,255,0.30)" strokeWidth="2" strokeLinecap="round" />
+                                        <text x={labelPoint.x} y={labelPoint.y} fill="var(--text-secondary)" fontSize="9" textAnchor="middle" dominantBaseline="middle" className="data-numbers">
+                                            {tick}
+                                        </text>
+                                    </g>
+                                );
+                            })}
+                            <polygon points={`${needleBaseLeft.x},${needleBaseLeft.y} ${needleBaseRight.x},${needleBaseRight.y} ${needleTip.x},${needleTip.y}`} fill={gauge.color} />
+                            <circle cx={cx} cy={cy} r="10" fill="var(--bg-card)" stroke={gauge.color} strokeWidth="4" />
+                            <circle cx={cx} cy={cy} r="3" fill={gauge.color} />
+                        </svg>
+                        <div className="relative -mt-4 text-center">
+                            <div className="data-numbers text-[30px] leading-none font-semibold" style={{ color: gauge.color }}>
+                                {Math.round(gauge.value)}
+                            </div>
+                            <div className="text-[11px] mt-1 gx-text-secondary tracking-[0.24em] uppercase">
+                                {isSimulating ? phaseRef.current : 'Standby'}
+                            </div>
+                        </div>
+                        <div className="relative mt-4 pointer-events-none">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-[9px] uppercase tracking-[0.24em] gx-text-secondary">Trend</span>
+                                <span className="text-[9px] gx-text-secondary">{history.length} pts</span>
+                            </div>
+                            <div className="rounded-xl border overflow-hidden" style={{ borderColor: `${gauge.color}33`, background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))' }}>
+                                <svg viewBox={`0 0 ${sparkWidth} ${sparkHeight}`} preserveAspectRatio="none" className="w-full h-[128px]">
+                                    <defs>
+                                        <linearGradient id={`trend-fill-${gauge.id}`} x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor={gauge.color} stopOpacity="0.28" />
+                                            <stop offset="100%" stopColor={gauge.color} stopOpacity="0.02" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path d={`M 0 ${(sparkHeight * 0.5).toFixed(2)} L ${sparkWidth} ${(sparkHeight * 0.5).toFixed(2)}`} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="3 3" fill="none" />
+                                    <path d={sparkAreaPath} fill={`url(#trend-fill-${gauge.id})`} />
+                                    <path d={sparkPath} stroke={gauge.color} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
             const InputRow = ({ item, type = 'text' }) => {
                 const displayLabel = item.l[lang] || item.l['en'];
                 return (
@@ -611,7 +1268,7 @@
             };
 
             return (
-                <div data-theme={theme} className="ecm-page flex flex-col min-h-[calc(100vh-12rem)] w-full max-w-[1800px] mx-auto p-1 sm:p-2 gap-2 gx-bg-main transition-colors duration-300">
+                <div className="ecm-page flex flex-col min-h-[calc(100vh-12rem)] w-full max-w-[1800px] mx-auto p-1 sm:p-2 gap-2 gx-bg-main transition-colors duration-300">
                     <GlobalStyles />
                     <div className="flex flex-col gx-bg-card gx-border border rounded-lg shadow-lg overflow-hidden shrink-0">
                         <div className="px-3 sm:px-4 py-2 gx-border border-b flex flex-col md:flex-row md:items-center md:justify-between gap-2 select-none">
@@ -623,9 +1280,6 @@
                             </div>
                             
                             <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-                                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-1.5 rounded hover:bg-[rgba(128,128,128,0.1)] gx-text-secondary transition-colors">
-                                    {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                                </button>
                                 <div className="flex items-center gap-1.5 ml-2">
                                     <div className={`w-2 h-2 rounded-full ${isSimulating ? 'bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]' : 'bg-[#555555]'}`}></div>
                                     <span className="data-numbers text-[10px] gx-text-secondary">{t('sysSts')}</span>
@@ -682,19 +1336,107 @@
                         </div>
                     </div>
 
-                    {simMode !== 'NORMAL' && activeSimModes[simMode] && (
-                        <div className="gx-bg-card border border-[var(--status-warning)] rounded-lg p-3 mx-0 shadow-[0_0_15px_rgba(255,153,0,0.1)] flex flex-col gap-1.5 shrink-0">
-                            <div className="flex items-center gap-2 mb-0.5">
-                                <AlertTriangle size={16} className="text-[var(--status-warning)]" />
-                                <span className="text-[12px] sm:text-[13px] font-bold text-[var(--status-warning)] tracking-wide break-words">
-                                    {t('expert')}: {activeSimModes[simMode].label}
-                                </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-2 shrink-0">
+                        {gaugeData.map((gauge) => (
+                            <GaugeCard key={gauge.id} gauge={gauge} />
+                        ))}
+                    </div>
+
+                    {diagnosticNarrative && (
+                        <div className="ecm-diagnostic-panel gx-bg-card rounded-2xl p-3 sm:p-4 mx-0 flex flex-col gap-3 shrink-0">
+                            <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-3">
+                                <div className="flex items-start gap-3 min-w-0">
+                                    <div className="mt-0.5 p-2 rounded-xl bg-[rgba(255,90,90,0.12)] text-[var(--status-danger)] border border-[rgba(255,90,90,0.4)] shadow-[0_0_18px_rgba(255,70,70,0.12)]">
+                                        <AlertTriangle size={18} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="text-[12px] sm:text-[13px] font-bold text-[var(--status-warning)] tracking-wide break-words">
+                                            {t('expert')}: {diagnosticNarrative.title}
+                                        </div>
+                                        <div className="mt-1 text-[12px] sm:text-[13px] gx-text-primary leading-relaxed">
+                                            {diagnosticNarrative.summary}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                                    <span className="data-numbers text-[11px] px-2.5 py-1 rounded-full border border-[rgba(255,90,90,0.45)] bg-[rgba(255,70,70,0.14)] text-[var(--status-danger)]">
+                                        {textPair('当前阶段', 'Phase')}: {diagnosticNarrative.phaseLabel}
+                                    </span>
+                                    <span className="data-numbers text-[11px] px-2.5 py-1 rounded-full border border-[rgba(255,153,0,0.38)] bg-[rgba(255,153,0,0.12)] text-[var(--status-warning)]">
+                                        {diagnosticNarrative.phaseBadge}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="text-[12px] gx-text-primary sm:pl-6 flex items-start">
-                                <span className="gx-text-secondary whitespace-nowrap mr-2">{t('cause')}</span> {activeSimModes[simMode].desc}
-                            </div>
-                            <div className="text-[12px] gx-text-accent sm:pl-6 flex items-start">
-                                <span className="gx-text-secondary whitespace-nowrap mr-2">{t('sol')}</span> {activeSimModes[simMode].sol}
+
+                            <div className="grid grid-cols-1 xl:grid-cols-[1.35fr_0.95fr] gap-3">
+                                <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-3">
+                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                        <span className="text-[11px] uppercase tracking-[0.24em] text-[rgba(255,255,255,0.72)]">
+                                            {textPair('过程解说', 'Process Narrative')}
+                                        </span>
+                                        <span className="text-[11px] text-[var(--status-danger)] data-numbers">
+                                            {diagnosticNarrative.tripText}
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+                                        {diagnosticNarrative.steps.map((step, index) => (
+                                            <div
+                                                key={`${simMode}-step-${index}`}
+                                                className={`ecm-diagnostic-step rounded-2xl p-3 flex flex-col gap-2 ${
+                                                    step.state === 'active' ? 'is-active' : (step.state === 'done' ? 'is-done' : '')
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="data-numbers text-[11px] font-semibold tracking-[0.14em] text-[rgba(255,255,255,0.72)]">
+                                                        {textPair('阶段', 'Step')} {index + 1}
+                                                    </span>
+                                                    <span className={`w-2.5 h-2.5 rounded-full ${
+                                                        step.state === 'active'
+                                                            ? 'bg-[var(--status-danger)] shadow-[0_0_10px_rgba(255,60,60,0.85)]'
+                                                            : (step.state === 'done'
+                                                                ? 'bg-[var(--status-warning)] shadow-[0_0_8px_rgba(255,153,0,0.45)]'
+                                                                : 'bg-[rgba(255,255,255,0.18)]')
+                                                    }`}></span>
+                                                </div>
+                                                <div className="text-[12px] font-semibold gx-text-primary">{step.title}</div>
+                                                <div className="text-[12px] leading-relaxed gx-text-secondary">{step.detail}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] p-3 flex flex-col gap-3">
+                                    <div>
+                                        <div className="text-[11px] uppercase tracking-[0.24em] text-[rgba(255,255,255,0.72)] mb-1">
+                                            {textPair('当前结果', 'Current Outcome')}
+                                        </div>
+                                        <div className="text-[13px] sm:text-[14px] leading-relaxed text-[var(--status-danger)] font-semibold">
+                                            {diagnosticNarrative.result}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        {diagnosticNarrative.metrics.map((metric) => (
+                                            <div key={metric.key} className="ecm-diagnostic-metric rounded-xl p-2">
+                                                <div className="text-[10px] uppercase tracking-[0.16em] gx-text-secondary">{metric.label}</div>
+                                                <div className="mt-1 data-numbers text-[15px] font-semibold gx-text-primary">
+                                                    {metric.value}
+                                                    {metric.unit && <span className="ml-1 text-[11px] gx-text-secondary">{metric.unit}</span>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="rounded-xl border border-[rgba(255,153,0,0.28)] bg-[rgba(255,153,0,0.05)] p-3">
+                                        <div className="text-[11px] font-semibold text-[var(--status-warning)] mb-1">{t('cause')}</div>
+                                        <div className="text-[12px] leading-relaxed gx-text-primary">{activeSimModes[simMode].desc}</div>
+                                    </div>
+
+                                    <div className="rounded-xl border border-[rgba(var(--accent-rgb),0.26)] bg-[rgba(var(--accent-rgb),0.06)] p-3">
+                                        <div className="text-[11px] font-semibold gx-text-accent mb-1">{t('sol')}</div>
+                                        <div className="text-[12px] leading-relaxed gx-text-primary">{activeSimModes[simMode].sol}</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -799,7 +1541,7 @@
 
         const syncEcmHeaderBrand = () => {
             const brandTextNode = document.getElementById('ggx-header-brand-text');
-            if (brandTextNode) {
+            if (brandTextNode && !brandTextNode.classList.contains('ggx-header-brand-custom')) {
                 brandTextNode.textContent = 'GasGx';
             }
 

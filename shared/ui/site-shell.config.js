@@ -1031,6 +1031,8 @@
                 brand: {
                         name: "GasGx",
                         homeHref: "/index.html",
+                        logoHtml: "<div class=\"gasgx-logo\" aria-label=\"GasGx\"><div class=\"logo-title\"><span class=\"t-gas\">Gas</span><span class=\"t-gx\">Gx</span></div></div>",
+                        logoCss: ".gasgx-logo{display:inline-flex;align-items:center;justify-content:flex-start;text-align:left;}.gasgx-logo .logo-title{font-family:'Arial Black','Segoe UI',Arial,sans-serif;font-weight:900;font-size:2rem;line-height:1;letter-spacing:-0.04em;margin:0;white-space:nowrap;}.gasgx-logo .t-gas,.gasgx-logo .t-gx{display:inline-block;line-height:1;}.gasgx-logo .t-gas{color:#5dd62c;text-shadow:0 0 10px rgba(93,214,44,.18);}.gasgx-logo .t-gx{color:#f5f7fa;text-shadow:0 0 10px rgba(255,255,255,.08);}",
                         footerMeta: "Energy-compute infrastructure for mining operators.",
                         copyright: "© 2026 GasGx. All rights reserved."
                 },

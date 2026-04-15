@@ -1,0 +1,149 @@
+[
+  {
+    "name": "performance",
+    "url": "/rankings/performance",
+    "target": "rank-top-performance",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\performance.png"
+  },
+  {
+    "name": "efficiency",
+    "url": "/rankings/efficiency",
+    "target": "rank-high-efficiency",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\efficiency.png"
+  },
+  {
+    "name": "engine-efficiency",
+    "url": "/rankings/engine-efficiency",
+    "target": "rank-high-efficiency",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\engine-efficiency.png"
+  },
+  {
+    "name": "thermal-efficiency",
+    "url": "/rankings/thermal-efficiency",
+    "target": "rank-thermal-efficiency",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\thermal-efficiency.png"
+  },
+  {
+    "name": "gas-consumption",
+    "url": "/rankings/gas-consumption",
+    "target": "rank-gas-consumption",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\gas-consumption.png"
+  },
+  {
+    "name": "roi",
+    "url": "/rankings/roi",
+    "target": "rank-best-roi",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\roi.png"
+  },
+  {
+    "name": "lcoe",
+    "url": "/rankings/lcoe",
+    "target": "rank-lowest-lcoe",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\lcoe.png"
+  },
+  {
+    "name": "depreciation",
+    "url": "/rankings/depreciation",
+    "target": "rank-best-roi",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\depreciation.png"
+  },
+  {
+    "name": "engine-roi",
+    "url": "/rankings/engine-roi",
+    "target": "rank-best-roi",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\engine-roi.png"
+  },
+  {
+    "name": "reliability",
+    "url": "/rankings/reliability",
+    "target": "rank-high-reliability",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\reliability.png"
+  },
+  {
+    "name": "mtbf",
+    "url": "/rankings/mtbf",
+    "target": "rank-high-reliability",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\mtbf.png"
+  },
+  {
+    "name": "maintenance-interval",
+    "url": "/rankings/maintenance-interval",
+    "target": "rank-maintenance-interval",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\maintenance-interval.png"
+  },
+  {
+    "name": "spare-parts",
+    "url": "/rankings/spare-parts",
+    "target": "rank-maintenance-interval",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\spare-parts.png"
+  },
+  {
+    "name": "emissions",
+    "url": "/rankings/emissions",
+    "target": "rank-emission",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\emissions.png"
+  },
+  {
+    "name": "noise",
+    "url": "/rankings/noise",
+    "target": "rank-noise",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\noise.png"
+  },
+  {
+    "name": "generator",
+    "url": "/rankings/generator",
+    "target": "rank-generator",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\generator.png"
+  },
+  {
+    "name": "control-system",
+    "url": "/rankings/control-system",
+    "target": "rank-control-system",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\control-system.png"
+  },
+  {
+    "name": "usa",
+    "url": "/rankings/usa",
+    "target": "rank-usa-market",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\usa.png"
+  },
+  {
+    "name": "canada",
+    "url": "/rankings/canada",
+    "target": "rank-canada-market",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\canada.png"
+  },
+  {
+    "name": "middle-east",
+    "url": "/rankings/middle-east",
+    "target": "rank-middle-east-market",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\middle-east.png"
+  },
+  {
+    "name": "russia",
+    "url": "/rankings/russia",
+    "target": "rank-russia-market",
+    "highlighted": true,
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-nav-click-check-pass\\russia.png"
+  }
+]

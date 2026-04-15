@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.gasgx.com/</loc>
-    <lastmod>2026-04-13</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -14,7 +14,7 @@
   </url>
   <url>
     <loc>https://www.gasgx.com/about/company/</loc>
-    <lastmod>2026-03-21</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -31,8 +31,38 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.gasgx.com/article_management/gasgxplant/</loc>
+    <lastmod>2026-04-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://www.gasgx.com/article_management/sales/</loc>
     <lastmod>2026-04-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/digitalization/ecm/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/digitalization/ims/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/digitalization/platform/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/digitalization/sales/</loc>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -290,7 +320,7 @@
   </url>
   <url>
     <loc>https://www.gasgx.com/products/gas/power-range/500-1000kw/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -308,139 +338,139 @@
   </url>
   <url>
     <loc>https://www.gasgx.com/products/power-range/500-1000kw/</loc>
-    <lastmod>2026-04-12</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/canada/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/control-system/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/depreciation/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/efficiency/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/emissions/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/engine-efficiency/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/engine-roi/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/gas-consumption/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/generator/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/lcoe/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/maintenance-interval/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/middle-east/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/mtbf/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/noise/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/performance/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/reliability/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/roi/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/russia/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/spare-parts/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/thermal-efficiency/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/rankings/usa/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -482,7 +512,7 @@
   </url>
   <url>
     <loc>https://www.gasgx.com/resources/faq/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -584,7 +614,7 @@
   </url>
   <url>
     <loc>https://www.gasgx.com/tools/energy-conversion/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -626,7 +656,7 @@
   </url>
   <url>
     <loc>https://www.gasgx.com/tools/global-compliance/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -686,7 +716,7 @@
   </url>
   <url>
     <loc>https://www.gasgx.com/tools/roce-calculator/</loc>
-    <lastmod>2026-04-14</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -704,7 +734,7 @@
   </url>
   <url>
     <loc>https://www.gasgx.com/tools/vehicle-vs-industrial-10mw/</loc>
-    <lastmod>2026-03-10</lastmod>
+    <lastmod>2026-04-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -743,6 +773,222 @@
     <lastmod>2026-03-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4352/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4349/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4348/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4347/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4346/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4343/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4342/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4340/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4336/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4335/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4334/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4333/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4331/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4330/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4329/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4328/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4325/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4324/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4321/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4320/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4319/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4316/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4315/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4314/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4312/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4311/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4308/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4307/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4306/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4303/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4302/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4301/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4299/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4295/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4294/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.gasgx.com/news/article/4293/</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.gasgx.com/news/article/4290/</loc>

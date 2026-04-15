@@ -1,0 +1,191 @@
+[
+  {
+    "name": "top-performance",
+    "url": "/rankings#rank-top-performance",
+    "targetId": "rank-top-performance",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-1",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\top-performance.png"
+  },
+  {
+    "name": "high-efficiency",
+    "url": "/rankings#rank-high-efficiency",
+    "targetId": "rank-high-efficiency",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-1",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\high-efficiency.png"
+  },
+  {
+    "name": "elec-efficiency-rank",
+    "url": "/rankings#rank-high-efficiency",
+    "targetId": "rank-high-efficiency",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-1",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\elec-efficiency-rank.png"
+  },
+  {
+    "name": "thermal-efficiency",
+    "url": "/rankings#rank-thermal-efficiency",
+    "targetId": "rank-thermal-efficiency",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-1",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\thermal-efficiency.png"
+  },
+  {
+    "name": "gas-consumption",
+    "url": "/rankings#rank-gas-consumption",
+    "targetId": "rank-gas-consumption",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-1",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\gas-consumption.png"
+  },
+  {
+    "name": "best-roi",
+    "url": "/rankings#rank-best-roi",
+    "targetId": "rank-best-roi",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-2",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\best-roi.png"
+  },
+  {
+    "name": "lowest-lcoe",
+    "url": "/rankings#rank-lowest-lcoe",
+    "targetId": "rank-lowest-lcoe",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-2",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\lowest-lcoe.png"
+  },
+  {
+    "name": "depreciation-rank",
+    "url": "/rankings#rank-best-roi",
+    "targetId": "rank-best-roi",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-2",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\depreciation-rank.png"
+  },
+  {
+    "name": "roi-rank",
+    "url": "/rankings#rank-best-roi",
+    "targetId": "rank-best-roi",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-2",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\roi-rank.png"
+  },
+  {
+    "name": "high-reliability",
+    "url": "/rankings#rank-high-reliability",
+    "targetId": "rank-high-reliability",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-3",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\high-reliability.png"
+  },
+  {
+    "name": "longest-mtbf",
+    "url": "/rankings#rank-high-reliability",
+    "targetId": "rank-high-reliability",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-3",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\longest-mtbf.png"
+  },
+  {
+    "name": "maintenance-interval",
+    "url": "/rankings#rank-maintenance-interval",
+    "targetId": "rank-maintenance-interval",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-3",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\maintenance-interval.png"
+  },
+  {
+    "name": "spare-parts-rank",
+    "url": "/rankings#rank-maintenance-interval",
+    "targetId": "rank-maintenance-interval",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-3",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\spare-parts-rank.png"
+  },
+  {
+    "name": "emission-rank",
+    "url": "/rankings#rank-emission",
+    "targetId": "rank-emission",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-4",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\emission-rank.png"
+  },
+  {
+    "name": "noise-rank",
+    "url": "/rankings#rank-noise",
+    "targetId": "rank-noise",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-4",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\noise-rank.png"
+  },
+  {
+    "name": "generator-rank",
+    "url": "/rankings#rank-generator",
+    "targetId": "rank-generator",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-5",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\generator-rank.png"
+  },
+  {
+    "name": "control-system-rank",
+    "url": "/rankings#rank-control-system",
+    "targetId": "rank-control-system",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-5",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\control-system-rank.png"
+  },
+  {
+    "name": "usa-market",
+    "url": "/rankings#rank-usa-market",
+    "targetId": "rank-usa-market",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-6",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\usa-market.png"
+  },
+  {
+    "name": "canada-market",
+    "url": "/rankings#rank-canada-market",
+    "targetId": "rank-canada-market",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-6",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\canada-market.png"
+  },
+  {
+    "name": "middle-east-market",
+    "url": "/rankings#rank-middle-east-market",
+    "targetId": "rank-middle-east-market",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-6",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\middle-east-market.png"
+  },
+  {
+    "name": "russia-market",
+    "url": "/rankings#rank-russia-market",
+    "targetId": "rank-russia-market",
+    "found": true,
+    "highlighted": true,
+    "activeTab": "tab-6",
+    "screenshot": "D:\\code\\GasGx\\.tmp-verify\\rankings-anchor-check\\russia-market.png"
+  }
+]

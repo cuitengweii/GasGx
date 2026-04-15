@@ -410,10 +410,28 @@
             }
         };
 
-        window.app = {
+        window.faqPageApp = {
             lang: localStorage.getItem('gas_lang') || 'en',
+            faqAnswerBlocksEn: [
+                '<p>This model applies an industrial-symbiosis approach: converting stranded or associated gas that would otherwise be flared or vented into on-site electricity for compute workloads such as Bitcoin mining and AI inference/training. GasGx calls this Digital Flare Mitigation (DFM).</p>',
+                '<p>The main constraints are economics and infrastructure:</p><ul class="list-disc pl-5 space-y-2"><li><strong class="text-white">Scale of waste:</strong> Large volumes of associated gas are still flared globally each year.</li><li><strong class="text-white">Pipeline economics:</strong> Many fields are remote, so pipeline build-out is often uneconomic.</li><li><strong class="text-white">Stranded-gas reality:</strong> On-site power generation monetizes gas in place and avoids expensive midstream transport.</li></ul>',
+                '<p class="mb-3">A typical system includes five core layers:</p><ol class="list-decimal pl-5 space-y-2"><li><strong class="text-white">Gas capture and pretreatment:</strong> dehydration and contaminant removal, including H2S control.</li><li><strong class="text-white">Generation set:</strong> reciprocating gas engines or microturbines converting gas to electricity.</li><li><strong class="text-white">Modular compute center:</strong> containerized power distribution, cooling, and mining/AI racks.</li><li><strong class="text-white">Cooling system:</strong> air, liquid, or immersion cooling for high-density workloads.</li><li><strong class="text-white">Connectivity:</strong> satellite or fiber backhaul for remote operations.</li></ol>',
+                '<p>The key advantage is decoupling compute power cost from retail grid pricing, often reducing delivered power cost materially:</p><ul class="list-disc pl-5 space-y-2"><li><strong class="text-white">Grid benchmark:</strong> industrial power rates can be volatile and location-dependent.</li><li><strong class="text-white">Off-grid benchmark:</strong> stranded-gas generation can reach a lower LCOE range in viable sites.</li><li><strong class="text-white">Downside resilience:</strong> lower energy cost improves survivability during weak market cycles.</li></ul>',
+                '<p class="mb-3">For producers, the value case is usually threefold:</p><ul class="list-disc pl-5 space-y-2"><li><strong class="text-white">Compliance support:</strong> reduced routine flaring and methane emissions risk.</li><li><strong class="text-white">Asset monetization:</strong> turning previously wasted gas into power-backed revenue.</li><li><strong class="text-white">ESG performance:</strong> stronger emissions profile for financing and reporting.</li></ul>',
+                '<p>When designed correctly, gas-to-power mining can improve emissions outcomes versus venting and routine flaring:</p><ul class="list-disc pl-5 space-y-2"><li><strong class="text-white">Methane impact:</strong> methane has significantly higher short-term warming potential than CO2.</li><li><strong class="text-white">Combustion quality:</strong> high-efficiency systems can deliver very high methane destruction rates.</li><li><strong class="text-white">Measured reduction:</strong> outcomes depend on baseline, measurement, and operational discipline.</li></ul>',
+                '<p>Yes. The model can align with major international decarbonization and flare-reduction frameworks:</p><ul class="list-disc pl-5 space-y-2"><li><strong class="text-white">Policy alignment:</strong> supports zero-routine-flaring style targets where applicable.</li><li><strong class="text-white">Carbon pathways:</strong> projects may be structured for audited carbon methodologies when eligible.</li></ul>',
+                '<p>Yes, but sour-gas projects require dedicated engineering controls:</p><ul class="list-disc pl-5 space-y-2"><li><strong class="text-white">Materials:</strong> use corrosion-resistant standards suitable for H2S service.</li><li><strong class="text-white">Process treatment:</strong> apply fit-for-purpose gas sweetening and safety systems before generation.</li></ul>',
+                '<p>Industrialized deployment is the baseline:</p><ul class="list-disc pl-5 space-y-2"><li><strong class="text-white">Containerization:</strong> weatherproof enclosures for dust, heat, and cold extremes.</li><li><strong class="text-white">Thermal design:</strong> liquid/immersion options for stable performance in harsh climates.</li><li><strong class="text-white">Smart dispatch:</strong> software coordinates gas supply, generation, and compute load.</li></ul>',
+                '<p>CHP (combined heat and power) improves total energy utilization:</p><ul class="list-disc pl-5 space-y-2"><li><strong class="text-white">Heat recovery:</strong> reuse engine waste heat for site or industrial needs.</li><li><strong class="text-white">System efficiency:</strong> improves overall economics when heat offtake exists.</li></ul>',
+                '<ul class="list-disc pl-5 space-y-2"><li><strong class="text-white">North America:</strong> active deployments in regions with large associated-gas supply and supportive power economics.</li><li><strong class="text-white">Latin America:</strong> growing pilots around major unconventional basins.</li><li><strong class="text-white">Eurasia and others:</strong> mixed adoption, shaped by policy, fuel logistics, and grid constraints.</li></ul>',
+                '<ul class="list-disc pl-5 space-y-2"><li><strong class="text-white">AI transition:</strong> infrastructure is expanding from pure mining to mixed AI/HPC workloads.</li><li><strong class="text-white">Financialization:</strong> compute and carbon-linked cashflows are being packaged into investable structures.</li><li><strong class="text-white">Integrated energy:</strong> projects increasingly plan for multi-energy interfaces over time.</li></ul>',
+                '<ul class="list-disc pl-5 space-y-2"><li><strong class="text-white">Emissions rules:</strong> destruction efficiency, monitoring, and reporting requirements are tightening.</li><li><strong class="text-white">Off-grid definitions:</strong> regulatory treatment varies by jurisdiction and project design.</li><li><strong class="text-white">Policy volatility:</strong> licensing and digital-asset policy can change quickly.</li></ul>'
+            ],
+            faqAnswerBlocksOriginal: [],
             
             init() {
+                this.faqAnswerBlocksOriginal = Array.from(document.querySelectorAll('section.max-w-4xl details > div'))
+                    .map((el) => el.innerHTML);
                 this.setLanguage(this.lang);
             },
 
@@ -450,13 +468,36 @@
                         }
                     }
                 });
+
+                this.applyFaqAnswerLanguage(lang);
+                document.title = lang === 'en' ? 'FAQ | GasGx' : 'FAQ | GasGx 常见问题解答';
+            },
+
+            applyFaqAnswerLanguage(lang) {
+                const blocks = document.querySelectorAll('section.max-w-4xl details > div');
+                if (!blocks.length) return;
+
+                if (lang === 'en') {
+                    blocks.forEach((block, index) => {
+                        if (this.faqAnswerBlocksEn[index]) {
+                            block.innerHTML = this.faqAnswerBlocksEn[index];
+                        }
+                    });
+                    return;
+                }
+
+                blocks.forEach((block, index) => {
+                    if (this.faqAnswerBlocksOriginal[index]) {
+                        block.innerHTML = this.faqAnswerBlocksOriginal[index];
+                    }
+                });
             }
         };
 
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => window.app.init());
+            document.addEventListener('DOMContentLoaded', () => window.faqPageApp.init());
         } else {
-            window.app.init();
+            window.faqPageApp.init();
         }
     </script>
 
