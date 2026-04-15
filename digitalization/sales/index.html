@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx 销售全链路闭环系统</title>
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 AOS 动画库 -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <!-- 主站公共导航图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- 引入 Lucide 图标 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- 配置 Tailwind 主题以符合 GasGx 科技规范 -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+                    },
+                    colors: {
+                        gasgx: {
+                            dark: '#05080F',     // 优化4：更纯粹的暗色赛博工业背景 (由 #0B1121 变深)
+                            panel: '#111827',    // 适配暗底的面板色
+                            border: '#1F2937',   // 边框色变暗
+                            primary: '#5DD62C',  // 核心赛博亮绿 (v6.1 规范)
+                            secondary: '#3B82F6',// 辅助蓝色
+                            accent: '#F59E0B',   // 警告/待办橙色
+                            success: '#5DD62C',  // 成功绿色 (同步主色)
+                        }
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #1F2937 1px, transparent 1px), linear-gradient(to bottom, #1F2937 1px, transparent 1px)",
+                    },
+                    animation: {
+                        'flow': 'flow 3s linear infinite',
+                        'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        flow: {
+                            '0%': { backgroundPosition: '200% 0' },
+                            '100%': { backgroundPosition: '-200% 0' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: 1, textShadow: '0 0 10px #5DD62C, 0 0 20px #5DD62C' },
+                            '50%': { opacity: .5, textShadow: 'none' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        
+        body {
+            /* 统一由 Tailwind font-sans 结合新配置接管字体栈 */
+            background-color: #05080F;
+            color: #9CA3AF;
+            overflow-x: hidden;
+        }
+
+        /* 动态网格背景 - 适配更深的背景 */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(31, 41, 55, 0.4) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(31, 41, 55, 0.4) 1px, transparent 1px);
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            mask-image: radial-gradient(ellipse at center, black 0%, transparent 80%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 0%, transparent 80%);
+        }
+
+        /* 玻璃态面板 */
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(31, 41, 55, 0.8);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 科技感发光边框 - 修复透明面板底色溢出导致的对比度灾难 */
+        .glow-border {
+            transition: all 0.3s ease;
+        }
+        .glow-border:hover {
+            border-color: #5DD62C;
+            box-shadow: 0 0 20px rgba(93, 214, 44, 0.15), inset 0 0 10px rgba(93, 214, 44, 0.05);
+        }
+
+        /* 数据流光束动效 */
+        .data-stream {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #5DD62C, transparent);
+            background-size: 200% 100%;
+            animation: flow 2s linear infinite;
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #05080F; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1F2937; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5DD62C; 
+        }
+    </style>
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+</head>
+<body class="antialiased selection:bg-gasgx-primary selection:text-black font-sans flex flex-col min-h-screen relative">
+
+    <!-- 背景动效 -->
+    <div class="bg-grid"></div>
+
+    <div id="ggx-site-header-slot"></div>
+    <main class="flex-1 relative z-10">
+
+    <!-- Hero Section (系统定位) -->
+    <section id="vision" class="pt-24 pb-16 relative px-4 md:px-6">
+        <div class="max-w-7xl mx-auto text-center relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gasgx-primary/10 border border-gasgx-primary/20 text-gasgx-primary text-xs mb-8 uppercase tracking-widest animate-float">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gasgx-primary opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-gasgx-primary"></span>
+                </span>
+                <span data-i18n="hero_tag">ERP 核心闭环架构</span>
+            </div>
+            <h1 class="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight tracking-tight" data-aos="fade-up" data-i18n-html="hero_title">
+                解决从 <span class="text-transparent bg-clip-text bg-gradient-to-r from-gasgx-primary to-green-300">建档到运维</span> 的全链路推进
+            </h1>
+            <p class="text-base md:text-xl text-slate-400 max-w-3xl mx-auto mb-10 leading-relaxed" data-aos="fade-up" data-aos-delay="100" data-i18n="hero_desc">
+                为什么选择统一闭环系统？打破部门壁垒，让数据流转毫无断点。从商机触达到最终交付，全局视角把控进度风险，用数据驱动每一个关键里程碑。
+            </p>
+            
+            <!-- 核心价值展示环 -->
+            <div class="flex justify-center items-center gap-6 md:gap-16 mt-12 flex-wrap" data-aos="fade-up" data-aos-delay="200">
+                <div class="flex flex-col items-center">
+                    <div class="w-14 h-14 md:w-16 md:h-16 rounded-full glass-panel flex items-center justify-center mb-4 text-gasgx-primary shadow-[0_0_20px_rgba(93,214,44,0.1)]">
+                        <i data-lucide="infinity" class="w-6 h-6 md:w-8 md:h-8"></i>
+                    </div>
+                    <span class="text-white font-medium text-sm md:text-base" data-i18n="val_1">业务全闭环</span>
+                </div>
+                <div class="hidden md:block w-16 h-px data-stream"></div>
+                <div class="flex flex-col items-center">
+                    <div class="w-14 h-14 md:w-16 md:h-16 rounded-full glass-panel flex items-center justify-center mb-4 text-gasgx-secondary shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+                        <i data-lucide="eye" class="w-6 h-6 md:w-8 md:h-8"></i>
+                    </div>
+                    <span class="text-white font-medium text-sm md:text-base" data-i18n="val_2">全局透明可视</span>
+                </div>
+                <div class="hidden md:block w-16 h-px data-stream"></div>
+                <div class="flex flex-col items-center">
+                    <div class="w-14 h-14 md:w-16 md:h-16 rounded-full glass-panel flex items-center justify-center mb-4 text-gasgx-success shadow-[0_0_20px_rgba(93,214,44,0.1)]">
+                        <i data-lucide="shield-check" class="w-6 h-6 md:w-8 md:h-8"></i>
+                    </div>
+                    <span class="text-white font-medium text-sm md:text-base" data-i18n="val_3">进度风险可控</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 13 节点销售流水线总览 -->
+    <section id="pipeline" class="py-16 md:py-20 bg-gasgx-panel/30 border-y border-gasgx-border relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 md:px-6">
+            <div class="mb-8 md:mb-12" data-aos="fade-right">
+                <h2 class="text-2xl md:text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                    <i data-lucide="git-merge" class="text-gasgx-primary"></i>
+                    <span data-i18n="pl_title">13 节点销售流水线总览</span>
+                </h2>
+                <p class="text-xs md:text-sm text-slate-400" data-i18n="pl_desc">实时追踪单据状态，精准定位处理瓶颈</p>
+            </div>
+
+            <!-- 动态流水线容器 -->
+            <div class="relative w-full overflow-x-auto pb-8 hide-scrollbar">
+                <div class="absolute top-1/2 left-0 w-[1800px] h-1 bg-gasgx-border -translate-y-1/2 z-0 rounded-full"></div>
+                <div class="absolute top-1/2 left-0 w-32 h-1 bg-gasgx-primary shadow-[0_0_10px_#5DD62C] -translate-y-1/2 z-0 rounded-full data-stream-node"></div>
+
+                <div class="flex items-center gap-4 w-max relative z-10 px-4" id="pipeline-nodes">
+                    <!-- 通过 JS 动态渲染节点 -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ERP 核心业务视图 -->
+    <section id="dashboard" class="py-16 md:py-24 px-4 md:px-6 relative">
+        <div class="max-w-7xl mx-auto">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+                
+                <!-- 顶部节点筛 / 压力分布 -->
+                <div class="lg:col-span-2 glass-panel rounded-xl p-5 md:p-6 glow-border" data-aos="fade-up">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
+                        <h3 class="text-base md:text-lg font-semibold text-white flex items-center gap-2">
+                            <i data-lucide="bar-chart-2" class="text-gasgx-primary w-5 h-5"></i>
+                            <span data-i18n="erp_title">总流水线模式 (当前压力分布)</span>
+                        </h3>
+                        <div class="flex gap-2">
+                            <span class="px-3 py-1 bg-gasgx-dark rounded text-xs text-slate-400 border border-gasgx-border cursor-pointer hover:border-gasgx-primary transition" data-i18n="btn_month">本月</span>
+                            <span class="px-3 py-1 bg-gasgx-primary/20 rounded text-xs text-gasgx-primary border border-gasgx-primary cursor-pointer" data-i18n="btn_all">全量</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 模拟压力柱状图 -->
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2 md:gap-4 group">
+                            <div class="w-20 md:w-24 text-xs md:text-sm text-slate-400 md:text-right" data-i18n="quote_conf">确认报价</div>
+                            <div class="flex-1 h-2 bg-gasgx-dark rounded-full overflow-hidden">
+                                <div class="h-full bg-gasgx-secondary w-3/4 rounded-full group-hover:bg-gasgx-primary transition-colors"></div>
+                            </div>
+                            <div class="w-12 text-xs md:text-sm text-white font-mono">142 <span data-i18n="order">单</span></div>
+                        </div>
+                        <div class="flex items-center gap-2 md:gap-4 group">
+                            <div class="w-20 md:w-24 text-xs md:text-sm text-slate-400 md:text-right" data-i18n="schedule">排产安排</div>
+                            <div class="flex-1 h-2 bg-gasgx-dark rounded-full overflow-hidden">
+                                <div class="h-full bg-gasgx-accent w-1/2 rounded-full relative">
+                                    <div class="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                </div>
+                            </div>
+                            <div class="w-12 text-xs md:text-sm text-gasgx-accent font-mono">89 <span data-i18n="order">单</span></div>
+                        </div>
+                        <div class="flex items-center gap-2 md:gap-4 group">
+                            <div class="w-20 md:w-24 text-xs md:text-sm text-slate-400 md:text-right" data-i18n="logistics">物流运输</div>
+                            <div class="flex-1 h-2 bg-gasgx-dark rounded-full overflow-hidden">
+                                <div class="h-full bg-gasgx-success w-1/4 rounded-full"></div>
+                            </div>
+                            <div class="w-12 text-xs md:text-sm text-white font-mono">34 <span data-i18n="order">单</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 客户档案中心 -->
+                <div class="glass-panel rounded-xl p-5 md:p-6 glow-border" data-aos="fade-up" data-aos-delay="100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-base md:text-lg font-semibold text-white flex items-center gap-2">
+                            <i data-lucide="users" class="text-gasgx-primary w-5 h-5"></i>
+                            <span data-i18n="client_center">客户档案中心</span>
+                        </h3>
+                        <button class="text-gasgx-primary bg-gasgx-primary/10 p-1 rounded hover:bg-gasgx-primary hover:text-black transition">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <!-- 搜索框 -->
+                    <div class="relative mb-4">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                        <input type="text" id="searchInput" placeholder="搜索客户、联系人..." class="w-full bg-gasgx-dark border border-gasgx-border rounded text-sm py-2 pl-9 pr-3 text-white focus:outline-none focus:border-gasgx-primary transition">
+                    </div>
+                    <!-- 客户卡片列表 -->
+                    <div class="space-y-3 h-40 overflow-y-auto pr-2 custom-scrollbar">
+                        <div class="p-3 bg-gasgx-dark border border-gasgx-border rounded hover:bg-gasgx-primary/[0.15] hover:border-gasgx-primary/50 transition cursor-pointer group">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="font-medium text-white transition text-sm">TechVision 集团</span>
+                                <span class="text-[10px] px-1.5 py-0.5 bg-gasgx-success/20 text-gasgx-success rounded" data-i18n="active">活跃</span>
+                            </div>
+                            <div class="text-[11px] md:text-xs text-slate-500 flex flex-wrap gap-2 group-hover:text-slate-300 transition-colors">
+                                <span data-i18n="wang_ceo">王总 (CEO)</span> | <span class="font-mono">+86 138****0000</span>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-gasgx-dark border border-gasgx-border rounded hover:bg-gasgx-primary/[0.15] hover:border-gasgx-primary/50 transition cursor-pointer group">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="font-medium text-white transition text-sm">Global Ind.</span>
+                                <span class="text-[10px] px-1.5 py-0.5 bg-slate-700 text-slate-300 rounded" data-i18n="germany">德国</span>
+                            </div>
+                            <div class="text-[11px] md:text-xs text-slate-500 flex flex-wrap gap-2 group-hover:text-slate-300 transition-colors">
+                                <span>Michael</span> | <span class="font-mono">contact@global.de</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 客户维度流程视图 (展示在下方) -->
+                <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-2 md:mt-4">
+                    <!-- 需求流转 -->
+                    <div class="glass-panel rounded-xl p-5 border-l-2 border-l-gasgx-secondary" data-aos="fade-up">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2 bg-gasgx-secondary/10 rounded text-gasgx-secondary">
+                                <i data-lucide="file-text" class="w-5 h-5"></i>
+                            </div>
+                            <h4 class="text-white font-medium text-sm md:text-base" data-i18n="req_title">需求获取与确认</h4>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-4 h-10 md:h-12" data-i18n="req_desc">从采集到确认全状态记录，强关联客户主体与商机池，防止需求脱节。</p>
+                        <div class="flex items-center justify-between text-[11px] text-slate-500 bg-gasgx-dark p-2 rounded">
+                            <span class="flex items-center gap-1"><i data-lucide="circle-dashed" class="w-3 h-3 text-gasgx-accent"></i> <span data-i18n="drafting">草稿采集中</span></span>
+                            <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                            <span class="flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3 text-gasgx-success"></i> <span data-i18n="confirmed">需求已确认</span></span>
+                        </div>
+                    </div>
+
+                    <!-- 报价与合同 -->
+                    <div class="glass-panel rounded-xl p-5 border-l-2 border-l-gasgx-primary" data-aos="fade-up" data-aos-delay="100">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2 bg-gasgx-primary/10 rounded text-gasgx-primary">
+                                <i data-lucide="calculator" class="w-5 h-5"></i>
+                            </div>
+                            <h4 class="text-white font-medium text-sm md:text-base" data-i18n="quote_title">报价流转与合同</h4>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-4 h-10 md:h-12" data-i18n="quote_desc">报价草稿到确认自动流转，无缝对接签约合同与定金付款里程碑。</p>
+                        <div class="w-full bg-gasgx-dark rounded h-6 relative overflow-hidden flex text-[10px] leading-6 font-medium">
+                            <div class="w-1/3 bg-gasgx-primary/20 text-gasgx-primary text-center border-r border-gasgx-dark" data-i18n="q_mgmt">报价管理</div>
+                            <div class="w-1/3 bg-gasgx-secondary/20 text-gasgx-secondary text-center border-r border-gasgx-dark" data-i18n="c_rule">签约规则</div>
+                            <div class="w-1/3 bg-gasgx-success/20 text-gasgx-success text-center" data-i18n="p_node">收款节点</div>
+                        </div>
+                    </div>
+
+                    <!-- 交付执行后半程 -->
+                    <div class="glass-panel rounded-xl p-5 border-l-2 border-l-gasgx-accent" data-aos="fade-up" data-aos-delay="200">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2 bg-gasgx-accent/10 rounded text-gasgx-accent">
+                                <i data-lucide="truck" class="w-5 h-5"></i>
+                            </div>
+                            <h4 class="text-white font-medium text-sm md:text-base" data-i18n="dev_title">交付与运维执行</h4>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-4 h-10 md:h-12" data-i18n="dev_desc">排产、验收、尾款、物流、部署直至运维支持，后半程链路严密监控。</p>
+                        <div class="flex justify-between items-center">
+                            <div class="flex -space-x-2">
+                                <div class="px-2 h-6 rounded-full bg-gasgx-dark border border-gasgx-panel flex items-center justify-center text-[10px]"><span data-i18n="circle_1">排</span></div>
+                                <div class="px-2 h-6 rounded-full bg-gasgx-dark border border-gasgx-panel flex items-center justify-center text-[10px]"><span data-i18n="circle_2">验</span></div>
+                                <div class="px-2 h-6 rounded-full bg-gasgx-dark border border-gasgx-panel flex items-center justify-center text-[10px]"><span data-i18n="circle_3">运</span></div>
+                                <div class="px-2 h-6 rounded-full bg-gasgx-primary border border-gasgx-panel flex items-center justify-center text-[10px] text-black font-bold z-10"><span data-i18n="circle_4">维</span></div>
+                            </div>
+                            <span class="text-xs text-gasgx-primary animate-pulse" data-i18n="executing">执行中...</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 机制、卡片与风控 (Action Queue) -->
+    <section id="execution" class="py-16 md:py-20 pb-24 md:pb-32 relative overflow-hidden bg-gradient-to-b from-transparent to-gasgx-dark">
+        <div class="max-w-7xl mx-auto px-4 md:px-6">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+                
+                <!-- 左侧：阶段执行卡片与活动待办 -->
+                <div data-aos="fade-right">
+                    <div class="mb-6 md:mb-8">
+                        <h2 class="text-xl md:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                            <i data-lucide="zap" class="text-gasgx-accent"></i>
+                            <span data-i18n="aq_title">下一步动作驱动 (Action Queue)</span>
+                        </h2>
+                        <p class="text-xs md:text-sm text-slate-400" data-i18n="aq_desc">告别被动等待，系统智能推送近期阶段待办与活动提醒。</p>
+                    </div>
+
+                    <!-- 动态待办列表 -->
+                    <div class="space-y-4">
+                        <!-- 待办卡片 1 -->
+                        <div class="glass-panel rounded-lg p-4 flex gap-3 md:gap-4 items-start relative overflow-hidden border-l-4 border-l-gasgx-accent transition hover:translate-x-1">
+                            <div class="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-gasgx-accent/10 to-transparent"></div>
+                            <div class="mt-1">
+                                <i data-lucide="clock" class="text-gasgx-accent w-4 h-4 md:w-5 md:h-5"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-white text-sm font-medium mb-1" data-i18n="todo1_title">跟进 Global Ind. 出厂验收报告</h4>
+                                <div class="flex items-center gap-3 text-[10px] md:text-xs text-slate-400 mb-2">
+                                    <span class="flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> <span data-i18n="owner_zhang">负责人: 张工</span></span>
+                                    <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i> <span class="font-mono" data-i18n="plan_0415">计划: 04-15</span></span>
+                                </div>
+                                <div class="inline-block px-2 py-1 bg-gasgx-dark rounded text-[10px] text-slate-300 border border-gasgx-border">
+                                    <span data-i18n="stage_acc">阶段: 出厂验收</span>
+                                </div>
+                            </div>
+                            <button class="px-2 py-1 md:px-3 md:py-1 bg-gasgx-accent/20 text-gasgx-accent text-[10px] md:text-xs rounded hover:bg-gasgx-accent hover:text-black transition mt-2 z-10 relative whitespace-nowrap" data-i18n="btn_process">
+                                立即处理
+                            </button>
+                        </div>
+                        
+                        <!-- 待办卡片 2 -->
+                        <div class="glass-panel rounded-lg p-4 flex gap-3 md:gap-4 items-start border-l-4 border-l-gasgx-primary transition hover:translate-x-1">
+                            <div class="mt-1">
+                                <i data-lucide="file-check" class="text-gasgx-primary w-4 h-4 md:w-5 md:h-5"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-white text-sm font-medium mb-1" data-i18n="todo2_title">确认 TechVision 最终报价单</h4>
+                                <div class="flex items-center gap-3 text-[10px] md:text-xs text-slate-400 mb-2">
+                                    <span class="flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> <span data-i18n="owner_li">负责人: 李销售</span></span>
+                                    <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i> <span data-i18n="plan_today">计划: 今日截止</span></span>
+                                </div>
+                                <div class="inline-block px-2 py-1 bg-gasgx-dark rounded text-[10px] text-slate-300 border border-gasgx-border">
+                                    <span data-i18n="stage_quote">阶段: 确认报价</span>
+                                </div>
+                            </div>
+                            <button class="px-2 py-1 md:px-3 md:py-1 bg-gasgx-primary text-black font-semibold text-[10px] md:text-xs rounded hover:bg-gasgx-primary/90 transition mt-2 z-10 relative shadow-[0_0_10px_rgba(93,214,44,0.2)] whitespace-nowrap" data-i18n="btn_process">
+                                立即处理
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：流程收口与风险控制 -->
+                <div data-aos="fade-left">
+                    <div class="mb-6 md:mb-8">
+                        <h2 class="text-xl md:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                            <i data-lucide="shield-alert" class="text-gasgx-success"></i>
+                            <span data-i18n="risk_title">流程收口与风险控制</span>
+                        </h2>
+                        <p class="text-xs md:text-sm text-slate-400" data-i18n="risk_desc">保证数据口径一致，区分当前运作与历史追溯。</p>
+                    </div>
+
+                    <div class="glass-panel rounded-xl p-5 md:p-8 border border-gasgx-success/30 relative">
+                        <!-- 科技感雷达/锁形动效 -->
+                        <div class="absolute top-4 right-4 w-10 h-10 md:w-12 md:h-12 rounded-full border border-gasgx-success/50 flex items-center justify-center">
+                            <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gasgx-success/20 animate-ping absolute"></div>
+                            <i data-lucide="lock" class="text-gasgx-success w-4 h-4 md:w-5 md:h-5 relative z-10"></i>
+                        </div>
+
+                        <div class="space-y-6 mt-4">
+                            <div class="flex gap-4">
+                                <div class="w-8 h-8 rounded bg-gasgx-dark border border-gasgx-border flex items-center justify-center shrink-0">
+                                    <i data-lucide="archive" class="w-4 h-4 text-slate-400"></i>
+                                </div>
+                                <div>
+                                    <h5 class="text-white text-sm font-medium" data-i18n="arch_title">归档机制 (Archiving)</h5>
+                                    <p class="text-xs text-slate-500 mt-1 leading-relaxed" data-i18n="arch_desc">项目完结后转入历史池，确保当前工作台数据高信噪比，同时保留全链路追溯能力。</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-4">
+                                <div class="w-8 h-8 rounded bg-gasgx-dark border border-gasgx-border flex items-center justify-center shrink-0">
+                                    <i data-lucide="trash-2" class="w-4 h-4 text-slate-400"></i>
+                                </div>
+                                <div>
+                                    <h5 class="text-white text-sm font-medium" data-i18n="void_title">作废与恢复 (Void & Restore)</h5>
+                                    <p class="text-xs text-slate-500 mt-1 leading-relaxed" data-i18n="void_desc">控制误操作风险。异常单据作废收口，特殊情况可鉴权恢复，保持报表口径稳定。</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-4">
+                                <div class="w-8 h-8 rounded bg-gasgx-dark border border-gasgx-border flex items-center justify-center shrink-0">
+                                    <i data-lucide="database" class="w-4 h-4 text-slate-400"></i>
+                                </div>
+                                <div>
+                                    <h5 class="text-white text-sm font-medium" data-i18n="meta_title">元信息快照</h5>
+                                    <p class="text-xs text-slate-500 mt-1 leading-relaxed" data-i18n="meta_desc">阶段推进时，自动保存各负责人、完成时间及备注，形成不可篡改的操作快照。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+    </main>
+    <div id="ggx-site-footer-slot"></div>
+
+    <script src="/shared/ui/site-shell.config.js?v=20260322news02"></script>
+    <script src="/shared/ui/site-shell.shared.js?v=20260322news02"></script>
+
+    <!-- 脚本逻辑 -->
+    <script>
+        // --- I18N 国际化字典数据 ---
+        const dictionary = {
+            zh: {
+                hero_tag: "ERP 核心闭环架构",
+                hero_title: "解决从 <span class='text-transparent bg-clip-text bg-gradient-to-r from-gasgx-primary to-green-300'>建档到运维</span> 的全链路推进",
+                hero_desc: "为什么选择统一闭环系统？打破部门壁垒，让数据流转毫无断点。从商机触达到最终交付，全局视角把控进度风险，用数据驱动每一个关键里程碑。",
+                val_1: "业务全闭环",
+                val_2: "全局透明可视",
+                val_3: "进度风险可控",
+                pl_title: "13 节点销售流水线总览",
+                pl_desc: "实时追踪单据状态，精准定位处理瓶颈",
+                erp_title: "总流水线模式 (当前压力分布)",
+                btn_month: "本月",
+                btn_all: "全量",
+                quote_conf: "确认报价",
+                schedule: "排产安排",
+                logistics: "物流运输",
+                order: "单",
+                client_center: "客户档案中心",
+                search_ph: "搜索客户、联系人...",
+                active: "活跃",
+                germany: "德国",
+                wang_ceo: "王总 (CEO)",
+                req_title: "需求获取与确认",
+                req_desc: "从采集到确认全状态记录，强关联客户主体与商机池，防止需求脱节。",
+                drafting: "草稿采集中",
+                confirmed: "需求已确认",
+                quote_title: "报价流转与合同",
+                quote_desc: "报价草稿到确认自动流转，无缝对接签约合同与定金付款里程碑。",
+                q_mgmt: "报价管理",
+                c_rule: "签约规则",
+                p_node: "收款节点",
+                dev_title: "交付与运维执行",
+                dev_desc: "排产、验收、尾款、物流、部署直至运维支持，后半程链路严密监控。",
+                circle_1: "排",
+                circle_2: "验",
+                circle_3: "运",
+                circle_4: "维",
+                executing: "执行中...",
+                aq_title: "下一步动作驱动 (Action Queue)",
+                aq_desc: "告别被动等待，系统智能推送近期阶段待办与活动提醒。",
+                todo1_title: "跟进 Global Ind. 出厂验收报告",
+                owner_zhang: "负责人: 张工",
+                plan_0415: "计划: 04-15",
+                stage_acc: "阶段: 出厂验收",
+                btn_process: "立即处理",
+                todo2_title: "确认 TechVision 最终报价单",
+                owner_li: "负责人: 李销售",
+                plan_today: "计划: 今日截止",
+                stage_quote: "阶段: 确认报价",
+                risk_title: "流程收口与风险控制",
+                risk_desc: "保证数据口径一致，区分当前运作与历史追溯。",
+                arch_title: "归档机制 (Archiving)",
+                arch_desc: "项目完结后转入历史池，确保当前工作台数据高信噪比，同时保留全链路追溯能力。",
+                void_title: "作废与恢复 (Void & Restore)",
+                void_desc: "控制误操作风险。异常单据作废收口，特殊情况可鉴权恢复，保持报表口径稳定。",
+                meta_title: "元信息快照",
+                meta_desc: "阶段推进时，自动保存各负责人、完成时间及备注，形成不可篡改的操作快照。"
+            },
+            en: {
+                hero_tag: "CORE ERP CLOSED-LOOP ARCH.",
+                hero_title: "Full-Link Progression from <span class='text-transparent bg-clip-text bg-gradient-to-r from-gasgx-primary to-green-300'>Profiling to Maintenance</span>",
+                hero_desc: "Why a unified closed-loop system? Break silos and ensure seamless data flow. From lead to delivery, control risks globally and drive milestones with data.",
+                val_1: "Full Business Loop",
+                val_2: "Global Transparency",
+                val_3: "Risk Controllable",
+                pl_title: "13-Node Pipeline Overview",
+                pl_desc: "Real-time status tracking, accurately pinpoint bottlenecks",
+                erp_title: "Pipeline Mode (Pressure Dist.)",
+                btn_month: "Month",
+                btn_all: "All",
+                quote_conf: "Quote Conf.",
+                schedule: "Scheduling",
+                logistics: "Logistics",
+                order: "Ord",
+                client_center: "Client Profile Center",
+                search_ph: "Search clients, contacts...",
+                active: "Active",
+                germany: "Germany",
+                wang_ceo: "Mr. Wang (CEO)",
+                req_title: "Req. Gathering & Confirmation",
+                req_desc: "Full status record from collection to confirmation, strongly linking client & opportunity pools.",
+                drafting: "Drafting",
+                confirmed: "Confirmed",
+                quote_title: "Quote Flow & Contracts",
+                quote_desc: "Auto flow from draft to confirmation, seamlessly docking with signing & deposit milestones.",
+                q_mgmt: "Quote Mgmt",
+                c_rule: "Sign Rule",
+                p_node: "Pay Node",
+                dev_title: "Delivery & Mnt. Exec",
+                dev_desc: "Scheduling, acceptance, balance, logistics, deployment to maintenance, tightly monitored.",
+                circle_1: "Sch",
+                circle_2: "Acc",
+                circle_3: "Log",
+                circle_4: "Mnt",
+                executing: "Executing...",
+                aq_title: "Next Action Driven (Action Queue)",
+                aq_desc: "Say goodbye to passive waiting. Smart push for recent phase to-dos and reminders.",
+                todo1_title: "Follow up Global Ind. Factory Acceptance",
+                owner_zhang: "Owner: Eng. Zhang",
+                plan_0415: "Plan: 04-15",
+                stage_acc: "Stage: Factory Acc",
+                btn_process: "Process Now",
+                todo2_title: "Confirm TechVision Final Quote",
+                owner_li: "Owner: Sales Li",
+                plan_today: "Plan: Due Today",
+                stage_quote: "Stage: Quote Conf",
+                risk_title: "Process Closure & Risk Control",
+                risk_desc: "Ensure consistent data metrics, distinguishing current ops from historical traces.",
+                arch_title: "Archiving Mechanism",
+                arch_desc: "Transfer to history pool after completion, ensuring high SNR on desk while retaining traceability.",
+                void_title: "Void & Restore",
+                void_desc: "Control misoperation risks. Void abnormal docs, authenticate restoration for stability.",
+                meta_title: "Meta Info Snapshot",
+                meta_desc: "Auto save owners, completion times and notes to form an immutable operational snapshot."
+            }
+        };
+
+        // 13 节点中英文双语数据
+        const nodesData = [
+            { id: 1, name_zh: '客户建档', name_en: 'Profiling', icon: 'folder-plus', status: 'done' },
+            { id: 2, name_zh: '获取需求', name_en: 'Req Gather', icon: 'inbox', status: 'done' },
+            { id: 3, name_zh: '确认需求', name_en: 'Req Confirm', icon: 'check-square', status: 'done' },
+            { id: 4, name_zh: '转入报价', name_en: 'To Quote', icon: 'arrow-right-left', status: 'done' },
+            { id: 5, name_zh: '确认报价', name_en: 'Quote Conf', icon: 'badge-dollar-sign', status: 'active' },
+            { id: 6, name_zh: '签约合同', name_en: 'Contract', icon: 'file-signature', status: 'pending' },
+            { id: 7, name_zh: '定金付款', name_en: 'Deposit', icon: 'banknote', status: 'pending' },
+            { id: 8, name_zh: '排产安排', name_en: 'Schedule', icon: 'factory', status: 'pending' },
+            { id: 9, name_zh: '出厂验收', name_en: 'Acceptance', icon: 'clipboard-check', status: 'pending' },
+            { id: 10, name_zh: '尾款确认', name_en: 'Balance', icon: 'receipt', status: 'pending' },
+            { id: 11, name_zh: '物流运输', name_en: 'Logistics', icon: 'truck', status: 'pending' },
+            { id: 12, name_zh: '到场部署', name_en: 'Deployment', icon: 'map-pin', status: 'pending' },
+            { id: 13, name_zh: '运维支持', name_en: 'Support', icon: 'wrench', status: 'pending' },
+        ];
+
+        function normalizeLang(langCandidate) {
+            return String(langCandidate || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+        }
+
+        function readInitialLang() {
+            try {
+                const storedLang = window.localStorage.getItem('gasgx-lang') || window.localStorage.getItem('gas_lang');
+                if (storedLang) return normalizeLang(storedLang);
+            } catch (error) {
+                // ignore storage read errors and fallback to html lang
+            }
+            return normalizeLang(document.documentElement.lang || 'zh-CN');
+        }
+
+        let currentLang = readInitialLang();
+
+        // --- 初始化操作 ---
+        AOS.init({ duration: 800, once: true, offset: 50 });
+        lucide.createIcons();
+        
+        // --- 渲染 13 节点流水线 ---
+        const pipelineContainer = document.getElementById('pipeline-nodes');
+        function renderPipeline() {
+            pipelineContainer.innerHTML = '';
+            nodesData.forEach((node, index) => {
+                let colorClass = 'text-slate-500 bg-gasgx-dark border-gasgx-border';
+                let iconColor = 'text-slate-500';
+
+                if (node.status === 'done') {
+                    colorClass = 'text-gasgx-success bg-gasgx-success/10 border-gasgx-success/50';
+                    iconColor = 'text-gasgx-success';
+                } else if (node.status === 'active') {
+                    colorClass = 'text-gasgx-primary bg-gasgx-primary/20 border-gasgx-primary shadow-[0_0_15px_rgba(93,214,44,0.3)] animate-pulse-glow';
+                    iconColor = 'text-gasgx-primary';
+                }
+
+                const displayName = currentLang === 'zh' ? node.name_zh : node.name_en;
+
+                const nodeHtml = `
+                    <div class="relative group cursor-pointer" data-aos="zoom-in" data-aos-delay="${index * 50}">
+                        <div class="w-12 h-12 md:w-14 md:h-14 rounded-xl border ${colorClass} flex flex-col items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-2 backdrop-blur-md relative z-10">
+                            <i data-lucide="${node.icon}" class="w-5 h-5 md:w-6 md:h-6 ${iconColor}"></i>
+                        </div>
+                        <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 w-max text-[10px] md:text-[11px] font-medium transition-colors ${node.status === 'active' ? 'text-gasgx-primary' : 'text-slate-400'} group-hover:text-white">
+                            ${index + 1}. ${displayName}
+                        </div>
+                    </div>
+                    ${index < nodesData.length - 1 ? `<div class="w-4 md:w-8 h-0"></div>` : ''} 
+                `;
+                pipelineContainer.innerHTML += nodeHtml;
+            });
+            lucide.createIcons();
+        }
+
+        // --- 应用国际化翻译 ---
+        function applyI18n() {
+            const langData = dictionary[currentLang] || dictionary.zh;
+            
+            // 替换 innerText 属性
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(langData[key]) el.innerText = langData[key];
+            });
+
+            // 替换 innerHTML 属性（针对带 HTML 标签的文字如高亮词）
+            document.querySelectorAll('[data-i18n-html]').forEach(el => {
+                const key = el.getAttribute('data-i18n-html');
+                if(langData[key]) el.innerHTML = langData[key];
+            });
+
+            // 替换 placeholder
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput && langData['search_ph']) {
+                searchInput.placeholder = langData['search_ph'];
+            }
+
+            if (document.documentElement) {
+                document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+            }
+
+            window.app.currentLang = currentLang;
+        }
+
+        window.app = window.app || {};
+        window.app.currentLang = currentLang;
+        window.app.setLanguage = function (langValue) {
+            currentLang = normalizeLang(langValue || currentLang);
+            this.currentLang = currentLang;
+            applyI18n();
+            renderPipeline();
+            return currentLang;
+        };
+
+        document.addEventListener('gasgx:lang-changed', (event) => {
+            const targetLang = normalizeLang(event?.detail?.lang || currentLang);
+            window.app.setLanguage(targetLang);
+        });
+
+        // 初始化执行
+        window.app.setLanguage(currentLang);
+
+        // 模拟光束在流水线上游动
+        const lightStream = document.querySelector('.data-stream-node');
+        let pos = -200;
+        setInterval(() => {
+            pos += 2;
+            if (pos > 1200) pos = -200;
+            lightStream.style.transform = `translate(${pos}px, -50%)`;
+        }, 16);
+
+    </script>
+</body>
+</html>
