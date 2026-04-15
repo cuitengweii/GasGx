@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx 智维云 - 全球分布式燃气算力电站 O&M 领航者</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bgDark: '#0A0A0F',
+                        bgPanel: '#12121A',
+                        accent: '#5DD62C',
+                        accentDark: '#4bc222',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'data-flow': 'dataFlow 3s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+                        'scan-line': 'scanLine 2s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'scroll-up': 'scrollUp 10s linear infinite',
+                    },
+                    keyframes: {
+                        dataFlow: {
+                            '0%': { transform: 'translateY(-100%)', opacity: '0' },
+                            '50%': { opacity: '1' },
+                            '100%': { transform: 'translateY(100%)', opacity: '0' },
+                        },
+                        scanLine: {
+                            '0%': { top: '0%' },
+                            '100%': { top: '100%' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        scrollUp: {
+                            '0%': { transform: 'translateY(0)' },
+                            '100%': { transform: 'translateY(-50%)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #0A0A0F;
+            color: #E2E8F0;
+            overflow-x: hidden;
+        }
+        ::selection {
+            background-color: rgba(93, 214, 44, 0.2);
+            color: #5DD62C;
+        }
+        .glass-panel {
+            background: rgba(18, 18, 26, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        .glass-panel:hover {
+            border-color: rgba(93, 214, 44, 0.2);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+        .cyber-glow {
+            box-shadow: 0 0 25px rgba(93, 214, 44, 0.15);
+        }
+        .text-gradient {
+            background: linear-gradient(to right, #ffffff, #a1a1aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        /* 隐藏全局滚动条但保持可滚动 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0A0A0F; }
+        ::-webkit-scrollbar-thumb { background: #27272A; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3F3F46; }
+
+        /* 横向滚动容器专属美化滚动条 (适配手机端手指滑动) */
+        .overflow-x-auto::-webkit-scrollbar { height: 4px; }
+        .overflow-x-auto::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 4px; }
+        .overflow-x-auto::-webkit-scrollbar-thumb { background: rgba(93, 214, 44, 0.3); border-radius: 4px; }
+        .overflow-x-auto::-webkit-scrollbar-thumb:hover { background: rgba(93, 214, 44, 0.6); }
+
+        /* 纯代码 UI 元素的通用样式 */
+        .ui-window {
+            background-color: #0d0d12;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .ui-header {
+            height: 32px;
+            background-color: #1a1a24;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 8px;
+        }
+        .ui-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .ui-dot-r { background-color: #ff5f56; }
+        .ui-dot-y { background-color: #ffbd2e; }
+        .ui-dot-g { background-color: #27c93f; }
+
+        /* 中英文切换核心样式 */
+        body:not(.en-mode) .lang-en { display: none !important; }
+        body.en-mode .lang-zh { display: none !important; }
+    </style>
+</head>
+<body class="font-sans min-h-screen relative">
+    <div id="ggx-site-header-slot"></div>
+
+    <!-- 全局背景光效 -->
+    <div class="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-accent/5 rounded-full blur-[150px] pointer-events-none z-0"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
+
+    <!-- 【屏 1】Hero Section -->
+    <section id="hero" class="relative pt-24 pb-20 px-4 sm:px-6 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[95vh] text-center z-10">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-accent/20 bg-accent/5 text-accent text-[10px] sm:text-xs font-mono mb-8 cyber-glow">
+            <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+            GASGX OS · VERSION 6.1 ENTERPRISE
+        </div>
+        
+        <h1 class="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-extrabold leading-[1.1] tracking-tight mb-8">
+            <span class="text-gradient lang-zh">全链路接管</span><span class="text-gradient lang-en">Full-Stack Takeover</span><br />
+            <span class="lang-zh">全球分布式燃气算力</span><span class="lang-en">Global Distributed Gas Hashrate</span><br/>
+            <span class="text-accent lang-zh">超级数字中枢</span><span class="text-accent lang-en">Super Digital Hub</span>
+        </h1>
+        
+        <p class="text-gray-400 text-base sm:text-lg md:text-xl max-w-3xl leading-relaxed mb-12">
+            <span class="lang-zh">打破传统机械制造与加密挖矿的运维代沟。一套系统，横跨硬件采集、中控大屏、AI诊断与移动工单。让全球十万台散落的机组，如同一台机器般运转。</span>
+            <span class="lang-en">Bridging the O&M gap between traditional manufacturing and crypto mining. One system across edge hardware, SCADA, AI diagnostics, and mobile dispatch. Make 100,000 scattered gen-sets run as one.</span>
+        </p>
+        
+        <div class="flex flex-col sm:flex-row w-full sm:w-auto gap-4 mb-20">
+            <a href="#scada" class="bg-accent text-black px-8 py-4 rounded font-bold flex items-center justify-center gap-2 hover:bg-accentDark transition-all hover:scale-105 w-full sm:w-auto">
+                <span class="lang-zh">进入系统控制台</span><span class="lang-en">Enter Command Center</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+            </a>
+            <a href="#context" class="bg-white/5 border border-white/10 text-white px-8 py-4 rounded font-bold flex items-center justify-center hover:bg-white/10 transition-colors w-full sm:w-auto">
+                <span class="lang-zh">阅读破局白皮书</span><span class="lang-en">Read Whitepaper</span>
+            </a>
+        </div>
+
+        <!-- 3D 系统层级爆炸图 (仅大屏显示) -->
+        <div class="relative w-full max-w-3xl mx-auto h-[320px] hidden lg:block perspective-[1200px]">
+            <!-- 底层：硬件网关 (Layer 0) -->
+            <div class="absolute inset-x-10 bottom-0 h-32 bg-[#12121A]/80 border border-white/10 rounded-xl transform rotateX-[60deg] translateY(40px) shadow-[0_0_30px_rgba(93,214,44,0.1)] flex flex-col p-4 animate-float" style="animation-delay: 0s;">
+                <span class="font-mono text-accent/50 tracking-widest text-sm font-bold mb-2">LAYER 0: EDGE IoT GATEWAY</span>
+                <div class="flex gap-4 opacity-50 font-mono text-[10px] text-gray-400">
+                    <div class="flex-1 space-y-1">
+                        <div class="flex justify-between"><span>CAN J1939 BUS</span><span class="text-accent">OK</span></div>
+                        <div class="flex justify-between"><span>MODBUS TCP/RTU</span><span class="text-accent">OK</span></div>
+                        <div class="h-1 w-full bg-white/10 rounded overflow-hidden mt-1"><div class="h-full bg-accent w-[85%] animate-pulse"></div></div>
+                    </div>
+                    <div class="w-px h-full bg-white/10"></div>
+                    <div class="flex-1 space-y-1">
+                        <div class="flex justify-between"><span>ENCRYPTION</span><span>AES-256</span></div>
+                        <div class="flex justify-between"><span>UPLINK (STARLINK)</span><span class="text-blue-400">45ms</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中层：数据与 AI (Layer 1) -->
+            <div class="absolute inset-x-5 bottom-12 h-40 bg-black/60 backdrop-blur-md border border-accent/30 rounded-xl transform rotateX-[60deg] translateY(20px) shadow-[0_0_40px_rgba(93,214,44,0.2)] overflow-hidden animate-float flex flex-col p-4" style="animation-delay: 0.5s;">
+                <div class="absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(93,214,44,0.1),transparent)] w-[200%] animate-[scanLine_3s_linear_infinite]"></div>
+                <div class="relative z-10 flex justify-between items-center mb-2 border-b border-accent/20 pb-2">
+                    <span class="font-mono text-accent tracking-widest font-bold">LAYER 1: CLOUD DATA & AI ENGINE</span>
+                    <span class="font-mono text-xs text-accent animate-pulse">PROCESSING...</span>
+                </div>
+                <div class="relative z-10 flex-1 overflow-hidden font-mono text-[9px] text-accent/70 leading-relaxed">
+                    <div class="animate-scroll-up">
+                        > INGEST: Node #042 telemetry batch received.<br/>
+                        > PARSE: 124 metrics decoded.<br/>
+                        > AI_MODEL: MN_Fluctuation_Adapter running...<br/>
+                        > AI_MODEL: EGT_Deviation within tolerance.<br/>
+                        > EVENT: Spark Plug degradation +0.02kV.<br/>
+                        > INGEST: Node #043 telemetry batch received.<br/>
+                        > PARSE: 124 metrics decoded.<br/>
+                        > ALERT_CHECK: Passed.<br/>
+                        > SYNC: Pushing to Dashboard...<br/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 顶层：控制台 UI (Layer 2) -->
+            <div class="absolute inset-x-0 bottom-24 h-56 bg-[#0d0d12] border border-white/20 rounded-xl transform rotateX-[60deg] shadow-[0_-30px_60px_rgba(0,0,0,0.9)] overflow-hidden animate-float flex flex-col" style="animation-delay: 1s;">
+                <div class="h-6 bg-[#1a1a24] border-b border-white/10 flex items-center px-4 justify-between">
+                    <div class="flex gap-2">
+                        <div class="w-2 h-2 rounded-full bg-red-500"></div><div class="w-2 h-2 rounded-full bg-yellow-500"></div><div class="w-2 h-2 rounded-full bg-green-500"></div>
+                    </div>
+                    <span class="text-[9px] font-mono text-gray-500">gasgx.app / command-center</span>
+                </div>
+                <div class="p-4 flex gap-4 h-full bg-[#12121A]">
+                    <div class="w-16 h-full flex flex-col gap-2 border-r border-white/5 pr-2">
+                        <div class="h-4 bg-accent/20 rounded border border-accent/30"></div>
+                        <div class="h-4 bg-white/5 rounded"></div>
+                        <div class="h-4 bg-white/5 rounded"></div>
+                        <div class="h-4 bg-white/5 rounded"></div>
+                    </div>
+                    <div class="flex-1 flex flex-col gap-3">
+                        <div class="flex gap-3">
+                            <div class="flex-1 h-12 bg-white/5 rounded flex items-center px-3 border border-white/5"><div class="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin"></div><div class="ml-2 w-16 h-2 bg-white/10 rounded"></div></div>
+                            <div class="flex-1 h-12 bg-white/5 rounded flex items-center px-3 border border-white/5"><div class="w-full h-4 bg-red-500/20 border border-red-500/50 rounded"></div></div>
+                        </div>
+                        <div class="flex-1 bg-black/50 rounded border border-white/5 p-2 flex flex-col gap-1">
+                            <div class="h-3 w-full bg-white/10 rounded mb-1"></div>
+                            <div class="h-3 w-full bg-white/5 rounded"></div>
+                            <div class="h-3 w-full bg-white/5 rounded"></div>
+                            <div class="h-3 w-full bg-white/5 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 【屏 2】全球足迹与信任背书 -->
+    <section class="py-12 border-y border-white/5 bg-black/50 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <p class="text-center text-[10px] sm:text-xs font-mono text-gray-500 mb-8 uppercase tracking-widest">Trust By Global Crypto Miners & Energy Providers</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center divide-x divide-white/5">
+                <div>
+                    <div class="text-2xl sm:text-3xl md:text-5xl font-mono font-bold text-white mb-1 sm:mb-2">250<span class="text-accent">+</span></div>
+                    <div class="text-[10px] sm:text-xs text-gray-400 lang-zh">全球部署电站节点</div>
+                    <div class="text-[10px] sm:text-xs text-gray-400 lang-en">Global Deployed Nodes</div>
+                </div>
+                <div>
+                    <div class="text-2xl sm:text-3xl md:text-5xl font-mono font-bold text-white mb-1 sm:mb-2">480<span class="text-accent">MW</span></div>
+                    <div class="text-[10px] sm:text-xs text-gray-400 lang-zh">托管装机总容量</div>
+                    <div class="text-[10px] sm:text-xs text-gray-400 lang-en">Managed Capacity</div>
+                </div>
+                <div>
+                    <div class="text-2xl sm:text-3xl md:text-5xl font-mono font-bold text-white mb-1 sm:mb-2">99.8<span class="text-accent">%</span></div>
+                    <div class="text-[10px] sm:text-xs text-gray-400 lang-zh">历史平均在线率</div>
+                    <div class="text-[10px] sm:text-xs text-gray-400 lang-en">Historical Uptime</div>
+                </div>
+                <div>
+                    <div class="text-2xl sm:text-3xl md:text-5xl font-mono font-bold text-white mb-1 sm:mb-2">3.2<span class="text-accent">B</span></div>
+                    <div class="text-[10px] sm:text-xs text-gray-400 lang-zh">日均处理遥测数据点</div>
+                    <div class="text-[10px] sm:text-xs text-gray-400 lang-en">Daily Telemetry Data Points</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 【屏 3】行业困局 (Context) -->
+    <section id="context" class="py-20 sm:py-32 relative z-10 bg-gradient-to-b from-transparent to-bgPanel/30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-12 sm:mb-20">
+                <span class="text-accent font-mono text-xs sm:text-sm tracking-widest uppercase mb-4 block">// The Paradox</span>
+                <h2 class="text-2xl sm:text-3xl md:text-5xl font-bold mb-4 sm:mb-6 lang-zh">当百年机械制造，<br/><span class="text-gray-500">遭遇</span> 毫秒必争的算力狂潮</h2>
+                <h2 class="text-2xl sm:text-3xl md:text-5xl font-bold mb-4 sm:mb-6 lang-en">When Century-old Manufacturing,<br/><span class="text-gray-500">Meets</span> Millisecond Crypto Mining</h2>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 sm:gap-8 mb-16">
+                <div class="glass-panel p-6 sm:p-10 rounded-2xl border-l-4 border-l-gray-600">
+                    <h3 class="text-xl sm:text-2xl font-bold mb-4 text-white lang-zh">主机厂的“失控孤岛”</h3>
+                    <h3 class="text-xl sm:text-2xl font-bold mb-4 text-white lang-en">OEM's "Isolated Islands"</h3>
+                    <p class="text-sm sm:text-base text-gray-400 leading-relaxed mb-6 lang-zh">
+                        机组被卖到得州荒漠、西伯利亚冻土。物理空间的极度分散，让传统的巡检、维保体系瞬间瘫痪。机器运行状态沦为“黑盒”，售后变成了高昂且低效的“跨洋救火”。
+                    </p>
+                    <p class="text-sm sm:text-base text-gray-400 leading-relaxed mb-6 lang-en">
+                        Gen-sets sold to Texas deserts or Siberian permafrost. Extreme physical dispersion paralyzes traditional O&M. Machine status becomes a "black box," making after-sales an expensive and inefficient "cross-ocean firefighting."
+                    </p>
+                    <div class="bg-black/50 p-3 sm:p-4 rounded-lg font-mono text-[10px] sm:text-xs text-gray-500 break-all sm:break-normal">
+                        > ERR_NO_CONNECTION: Remote site unreachable.<br>
+                        > STATUS: Blind.
+                    </div>
+                </div>
+                <div class="glass-panel p-6 sm:p-10 rounded-2xl border-l-4 border-l-red-500">
+                    <h3 class="text-xl sm:text-2xl font-bold mb-4 text-white lang-zh">挖矿客户的“生死时速”</h3>
+                    <h3 class="text-xl sm:text-2xl font-bold mb-4 text-white lang-en">Miners' "Race Against Time"</h3>
+                    <p class="text-sm sm:text-base text-gray-400 leading-relaxed mb-6 lang-zh">
+                        比特币挖矿要求 7×24 小时满负荷极限压榨。停机一分钟就是实打实的算力损失与资金蒸发。孤网环境下，极端的负载要求与滞后的维修响应构成了致命矛盾。
+                    </p>
+                    <p class="text-sm sm:text-base text-gray-400 leading-relaxed mb-6 lang-en">
+                        Bitcoin mining demands 24/7 limit-pushing operation. A minute of downtime means real hash rate and capital loss. In isolated grids, extreme load demands and delayed maintenance create a fatal contradiction.
+                    </p>
+                    <div class="bg-red-500/10 p-3 sm:p-4 rounded-lg font-mono text-[10px] sm:text-xs text-red-400 border border-red-500/20 break-all sm:break-normal">
+                        > ALERT: Uptime critical.<br>
+                        > HASH_RATE_DROP: -145 TH/s (Lost $120/hr)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 【过渡】数字链路贯穿线 -->
+    <div class="w-full flex justify-center py-8 relative z-0">
+        <div class="w-px h-24 sm:h-32 bg-gradient-to-b from-transparent via-accent to-transparent animate-data-flow"></div>
+    </div>
+
+    <!-- 【屏 4】边缘硬件接入 (Layer 0) -->
+    <section id="hardware" class="py-20 sm:py-24 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-12 sm:mb-16">
+                <span class="text-accent font-mono text-xs sm:text-sm tracking-widest uppercase mb-4 block">// Layer 0. Edge Protocol</span>
+                <h2 class="text-2xl sm:text-3xl md:text-5xl font-bold mb-4 sm:mb-6 lang-zh">第一道防线：GasGx 边缘计算网关</h2>
+                <h2 class="text-2xl sm:text-3xl md:text-5xl font-bold mb-4 sm:mb-6 lang-en">The First Line of Defense: GasGx Edge IoT Gateway</h2>
+                <p class="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto lang-zh">直连底层 PLC 与传感器，强力破除信息孤岛。在极端恶劣环境下，依然能将百种高频数据压缩加密，通过 4G/星链 稳定上云。</p>
+                <p class="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto lang-en">Direct connection to underlying PLC and sensors, shattering information silos. In extreme environments, it compresses and encrypts hundreds of high-frequency data points for stable cloud uplink via 4G/Starlink.</p>
+            </div>
+
+            <div class="flex flex-col lg:flex-row items-center gap-16">
+                <!-- 纯代码绘制：工业网关硬件 (自适应缩小尺寸防止手机端溢出) -->
+                <div class="w-full lg:w-1/2 flex justify-center perspective-[1000px]">
+                    <div class="relative w-64 sm:w-80 h-80 sm:h-96 transform rotateY-[15deg] rotateX-[10deg] transition-transform hover:rotate-0 duration-700">
+                        <div class="absolute -top-12 sm:-top-16 left-6 sm:left-8 w-2 h-16 sm:h-20 bg-gray-700 rounded-t-full border border-gray-600"></div>
+                        <div class="absolute -top-12 sm:-top-16 right-6 sm:right-8 w-2 h-16 sm:h-20 bg-gray-700 rounded-t-full border border-gray-600"></div>
+                        
+                        <div class="w-full h-full bg-[#1c1c24] rounded-2xl border-4 border-[#2a2a35] shadow-[-10px_10px_30px_rgba(0,0,0,0.8)] sm:shadow-[-20px_20px_40px_rgba(0,0,0,0.8)] relative overflow-hidden flex flex-col justify-between">
+                            <div class="absolute inset-x-0 top-0 h-full opacity-20 pointer-events-none" style="background: repeating-linear-gradient(0deg, transparent, transparent 10px, #000 10px, #000 12px);"></div>
+                            
+                            <div class="p-4 sm:p-6 relative z-10">
+                                <div class="font-black text-xl sm:text-2xl tracking-tighter text-gray-300 mb-4 sm:mb-6 border-b border-white/10 pb-4">GasGx <span class="font-mono text-[10px] sm:text-xs text-gray-500 font-normal ml-2">EDGE_G900</span></div>
+                                
+                                <div class="flex flex-col gap-3 sm:gap-4">
+                                    <div class="flex items-center gap-3 sm:gap-4">
+                                        <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-accent shadow-[0_0_10px_#5DD62C]"></div>
+                                        <span class="text-[10px] sm:text-xs font-mono text-gray-400">PWR_ON</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 sm:gap-4">
+                                        <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-blue-500 shadow-[0_0_10px_#3b82f6] animate-pulse"></div>
+                                        <span class="text-[10px] sm:text-xs font-mono text-gray-400">4G_LTE / LINK</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 sm:gap-4">
+                                        <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-accent animate-pulse" style="animation-duration: 0.2s;"></div>
+                                        <span class="text-[10px] sm:text-xs font-mono text-gray-400">DATA_TX/RX</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="h-20 sm:h-24 bg-black/60 border-t border-white/10 p-3 sm:p-4 relative z-10 flex justify-around items-end">
+                                <div class="w-8 sm:w-10 h-5 sm:h-6 bg-yellow-600/20 border border-yellow-600/50 rounded flex items-center justify-center relative">
+                                    <div class="flex gap-1"><div class="w-1 h-1 bg-yellow-500 rounded-full"></div><div class="w-1 h-1 bg-yellow-500 rounded-full"></div></div>
+                                    <span class="absolute -top-4 sm:-top-5 text-[7px] sm:text-[8px] font-mono text-gray-500">CAN</span>
+                                </div>
+                                <div class="w-10 sm:w-14 h-5 sm:h-6 bg-gray-800 border border-gray-600 rounded flex items-center justify-around px-1 relative">
+                                    <div class="w-1 h-2 sm:h-3 bg-gray-400"></div><div class="w-1 h-2 sm:h-3 bg-gray-400"></div><div class="w-1 h-2 sm:h-3 bg-gray-400"></div>
+                                    <span class="absolute -top-4 sm:-top-5 text-[7px] sm:text-[8px] font-mono text-gray-500">RS485</span>
+                                </div>
+                                <div class="w-6 sm:w-8 h-6 sm:h-8 bg-black border border-gray-700 rounded relative">
+                                    <div class="absolute top-1 left-1 w-1 h-1 bg-accent rounded-full animate-pulse"></div>
+                                    <span class="absolute -top-4 sm:-top-5 -left-1 text-[7px] sm:text-[8px] font-mono text-gray-500">RJ45</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 硬件说明 -->
+                <div class="w-full lg:w-1/2 space-y-4 sm:space-y-6">
+                    <div class="glass-panel p-5 sm:p-6 rounded-xl border-l-2 border-l-accent">
+                        <h4 class="font-bold text-white mb-2 text-sm sm:text-base lang-zh">广泛的协议兼容</h4>
+                        <h4 class="font-bold text-white mb-2 text-sm sm:text-base lang-en">Extensive Protocol Compatibility</h4>
+                        <p class="text-xs sm:text-sm text-gray-400 lang-zh">内置解析引擎，全面兼容 J1939、Modbus RTU/TCP 等工业协议。无缝对接各类主流燃气发电机组 (Jenbacher, Caterpillar, Cummins 等)。</p>
+                        <p class="text-xs sm:text-sm text-gray-400 lang-en">Built-in parsing engine, fully compatible with J1939, Modbus RTU/TCP. Seamlessly integrates with mainstream gas gen-sets (Jenbacher, CAT, Cummins).</p>
+                    </div>
+                    <div class="glass-panel p-5 sm:p-6 rounded-xl border-l-2 border-l-accent">
+                        <h4 class="font-bold text-white mb-2 text-sm sm:text-base lang-zh">边缘侧毫秒级响应</h4>
+                        <h4 class="font-bold text-white mb-2 text-sm sm:text-base lang-en">Millisecond Edge Response</h4>
+                        <p class="text-xs sm:text-sm text-gray-400 lang-zh">在设备端即可执行基础的阈值判断。当发生致命过载时，无需等待云端指令，网关直接下发停机保护信号，守护百万资产。</p>
+                        <p class="text-xs sm:text-sm text-gray-400 lang-en">Executes threshold judgments at the device level. During fatal overloads, the gateway issues immediate shutdown signals without waiting for cloud commands, safeguarding millions in assets.</p>
+                    </div>
+                    <div class="glass-panel p-5 sm:p-6 rounded-xl border-l-2 border-l-accent">
+                        <h4 class="font-bold text-white mb-2 text-sm sm:text-base lang-zh">断网续传机制</h4>
+                        <h4 class="font-bold text-white mb-2 text-sm sm:text-base lang-en">Offline Resumption</h4>
+                        <p class="text-xs sm:text-sm text-gray-400 lang-zh">针对偏远矿场恶劣网络，内置本地缓存芯片，断网期间数据不丢失，网络恢复后自动进行时序对齐与补传。</p>
+                        <p class="text-xs sm:text-sm text-gray-400 lang-en">Built-in cache chip for harsh remote networks. Data is retained during outages and automatically backfilled upon reconnection.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 【屏 5】SCADA 中控 Web UI (Layer 1) - 横向滚动自适应 -->
+    <section id="scada" class="py-20 sm:py-32 relative z-10 bg-bgPanel">
+        <div class="max-w-[1400px] mx-auto px-4 sm:px-6">
+            <div class="text-center mb-12 sm:mb-16">
+                <span class="text-accent font-mono text-xs sm:text-sm tracking-widest uppercase mb-4 block">// Layer 1. Fleet Dashboard</span>
+                <h2 class="text-2xl sm:text-3xl md:text-5xl font-bold mb-4 sm:mb-6 lang-zh">智维控制台：百兆瓦级集群，一屏尽览</h2>
+                <h2 class="text-2xl sm:text-3xl md:text-5xl font-bold mb-4 sm:mb-6 lang-en">SCADA Console: 100MW+ Fleet at a Glance</h2>
+                <p class="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto lang-zh">告别 100 个现场的折返跑。现在，您可以坐在纽约的办公室，实时查看德州某一台机组 2 分钟前的火花塞点火电压。<br/><span class="text-accent text-xs mt-2 block">(← 手机端请左右滑动查看完整控制台 →)</span></p>
+                <p class="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto lang-en">Say goodbye to running between 100 sites. Now, sit in your New York office and monitor the spark plug voltage of a Texas gen-set from 2 minutes ago.<br/><span class="text-accent text-xs mt-2 block">(← Swipe left/right on mobile to view full console →)</span></p>
+            </div>
+
+            <!-- 通过包裹 overflow-x-auto 实现复杂桌面 UI 在手机端的平滑滚动展示 -->
+            <div class="w-full overflow-x-auto pb-6">
+                <div class="ui-window min-w-[1024px] h-[700px] flex flex-col shadow-[0_0_60px_rgba(93,214,44,0.1)] border border-white/10 mx-auto">
+                    <div class="ui-header justify-between">
+                        <div class="flex gap-2">
+                            <div class="ui-dot ui-dot-r"></div><div class="ui-dot ui-dot-y"></div><div class="ui-dot ui-dot-g"></div>
+                        </div>
+                        <div class="text-[10px] font-mono text-gray-500">gasgx.app / fleet-dashboard</div>
+                        <div class="w-16"></div>
+                    </div>
+                    
+                    <div class="flex-1 flex overflow-hidden">
+                        <div class="w-64 bg-[#0a0a0f] border-r border-white/5 p-4 flex flex-col">
+                            <div class="text-accent font-bold tracking-tighter mb-8 pl-2">GASGX_</div>
+                            <div class="space-y-1">
+                                <div class="p-2 bg-accent/10 text-accent rounded text-sm font-bold flex items-center gap-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                                    <span class="lang-zh">舰队总览</span><span class="lang-en">Fleet Overview</span>
+                                </div>
+                                <div class="p-2 text-gray-400 hover:text-white rounded text-sm flex items-center gap-3 cursor-pointer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                    <span class="lang-zh">站点拓扑</span><span class="lang-en">Site Topology</span>
+                                </div>
+                                <div class="p-2 text-gray-400 hover:text-white rounded text-sm flex items-center gap-3 cursor-pointer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20"/><path d="M12 2v20"/></svg>
+                                    <span class="lang-zh">实时遥测</span><span class="lang-en">Live Telemetry</span>
+                                </div>
+                                <div class="p-2 text-gray-400 hover:text-white rounded text-sm flex items-center gap-3 cursor-pointer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                                    <span class="lang-zh">AI 诊断预警</span><span class="lang-en">AI Diagnostics</span>
+                                </div>
+                            </div>
+                            <div class="mt-auto border-t border-white/5 pt-4">
+                                <div class="text-[10px] text-gray-500 font-mono mb-2">SYSTEM STATUS</div>
+                                <div class="flex items-center gap-2 text-xs text-white">
+                                    <div class="w-2 h-2 rounded-full bg-accent animate-pulse"></div> All Services Up
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 p-6 bg-[#12121a] overflow-y-auto">
+                            <div class="grid grid-cols-4 gap-4 mb-6">
+                                <div class="bg-black/40 border border-white/5 p-4 rounded-xl">
+                                    <div class="text-[10px] text-gray-500 uppercase mb-1">Total Power Output</div>
+                                    <div class="text-2xl font-mono text-white">142.5 <span class="text-sm text-accent">MW</span></div>
+                                    <div class="text-[10px] text-accent mt-2">↑ 2.4% vs last hour</div>
+                                </div>
+                                <div class="bg-black/40 border border-white/5 p-4 rounded-xl">
+                                    <div class="text-[10px] text-gray-500 uppercase mb-1">Active Nodes</div>
+                                    <div class="text-2xl font-mono text-white">104 <span class="text-sm text-gray-500">/ 106</span></div>
+                                    <div class="text-[10px] text-red-400 mt-2">2 nodes offline</div>
+                                </div>
+                                <div class="bg-black/40 border border-white/5 p-4 rounded-xl">
+                                    <div class="text-[10px] text-gray-500 uppercase mb-1">Avg Gas Pressure</div>
+                                    <div class="text-2xl font-mono text-white">2.84 <span class="text-sm text-gray-500">Bar</span></div>
+                                    <div class="w-full h-1 bg-white/10 mt-2 rounded-full"><div class="w-[70%] h-full bg-accent rounded-full"></div></div>
+                                </div>
+                                <div class="bg-black/40 border border-white/5 p-4 rounded-xl">
+                                    <div class="text-[10px] text-gray-500 uppercase mb-1">Pending Work Orders</div>
+                                    <div class="text-2xl font-mono text-white">12</div>
+                                    <div class="text-[10px] text-orange-400 mt-2">3 critical priorities</div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-6">
+                                <div class="col-span-2 bg-black/40 border border-white/5 rounded-xl flex flex-col">
+                                    <div class="p-4 border-b border-white/5 flex justify-between items-center">
+                                        <span class="text-sm font-bold text-white">Node Telemetry Matrix</span>
+                                        <div class="flex gap-2">
+                                            <div class="px-2 py-1 bg-white/10 rounded text-[10px] text-white">All Sites</div>
+                                            <div class="px-2 py-1 bg-accent/10 rounded text-[10px] text-accent font-mono border border-accent/20">LIVE</div>
+                                        </div>
+                                    </div>
+                                    <div class="p-0">
+                                        <table class="w-full text-left text-xs">
+                                            <thead class="text-gray-500 bg-white/5">
+                                                <tr><th class="p-3 font-normal">SITE_ID</th><th class="p-3 font-normal">STATUS</th><th class="p-3 font-normal">RPM</th><th class="p-3 font-normal">TEMP (IN/OUT)</th><th class="p-3 font-normal">POWER</th></tr>
+                                            </thead>
+                                            <tbody class="text-gray-300 font-mono divide-y divide-white/5">
+                                                <tr class="hover:bg-white/5">
+                                                    <td class="p-3 text-white">TX_MID_01</td>
+                                                    <td class="p-3"><span class="text-accent flex items-center gap-1"><div class="w-1.5 h-1.5 bg-accent rounded-full animate-pulse"></div> RUN</span></td>
+                                                    <td class="p-3">1500</td><td class="p-3">42° / 88°</td><td class="p-3">1.2 MW</td>
+                                                </tr>
+                                                <tr class="hover:bg-white/5">
+                                                    <td class="p-3 text-white">TX_MID_02</td>
+                                                    <td class="p-3"><span class="text-accent flex items-center gap-1"><div class="w-1.5 h-1.5 bg-accent rounded-full animate-pulse"></div> RUN</span></td>
+                                                    <td class="p-3">1502</td><td class="p-3">43° / 89°</td><td class="p-3">1.2 MW</td>
+                                                </tr>
+                                                <tr class="hover:bg-white/5 bg-red-500/5">
+                                                    <td class="p-3 text-white">WY_NORTH_09</td>
+                                                    <td class="p-3"><span class="text-red-400 font-bold">TRIP_OIL</span></td>
+                                                    <td class="p-3 text-red-400">0</td><td class="p-3">65° / 68°</td><td class="p-3 text-red-400">0 MW</td>
+                                                </tr>
+                                                <tr class="hover:bg-white/5">
+                                                    <td class="p-3 text-white">WY_NORTH_10</td>
+                                                    <td class="p-3"><span class="text-accent flex items-center gap-1"><div class="w-1.5 h-1.5 bg-accent rounded-full animate-pulse"></div> RUN</span></td>
+                                                    <td class="p-3">1500</td><td class="p-3">40° / 85°</td><td class="p-3">1.1 MW</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-span-1 bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col">
+                                    <div class="text-[10px] text-gray-500 mb-4">SELECTED NODE</div>
+                                    <div class="text-xl font-bold text-white mb-1">TX_MID_01</div>
+                                    <div class="text-xs font-mono text-accent bg-accent/10 inline-block px-2 py-0.5 border border-accent/20 rounded mb-6 w-max">HEALTH: 94%</div>
+                                    
+                                    <div class="flex-1 flex flex-col items-center justify-center relative">
+                                        <svg viewBox="0 0 100 50" class="w-full h-auto drop-shadow-[0_0_10px_rgba(93,214,44,0.3)]">
+                                            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8" stroke-linecap="round"/>
+                                            <path d="M 10 50 A 40 40 0 0 1 70 20" fill="none" stroke="#5DD62C" stroke-width="8" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="0"/>
+                                            <line x1="50" y1="50" x2="68" y2="22" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                                            <circle cx="50" cy="50" r="4" fill="white"/>
+                                        </svg>
+                                        <div class="absolute bottom-0 text-center">
+                                            <div class="text-2xl font-mono text-white font-bold">1.2</div>
+                                            <div class="text-[9px] text-gray-500 uppercase">Output (MW)</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-6 grid grid-cols-2 gap-2 text-xs font-mono border-t border-white/10 pt-4">
+                                        <div><span class="text-gray-500 text-[10px] block">L1-L2 VOLT</span><span class="text-white">480 V</span></div>
+                                        <div><span class="text-gray-500 text-[10px] block">FREQUENCY</span><span class="text-white">60.0 Hz</span></div>
+                                        <div class="mt-2"><span class="text-gray-500 text-[10px] block">GAS VALVE</span><span class="text-white">42% OPEN</span></div>
+                                        <div class="mt-2"><span class="text-gray-500 text-[10px] block">SPARK TIMING</span><span class="text-white">-14° BTDC</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 【屏 6】硬核升级：GasGx AI 深度诊断预警 (Layer 2) -->
+    <section id="ai" class="py-20 sm:py-28 relative z-10 bg-gradient-to-r from-[#0d1522] to-bgDark border-y border-blue-500/20 overflow-hidden">
+        <div class="absolute top-0 right-0 w-[50%] h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent pointer-events-none"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-12 sm:gap-16 items-center">
+            <!-- 左侧：AI 模型价值与专业说明 -->
+            <div class="space-y-6 sm:space-y-8 relative z-10">
+                <div class="inline-block px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[10px] sm:text-xs font-mono shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                    // LAYER 2: DEEP LEARNING PDM ENGINE
+                </div>
+                <h2 class="text-2xl sm:text-3xl md:text-5xl font-bold leading-tight lang-zh">
+                    AI 深度诊断引擎：<br />比经验最老的技师更<span class="text-blue-400">懂</span>你的机器
+                </h2>
+                <h2 class="text-2xl sm:text-3xl md:text-5xl font-bold leading-tight lang-en">
+                    AI Deep Diagnostics Engine:<br />Knows Your Machine Better Than <span class="text-blue-400">Veteran Techs</span>
+                </h2>
+                <p class="text-sm sm:text-lg text-gray-400 leading-relaxed lang-zh">
+                    在伴生气（Flare Gas）或井口孤网发电中，气源的甲烷值（MN）波动极大。传统的固定阈值告警形同虚设。GasGx AI 结合设备机理，针对 <strong class="text-white">Jenbacher, CAT 等大型燃气机</strong> 的核心痛点，提供提前数周的“预测性维护（PdM）”。
+                </p>
+                <p class="text-sm sm:text-lg text-gray-400 leading-relaxed lang-en">
+                    Flare gas or isolated wellhead power generation faces massive Methane Number (MN) fluctuations. Fixed thresholds fail. GasGx AI provides weeks of Predictive Maintenance (PdM) tailored for large gen-sets like <strong class="text-white">Jenbacher and CAT</strong>.
+                </p>
+                
+                <div class="space-y-4 sm:space-y-6">
+                    <div class="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-white/5 border border-white/10 rounded-xl hover:border-blue-500/30 transition-colors">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0 text-base sm:text-xl font-bold">1</div>
+                        <div>
+                            <h4 class="text-white font-bold mb-1 text-sm sm:text-base lang-zh">动态甲烷值与爆震预测</h4>
+                            <h4 class="text-white font-bold mb-1 text-sm sm:text-base lang-en">Dynamic MN & Knock Prediction</h4>
+                            <p class="text-xs sm:text-sm text-gray-400 lang-zh">持续追踪点火提前角（Timing）与爆震传感器（Knock Sensor）频谱。当气源热值突变引发轻微爆震时，AI先于ECU限载前发现趋势，避免损坏活塞环。</p>
+                            <p class="text-xs sm:text-sm text-gray-400 lang-en">Continuously tracks ignition timing and knock sensor spectrums. Catches trends before ECU derating to prevent piston ring damage when gas composition changes.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-white/5 border border-white/10 rounded-xl hover:border-blue-500/30 transition-colors">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0 text-base sm:text-xl font-bold">2</div>
+                        <div>
+                            <h4 class="text-white font-bold mb-1 text-sm sm:text-base lang-zh">各缸排温 (EGT) 偏差分析</h4>
+                            <h4 class="text-white font-bold mb-1 text-sm sm:text-base lang-en">Cylinder EGT Deviation Analysis</h4>
+                            <p class="text-xs sm:text-sm text-gray-400 lang-zh">建立 V16/V20 发动机的气缸热力均衡模型。精准识别单个气缸高达 60°C 的温度漂移，判断是“火花塞失效”、“点火线圈老化”还是“混合气阀堵塞”。</p>
+                            <p class="text-xs sm:text-sm text-gray-400 lang-en">Builds thermal equilibrium models for V16/V20 engines. Accurately identifies 60°C drifts in single cylinders to diagnose spark plug failure, coil aging, or valve blockage.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-white/5 border border-white/10 rounded-xl hover:border-blue-500/30 transition-colors">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0 text-base sm:text-xl font-bold">3</div>
+                        <div>
+                            <h4 class="text-white font-bold mb-1 text-sm sm:text-base lang-zh">机油压降与滤芯生命周期</h4>
+                            <h4 class="text-white font-bold mb-1 text-sm sm:text-base lang-en">Oil Pressure Drop & Filter Lifecycle</h4>
+                            <p class="text-xs sm:text-sm text-gray-400 lang-zh">根据压降曲线斜率，AI 直接推算滤芯剩余寿命百分比，结合 WMS 仓储库存，自动发起“按需保养”工单，告别盲目的定期更换。</p>
+                            <p class="text-xs sm:text-sm text-gray-400 lang-en">Calculates remaining filter lifespan percentage directly from pressure drop slopes. Links with WMS to trigger on-demand maintenance orders, eliminating blind routine changes.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：纯代码绘制的 AI 多维分析诊断 UI 面板 (在超小屏可能需要加横向滚动) -->
+            <div class="w-full overflow-x-auto pb-4">
+                <div class="ui-window bg-[#080b12] p-4 sm:p-6 min-w-[340px] border-blue-500/30 shadow-[0_20px_60px_rgba(59,130,246,0.15)] flex flex-col gap-6 relative z-10 mx-auto">
+                    <div class="flex justify-between items-center border-b border-white/10 pb-4">
+                        <div class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
+                            <span class="font-bold text-white text-xs sm:text-sm">V16 MULTI-DIMENSIONAL DIAGNOSTICS</span>
+                        </div>
+                        <span class="text-[8px] sm:text-[10px] bg-blue-500/20 text-blue-300 px-2 py-1 rounded font-mono border border-blue-500/30">SITE_042 (CAT)</span>
+                    </div>
+
+                    <!-- EGT 排温热力图 (V16 引擎) -->
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-[9px] sm:text-[10px] text-gray-400 font-mono">Exhaust Gas Temp (EGT) Deviation Map</span>
+                            <span class="text-[9px] sm:text-[10px] text-red-400 font-bold bg-red-500/10 px-1 rounded animate-pulse">#10 CYL ANOMALY</span>
+                        </div>
+                        <div class="bg-black/50 p-2 sm:p-3 rounded-lg border border-white/5">
+                            <div class="flex justify-between items-center text-[8px] sm:text-[9px] text-gray-500 font-mono mb-1"><span>LEFT BANK (1-8)</span><span>RIGHT BANK (9-16)</span></div>
+                            <div class="flex justify-between gap-2 sm:gap-4">
+                                <!-- Left Bank -->
+                                <div class="flex-1 grid grid-cols-4 gap-1">
+                                    <div class="h-6 bg-blue-500/30 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">1</div><div class="h-6 bg-blue-500/40 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">3</div><div class="h-6 bg-blue-500/30 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">5</div><div class="h-6 bg-blue-500/50 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">7</div>
+                                    <div class="h-6 bg-blue-500/30 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">2</div><div class="h-6 bg-blue-500/40 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">4</div><div class="h-6 bg-blue-500/30 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">6</div><div class="h-6 bg-blue-500/50 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">8</div>
+                                </div>
+                                <!-- Right Bank (Anomaly on #10) -->
+                                <div class="flex-1 grid grid-cols-4 gap-1">
+                                    <div class="h-6 bg-blue-500/40 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">9</div><div class="h-6 bg-blue-500/30 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">11</div><div class="h-6 bg-blue-500/40 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">13</div><div class="h-6 bg-blue-500/50 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">15</div>
+                                    <div class="h-6 bg-red-500/80 rounded flex items-center justify-center text-[7px] sm:text-[8px] font-bold text-white ring-1 ring-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]">10</div><div class="h-6 bg-blue-500/30 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">12</div><div class="h-6 bg-blue-500/40 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">14</div><div class="h-6 bg-blue-500/30 rounded flex items-center justify-center text-[7px] sm:text-[8px] text-white/50">16</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 动态火花塞衰减预测曲线 -->
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-[9px] sm:text-[10px] text-gray-400 font-mono">Spark Plug Voltage Demand Curve (Cyl #10)</span>
+                        </div>
+                        <div class="relative h-20 sm:h-24 w-full bg-black/50 border border-white/5 rounded-lg flex items-end pb-1 overflow-hidden">
+                            <div class="absolute left-1 top-1 text-[6px] sm:text-[7px] text-gray-500">40kV</div>
+                            <div class="absolute w-full border-t border-red-500/50 border-dashed" style="bottom: 80%;">
+                                <span class="absolute -top-3 right-2 text-[6px] sm:text-[7px] text-red-400 font-mono">MISFIRE LIMIT</span>
+                            </div>
+                            <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+                                <linearGradient id="aiGrad2" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="rgba(59, 130, 246, 0.4)"/>
+                                    <stop offset="100%" stop-color="rgba(59, 130, 246, 0)"/>
+                                </linearGradient>
+                                <path d="M0,100 L0,50 Q30,55 60,35 T90,85 L100,90 L100,100 Z" fill="url(#aiGrad2)"/>
+                                <path d="M0,50 Q30,55 60,35" fill="none" stroke="#3b82f6" stroke-width="2"/>
+                                <path d="M60,35 T90,10 L100,5" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="2,2"/>
+                                <circle cx="60" cy="35" r="2.5" fill="#3b82f6" class="animate-pulse"/>
+                            </svg>
+                            <div class="absolute bottom-1 right-2 text-[7px] sm:text-[8px] bg-blue-500/20 text-blue-300 px-1 rounded font-mono">EST: 120 hrs left</div>
+                        </div>
+                    </div>
+
+                    <!-- AI 动作决断框 -->
+                    <div class="bg-blue-900/20 border border-blue-500/30 p-2 sm:p-3 rounded-xl flex items-start gap-2 sm:gap-3">
+                        <div class="mt-1 w-5 h-5 sm:w-6 sm:h-6 rounded bg-blue-500/20 flex items-center justify-center flex-shrink-0 text-blue-400"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></div>
+                        <div>
+                            <div class="text-[9px] sm:text-[11px] font-bold text-white mb-1">PRESCRIPTIVE ACTION GENERATED</div>
+                            <p class="text-[9px] sm:text-[10px] text-blue-200/80 leading-relaxed lang-zh">
+                                检测到 <strong class="text-red-400">#10 气缸</strong> 排温持续异常，且点火电压需求剧增。判断为火花塞即将彻底击穿。已自动拦截严重宕机风险，并联动 WMS 发出【火花塞 x2】的备料工单至现场终端。
+                            </p>
+                            <p class="text-[9px] sm:text-[10px] text-blue-200/80 leading-relaxed lang-en">
+                                Detected persistent abnormal EGT on <strong class="text-red-400">#10 CYL</strong> with surging ignition voltage demand. Diagnosed as impending spark plug breakdown. Fatal downtime intercepted. WMS order [Spark Plug x2] dispatched to field terminal.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 【屏 7】调度中枢与端到端联动 (Layer 3) -->
+    <section id="mobile" class="py-20 sm:py-24 border-y border-white/5 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/5 via-bgDark to-bgDark relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-12 sm:mb-16">
+                <span class="text-white font-mono text-xs sm:text-sm tracking-widest uppercase mb-4 block">// Layer 3. Dispatch & Mobile</span>
+                <h2 class="text-2xl sm:text-3xl md:text-5xl font-bold mb-4 sm:mb-6 lang-zh">全端协同：大脑与四肢的完美咬合</h2>
+                <h2 class="text-2xl sm:text-3xl md:text-5xl font-bold mb-4 sm:mb-6 lang-en">End-to-End Synergy: Perfect Mesh of Brain and Limbs</h2>
+                <p class="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto lang-zh">当 AI 发现上述异常时，系统将自动生成标准 SOP，并直接派发到运维人员与库管员的移动终端。0 沟通误差，0 跑错路。</p>
+                <p class="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto lang-en">When AI detects anomalies, the system auto-generates standard SOPs and dispatches them to mobile terminals of field techs and warehouse keepers. Zero miscommunication, zero wasted trips.</p>
+            </div>
+
+            <div class="flex flex-col lg:flex-row items-center justify-center gap-8 sm:gap-12 mt-8 sm:mt-12">
+                <!-- 手机 UI 1: 告警推送与派单 -->
+                <div class="relative w-64 sm:w-[280px] h-[520px] sm:h-[580px] bg-[#0A0A0F] border-[6px] border-[#1f1f2e] rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col group">
+                    <div class="absolute top-0 inset-x-0 h-4 sm:h-5 flex justify-center z-20"><div class="w-16 sm:w-20 h-full bg-[#1f1f2e] rounded-b-xl"></div></div>
+                    <div class="flex-1 w-full bg-bgPanel pt-6 sm:pt-8 px-3 sm:px-4 flex flex-col">
+                        <div class="text-center mb-4 sm:mb-6 border-b border-white/10 pb-3 sm:pb-4">
+                            <div class="text-[9px] sm:text-[10px] text-gray-500 font-mono">GasGx Dispatcher</div>
+                            <div class="font-bold text-white text-base sm:text-lg lang-zh">待办工单 (3)</div>
+                            <div class="font-bold text-white text-base sm:text-lg lang-en">Pending Tasks (3)</div>
+                        </div>
+                        <div class="space-y-3 sm:space-y-4">
+                            <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-3 relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[9px] sm:text-[10px] font-bold text-red-400 bg-red-500/20 px-1.5 rounded">PdM ACTION</span>
+                                    <span class="text-[8px] sm:text-[9px] text-gray-500">Just now</span>
+                                </div>
+                                <div class="text-xs sm:text-sm font-bold text-white mb-1 lang-zh">更换 #10 气缸火花塞</div>
+                                <div class="text-xs sm:text-sm font-bold text-white mb-1 lang-en">Replace Cyl #10 Spark Plug</div>
+                                <div class="text-[10px] sm:text-xs text-gray-400 mb-2 sm:mb-3 font-mono">NODE: SITE_042</div>
+                                <button class="w-full bg-red-500 text-white text-[10px] sm:text-xs font-bold py-2 rounded-lg hover:bg-red-600">
+                                    <span class="lang-zh">接受任务并领料</span><span class="lang-en">Accept Task & Collect</span>
+                                </button>
+                            </div>
+                            <div class="bg-white/5 border border-white/10 rounded-xl p-3 relative">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-[9px] sm:text-[10px] font-bold text-blue-400 bg-blue-500/20 px-1.5 rounded">MAINTENANCE</span>
+                                    <span class="text-[8px] sm:text-[9px] text-gray-500">2h ago</span>
+                                </div>
+                                <div class="text-xs sm:text-sm font-bold text-white mb-1 lang-zh">500H 常规保养 (机油/滤芯)</div>
+                                <div class="text-xs sm:text-sm font-bold text-white mb-1 lang-en">500H Routine Maintenance</div>
+                                <div class="text-[10px] sm:text-xs text-gray-400 mb-2 sm:mb-3 font-mono">NODE: TX_MID_01</div>
+                                <button class="w-full bg-white/10 text-white text-[10px] sm:text-xs font-bold py-2 rounded-lg">
+                                    <span class="lang-zh">查看详情</span><span class="lang-en">View Details</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="h-14 sm:h-16 bg-[#12121A] border-t border-white/10 flex justify-around items-center px-4">
+                        <div class="text-white flex flex-col items-center"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+                        <div class="text-gray-600 flex flex-col items-center"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+                        <div class="text-gray-600 flex flex-col items-center"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" class="sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                    </div>
+                </div>
+
+                <div class="hidden lg:flex items-center text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </div>
+
+                <!-- 手机 UI 2: WMS 仓储扫码 -->
+                <div class="relative w-64 sm:w-[280px] h-[520px] sm:h-[580px] bg-[#0A0A0F] border-[6px] border-[#1f1f2e] rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col group">
+                    <div class="absolute top-0 inset-x-0 h-4 sm:h-5 flex justify-center z-20"><div class="w-16 sm:w-20 h-full bg-[#1f1f2e] rounded-b-xl"></div></div>
+                    <div class="flex-1 w-full bg-bgPanel pt-6 sm:pt-8 px-3 sm:px-4 flex flex-col">
+                        <div class="text-center mb-4 sm:mb-6 border-b border-white/10 pb-3 sm:pb-4">
+                            <div class="text-[9px] sm:text-[10px] text-orange-500 font-mono">WMS Subsystem</div>
+                            <div class="font-bold text-white text-base sm:text-lg lang-zh">智能领料出库</div>
+                            <div class="font-bold text-white text-base sm:text-lg lang-en">Smart Checkout</div>
+                        </div>
+                        
+                        <div class="w-full h-24 sm:h-32 border-2 border-dashed border-orange-500/50 rounded-xl mb-4 sm:mb-6 relative flex items-center justify-center overflow-hidden bg-black">
+                            <div class="absolute inset-0 w-full h-[2px] bg-orange-500 shadow-[0_0_15px_#f97316] animate-[scanLine_2s_linear_infinite]"></div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" class="sm:w-8 sm:h-8 text-orange-500/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect width="10" height="10" x="7" y="7" rx="1"/></svg>
+                        </div>
+
+                        <div class="text-[10px] sm:text-xs font-bold text-gray-300 mb-2 lang-zh">当前备件清单 (对应 PdM 指令)</div>
+                        <div class="text-[10px] sm:text-xs font-bold text-gray-300 mb-2 lang-en">Current Parts List (per PdM)</div>
+                        <div class="space-y-2">
+                            <div class="bg-orange-500/10 border border-orange-500/30 p-2 rounded flex justify-between items-center">
+                                <div>
+                                    <div class="text-[10px] sm:text-xs text-white lang-zh">工业火花塞 (JNT)</div>
+                                    <div class="text-[10px] sm:text-xs text-white lang-en">Industrial Spark Plug</div>
+                                    <div class="text-[8px] sm:text-[10px] text-orange-400 font-mono lang-zh">库位: A区-03货架</div>
+                                    <div class="text-[8px] sm:text-[10px] text-orange-400 font-mono lang-en">Rack: A-03</div>
+                                </div>
+                                <div class="text-orange-400 font-bold text-[10px] sm:text-xs animate-pulse">
+                                    <span class="lang-zh">待扫 0/2</span><span class="lang-en">Pending 0/2</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="h-14 sm:h-16 bg-[#12121A] border-t border-white/10 flex justify-center items-center px-4">
+                        <button class="w-full bg-gray-700 text-gray-400 text-[10px] sm:text-sm font-bold py-2 rounded-lg cursor-not-allowed">
+                            <span class="lang-zh">等待扫码核销</span><span class="lang-en">Awaiting Scan</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 【屏 8】财务大屏与算力对齐 (Layer 4) -->
+    <section class="py-20 sm:py-24 relative z-10 bg-[#0A0A0F]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-12 sm:mb-16">
+                <span class="text-accent font-mono text-xs sm:text-sm tracking-widest uppercase mb-4 block">// Layer 4. FinOps & ROI</span>
+                <h2 class="text-2xl sm:text-3xl md:text-5xl font-bold mb-4 sm:mb-6 lang-zh">财务对齐：打通【气-电-算】链路</h2>
+                <h2 class="text-2xl sm:text-3xl md:text-5xl font-bold mb-4 sm:mb-6 lang-en">FinOps Alignment: Bridging [Gas-Power-Hashrate]</h2>
+                <p class="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto lang-zh">GasGx 不仅仅看设备指标，更关心您的钱包。系统内置能源测算模块，直观呈现每一方气如何转化为每一度电，最终换算为 BTC 挖矿收益。</p>
+                <p class="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto lang-en">GasGx cares about your wallet, not just machine metrics. Built-in energy calculation visualizes how each cubic meter of gas converts to kWh, and ultimately to BTC mining revenue.</p>
+            </div>
+
+            <div class="ui-window p-4 sm:p-6 bg-black/80 max-w-4xl mx-auto border border-accent/20">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                    <div class="p-4 border-b md:border-b-0 md:border-r border-white/10 border-dashed">
+                        <div class="text-[10px] text-gray-500 uppercase font-mono mb-2">Input: Flare Gas</div>
+                        <div class="text-2xl sm:text-3xl font-bold text-white mb-1">12.5k <span class="text-xs sm:text-sm">m³/h</span></div>
+                        <div class="text-xs text-gray-400">Cost: ~$0.00 / MCF</div>
+                    </div>
+                    <div class="p-4 border-b md:border-b-0 md:border-r border-white/10 border-dashed relative">
+                        <div class="hidden md:flex absolute top-1/2 -left-4 w-8 h-8 bg-[#0a0a0f] rounded-full items-center justify-center -translate-y-1/2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+                        <div class="text-[10px] text-gray-500 uppercase font-mono mb-2">Conversion: Power</div>
+                        <div class="text-2xl sm:text-3xl font-bold text-accent mb-1">38.2 <span class="text-xs sm:text-sm">MWh</span></div>
+                        <div class="text-xs text-gray-400">Gen LCOE: $0.025/kWh</div>
+                    </div>
+                    <div class="p-4 relative">
+                        <div class="hidden md:flex absolute top-1/2 -left-4 w-8 h-8 bg-[#0a0a0f] rounded-full items-center justify-center -translate-y-1/2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="text-yellow-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+                        <div class="text-[10px] text-yellow-500/80 uppercase font-mono mb-2">Output: Hashrate Value</div>
+                        <div class="text-2xl sm:text-3xl font-bold text-yellow-500 mb-1">~0.45 <span class="text-xs sm:text-sm">BTC/day</span></div>
+                        <div class="text-xs text-gray-400">Network Difficulty Adjusted</div>
+                    </div>
+                </div>
+
+                <div class="mt-4 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10 bg-white/5 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between text-center sm:text-left gap-4 sm:gap-0">
+                    <div>
+                        <div class="text-sm font-bold text-white lang-zh">避免停机挽回损失 (本月)</div>
+                        <div class="text-sm font-bold text-white lang-en">Downtime Loss Prevented (This Month)</div>
+                        <div class="text-xs text-gray-400 lang-zh">基于 AI PdM 提前发现的重大故障测算</div>
+                        <div class="text-xs text-gray-400 lang-en">Calculated from critical failures caught early by AI PdM</div>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-mono text-accent">+$142,500</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 【屏 9】大型全景场景展示 (Layer 5. Physical World) - 横向滚动自适应 -->
+    <section id="full-scene" class="py-20 sm:py-24 relative overflow-hidden border-t border-white/5 bg-gradient-to-b from-bgDark to-[#08080c]">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-accent/5 via-transparent to-transparent pointer-events-none"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 mb-12 sm:mb-16 text-center relative z-10">
+            <span class="text-accent font-mono text-xs sm:text-sm tracking-widest uppercase mb-4 block">// Layer 5. Physical World Implementation</span>
+            <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 lang-zh">从井口到算力：全链路数字化接管图景</h2>
+            <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 lang-en">From Wellhead to Hashrate: Full-Chain Digital Takeover</h2>
+            <p class="text-sm sm:text-lg text-gray-400 max-w-3xl mx-auto lang-zh">
+                GasGx 将荒野上孤立的天然气开采、发电与比特币挖矿物理设施，用数字神经紧密相连。运维人员只需一部移动设备，即可在现场实现对整个复杂业务链的精准掌控。
+                <span class="text-accent text-xs mt-2 block sm:hidden">(← 请左右滑动查看完整场景图景 →)</span>
+            </p>
+            <p class="text-sm sm:text-lg text-gray-400 max-w-3xl mx-auto lang-en">
+                GasGx connects isolated gas extraction, power generation, and Bitcoin mining facilities in the wilderness with a digital nerve system. Field techs control the entire complex value chain via a single mobile device.
+                <span class="text-accent text-xs mt-2 block sm:hidden">(← Swipe left/right to explore full scene →)</span>
+            </p>
+        </div>
+        
+        <!-- 包裹 overflow-x-auto，让 SVG 场景图在手机上保持清晰度并允许滑动 -->
+        <div class="relative w-full overflow-x-auto pb-6 border-t border-white/5 pt-10">
+            <div class="relative w-[1200px] md:w-full h-[450px] sm:h-[500px] md:h-[600px] max-w-[1400px] mx-auto">
+                <!-- 场景背景 -->
+                <div class="absolute inset-0 bg-gradient-to-t from-[#08080c] via-transparent to-bgDark/50 z-0"></div>
+                
+                <!-- 场景元素 SVG绘制 -->
+                <svg class="absolute inset-0 w-full h-full z-10" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <linearGradient id="pipe-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#333;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#555;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#333;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="cable-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#1a1a24;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#2a2a35;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#1a1a24;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="glow-accent-strong">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+
+                    <!-- 地平线 -->
+                    <line x1="0" y1="480" x2="1200" y2="480" stroke="#1f1f2e" stroke-width="2"/>
+                    
+                    <!-- 1. 天然气井口装置 -->
+                    <g transform="translate(150, 360)">
+                        <rect x="0" y="0" width="60" height="120" fill="#2a2a35" stroke="#111" stroke-width="2"/>
+                        <rect x="-20" y="-20" width="100" height="20" fill="#3a3a45" stroke="#111" stroke-width="2"/>
+                        <rect x="20" y="-60" width="20" height="40" fill="#2a2a35" stroke="#111"/>
+                        <circle cx="30" cy="-60" r="8" fill="#F7931A" filter="url(#glow-accent-strong)">
+                            <animate attributeName="opacity" values="0.8;1;0.8" dur="0.5s" repeatCount="indefinite"/>
+                        </circle>
+                        <text x="30" y="150" font-family="monospace" font-weight="bold" font-size="14" fill="#a1a1aa" text-anchor="middle" class="lang-zh">1. 伴生气井口/脱硫站</text>
+                        <text x="30" y="150" font-family="monospace" font-weight="bold" font-size="14" fill="#a1a1aa" text-anchor="middle" class="lang-en">1. Flare Gas Wellhead</text>
+                        
+                        <path d="M60 100 L250 100" stroke="url(#pipe-grad)" stroke-width="12" fill="none"/>
+                        <path d="M60 100 L250 100" stroke="#5DD62C" stroke-width="2" stroke-dasharray="10,10" fill="none" opacity="0.6">
+                            <animate attributeName="stroke-dashoffset" from="20" to="0" dur="1s" repeatCount="indefinite" />
+                        </path>
+                    </g>
+
+                    <!-- 2. 燃气发电机组集装箱 -->
+                    <g transform="translate(400, 300)">
+                        <rect x="0" y="0" width="320" height="180" fill="#12121A" stroke="#222" stroke-width="4" rx="4"/>
+                        <rect x="60" y="-50" width="40" height="50" fill="#222" stroke="#111"/>
+                        <path d="M60 -50 L100 -50 L110 -70 L50 -70 Z" fill="#1a1a1a" stroke="#111"/>
+                        <path d="M80 -70 Q 90 -100 120 -120" stroke="rgba(255,255,255,0.1)" stroke-width="10" fill="none" stroke-linecap="round" filter="url(#glow-accent-strong)"/>
+                        
+                        <g transform="translate(30, 40)">
+                            <rect x="0" y="0" width="70" height="70" fill="#0d0d12" stroke="#222" rx="4"/>
+                            <circle cx="35" cy="35" r="30" fill="#050508" stroke="#1a1a24"/>
+                            <g>
+                                <line x1="35" y1="5" x2="35" y2="65" stroke="#222" stroke-width="6"/>
+                                <line x1="5" y1="35" x2="65" y2="35" stroke="#222" stroke-width="6"/>
+                                <animateTransform attributeName="transform" type="rotate" from="0 35 35" to="360 35 35" dur="1s" repeatCount="indefinite" />
+                            </g>
+                        </g>
+                        <text x="200" y="60" font-family="sans-serif" font-weight="900" font-size="28" fill="white">GAS<tspan fill="#5DD62C">GX</tspan></text>
+                        <text x="200" y="85" font-family="monospace" font-size="12" fill="#5DD62C" filter="url(#glow-accent-strong)">[ PDM PROTECTED ]</text>
+                        <text x="160" y="210" font-family="monospace" font-weight="bold" font-size="14" fill="#a1a1aa" text-anchor="middle" class="lang-zh">2. 分布式燃气发电机组</text>
+                        <text x="160" y="210" font-family="monospace" font-weight="bold" font-size="14" fill="#a1a1aa" text-anchor="middle" class="lang-en">2. Distributed Gas Gen-Set</text>
+                        
+                        <path d="M320 140 L580 140" stroke="url(#cable-grad)" stroke-width="10" fill="none"/>
+                        <path d="M320 140 L580 140" stroke="#5DD62C" stroke-width="4" stroke-dasharray="15,15" fill="none" opacity="0.9" filter="url(#glow-accent-strong)">
+                             <animate attributeName="stroke-dashoffset" from="0" to="30" dur="0.5s" repeatCount="indefinite" />
+                        </path>
+                    </g>
+
+                    <!-- 3. 比特币矿箱 -->
+                    <g transform="translate(980, 300)">
+                        <rect x="0" y="0" width="220" height="180" fill="#0a0a0f" stroke="#1f1f2e" stroke-width="4" rx="4"/>
+                        <g transform="translate(20, 20)">
+                            <circle cx="30" cy="30" r="20" fill="#050508" stroke="#222"><animate attributeName="stroke" values="#222;#5DD62C;#222" dur="2s" repeatCount="indefinite" /></circle>
+                            <circle cx="30" cy="90" r="20" fill="#050508" stroke="#222"/>
+                            <circle cx="90" cy="30" r="20" fill="#050508" stroke="#222"/>
+                            <circle cx="90" cy="90" r="20" fill="#050508" stroke="#222"/>
+                            <circle cx="150" cy="30" r="20" fill="#050508" stroke="#222"/>
+                            <circle cx="150" cy="90" r="20" fill="#050508" stroke="#222"/>
+                        </g>
+                        <circle cx="110" cy="150" r="22" fill="#F7931A" opacity="0.8"/>
+                        <text x="110" y="160" font-family="sans-serif" font-weight="bold" font-size="28" fill="white" text-anchor="middle">₿</text>
+                        <text x="110" y="210" font-family="monospace" font-weight="bold" font-size="14" fill="#a1a1aa" text-anchor="middle" class="lang-zh">3. 加密算力数据中心</text>
+                        <text x="110" y="210" font-family="monospace" font-weight="bold" font-size="14" fill="#a1a1aa" text-anchor="middle" class="lang-en">3. Crypto Mining Center</text>
+                    </g>
+
+                    <!-- 4. 现场运维工程师与智能终端 -->
+                    <g transform="translate(770, 350)">
+                        <path d="M-15 130 L-15 50 L-5 40 L15 40 L25 50 L25 130 Z" fill="#2a2a35" stroke="#111" stroke-width="2"/>
+                        <circle cx="5" cy="25" r="18" fill="#3a3a45" stroke="#111" stroke-width="2"/>
+                        <rect x="-18" y="130" width="16" height="50" fill="#1a1a24" rx="2"/>
+                        <rect x="12" y="130" width="16" height="50" fill="#1a1a24" rx="2"/>
+                        <path d="M-15 50 L-30 85" stroke="#2a2a35" stroke-width="12" stroke-linecap="round"/>
+                        <path d="M25 50 L40 70" stroke="#2a2a35" stroke-width="12" stroke-linecap="round"/>
+                        
+                        <g transform="translate(30, 55) rotate(-10)">
+                            <rect x="0" y="0" width="55" height="40" fill="#050508" stroke="#444" stroke-width="3" rx="4" filter="url(#glow-accent-strong)"/>
+                            <rect x="3" y="3" width="49" height="34" fill="#0D0D12" rx="2"/>
+                            <text x="7" y="12" font-family="sans-serif" font-weight="bold" font-size="6" fill="#5DD62C">SOP: WMS Ready</text>
+                            <rect x="7" y="16" width="41" height="4" fill="#1f1f2e" rx="1"/>
+                            <rect x="7" y="23" width="20" height="10" fill="#3b82f6" rx="2"/>
+                            <line x1="3" y1="3" x2="52" y2="3" stroke="#5DD62C" stroke-width="1" opacity="0.5">
+                                <animate attributeName="y1" values="3;37;3" dur="2s" repeatCount="indefinite" />
+                                <animate attributeName="y2" values="3;37;3" dur="2s" repeatCount="indefinite" />
+                            </line>
+                        </g>
+                        
+                        <circle cx="55" cy="75" r="15" fill="none" stroke="#5DD62C" stroke-width="2" opacity="0.8" filter="url(#glow-accent-strong)">
+                            <animate attributeName="r" from="15" to="45" dur="1.5s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" from="0.8" to="0" dur="1.5s" repeatCount="indefinite" />
+                        </circle>
+                    </g>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- 【屏 10】最终转化 (移除了公共 Header 和 底部版权 Footer) -->
+    <section class="pt-20 sm:pt-24 pb-20 sm:pb-24 text-center relative z-10 bg-gradient-to-t from-bgDark to-[#08080c] border-t border-white/5">
+        <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none opacity-20"></div>
+        
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 relative z-10">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-6 sm:mb-8 text-white tracking-tight">
+                <span class="lang-zh">准备好将您的车队<br/>全面接入数字宇宙了吗？</span>
+                <span class="lang-en">Ready to Connect Your Fleet<br/>to the Digital Universe?</span>
+            </h2>
+            <p class="text-sm sm:text-lg text-gray-400 mb-8 sm:mb-12 max-w-2xl mx-auto lang-zh">
+                不要再为跨洋救火和无休止的机器宕机支付昂贵的代价。现在就预约演示，看看 GasGx 如何在 30 天内重塑您的全球运维体系。
+            </p>
+            <p class="text-sm sm:text-lg text-gray-400 mb-8 sm:mb-12 max-w-2xl mx-auto lang-en">
+                Stop paying for cross-ocean firefighting and endless downtime. Book a demo now and see how GasGx reshapes your global O&M in 30 days.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                <button class="bg-accent text-black px-8 sm:px-10 py-4 sm:py-5 rounded font-bold text-base sm:text-lg hover:bg-accentDark transition-all hover:scale-105 shadow-[0_0_30px_rgba(93,214,44,0.3)] w-full sm:w-auto">
+                    <span class="lang-zh">申请系统专属演示</span><span class="lang-en">Request Exclusive Demo</span>
+                </button>
+                <button class="bg-[#12121A] border border-white/20 text-white px-8 sm:px-10 py-4 sm:py-5 rounded font-bold text-base sm:text-lg hover:bg-white/5 transition-all w-full sm:w-auto">
+                    <span class="lang-zh">联系商务团队</span><span class="lang-en">Contact Sales Team</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <div id="ggx-site-footer-slot"></div>
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+    <script>
+        (function () {
+            function normalizeLang(langCandidate) {
+                return String(langCandidate || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+            }
+
+            function resolveInitialLang() {
+                try {
+                    const storedLang = window.localStorage.getItem('gasgx-lang') || window.localStorage.getItem('gas_lang');
+                    if (storedLang) return normalizeLang(storedLang);
+                } catch (error) {
+                    // Ignore storage failures in restricted environments.
+                }
+                return normalizeLang(document.documentElement.lang || 'zh-CN');
+            }
+
+            function persistLang(lang) {
+                try {
+                    window.localStorage.setItem('gasgx-lang', lang);
+                    window.localStorage.setItem('gas_lang', lang);
+                } catch (error) {
+                    // Ignore storage failures in restricted environments.
+                }
+            }
+
+            function applyLanguage(langCandidate) {
+                const lang = normalizeLang(langCandidate);
+                document.body.classList.toggle('en-mode', lang === 'en');
+                document.body.dataset.lang = lang;
+                document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+                persistLang(lang);
+                return lang;
+            }
+
+            const app = window.app && typeof window.app === 'object' ? window.app : {};
+            app.currentLang = normalizeLang(app.currentLang || app.lang || resolveInitialLang());
+            app.setLanguage = function (langCandidate) {
+                this.currentLang = applyLanguage(langCandidate || this.currentLang);
+                return this.currentLang;
+            };
+            app.init = function () {
+                this.setLanguage(this.currentLang);
+            };
+            window.app = app;
+
+            document.addEventListener('gasgx:lang-changed', function (event) {
+                const lang = event && event.detail ? event.detail.lang : undefined;
+                app.setLanguage(lang);
+            });
+
+            const boot = function () {
+                if (app.__sharedBooted) return;
+                app.__sharedBooted = true;
+                app.init();
+            };
+
+            if (window.GasGxSharedUI && window.GasGxSharedUI.mounted) {
+                boot();
+            } else {
+                document.addEventListener('gasgx:shared-ui-ready', boot, { once: true });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', boot, { once: true });
+            } else {
+                boot();
+            }
+        })();
+    </script>
+
+</body>
+</html>
