@@ -269,6 +269,18 @@
         }
 
         @media (max-width: 1279px) {
+            #ranking-sidebar {
+                position: fixed !important;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                height: min(58dvh, calc(100dvh - 84px)) !important;
+                max-height: min(58dvh, calc(100dvh - 84px));
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+                z-index: 220;
+            }
+
             #mobile-drawer-toggle {
                 position: relative;
                 overflow: visible;
@@ -279,6 +291,7 @@
                     0 0 0 1px rgba(93, 214, 44, 0.12) inset,
                     0 10px 24px rgba(0, 0, 0, 0.48),
                     0 0 14px rgba(93, 214, 44, 0.2) !important;
+                margin-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
             }
 
             #mobile-drawer-toggle::before {
@@ -356,18 +369,18 @@
             border: 1px solid rgba(255, 255, 255, 0.88);
             border-radius: 10px;
             background:
-                linear-gradient(#7ee7ff, #7ee7ff) left top / 22px 2px no-repeat,
-                linear-gradient(#7ee7ff, #7ee7ff) left top / 2px 22px no-repeat,
-                linear-gradient(#7ee7ff, #7ee7ff) right top / 22px 2px no-repeat,
-                linear-gradient(#7ee7ff, #7ee7ff) right top / 2px 22px no-repeat,
-                linear-gradient(#7ee7ff, #7ee7ff) left bottom / 22px 2px no-repeat,
-                linear-gradient(#7ee7ff, #7ee7ff) left bottom / 2px 22px no-repeat,
-                linear-gradient(#7ee7ff, #7ee7ff) right bottom / 22px 2px no-repeat,
-                linear-gradient(#7ee7ff, #7ee7ff) right bottom / 2px 22px no-repeat;
+                linear-gradient(#ffffff, #ffffff) left top / 22px 2px no-repeat,
+                linear-gradient(#ffffff, #ffffff) left top / 2px 22px no-repeat,
+                linear-gradient(#ffffff, #ffffff) right top / 22px 2px no-repeat,
+                linear-gradient(#ffffff, #ffffff) right top / 2px 22px no-repeat,
+                linear-gradient(#ffffff, #ffffff) left bottom / 22px 2px no-repeat,
+                linear-gradient(#ffffff, #ffffff) left bottom / 2px 22px no-repeat,
+                linear-gradient(#ffffff, #ffffff) right bottom / 22px 2px no-repeat,
+                linear-gradient(#ffffff, #ffffff) right bottom / 2px 22px no-repeat;
             box-shadow:
                 0 0 0 9999px rgba(0, 0, 0, 0.22),
-                0 0 0 1px rgba(126, 231, 255, 0.75) inset,
-                0 0 18px rgba(126, 231, 255, 0.65),
+                0 0 0 1px rgba(255, 255, 255, 0.75) inset,
+                0 0 18px rgba(255, 255, 255, 0.65),
                 0 0 36px rgba(255, 255, 255, 0.25);
             pointer-events: none;
             transition: all 0.24s ease;
@@ -579,24 +592,24 @@
             0% {
                 box-shadow:
                     0 0 0 9999px rgba(0, 0, 0, 0.22),
-                    0 0 0 1px rgba(126, 231, 255, 0.62) inset,
-                    0 0 12px rgba(126, 231, 255, 0.52),
+                    0 0 0 1px rgba(255, 255, 255, 0.62) inset,
+                    0 0 12px rgba(255, 255, 255, 0.52),
                     0 0 24px rgba(255, 255, 255, 0.2);
             }
 
             50% {
                 box-shadow:
                     0 0 0 9999px rgba(0, 0, 0, 0.22),
-                    0 0 0 1px rgba(126, 231, 255, 0.96) inset,
-                    0 0 22px rgba(126, 231, 255, 0.86),
+                    0 0 0 1px rgba(255, 255, 255, 0.96) inset,
+                    0 0 22px rgba(255, 255, 255, 0.86),
                     0 0 42px rgba(255, 255, 255, 0.36);
             }
 
             100% {
                 box-shadow:
                     0 0 0 9999px rgba(0, 0, 0, 0.22),
-                    0 0 0 1px rgba(126, 231, 255, 0.62) inset,
-                    0 0 12px rgba(126, 231, 255, 0.52),
+                    0 0 0 1px rgba(255, 255, 255, 0.62) inset,
+                    0 0 12px rgba(255, 255, 255, 0.52),
                     0 0 24px rgba(255, 255, 255, 0.2);
             }
         }
@@ -724,7 +737,7 @@
 
     <div id="ggx-site-header-slot"></div>
 
-    <main class="flex-grow pt-16 w-full relative h-[100vh] flex flex-col overflow-hidden">
+    <main class="flex-grow pt-16 w-full relative h-[100dvh] flex flex-col overflow-hidden">
         <div class="relative w-full flex-grow flex md:flex-row bg-[#000] overflow-hidden">
             
             <div class="w-full h-full relative bg-[#000] overflow-hidden z-0 flex-1">
@@ -1351,7 +1364,13 @@ window.app = {
             getMobileDrawerPeekHeight() {
                 const toggle = document.getElementById('mobile-drawer-toggle');
                 if (!toggle) return 72;
-                return Math.max(72, Math.ceil(toggle.getBoundingClientRect().height + 24));
+                const rect = toggle.getBoundingClientRect();
+                const sidebar = document.getElementById('ranking-sidebar');
+                const rawPeek = Math.max(72, Math.ceil(rect.height + 24));
+                if (!sidebar) return rawPeek;
+                const sidebarHeight = Math.ceil(sidebar.getBoundingClientRect().height || 0);
+                if (sidebarHeight <= 0) return rawPeek;
+                return Math.min(rawPeek, Math.max(72, sidebarHeight - 12));
             },
             syncDrawerState() {
                 const sidebar = document.getElementById('ranking-sidebar');
@@ -1960,6 +1979,13 @@ window.app = {
                 if (layer) layer.classList.add('hidden');
                 const gesture = document.getElementById('ggx-onboarding-gesture');
                 if (gesture) gesture.classList.remove('is-visible', 'is-tap', 'is-drag', 'is-swipe', 'is-circle');
+                const detailModal = document.getElementById('detail-modal');
+                if (detailModal && !detailModal.classList.contains('hidden')) {
+                    detailModal.classList.add('hidden');
+                }
+                if (this.activeData) {
+                    this.resetMap();
+                }
                 this.stopOnboardingGlobeDemo();
                 this.onboardingLastStepKey = '';
                 this.onboardingInfoPrimed = false;
