@@ -260,9 +260,20 @@
         }
 
         function getLocalizedValue(value, lang, fallback = '') {
-            if (typeof value === 'string') return value || fallback;
             const safeLang = normalizeLang(lang);
-            return value?.[safeLang] || value?.en || value?.zh || value?.ru || fallback;
+            const safeFallback = typeof fallback === 'string' ? fallback : '';
+            if (typeof value === 'string') return value || safeFallback;
+            if (!value || typeof value !== 'object') return safeFallback;
+
+            const raw = value[safeLang] ?? value.en ?? value.zh ?? value.ru;
+            if (typeof raw === 'string') return raw || safeFallback;
+
+            if (raw && typeof raw === 'object') {
+                const nested = raw[safeLang] ?? raw.en ?? raw.zh ?? raw.ru;
+                if (typeof nested === 'string') return nested || safeFallback;
+            }
+
+            return safeFallback;
         }
 
         function buildAboutContactI18n(config) {

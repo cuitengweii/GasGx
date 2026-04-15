@@ -12093,6 +12093,8 @@ function requirementStageActionCardMarkup(stageKey = '', deal = null, requiremen
 function quoteStageActionCardMarkup(stageKey = '', deal = null, instance = {}) {
     const normalizedStageKey = normalizeDealStageKey(stageKey);
     const quotePublished = quotePublishedForStage(stageKey, instance);
+    const quoteConfirmedRecord = salesStageStatusRecord('quote_confirmed', deal);
+    const quoteCustomerConfirmed = quoteConfirmationSubmitted(quoteConfirmedRecord);
     if (!instance?.id) {
         return salesStageActionCardMarkup('先在这里选择产品模板并生成报价单，生成后再进入编辑、发布和分享。', `
             ${salesStageActionGroupMarkup('生成报价', '报价草稿生成后，系统会自动带入客户和需求快照。', `
@@ -12151,7 +12153,7 @@ function quoteStageActionCardMarkup(stageKey = '', deal = null, instance = {}) {
                 ? salesStageActionGroupMarkup('阶段推进', '条款保存和阶段推进统一固定在这里。', `
                     <div class="ams-sales-stage-side-actions">
                         <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-flow-quote-save">保存确认条款</button>
-                        <button class="ams-btn ams-btn-warning" type="button" id="ams-sales-flow-instance-confirm">确认报价并进入签约合同</button>
+                        <button class="ams-btn ${quoteCustomerConfirmed ? 'ams-btn-warning' : 'ams-btn-muted'}" type="button" id="ams-sales-flow-instance-confirm" ${quoteCustomerConfirmed ? '' : 'disabled'}>确认报价并进入签约合同</button>
                     </div>
                 `)
                 : ''}

@@ -661,6 +661,7 @@
     function render() {
         const root = byId('sales-pipeline-root');
         if (!root) return;
+        root.setAttribute('aria-busy', state.overviewLoading || state.detailLoading ? 'true' : 'false');
         normalizeMobileListState(false);
 
         if (state.overviewLoading && !state.loadedOnce) {

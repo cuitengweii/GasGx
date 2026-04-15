@@ -681,9 +681,18 @@
     function mergeLocalizedBlock(baseBlock, sourceBlock) {
         const base = baseBlock && typeof baseBlock === "object" ? baseBlock : {};
         const source = sourceBlock && typeof sourceBlock === "object" ? sourceBlock : {};
+        function mergeLocaleValue(baseValue, sourceValue) {
+            const baseIsObject = !!baseValue && typeof baseValue === "object";
+            const sourceIsObject = !!sourceValue && typeof sourceValue === "object";
+            if (baseIsObject || sourceIsObject) {
+                return Object.assign({}, baseIsObject ? baseValue : {}, sourceIsObject ? sourceValue : {});
+            }
+            return sourceValue || baseValue || "";
+        }
         return Object.assign({}, base, source, {
-            en: Object.assign({}, base.en || {}, source.en || {}),
-            zh: Object.assign({}, base.zh || {}, source.zh || {})
+            en: mergeLocaleValue(base.en, source.en),
+            zh: mergeLocaleValue(base.zh, source.zh),
+            ru: mergeLocaleValue(base.ru, source.ru)
         });
     }
 

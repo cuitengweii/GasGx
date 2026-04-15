@@ -318,7 +318,16 @@
                         <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl" data-i18n="salesTitle">Customer Deal Workflow</h2>
                         <p class="mt-2 max-w-3xl text-sm text-gray-400" data-i18n="salesDesc">All customer-side milestones are handled here. Requirement, quote, contract, and factory acceptance confirmations are submitted in this tab only.</p>
                     </header>
-                    <div id="sales-pipeline-root"></div>
+                    <div
+                        id="sales-pipeline-root"
+                        class="rounded-xl border border-white/10 bg-[#0F0F0F]/60 p-4 md:p-6 shadow-lg transition-colors duration-500 hover:border-[#5DD62C]/30 min-h-[240px]"
+                        aria-busy="true"
+                    >
+                        <div class="flex min-h-[180px] items-center justify-center gap-3 text-sm text-gray-400">
+                            <i class="fa-solid fa-circle-notch fa-spin text-[#5DD62C]"></i>
+                            <span data-i18n="loading">Loading...</span>
+                        </div>
+                    </div>
                 </section>
             </div>
         </main>
@@ -466,7 +475,7 @@
 
                 if (error || !session?.user) {
                     const waitForSession = new Promise((resolve) => {
-                        const timeout = setTimeout(() => resolve(null), 6000);
+                        const timeout = setTimeout(() => resolve(null), 800);
                         const authListener = client.auth.onAuthStateChange((_event, nextSession) => {
                             if (nextSession?.user) {
                                 clearTimeout(timeout);
@@ -482,7 +491,7 @@
                 }
 
                 if (!session?.user) {
-                    window.location.href = SIGN_IN_URL;
+                    window.location.replace(SIGN_IN_URL);
                     return;
                 }
                 currentUser = session.user;
