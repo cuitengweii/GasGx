@@ -184,6 +184,18 @@
                 border: 1px solid rgba(255,255,255,0.07);
                 background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
             }
+            @media (max-width: 767px) {
+                .ecm-page .ecm-diagnostic-panel::before,
+                .ecm-page .ecm-diagnostic-panel::after {
+                    animation: none;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .ecm-page .ecm-diagnostic-panel::before,
+                .ecm-page .ecm-diagnostic-panel::after {
+                    animation: none;
+                }
+            }
             @keyframes ecm-diagnostic-pulse {
                 0%, 100% {
                     box-shadow:
@@ -280,6 +292,10 @@
             const gaugeTargetsRef = useRef(initialGaugeValuesRef.current);
             const gaugeAnimationFrameRef = useRef(0);
             const lastHistorySampleRef = useRef(0);
+            const [isMobileView, setIsMobileView] = useState(() => {
+                if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+                return window.matchMedia('(max-width: 767px)').matches;
+            });
 
             const getStopStateText = () => lang === 'en' ? 'STOP' : (lang === 'zh' ? '停机' : 'СТОП');
 
@@ -346,12 +362,35 @@
             }, [lang]);
 
             useEffect(() => {
+                if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+                const mediaQuery = window.matchMedia('(max-width: 767px)');
+                const applyChange = (event) => setIsMobileView(event.matches);
+                setIsMobileView(mediaQuery.matches);
+                if (typeof mediaQuery.addEventListener === 'function') {
+                    mediaQuery.addEventListener('change', applyChange);
+                    return () => mediaQuery.removeEventListener('change', applyChange);
+                }
+                mediaQuery.addListener(applyChange);
+                return () => mediaQuery.removeListener(applyChange);
+            }, []);
+
+            useEffect(() => {
                 gaugeTargetsRef.current = {
                     rpm: Math.max(0, Math.min(2000, Number(engineState.CurSpd) || 0)),
                     water: Math.max(0, Math.min(120, Number(engineState.WaterTemp) || 0)),
                     exhaust: Math.max(0, Math.min(800, Number(engineState.ExhaustTemp) || 0)),
                     oil: Math.max(0, Math.min(600, Number(engineState.OilPressure) || 0))
                 };
+
+                if (isMobileView) {
+                    if (gaugeAnimationFrameRef.current) {
+                        window.cancelAnimationFrame(gaugeAnimationFrameRef.current);
+                        gaugeAnimationFrameRef.current = 0;
+                    }
+                    smoothedGaugesRef.current = gaugeTargetsRef.current;
+                    setSmoothedGauges(gaugeTargetsRef.current);
+                    return undefined;
+                }
 
                 if (gaugeAnimationFrameRef.current) return;
 
@@ -396,22 +435,24 @@
                         gaugeAnimationFrameRef.current = 0;
                     }
                 };
-            }, [engineState.CurSpd, engineState.WaterTemp, engineState.ExhaustTemp, engineState.OilPressure]);
+            }, [engineState.CurSpd, engineState.WaterTemp, engineState.ExhaustTemp, engineState.OilPressure, isMobileView]);
 
             useEffect(() => {
                 const now = Date.now();
-                if (now - lastHistorySampleRef.current < 180) return;
+                const historySampleMs = isMobileView ? 320 : 180;
+                const maxHistoryPoints = isMobileView ? 72 : 180;
+                if (now - lastHistorySampleRef.current < historySampleMs) return;
                 lastHistorySampleRef.current = now;
 
                 setGaugeHistory((prev) => {
                     const next = {};
                     Object.keys(smoothedGauges).forEach((key) => {
                         const series = Array.isArray(prev[key]) ? prev[key] : [];
-                        next[key] = [...series.slice(-179), smoothedGauges[key]];
+                        next[key] = [...series.slice(-(maxHistoryPoints - 1)), smoothedGauges[key]];
                     });
                     return next;
                 });
-            }, [smoothedGauges]);
+            }, [smoothedGauges, isMobileView]);
 
             useEffect(() => {
                 if (!isSimulating && phaseRef.current !== 'STOP') return;
