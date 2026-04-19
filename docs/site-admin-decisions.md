@@ -195,3 +195,31 @@
   - stage-specific progress content
 - Stage-specific business content may differ by node, but action entry placement must not drift between requirement, quote, contract, deposit, production, or later execution stages.
 - The fixed shell lives in `article_management/modules/quote-system.module.js`, and later stage-level UI changes should extend the shared side-rail/action-shell model instead of reintroducing per-node one-off layouts.
+
+### Decision 25: Customer-flow detail pages use one reference visual order derived from the approved `t.html`
+
+- The approved reference layout for customer-flow detail pages is now:
+  - left: stage intro + stage-specific progress modules
+  - right: action zone first, then status zone, then customer context
+- The action zone is the visual anchor of the right rail and should stay at the top on desktop, matching the operator reading path in the approved mock reference.
+- The change is style/layout-only:
+  - no stage rules changed
+  - no save/advance logic changed
+  - no data model changed
+- Future node-page adjustments should keep reusing the shared shell and CSS tokens instead of hand-moving modules per stage.
+
+### Decision 26: Customer-flow detail fold cards and activity logs should favor local readability over shell-level compression
+
+- For customer-flow stage detail pages, fold-card headers must remain fully legible in collapsed state, even when the module body is hidden.
+- `节点双负责人` and `用户行为轨迹` belong in the main left reading flow, not at the very bottom after the whole shell.
+- `用户行为轨迹` should use its own taller inner scroll region so long logs can be reviewed without forcing the operator to scroll the entire stage shell for every record check.
+- This remains a presentation-only rule:
+  - no workflow state changes
+  - no save binding changes
+  - no stage data changes
+
+### Decision 27: Sales entry HTML must version-bump linked assets when shell/UI fixes are meant to be operator-visible immediately
+
+- When customer-flow UI debugging depends on operators seeing the newest CSS or bootstrap logic right away, `article_management/sales/index.html` must bump the linked asset version string together with the code change.
+- Otherwise the browser can continue serving old `main.css` / `sales.bootstrap.js`, creating false negatives where source is corrected but the rendered page looks unchanged.
+- For this sales console, cache-busting the entry HTML is part of the rollout checklist for visible UI fixes, not an optional cleanup step.
