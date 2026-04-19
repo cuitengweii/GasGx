@@ -12,9 +12,15 @@ import {
     setLinkedinExtensionAccessByEmail,
     sendPasswordResetEmail,
     updateCurrentPassword,
-} from './auth.module.js?v=20260419auth04';
+} from './auth.module.js?v=20260419auth05';
 
 let adminUsersCreatePanelExpanded = false;
+const SALES_TOOL_OPTIONS = [
+    { key: 'linkedin', label: 'Linkedin', reserved: false },
+    { key: 'x', label: 'X', reserved: true },
+    { key: 'tiktok', label: 'TikTok', reserved: true },
+    { key: 'youtube', label: 'YouTube', reserved: true },
+];
 
 function esc(value) {
     return String(value ?? '')
@@ -29,6 +35,38 @@ function fmtDate(value) {
     const date = new Date(value || '');
     if (Number.isNaN(date.getTime())) return '--';
     return date.toISOString().slice(0, 16).replace('T', ' ');
+}
+
+function renderSalesToolPermissionsCell(row) {
+    return `
+        <div class="ams-admin-tool-permissions">
+            ${SALES_TOOL_OPTIONS.map((tool) => {
+                if (tool.key === 'linkedin') {
+                    return `
+                        <label class="ams-social-toggle ams-admin-tool-option">
+                            <input
+                                type="checkbox"
+                                data-admin-extension-toggle="${esc(row.id)}"
+                                ${row.linkedin_extension_enabled ? 'checked' : ''}
+                            >
+                            <span>${tool.label}</span>
+                        </label>
+                    `;
+                }
+                return `
+                    <label class="ams-social-toggle ams-admin-tool-option ams-admin-tool-option-reserved">
+                        <input type="checkbox" disabled>
+                        <span>${tool.label}</span>
+                    </label>
+                `;
+            }).join('')}
+        </div>
+        <div class="ams-footnote">${
+            row.linkedin_extension_enabled
+                ? 'Linkedin \u5df2\u5f00\u901a\uff1bX\u3001TikTok\u3001YouTube \u4e3a\u50a8\u5907\u9879'
+                : '\u76ee\u524d\u4ec5 Linkedin \u5df2\u63a5\u5165\u524d\u7aef\u903b\u8f91\uff1bX\u3001TikTok\u3001YouTube \u4e3a\u50a8\u5907\u9879'
+        }</div>
+    `;
 }
 
 function allowedRoleEntries(input = null) {
@@ -65,7 +103,7 @@ function roleOptions(selected = ADMIN_ROLE_ADMIN, input = null) {
 }
 
 export async function renderAdminUsersPage(input) {
-    const { user, setPageHeader, setContent, showToast, withButtonBusy } = input;
+    const { user, adminRow, setPageHeader, setContent, showToast, withButtonBusy } = input;
     const salesConsole = input?.entryKind === 'sales';
     setPageHeader(
         '\u4eba\u5458\u7ba1\u7406',
@@ -78,9 +116,21 @@ export async function renderAdminUsersPage(input) {
     let loadError = null;
     try {
         rows = await fetchAdminUsers(false);
+        if (!rows.length) {
+            rows = await fetchAdminUsers(true);
+        }
     } catch (error) {
         loadError = error;
     }
+
+    const currentLoginEmail = String(user?.email || '').trim().toLowerCase();
+    const currentRowId = String(adminRow?.id || '').trim();
+    const usesStaticFallback = currentRowId.startsWith('static:');
+    const emptyRowsHint = salesConsole
+        ? usesStaticFallback
+            ? `\u5f53\u524d\u767b\u5f55\u90ae\u7bb1 ${esc(currentLoginEmail || '\u672a\u77e5\u8d26\u53f7')} \u6b63\u5728\u901a\u8fc7\u9759\u6001\u767d\u540d\u5355\u8fdb\u5165\u9500\u552e\u540e\u53f0\uff0c\u4f46\u6570\u636e\u5e93 admin_users \u672c\u6b21\u672a\u8fd4\u56de\u53ef\u8bfb\u4eba\u5458\u8bb0\u5f55\u3002\u8bf7\u786e\u8ba4\u8be5\u90ae\u7bb1\u5728 public.admin_users \u4e2d\u5df2\u542f\u7528\uff0c\u4e14\u89d2\u8272\u4e3a admin \u6216 super_admin\uff1b\u5982\u9700\u7acb\u5373\u6062\u590d\u5217\u8868\uff0c\u8bf7\u76f4\u63a5\u4f7f\u7528 cuitengwei@gasgx.com \u767b\u5f55\u3002`
+            : `\u5f53\u524d\u767b\u5f55\u90ae\u7bb1 ${esc(currentLoginEmail || '\u672a\u77e5\u8d26\u53f7')} \u5df2\u8fdb\u5165\u9500\u552e\u540e\u53f0\uff0c\u4f46 admin_users \u5217\u8868\u672c\u6b21\u8fd4\u56de\u4e3a\u7a7a\u3002\u8bf7\u5148\u70b9\u51fb\u201c\u5237\u65b0\u540d\u5355\u201d\u91cd\u8bd5\uff1b\u82e5\u4ecd\u4e3a\u7a7a\uff0c\u8bf7\u68c0\u67e5\u8be5\u90ae\u7bb1\u5728 public.admin_users \u4e2d\u662f\u5426\u4e3a admin \u6216 super_admin\uff0c\u4e14 is_active = true\u3002`
+        : '\u5f53\u524d\u8fd8\u6ca1\u6709\u540e\u53f0\u4eba\u5458\u8bb0\u5f55\u3002';
 
     setContent(`
         <section class="ams-card ams-admin-users-toolbar-card">
@@ -142,7 +192,7 @@ export async function renderAdminUsersPage(input) {
                                     <th>\u59d3\u540d</th>
                                     <th>\u89d2\u8272</th>
                                     <th>\u72b6\u6001</th>
-                                    <th>LinkedIn \u6269\u5c55</th>
+                                    <th>\u9500\u552e\u5de5\u5177\u6743\u9650</th>
                                     <th>\u66f4\u65b0\u65f6\u95f4</th>
                                     <th class="ams-col-actions">\u64cd\u4f5c</th>
                                 </tr>
@@ -166,16 +216,7 @@ export async function renderAdminUsersPage(input) {
                                                 </select>
                                             </td>
                                             <td><label class="ams-social-toggle ams-admin-user-status-toggle"><input type="checkbox" data-admin-active="${esc(row.id)}" ${row.is_active !== false ? 'checked' : ''}><span>${row.is_active !== false ? '\u542f\u7528' : '\u505c\u7528'}</span></label></td>
-                                            <td>
-                                                <div class="ams-row-actions ams-admin-user-actions">
-                                                    <button
-                                                        class="ams-btn ${row.linkedin_extension_enabled ? 'ams-btn-primary' : 'ams-btn-muted'}"
-                                                        type="button"
-                                                        data-admin-extension-toggle="${esc(row.id)}"
-                                                    >${row.linkedin_extension_enabled ? '\u5df2\u5f00\u901a' : '\u5f00\u901a'}</button>
-                                                </div>
-                                                <div class="ams-footnote">${row.linkedin_extension_enabled ? '\u5df2\u5199\u5165 profiles \u6269\u5c55\u6743\u9650' : '\u6309\u8d26\u53f7\u76f4\u63a5\u5f00\u901a LinkedIn \u6269\u5c55'}</div>
-                                            </td>
+                                            <td>${renderSalesToolPermissionsCell(row)}</td>
                                             <td>${esc(fmtDate(row.updated_at || row.created_at))}</td>
                                             <td class="ams-col-actions">
                                                 <div class="ams-row-actions ams-admin-user-actions">
@@ -186,7 +227,7 @@ export async function renderAdminUsersPage(input) {
                                         </tr>`,
                                               )
                                               .join('')
-                                        : '<tr><td colspan="7"><div class="ams-empty">\u5f53\u524d\u8fd8\u6ca1\u6709\u540e\u53f0\u4eba\u5458\u8bb0\u5f55\u3002</div></td></tr>'
+                                        : `<tr><td colspan="7"><div class="ams-empty">${emptyRowsHint}</div></td></tr>`
                                 }
                             </tbody>
                         </table>
@@ -205,12 +246,25 @@ export async function renderAdminUsersPage(input) {
     });
 
     document.getElementById('ams-admin-create-submit')?.addEventListener('click', async (event) => {
-        const email = document.getElementById('ams-admin-create-email')?.value || '';
-        const fullName = document.getElementById('ams-admin-create-name')?.value || '';
+        const email = String(document.getElementById('ams-admin-create-email')?.value || '').trim();
+        const fullName = String(document.getElementById('ams-admin-create-name')?.value || '').trim();
         const role = document.getElementById('ams-admin-create-role')?.value || defaultRoleValue(input);
         const password = document.getElementById('ams-admin-create-password')?.value || '';
         const isActive = Boolean(document.getElementById('ams-admin-create-active')?.checked);
         const createAccount = Boolean(document.getElementById('ams-admin-create-account')?.checked);
+
+        if (!email) {
+            showToast('\u8bf7\u5148\u8f93\u5165\u4eba\u5458\u90ae\u7bb1\u3002', true);
+            return;
+        }
+        if (!fullName) {
+            showToast('\u8bf7\u5148\u8f93\u5165\u4eba\u5458\u59d3\u540d\u3002', true);
+            return;
+        }
+        if (createAccount && String(password || '').length < 8) {
+            showToast('\u521d\u59cb\u5bc6\u7801\u81f3\u5c11\u9700\u8981 8 \u4f4d\u3002', true);
+            return;
+        }
 
         await withButtonBusy(event.currentTarget, '\u63d0\u4ea4\u4e2d...', async () => {
             try {
@@ -271,21 +325,24 @@ export async function renderAdminUsersPage(input) {
         });
     });
 
-    document.querySelectorAll('[data-admin-extension-toggle]').forEach((button) => {
-        button.addEventListener('click', async () => {
-            const id = String(button.dataset.adminExtensionToggle || '').trim();
+    document.querySelectorAll('[data-admin-extension-toggle]').forEach((checkbox) => {
+        checkbox.addEventListener('change', async () => {
+            const id = String(checkbox.dataset.adminExtensionToggle || '').trim();
             const row = rows.find((item) => item.id === id);
             if (!row) return;
+            const enabled = Boolean(checkbox.checked);
 
-            await withButtonBusy(button, row.linkedin_extension_enabled ? '\u5173\u95ed\u4e2d...' : '\u5f00\u901a\u4e2d...', async () => {
-                try {
-                    await setLinkedinExtensionAccessByEmail(row.email, row.linkedin_extension_enabled !== true, user?.id || null);
-                    showToast(row.linkedin_extension_enabled ? '\u5df2\u5173\u95ed LinkedIn \u6269\u5c55\u6743\u9650\u3002' : '\u5df2\u5f00\u901a LinkedIn \u6269\u5c55\u6743\u9650\u3002');
-                    await renderAdminUsersPage(input);
-                } catch (error) {
-                    showToast(error.message || '\u66f4\u65b0 LinkedIn \u6269\u5c55\u6743\u9650\u5931\u8d25\u3002', true);
-                }
-            });
+            checkbox.disabled = true;
+            try {
+                await setLinkedinExtensionAccessByEmail(row.email, enabled, user?.id || null);
+                showToast(enabled ? 'Linkedin \u6743\u9650\u5df2\u5f00\u901a\u3002' : 'Linkedin \u6743\u9650\u5df2\u5173\u95ed\u3002');
+                await renderAdminUsersPage(input);
+            } catch (error) {
+                checkbox.checked = row.linkedin_extension_enabled === true;
+                showToast(error.message || '\u66f4\u65b0 LinkedIn \u6269\u5c55\u6743\u9650\u5931\u8d25\u3002', true);
+            } finally {
+                checkbox.disabled = false;
+            }
         });
     });
 

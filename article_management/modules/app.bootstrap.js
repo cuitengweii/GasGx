@@ -11,7 +11,7 @@ import {
     signInWithPassword,
     signOut,
     updateCurrentPassword,
-} from './auth.module.js?v=20260419auth04';
+} from './auth.module.js?v=20260419auth05';
 import {
     ADMIN_ENTRY_KIND,
     SALES_ENTRY_KIND,
@@ -42,7 +42,7 @@ import {
     rejectQueueItem,
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
-import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260419adminusers02';
+import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260419adminusers03';
 import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260414site09';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js?v=20260321admin01';
 
@@ -278,7 +278,12 @@ async function withButtonBusy(button, busyText, task) {
     try {
         await task();
     } finally {
-        if (shouldShowBusyToast) {
+        if (
+            shouldShowBusyToast &&
+            toastNode &&
+            toastNode.classList.contains('is-busy') &&
+            String(toastNode.textContent || '') === String(busyText || '')
+        ) {
             clearToastState();
         }
         button.classList.remove('is-loading');

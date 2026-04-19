@@ -12,7 +12,7 @@ import {
     signInWithPassword,
     signOut,
     updateCurrentPassword,
-} from './auth.module.js?v=20260414auth02';
+} from './auth.module.js?v=20260419auth05';
 import {
     ADMIN_ENTRY_KIND,
     SALES_ENTRY_KIND,
@@ -21,7 +21,7 @@ import {
 import {
     renderAdminSecurityPage,
     renderAdminUsersPage,
-} from './admin-users.module.js?v=20260327sales03';
+} from './admin-users.module.js?v=20260419sales-adminusers05';
 import {
     renderQuoteBrandsPage,
     renderQuoteCustomerFlowPage,
@@ -29,7 +29,7 @@ import {
     renderQuotePipelinePage,
     renderQuoteProductsPage,
     renderQuoteSalesDashboardPage,
-} from './quote-system.module.js?v=20260414quote59';
+} from './quote-system.module.js?v=20260419quote60';
 
 const root = document.getElementById('ams-root');
 const toastNode = document.getElementById('ams-toast');
@@ -168,7 +168,12 @@ async function withButtonBusy(button, busyText, task) {
     try {
         await task();
     } finally {
-        if (shouldShowBusyToast) {
+        if (
+            shouldShowBusyToast &&
+            toastNode &&
+            toastNode.classList.contains('is-busy') &&
+            String(toastNode.textContent || '') === String(busyText || '')
+        ) {
             clearToastState();
         }
         button.classList.remove('is-loading');
