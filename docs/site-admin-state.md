@@ -245,6 +245,73 @@
 2. Decide whether brand default-link source-of-truth needs structured metadata beyond `default_quote_slug`, such as picker source instance id vs manual override marker.
 3. Continue collapsing lower visual-editor copy controls into a more explicit top-level property-panel workflow so publish-copy, rates, and section editing each have a clearer home.
 
+## 2026-04-16 sales pipeline regression update
+
+### Latest milestone
+
+- Sales pipeline regression is now green under the current shared dev identity setup.
+- The current full matrix finished with `12 passed / 1 skipped` across account entry, auth roles, exception branches, formal backend flow, execution chain, console safety, and governance guard coverage.
+- A later split-identity pass seeded dedicated dev accounts and upgraded the matrix to `13 passed / 0 skipped`.
+- Customer-node boundary coverage was then expanded to include duplicate submit, refresh resubmit, tampered public links, and second-browser replay protection.
+- The latest split-role regression matrix now finishes with `23 passed / 0 failed`.
+
+### Effective behaviors
+
+- Public requirement links now survive sign-in redirects and return users to the exact `/account/sales.html` funnel URL.
+- Customer-side requirement submission can be completed reliably after account login in both formal-backend and execution-chain paths.
+- `quote_confirmed` cannot be advanced to `contract_signed` before customer confirmation, and the admin confirm button now renders disabled until the confirmation exists.
+- Customer-side nodes now defend against repeated requirement submission across tabs, repeated quote confirmation after refresh, tampered requirement tokens, and cross-browser replay after a confirmation is already consumed.
+- The shared admin-console startup helper used by customer-node regression now retries through startup-loading and timeout-toast states, reducing false failures from shell boot timing.
+
+### Latest regression scope
+
+- Account portal routing, admin sign-in, customer sign-in, and sales entry funnel
+- Customer node scenarios:
+  - unlinked account
+  - requirement submit + revisit
+  - quote confirmation branch guards
+  - contract confirmation branch guards
+  - factory acceptance branch guards
+  - readonly late-stage revisit
+  - duplicate requirement submit across tabs
+  - quote confirmation refresh resubmit
+  - tampered requirement token
+  - second-browser confirmation replay
+- Exception branches:
+  - archive
+  - void
+- Main backend chains:
+  - formal requirement -> quote confirmation
+  - contract -> support execution chain
+- Governance:
+  - customer cannot access admin console
+  - quote cannot advance to contract before customer confirmation
+- Customer archive and void exception branches are covered against the current `quote-customers` list model instead of the retired stage-list entry point.
+- Split auth identities are now available for dev regression:
+  - admin: `sales-admin-dev@gasgx.dev`
+  - customer: `sales-customer-dev@gasgx.dev`
+- `customer account cannot access sales admin console` is now verified with separate auth identities instead of a shared-account skip.
+
+### Solved in this thread
+
+- Unified the customer login/return handling used by `sales-formal-backend.spec.ts` and `sales-execution-chain.spec.ts` with the hardened governance flow.
+- Rebased exception-branch regression to the current customer archive/delete UI model so archive/void actions are tested against the actual active/archived/deleted list behavior.
+- Restored the seeded `cuitengwei@gasgx.com` admin allowlist row after governance experimentation temporarily deactivated it.
+- Seeded confirmed split-role dev accounts through the Supabase service-role path and verified they can be used for backend/customer regression.
+- Extended the static dev fallback allowlist in `article_management/modules/supabase.client.js` to include the seeded admin regression account.
+- Verified the end-to-end sales flow with the following matrix:
+  - `sales-account-portal.spec.ts`
+  - `sales-auth-roles.spec.ts`
+  - `sales-exception-branches.spec.ts`
+  - `sales-execution-chain.spec.ts`
+  - `sales-flow.spec.ts`
+  - `sales-formal-backend.spec.ts`
+  - `sales-governance.spec.ts`
+
+### Remaining risk
+
+- The current dev regression matrix is green, but the seeded split accounts are development credentials and should not be treated as production UAT identities.
+
 ## 2026-03-23 requirement intake update
 
 ### Latest milestone
@@ -483,3 +550,106 @@
 1. Run focused UI regression on customer-flow stages covering requirement, quote-confirmed, contract, deposit, and production nodes.
 2. Remove now-unused quote-stage action-chip helpers after regression confirms the shared shell is stable.
 3. If later requested, apply the same fixed shell rule to overview-mode stage detail pages outside the single-customer flow.
+
+## 2026-04-16 sales pipeline regression and governance verification
+
+### Latest milestone
+
+- The customer funnel, backend formal flow, execution chain, and quote-confirmation governance guard were regression-tested with active dev credentials.
+- A dedicated test report was added at:
+  - `docs/sales-pipeline-test-report-2026-04-16.md`
+
+### Effective behaviors
+
+- Public requirement entry now survives sign-in redirect and returns to the original `/account/sales.html?...` funnel URL.
+- Customer-side requirement submission can proceed from public entry after sign-in.
+- Backend quote confirmation can no longer be visually advanced to contract before customer confirmation is present.
+- Governance automation now supports the current dev setup where admin and customer credentials may temporarily be the same account.
+
+### Solved in this thread
+
+- Fixed customer sales return-url persistence in `account/sales.html`.
+- Stabilized customer pipeline mount-state handling in `account/sales-pipeline.portal.js`.
+- Fixed quote-confirmed action disabled-state alignment in `article_management/modules/quote-system.module.js`.
+- Hardened sales-console startup fallback in `article_management/modules/sales.bootstrap.js`.
+- Hardened governance Playwright flow in `tests/playwright/sales-governance.spec.ts`.
+
+### Unfinished
+
+- Strict role-isolation is still not fully verified because current `GX_ADMIN_*` and `GX_CUSTOMER_*` point to the same identity in dev.
+- There is still no separate customer-only test account documented for final permission validation.
+
+### Next Step
+
+1. Prepare split admin/customer credentials and rerun the skipped role-isolation governance case.
+2. Keep using `docs/sales-pipeline-test-report-2026-04-16.md` as the current baseline for funnel regression status.
+3. If a release gate is needed, add one final permission-only regression pass with true separated roles.
+
+## 2026-04-16 customer node scenario regression expansion
+
+### Latest milestone
+
+- Added a dedicated customer-node scenario regression spec at:
+  - `tests/playwright/sales-customer-node-scenarios.spec.ts`
+- The updated sales matrix now finishes with `16 passed / 0 failed` under split admin/customer dev identities.
+
+### Effective behaviors
+
+- Customer-side requirement entry now tolerates login return landing on either `/account/sales.html` or `/account/account.html`, then normalizes back to the canonical sales-funnel URL with the original `req/req_token` or confirmation params.
+- Customer-node regression now covers:
+  - unmatched signed-in account state
+  - signed-out requirement-entry login return and revisit
+  - quote-confirmation out-of-turn access, missing-checkbox guard, successful revisit, and invalid-link handling
+  - contract confirmation out-of-turn access, missing-checkbox guard, successful revisit, and invalid-link-equivalent future-stage handling
+  - factory acceptance out-of-turn access, missing-checkbox guard, and successful revisit
+  - balance confirmation / deployment completed / support active readonly revisit behavior without leaked submit actions
+  - duplicate requirement submit protection across two customer tabs
+  - quote confirmation refresh-resubmit protection inside the same customer session
+- The customer-node spec uses isolated browser contexts so admin and customer state no longer bleed into each other during the same regression run.
+- The customer-node helper now waits for the sales-console shell to finish booting before touching customer archive/profile forms, which removed a loader-state flake during long full-matrix runs.
+
+### Latest status refresh
+
+- The expanded customer-node matrix now contributes 8 passing cases.
+- The combined sales regression matrix is currently `21 passed / 0 failed`.
+
+### Next attention points
+
+1. If later requested, extend the same customer-node scenario style to stale-link expiry / revoked-token handling and cross-browser concurrent sessions.
+2. Keep the split dev identities as the default regression pair until a separate long-lived UAT account set is prepared.
+
+## 2026-04-19 sales stage detail UI clone follow-up
+
+### Latest milestone
+
+- The sales customer-flow detail page was further tightened around the approved `t.html` reference for the `quote_confirmed` stage.
+- This thread stayed within layout/style scope and did not change stage business rules, save handlers, or stage progression logic.
+
+### Effective behaviors
+
+- The right rail continues to follow the fixed desktop order:
+  - action zone
+  - status zone
+  - customer context
+- `节点双负责人` and `用户行为轨迹` are now rendered inside the main left content flow instead of dropping below the shell.
+- Desktop customer-flow pages keep independent main/side scrolling, while the activity list itself now has a taller inner scroll region for long records.
+- Folded stage modules now keep their header chips fully visible when collapsed instead of clipping the title pill.
+
+### Solved in this thread
+
+- Restyled action-zone status rows into a clearer left-label/right-badge pattern for customer visibility and customer confirmation state.
+- Tightened the action button sizing, chip colors, and activity-log pill colors to match the approved visual reference more closely.
+- Raised the visible height of the customer activity log and strengthened its inner scrolling container.
+- Fixed the collapsed-module header crop on `节点双负责人` / `用户行为轨迹`.
+- Updated `article_management/sales/index.html` asset version strings so current sales pages actually load the newest CSS/JS after UI edits.
+
+### Unfinished
+
+- Live screenshot verification through the headless login path still needs one final pass after the cache-busting change, because a direct scripted capture was still landing on the login view during this thread.
+- A wider manual visual sweep is still needed for stages beyond `quote_confirmed`, especially contract/deposit/execution nodes, to confirm the same fold/scroll behavior holds consistently.
+
+### Next Step
+
+1. Re-run a logged-in visual capture on the real `quote_confirmed` customer-flow URL after cache refresh and verify the updated shell is actually served.
+2. Repeat the same folded-header and inner-scroll check on `contract_signed`, `deposit_paid`, and `production_scheduled`.
+3. If any later customer-flow page still misses the updated look, inspect its entry HTML asset version string before changing business templates again.

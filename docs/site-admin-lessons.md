@@ -149,3 +149,21 @@ How to prevent recurrence:
   3. replace root binder with dispatch-only wiring
   4. run a full flow regression pass
 - Record the partial-state checkpoint in the state doc immediately so the next thread does not mistake helper extraction for a finished event-layer refactor.
+
+## Lesson 9: Sales detail-page UI fixes can appear "not working" when the entry HTML still points at stale asset versions
+
+Error symptom:
+- Multiple sales customer-flow UI fixes appeared to have no effect in the browser even though `quote-system.module.js` and `main.css` had already been updated locally.
+- Operators reported that the page looked unchanged across several refreshes.
+
+Root cause:
+- `article_management/sales/index.html` was still referencing older versioned URLs for `main.css` and `sales.bootstrap.js`.
+- The browser therefore kept using cached assets and rendered an older shell than the current source tree.
+
+How to detect earlier:
+- When a visible sales UI fix "does nothing", inspect the entry HTML asset query strings before debugging layout logic again.
+- Compare the loaded stylesheet/script URL version in the browser with the local file change time or current patch batch.
+
+How to prevent recurrence:
+- Treat cache-busting as part of the implementation for operator-facing sales UI changes.
+- After a shell/layout fix, bump the version string in `article_management/sales/index.html` and then verify the page with a hard refresh or a clean browser context.

@@ -4620,24 +4620,44 @@ textarea {
 
 .ams-sales-stage-shell {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-    gap: 16px;
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 404px);
+    gap: 18px;
     align-items: start;
 }
 
 .ams-sales-stage-shell-main,
 .ams-sales-stage-shell-side {
     min-width: 0;
+    min-height: 0;
+}
+
+.ams-sales-stage-shell-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: calc(100vh - 240px);
+    overflow-y: auto;
+    padding-right: 6px;
+    scrollbar-width: thin;
 }
 
 .ams-sales-stage-shell-side {
     display: grid;
-    gap: 12px;
+    gap: 14px;
     align-content: start;
+    max-height: calc(100vh - 240px);
+    overflow-y: auto;
+    padding-right: 4px;
+    scrollbar-width: thin;
+}
+
+.ams-sales-stage-shell-side-rail {
+    position: sticky;
+    top: 18px;
 }
 
 .ams-sales-stage-side-card {
-    padding: 16px;
+    padding: 18px;
     border-radius: 18px;
     border-color: rgba(255, 255, 255, 0.08);
     background:
@@ -4648,17 +4668,28 @@ textarea {
         0 10px 22px rgba(0, 0, 0, 0.2);
 }
 
-.ams-sales-stage-side-card-actions {
-    border-color: rgba(101, 219, 53, 0.16);
+.ams-sales-stage-side-card-status,
+.ams-sales-stage-side-card-customer {
     background:
-        linear-gradient(180deg, rgba(17, 31, 16, 0.98), rgba(11, 18, 11, 0.99)),
-        radial-gradient(circle at top right, rgba(101, 219, 53, 0.12), transparent 58%);
+        linear-gradient(180deg, rgba(20, 21, 20, 0.97), rgba(13, 14, 13, 0.98)),
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.03), transparent 60%);
+}
+
+.ams-sales-stage-side-card-actions {
+    border-color: rgba(101, 219, 53, 0.22);
+    background:
+        linear-gradient(180deg, rgba(16, 28, 14, 0.98), rgba(10, 16, 10, 0.99)),
+        radial-gradient(circle at top right, rgba(101, 219, 53, 0.14), transparent 58%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.02),
+        0 12px 28px rgba(0, 0, 0, 0.24),
+        0 0 0 1px rgba(101, 219, 53, 0.04);
 }
 
 .ams-sales-stage-side-card-head {
     display: grid;
     gap: 4px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .ams-sales-stage-side-card-head span {
@@ -4671,7 +4702,7 @@ textarea {
 
 .ams-sales-stage-side-card-head strong {
     color: #f3f7ee;
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.2;
 }
 
@@ -4681,6 +4712,11 @@ textarea {
 .ams-sales-stage-side-list {
     display: grid;
     gap: 10px;
+}
+
+.ams-sales-stage-side-card-status .ams-sales-stage-side-list,
+.ams-sales-stage-side-card-customer .ams-sales-stage-side-list {
+    gap: 0;
 }
 
 .ams-sales-stage-side-lead,
@@ -4694,10 +4730,31 @@ textarea {
 .ams-sales-stage-side-item {
     display: grid;
     gap: 6px;
-    padding: 12px 14px;
+    padding: 13px 14px;
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 14px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02));
+}
+
+.ams-sales-stage-side-card-status .ams-sales-stage-side-item,
+.ams-sales-stage-side-card-customer .ams-sales-stage-side-item {
+    border-radius: 0;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.ams-sales-stage-side-card-status .ams-sales-stage-side-item:first-child,
+.ams-sales-stage-side-card-customer .ams-sales-stage-side-item:first-child {
+    padding-top: 0;
+}
+
+.ams-sales-stage-side-card-status .ams-sales-stage-side-item:last-child,
+.ams-sales-stage-side-card-customer .ams-sales-stage-side-item:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
 }
 
 .ams-sales-stage-side-item > span,
@@ -4727,10 +4784,68 @@ textarea {
     line-height: 1.55;
 }
 
+.ams-sales-stage-side-card-actions .ams-sales-stage-side-item.is-action-status {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 11px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.035);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.ams-sales-stage-side-card-actions .ams-sales-stage-side-item.is-action-status > span {
+    grid-column: 1;
+    color: #8b947f;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+}
+
+.ams-sales-stage-side-card-actions .ams-sales-stage-side-item.is-action-status > strong {
+    grid-column: 2;
+    justify-self: end;
+}
+
+.ams-sales-stage-action-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+    color: #dbe2d1;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.ams-sales-stage-action-badge.is-info {
+    background: linear-gradient(180deg, rgba(65, 84, 120, 0.78), rgba(38, 50, 75, 0.92));
+    border-color: rgba(124, 160, 229, 0.38);
+    color: #edf4ff;
+}
+
+.ams-sales-stage-action-badge.is-warning {
+    background: linear-gradient(180deg, rgba(255, 205, 46, 0.92), rgba(233, 173, 20, 0.96));
+    border-color: rgba(255, 211, 99, 0.58);
+    color: #231500;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.ams-sales-stage-action-badge.is-success {
+    background: linear-gradient(180deg, rgba(126, 240, 71, 0.92), rgba(79, 191, 34, 0.96));
+    border-color: rgba(146, 244, 107, 0.48);
+    color: #0d1a07;
+}
+
 .ams-sales-stage-side-group {
     display: grid;
     gap: 10px;
-    padding-top: 12px;
+    padding-top: 14px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -4745,25 +4860,42 @@ textarea {
 }
 
 .ams-sales-stage-side-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
 }
 
 .ams-sales-stage-side-actions .ams-btn,
 .ams-sales-stage-side-actions .ams-share-menu > summary.ams-btn {
-    flex: 1 1 144px;
-    min-height: 36px;
+    min-height: 46px;
+    padding: 11px 14px;
     justify-content: center;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.3;
+    letter-spacing: normal;
+    text-transform: none;
+    font-size: 13px;
+    font-weight: 800;
+    border-radius: 10px;
 }
 
 .ams-sales-stage-side-actions .ams-share-menu {
-    flex: 1 1 144px;
     min-width: 0;
 }
 
 .ams-sales-stage-side-actions .ams-share-menu > summary.ams-btn {
     width: 100%;
+}
+
+.ams-sales-stage-side-actions > .ams-btn:only-child,
+.ams-sales-stage-side-actions > .ams-share-menu:only-child {
+    grid-column: 1 / -1;
+}
+
+.ams-sales-stage-side-actions > #ams-sales-flow-stage-complete,
+.ams-sales-stage-side-actions > #ams-sales-flow-instance-confirm {
+    grid-column: span 2;
 }
 
 .ams-sales-stage-side-card .ams-field {
@@ -4780,8 +4912,20 @@ textarea {
         grid-template-columns: minmax(0, 1fr);
     }
 
+    .ams-sales-stage-shell-main,
+    .ams-sales-stage-shell-side {
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
+    }
+
     .ams-sales-stage-shell-side {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .ams-sales-stage-shell-side-rail {
+        position: static;
+        top: auto;
     }
 }
 
@@ -4798,7 +4942,7 @@ textarea {
 
     .ams-sales-stage-side-actions .ams-btn,
     .ams-sales-stage-side-actions .ams-share-menu {
-        flex: 1 1 100%;
+        grid-column: 1 / -1;
     }
 }
 
@@ -5029,14 +5173,18 @@ textarea {
     display: flex;
     flex-direction: column;
     gap: 14px;
+    overflow: visible;
 }
 
 .ams-sales-activity-list {
     display: grid;
     gap: 10px;
-    max-height: min(560px, 58vh);
+    min-height: 320px;
+    max-height: min(920px, 82vh);
     overflow-y: auto;
-    padding-right: 4px;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding-right: 6px;
     align-content: start;
 }
 
@@ -5057,17 +5205,17 @@ textarea {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 12px;
-    padding: 10px 14px;
+    gap: 14px;
+    padding: 14px 16px;
     border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.026), rgba(255, 255, 255, 0.018));
 }
 
 .ams-sales-activity-main {
     min-width: 0;
     display: grid;
-    gap: 5px;
+    gap: 8px;
 }
 
 .ams-sales-activity-head {
@@ -5079,7 +5227,8 @@ textarea {
 
 .ams-sales-activity-head strong {
     color: #f5f7f0;
-    font-size: 12px;
+    font-size: 14px;
+    font-weight: 800;
     line-height: 1.35;
 }
 
@@ -5087,47 +5236,51 @@ textarea {
 .ams-sales-activity-stage {
     display: inline-flex;
     align-items: center;
-    min-height: 20px;
-    padding: 0 8px;
-    border-radius: 999px;
+    min-height: 22px;
+    padding: 0 10px;
+    border-radius: 8px;
     font-size: 10px;
     font-weight: 800;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
 }
 
 .ams-sales-activity-pill.is-customer {
-    background: rgba(255, 191, 72, 0.12);
-    border: 1px solid rgba(255, 191, 72, 0.24);
-    color: #ffd37f;
+    background: linear-gradient(180deg, rgba(111, 72, 18, 0.88), rgba(77, 50, 10, 0.96));
+    border: 1px solid rgba(255, 193, 81, 0.34);
+    color: #ffcb63;
 }
 
 .ams-sales-activity-pill.is-sales {
-    background: rgba(93, 214, 44, 0.12);
-    border: 1px solid rgba(93, 214, 44, 0.24);
-    color: #98f464;
+    background: linear-gradient(180deg, rgba(34, 79, 33, 0.9), rgba(18, 52, 22, 0.98));
+    border: 1px solid rgba(112, 228, 90, 0.26);
+    color: #9ef36f;
 }
 
 .ams-sales-activity-pill.is-system,
 .ams-sales-activity-stage {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #b8b8b8;
+    background: linear-gradient(180deg, rgba(43, 52, 71, 0.88), rgba(29, 36, 52, 0.96));
+    border: 1px solid rgba(100, 121, 165, 0.28);
+    color: #d6e3ff;
 }
 
 .ams-sales-activity-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 10px;
-    color: #99a494;
-    font-size: 11px;
+    gap: 4px 8px;
+    color: #879182;
+    font-size: 12px;
     line-height: 1.45;
+}
+
+.ams-sales-activity-meta > span:nth-child(2) {
+    color: #596158;
 }
 
 .ams-sales-activity-item time {
     flex: 0 0 auto;
-    color: #8f9688;
-    font-size: 11px;
+    color: #97a08f;
+    font-size: 12px;
     line-height: 1.35;
     white-space: nowrap;
 }
@@ -5281,12 +5434,75 @@ textarea {
 .ams-stage-module-fold {
     margin-top: 8px;
     border-color: rgba(101, 219, 53, 0.16);
+    overflow: hidden;
+    border-radius: 16px;
+    background: rgba(10, 10, 10, 0.96);
 }
 
 .ams-stage-module-card {
     margin-top: 8px;
     border-color: rgba(101, 219, 53, 0.16);
     overflow: hidden;
+    border-radius: 16px;
+    background: rgba(10, 10, 10, 0.96);
+}
+
+.ams-stage-intro-card {
+    padding: 0;
+    overflow: hidden;
+    border-color: rgba(255, 255, 255, 0.08);
+    background:
+        linear-gradient(180deg, rgba(18, 18, 18, 0.98), rgba(12, 12, 12, 0.98)),
+        radial-gradient(circle at top right, rgba(101, 219, 53, 0.04), transparent 58%);
+}
+
+.ams-stage-intro-card .ams-section-head {
+    padding: 0;
+    margin: 0;
+}
+
+.ams-stage-intro-card .ams-section-head > div {
+    width: 100%;
+    padding: 22px 24px 0;
+}
+
+.ams-stage-intro-card .ams-section-head h3 {
+    font-size: clamp(24px, 3vw, 30px);
+    line-height: 1.08;
+}
+
+.ams-stage-intro-card .ams-section-head p {
+    max-width: 860px;
+    color: #b1b6ad;
+}
+
+.ams-stage-intro-card > .ams-field-help,
+.ams-stage-intro-card > .ams-site-field-grid,
+.ams-stage-intro-card > .ams-field,
+.ams-stage-intro-card > .ams-share-poster-modal {
+    margin-left: 24px;
+    margin-right: 24px;
+}
+
+.ams-stage-intro-card > .ams-field-help:last-child,
+.ams-stage-intro-card > .ams-field:last-child,
+.ams-stage-intro-card > .ams-site-field-grid:last-child {
+    margin-bottom: 22px;
+}
+
+.ams-stage-intro-card > .ams-field-help {
+    display: inline-flex;
+    margin-top: 14px;
+    margin-bottom: 20px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #8c8f88;
+}
+
+.ams-stage-intro-card > .ams-field-help + .ams-field-help {
+    margin-top: 0;
 }
 
 .ams-stage-module-card-head {
@@ -5332,26 +5548,31 @@ textarea {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 14px;
+    padding: 18px 16px 16px;
 }
 
 .ams-stage-module-fold > .ams-fold-summary {
-    min-height: 38px;
+    min-height: 54px;
     box-sizing: border-box;
-    padding: 6px 14px;
+    align-items: center;
+    padding: 12px 16px;
     padding-right: 34px;
-    line-height: 1;
+    line-height: 1.2;
+    overflow: visible;
+    background: #111;
 }
 
 .ams-stage-module-fold > .ams-fold-summary > span {
-    height: 24px;
-    padding: 0 10px;
+    height: auto;
+    min-height: 30px;
+    padding: 2px 12px;
     flex: 0 0 auto;
     font-size: 13px;
+    line-height: 1.2;
 }
 
 .ams-stage-module-fold > .ams-fold-summary > em {
-    line-height: 1;
+    line-height: 1.2;
     min-width: 64px;
     text-align: right;
     white-space: nowrap;
@@ -5363,8 +5584,26 @@ textarea {
     background: rgba(101, 219, 53, 0.06);
 }
 
+.ams-stage-module-fold:not([open]) > .ams-fold-summary {
+    border-bottom: 0;
+}
+
 .ams-stage-module-fold:not([open]) .ams-fold-body {
     display: none;
+}
+
+@media (max-width: 720px) {
+    .ams-stage-intro-card .ams-section-head > div {
+        padding: 20px 18px 0;
+    }
+
+    .ams-stage-intro-card > .ams-field-help,
+    .ams-stage-intro-card > .ams-site-field-grid,
+    .ams-stage-intro-card > .ams-field,
+    .ams-stage-intro-card > .ams-share-poster-modal {
+        margin-left: 18px;
+        margin-right: 18px;
+    }
 }
 
 .ams-sales-stage-note-list {
@@ -5399,6 +5638,32 @@ textarea {
     font-size: 13px;
     line-height: 1.6;
     white-space: pre-wrap;
+}
+
+.ams-stage-note-composer {
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    background: #111;
+    padding: 14px;
+}
+
+.ams-stage-note-composer .ams-field {
+    margin: 0;
+}
+
+.ams-stage-note-composer .ams-textarea {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    min-height: 72px;
+}
+
+.ams-stage-note-composer .ams-sales-note-submit {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .ams-stage-detail-stack {
