@@ -9,9 +9,10 @@ import {
     getDisplayName,
     provisionAdminUserAccount,
     saveAdminUserEntry,
+    setLinkedinExtensionAccessByEmail,
     sendPasswordResetEmail,
     updateCurrentPassword,
-} from './auth.module.js?v=20260414auth02';
+} from './auth.module.js?v=20260419auth04';
 
 let adminUsersCreatePanelExpanded = false;
 
@@ -132,7 +133,7 @@ export async function renderAdminUsersPage(input) {
             </div>
             ${
                 loadError
-                    ? `<div class="ams-empty">\u4eba\u5458\u8868\u5f53\u524d\u4e0d\u53ef\u7528\uff1a${esc(loadError.message || '\u672a\u77e5\u9519\u8bef')}\u3002\u8bf7\u5148\u6267\u884c SQL\uff1aarticle_management/sql/005_admin_users.sql\u3002</div>`
+                    ? `<div class="ams-empty">\u4eba\u5458\u8868\u5f53\u524d\u4e0d\u53ef\u7528\uff1a${esc(loadError.message || '\u672a\u77e5\u9519\u8bef')}\u3002\u8bf7\u5148\u6267\u884c SQL\uff1aarticle_management/sql/005_admin_users.sql\u3001article_management/sql/026_admin_user_extension_entitlement.sql \u548c article_management/sql/027_set_linkedin_extension_access_rpc.sql\u3002</div>`
                     : `<div class="ams-table-wrap">
                         <table class="ams-table ams-admin-users-table">
                             <thead>
@@ -141,6 +142,7 @@ export async function renderAdminUsersPage(input) {
                                     <th>\u59d3\u540d</th>
                                     <th>\u89d2\u8272</th>
                                     <th>\u72b6\u6001</th>
+                                    <th>LinkedIn \u6269\u5c55</th>
                                     <th>\u66f4\u65b0\u65f6\u95f4</th>
                                     <th class="ams-col-actions">\u64cd\u4f5c</th>
                                 </tr>
@@ -164,6 +166,16 @@ export async function renderAdminUsersPage(input) {
                                                 </select>
                                             </td>
                                             <td><label class="ams-social-toggle ams-admin-user-status-toggle"><input type="checkbox" data-admin-active="${esc(row.id)}" ${row.is_active !== false ? 'checked' : ''}><span>${row.is_active !== false ? '\u542f\u7528' : '\u505c\u7528'}</span></label></td>
+                                            <td>
+                                                <div class="ams-row-actions ams-admin-user-actions">
+                                                    <button
+                                                        class="ams-btn ${row.linkedin_extension_enabled ? 'ams-btn-primary' : 'ams-btn-muted'}"
+                                                        type="button"
+                                                        data-admin-extension-toggle="${esc(row.id)}"
+                                                    >${row.linkedin_extension_enabled ? '\u5df2\u5f00\u901a' : '\u5f00\u901a'}</button>
+                                                </div>
+                                                <div class="ams-footnote">${row.linkedin_extension_enabled ? '\u5df2\u5199\u5165 profiles \u6269\u5c55\u6743\u9650' : '\u6309\u8d26\u53f7\u76f4\u63a5\u5f00\u901a LinkedIn \u6269\u5c55'}</div>
+                                            </td>
                                             <td>${esc(fmtDate(row.updated_at || row.created_at))}</td>
                                             <td class="ams-col-actions">
                                                 <div class="ams-row-actions ams-admin-user-actions">
@@ -174,7 +186,7 @@ export async function renderAdminUsersPage(input) {
                                         </tr>`,
                                               )
                                               .join('')
-                                        : '<tr><td colspan="6"><div class="ams-empty">\u5f53\u524d\u8fd8\u6ca1\u6709\u540e\u53f0\u4eba\u5458\u8bb0\u5f55\u3002</div></td></tr>'
+                                        : '<tr><td colspan="7"><div class="ams-empty">\u5f53\u524d\u8fd8\u6ca1\u6709\u540e\u53f0\u4eba\u5458\u8bb0\u5f55\u3002</div></td></tr>'
                                 }
                             </tbody>
                         </table>
@@ -202,8 +214,10 @@ export async function renderAdminUsersPage(input) {
 
         await withButtonBusy(event.currentTarget, '\u63d0\u4ea4\u4e2d...', async () => {
             try {
+                let provisionedUserId = '';
                 if (createAccount) {
-                    await provisionAdminUserAccount({ email, password, fullName });
+                    const provisioned = await provisionAdminUserAccount({ email, password, fullName });
+                    provisionedUserId = String(provisioned?.user?.id || '').trim();
                 }
                 await saveAdminUserEntry(
                     {
@@ -211,6 +225,8 @@ export async function renderAdminUsersPage(input) {
                         full_name: fullName,
                         role,
                         is_active: isActive,
+                        auth_user_id: provisionedUserId,
+                        linkedin_extension_enabled: false,
                     },
                     user?.id || null,
                 );
@@ -241,6 +257,8 @@ export async function renderAdminUsersPage(input) {
                             full_name: fullName,
                             role,
                             is_active: isActive,
+                            auth_user_id: row.auth_user_id || '',
+                            linkedin_extension_enabled: row.linkedin_extension_enabled === true,
                         },
                         user?.id || null,
                     );
@@ -248,6 +266,24 @@ export async function renderAdminUsersPage(input) {
                     await renderAdminUsersPage(input);
                 } catch (error) {
                     showToast(error.message || '\u4fdd\u5b58\u4eba\u5458\u4fe1\u606f\u5931\u8d25\u3002', true);
+                }
+            });
+        });
+    });
+
+    document.querySelectorAll('[data-admin-extension-toggle]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const id = String(button.dataset.adminExtensionToggle || '').trim();
+            const row = rows.find((item) => item.id === id);
+            if (!row) return;
+
+            await withButtonBusy(button, row.linkedin_extension_enabled ? '\u5173\u95ed\u4e2d...' : '\u5f00\u901a\u4e2d...', async () => {
+                try {
+                    await setLinkedinExtensionAccessByEmail(row.email, row.linkedin_extension_enabled !== true, user?.id || null);
+                    showToast(row.linkedin_extension_enabled ? '\u5df2\u5173\u95ed LinkedIn \u6269\u5c55\u6743\u9650\u3002' : '\u5df2\u5f00\u901a LinkedIn \u6269\u5c55\u6743\u9650\u3002');
+                    await renderAdminUsersPage(input);
+                } catch (error) {
+                    showToast(error.message || '\u66f4\u65b0 LinkedIn \u6269\u5c55\u6743\u9650\u5931\u8d25\u3002', true);
                 }
             });
         });

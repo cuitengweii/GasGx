@@ -11,7 +11,7 @@ import {
     signInWithPassword,
     signOut,
     updateCurrentPassword,
-} from './auth.module.js?v=20260414auth02';
+} from './auth.module.js?v=20260419auth04';
 import {
     ADMIN_ENTRY_KIND,
     SALES_ENTRY_KIND,
@@ -42,7 +42,7 @@ import {
     rejectQueueItem,
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
-import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260327sales03';
+import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260419adminusers02';
 import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260414site09';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js?v=20260321admin01';
 

@@ -1,7 +1,8 @@
-import { ADMIN_EMAILS, SUPABASE_KEY, SUPABASE_URL, client } from './supabase.client.js?v=20260321admin01';
+﻿import { ADMIN_EMAILS, SUPABASE_KEY, SUPABASE_URL, client } from './supabase.client.js?v=20260321admin01';
 import { ADMIN_ENTRY_KIND, SALES_ENTRY_KIND, adminConsolePath, detectAdminEntryKind, normalizeEntryKind } from './admin-entry.module.js';
 
 const ADMIN_USERS_TABLE = 'admin_users';
+const PROFILES_TABLE = 'profiles';
 const AUTH_TIMEOUT_MS = 15000;
 
 export const ADMIN_ROLE_SALES = 'sales';
@@ -59,6 +60,10 @@ function normalizeAdminRow(row = {}) {
         full_name: String(row.full_name || '').trim(),
         role: normalizeAdminRole(row.role),
         is_active: row.is_active !== false,
+        auth_user_id: String(row.auth_user_id || '').trim(),
+        linkedin_extension_enabled: row.linkedin_extension_enabled === true,
+        linkedin_extension_plan: String(row.linkedin_extension_plan || '').trim(),
+        linkedin_extension_enabled_at: row.linkedin_extension_enabled_at || '',
         created_at: row.created_at || '',
         updated_at: row.updated_at || '',
     };
@@ -131,7 +136,7 @@ export async function fetchAdminUsers(forceRefresh = false) {
     const { data, error } = await withRequestTimeout(
         client
             .from(ADMIN_USERS_TABLE)
-            .select('id, email, full_name, role, is_active, created_at, updated_at')
+            .select('id, email, full_name, role, is_active, auth_user_id, linkedin_extension_enabled, linkedin_extension_plan, linkedin_extension_enabled_at, created_at, updated_at')
             .order('created_at', { ascending: true }),
         'Loading admin access timed out. Please check connectivity to Supabase.',
     );
@@ -285,7 +290,52 @@ export async function provisionAdminUserAccount({ email, password, fullName = ''
     return data;
 }
 
-export async function saveAdminUserEntry({ id = '', email, full_name = '', role = 'admin', is_active = true } = {}, actorId = null) {
+async function updateLinkedinExtensionEntitlement({ authUserId = '', enabled = false, plan = '' } = {}) {
+    const cleanAuthUserId = String(authUserId || '').trim();
+    if (!cleanAuthUserId) {
+        if (enabled === true) {
+            throw new Error('当前用户缺少 auth_user_id 绑定，暂时无法开通扩展权限。');
+        }
+        return;
+    }
+
+    const payload = {
+        id: cleanAuthUserId,
+        linkedin_extension_enabled: enabled === true,
+        linkedin_extension_plan: enabled === true ? String(plan || 'LinkedIn Automatic Comments').trim() || 'LinkedIn Automatic Comments' : null,
+        linkedin_extension_enabled_at: enabled === true ? new Date().toISOString() : null,
+    };
+
+    const { error } = await client.from(PROFILES_TABLE).upsert(payload, { onConflict: 'id' });
+    if (error) throw error;
+}
+
+export async function setLinkedinExtensionAccessByEmail(email, enabled, actorId = null) {
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) throw new Error('人员邮箱不能为空。');
+
+    const { data, error } = await client.rpc('set_linkedin_extension_access', {
+        actor_id: actorId || null,
+        target_email: normalizedEmail,
+        target_enabled: enabled === true,
+    });
+    if (error) throw error;
+    invalidateAdminUsersCache();
+    return data || null;
+}
+
+export async function saveAdminUserEntry(
+    {
+        id = '',
+        email,
+        full_name = '',
+        role = 'admin',
+        is_active = true,
+        auth_user_id = '',
+        linkedin_extension_enabled = false,
+    } = {},
+    actorId = null,
+) {
     const normalizedEmail = normalizeEmail(email);
     if (!normalizedEmail) throw new Error('人员邮箱不能为空。');
 
@@ -294,6 +344,10 @@ export async function saveAdminUserEntry({ id = '', email, full_name = '', role 
         full_name: String(full_name || '').trim(),
         role: normalizeAdminRole(role),
         is_active: is_active !== false,
+        auth_user_id: String(auth_user_id || '').trim() || null,
+        linkedin_extension_enabled: linkedin_extension_enabled === true,
+        linkedin_extension_plan: linkedin_extension_enabled === true ? 'LinkedIn Automatic Comments' : null,
+        linkedin_extension_enabled_at: linkedin_extension_enabled === true ? new Date().toISOString() : null,
         updated_by: actorId || null,
     };
     if (id) payload.id = id;
@@ -302,10 +356,15 @@ export async function saveAdminUserEntry({ id = '', email, full_name = '', role 
     const { data, error } = await client
         .from(ADMIN_USERS_TABLE)
         .upsert(payload, { onConflict: 'email' })
-        .select('id, email, full_name, role, is_active, created_at, updated_at')
+        .select('id, email, full_name, role, is_active, auth_user_id, linkedin_extension_enabled, linkedin_extension_plan, linkedin_extension_enabled_at, created_at, updated_at')
         .single();
 
     if (error) throw error;
+    await updateLinkedinExtensionEntitlement({
+        authUserId: data?.auth_user_id || payload.auth_user_id,
+        enabled: payload.linkedin_extension_enabled === true,
+        plan: payload.linkedin_extension_plan,
+    });
     invalidateAdminUsersCache();
     return normalizeAdminRow(data);
 }
@@ -340,3 +399,4 @@ export function onAuthStateChange(handler) {
         handler(event, session || null);
     });
 }
+
