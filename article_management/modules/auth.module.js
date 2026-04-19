@@ -12,6 +12,18 @@ export const ADMIN_ROLE_EDITOR = 'editor';
 export const ADMIN_ROLE_ADMIN = 'admin';
 export const ADMIN_ROLE_SUPER_ADMIN = 'super_admin';
 
+function isRecognizedAdminRole(value = '') {
+    const role = String(value || '').trim().toLowerCase();
+    return [
+        ADMIN_ROLE_SALES,
+        ADMIN_ROLE_PRE_SALES,
+        ADMIN_ROLE_AFTER_SALES,
+        ADMIN_ROLE_EDITOR,
+        ADMIN_ROLE_ADMIN,
+        ADMIN_ROLE_SUPER_ADMIN,
+    ].includes(role);
+}
+
 export function normalizeAdminRole(value = '') {
     const role = String(value || '').trim().toLowerCase();
     if (role === ADMIN_ROLE_SALES) return ADMIN_ROLE_SALES;
@@ -69,6 +81,20 @@ function normalizeAdminRow(row = {}) {
     };
 }
 
+function buildCurrentUserAccessRow(user, role) {
+    const email = normalizeEmail(user?.email);
+    const normalizedRole = String(role || '').trim().toLowerCase();
+    if (!email || !isRecognizedAdminRole(normalizedRole)) return null;
+    return normalizeAdminRow({
+        id: String(user?.id || `self:${email}`).trim() || `self:${email}`,
+        email,
+        full_name: String(user?.user_metadata?.full_name || user?.user_metadata?.name || '').trim(),
+        role: normalizedRole,
+        is_active: true,
+        auth_user_id: String(user?.id || '').trim(),
+    });
+}
+
 function buildStaticAdminRows() {
     return ADMIN_EMAILS.map((email) => ({
         id: `static:${normalizeEmail(email)}`,
@@ -102,6 +128,17 @@ async function withRequestTimeout(promise, message, timeoutMs = AUTH_TIMEOUT_MS)
     } finally {
         if (timer) globalThis.clearTimeout(timer);
     }
+}
+
+async function resolveCurrentUserAdminAccess(user) {
+    const email = normalizeEmail(user?.email);
+    if (!email) return null;
+    const { data, error } = await withRequestTimeout(
+        client.rpc('current_admin_role'),
+        'Loading current admin role timed out. Please check connectivity to Supabase.',
+    );
+    if (error) throw error;
+    return buildCurrentUserAccessRow(user, data);
 }
 
 function getRecoveryRedirectUrl() {
@@ -153,14 +190,19 @@ export async function getAdminUserAccess(user, options = {}) {
     const email = normalizeEmail(user?.email);
     if (!email) return { allowed: false, row: null, source: 'none' };
     const staticRow = buildStaticAdminRows().find((item) => item.email === email) || null;
+    let roleFallbackRow = null;
 
     try {
         const rows = await fetchAdminUsers(options.forceRefresh === true);
         const row = rows.find((item) => item.email === email && item.is_active !== false) || null;
         if (row) return { allowed: true, row, source: 'supabase' };
+        roleFallbackRow = await resolveCurrentUserAdminAccess(user).catch(() => null);
+        if (roleFallbackRow) return { allowed: true, row: roleFallbackRow, source: 'rpc-self' };
         if (staticRow) return { allowed: true, row: staticRow, source: 'static-legacy' };
         return { allowed: false, row: null, source: 'supabase' };
     } catch (error) {
+        roleFallbackRow = await resolveCurrentUserAdminAccess(user).catch(() => null);
+        if (roleFallbackRow) return { allowed: true, row: roleFallbackRow, source: 'rpc-self' };
         if (!shouldFallbackToStatic(error)) throw error;
         return { allowed: Boolean(staticRow), row: staticRow, source: 'static-fallback' };
     }

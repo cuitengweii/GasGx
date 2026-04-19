@@ -78,7 +78,6 @@ const moduleState = {
     dealEditor: null,
     customerEvents: [],
     customerActivities: [],
-    customerTimelineLoadedForId: '',
     customerActivityFilter: DEFAULT_CUSTOMER_ACTIVITY_FILTER,
     recentActivities: [],
     activityReadMap: {},
@@ -125,8 +124,6 @@ const moduleState = {
     instanceListMode: 'active',
     instanceViewPage: 1,
     salesPipelineExpanded: false,
-    dashboardDataLoadedAt: 0,
-    dashboardDataLoadingPromise: null,
     baseDataLoadedAt: 0,
     baseDataLoadingPromise: null,
     unreadSummaryLoadedAt: 0,
@@ -1474,36 +1471,6 @@ function visibleDealsForInput(input = null, options = {}) {
     return rows;
 }
 
-function visibleDealsForDashboard(input = null, options = {}) {
-    const includeArchived = options.includeArchived === true;
-    const includeClosed = options.includeClosed === true;
-    let rows = [...moduleState.deals];
-    if (isSalesConsole(input) && isSalesOnlyUser(input)) {
-        const email = text(input?.user?.email).toLowerCase();
-        rows = rows.filter((deal) => text(deal.owner_email).toLowerCase() === email);
-    }
-    if (!includeArchived) rows = rows.filter((deal) => !isDealArchived(deal));
-    if (!includeClosed) {
-        rows = rows.filter((deal) => !['lost', 'cancelled', 'completed'].includes(normalizeDealStatus(deal?.deal_status)));
-    }
-    return rows;
-}
-
-function dashboardCustomerCount(input = null) {
-    return new Set(
-        visibleDealsForDashboard(input)
-            .map((deal) => text(deal.customer_id))
-            .filter(Boolean),
-    ).size;
-}
-
-function dashboardStageCount(stageKey = '', input = null) {
-    if (normalizeDealStageKey(stageKey) === 'customer_profile') return dashboardCustomerCount(input);
-    return visibleDealsForDashboard(input)
-        .filter((deal) => normalizeDealStageKey(deal.current_stage) === normalizeDealStageKey(stageKey))
-        .length;
-}
-
 function salesStageCount(stageKey = '', input = null) {
     if (normalizeDealStageKey(stageKey) === 'customer_profile') {
         return moduleState.customers.filter((customer) => customer.is_active !== false && !customer.is_deleted).length;
@@ -2812,7 +2779,6 @@ function customerActivityTimelineRows(customerId = '') {
 async function fetchCustomerActivityTimeline(customerId = '', reader = null) {
     if (!customerId) {
         moduleState.customerActivities = [];
-        moduleState.customerTimelineLoadedForId = '';
         return [];
     }
     try {
@@ -2824,12 +2790,10 @@ async function fetchCustomerActivityTimeline(customerId = '', reader = null) {
             .limit(200);
         if (error) throw error;
         moduleState.customerActivities = Array.isArray(data) ? data.map((row) => createSalesActivityRecord(row)) : [];
-        moduleState.customerTimelineLoadedForId = text(customerId);
         await fetchActivityReadsForUser(reader, moduleState.customerActivities.map((item) => item.id).filter(Boolean));
         return customerActivityTimelineRows(customerId);
     } catch (_error) {
         moduleState.customerActivities = [];
-        moduleState.customerTimelineLoadedForId = text(customerId);
         return customerActivityTimelineRows(customerId);
     }
 }
@@ -2859,7 +2823,7 @@ async function markCustomerActivitiesRead(customerId = '', reader = null, visibl
     }
 }
 
-async function fetchInstanceEditor(instanceId, options = {}) {
+async function fetchInstanceEditor(instanceId) {
     if (!instanceId) {
         moduleState.instanceLoadedId = '';
         moduleState.instanceEditor = createInstanceDraft();
@@ -2871,18 +2835,12 @@ async function fetchInstanceEditor(instanceId, options = {}) {
     }
     const { data, error } = await client.from(TABLE_INSTANCES).select('*').eq('id', instanceId).single();
     if (error) throw error;
-    const includeAnalytics = options.includeAnalytics !== false;
     const [itemsResult] = await Promise.all([
         client.from(TABLE_INSTANCE_ITEMS).select('*').eq('instance_id', instanceId).order('sort_order', { ascending: true }),
-        includeAnalytics ? fetchInstanceAnalytics(instanceId) : Promise.resolve(emptyInstanceEventSummary()),
-        includeAnalytics ? fetchInstanceSendLedger(instanceId) : Promise.resolve([]),
+        fetchInstanceAnalytics(instanceId),
+        fetchInstanceSendLedger(instanceId),
     ]);
     if (itemsResult.error) throw itemsResult.error;
-    if (!includeAnalytics) {
-        moduleState.instanceEvents = [];
-        moduleState.instanceEventSummary = emptyInstanceEventSummary();
-        moduleState.instanceSends = [];
-    }
     moduleState.instanceLoadedId = instanceId;
     moduleState.instanceEditor = createInstanceDraft({
         ...data,
@@ -2892,7 +2850,7 @@ async function fetchInstanceEditor(instanceId, options = {}) {
     return moduleState.instanceEditor;
 }
 
-async function fetchCustomerEditor(customerId, options = {}) {
+async function fetchCustomerEditor(customerId) {
     if (!customerId) {
         moduleState.customerLoadedId = '';
         moduleState.customerEditor = createCustomerDraft();
@@ -2904,16 +2862,10 @@ async function fetchCustomerEditor(customerId, options = {}) {
     }
     const { data, error } = await client.from(TABLE_CUSTOMERS).select('*').eq('id', customerId).single();
     if (error) throw error;
-    const includeAnalytics = options.includeAnalytics !== false;
-    if (includeAnalytics) {
-        await Promise.all([
-            fetchCustomerAnalytics(customerId),
-            fetchCustomerSendLedger(customerId),
-        ]);
-    } else {
-        moduleState.customerEvents = [];
-        moduleState.customerSends = [];
-    }
+    await Promise.all([
+        fetchCustomerAnalytics(customerId),
+        fetchCustomerSendLedger(customerId),
+    ]);
     moduleState.customerLoadedId = customerId;
     moduleState.customerEditor = createCustomerDraft(data);
     moduleState.customerActivityFilter = DEFAULT_CUSTOMER_ACTIVITY_FILTER;
@@ -5970,17 +5922,6 @@ function startBaseDataLoad({ force = false } = {}) {
     return moduleState.baseDataLoadingPromise;
 }
 
-function startDashboardDataLoad({ force = false } = {}) {
-    if (moduleState.dashboardDataLoadingPromise && !force) return moduleState.dashboardDataLoadingPromise;
-    const request = fetchDealRows().then(() => {
-        moduleState.dashboardDataLoadedAt = Date.now();
-    });
-    moduleState.dashboardDataLoadingPromise = request.finally(() => {
-        if (moduleState.dashboardDataLoadingPromise === request) moduleState.dashboardDataLoadingPromise = null;
-    });
-    return moduleState.dashboardDataLoadingPromise;
-}
-
 function writeBaseDataSessionCache() {
     try {
         const storage = window?.sessionStorage;
@@ -6046,38 +5987,6 @@ async function ensureBaseData() {
     }
 
     await startBaseDataLoad();
-}
-
-async function ensureCustomerFlowStageBaseData(stageKey = '') {
-    const normalizedStage = normalizeDealStageKey(stageKey);
-    if (normalizedStage !== 'quote_draft') {
-        await ensureBaseData();
-        return;
-    }
-
-    const requests = [];
-    if (!moduleState.brands.length) requests.push(fetchBrandRows());
-    if (!moduleState.products.length) requests.push(fetchProductRows());
-    if (!moduleState.customers.length) requests.push(fetchCustomerRows());
-    if (!moduleState.instances.length) requests.push(fetchInstanceRows());
-    if (!moduleState.deals.length) requests.push(fetchDealRows());
-
-    if (requests.length) await Promise.all(requests);
-}
-
-async function ensureDashboardData() {
-    const age = moduleState.dashboardDataLoadedAt > 0
-        ? Date.now() - moduleState.dashboardDataLoadedAt
-        : Number.POSITIVE_INFINITY;
-
-    if (age <= BASE_DATA_FRESH_MS) return;
-
-    if (age <= BASE_DATA_MAX_STALE_MS) {
-        if (!moduleState.dashboardDataLoadingPromise) void startDashboardDataLoad();
-        return;
-    }
-
-    await startDashboardDataLoad();
 }
 
 function isQuoteSetupMissing(error) {
@@ -6309,7 +6218,6 @@ function salesActivityTimelineItemMarkup(activity = {}) {
                 </div>
                 <div class="ams-sales-activity-meta">
                     <span>${esc(text(activity.page_key || activity.entity_type, 'sales'))}</span>
-                    <span>·</span>
                     <span>${esc(salesActivityTypeLabel(activity.activity_type))}</span>
                     ${detailLine ? `<span>${esc(detailLine)}</span>` : ''}
                 </div>
@@ -7798,7 +7706,7 @@ function customerActivityTimelinePanelMarkup(customerId = '') {
     const rows = customerActivityTimelineRows(customerId)
         .filter((item) => filter === 'all' ? true : text(item.actor_type) === filter);
     return `
-        <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold" data-customer-activity-panel="${esc(customerId)}" open>
+        <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold" data-customer-activity-panel="${esc(customerId)}">
             <summary class="ams-fold-summary">
                 <span>用户行为轨迹</span>
                 <em>${esc(`${rows.length} 条`)}</em>
@@ -11554,7 +11462,6 @@ function dashboardToneForRate(rate = 0, warningThreshold = 0.8) {
 }
 
 function dashboardTopRegions(deals = []) {
-    if (!moduleState.customers.length) return [];
     const map = new Map();
     deals.forEach((deal) => {
         const customer = moduleState.customers.find((item) => item.id === text(deal.customer_id)) || {};
@@ -11568,7 +11475,6 @@ function dashboardTopRegions(deals = []) {
 }
 
 function dashboardTopProducts(deals = []) {
-    if (!moduleState.instances.length) return [];
     const map = new Map();
     deals.forEach((deal) => {
         dealQuotes(deal.id).forEach((quote) => {
@@ -11583,7 +11489,6 @@ function dashboardTopProducts(deals = []) {
 }
 
 function dashboardTopChannels(deals = []) {
-    if (!moduleState.requirements.length) return [];
     const map = new Map();
     deals.forEach((deal) => {
         dealRequirements(deal.id).forEach((requirement) => {
@@ -11657,7 +11562,7 @@ function dashboardSummarySentence(metrics = {}) {
 function buildDashboardMetrics(input = null) {
     const now = new Date();
     const range = DASHBOARD_RANGE_OPTIONS.some((item) => item.value === moduleState.dashboardRange) ? moduleState.dashboardRange : 'quarter';
-    const allDeals = visibleDealsForDashboard(input, { includeClosed: true, includeArchived: false });
+    const allDeals = visibleDealsForInput(input, { includeClosed: true, includeArchived: false });
     const currentDeals = dashboardDealsInRange(allDeals, range, now);
     const previousDeals = dashboardPreviousDeals(allDeals, range, now);
     const revenue = dashboardRevenueForDeals(currentDeals);
@@ -11674,7 +11579,7 @@ function buildDashboardMetrics(input = null) {
     const totalDays = Math.max(daysPassed, Math.ceil((endOfDashboardRange(range, now).getTime() - startOfDashboardRange(range, now).getTime()) / 86400000));
     const timeProgress = Math.min(1, daysPassed / totalDays);
     const stagePressure = timeProgress ? conversionRate / timeProgress : conversionRate;
-    const activePipelineDeals = visibleDealsForDashboard(input, { includeClosed: false, includeArchived: false });
+    const activePipelineDeals = visibleDealsForInput(input, { includeClosed: false, includeArchived: false });
     const topRegions = dashboardTopRegions(currentDeals);
     const topProducts = dashboardTopProducts(currentDeals);
     const topChannels = dashboardTopChannels(currentDeals);
@@ -11682,18 +11587,8 @@ function buildDashboardMetrics(input = null) {
     const trend = dashboardTrendBuckets(range, currentDeals, now);
     const funnel = [
         { label: '线索', value: new Set(currentDeals.map((deal) => text(deal.customer_id)).filter(Boolean)).size || 0 },
-        {
-            label: '需求',
-            value: moduleState.requirements.length
-                ? currentDeals.filter((deal) => dealRequirements(deal.id).length > 0).length
-                : currentDeals.filter((deal) => dashboardStageIndex(deal.current_stage) >= dashboardStageIndex('requirement_capture')).length,
-        },
-        {
-            label: '报价',
-            value: moduleState.instances.length
-                ? currentDeals.filter((deal) => dealQuotes(deal.id).length > 0).length
-                : currentDeals.filter((deal) => dashboardStageIndex(deal.current_stage) >= dashboardStageIndex('quote_draft')).length,
-        },
+        { label: '需求', value: currentDeals.filter((deal) => dealRequirements(deal.id).length > 0).length },
+        { label: '报价', value: currentDeals.filter((deal) => dealQuotes(deal.id).length > 0).length },
         { label: '签约', value: signedDeals },
         { label: '回款', value: currentDeals.filter((deal) => dashboardCashForDeals([deal]) > 0).length },
     ];
@@ -11708,13 +11603,11 @@ function buildDashboardMetrics(input = null) {
             funnelDropLabel = `${funnel[index - 1].label} → ${funnel[index].label} 流失 ${fmtPercent(drop, 0)}`;
         }
     }
-    const newCustomers = moduleState.customers.length
-        ? currentDeals.filter((deal) => {
-            const customer = moduleState.customers.find((item) => item.id === text(deal.customer_id));
-            const createdMs = dateMs(customer?.created_at);
-            return createdMs >= startOfDashboardRange(range, now).getTime();
-        }).length
-        : 0;
+    const newCustomers = currentDeals.filter((deal) => {
+        const customer = moduleState.customers.find((item) => item.id === text(deal.customer_id));
+        const createdMs = dateMs(customer?.created_at);
+        return createdMs >= startOfDashboardRange(range, now).getTime();
+    }).length;
     const customerMix = {
         newCount: newCustomers,
         oldCount: Math.max(0, currentDeals.length - newCustomers),
@@ -11822,15 +11715,10 @@ function customerFlowDeals(customerId = '', input = null) {
         .sort((left, right) => text(right.updated_at || right.created_at).localeCompare(text(left.updated_at || left.created_at)));
 }
 
-async function ensureCustomerEditorForSalesFlow(customerId = '', options = {}) {
+async function ensureCustomerEditorForSalesFlow(customerId = '') {
     if (!customerId) return createCustomerDraft();
-    const needsAnalytics = options.includeAnalytics !== false;
-    const hasCustomerAnalytics = needsAnalytics
-        ? (Array.isArray(moduleState.customerEvents) && moduleState.customerEvents.length > 0)
-            || (Array.isArray(moduleState.customerSends) && moduleState.customerSends.length > 0)
-        : true;
-    if (moduleState.customerLoadedId !== customerId || !hasCustomerAnalytics) {
-        await fetchCustomerEditor(customerId, options);
+    if (moduleState.customerLoadedId !== customerId) {
+        await fetchCustomerEditor(customerId);
     }
     return moduleState.customerEditor || createCustomerDraft(moduleState.customers.find((item) => item.id === customerId) || {});
 }
@@ -11884,7 +11772,7 @@ async function ensureRequirementEditorForDeal(deal = null, user = null) {
     return moduleState.requirementEditor;
 }
 
-async function ensureInstanceEditorForDeal(deal = null, options = {}) {
+async function ensureInstanceEditorForDeal(deal = null) {
     const activeDeal = deal || dealById(activeDealIdFromState());
     const customer = moduleState.customers.find((item) => item.id === text(activeDeal?.customer_id)) || {};
     const customerEmail = normalizedCustomerEmail(customer.email);
@@ -11895,12 +11783,7 @@ async function ensureInstanceEditorForDeal(deal = null, options = {}) {
     }
     const instanceId = text(activeDeal.primary_instance_id || dealQuotes(activeDeal.id)[0]?.id);
     if (instanceId) {
-        const needsAnalytics = options.includeAnalytics !== false;
-        const hasInstanceAnalytics = needsAnalytics
-            ? (Array.isArray(moduleState.instanceEvents) && moduleState.instanceEvents.length > 0)
-                || (Array.isArray(moduleState.instanceSends) && moduleState.instanceSends.length > 0)
-            : true;
-        if (moduleState.instanceLoadedId !== instanceId || !hasInstanceAnalytics) await fetchInstanceEditor(instanceId, options);
+        if (moduleState.instanceLoadedId !== instanceId) await fetchInstanceEditor(instanceId);
         moduleState.instanceEditor = createInstanceDraft({
             ...moduleState.instanceEditor,
             deal_id: activeDeal.id,
@@ -11984,23 +11867,22 @@ function salesStageStatusRecord(stageKey = '', deal = null) {
 
 function salesStageSideCardMarkup(title = '', eyebrow = '', bodyMarkup = '', options = {}) {
     const className = ['ams-card', 'ams-sales-stage-side-card', text(options.className)].filter(Boolean).join(' ');
-    const bodyClassName = ['ams-sales-stage-side-card-body', text(options.bodyClassName)].filter(Boolean).join(' ');
     return `
         <section class="${className}">
             <div class="ams-sales-stage-side-card-head">
                 ${eyebrow ? `<span>${esc(eyebrow)}</span>` : ''}
                 <strong>${esc(title)}</strong>
             </div>
-            <div class="${bodyClassName}">
+            <div class="ams-sales-stage-side-card-body">
                 ${bodyMarkup}
             </div>
         </section>
     `;
 }
 
-function salesStageSideItemMarkup(label = '', valueMarkup = '--', hint = '', className = '') {
+function salesStageSideItemMarkup(label = '', valueMarkup = '--', hint = '') {
     return `
-        <div class="ams-sales-stage-side-item ${esc(className)}">
+        <div class="ams-sales-stage-side-item">
             <span>${esc(label)}</span>
             <strong>${valueMarkup || '--'}</strong>
             ${hint ? `<small>${esc(hint)}</small>` : ''}
@@ -12010,14 +11892,6 @@ function salesStageSideItemMarkup(label = '', valueMarkup = '--', hint = '', cla
 
 function salesStageSideTextItemMarkup(label = '', value = '--', hint = '') {
     return salesStageSideItemMarkup(label, esc(text(value, '--')), hint);
-}
-
-function salesStageActionBadgeMarkup(tone = 'neutral', label = '--') {
-    return `<span class="ams-sales-stage-action-badge is-${esc(tone || 'neutral')}">${esc(text(label, '--'))}</span>`;
-}
-
-function salesStageActionStatusItemMarkup(label = '', tone = 'neutral', value = '--', hint = '') {
-    return salesStageSideItemMarkup(label, salesStageActionBadgeMarkup(tone, value), hint, 'is-action-status');
 }
 
 function salesStageActionGroupMarkup(title = '', description = '', bodyMarkup = '') {
@@ -12106,9 +11980,7 @@ function salesStageStatusCardMarkup(stageKey = '', deal = null) {
         <div class="ams-sales-stage-side-list">
             ${items.join('')}
         </div>
-    `, {
-        className: 'ams-sales-stage-side-card-status',
-    });
+    `);
 }
 
 function salesStageCustomerCardMarkup(stageKey = '', deal = null, customer = {}) {
@@ -12130,9 +12002,7 @@ function salesStageCustomerCardMarkup(stageKey = '', deal = null, customer = {})
             ${salesStageSideTextItemMarkup('国家 / 地区', country)}
             ${salesStageSideTextItemMarkup('节点双负责人', deal?.id ? stageContactDisplayLabel(record, deal) : '待保存后补全')}
         </div>
-    `, {
-        className: 'ams-sales-stage-side-card-customer',
-    });
+    `);
 }
 
 function customerProfileActionCardMarkup() {
@@ -12246,9 +12116,9 @@ function quoteStageActionCardMarkup(stageKey = '', deal = null, instance = {}) {
             ? '客户确认报价后，再统一从这里锁定商务基线并推进到签约合同。'
             : '当前节点统一在这里打开编辑器、查看客户视角报价以及分享对外入口。',
         `
-            ${salesStageActionStatusItemMarkup('客户侧查看', quotePublished ? 'info' : 'neutral', quotePublished ? '已可查看' : '需先发布')}
+            ${salesStageSideTextItemMarkup('客户侧查看', quotePublished ? '已可查看' : '需先发布报价')}
             ${normalizedStageKey === 'quote_confirmed'
-                ? salesStageActionStatusItemMarkup('客户确认', quoteConfirmationSubmitted(quoteConfirmedRecord) ? 'success' : 'warning', quoteConfirmationSubmitted(quoteConfirmedRecord) ? '已确认' : '待确认')
+                ? salesStageSideTextItemMarkup('客户确认', quoteConfirmationSubmitted(quoteConfirmedRecord) ? '已提交' : '待确认')
                 : ''}
             ${salesStageActionGroupMarkup('报价入口', '所有对外报价动作都固定放在这里，避免不同节点入口分散。', `
                 <div class="ams-sales-stage-side-actions">
@@ -12358,10 +12228,10 @@ function salesStageShellMarkup(stage = {}, deal = null, customer = {}, mainMarku
             <div class="ams-sales-stage-shell-main">
                 ${mainMarkup}
             </div>
-            <aside class="ams-sales-stage-shell-side ams-sales-stage-shell-side-rail">
-                ${salesStageOperationsCardMarkup(stage, deal, customer)}
+            <aside class="ams-sales-stage-shell-side">
                 ${salesStageStatusCardMarkup(stage.key, deal)}
                 ${salesStageCustomerCardMarkup(stage.key, deal, customer)}
+                ${salesStageOperationsCardMarkup(stage, deal, customer)}
             </aside>
         </section>
     `;
@@ -12370,7 +12240,7 @@ function salesStageShellMarkup(stage = {}, deal = null, customer = {}, mainMarku
 function customerProfileFlowMarkup(customer = {}, deals = [], activeDeal = null) {
     const customerLabel = text(customerDisplayName(customer || {}), text(activeDeal?.title, '当前客户'));
     return `
-        <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel ams-stage-intro-card">
+        <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
             <div class="ams-section-head">
                 <div>
                     <h3>${esc(customerLabel)}</h3>
@@ -12406,7 +12276,7 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
             : '当前阶段只等待客户填写，客户基础信息与需求详情以公开需求页实际提交内容为准。')
         : '当前阶段请基于客户已提交的真实需求内容进行确认。';
     return `
-        <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel ams-stage-intro-card">
+        <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
             <div class="ams-section-head">
                 <div>
                     <h3>${esc(dealStageLabel(stageKey))}</h3>
@@ -12475,11 +12345,9 @@ function stageCommunicationSectionMarkup(stageKey = '', record = {}, options = {
             </summary>
             <div class="ams-fold-body">
                 <p class="ams-field-help">${esc(help)}</p>
-                <div class="ams-stage-note-composer">
-                    <div class="ams-field">
-                        <label>新增沟通备注</label>
-                        <textarea class="ams-textarea" rows="3" data-sales-flow-stage-meta="communication_note_draft" placeholder="记录本次和客户沟通的要点、变更原因、承诺事项或内部判断。">${esc(stageMetaValue(record, 'communication_note_draft'))}</textarea>
-                    </div>
+                <div class="ams-field">
+                    <label>新增沟通备注</label>
+                    <textarea class="ams-textarea" rows="3" data-sales-flow-stage-meta="communication_note_draft" placeholder="记录本次和客户沟通的要点、变更原因、承诺事项或内部判断。">${esc(stageMetaValue(record, 'communication_note_draft'))}</textarea>
                     <div class="ams-sales-note-submit">
                         <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-note-submit">提交备注</button>
                     </div>
@@ -12502,7 +12370,7 @@ function stageCommunicationSectionMarkup(stageKey = '', record = {}, options = {
 
 function quoteTermsCardMarkup(record = {}) {
     return `
-        <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold" open>
+        <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold">
             <summary class="ams-fold-summary">
                 <span>确认条款</span>
                 <em>可展开编辑</em>
@@ -12621,7 +12489,7 @@ function quoteDraftStageMarkup(stageKey = '', deal = null, instance = {}, contex
     const { record = createDealStageRecord() } = context;
     return `
         <div class="ams-stage-detail-stack">
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel ams-stage-intro-card">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
                 <div class="ams-section-head">
                     <div>
                         <h3>${esc(dealStageLabel(stageKey))}</h3>
@@ -12724,7 +12592,7 @@ function quoteConfirmedStageMarkup(stageKey = '', deal = null, instance = {}, co
     const { record = createDealStageRecord() } = context;
     return `
         <div class="ams-stage-detail-stack">
-            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel ams-stage-intro-card">
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
                 <div class="ams-section-head">
                     <div>
                         <h3>${esc(dealStageLabel(stageKey))}</h3>
@@ -13172,7 +13040,7 @@ function salesStageContactsCardMarkup(stageKey = '', deal = null) {
         owner_email: deal.owner_email,
     });
     return `
-        <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold" open>
+        <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold">
             <summary class="ams-fold-summary">
                 <span>节点双负责人</span>
                 <em>售前 / 售后</em>
@@ -13188,19 +13056,15 @@ function salesStageContactsCardMarkup(stageKey = '', deal = null) {
     `;
 }
 
-function salesStageDetailMarkup(stageKey = '', deal = null, customer = {}, input = null, extraMainMarkup = '') {
+function salesStageDetailMarkup(stageKey = '', deal = null, customer = {}, input = null) {
     const stage = dealStageDefinition(stageKey);
     if (!deal?.id && stage.key !== 'customer_profile') {
         return '<section class="ams-card"><div class="ams-empty">当前阶段还没有可处理的销售线。</div></section>';
     }
     const mainMarkup = salesStageDetailRenderer(stage)(deal, customer, input);
-    const appendedMainMarkup = `
-        ${mainMarkup}
-        ${salesStageContactsCardMarkup(stage.key, deal)}
-        ${extraMainMarkup}
-    `;
     return `
-        ${salesStageShellMarkup(stage, deal, customer, appendedMainMarkup)}
+        ${salesStageShellMarkup(stage, deal, customer, mainMarkup)}
+        ${salesStageContactsCardMarkup(stage.key, deal)}
     `;
 }
 
@@ -13941,10 +13805,9 @@ export async function renderQuotePipelinePage(input) {
 }
 
 export async function renderQuoteCustomerFlowPage(input) {
-    const stageKey = currentSalesStageParam('customer_profile');
-    const isQuoteDraftStage = normalizeDealStageKey(stageKey) === 'quote_draft';
     try {
-        await ensureCustomerFlowStageBaseData(stageKey);
+        await ensureBaseData();
+        await fetchUnreadStageActivitySummary(input.user);
     } catch (error) {
         if (isQuoteSetupMissing(error)) {
             renderQuoteSetupRequired(input, error);
@@ -13952,6 +13815,8 @@ export async function renderQuoteCustomerFlowPage(input) {
         }
         throw error;
     }
+
+    const stageKey = currentSalesStageParam('customer_profile');
     const requestedDealId = text(readAdminPageParam('deal'));
     let customerId = text(readAdminPageParam('customer'));
     const requestedDeal = dealById(requestedDealId);
@@ -13967,7 +13832,7 @@ export async function renderQuoteCustomerFlowPage(input) {
         return;
     }
 
-    await ensureCustomerEditorForSalesFlow(customerId, { includeAnalytics: !isQuoteDraftStage });
+    await ensureCustomerEditorForSalesFlow(customerId);
     const deals = customerFlowDeals(customerId, input);
     const activeDeal = deals.find((deal) => deal.id === requestedDealId) || deals[0] || null;
     if (!activeDeal && stageKey !== 'customer_profile') {
@@ -13996,9 +13861,7 @@ export async function renderQuoteCustomerFlowPage(input) {
         await renderQuoteCustomerFlowPage(input);
         return;
     }
-    if (dealStageDefinition(stageKey).scope === 'quote') {
-        await ensureInstanceEditorForDeal(syncedActiveDeal, { includeAnalytics: !isQuoteDraftStage });
-    }
+    if (dealStageDefinition(stageKey).scope === 'quote') await ensureInstanceEditorForDeal(syncedActiveDeal);
     if (normalizeDealStageKey(stageKey) === 'quote_confirmed' && moduleState.instanceEditor?.id) {
         moduleState.instanceEditor = await ensurePublishedQuoteForStage(input.user, stageKey, moduleState.instanceEditor);
     }
@@ -14028,19 +13891,34 @@ export async function renderQuoteCustomerFlowPage(input) {
     moduleState.dealEditor = syncedActiveDeal ? createDealDraft(moduleState.dealEditor || syncedActiveDeal) : createDealDraft();
     moduleState.dealStageRecords = syncedActiveDeal ? dealCurrentRecords(moduleState.dealEditor) : [];
     const customerLabel = flowCustomerLabel(moduleState.customerEditor || {}, syncedActiveDeal);
-    const shouldHydrateUnreadSummary = moduleState.unreadSummaryLoadedAt <= 0;
-    const shouldHydrateTimelineAsync = isQuoteDraftStage && moduleState.customerTimelineLoadedForId !== text(customerId);
+    await appendSalesActivity({
+        customer_id: customerId,
+        deal_id: syncedActiveDeal?.id,
+        requirement_id: moduleState.requirementEditor?.id,
+        instance_id: moduleState.instanceEditor?.id,
+        actor_type: 'sales',
+        actor_id: input.user?.id,
+        actor_label: input.user?.email || input.user?.id || 'sales',
+        activity_type: 'page_view',
+        entity_type: 'deal',
+        entity_id: syncedActiveDeal?.id || customerId,
+        page_key: 'quote-customer-flow',
+        stage_key: stageKey,
+        action_label: `进入客户流水线 · ${dealStageLabel(stageKey)}`,
+        detail_json: {
+            summary: customerLabel,
+        },
+    });
+    const timeline = await fetchCustomerActivityTimeline(customerId, input.user);
+    await markCustomerActivitiesRead(customerId, input.user, timeline.map((item) => item.id));
+    await fetchUnreadStageActivitySummary(input.user);
+
     const stageLabel = dealStageLabel(stageKey);
     renderSalesPageFrame(input, `独立客户流水线 · ${stageLabel}`, `客户模式：${customerLabel} · 围绕单个客户回看已完成节点，并继续推进当前节点。`, `
         <section class="ams-quote-layout ams-sales-stage-layout ams-quote-layout-single">
             <div class="ams-sales-flow-detail-stack">
-                ${salesStageDetailMarkup(
-                    stageKey,
-                    syncedActiveDeal,
-                    moduleState.customerEditor || createCustomerDraft(),
-                    input,
-                    customerActivityTimelinePanelMarkup(customerId)
-                )}
+                ${salesStageDetailMarkup(stageKey, syncedActiveDeal, moduleState.customerEditor || createCustomerDraft(), input)}
+                ${customerActivityTimelinePanelMarkup(customerId)}
             </div>
         </section>
     `, {
@@ -14052,74 +13930,12 @@ export async function renderQuoteCustomerFlowPage(input) {
     });
     bindSalesPageChrome(input);
     bindSalesStageListActions(input, stageKey, customerId, true);
-
-    window.setTimeout(() => {
-        void appendSalesActivity({
-            customer_id: customerId,
-            deal_id: syncedActiveDeal?.id,
-            requirement_id: moduleState.requirementEditor?.id,
-            instance_id: moduleState.instanceEditor?.id,
-            actor_type: 'sales',
-            actor_id: input.user?.id,
-            actor_label: input.user?.email || input.user?.id || 'sales',
-            activity_type: 'page_view',
-            entity_type: 'deal',
-            entity_id: syncedActiveDeal?.id || customerId,
-            page_key: 'quote-customer-flow',
-            stage_key: stageKey,
-            action_label: `进入客户流水线 · ${dealStageLabel(stageKey)}`,
-            detail_json: {
-                summary: customerLabel,
-            },
-        }).catch(() => {});
-    }, 0);
-
-    if (shouldHydrateUnreadSummary) {
-        void fetchUnreadStageActivitySummary(input.user)
-            .then(() => {
-                const currentPage = text(readAdminPageParam('page'));
-                const currentStage = normalizeDealStageKey(readAdminPageParam('stage'));
-                const currentCustomer = text(readAdminPageParam('customer'));
-                const currentDeal = text(readAdminPageParam('deal'));
-                if (
-                    currentPage === 'quote-customer-flow'
-                    && currentStage === normalizeDealStageKey(stageKey)
-                    && currentCustomer === customerId
-                    && currentDeal === text(syncedActiveDeal?.id)
-                ) {
-                    void renderQuoteCustomerFlowPage(input);
-                }
-            })
-            .catch(() => {});
-    }
-
-    if (shouldHydrateTimelineAsync) {
-        void fetchCustomerActivityTimeline(customerId, input.user)
-            .then((timeline) => markCustomerActivitiesRead(customerId, input.user, timeline.map((item) => item.id)))
-            .then(() => {
-                const currentPage = text(readAdminPageParam('page'));
-                const currentStage = normalizeDealStageKey(readAdminPageParam('stage'));
-                const currentCustomer = text(readAdminPageParam('customer'));
-                const currentDeal = text(readAdminPageParam('deal'));
-                if (
-                    currentPage === 'quote-customer-flow'
-                    && currentStage === 'quote_draft'
-                    && currentCustomer === customerId
-                    && currentDeal === text(syncedActiveDeal?.id)
-                ) {
-                    void renderQuoteCustomerFlowPage(input);
-                }
-            })
-            .catch(() => {});
-    } else if (!isQuoteDraftStage) {
-        const timeline = await fetchCustomerActivityTimeline(customerId, input.user);
-        await markCustomerActivitiesRead(customerId, input.user, timeline.map((item) => item.id));
-    }
 }
 
 export async function renderQuoteSalesDashboardPage(input) {
     try {
-        await ensureDashboardData();
+        await ensureBaseData();
+        await fetchUnreadStageActivitySummary(input.user);
     } catch (error) {
         if (isQuoteSetupMissing(error)) {
             renderQuoteSetupRequired(input, error);
@@ -14128,7 +13944,7 @@ export async function renderQuoteSalesDashboardPage(input) {
         throw error;
     }
 
-    const visibleDeals = visibleDealsForDashboard(input);
+    const visibleDeals = visibleDealsForInput(input);
     const activeDeals = visibleDeals.filter((deal) => ['active', 'paused'].includes(normalizeDealStatus(deal.deal_status)));
     const upcomingDeals = [...activeDeals]
         .filter((deal) => text(deal.next_action) || text(deal.next_action_due_at))
@@ -14139,7 +13955,24 @@ export async function renderQuoteSalesDashboardPage(input) {
     const progressTone = dashboardToneForRate(metrics.stagePressure, 0.85);
     const maxTrendRevenue = Math.max(1, ...metrics.trend.map((item) => safeNumber(item.revenue, 0)));
     const dashboardCustomerId = text(upcomingDeals[0]?.customer_id || activeDeals[0]?.customer_id);
-    const shouldHydrateUnreadSummary = moduleState.unreadSummaryLoadedAt <= 0;
+    if (dashboardCustomerId) {
+        await appendSalesActivity({
+            customer_id: dashboardCustomerId,
+            deal_id: text(upcomingDeals[0]?.id || activeDeals[0]?.id),
+            actor_type: 'sales',
+            actor_id: input.user?.id,
+            actor_label: input.user?.email || input.user?.id || 'sales',
+            activity_type: 'page_view',
+            entity_type: 'deal',
+            entity_id: text(upcomingDeals[0]?.id || activeDeals[0]?.id || dashboardCustomerId),
+            page_key: 'sales-dashboard',
+            stage_key: 'customer_profile',
+            action_label: '进入销售总览',
+            detail_json: {
+                summary: '查看销售总览',
+            },
+        });
+    }
 
     renderSalesPageFrame(input, '销售总览', '30 秒看清销售健康度、增长动因和当前堵点。', `
         <section class="ams-dashboard-command">
@@ -14303,7 +14136,7 @@ export async function renderQuoteSalesDashboardPage(input) {
                         </div>
                         <div class="ams-sales-stage-guide-track">
                             ${lane.stages.map((stage, stageIndex) => {
-                                const count = dashboardStageCount(stage.key, input);
+                                const count = salesStageCount(stage.key, input);
                                 const countUnit = stage.key === 'customer_profile' ? '个客户' : '条销售线';
                                 const countTone = count <= 0 ? 'is-empty' : count === 1 ? 'is-warm' : 'is-hot';
                                 const countIcon = count <= 0
@@ -14350,34 +14183,4 @@ export async function renderQuoteSalesDashboardPage(input) {
     });
     bindSalesPageChrome(input);
     bindSalesDashboardEvents(input);
-
-    if (shouldHydrateUnreadSummary) {
-        void fetchUnreadStageActivitySummary(input.user)
-            .then(() => {
-                const currentPage = text(readAdminPageParam('page'), 'dashboard');
-                if (currentPage === 'dashboard') void renderQuoteSalesDashboardPage(input);
-            })
-            .catch(() => {});
-    }
-
-    if (dashboardCustomerId && shouldHydrateUnreadSummary) {
-        window.setTimeout(() => {
-            void appendSalesActivity({
-                customer_id: dashboardCustomerId,
-                deal_id: text(upcomingDeals[0]?.id || activeDeals[0]?.id),
-                actor_type: 'sales',
-                actor_id: input.user?.id,
-                actor_label: input.user?.email || input.user?.id || 'sales',
-                activity_type: 'page_view',
-                entity_type: 'deal',
-                entity_id: text(upcomingDeals[0]?.id || activeDeals[0]?.id || dashboardCustomerId),
-                page_key: 'sales-dashboard',
-                stage_key: 'customer_profile',
-                action_label: '进入销售总览',
-                detail_json: {
-                    summary: '查看销售总览',
-                },
-            }).catch(() => {});
-        }, 0);
-    }
 }

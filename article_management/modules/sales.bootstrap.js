@@ -21,7 +21,7 @@ import {
 import {
     renderAdminSecurityPage,
     renderAdminUsersPage,
-} from './admin-users.module.js?v=20260419sales-adminusers05';
+} from './admin-users.module.js?v=20260327sales03';
 import {
     renderQuoteBrandsPage,
     renderQuoteCustomerFlowPage,
@@ -168,12 +168,7 @@ async function withButtonBusy(button, busyText, task) {
     try {
         await task();
     } finally {
-        if (
-            shouldShowBusyToast &&
-            toastNode &&
-            toastNode.classList.contains('is-busy') &&
-            String(toastNode.textContent || '') === String(busyText || '')
-        ) {
+        if (shouldShowBusyToast) {
             clearToastState();
         }
         button.classList.remove('is-loading');
