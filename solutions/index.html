@@ -135,7 +135,7 @@
                     </div>
                     <h1 class="text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
                         <span data-i18n="heroTitle">Efficiency Beyond</span> <br>
-                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-gas-orange to-red-500">Electricity (80%+)</span>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-gas-orange to-red-500" data-i18n="heroHighlight">Electricity (80%+)</span>
                     </h1>
                     <p class="text-xl text-gas-subtext mb-8 max-w-2xl mx-auto lg:mx-0" data-i18n="heroDesc">
                         Don't just burn gas for power. Capture the heat. Transform waste into steam, cooling, or carbon-negative agriculture, boosting system efficiency from 35% to over 80%.
@@ -155,24 +155,24 @@
                     
                     <div class="mb-6">
                         <div class="flex justify-between text-xs text-gray-400 mb-2">
-                            <span>Traditional Genset</span>
-                            <span>~35% Efficiency</span>
+                            <span data-i18n="graphTraditional">Traditional Genset</span>
+                            <span data-i18n="graphTraditionalEfficiency">~35% Efficiency</span>
                         </div>
                         <div class="h-8 w-full bg-[#111] rounded-full overflow-hidden flex">
-                            <div class="h-full bg-gas-subtext w-[35%] flex items-center justify-center text-[10px] text-black font-bold">Power 35%</div>
-                            <div class="h-full bg-red-900/20 w-[65%] flex items-center justify-center text-[10px] text-gray-500">Waste Heat 65%</div>
+                            <div class="h-full bg-gas-subtext w-[35%] flex items-center justify-center text-[10px] text-black font-bold" data-i18n="graphTraditionalPower">Power 35%</div>
+                            <div class="h-full bg-red-900/20 w-[65%] flex items-center justify-center text-[10px] text-gray-500" data-i18n="graphTraditionalWasteHeat">Waste Heat 65%</div>
                         </div>
                     </div>
 
                     <div>
                         <div class="flex justify-between text-xs text-gas-orange mb-2">
-                            <span class="font-bold">GasGx CHP Solution</span>
-                            <span class="font-bold">~85% Efficiency</span>
+                            <span class="font-bold" data-i18n="graphChp">GasGx CHP Solution</span>
+                            <span class="font-bold" data-i18n="graphChpEfficiency">~85% Efficiency</span>
                         </div>
                         <div class="h-8 w-full bg-[#111] rounded-full overflow-hidden flex relative shadow-glow-orange">
-                            <div class="h-full bg-gas-green w-[35%] flex items-center justify-center text-[10px] text-black font-bold z-10">Power 35%</div>
-                            <div class="h-full bg-gas-orange w-[50%] flex items-center justify-center text-[10px] text-black font-bold z-10">Recovered Heat 50%</div>
-                            <div class="h-full bg-red-900/20 w-[15%] flex items-center justify-center text-[10px] text-gray-500 z-0">Loss</div>
+                            <div class="h-full bg-gas-green w-[35%] flex items-center justify-center text-[10px] text-black font-bold z-10" data-i18n="graphChpPower">Power 35%</div>
+                            <div class="h-full bg-gas-orange w-[50%] flex items-center justify-center text-[10px] text-black font-bold z-10" data-i18n="graphRecoveredHeat">Recovered Heat 50%</div>
+                            <div class="h-full bg-red-900/20 w-[15%] flex items-center justify-center text-[10px] text-gray-500 z-0" data-i18n="graphLoss">Loss</div>
                         </div>
                     </div>
                     
@@ -215,18 +215,18 @@
                     <div class="gas-card p-6 rounded-xl border border-white/10 flex items-center justify-center h-64 relative">
                         <div class="flex items-center gap-2 text-xs md:text-sm">
                             <div class="flex flex-col items-center gap-2">
-                                <div class="p-3 border border-gas-green text-gas-green rounded">Gas Engine</div>
+                                <div class="p-3 border border-gas-green text-gas-green rounded" data-i18n="diagramGasEngine">Gas Engine</div>
                             </div>
                             <i class="fa-solid fa-arrow-right text-gray-600"></i>
                             <div class="flex flex-col items-center gap-2">
-                                <div class="p-3 border border-gas-orange text-gas-orange rounded bg-gas-orange/10 shadow-glow-orange">Heat Recovery</div>
+                                <div class="p-3 border border-gas-orange text-gas-orange rounded bg-gas-orange/10 shadow-glow-orange" data-i18n="diagramHeatRecovery">Heat Recovery</div>
                                 <i class="fa-solid fa-arrow-down text-gas-orange"></i>
                             </div>
                             <i class="fa-solid fa-arrow-right text-gray-600"></i>
                             <div class="flex flex-col gap-2">
-                                <span class="px-2 py-1 bg-white/5 rounded border border-white/10">🏭 Steam</span>
-                                <span class="px-2 py-1 bg-white/5 rounded border border-white/10">🥬 Agriculture</span>
-                                <span class="px-2 py-1 bg-white/5 rounded border border-white/10">❄️ Cooling</span>
+                                <span class="px-2 py-1 bg-white/5 rounded border border-white/10" data-i18n="diagramSteam">🏭 Steam</span>
+                                <span class="px-2 py-1 bg-white/5 rounded border border-white/10" data-i18n="diagramAgriculture">🥬 Agriculture</span>
+                                <span class="px-2 py-1 bg-white/5 rounded border border-white/10" data-i18n="diagramCooling">❄️ Cooling</span>
                             </div>
                         </div>
                     </div>
@@ -299,10 +299,20 @@
                     tagline: "天然气发电挖矿助手",
                     heroBadge: "解决方案 / 热电联供 CHP",
                     heroTitle: "超越电力的极致效率",
+                    heroHighlight: "电力之外（80%+）",
                     heroDesc: "不要只为了发电而燃烧天然气。通过回收废热转化为蒸汽、制冷或碳汇农业，将系统综合效率从 35% 提升至 80% 以上。",
                     btnExplore: "探索应用场景",
                     btnCalc: "热值换算计算器",
                     graphTitle: "系统效率对比",
+                    graphTraditional: "传统燃气机组",
+                    graphTraditionalEfficiency: "约 35% 效率",
+                    graphTraditionalPower: "发电 35%",
+                    graphTraditionalWasteHeat: "废热 65%",
+                    graphChp: "GasGx 热电联供方案",
+                    graphChpEfficiency: "约 85% 效率",
+                    graphChpPower: "发电 35%",
+                    graphRecoveredHeat: "回收热能 50%",
+                    graphLoss: "损耗",
                     graphNote: "热能通过余热锅炉(HRSG)或液冷回路回收。",
                     techTitle: "技术路径",
                     techDesc: "我们根据您的发动机类型和挖矿设施部署先进的热能捕获系统。",
@@ -310,6 +320,11 @@
                     tech1Desc: "捕获 400°C+ 的高温排气，产生高压蒸汽用于工业用途。",
                     tech2Title: "液冷热回收回路",
                     tech2Desc: "通过板式换热器回收液冷矿机产生的 60°C 热水，用于温室供暖或区域供热。",
+                    diagramGasEngine: "燃气发动机",
+                    diagramHeatRecovery: "热能回收",
+                    diagramSteam: "🏭 蒸汽",
+                    diagramAgriculture: "🥬 农业",
+                    diagramCooling: "❄️ 制冷",
                     appTitle: "三重收入来源",
                     appSubtitle: "同时通过电子（挖矿）、分子（天然气）和热值（热能）获利。",
                     app1Title: "工业供汽",
@@ -328,10 +343,20 @@
                     tagline: "Natural Gas Power Mining Assistant",
                     heroBadge: "SOLUTIONS / CHP",
                     heroTitle: "Efficiency Beyond",
+                    heroHighlight: "Electricity (80%+)",
                     heroDesc: "Don't just burn gas for power. Capture the heat. Transform waste into steam, cooling, or carbon-negative agriculture, boosting system efficiency from 35% to over 80%.",
                     btnExplore: "Explore Applications",
                     btnCalc: "Heat Value Calc",
                     graphTitle: "System Efficiency Comparison",
+                    graphTraditional: "Traditional Genset",
+                    graphTraditionalEfficiency: "~35% Efficiency",
+                    graphTraditionalPower: "Power 35%",
+                    graphTraditionalWasteHeat: "Waste Heat 65%",
+                    graphChp: "GasGx CHP Solution",
+                    graphChpEfficiency: "~85% Efficiency",
+                    graphChpPower: "Power 35%",
+                    graphRecoveredHeat: "Recovered Heat 50%",
+                    graphLoss: "Loss",
                     graphNote: "Heat captured via HRSG or Liquid Cooling Loops.",
                     techTitle: "Technology Path",
                     techDesc: "We deploy advanced thermal capture systems tailored to your engine type and mining setup.",
@@ -339,6 +364,11 @@
                     tech1Desc: "Heat Recovery Steam Generators capture 400°C+ exhaust to produce high-pressure steam for industrial use.",
                     tech2Title: "Liquid Cooling Loops",
                     tech2Desc: "Plate heat exchangers recycle 60°C hot water from hydro-cooled miners for greenhouse heating or district warming.",
+                    diagramGasEngine: "Gas Engine",
+                    diagramHeatRecovery: "Heat Recovery",
+                    diagramSteam: "🏭 Steam",
+                    diagramAgriculture: "🥬 Agriculture",
+                    diagramCooling: "❄️ Cooling",
                     appTitle: "Triple Revenue Streams",
                     appSubtitle: "Monetize the Electron (Mining), the Molecule (Gas), and the Thermal Unit (Heat).",
                     app1Title: "Industrial Steam",
@@ -357,10 +387,20 @@
                     tagline: "Помощник по газовому майнингу",
                     heroBadge: "РЕШЕНИЯ / ТЭЦ (CHP)",
                     heroTitle: "Эффективность выше",
+                    heroHighlight: "электричества (80%+)",
                     heroDesc: "Не просто сжигайте газ ради энергии. Улавливайте тепло. Превращайте отходы в пар, холод или сельское хозяйство, повышая КПД с 35% до 80%+.",
                     btnExplore: "Применение",
                     btnCalc: "Калькулятор тепла",
                     graphTitle: "Сравнение эффективности",
+                    graphTraditional: "Традиционный газогенератор",
+                    graphTraditionalEfficiency: "~35% КПД",
+                    graphTraditionalPower: "Электроэнергия 35%",
+                    graphTraditionalWasteHeat: "Потери тепла 65%",
+                    graphChp: "Решение GasGx CHP",
+                    graphChpEfficiency: "~85% КПД",
+                    graphChpPower: "Электроэнергия 35%",
+                    graphRecoveredHeat: "Возвращенное тепло 50%",
+                    graphLoss: "Потери",
                     graphNote: "Тепло улавливается через КУ (HRSG) или контуры жидкостного охлаждения.",
                     techTitle: "Технологии",
                     techDesc: "Мы внедряем передовые системы улавливания тепла, адаптированные к вашим двигателям.",
@@ -368,6 +408,11 @@
                     tech1Desc: "Улавливает выхлоп 400°C+ для производства пара высокого давления для промышленности.",
                     tech2Title: "Жидкостные контуры",
                     tech2Desc: "Пластинчатые теплообменники перерабатывают горячую воду 60°C от гидро-майнеров для отопления теплиц.",
+                    diagramGasEngine: "Газовый двигатель",
+                    diagramHeatRecovery: "Утилизация тепла",
+                    diagramSteam: "🏭 Пар",
+                    diagramAgriculture: "🥬 Сельское хозяйство",
+                    diagramCooling: "❄️ Охлаждение",
                     appTitle: "Тройной поток доходов",
                     appSubtitle: "Монетизируйте Электрон (Майнинг), Молекулу (Газ) и Тепло (Джоули).",
                     app1Title: "Промышленный пар",

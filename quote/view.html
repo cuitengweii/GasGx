@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GasGx Quote View</title>
+    <title>GasGx 报价查看</title>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -60,14 +60,14 @@
     <div id="toolbar" class="fixed top-0 left-0 right-0 z-50 px-3 md:px-8 py-3 md:py-4 flex justify-between items-center border-b backdrop-blur-md" style="background-color: rgba(10, 14, 20, 0.85); border-color: var(--border-color);">
         <div class="toolbar-brand flex items-center space-x-2 md:space-x-4">
             <div id="toolbar-brand-name" class="text-[var(--gas-green-light)] text-xl md:text-3xl font-black tracking-tight flex whitespace-nowrap items-center flex-shrink-0">
-                <span>GasGx Quotation System</span>
+                <span>GasGx 报价系统</span>
             </div>
         </div>
 
         <div class="toolbar-actions flex items-center space-x-2 md:space-x-4 text-xs md:text-sm">
-            <button id="btn-auth" type="button" hidden class="toolbar-auth-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center justify-center gap-2" title="Login">
+            <button id="btn-auth" type="button" hidden class="toolbar-auth-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center justify-center gap-2" title="登录">
                 <i id="icon-auth" class="fa-solid fa-user-lock"></i>
-                <span id="btn-text-auth" class="toolbar-auth-text">Login</span>
+                <span id="btn-text-auth" class="toolbar-auth-text">登录</span>
             </button>
 
             <div class="toolbar-lang flex bg-[#161B22] rounded p-1 border border-[#2C2F33]">
@@ -161,9 +161,9 @@
         <div class="share-modal-card auth-modal-card p-5 md:p-6">
             <div class="flex items-start justify-between gap-4 mb-5">
                 <div>
-                    <div class="text-[var(--gas-green-light)] text-xs uppercase tracking-[0.28em] font-mono-num mb-2" id="auth-modal-kicker">Protected Action</div>
-                    <h3 id="auth-modal-title" class="text-xl md:text-2xl font-bold text-white">Login required</h3>
-                    <p id="auth-modal-message" class="text-sm text-[var(--text-body)] mt-2 leading-6">Sign in to keep using quote sharing, export, and email actions.</p>
+                    <div class="text-[var(--gas-green-light)] text-xs uppercase tracking-[0.28em] font-mono-num mb-2" id="auth-modal-kicker">受保护操作</div>
+                    <h3 id="auth-modal-title" class="text-xl md:text-2xl font-bold text-white">需要登录</h3>
+                    <p id="auth-modal-message" class="text-sm text-[var(--text-body)] mt-2 leading-6">登录后才能继续使用报价分享、导出和邮件相关操作。</p>
                 </div>
                 <button type="button" id="btn-auth-modal-close" class="btn-outline w-10 h-10 inline-flex items-center justify-center">
                     <i class="fa-solid fa-xmark"></i>
@@ -175,19 +175,19 @@
                     <i id="auth-modal-icon" class="fa-solid fa-user-lock"></i>
                 </div>
                 <div class="min-w-0">
-                    <div id="auth-modal-action" class="text-sm font-semibold text-white tracking-wide">Share / Export</div>
-                    <div id="auth-modal-hint" class="text-sm text-[var(--text-body)] mt-1 leading-6">Browsing stays open. We will return you to this quote after sign-in.</div>
+                    <div id="auth-modal-action" class="text-sm font-semibold text-white tracking-wide">分享 / 导出</div>
+                    <div id="auth-modal-hint" class="text-sm text-[var(--text-body)] mt-1 leading-6">当前浏览不会中断，登录完成后会自动回到这份报价。</div>
                 </div>
             </div>
 
             <div class="flex flex-wrap gap-3 mt-6">
                 <button id="btn-auth-modal-login" type="button" class="btn-glow px-4 py-2.5 inline-flex items-center gap-2">
                     <i class="fa-solid fa-right-to-bracket"></i>
-                    <span id="auth-modal-login-text">Login now</span>
+                    <span id="auth-modal-login-text">立即登录</span>
                 </button>
                 <button type="button" id="btn-auth-modal-cancel" class="btn-outline px-4 py-2.5 inline-flex items-center gap-2">
                     <i class="fa-solid fa-eye"></i>
-                    <span id="auth-modal-cancel-text">Continue browsing</span>
+                    <span id="auth-modal-cancel-text">继续浏览</span>
                 </button>
             </div>
         </div>
@@ -197,7 +197,7 @@
         <div class="share-modal-card auth-modal-card p-5 md:p-6">
             <div class="flex items-start justify-between gap-4 mb-5">
                 <div>
-                    <div class="text-[var(--gas-green-light)] text-xs uppercase tracking-[0.28em] font-mono-num mb-2" id="quote-confirm-alert-kicker">QUOTE CONFIRM</div>
+                    <div class="text-[var(--gas-green-light)] text-xs uppercase tracking-[0.28em] font-mono-num mb-2" id="quote-confirm-alert-kicker">报价确认</div>
                     <h3 id="quote-confirm-alert-title" class="text-xl md:text-2xl font-bold text-white">确认提示</h3>
                     <p id="quote-confirm-alert-message" class="text-sm text-[var(--text-body)] mt-2 leading-6">当前账号暂时不能提交这份报价确认。</p>
                 </div>
@@ -211,15 +211,15 @@
                     <i class="fa-solid fa-triangle-exclamation"></i>
                 </div>
                 <div class="min-w-0">
-                    <div id="quote-confirm-alert-action" class="text-sm font-semibold text-white tracking-wide">Quote confirmation</div>
-                    <div id="quote-confirm-alert-hint" class="text-sm text-[var(--text-body)] mt-1 leading-6">Please use the customer email registered on this quote.</div>
+                    <div id="quote-confirm-alert-action" class="text-sm font-semibold text-white tracking-wide">报价确认</div>
+                    <div id="quote-confirm-alert-hint" class="text-sm text-[var(--text-body)] mt-1 leading-6">请使用这份报价中登记的客户邮箱进行确认。</div>
                 </div>
             </div>
 
             <div class="flex flex-wrap gap-3 mt-6">
                 <button type="button" id="btn-quote-confirm-alert-ack" class="btn-glow px-4 py-2.5 inline-flex items-center gap-2">
                     <i class="fa-solid fa-circle-check"></i>
-                    <span id="quote-confirm-alert-ack-text">OK</span>
+                    <span id="quote-confirm-alert-ack-text">知道了</span>
                 </button>
             </div>
         </div>
@@ -229,7 +229,7 @@
         <div class="share-modal-card p-5 md:p-6">
             <div class="flex items-start justify-between gap-4 mb-5">
                 <div>
-                    <div class="text-[var(--gas-green-light)] text-xs uppercase tracking-[0.28em] font-mono-num mb-2" id="share-modal-kicker">WPS STYLE SHARE</div>
+                    <div class="text-[var(--gas-green-light)] text-xs uppercase tracking-[0.28em] font-mono-num mb-2" id="share-modal-kicker">分享链接</div>
                     <h3 id="share-modal-title" class="text-xl md:text-2xl font-bold text-white">创建分享链接</h3>
                     <p id="share-modal-desc" class="text-sm text-[var(--text-body)] mt-2 leading-6">设置链接有效期后生成访问链接。管理员登录状态下始终可打开页面。</p>
                 </div>

@@ -1,4 +1,4 @@
-import {
+﻿import {
     DEFAULT_LANG,
     DEFAULT_RATES,
     DEFAULT_SHARE_SECRET,
@@ -135,11 +135,12 @@ const dict = {
         sender: '发件人：',
         receiver: '收件人：',
         validity: '报价有效期：',
+        update: '系统时间同步',
         included: '包含',
         mainConfig: '主配置',
         optionalConfig: '选配',
-        systemTotal: '系统预估总价 / EST. SYSTEM TOTAL',
-        headers: ['SEQ', '模块描述 (DESCRIPTION)', '规格 (BRAND)', 'QTY', 'RMB (¥)', 'USD ($)', 'EUR (€)', 'CAD (C$)', 'RUB (₽)'],
+        systemTotal: '系统预估总价',
+        headers: ['序号', '模块描述', '规格品牌', '数量', '人民币 (¥)', '美元 ($)', '欧元 (€)', '加元 (C$)', '卢布 (₽)'],
         ratesOnline: '全球实时汇率在线',
         ratesRefreshing: '正在刷新...',
         ratesFallback: '汇率获取失败，使用本地快照。',
@@ -963,7 +964,7 @@ function renderViewContextBanner() {
 function renderToolbar() {
     const node = byId('toolbar-brand-name');
     if (!node) return;
-    node.textContent = 'GasGx Quotation System';
+    node.textContent = state.currentLang === 'zh' ? 'GasGx 报价系统' : 'GasGx Quotation System';
 }
 
 function renderAuthButton() {

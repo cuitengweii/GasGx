@@ -246,6 +246,59 @@
                 expert: 'Экспертная система | Сценарий', cause: '[ПРИЧИНА]', sol: '[РЕШЕНИЕ]', chartMap: 'Кривая (MAP)'
             }
         };
+        Object.assign(dict.en, {
+            pro: 'PRO',
+            standby: 'Standby',
+            trend: 'Trend',
+            points: 'pts',
+            statusOpen: 'OPEN',
+            statusPid: 'PID',
+            statusFault: 'FLT',
+            phaseStop: 'STOP',
+            headerCurrent: 'Current (A)',
+            headerLambda: 'Lambda',
+            headerSetPos: 'SetPos',
+            headerMaxPos: 'MaxPos',
+            headerSpdLimit: 'SpdLmt'
+        });
+        Object.assign(dict.zh, {
+            port: '串口',
+            baud: '波特率',
+            start: '启动测试',
+            stop: '急停关机',
+            mode: '诊断推演模式',
+            sysSts: '系统状态',
+            phase: '阶段',
+            noError: '系统无故障',
+            errPrefix: '故障:',
+            tabs: { speed: '调速控制', ignition: '点火系统', lambda: '空燃比', waterTem: '水温曲线', oilPress: '油压曲线' },
+            expert: '专家系统介入 | 正在推演',
+            cause: '【故障表象】',
+            sol: '【排查方案】',
+            chartMap: '标定曲线',
+            pro: '专业版',
+            standby: '待机',
+            trend: '趋势',
+            points: '点',
+            statusOpen: '开环',
+            statusPid: '闭环',
+            statusFault: '故障',
+            phaseStop: '停机',
+            headerCurrent: '电流 (A)',
+            headerLambda: '空燃比',
+            headerSetPos: '目标位',
+            headerMaxPos: '最大位',
+            headerSpdLimit: '限速',
+            faultHighTemp: '水温>95℃',
+            faultLowOil: '油压<150kPa',
+            faultOverspeed: '超速',
+            faultExhaustHigh: '排温>650℃',
+            faultNoSync: '无同步',
+            faultCanFault: 'CAN故障',
+            faultComLost: '通讯丢失',
+            faultOverload: '过载',
+            faultCoilFault: '线圈故障'
+        });
 
         const normalizeShellLang = (langCandidate) => {
             const value = String(langCandidate || '').toLowerCase();
@@ -298,6 +351,34 @@
             });
 
             const getStopStateText = () => lang === 'en' ? 'STOP' : (lang === 'zh' ? '停机' : 'СТОП');
+            const localizeStatusValue = (value) => {
+                const text = String(value ?? '');
+                if (lang === 'zh') {
+                    if (text === 'ON') return '开启';
+                    if (text === 'OFF') return '关闭';
+                    if (text === 'OPEN') return t('statusOpen');
+                    if (text === 'PID') return t('statusPid');
+                    if (text === 'FLT') return t('statusFault');
+                    if (text === 'STOP') return t('phaseStop');
+                    if (text === 'Standby') return t('standby');
+                }
+                return text;
+            };
+            const localizePhaseValue = (value) => {
+                const text = String(value ?? '');
+                if (text === 'STOP') return t('phaseStop');
+                return text;
+            };
+            const localizeTableHeader = (header) => {
+                const keyMap = {
+                    'Current (A)': 'headerCurrent',
+                    'Lambda': 'headerLambda',
+                    'SetPos': 'headerSetPos',
+                    'MaxPos': 'headerMaxPos',
+                    'SpdLmt': 'headerSpdLimit'
+                };
+                return t(keyMap[header] || header);
+            };
 
             const INITIAL_ENGINE_STATE = {
                 CurSpd: 0, SetSpd: 1500, IgtSpd: 0, SyncVolt: 0.0,
@@ -679,15 +760,15 @@
 
                             let faultMsg = '';
                             if (phaseRef.current === 'RATED' || (phaseRef.current === 'IDLE' && ticks > 25)) {
-                                if (nextWater > 95) faultMsg = t('errPrefix') + ' T>95℃';
-                                else if (nextOil < 150 && mode !== 'START_FAIL') faultMsg = t('errPrefix') + ' P<150kPa';
-                                else if (nextSpd > 1750) faultMsg = t('errPrefix') + ' OVERSPEED';
-                                else if (nextState.ExhaustTemp > 650) faultMsg = t('errPrefix') + ' EXH>650℃';
-                                else if (mode === 'SYNC_LOSS' && ticks % 4 === 0) faultMsg = t('errPrefix') + ' NO SYNC';
-                                else if (mode === 'CAN_BUS_OFF' && ticks % 5 === 0) faultMsg = t('errPrefix') + ' CAN FLT';
-                                else if (mode === 'SENSOR_FAIL_MAP' && ticks % 12 === 0) faultMsg = t('errPrefix') + ' COM LOST';
-                                else if ((mode === 'LOAD_SURGE' || mode === 'OVERLOAD') && nextState.LoadI > 650 && ticks % 8 === 0) faultMsg = t('errPrefix') + ' OVERLOAD';
-                                else if (mode === 'IGNITION_COIL_SHORT' && ticks % 10 === 0) faultMsg = t('errPrefix') + ' COIL FLT';
+                                if (nextWater > 95) faultMsg = t('errPrefix') + ' ' + t('faultHighTemp');
+                                else if (nextOil < 150 && mode !== 'START_FAIL') faultMsg = t('errPrefix') + ' ' + t('faultLowOil');
+                                else if (nextSpd > 1750) faultMsg = t('errPrefix') + ' ' + t('faultOverspeed');
+                                else if (nextState.ExhaustTemp > 650) faultMsg = t('errPrefix') + ' ' + t('faultExhaustHigh');
+                                else if (mode === 'SYNC_LOSS' && ticks % 4 === 0) faultMsg = t('errPrefix') + ' ' + t('faultNoSync');
+                                else if (mode === 'CAN_BUS_OFF' && ticks % 5 === 0) faultMsg = t('errPrefix') + ' ' + t('faultCanFault');
+                                else if (mode === 'SENSOR_FAIL_MAP' && ticks % 12 === 0) faultMsg = t('errPrefix') + ' ' + t('faultComLost');
+                                else if ((mode === 'LOAD_SURGE' || mode === 'OVERLOAD') && nextState.LoadI > 650 && ticks % 8 === 0) faultMsg = t('errPrefix') + ' ' + t('faultOverload');
+                                else if (mode === 'IGNITION_COIL_SHORT' && ticks % 10 === 0) faultMsg = t('errPrefix') + ' ' + t('faultCoilFault');
                             }
                             if (faultMsg && phaseRef.current !== 'FAULT') {
                                 phaseRef.current = 'FAULT'; nextState.FaultMsg = faultMsg;
@@ -1263,13 +1344,13 @@
                                 {Math.round(gauge.value)}
                             </div>
                             <div className="text-[11px] mt-1 gx-text-secondary tracking-[0.24em] uppercase">
-                                {isSimulating ? phaseRef.current : 'Standby'}
+                                {isSimulating ? localizePhaseValue(phaseRef.current) : t('standby')}
                             </div>
                         </div>
                         <div className="relative mt-4 pointer-events-none">
                             <div className="flex items-center justify-between mb-1">
-                                <span className="text-[9px] uppercase tracking-[0.24em] gx-text-secondary">Trend</span>
-                                <span className="text-[9px] gx-text-secondary">{history.length} pts</span>
+                                <span className="text-[9px] uppercase tracking-[0.24em] gx-text-secondary">{t('trend')}</span>
+                                <span className="text-[9px] gx-text-secondary">{history.length} {t('points')}</span>
                             </div>
                             <div className="rounded-xl border overflow-hidden" style={{ borderColor: `${gauge.color}33`, background: 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))' }}>
                                 <svg viewBox={`0 0 ${sparkWidth} ${sparkHeight}`} preserveAspectRatio="none" className="w-full h-[128px]">
@@ -1297,8 +1378,8 @@
                         <div className="flex-shrink-0">
                             {type === 'select' ? (
                                 <select className="data-numbers w-[74px] sm:w-[65px] px-1 py-0.5 text-[12px] gx-bg-main gx-border border gx-text-accent gx-shadow-inner rounded focus:outline-none focus:border-[var(--accent)] transition-colors">
-                                    <option>{item.v}</option>
-                                    <option>{item.v === 'ON' ? 'OFF' : 'ON'}</option>
+                                    <option>{localizeStatusValue(item.v)}</option>
+                                    <option>{localizeStatusValue(item.v === 'ON' ? 'OFF' : 'ON')}</option>
                                 </select>
                             ) : (
                                 <input type="text" defaultValue={item.v} className="data-numbers w-[74px] sm:w-[65px] px-1.5 py-0.5 text-[12px] text-right gx-bg-main gx-border border gx-text-primary gx-shadow-inner rounded focus:outline-none focus:border-[var(--accent)] transition-colors" />
@@ -1317,7 +1398,7 @@
                                 <div className="p-1.5 bg-[rgba(var(--accent-rgb),0.2)] rounded border gx-border-accent">
                                     <Settings2 size={16} className="gx-text-accent" />
                                 </div>
-                                <span className="font-semibold text-xs sm:text-sm tracking-wide sm:tracking-widest gx-text-primary">{t('appTitle')} <span className="gx-text-secondary font-normal text-[10px] sm:text-xs ml-2">PRO</span></span>
+                                <span className="font-semibold text-xs sm:text-sm tracking-wide sm:tracking-widest gx-text-primary">{t('appTitle')} <span className="gx-text-secondary font-normal text-[10px] sm:text-xs ml-2">{t('pro')}</span></span>
                             </div>
                             
                             <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
@@ -1326,7 +1407,7 @@
                                     <span className="data-numbers text-[10px] gx-text-secondary">{t('sysSts')}</span>
                                 </div>
                                 <span className={`data-numbers text-[11px] px-2 py-0.5 border rounded ${isSimulating ? 'bg-[rgba(var(--accent-rgb),0.15)] gx-text-accent gx-border-accent' : 'bg-[rgba(128,128,128,0.1)] gx-text-secondary gx-border'}`}>
-                                    {t('phase')}: {phaseRef.current}
+                                    {t('phase')}: {localizePhaseValue(phaseRef.current)}
                                 </span>
                             </div>
                         </div>
@@ -1514,7 +1595,7 @@
                                     <thead className="gx-bg-tab gx-text-secondary sticky top-0 shadow-sm">
                                         <tr>
                                             {currentConfig.tableHeaders.map((header, idx) => (
-                                                <th key={idx} className="gx-border border-b py-2 px-1 font-medium whitespace-pre-line">{header}</th>
+                                                <th key={idx} className="gx-border border-b py-2 px-1 font-medium whitespace-pre-line">{localizeTableHeader(header)}</th>
                                             ))}
                                         </tr>
                                     </thead>
@@ -1566,7 +1647,7 @@
                                                 {item.l[lang] || item.l['en']}
                                             </span>
                                         </div>
-                                        <div className={`data-numbers text-[13px] ml-2 transition-all duration-300 ${valClass}`}>{val}</div>
+                                        <div className={`data-numbers text-[13px] ml-2 transition-all duration-300 ${valClass}`}>{localizeStatusValue(val)}</div>
                                     </div>
                                 );
                             })}
