@@ -43,6 +43,7 @@ import {
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
 import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260419adminusers03';
+import { renderChatQaAdminPage, renderKnowledgeAdminPage, renderKnowledgeIngestionAdminPage } from './chat-knowledge-admin.module.js?v=20260420chatkb01';
 import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260414site09';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js?v=20260321admin01';
 
@@ -131,6 +132,9 @@ const ADMIN_PAGE_IDS = new Set([
     'site-general',
     'site-navigation',
     'site-footer',
+    'knowledge',
+    'knowledge-ingestion',
+    'chat-qa',
     'admin-users',
     'admin-security',
     'articles',
@@ -1093,9 +1097,12 @@ function renderShell() {
                     ${navGroup('system', 'System', [
                         navButton('site-navigation', '主站导航', 'fa-compass', 'system'),
                         navButton('site-footer', '主站页脚', 'fa-window-maximize', 'system'),
+                        navButton('knowledge', '知识库', 'fa-book-open', 'system'),
+                        navButton('knowledge-ingestion', '知识采集', 'fa-cloud-arrow-down', 'system'),
+                        navButton('chat-qa', '机器人质检', 'fa-robot', 'system'),
                         navButton('admin-users', '人员管理', 'fa-users-gear', 'system'),
                         navButton('admin-security', '账号安全', 'fa-user-shield', 'system'),
-                    ], ['site-navigation', 'site-footer', 'admin-users', 'admin-security'])}
+                    ], ['site-navigation', 'site-footer', 'knowledge', 'knowledge-ingestion', 'chat-qa', 'admin-users', 'admin-security'])}
                     ${navGroup('news', 'News', [
                         navButton('articles', '文章管理', 'fa-file-lines', 'news'),
                         navButton('editor', '新建文章', 'fa-pen-to-square', 'news'),
@@ -2986,6 +2993,30 @@ async function renderPage() {
             rerender: () => renderPage(),
         });
         else if (state.page === 'site-footer') await renderSiteFooterAdmin({
+            user: state.user,
+            setPageHeader,
+            setContent,
+            showToast,
+            withButtonBusy,
+            rerender: () => renderPage(),
+        });
+        else if (state.page === 'knowledge') await renderKnowledgeAdminPage({
+            user: state.user,
+            setPageHeader,
+            setContent,
+            showToast,
+            withButtonBusy,
+            rerender: () => renderPage(),
+        });
+        else if (state.page === 'knowledge-ingestion') await renderKnowledgeIngestionAdminPage({
+            user: state.user,
+            setPageHeader,
+            setContent,
+            showToast,
+            withButtonBusy,
+            rerender: () => renderPage(),
+        });
+        else if (state.page === 'chat-qa') await renderChatQaAdminPage({
             user: state.user,
             setPageHeader,
             setContent,

@@ -1,0 +1,707 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx IMS | å¨ççæ°çµç«ç©èµæ°å­å­ªçç³»ç»</title>
+    <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        :root {
+            --bg-main: #060606;
+            --bg-card: #121212;
+            --accent-aurora: #5DD62C;
+            --accent-blue: #3B82F6;
+            --text-primary: #E5E7EB;
+            --text-secondary: #9CA3AF;
+            --border-line: #262626;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, "PingFang SC", sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        body:not(.en-mode) .lang-en { display: none !important; }
+        body.en-mode .lang-zh { display: none !important; }
+
+        /* Shared shell fallback utility colors (avoid color loss when dynamic Tailwind classes are missing). */
+        .text-gas-green { color: rgb(93 214 44 / 1); }
+        .text-gas-green\/80 { color: rgb(93 214 44 / 0.8); }
+        .text-gas-subtext { color: rgb(148 163 184 / 1); }
+        .bg-gas-green { background-color: rgb(93 214 44 / 1); }
+        .bg-gas-green\/10 { background-color: rgb(93 214 44 / 0.1); }
+        .border-gas-green { border-color: rgb(93 214 44 / 1); }
+        .border-gas-green\/20 { border-color: rgb(93 214 44 / 0.2); }
+        .border-gas-green\/30 { border-color: rgb(93 214 44 / 0.3); }
+        .border-gas-green\/35 { border-color: rgb(93 214 44 / 0.35); }
+        .border-gas-green\/40 { border-color: rgb(93 214 44 / 0.4); }
+        .border-gas-green\/45 { border-color: rgb(93 214 44 / 0.45); }
+        .border-gas-green\/60 { border-color: rgb(93 214 44 / 0.6); }
+        .shadow-glow { box-shadow: 0 0 10px rgba(93, 214, 44, 0.3); }
+        .hover\:shadow-glow-strong:hover { box-shadow: 0 0 20px rgba(93, 214, 44, 0.6); }
+        .hover\:text-gas-green:hover { color: rgb(93 214 44 / 1); }
+        .hover\:bg-gas-green:hover { background-color: rgb(93 214 44 / 1); }
+        .hover\:border-gas-green:hover { border-color: rgb(93 214 44 / 1); }
+
+        .aurora-text { color: var(--accent-aurora); }
+        .glow-aurora { text-shadow: 0 0 20px rgba(93, 214, 44, 0.4); }
+
+        /* æåèæ¯å¨ç» */
+        .aurora-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(circle at 10% 10%, rgba(93, 214, 44, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(59, 130, 246, 0.08) 0%, transparent 40%);
+        }
+
+        /* æé®è®¾è®¡ */
+        .btn-aurora {
+            background: var(--accent-aurora);
+            color: #000;
+            font-weight: 800;
+            padding: 1rem 2.5rem;
+            border-radius: 9999px;
+            transition: all 0.3s;
+            box-shadow: 0 0 30px rgba(93, 214, 44, 0.3);
+        }
+        .btn-aurora:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 0 50px rgba(93, 214, 44, 0.5);
+        }
+
+        /* çç¸å¾æ ·å¼ */
+        .engine-part {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .engine-part:hover {
+            filter: drop-shadow(0 0 8px var(--accent-aurora));
+            transform: scale(1.02);
+        }
+        .engine-core {
+            filter: drop-shadow(0 0 24px rgba(93, 214, 44, 0.12));
+        }
+        .engine-outline {
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .engine-label {
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+        }
+        .tech-panel {
+            fill: rgba(170, 215, 206, 0.04);
+            stroke: rgba(229, 249, 244, 0.58);
+            stroke-width: 1.8;
+        }
+        .tech-panel-strong {
+            fill: rgba(196, 240, 230, 0.11);
+            stroke: rgba(246, 253, 250, 0.98);
+            stroke-width: 2.3;
+        }
+        .tech-stroke {
+            fill: none;
+            stroke: rgba(207, 255, 244, 0.78);
+            stroke-width: 1.35;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 5 5;
+        }
+        .tech-stroke-strong {
+            fill: none;
+            stroke: rgba(239, 252, 248, 0.95);
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 7 5;
+        }
+        .tech-stroke-faint {
+            fill: none;
+            stroke: rgba(207, 255, 244, 0.18);
+            stroke-width: 0.9;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 3 5;
+        }
+        .hotspot-ring {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { r: 4; opacity: 1; }
+            100% { r: 12; opacity: 0; }
+        }
+
+        /* ä¾åºé¾æ¡¥æ¥ */
+        .supply-line {
+            stroke-dasharray: 10;
+            animation: flow 20s linear infinite;
+        }
+        @keyframes flow {
+            from { stroke-dashoffset: 100; }
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* å¤¸å¼ ç UI å¡ç */
+        .ui-layered-card {
+            background: rgba(18, 18, 18, 0.8);
+            border: 1px solid var(--border-line);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .ui-layered-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-aurora), transparent);
+        }
+
+        .ops-workflow-card { min-height: 640px; }
+        .ops-workflow-body { flex: 1; display: flex; flex-direction: column; gap: 1.5rem; }
+        .ops-workflow-primary { min-height: 220px; display: flex; align-items: center; }
+        .ops-workflow-secondary { min-height: 156px; }
+        .ops-workflow-footer { margin-top: auto; padding-top: 1.5rem; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+    <div id="ggx-site-header-slot"></div>
+
+    <div class="aurora-canvas"></div>
+
+    <!-- Hero Section -->
+    <section class="relative pt-36 pb-24 px-10">
+        <div class="max-w-6xl mx-auto text-center">
+            <div class="inline-block px-4 py-1 border border-[var(--accent-aurora)]/40 rounded-full text-[var(--accent-aurora)] text-[10px] font-black tracking-[0.4em] mb-10 animate__animated animate__fadeIn">
+                GLOBAL DISTRIBUTED POWER PLANT OPS
+            </div>
+            <h1 class="text-7xl md:text-9xl font-black mb-12 leading-[0.95] tracking-tighter">
+                <span class="lang-zh">è®©è·¨å½è¿ç»´<br><span class="aurora-text glow-aurora italic">ä»æªå¦æ­¤ç®å</span></span>
+                <span class="lang-en">Cross-Border O&amp;M<br><span class="aurora-text glow-aurora italic">Made Effortless</span></span>
+            </h1>
+            <p class="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+                <span class="lang-zh">GasGx å°ä¸­å½å¼ºå¤§çå¤ä»¶ä¾åºé¾ä¸å¨ççµç«è¿ç»´ä¸çº¿å®æ¶è¦åãéè¿æ°å­å­ªçéä»¶è¿½è¸ªä¸æºè½é¢è­¦ï¼ç¡®ä¿æ¯ä¸ä¸ªèç¹é½æ¥æâæ»ä»çº§âçæ§å¶åã</span>
+                <span class="lang-en">GasGx connects China's spare-parts supply with global site O&amp;M in real time, using digital-twin tracking and predictive alerts.</span>
+            </p>
+        </div>
+    </section>
+
+    <!-- æ¨¡åä¸ï¼ä¸­å½ä¾åºé¾æ¯æå¨çï¼Supply Chain Bridgeï¼ -->
+    <section id="supply-bridge" class="py-24 px-10 bg-black/40">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+                <div class="space-y-8">
+                    <h2 class="text-5xl font-black italic">THE <span class="aurora-text">BRIDGE</span><br><span class="lang-zh">ä¸­å½å¶é ï¼å¨çäºç®¡</span><span class="lang-en">China Built, Cloud Operated Globally</span></h2>
+                    <p class="text-gray-400 leading-loose">
+                        <span class="lang-zh">æä»¬æå»ºäºä»ä¸­å½åå¤§ä¸­å¿ä»ï¼ä¸æµ·ãæ·±å³ãæé½ãåäº¬ï¼å°å¨ç 140+ è¿ç»´ç«ç¹çæ°å­åæ¡¥æ¢ãéè¿ GasGx åºå¥åºç³»ç»ï¼æ¯ä¸ä»¶å¤ä»¶å¨ç¦»å¼ä¸­å½å·¥åçç¬é´ï¼å°±å·²ç»è¿å¥äºå¨çç«ç¹çå¨éé¢æ¥æ¸åã</span>
+                        <span class="lang-en">We built a digital bridge from four China hub warehouses to 140+ global O&amp;M sites. Every spare enters the in-transit forecast list the moment it leaves factory.</span>
+                    </p>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-4 p-4 ui-layered-card">
+                            <div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-xl">ð¨ð³</div>
+                            <div>
+                                <h4 class="font-bold"><span class="lang-zh">ä¸­å½ééä¸­å¿</span><span class="lang-en">China Central Procurement Hub</span></h4>
+                                <p class="text-[10px] text-gray-500"><span class="lang-zh">ç»ä¸è´¨æ£ãæ°å­åèµç ãHSç¼ç èªå¨å¹é</span><span class="lang-en">Unified QC, digital tagging, HS-code matching</span></p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4 p-4 ui-layered-card">
+                            <div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-xl">ð</div>
+                            <div>
+                                <h4 class="font-bold"><span class="lang-zh">å¨çèç¹ä¸è´æ§</span><span class="lang-en">Global Node Consistency</span></h4>
+                                <p class="text-[10px] text-gray-500"><span class="lang-zh">å¤è¯­è¨åºå­å¯¹ç§ãè·¨æ¶åºèªå¨åæ­¥ãå½å°å³ç¨é¢ä¼°</span><span class="lang-en">Multilingual inventory map, timezone sync, duty forecast</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- ä¾åºé¾å¨æææå¾ -->
+                <div class="relative h-[400px] flex items-center justify-center">
+                    <svg viewBox="0 0 400 300" class="w-full h-full opacity-60">
+                        <defs>
+                            <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                        </defs>
+                        <!-- ä¸­å½æ ¸å¿ -->
+                        <circle cx="50" cy="150" r="10" fill="var(--accent-aurora)" filter="url(#glow)"/>
+                        <text x="35" y="130" fill="white" font-size="12" font-weight="bold">CHINA HQ</text>
+                        <!-- èªçº¿ -->
+                        <path d="M60,150 Q200,50 340,80" stroke="var(--accent-aurora)" fill="none" stroke-width="1.5" class="supply-line"/>
+                        <path d="M60,150 Q200,150 340,150" stroke="white" fill="none" stroke-width="0.5" stroke-dasharray="4"/>
+                        <path d="M60,150 Q200,250 340,220" stroke="var(--accent-aurora)" fill="none" stroke-width="1.5" class="supply-line"/>
+                        <!-- å¨çç«ç¹ -->
+                        <circle cx="350" cy="80" r="5" fill="white"/><text x="360" y="85" fill="var(--text-secondary)" font-size="8">Africa Site</text>
+                        <circle cx="350" cy="150" r="5" fill="white"/><text x="360" y="155" fill="var(--text-secondary)" font-size="8">Europe Site</text>
+                        <circle cx="350" cy="220" r="5" fill="white"/><text x="360" y="225" fill="var(--text-secondary)" font-size="8">Asia Site</text>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                         <div class="text-[60px] font-black opacity-10 tracking-widest italic">LOGISTICS</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- æ¨¡åäºï¼åå¨æºçç¸å¾å¨çå½å¨æç®¡çï¼Engine Hubï¼ -->
+    <section id="engine-hub" class="py-32 px-10">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-20">
+                <h2 class="text-5xl font-black italic mb-6 uppercase">Asset <span class="aurora-text">Explosion</span></h2>
+                <p class="text-gray-400 max-w-2xl mx-auto italic"><span class="lang-zh">ç¹å»æºç»ä»»ä½é¨ä½ï¼æ¥çå¶èåçåºå­å¥åº·åº¦ä¸å¨çè°æ¨è®¡å</span><span class="lang-en">Tap any module to inspect inventory health and global dispatch plans.</span></p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <!-- åå¨æºçç¸å¾ (SVG) -->
+                <div class="lg:col-span-8 ui-layered-card p-10 flex items-center justify-center min-h-[500px]">
+                    <svg viewBox="0 0 800 500" class="w-full h-full text-gray-700">
+                        <defs>
+                            <radialGradient id="grad-aurora"><stop offset="0%" stop-color="var(--accent-aurora)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+                            <linearGradient id="engine-metal" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#20242B"/>
+                                <stop offset="45%" stop-color="#0F1318"/>
+                                <stop offset="100%" stop-color="#1A212A"/>
+                            </linearGradient>
+                            <linearGradient id="engine-edge" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#3D4653"/>
+                                <stop offset="50%" stop-color="#8A94A3"/>
+                                <stop offset="100%" stop-color="#313843"/>
+                            </linearGradient>
+                            <filter id="engine-glow">
+                                <feGaussianBlur stdDeviation="6" result="softGlow"/>
+                                <feMerge>
+                                    <feMergeNode in="softGlow"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <g class="engine-core" filter="url(#engine-glow)" transform="translate(52 44) scale(0.82)">
+                            <ellipse cx="410" cy="254" rx="225" ry="126" fill="url(#grad-aurora)" opacity="0.08"/>
+
+                            <path d="M165,338 H657 L694,322 L718,333 L719,366 H165 Z" class="tech-panel engine-outline"/>
+                            <path d="M166,340 H718" class="tech-stroke-faint" opacity="0.5"/>
+                            <path d="M188,338 V366 M282,338 V366 M376,338 V366 M470,338 V366 M564,338 V366 M658,327 V366" class="tech-stroke-faint" opacity="0.45"/>
+                            <path d="M205,306 H628" class="tech-stroke-faint" opacity="0.45"/>
+
+                            <circle cx="177" cy="160" r="52" class="tech-panel-strong"/>
+                            <circle cx="177" cy="160" r="42" fill="none" stroke="rgba(245,252,249,0.92)" stroke-width="2"/>
+                            <circle cx="177" cy="160" r="66" fill="none" stroke="rgba(190,244,232,0.18)" stroke-width="1.2" stroke-dasharray="8 8"/>
+                            <circle cx="177" cy="160" r="30" fill="none" stroke="rgba(235,250,246,0.62)" stroke-width="1.2" stroke-dasharray="2 6"/>
+                            <path d="M192,112 L252,102 L280,122 L276,155 L228,171 L195,156 Z" class="tech-panel-strong engine-outline"/>
+                            <path d="M204,105 L219,95 H249 L268,108" class="tech-stroke-faint"/>
+                            <path d="M211,122 L253,118 M211,134 L260,130 M213,146 L254,142" class="tech-stroke-faint"/>
+                            <path d="M148,124 L134,103 H153 L171,118" class="tech-stroke-strong"/>
+                            <path d="M229,98 L247,84 H265 L274,95" class="tech-stroke-faint"/>
+                            <path d="M226,182 L240,216 L235,309" class="tech-stroke-strong"/>
+                            <path d="M206,187 V327" class="tech-stroke-faint"/>
+                            <rect x="141" y="213" width="67" height="66" class="tech-panel"/>
+                            <path d="M152,225 H197 M152,238 H197 M152,251 H197 M168,213 V279 M184,213 V279" class="tech-stroke-faint"/>
+                            <path d="M129,319 L154,286 H207 V319" class="tech-stroke"/>
+                            <path d="M163,276 V366 M185,295 V366 M212,290 V366 M229,248 C239,268 240,299 232,324" class="tech-stroke-faint"/>
+                            <path d="M143,326 L126,356 M157,319 L157,365 M188,321 L188,365 M206,314 L220,364" class="tech-stroke-faint"/>
+                            <circle cx="137" cy="130" r="2.4" fill="rgba(226,255,248,0.7)"/>
+                            <circle cx="142" cy="184" r="2.4" fill="rgba(226,255,248,0.7)"/>
+                            <circle cx="212" cy="205" r="2.4" fill="rgba(226,255,248,0.7)"/>
+
+                            <path d="M252,110 H598 L634,136" class="tech-stroke-strong"/>
+                            <path d="M264,96 H581 L616,122" class="tech-stroke"/>
+                            <path d="M276,84 H563 L596,110" class="tech-stroke-faint"/>
+                            <path d="M277,116 H606" class="tech-stroke-faint"/>
+                            <path d="M286,127 V314 M332,125 V310 M378,123 V305 M424,120 V299 M470,118 V293 M516,117 V286 M562,120 V279 M608,128 V270" class="tech-stroke-faint"/>
+                            <path d="M285,126 Q297,114 309,126 M332,125 Q343,112 355,124 M378,123 Q389,111 401,121 M424,120 Q435,110 447,119 M470,118 Q481,110 493,118 M516,117 Q527,111 539,118 M562,120 Q573,113 585,123" class="tech-stroke-faint"/>
+
+                            <path d="M268,140 H598 V170 L632,170 L657,196 V299 L630,322 H260 L236,298 V184 Z" class="tech-panel-strong engine-outline"/>
+                            <path d="M247,188 L296,156 H545 L589,184" class="tech-stroke-strong"/>
+                            <path d="M247,197 H613" class="tech-stroke-faint" opacity="0.4"/>
+                            <path d="M272,324 H634" class="tech-stroke-faint" opacity="0.4"/>
+
+                            <g>
+                                <path d="M296,177 L328,165 L345,218 L313,230 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M332,176 L365,166 L381,218 L349,230 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M368,175 L401,166 L415,218 L384,229 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M404,175 L437,168 L449,218 L419,229 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M440,176 L473,170 L484,218 L454,229 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M476,178 L509,173 L518,218 L489,228 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M512,180 L544,177 L552,218 L524,228 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M548,183 L579,182 L586,218 L560,227 Z" class="tech-panel-strong engine-outline"/>
+                                <path d="M306,183 L317,220 M378,181 L389,220 M450,183 L461,220 M521,187 L532,220" class="tech-stroke-faint" opacity="0.42"/>
+                            </g>
+
+                            <g>
+                                <rect x="288" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="324" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="360" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="396" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="432" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="468" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="504" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <rect x="540" y="232" width="32" height="60" rx="6" class="tech-panel"/>
+                                <path d="M288,252 H572" class="tech-stroke-faint" opacity="0.42"/>
+                                <path d="M304,232 V311 M376,232 V311 M448,232 V311 M520,232 V311" class="tech-stroke-faint" opacity="0.42"/>
+                            </g>
+
+                            <g>
+                                <rect x="282" y="203" width="296" height="16" rx="4" fill="rgba(190,244,232,0.05)" stroke="rgba(230,249,244,0.38)" stroke-width="1.4"/>
+                                <path d="M300,203 V291 M372,203 V291 M444,203 V291 M516,203 V291" class="tech-stroke-faint" opacity="0.38"/>
+                            </g>
+
+                            <g>
+                                <rect x="296" y="301" width="44" height="26" rx="6" class="tech-panel"/>
+                                <rect x="344" y="301" width="44" height="26" rx="6" class="tech-panel"/>
+                                <rect x="392" y="301" width="44" height="26" rx="6" class="tech-panel"/>
+                                <rect x="440" y="301" width="44" height="26" rx="6" class="tech-panel"/>
+                                <rect x="488" y="301" width="44" height="26" rx="6" class="tech-panel"/>
+                                <circle cx="318" cy="314" r="9" fill="none" stroke="rgba(233,250,246,0.76)" stroke-width="1.5"/>
+                                <circle cx="366" cy="314" r="9" fill="none" stroke="rgba(233,250,246,0.76)" stroke-width="1.5"/>
+                                <circle cx="414" cy="314" r="9" fill="none" stroke="rgba(233,250,246,0.76)" stroke-width="1.5"/>
+                                <circle cx="462" cy="314" r="9" fill="none" stroke="rgba(233,250,246,0.76)" stroke-width="1.5"/>
+                                <circle cx="510" cy="314" r="9" fill="none" stroke="rgba(233,250,246,0.76)" stroke-width="1.5"/>
+                            </g>
+
+                            <path d="M629,189 H683 L714,220 V317 H629 Z" class="tech-panel-strong engine-outline"/>
+                            <path d="M646,181 H700 L735,206 V309 H700 L700,286 H678 L678,226 H646 Z" fill="rgba(210,244,237,0.09)" stroke="rgba(242,252,249,0.88)" stroke-width="2" class="engine-outline"/>
+                            <path d="M657,178 H714 L742,199 V308 H714" class="tech-stroke-strong"/>
+                            <path d="M615,186 C638,199 651,228 651,257 C651,288 637,311 614,323" class="tech-stroke"/>
+                            <path d="M649,198 V316 M686,216 V316 M701,206 V309" class="tech-stroke-faint" opacity="0.5"/>
+                            <path d="M629,251 H678 M700,228 H735 M700,286 H735" class="tech-stroke-faint" opacity="0.46"/>
+
+                            <path d="M241,160 C258,170 267,189 267,211" class="tech-stroke-faint"/>
+                            <path d="M585,171 C603,179 615,192 629,209" class="tech-stroke-faint"/>
+
+                            <circle cx="172" cy="364" r="6" fill="rgba(93,214,44,0.95)"/>
+                            <circle cx="650" cy="228" r="6" fill="rgba(93,214,44,0.95)"/>
+                            <circle cx="172" cy="364" r="6" fill="#5DD62C" opacity="0.38" class="hotspot-ring"/>
+                            <circle cx="650" cy="228" r="6" fill="#5DD62C" opacity="0.38" class="hotspot-ring"/>
+                            <text x="438" y="406" text-anchor="middle" fill="rgba(238,252,248,0.48)" font-size="10" class="engine-label">GAS ENGINE DIGITAL TWIN</text>
+                        </g>
+                        <path d="M304,187 L180,140 M246,339 L180,360 M560,150 L620,140 M582,228 L620,360" stroke="currentColor" stroke-width="1" stroke-dasharray="4"/>
+                        <!-- çç¸åè§£åºçé¨ä»¶ -->
+                        <g class="engine-part">
+                            <rect x="100" y="100" width="80" height="80" rx="10" fill="#1A1A1A" stroke="var(--accent-aurora)" stroke-width="1"/>
+                            <text x="110" y="145" fill="var(--accent-aurora)" font-size="10">RECTIFIER</text>
+                            <circle cx="140" cy="120" r="4" fill="var(--accent-aurora)"/>
+                            <circle cx="140" cy="120" r="4" fill="var(--accent-aurora)" class="hotspot-ring"/>
+                        </g>
+                        <g class="engine-part">
+                            <rect x="620" y="100" width="80" height="80" rx="10" fill="#1A1A1A" stroke="white" stroke-width="1"/>
+                            <text x="630" y="145" fill="white" font-size="10">FILTER CORE</text>
+                        </g>
+                        <g class="engine-part">
+                            <rect x="100" y="320" width="80" height="80" rx="10" fill="#1A1A1A" stroke="white" stroke-width="1"/>
+                            <text x="115" y="365" fill="white" font-size="10">SPARK PLUG</text>
+                        </g>
+                        <g class="engine-part">
+                            <rect x="620" y="320" width="80" height="80" rx="10" fill="#1A1A1A" stroke="var(--accent-aurora)" stroke-width="1"/>
+                            <text x="635" y="365" fill="var(--accent-aurora)" font-size="10">CONTROL UNIT</text>
+                            <circle cx="660" cy="340" r="4" fill="var(--accent-aurora)" class="hotspot-ring"/>
+                        </g>
+                        <!-- è¿æ¥çº¿ -->
+                        <line x1="304" y1="187" x2="180" y2="140" stroke="var(--accent-aurora)" stroke-width="0.8"/>
+                        <line x1="246" y1="339" x2="180" y2="360" stroke="#64748B" stroke-width="0.8"/>
+                        <line x1="560" y1="150" x2="620" y2="140" stroke="#94A3B8" stroke-width="0.8"/>
+                        <line x1="582" y1="228" x2="620" y2="360" stroke="var(--accent-aurora)" stroke-width="0.8"/>
+                    </svg>
+                </div>
+                <!-- ä¾§è¾¹çå½å¨æé¢æ¿ -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="ui-layered-card p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="font-bold"><span class="lang-zh">æ´æµäºæç®¡</span><span class="lang-en">Rectifier Diode</span> <span class="text-[8px] opacity-50">SKU:51719193</span></h4>
+                            <span class="text-red-500 text-xs font-black animate-pulse"><span class="lang-zh">! éæ´æ¢</span><span class="lang-en">! Replace Soon</span></span>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-[10px] mb-1"><span><span class="lang-zh">çå½å¨æè¿åº¦ï¼æè¿è¡å°æ¶ï¼</span><span class="lang-en">Lifecycle Progress (By Runtime Hours)</span></span><span>88%</span></div>
+                                <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                                    <div class="bg-red-500 h-full w-[88%]"></div>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-white/5 rounded-xl border border-white/5">
+                                <p class="text-[10px] text-gray-400 font-bold mb-1"><span class="lang-zh">è·¨å¢é¢è­¦è¡¥ç»æµ</span><span class="lang-en">Cross-Border Alert Replenishment</span></p>
+                                <p class="text-[8px] text-gray-500"><span class="lang-zh">æ£æµå°æºç»ç´¯è®¡è¿è¡ 3500hï¼å·²è§¦åä¸­å½æ»ä»åæåæ¯ç«ç¹è°æ¨ 4 å¥éä»¶ã</span><span class="lang-en">At 3500 runtime hours, the system triggered dispatch of 4 kits from China HQ to Lagos.</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ui-layered-card p-6 border-blue-500/20">
+                        <h4 class="font-bold text-sm mb-4"><span class="lang-zh">å¨çåºå­ä¸è´æ§æè¦</span><span class="lang-en">Global Inventory Snapshot</span></h4>
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div class="p-3 bg-white/5 rounded-xl">
+                                <p class="text-[8px] text-gray-500"><span class="lang-zh">ä¸­å½æ»ä»</span><span class="lang-en">China Central Hub</span></p><p class="aurora-text font-black">2,400</p>
+                            </div>
+                            <div class="p-3 bg-white/5 rounded-xl">
+                                <p class="text-[8px] text-gray-500"><span class="lang-zh">æµ·å¤ç«ç¹æ»è®¡</span><span class="lang-en">Overseas Total</span></p><p class="text-white font-black">482</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- æ¨¡åä¸ï¼å¤¸å¼ çåè½ UI å±ç¤º (Advanced Ops Gallery) -->
+    <section id="ops-gallery" class="py-24 px-10 bg-black/50">
+        <div class="max-w-[1440px] mx-auto">
+            <div class="flex justify-center mb-20">
+                <div class="max-w-2xl text-center">
+                    <h2 class="text-5xl font-black italic">ULTIMATE <span class="aurora-text">WORKFLOW</span></h2>
+                    <p class="text-gray-400 mt-4 text-lg"><span class="lang-zh">è¿ä¸åªæ¯å ä¸ªçé¢ãè¿æ¯æ´åäºæºå¨è§è§ãGPS å°çå´æ ãå®æ¶æ¥å³ API ä¸å¤å¸ç§æ¸ç®çè¶çº§è¿ç»´ç»ç«¯ã</span><span class="lang-en">Beyond dashboards, this is a full operations terminal with machine vision, geofencing, customs APIs and multi-currency settlement.</span></p>
+                </div>
+            </div>
+
+            <div class="flex justify-start lg:justify-center space-x-12 overflow-x-auto pb-12 no-scrollbar snap-x px-4">
+                
+                <!-- å¤¸å¼ çå¥åºæ¨¡å -->
+                <div class="flex-none w-[400px] snap-center">
+                    <div class="ui-layered-card ops-workflow-card p-8 flex flex-col">
+                        <div class="mb-8 border-b border-white/5 pb-4">
+                            <h3 class="text-xl font-black italic text-blue-400">#01 SMART_INBOUND.exe</h3>
+                            <p class="text-[10px] text-gray-500"><span class="lang-zh">AI å¢å¼ºå¥åºå·¥ä½æµ</span><span class="lang-en">AI-Augmented Inbound Workflow</span></p>
+                        </div>
+                        <div class="ops-workflow-body">
+                            <!-- æ¨¡æä»£ç /æ°æ®å± -->
+                            <div class="text-[8px] font-mono text-blue-500/50 leading-tight">
+                                { "event": "INBOUND_SCAN", "gps": "6.5244Â° N, 3.3792Â° E", "product": "SPARK_PLUG_G3516", "consistency_check": "PASSED" }
+                            </div>
+                            <div class="ops-workflow-primary p-6 bg-white/5 border border-blue-500/30 rounded-2xl relative overflow-hidden">
+                                <div class="absolute inset-0 bg-blue-500/5 scan-anim"></div>
+                                <div class="flex items-center space-x-4 mb-4">
+                                    <div class="w-12 h-12 border-2 border-blue-500/40 rounded-full flex items-center justify-center">ð</div>
+                                    <span class="text-xs font-bold"><span class="lang-zh">æ­£å¨æ¯å¯¹ä¸­å½åºå£æ¥å³å...</span><span class="lang-en">Matching China export customs docs...</span></span>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-[10px]"><span><span class="lang-zh">è´§æå·: MSKU9210</span><span class="lang-en">Container: MSKU9210</span></span><span class="text-blue-400 italic">Matched</span></div>
+                                    <div class="flex justify-between text-[10px]"><span><span class="lang-zh">SKUæ¸åæ ¡éª</span><span class="lang-en">SKU Manifest Check</span></span><span class="text-blue-400 italic">Validated</span></div>
+                                </div>
+                            </div>
+                            <div class="ops-workflow-secondary space-y-2">
+                                <p class="text-xs font-bold text-gray-300"><span class="lang-zh">å¥åºè¯¦æå¤æ ¸</span><span class="lang-en">Inbound Detail Review</span></p>
+                                <div class="bg-black/40 p-4 rounded-xl border border-white/5 space-y-2">
+                                    <div class="flex justify-between text-[10px]"><span class="opacity-50"><span class="lang-zh">ä¾åºå</span><span class="lang-en">Supplier</span></span><span>LINKMINE SHANGHAI</span></div>
+                                    <div class="flex justify-between text-[10px]"><span class="opacity-50"><span class="lang-zh">æ»éé¢ (CNY)</span><span class="lang-en">Total Amount (CNY)</span></span><span class="aurora-text font-black">Â¥ 42,900.00</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="w-full py-4 rounded-xl bg-blue-500 text-white font-black text-xs uppercase tracking-widest mt-6 shadow-[0_0_20px_rgba(59,130,246,0.3)]"><span class="lang-zh">å®æå¨çå¥åºåæ­¥</span><span class="lang-en">Complete Global Inbound Sync</span></button>
+                    </div>
+                </div>
+
+                <!-- å¤¸å¼ çé¢è­¦æ¨¡å -->
+                <div class="flex-none w-[400px] snap-center">
+                    <div class="ui-layered-card ops-workflow-card p-8 flex flex-col border-red-500/20">
+                        <div class="mb-8 border-b border-white/5 pb-4">
+                            <h3 class="text-xl font-black italic text-red-500">#02 ALERT_CENTER.node</h3>
+                            <p class="text-[10px] text-gray-500"><span class="lang-zh">å¨çè·¨æ¶åºåºå­çæ­é¢è­¦</span><span class="lang-en">Cross-Timezone Inventory Breakpoint Alerts</span></p>
+                        </div>
+                        <div class="ops-workflow-body">
+                            <div class="ops-workflow-primary justify-center">
+                                <div class="w-32 h-32 rounded-full border-4 border-red-500/30 flex items-center justify-center relative">
+                                    <div class="absolute inset-0 rounded-full border-t-4 border-red-500 animate-spin"></div>
+                                    <span class="text-2xl font-black text-red-500">Critical</span>
+                                </div>
+                            </div>
+                            <div class="ops-workflow-secondary space-y-4">
+                                <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
+                                    <div class="flex justify-between text-xs font-bold mb-2"><span><span class="lang-zh">æåæ¯çµç«-2å·æº</span><span class="lang-en">Lagos Plant - Unit #2</span></span><span class="text-red-500"><span class="lang-zh">å³å°ç¼ºä»¶</span><span class="lang-en">Stockout Risk</span></span></div>
+                                    <p class="text-[10px] text-gray-500 leading-relaxed italic"><span class="lang-zh">ç³»ç»é¢æµæªæ¥ 72h åéè¿è¡ 4000h ä¸­æ£ï¼ç®åç°åºåºå­ï¼0ãä¸­å½æ»ä»è°æ¨ç©èµæ­£å¨æ¸å³ä¸­ã</span><span class="lang-en">A 4000-hour inspection is predicted within 72h. On-site stock is zero and emergency parts from China are in customs clearance.</span></p>
+                                </div>
+                                <div class="p-4 bg-white/5 rounded-2xl">
+                                    <div class="flex justify-between text-xs font-bold mb-2"><span><span class="lang-zh">å»ºè®®æä½</span><span class="lang-en">Recommended Actions</span></span></div>
+                                    <div class="space-y-2">
+                                        <div class="flex items-center space-x-2 text-[10px] text-gray-400"><span>â¢</span><span><span class="lang-zh">ç´§æ¥èç³»å½å°æµ·å³å é</span><span class="lang-en">Expedite via local customs hotline</span></span></div>
+                                        <div class="flex items-center space-x-2 text-[10px] text-gray-400"><span>â¢</span><span><span class="lang-zh">è°åé»è¿æ°å å¡ç«åºå­(å¨é)</span><span class="lang-en">Re-route inbound stock from Singapore</span></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ops-workflow-footer">
+                                <div class="p-4 rounded-2xl border border-red-500/20 bg-red-500/10 flex items-center justify-between text-xs">
+                                    <span class="font-bold text-red-400"><span class="lang-zh">ç»å¬ªåµéîå§©æ£°å®îéå¶ç°²</span><span class="lang-en">Trigger Incident Response</span></span>
+                                    <span class="text-red-500 font-black uppercase tracking-[0.2em]">Live</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- å¤¸å¼ çç®¡çæ¨¡å -->
+                 <div class="flex-none w-[400px] snap-center">
+                    <div class="ui-layered-card ops-workflow-card p-8 flex flex-col border-[var(--accent-aurora)]/30">
+                        <div class="mb-8 border-b border-white/5 pb-4">
+                            <h3 class="text-xl font-black italic text-[var(--accent-aurora)]">#03 GLOBAL_ADMIN.sys</h3>
+                            <p class="text-[10px] text-gray-500"><span class="lang-zh">å¨åç®¡çåæééå</span><span class="lang-en">Global Admin Permission Mirror</span></p>
+                        </div>
+                        <div class="ops-workflow-body">
+                            <div class="ops-workflow-primary">
+                                <div class="flex items-center space-x-4">
+                                <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-gray-800 to-black p-1">
+                                    <div class="w-full h-full rounded-xl bg-black flex items-center justify-center text-3xl">ð¤</div>
+                                </div>
+                                <div>
+                                    <p class="text-xl font-black italic">ALLEN_LINKMINE</p>
+                                    <p class="text-[8px] aurora-text uppercase font-bold tracking-[0.2em]">Cross-Border Ops Master</p>
+                                </div>
+                                </div>
+                            </div>
+                            <div class="ops-workflow-secondary grid grid-cols-2 gap-4">
+                                <div class="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
+                                    <p class="text-[8px] opacity-50 uppercase mb-1">Total Assets</p>
+                                    <p class="text-xl font-black">1.2M <span class="text-[8px]">$</span></p>
+                                </div>
+                                <div class="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
+                                    <p class="text-[8px] opacity-50 uppercase mb-1">Global Users</p>
+                                    <p class="text-xl font-black aurora-text">842</p>
+                                </div>
+                            </div>
+                            <div class="ops-workflow-footer space-y-3">
+                                <div class="p-4 bg-white/5 rounded-2xl flex justify-between items-center text-xs group cursor-pointer hover:bg-[var(--accent-aurora)] hover:text-black transition-all">
+                                    <span class="font-bold"><span class="lang-zh">ä¿®æ¹ç³»ç»æ ¸å¿é¢è­¦éå¼</span><span class="lang-en">Adjust Core Alert Thresholds</span></span>
+                                    <span>â</span>
+                                </div>
+                                <div class="p-4 bg-red-500/10 rounded-2xl flex justify-between items-center text-xs text-red-500 cursor-pointer">
+                                    <span class="font-bold"><span class="lang-zh">éæ¯å¼å¸¸åæ®è®°å½</span><span class="lang-en">Purge Abnormal Ticket Records</span></span>
+                                    <span>!</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- åºé¨å¬å¤åº -->
+    <section class="py-40 px-10 text-center relative overflow-hidden">
+        <div class="max-w-4xl mx-auto relative z-10">
+            <h2 class="text-6xl font-black mb-10 italic uppercase">Redefine <span class="aurora-text italic">Maintenance</span></h2>
+            <p class="text-xl text-gray-400 mb-16 max-w-2xl mx-auto">
+                <span class="lang-zh">åæ­¢å¨è¡¨æ ¼ä¸­å¯»æ¾ç©èµï¼å¼å§å¨å°å¾ä¸ææ¥ææãGasGx ä¸ºæ¨çå¨ççæ°çµç«æä¾æåé§çæ°å­åè¡¥ç»çº¿ã</span>
+                <span class="lang-en">Stop searching parts in spreadsheets and command supply on the map. GasGx provides a resilient digital lifeline for global gas power plants.</span>
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-10">
+                <button class="btn-aurora uppercase text-lg"><span class="lang-zh">ç³è¯·å¼éå¨çè´¦å·</span><span class="lang-en">Request Global Access</span></button>
+                <a href="#" class="text-lg font-bold hover:aurora-text transition-all border-b border-white/20 hover:border-[var(--accent-aurora)] pb-1 italic">Download System Whitepaper (EN/CN)</a>
+            </div>
+        </div>
+    </section>
+
+    <div id="ggx-site-footer-slot"></div>
+
+    <script src="/shared/ui/site-shell.config.js"></script>
+    <script src="/shared/ui/site-shell.shared.js"></script>
+    <script>
+        (function () {
+            function normalizeLang(langCandidate) {
+                return String(langCandidate || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+            }
+
+            function resolveInitialLang() {
+                try {
+                    const storedLang = window.localStorage.getItem('gasgx-lang') || window.localStorage.getItem('gas_lang');
+                    if (storedLang) return normalizeLang(storedLang);
+                } catch (error) {
+                    // Ignore localStorage failures.
+                }
+                return normalizeLang(document.documentElement.lang || 'zh-CN');
+            }
+
+            function persistLang(lang) {
+                try {
+                    window.localStorage.setItem('gasgx-lang', lang);
+                    window.localStorage.setItem('gas_lang', lang);
+                } catch (error) {
+                    // Ignore localStorage failures.
+                }
+            }
+
+            function applyLanguage(langCandidate) {
+                const lang = normalizeLang(langCandidate);
+                document.body.classList.toggle('en-mode', lang === 'en');
+                document.body.dataset.lang = lang;
+                document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+                document.title = lang === 'zh'
+                    ? 'GasGx IMS | å¨ççæ°çµç«ç©èµæ°å­å­ªçç³»ç»'
+                    : 'GasGx IMS | Global Gas Power Plant Digital Twin System';
+                persistLang(lang);
+                return lang;
+            }
+
+            const app = window.app && typeof window.app === 'object' ? window.app : {};
+            app.currentLang = normalizeLang(app.currentLang || app.lang || resolveInitialLang());
+            app.setLanguage = function (langCandidate) {
+                this.currentLang = applyLanguage(langCandidate || this.currentLang);
+                return this.currentLang;
+            };
+            app.init = function () {
+                this.setLanguage(this.currentLang);
+            };
+            window.app = app;
+
+            document.addEventListener('gasgx:lang-changed', function (event) {
+                const lang = event && event.detail ? event.detail.lang : undefined;
+                app.setLanguage(lang);
+            });
+
+            const boot = function () {
+                if (app.__sharedBooted) return;
+                app.__sharedBooted = true;
+                app.init();
+            };
+
+            if (window.GasGxSharedUI && window.GasGxSharedUI.mounted) {
+                boot();
+            } else {
+                document.addEventListener('gasgx:shared-ui-ready', boot, { once: true });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', boot, { once: true });
+            } else {
+                boot();
+            }
+        })();
+    </script>
+    <script>
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate__animated', 'animate__fadeInUp');
+                    entry.target.style.opacity = 1;
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.ui-layered-card, h2, h1').forEach(el => {
+            el.style.opacity = 0;
+            observer.observe(el);
+        });
+    </script>
+
+    <style>
+        @keyframes scan-anim {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+        .scan-anim {
+            position: absolute;
+            height: 2px;
+            width: 100%;
+            background: var(--accent-blue);
+            box-shadow: 0 0 15px var(--accent-blue);
+            animation: scan-anim 3s linear infinite;
+        }
+    </style>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7c123feb50364412bf620bfb4aa88b63","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ee71dd9cb7febb5',t:'MTc3NjU1MTQ1Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
+

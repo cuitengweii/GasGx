@@ -508,6 +508,16 @@ function pickCountryStrandedGasRule(message: string, language: string, rules: Fa
     return null;
 }
 
+function pickStrandedGasQuoteRule(message: string, language: string, rules: FaqRule[]): FaqRule | null {
+    const normalized = normalizedIntentText(message);
+    const mentionsStrandedTopic = /(stranded gas|associated gas|flare gas|flared gas|apg|bitcoin mining|mining power|gas power mining)/.test(normalized);
+    const mentionsQuoteIntent = /(quote|quotation|price|pricing|budget|cost|how much|proposal)/.test(normalized);
+    if (!mentionsStrandedTopic || !mentionsQuoteIntent) return null;
+
+    return rules.find((rule) => rule.intent_key === 'stranded_gas_quote_checklist' && rule.language === language)
+        || rules.find((rule) => rule.intent_key === 'stranded_gas_quote_checklist');
+}
+
 function normalizeSource(value: unknown): SourceRef | null {
     const source = value && typeof value === 'object' ? value as Record<string, unknown> : {};
     const title = text(source.title);
@@ -1323,7 +1333,8 @@ Deno.serve(async (request) => {
 
         const matchedIntent = detectIntent(message);
         const faqRules = await loadFaqRules(serviceClient, language);
-        const matchedRule = pickCountryStrandedGasRule(message, language, faqRules)
+        const matchedRule = pickStrandedGasQuoteRule(message, language, faqRules)
+            || pickCountryStrandedGasRule(message, language, faqRules)
             || pickFaqRule(message, language, faqRules, matchedIntent);
 
         if (matchedRule) {
