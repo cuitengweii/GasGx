@@ -5,7 +5,7 @@
         return;
     }
 
-    const DEFAULT_CHAT_API_URL = "http://localhost:8000/chat";
+    const DEFAULT_CHAT_API_PATH = "/functions/v1/site-chat";
     const SUPABASE_SDK_URL = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
     const MAIN_AUTH_DEFAULTS = Object.freeze({
         storageKey: "gasgx-main-auth",
@@ -3018,9 +3018,10 @@
         }
 
         const runtimeConfig = getSharedRuntimeConfig();
+        const authConfig = getMainAuthConfig();
         const chatApiUrl = typeof runtimeConfig.chatApiUrl === "string" && runtimeConfig.chatApiUrl.trim()
             ? runtimeConfig.chatApiUrl.trim()
-            : DEFAULT_CHAT_API_URL;
+            : `${String(authConfig.supabaseUrl || "").replace(/\/+$/, "")}${DEFAULT_CHAT_API_PATH}`;
         const dockStorageKey = "gasgx-chat-docked";
 
         let isChatOpen = false;
@@ -3116,15 +3117,22 @@
             try {
                 const response = await fetch(chatApiUrl, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        apikey: authConfig.supabaseKey || "",
+                        Authorization: `Bearer ${authConfig.supabaseKey || ""}`
+                    },
                     body: JSON.stringify({ message: text })
                 });
 
+                if (!response.ok) {
+                    throw new Error(`chat_http_${response.status}`);
+                }
                 const data = await response.json();
                 addMessage((data && data.reply) || "No response payload.", "bot");
             } catch (error) {
                 console.error("Chat Error:", error);
-                addMessage("Connection failed. Please check if the local Python server is running.", "bot");
+                addMessage("Assistant is temporarily unavailable. Please verify the Supabase Edge Function and Spark credentials.", "bot");
             } finally {
                 loadingIndicator.classList.add("hidden");
                 sendBtn.disabled = false;

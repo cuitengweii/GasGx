@@ -979,7 +979,7 @@ function renderGeneralPage() {
                                 <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="site.features.chatbotEnabled" data-site-input-type="boolean" ${features.chatbotEnabled === true ? 'checked' : ''}><span>聊天机器人</span></label>
                             </div>
                             <div class="ams-site-field-grid ams-site-field-grid-wide">
-                                ${renderTextField('site.features.chatApiUrl', '聊天接口地址', features.chatApiUrl, 'http://localhost:8000/chat')}
+                                ${renderTextField('site.features.chatApiUrl', '聊天接口地址', features.chatApiUrl, 'https://<project-ref>.supabase.co/functions/v1/site-chat')}
                             </div>
                             <div class="ams-site-inline-actions">
                                 <button class="ams-btn ams-btn-muted" type="button" data-site-action="open-logo-manager">打开 Logo 工作台</button>

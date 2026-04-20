@@ -154,12 +154,18 @@
 ```html
 <script>
   window.GASGX_SHARED_CONFIG = {
-    chatApiUrl: "http://localhost:8000/chat",
+    chatApiUrl: "https://<your-project-ref>.supabase.co/functions/v1/site-chat",
     chatbotEnabled: true,
     backToTopEnabled: true
   };
 </script>
 ```
+
+当前默认推荐链路：
+
+- 若 `chatApiUrl` 留空，共享壳会自动使用当前 Supabase 项目的 `/functions/v1/site-chat`
+- 前端会附带现有站点 publishable key 调用 Edge Function
+- Edge Function 再通过 `XFYUN_SPARK_*` 环境变量接入讯飞星火
 
 ## 6. 页面接口约定
 
