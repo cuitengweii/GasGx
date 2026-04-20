@@ -1054,6 +1054,7 @@ function normalizeRequirementAnswers(value = {}) {
             .filter((item) => item.note)
         : [];
     return {
+        allow_gas_source_report: source.allow_gas_source_report !== false,
         deployment_mode: text(source.deployment_mode || 'new_site'),
         miner_brands: normalizeStringList(source.miner_brands),
         miner_cooling: normalizeStringList(source.miner_cooling),
@@ -9382,6 +9383,44 @@ function bindCustomerEditor(input) {
     if (!content) return;
     hydrateCustomSelects(content);
 
+    const emailInput = content.querySelector('[data-customer-field="email"]');
+    const emailHelp = document.getElementById('ams-customer-email-help');
+
+    const setCustomerEmailError = (message = '') => {
+        if (!emailInput) return '';
+        const nextMessage = text(message);
+        emailInput.setCustomValidity(nextMessage);
+        emailInput.classList.toggle('is-invalid', Boolean(nextMessage));
+        emailInput.setAttribute('aria-invalid', nextMessage ? 'true' : 'false');
+        if (emailHelp) {
+            emailHelp.textContent = nextMessage || '邮箱将作为客户主档唯一识别字段，并用于后续需求单和报价流程绑定。';
+            emailHelp.classList.toggle('is-error', Boolean(nextMessage));
+        }
+        return nextMessage;
+    };
+
+    const validateCustomerEmailField = ({ shouldReport = false } = {}) => {
+        if (!emailInput) return true;
+        const normalized = normalizedCustomerEmail(emailInput.value);
+        const message = !normalized
+            ? '客户邮箱是必填项，请填写后再保存。'
+            : !isValidCustomerEmail(normalized)
+                ? '客户邮箱格式不正确，请检查后再保存。'
+                : '';
+        setCustomerEmailError(message);
+        if (message && shouldReport) emailInput.reportValidity();
+        return !message;
+    };
+
+    if (emailInput) {
+        emailInput.addEventListener('input', () => {
+            validateCustomerEmailField();
+        });
+        emailInput.addEventListener('blur', () => {
+            validateCustomerEmailField();
+        });
+    }
+
     const graphModal = document.getElementById('ams-customer-graph-modal');
     const closeGraphModal = () => {
         if (graphModal) graphModal.hidden = true;
@@ -9599,6 +9638,11 @@ function bindCustomerEditor(input) {
     });
 
     document.getElementById('ams-quote-customer-save')?.addEventListener('click', async (event) => {
+        if (!validateCustomerEmailField({ shouldReport: true })) {
+            input.showToast(emailInput?.validationMessage || '客户邮箱格式不正确，请检查后再保存。', true);
+            emailInput?.focus();
+            return;
+        }
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
             try {
                 const saved = await saveCustomerDraft(input.user, moduleState.customerEditor);
@@ -9814,7 +9858,7 @@ function bindRequirementEditor(input) {
             const field = node.dataset.requirementAnswer;
             if (!field) return;
             if (requirementIsLocked(moduleState.requirementEditor?.status)) return;
-            moduleState.requirementEditor.answers[field] = node.value;
+            moduleState.requirementEditor.answers[field] = node.type === 'checkbox' ? node.checked : node.value;
         };
         node.addEventListener('input', apply);
         if (node.type === 'checkbox' || node.tagName === 'SELECT') node.addEventListener('change', apply);
@@ -9864,7 +9908,7 @@ function bindRequirementEditor(input) {
             input.showToast('请先保存需求单，再打开公开需求页。', true);
             return;
         }
-        window.open(requirementPublicUrl(moduleState.requirementEditor.public_slug, moduleState.requirementEditor.public_token, { readonly: true }), '_blank', 'noopener');
+        window.location.assign(requirementPublicUrl(moduleState.requirementEditor.public_slug, moduleState.requirementEditor.public_token));
     });
     document.getElementById('ams-quote-requirement-open-link-inline')?.addEventListener('click', () => {
         document.getElementById('ams-quote-requirement-open-link')?.click();
@@ -10288,6 +10332,14 @@ export async function renderQuoteRequirementsPage(input) {
                                 <div class="ams-field-help ams-quote-ledger-note ${linkLocked ? '' : 'is-warning'}">
                                     ${linkLocked ? '客户已提交，公开需求页现在是锁定只读状态。' : '客户尚未提交，公开需求页仍可继续填写。'}
                                 </div>
+                            </div>
+                            <div class="ams-field">
+                                <label>客户页附件开关</label>
+                                <label class="ams-choice-chip">
+                                    <input type="checkbox" data-requirement-answer="allow_gas_source_report" ${answers.allow_gas_source_report ? 'checked' : ''} ${requirementLocked ? 'disabled' : ''}>
+                                    <span>允许客户上传气源报告</span>
+                                </label>
+                                <div class="ams-field-help">关闭后，客户公开页将隐藏气源报告上传区块。</div>
                             </div>
                         </div>
                           <div class="ams-inline-actions ams-quote-create-bar ams-quote-create-bar-compact">
@@ -10829,7 +10881,7 @@ export async function renderQuoteCustomersPage(input) {
                 ` : ''}
                 <div class="ams-site-field-grid ams-site-field-grid-wide">
 <div class="ams-field"><label>客户名称</label><input class="ams-input" data-customer-field="company_name" value="${esc(moduleState.customerEditor?.company_name)}" placeholder="Demo Customer"></div>
-<div class="ams-field"><label>客户邮箱（必填，仅支持邮箱格式）</label><input class="ams-input" type="email" inputmode="email" autocomplete="email" data-customer-field="email" value="${esc(moduleState.customerEditor?.email)}" placeholder="customer@example.com"></div>
+                    <div class="ams-field"><label>客户邮箱（必填，仅支持邮箱格式）</label><input class="ams-input" type="email" inputmode="email" autocomplete="email" data-customer-field="email" value="${esc(moduleState.customerEditor?.email)}" placeholder="customer@example.com"><div id="ams-customer-email-help" class="ams-field-help">邮箱将作为客户主档唯一识别字段，并用于后续需求单和报价流程绑定。</div></div>
                     <div class="ams-field"><label>客户电话</label><input class="ams-input" data-customer-field="phone" value="${esc(moduleState.customerEditor?.phone)}" placeholder="+7 000 000 0000"></div>
                     <div class="ams-field"><label>国家/地区</label><input class="ams-input" data-customer-field="country" value="${esc(moduleState.customerEditor?.country)}" placeholder="Russia"></div>
                 </div>
@@ -10893,7 +10945,7 @@ export async function renderQuoteCustomersPage(input) {
                     </div>
                     <div class="ams-site-field-grid ams-site-field-grid-wide">
 <div class="ams-field"><label>客户名称</label><input class="ams-input" data-customer-field="company_name" value="${esc(moduleState.customerEditor?.company_name)}" placeholder="Demo Customer"></div>
-<div class="ams-field"><label>客户邮箱（必填，仅支持邮箱格式）</label><input class="ams-input" type="email" inputmode="email" autocomplete="email" data-customer-field="email" value="${esc(moduleState.customerEditor?.email)}" placeholder="customer@example.com"></div>
+                    <div class="ams-field"><label>客户邮箱（必填，仅支持邮箱格式）</label><input class="ams-input" type="email" inputmode="email" autocomplete="email" data-customer-field="email" value="${esc(moduleState.customerEditor?.email)}" placeholder="customer@example.com"><div id="ams-customer-email-help" class="ams-field-help">邮箱将作为客户主档唯一识别字段，并用于后续需求单和报价流程绑定。</div></div>
                         <div class="ams-field"><label>客户电话</label><input class="ams-input" data-customer-field="phone" value="${esc(moduleState.customerEditor?.phone)}" placeholder="+7 000 000 0000"></div>
                         <div class="ams-field"><label>国家/地区</label><input class="ams-input" data-customer-field="country" value="${esc(moduleState.customerEditor?.country)}" placeholder="Russia"></div>
                     </div>
@@ -12019,16 +12071,13 @@ function requirementStageActionCardMarkup(stageKey = '', deal = null, requiremen
     const customerRequirementLink = requirement.id && requirement.public_slug && requirement.public_token
         ? requirementPublicUrl(requirement.public_slug, requirement.public_token)
         : '';
-    const readonlyRequirementLink = customerRequirementLink
-        ? requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true })
-        : '';
     const missingFields = requirementStatusReadyForQuote(requirement.status) ? [] : requirementMissingSubmissionFields(requirement);
     const submitted = requirementStatusReadyForQuote(requirement.status);
     const requirementLocked = requirementIsLocked(requirement.status);
     const canConfirm = normalizeDealStageKey(stageKey) === 'requirement_confirmed'
         && submitted
         && Boolean(text(requirement.customer_id) && text(requirement.deal_id || deal?.id));
-    const requirementLinkLabel = submitted ? '查看已提交需求' : '后台只读查看';
+    const requirementLinkLabel = submitted ? '打开独立需求页' : '打开独立需求页';
     const linkHelp = submitted
         ? '客户已提交，当前公开需求页已锁定；后续请基于客户真实提交内容推进。'
         : (missingFields.length
@@ -12052,7 +12101,7 @@ function requirementStageActionCardMarkup(stageKey = '', deal = null, requiremen
                         class="ams-btn ams-btn-muted ${requirementHasUnreadCustomerUpdate(requirement) ? 'has-alert-dot' : ''}"
                         type="button"
                         id="ams-sales-flow-requirement-open-link"
-                        ${readonlyRequirementLink ? '' : 'disabled'}
+                        ${customerRequirementLink ? '' : 'disabled'}
                     >
                         ${esc(requirementLinkLabel)}
                         ${requirementHasUnreadCustomerUpdate(requirement) ? '<span class="ams-btn-alert-dot" aria-hidden="true"></span>' : ''}
@@ -13212,7 +13261,7 @@ function bindSalesRequirementActions(input, stageKey = '', customerId = '', cust
         markRequirementCustomerUpdateSeen(requirement);
         document.getElementById('ams-sales-flow-requirement-open-link')?.classList.remove('has-alert-dot');
         document.querySelector('#ams-sales-flow-requirement-open-link .ams-btn-alert-dot')?.remove();
-        window.open(requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true }), '_blank', 'noopener');
+        window.location.assign(requirementPublicUrl(requirement.public_slug, requirement.public_token));
     });
 
     ensureSalesFlowShareMenuBindings();
@@ -13360,7 +13409,7 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
             input.showToast('当前还没有可查看的用户需求入口。', true);
             return;
         }
-        window.open(requirementPublicUrl(requirement.public_slug, requirement.public_token, { readonly: true }), '_blank', 'noopener');
+        window.location.assign(requirementPublicUrl(requirement.public_slug, requirement.public_token));
     });
 
     const salesFlowQuoteShareMenu = document.querySelector('.ams-sales-flow-quote-share-menu');
@@ -13727,10 +13776,6 @@ export async function renderQuotePipelinePage(input) {
     }
 
     const stageKey = currentSalesStageParam('requirement_capture');
-    window.history.replaceState({}, '', adminPageUrl('quote-customers', { stage: stageKey }));
-    await renderQuoteCustomersPage(input);
-    return;
-
     if (stageKey === 'customer_profile') {
         await renderQuoteCustomersPage(input);
         return;

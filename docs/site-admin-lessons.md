@@ -205,3 +205,44 @@ How to detect earlier:
 How to prevent recurrence:
 - Promote such topics into deterministic FAQ/policy rules with explicit trigger families and knowledge-card source refs.
 - Leave retrieval to support the answer, not to decide the commercial posture.
+
+## Lesson 12: “Public link available” and “customer runtime opens correctly” are two different checkpoints
+
+Error symptom:
+- Backend could generate a valid standalone public requirement link, but the user still reported that opening from the customer side “jumped back”.
+- Early validation only proved that the raw public URL itself was stable, not that the customer-side launcher path behaved the same way.
+
+Root cause:
+- The rollout touched multiple layers at once:
+  - backend link generation
+  - account-center launcher UI
+  - standalone public-page entry HTML
+  - SQL fallback/RPC recovery
+- Verifying only one layer created false confidence about the full clickthrough experience.
+
+How to detect earlier:
+- Treat these as separate acceptance checks:
+  1. raw public URL opens and stays stable
+  2. backend launcher opens the same stable page
+  3. customer account-center launcher opens the same stable page
+
+How to prevent recurrence:
+- For public-link workflows, always test both:
+  - direct pasted URL
+  - in-product launcher entry
+- A stable standalone page alone is not enough to close the bug if the launcher still uses old target/redirect behavior.
+
+## Lesson 13: SQL compatibility patches can be silently re-broken by later migration files
+
+Error symptom:
+- A function fix appeared correct in one SQL file, but the database still reproduced the same `relation "deal_row" does not exist` error after execution.
+
+Root cause:
+- A later compatibility SQL file still contained the previous function definition and overwrote the earlier repaired version.
+
+How to detect earlier:
+- When a function still fails after a local fix, search all later migrations/compatibility files for the same `create or replace function ...` target before assuming the fix itself is wrong.
+
+How to prevent recurrence:
+- For function hotfixes, verify the final override order across all migration/compatibility files.
+- If only one minimal function is needed for rollout recovery, prefer a dedicated one-purpose SQL file over re-executing a large historical migration bundle.

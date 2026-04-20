@@ -29,7 +29,7 @@ import {
     renderQuotePipelinePage,
     renderQuoteProductsPage,
     renderQuoteSalesDashboardPage,
-} from './quote-system.module.js?v=20260419quote60';
+} from './quote-system.module.js?v=20260420quote62';
 
 const root = document.getElementById('ams-root');
 const toastNode = document.getElementById('ams-toast');

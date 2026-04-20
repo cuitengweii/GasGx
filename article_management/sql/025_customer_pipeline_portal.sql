@@ -115,25 +115,6 @@ begin
     end if;
 
     return query
-    with deal_row as (
-        select d.*
-        from public.quote_deals as d
-        where d.id = target_deal_id
-          and d.customer_id = me_customer_id
-        limit 1
-    ), requirement_row as (
-        select r.*
-        from public.quote_requirements as r
-        join deal_row d on d.id = r.deal_id
-        order by (r.id = d.primary_requirement_id) desc, r.updated_at desc
-        limit 1
-    ), quote_row as (
-        select q.*
-        from public.quote_instances as q
-        join deal_row d on d.id = q.deal_id
-        order by (q.id = d.primary_instance_id) desc, q.updated_at desc
-        limit 1
-    )
     select
         d.id as deal_id,
         d.customer_id,
@@ -148,6 +129,8 @@ begin
                 'id', r.id,
                 'status', r.status,
                 'title', r.title,
+                'public_slug', r.public_slug,
+                'public_token', r.public_token,
                 'requirement_type', r.requirement_type,
                 'country', r.country,
                 'requester_company', r.requester_company,
@@ -158,7 +141,10 @@ begin
                 'submitted_at', r.submitted_at,
                 'updated_at', r.updated_at
             )
-            from requirement_row r
+            from public.quote_requirements as r
+            where r.deal_id = d.id
+            order by (r.id = d.primary_requirement_id) desc, r.updated_at desc
+            limit 1
         ), '{}'::jsonb) as requirement,
         coalesce((
             select jsonb_build_object(
@@ -169,7 +155,10 @@ begin
                 'updated_at', q.updated_at,
                 'published_at', q.published_at
             )
-            from quote_row q
+            from public.quote_instances as q
+            where q.deal_id = d.id
+            order by (q.id = d.primary_instance_id) desc, q.updated_at desc
+            limit 1
         ), '{}'::jsonb) as quote,
         coalesce((
             select jsonb_agg(
@@ -217,8 +206,11 @@ begin
                 limit 80
             ) as a
         ), '[]'::jsonb) as activities
-    from deal_row d
-    join public.quote_customers c on c.id = d.customer_id;
+    from public.quote_deals as d
+    join public.quote_customers c on c.id = d.customer_id
+    where d.id = target_deal_id
+      and d.customer_id = me_customer_id
+    limit 1;
 
     if not found then
         raise exception 'Deal not found for current customer account.';
@@ -227,6 +219,46 @@ end;
 $$;
 
 grant execute on function public.get_customer_pipeline_detail(uuid) to authenticated;
+
+create or replace function public.get_customer_requirement_link(target_deal_id uuid)
+returns table (
+    requirement_id uuid,
+    public_slug text,
+    public_token text
+)
+language sql
+security definer
+set search_path = public
+as $$
+    with me as (
+        select public.current_quote_customer_id() as customer_id
+    ), deal_row as (
+        select
+            d.id,
+            d.customer_id,
+            d.primary_requirement_id
+        from public.quote_deals as d
+        join me on me.customer_id = d.customer_id
+        where d.id = target_deal_id
+        limit 1
+    )
+    select
+        r.id as requirement_id,
+        coalesce(r.public_slug, '') as public_slug,
+        coalesce(r.public_token, '') as public_token
+    from deal_row as d
+    join public.quote_requirements as r
+        on r.id = d.primary_requirement_id
+        or r.deal_id = d.id
+        or (r.customer_id = d.customer_id and text(r.public_slug) <> '' and text(r.public_token) <> '')
+    order by
+        (r.id = d.primary_requirement_id) desc,
+        (r.deal_id = d.id) desc,
+        r.updated_at desc
+    limit 1;
+$$;
+
+grant execute on function public.get_customer_requirement_link(uuid) to authenticated;
 
 create or replace function public.submit_customer_requirement(target_deal_id uuid, payload jsonb default '{}'::jsonb)
 returns table (
@@ -241,8 +273,20 @@ set search_path = public
 as $$
 declare
     me_customer_id uuid;
-    deal_row public.quote_deals%rowtype;
-    requirement_row public.quote_requirements%rowtype;
+    deal_id_value uuid;
+    deal_customer_id uuid;
+    deal_primary_requirement_id uuid;
+    deal_current_stage text;
+    requirement_id_value uuid;
+    requirement_title_value text;
+    requirement_type_value text;
+    requirement_country_value text;
+    requirement_answers_value jsonb;
+    requirement_company_value text;
+    requirement_name_value text;
+    requirement_email_value text;
+    requirement_phone_value text;
+    requirement_submitted_at_value timestamptz;
     submitted_at_utc timestamptz := timezone('utc', now());
     merged_answers jsonb := '{}'::jsonb;
     next_company text := '';
@@ -251,39 +295,75 @@ declare
     next_phone text := '';
     next_country text := '';
     next_stage_key text := 'requirement_confirmed';
+    actor_sub text := auth.jwt() ->> 'sub';
+    actor_email text := coalesce(auth.jwt() ->> 'email', 'customer');
 begin
     me_customer_id := public.current_quote_customer_id();
     if me_customer_id is null then
         raise exception 'No matched customer profile for current login email.';
     end if;
 
-    select *
-    into deal_row
-    from public.quote_deals
-    where id = target_deal_id
-      and customer_id = me_customer_id
-    limit 1;
+    execute $sql$
+        select
+            d.id,
+            d.customer_id,
+            d.primary_requirement_id,
+            d.current_stage
+        from public.quote_deals as d
+        where d.id = $1
+          and d.customer_id = $2
+        limit 1
+    $sql$
+    into
+        deal_id_value,
+        deal_customer_id,
+        deal_primary_requirement_id,
+        deal_current_stage
+    using target_deal_id, me_customer_id;
 
-    if not found then
+    if deal_id_value is null then
         raise exception 'Deal not found for current customer account.';
     end if;
 
-    if coalesce(deal_row.current_stage, '') not in ('customer_profile', 'requirement_capture', 'requirement_confirmed') then
+    if coalesce(deal_current_stage, '') not in ('customer_profile', 'requirement_capture', 'requirement_confirmed') then
         raise exception 'Current deal stage does not accept requirement submission.';
     end if;
 
-    select r.*
-    into requirement_row
-    from public.quote_requirements r
-    where r.deal_id = deal_row.id
-    order by (r.id = deal_row.primary_requirement_id) desc, r.updated_at desc
-    limit 1;
+    execute $sql$
+        select
+            r.id,
+            r.title,
+            r.requirement_type,
+            r.country,
+            coalesce(r.answers, '{}'::jsonb),
+            r.requester_company,
+            r.requester_name,
+            r.requester_email,
+            r.requester_phone,
+            r.submitted_at
+        from public.quote_requirements as r
+        where r.deal_id = $1
+        order by (r.id = $2) desc, r.updated_at desc
+        limit 1
+    $sql$
+    into
+        requirement_id_value,
+        requirement_title_value,
+        requirement_type_value,
+        requirement_country_value,
+        requirement_answers_value,
+        requirement_company_value,
+        requirement_name_value,
+        requirement_email_value,
+        requirement_phone_value,
+        requirement_submitted_at_value
+    using target_deal_id, deal_primary_requirement_id;
 
-    if not found then
+    if requirement_id_value is null then
         raise exception 'No requirement draft found for this deal.';
     end if;
 
-    merged_answers := coalesce(requirement_row.answers, '{}'::jsonb) || coalesce(payload -> 'answers', '{}'::jsonb);
+    merged_answers := requirement_answers_value || coalesce(payload -> 'answers', '{}'::jsonb);
     merged_answers := public.append_quote_requirement_customer_activity(
         merged_answers,
         'submitted_from_account',
@@ -291,94 +371,135 @@ begin
         'customer'
     );
 
-    next_company := coalesce(nullif(trim(payload ->> 'requester_company'), ''), nullif(requirement_row.requester_company, ''), '');
-    next_name := coalesce(nullif(trim(payload ->> 'requester_name'), ''), nullif(requirement_row.requester_name, ''), '');
-    next_email := coalesce(nullif(trim(payload ->> 'requester_email'), ''), nullif(requirement_row.requester_email, ''), '');
-    next_phone := coalesce(nullif(trim(payload ->> 'requester_phone'), ''), nullif(requirement_row.requester_phone, ''), '');
-    next_country := coalesce(nullif(trim(payload ->> 'country'), ''), nullif(requirement_row.country, ''), '');
+    next_company := coalesce(nullif(trim(payload ->> 'requester_company'), ''), nullif(requirement_company_value, ''), '');
+    next_name := coalesce(nullif(trim(payload ->> 'requester_name'), ''), nullif(requirement_name_value, ''), '');
+    next_email := coalesce(nullif(trim(payload ->> 'requester_email'), ''), nullif(requirement_email_value, ''), '');
+    next_phone := coalesce(nullif(trim(payload ->> 'requester_phone'), ''), nullif(requirement_phone_value, ''), '');
+    next_country := coalesce(nullif(trim(payload ->> 'country'), ''), nullif(requirement_country_value, ''), '');
 
-    update public.quote_requirements
-    set status = 'submitted',
-        title = coalesce(nullif(trim(payload ->> 'title'), ''), nullif(requirement_row.title, ''), concat('Requirement ', substr(requirement_row.id::text, 1, 8))),
-        requirement_type = coalesce(nullif(trim(payload ->> 'requirement_type'), ''), nullif(requirement_row.requirement_type, ''), requirement_type),
-        country = next_country,
-        answers = merged_answers,
-        requester_company = next_company,
-        requester_name = next_name,
-        requester_email = next_email,
-        requester_phone = next_phone,
-        submitted_at = coalesce(requirement_row.submitted_at, submitted_at_utc),
-        updated_by = null,
-        updated_at = submitted_at_utc
-    where id = requirement_row.id
-    returning * into requirement_row;
+    execute $sql$
+        update public.quote_requirements
+        set status = 'submitted',
+            title = coalesce(nullif(trim($1), ''), nullif($2, ''), concat('Requirement ', substr($3::text, 1, 8))),
+            requirement_type = coalesce(nullif(trim($4), ''), nullif($5, ''), requirement_type),
+            country = $6,
+            answers = $7,
+            requester_company = $8,
+            requester_name = $9,
+            requester_email = $10,
+            requester_phone = $11,
+            submitted_at = coalesce($12, $13),
+            updated_by = null,
+            updated_at = $13
+        where id = $3
+    $sql$
+    using
+        payload ->> 'title',
+        requirement_title_value,
+        requirement_id_value,
+        payload ->> 'requirement_type',
+        requirement_type_value,
+        next_country,
+        merged_answers,
+        next_company,
+        next_name,
+        next_email,
+        next_phone,
+        requirement_submitted_at_value,
+        submitted_at_utc;
 
-    update public.quote_customers
-    set company_name = case when next_company <> '' then next_company else company_name end,
-        contact_name = case when next_name <> '' then next_name else contact_name end,
-        email = case when next_email <> '' then next_email else email end,
-        phone = case when next_phone <> '' then next_phone else phone end,
-        country = case when next_country <> '' then next_country else country end,
-        updated_by = null,
-        updated_at = submitted_at_utc
-    where id = deal_row.customer_id;
+    execute $sql$
+        update public.quote_customers
+        set company_name = case when $1 <> '' then $1 else company_name end,
+            contact_name = case when $2 <> '' then $2 else contact_name end,
+            email = case when $3 <> '' then $3 else email end,
+            phone = case when $4 <> '' then $4 else phone end,
+            country = case when $5 <> '' then $5 else country end,
+            updated_by = null,
+            updated_at = $6
+        where id = $7
+    $sql$
+    using next_company, next_name, next_email, next_phone, next_country, submitted_at_utc, deal_customer_id;
 
-    update public.quote_deal_stage_records as sr
-    set stage_status = 'completed',
-        completed_at = coalesce(completed_at, submitted_at_utc),
-        updated_at = submitted_at_utc
-    where sr.deal_id = deal_row.id
-      and sr.stage_key = 'requirement_capture';
+    execute $sql$
+        update public.quote_deal_stage_records as sr
+        set stage_status = 'completed',
+            completed_at = coalesce(completed_at, $1),
+            updated_at = $1
+        where sr.deal_id = $2
+          and sr.stage_key = 'requirement_capture'
+    $sql$
+    using submitted_at_utc, target_deal_id;
 
-    update public.quote_deal_stage_records as sr
-    set stage_status = case when stage_status = 'completed' then stage_status else 'active' end,
-        updated_at = submitted_at_utc
-    where sr.deal_id = deal_row.id
-      and sr.stage_key = next_stage_key;
+    execute $sql$
+        update public.quote_deal_stage_records as sr
+        set stage_status = case when stage_status = 'completed' then stage_status else 'active' end,
+            updated_at = $1
+        where sr.deal_id = $2
+          and sr.stage_key = $3
+    $sql$
+    using submitted_at_utc, target_deal_id, next_stage_key;
 
-    update public.quote_deals
-    set current_stage = next_stage_key,
-        updated_at = submitted_at_utc
-    where id = deal_row.id
-      and coalesce(current_stage, '') in ('customer_profile', 'requirement_capture', 'requirement_confirmed');
+    execute $sql$
+        update public.quote_deals
+        set current_stage = $1,
+            updated_at = $2
+        where id = $3
+          and coalesce(current_stage, '') in ('customer_profile', 'requirement_capture', 'requirement_confirmed')
+    $sql$
+    using next_stage_key, submitted_at_utc, target_deal_id;
 
-    insert into public.quote_customer_activities (
-        customer_id,
-        deal_id,
-        requirement_id,
-        stage_key,
-        actor_type,
-        actor_id,
-        actor_label,
-        activity_type,
-        entity_type,
-        entity_id,
-        page_key,
-        action_label,
-        detail_json,
-        occurred_at
-    ) values (
-        deal_row.customer_id,
-        deal_row.id,
-        requirement_row.id,
-        'requirement_capture',
-        'customer',
-        auth.jwt() ->> 'sub',
-        coalesce(auth.jwt() ->> 'email', 'customer'),
-        'stage_advanced',
-        'requirement',
-        requirement_row.id::text,
-        'account-sales-pipeline',
-        '客户在用户中心提交需求',
-        jsonb_build_object(
-            'summary', 'Requirement submitted from account center',
-            'next_stage', next_stage_key
-        ),
-        submitted_at_utc
-    );
+    execute $sql$
+        insert into public.quote_customer_activities (
+            customer_id,
+            deal_id,
+            requirement_id,
+            stage_key,
+            actor_type,
+            actor_id,
+            actor_label,
+            activity_type,
+            entity_type,
+            entity_id,
+            page_key,
+            action_label,
+            detail_json,
+            occurred_at
+        ) values (
+            $1,
+            $2,
+            $3,
+            'requirement_capture',
+            'customer',
+            $4,
+            $5,
+            'stage_advanced',
+            'requirement',
+            $6,
+            'account-sales-pipeline',
+            '客户在用户中心提交需求',
+            jsonb_build_object(
+                'summary', 'Requirement submitted from account center',
+                'next_stage', $7
+            ),
+            $8
+        )
+    $sql$
+    using
+        deal_customer_id,
+        target_deal_id,
+        requirement_id_value,
+        actor_sub,
+        actor_email,
+        requirement_id_value::text,
+        next_stage_key,
+        submitted_at_utc;
 
-    return query
-    select deal_row.id, 'requirement_capture'::text, next_stage_key::text, submitted_at_utc;
+    deal_id := deal_id_value;
+    stage_key := 'requirement_capture'::text;
+    next_stage := next_stage_key::text;
+    submitted_at := submitted_at_utc;
+    return next;
 end;
 $$;
 
@@ -397,11 +518,16 @@ set search_path = public
 as $$
 declare
     me_customer_id uuid;
-    deal_row public.quote_deals%rowtype;
-    stage_row public.quote_deal_stage_records%rowtype;
+    deal_id_value uuid;
+    deal_customer_id uuid;
+    deal_current_stage text;
+    stage_record_id uuid;
+    stage_meta_value jsonb;
     submitted_at_utc timestamptz := timezone('utc', now());
     normalized_stage text := lower(trim(coalesce(target_stage_key, '')));
     next_stage_key text;
+    actor_sub text := auth.jwt() ->> 'sub';
+    actor_email text := coalesce(auth.jwt() ->> 'email', 'customer');
 begin
     if normalized_stage not in ('quote_confirmed', 'contract_signed', 'factory_accepted') then
         raise exception 'This stage does not allow customer confirmation submission.';
@@ -412,105 +538,148 @@ begin
         raise exception 'No matched customer profile for current login email.';
     end if;
 
-    select *
-    into deal_row
-    from public.quote_deals
-    where id = target_deal_id
-      and customer_id = me_customer_id
-    limit 1;
+    execute $sql$
+        select
+            d.id,
+            d.customer_id,
+            d.current_stage
+        from public.quote_deals as d
+        where d.id = $1
+          and d.customer_id = $2
+        limit 1
+    $sql$
+    into
+        deal_id_value,
+        deal_customer_id,
+        deal_current_stage
+    using target_deal_id, me_customer_id;
 
-    if not found then
+    if deal_id_value is null then
         raise exception 'Deal not found for current customer account.';
     end if;
 
-    if coalesce(deal_row.current_stage, '') <> normalized_stage then
+    if coalesce(deal_current_stage, '') <> normalized_stage then
         raise exception 'Deal is not currently at the requested stage.';
     end if;
 
-    select *
-    into stage_row
-    from public.quote_deal_stage_records as sr
-    where sr.deal_id = deal_row.id
-      and sr.stage_key = normalized_stage
-    limit 1;
+    execute $sql$
+        select
+            sr.id,
+            coalesce(sr.meta, '{}'::jsonb)
+        from public.quote_deal_stage_records as sr
+        where sr.deal_id = $1
+          and sr.stage_key = $2
+        limit 1
+    $sql$
+    into
+        stage_record_id,
+        stage_meta_value
+    using target_deal_id, normalized_stage;
 
-    if not found then
+    if stage_record_id is null then
         raise exception 'Stage record not found for current deal.';
     end if;
 
     next_stage_key := public.customer_pipeline_next_stage(normalized_stage);
 
-    update public.quote_deal_stage_records
-    set stage_status = 'completed',
-        completed_at = coalesce(completed_at, submitted_at_utc),
-        meta = coalesce(stage_row.meta, '{}'::jsonb) || jsonb_build_object(
-            'public_confirmed_at', submitted_at_utc,
-            'public_confirmation_note', coalesce(payload ->> 'note', ''),
-            'public_confirmation_payload', coalesce(payload, '{}'::jsonb),
-            'confirmed_from', 'account_center'
-        ),
-        updated_at = submitted_at_utc
-    where id = stage_row.id;
+    execute $sql$
+        update public.quote_deal_stage_records
+        set stage_status = 'completed',
+            completed_at = coalesce(completed_at, $1),
+            meta = $2 || jsonb_build_object(
+                'public_confirmed_at', $1,
+                'public_confirmation_note', $3,
+                'public_confirmation_payload', $4,
+                'confirmed_from', 'account_center'
+            ),
+            updated_at = $1
+        where id = $5
+    $sql$
+    using submitted_at_utc, stage_meta_value, coalesce(payload ->> 'note', ''), coalesce(payload, '{}'::jsonb), stage_record_id;
 
-    update public.quote_deals
-    set current_stage = next_stage_key,
-        updated_at = submitted_at_utc
-    where id = deal_row.id
-      and current_stage = normalized_stage;
+    execute $sql$
+        update public.quote_deals
+        set current_stage = $1,
+            updated_at = $2
+        where id = $3
+          and current_stage = $4
+    $sql$
+    using next_stage_key, submitted_at_utc, target_deal_id, normalized_stage;
 
-    update public.quote_deal_stage_records as sr
-    set stage_status = case when stage_status = 'completed' then stage_status else 'active' end,
-        updated_at = submitted_at_utc
-    where sr.deal_id = deal_row.id
-      and sr.stage_key = next_stage_key;
+    execute $sql$
+        update public.quote_deal_stage_records as sr
+        set stage_status = case when stage_status = 'completed' then stage_status else 'active' end,
+            updated_at = $1
+        where sr.deal_id = $2
+          and sr.stage_key = $3
+    $sql$
+    using submitted_at_utc, target_deal_id, next_stage_key;
 
     if normalized_stage = 'quote_confirmed' then
-        update public.quote_deal_stage_records as sr
-        set meta = coalesce(meta, '{}'::jsonb) || jsonb_build_object(
-            'quote_terms',
-            coalesce((stage_row.meta ->> 'quote_terms'), '')
-        ),
-            updated_at = submitted_at_utc
-        where sr.deal_id = deal_row.id
-          and sr.stage_key = 'contract_signed';
+        execute $sql$
+            update public.quote_deal_stage_records as sr
+            set meta = coalesce(meta, '{}'::jsonb) || jsonb_build_object(
+                'quote_terms',
+                $1
+            ),
+                updated_at = $2
+            where sr.deal_id = $3
+              and sr.stage_key = 'contract_signed'
+        $sql$
+        using coalesce(stage_meta_value ->> 'quote_terms', ''), submitted_at_utc, target_deal_id;
     end if;
 
-    insert into public.quote_customer_activities (
-        customer_id,
-        deal_id,
-        stage_key,
-        actor_type,
-        actor_id,
-        actor_label,
-        activity_type,
-        entity_type,
-        entity_id,
-        page_key,
-        action_label,
-        detail_json,
-        occurred_at
-    ) values (
-        deal_row.customer_id,
-        deal_row.id,
+    execute $sql$
+        insert into public.quote_customer_activities (
+            customer_id,
+            deal_id,
+            stage_key,
+            actor_type,
+            actor_id,
+            actor_label,
+            activity_type,
+            entity_type,
+            entity_id,
+            page_key,
+            action_label,
+            detail_json,
+            occurred_at
+        ) values (
+            $1,
+            $2,
+            $3,
+            'customer',
+            $4,
+            $5,
+            'stage_advanced',
+            'deal_stage',
+            $6,
+            'account-sales-pipeline',
+            '客户在用户中心提交节点确认',
+            jsonb_build_object(
+                'summary', concat('Stage confirmed: ', $3),
+                'next_stage', $7,
+                'note', $8
+            ),
+            $9
+        )
+    $sql$
+    using
+        deal_customer_id,
+        target_deal_id,
         normalized_stage,
-        'customer',
-        auth.jwt() ->> 'sub',
-        coalesce(auth.jwt() ->> 'email', 'customer'),
-        'stage_advanced',
-        'deal_stage',
-        stage_row.id::text,
-        'account-sales-pipeline',
-        '客户在用户中心提交节点确认',
-        jsonb_build_object(
-            'summary', concat('Stage confirmed: ', normalized_stage),
-            'next_stage', next_stage_key,
-            'note', coalesce(payload ->> 'note', '')
-        ),
-        submitted_at_utc
-    );
+        actor_sub,
+        actor_email,
+        stage_record_id::text,
+        next_stage_key,
+        coalesce(payload ->> 'note', ''),
+        submitted_at_utc;
 
-    return query
-    select deal_row.id, normalized_stage, next_stage_key, submitted_at_utc;
+    deal_id := deal_id_value;
+    stage_key := normalized_stage;
+    next_stage := next_stage_key;
+    submitted_at := submitted_at_utc;
+    return next;
 end;
 $$;
 

@@ -69,6 +69,8 @@
             -moz-appearance: none;
             cursor: pointer;
             color-scheme: dark;
+            border-color: rgba(93, 214, 44, 0.42);
+            background-color: #1f1f1f;
             background-image:
                 linear-gradient(45deg, transparent 50%, #5DD62C 50%),
                 linear-gradient(135deg, #5DD62C 50%, transparent 50%);
@@ -80,18 +82,19 @@
             padding-right: 42px;
         }
         .field-select option {
-            background: #0f0f0f;
-            color: #e5e7eb;
+            background: #232323;
+            color: #f3f4f6;
+            padding: 12px 14px;
         }
         .field-select option:checked {
-            background: #5DD62C;
-            color: #050505;
+            background: #29431e;
+            color: #6fe34a;
             font-weight: 700;
         }
         .field-select option:hover,
         .field-select option:focus {
-            background: rgba(93, 214, 44, 0.34);
-            color: #050505;
+            background: #2c4721;
+            color: #ffffff;
         }
         .field-select::-ms-expand {
             display: none;
@@ -916,7 +919,7 @@
     <script src="/shared/ui/site-shell.config.js?v=20260321auth02"></script>
     <script src="/shared/ui/site-shell.shared.js?v=20260412shell03"></script>
     <script src="/shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
-    <script src="/account/sales-pipeline.portal.js?v=20260413salesTab01"></script>
+<script src="/account/sales-pipeline.portal.js?v=20260420salesTab04"></script>
     <script>
         const MAIN_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
         const MAIN_AUTH_HELPER = window.GasGxMainAuthShared;

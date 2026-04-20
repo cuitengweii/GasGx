@@ -24,48 +24,7 @@
     </main>
 
     <script>
-        (function redirectRequirementToAccountSales() {
-            const params = new URL(window.location.href).searchParams;
-            const mode = String(params.get('mode') || '').trim().toLowerCase();
-            const reqSlug = String(params.get('req') || '').trim();
-            const reqToken = String(params.get('req_token') || params.get('token') || '').trim();
-            if (mode === 'readonly' || !reqSlug || !reqToken) {
-                window.AMSLoadQuotePublicModule('../shared/quote-system/quote-requirement.module.js');
-                return;
-            }
-
-            const accountUrl = new URL('/account/sales.html', window.location.origin);
-            accountUrl.searchParams.set('req', reqSlug);
-            accountUrl.searchParams.set('req_token', reqToken);
-            const targetPath = `${accountUrl.pathname}${accountUrl.search}`;
-
-            const helper = window.GasGxMainAuthShared;
-            if (!helper?.createClient || !window.supabase) {
-                window.location.replace(targetPath);
-                return;
-            }
-
-            const runtime = helper.resolveConfig(window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth);
-            const redirectToAccount = () => {
-                try {
-                    window.sessionStorage.setItem(runtime.returnUrlStorageKey || 'gx_main_return_url', targetPath);
-                } catch (_error) {
-                    // Ignore storage errors and continue redirect.
-                }
-                window.location.replace(targetPath);
-            };
-
-            const client = helper.createClient(window.supabase, runtime);
-            client.auth.getSession()
-                .then(({ data, error }) => {
-                    if (error || !data?.session?.user) {
-                        redirectToAccount();
-                        return;
-                    }
-                    redirectToAccount();
-                })
-                .catch(() => redirectToAccount());
-        })();
+        window.AMSLoadQuotePublicModule('../shared/quote-system/quote-requirement.module.js');
     </script>
 </body>
 </html>

@@ -32,12 +32,23 @@
             dealUntitled: 'Untitled Deal',
             dealSummary: 'Customer confirmations are handled in this user portal.',
             stageReadonly: 'This is a read-only stage. No customer action is required.',
+            stageRequirementLinkTitle: 'Requirement Link',
+            stageRequirementLinkHint: 'Your sales contact has already prepared the requirement form. Please open the dedicated link to complete it once.',
+            stageRequirementLinkOpen: 'Open Requirement Link',
+            stageRequirementLinkMissing: 'Requirement link is not ready yet. Please contact sales.',
             stageDefaultNote: 'Please confirm key information at this stage before moving forward.',
             stageConfirmLine: 'I have reviewed the stage information and agree to move to the next stage.',
             stageConfirmNote: 'Confirmation Note',
             stageConfirmNotePlaceholder: 'Optional note',
             stageRequirementTitle: 'Requirement Title',
             stageRequirementType: 'Requirement Type',
+            stageRequirementTypePlaceholder: 'Select requirement type',
+            stageGasReport: 'Gas Source Report',
+            stageGasReportHelp: 'Upload gas composition or source report (PDF, DOC, DOCX, XLS, XLSX, JPG, PNG).',
+            stageGasReportUpload: 'Upload Report',
+            stageGasReportEmpty: 'No gas source report uploaded yet.',
+            stageGasReportUploading: 'Uploading gas source report...',
+            stageGasReportUploadFailed: 'Failed to upload gas source report.',
             stageCompany: 'Company',
             stageContact: 'Contact',
             stageEmail: 'Email',
@@ -45,7 +56,6 @@
             stageCountry: 'Country/Region',
             stageRequirementNote: 'Requirement Notes',
             stageRequirementNotePlaceholder: 'Add delivery constraints, budget range, and timeline',
-            stageRequirementTypePlaceholder: 'integrated_mining_power',
             stageProductionStatus: 'Progress Status',
             stageProductionEta: 'Estimated Completion',
             stageProductionFactory: 'Factory / Line',
@@ -65,6 +75,7 @@
             submitRequirement: 'Submit Requirement',
             submitConfirm: 'Confirm & Proceed',
             toastNeedFields: 'Please complete required requirement fields before submitting.',
+            toastInvalidEmail: 'Please enter a valid email address.',
             toastNeedCheck: 'Please tick confirmation before submitting.',
             toastSubmittedRequirement: 'Requirement submitted. Flow moved forward.',
             toastFailedRequirement: 'Failed to submit requirement.',
@@ -96,12 +107,23 @@
             dealUntitled: '未命名销售线',
             dealSummary: '客户节点确认统一在用户中心执行。',
             stageReadonly: '该节点为只读节点，客户侧无需操作。',
+            stageRequirementLinkTitle: '需求链接',
+            stageRequirementLinkHint: '销售已提前创建好需求单，请直接打开专属需求链接完成填写，无需在这里重复填写。',
+            stageRequirementLinkOpen: '打开需求链接',
+            stageRequirementLinkMissing: '需求链接暂未准备好，请联系销售。',
             stageDefaultNote: '请确认当前节点关键信息，提交后流程将进入下一节点。',
             stageConfirmLine: '我已确认当前节点信息，并同意推进到下一节点。',
             stageConfirmNote: '确认备注',
             stageConfirmNotePlaceholder: '可选：填写备注',
             stageRequirementTitle: '需求标题',
             stageRequirementType: '需求类型',
+            stageRequirementTypePlaceholder: '请选择需求类型',
+            stageGasReport: '气源报告',
+            stageGasReportHelp: '上传气体成分报告或气源说明（支持 PDF、Word、Excel、JPG、PNG）。',
+            stageGasReportUpload: '上传报告',
+            stageGasReportEmpty: '暂未上传气源报告。',
+            stageGasReportUploading: '正在上传气源报告...',
+            stageGasReportUploadFailed: '上传气源报告失败。',
             stageCompany: '公司',
             stageContact: '联系人',
             stageEmail: '邮箱',
@@ -109,7 +131,6 @@
             stageCountry: '国家/地区',
             stageRequirementNote: '需求补充说明',
             stageRequirementNotePlaceholder: '补充交付要求、预算和时间线',
-            stageRequirementTypePlaceholder: 'integrated_mining_power',
             stageProductionStatus: '进度状态',
             stageProductionEta: '预计完工',
             stageProductionFactory: '工厂/产线',
@@ -129,6 +150,7 @@
             submitRequirement: '提交需求',
             submitConfirm: '确认并推进',
             toastNeedFields: '请先完整填写客户需求核心字段。',
+            toastInvalidEmail: '请输入有效的邮箱地址。',
             toastNeedCheck: '请先勾选确认后再提交。',
             toastSubmittedRequirement: '需求已提交，流程已推进。',
             toastFailedRequirement: '提交需求失败。',
@@ -161,6 +183,14 @@
         deployment_completed: { zh: '到场部署', en: 'Deployment Completed' },
         support_active: { zh: '运维支持', en: 'Support Active' }
     };
+
+    const REQUIREMENT_TYPE_LABELS = Object.freeze({
+        integrated_mining_power: { zh: '燃气发电集成矿箱', en: 'Integrated Mining Container + Gas Power' },
+        power_only: { zh: '独立燃气发电机组', en: 'Standalone Gas Power Unit' }
+    });
+    const REQUIREMENT_TYPE_OPTIONS = Object.freeze(['power_only', 'integrated_mining_power']);
+    const STORAGE_BUCKET_REQUIREMENT_FILES = 'quote-product-media';
+    const GAS_REPORT_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png';
 
     function tr(key, vars = {}) {
         const lang = currentLang();
@@ -219,6 +249,7 @@
         mobileListCollapsed: true,
         timelineCollapsed: false,
         requirementDraft: {},
+        sessionUser: null,
     };
 
     function isMobileViewport() {
@@ -253,6 +284,149 @@
             .replace(/'/g, '&#39;');
     }
 
+    function requirementTypeLabel(value) {
+        const normalized = text(value);
+        if (!normalized) return '';
+        const labels = REQUIREMENT_TYPE_LABELS[normalized];
+        if (!labels) return normalized;
+        return currentLang() === 'zh' ? labels.zh : labels.en;
+    }
+
+    function requirementTypeValue(value) {
+        const normalized = text(value);
+        if (!normalized) return '';
+        const matchedKey = Object.entries(REQUIREMENT_TYPE_LABELS).find(([, labels]) => (
+            normalized === labels.zh || normalized === labels.en
+        ));
+        return matchedKey ? matchedKey[0] : normalized;
+    }
+
+    function requirementTypeOptionsMarkup(selectedValue = '', editable = true) {
+        const normalized = requirementTypeValue(selectedValue);
+        const placeholder = tr('stageRequirementTypePlaceholder');
+        const disabled = editable ? '' : 'disabled';
+        return `
+            <select class="field-select px-4 py-3" data-sales-req-field="requirement_type" ${disabled}>
+                <option value="">${esc(placeholder)}</option>
+                ${REQUIREMENT_TYPE_OPTIONS.map((value) => `
+                    <option value="${esc(value)}" ${value === normalized ? 'selected' : ''}>${esc(requirementTypeLabel(value))}</option>
+                `).join('')}
+            </select>
+        `;
+    }
+
+    function fileBaseName(name = '') {
+        return text(name).replace(/[^\w.\-]+/g, '_');
+    }
+
+    function gasReportPath(detail = {}, fileName = '') {
+        const dealId = text(detail.deal_id || state.selectedDealId || 'unknown-deal');
+        const safeName = fileBaseName(fileName || 'gas-report');
+        return `requirement-gas-reports/${dealId}/${Date.now()}-${safeName}`;
+    }
+
+    function requirementPublicUrl(publicSlug = '', publicToken = '') {
+        const url = new URL('/quote/requirement.html', window.location.origin);
+        if (text(publicSlug)) url.searchParams.set('req', text(publicSlug));
+        if (text(publicToken)) url.searchParams.set('token', text(publicToken));
+        return url.toString();
+    }
+
+    function requirementLinkInfo(detail = {}) {
+        const req = detail.requirement && typeof detail.requirement === 'object' ? detail.requirement : {};
+        const slug = text(req.public_slug);
+        const token = text(req.public_token);
+        return {
+            slug,
+            token,
+            url: slug ? requirementPublicUrl(slug, token) : '',
+        };
+    }
+
+    function gasReportFromDraft(draft = {}) {
+        const answers = draft.answers && typeof draft.answers === 'object' ? draft.answers : {};
+        const report = answers.gas_source_report && typeof answers.gas_source_report === 'object'
+            ? answers.gas_source_report
+            : {};
+        return {
+            name: text(report.name),
+            url: text(report.url),
+            path: text(report.path),
+            mime: text(report.mime),
+        };
+    }
+
+    function allowGasSourceReport(draft = {}) {
+        const answers = draft.answers && typeof draft.answers === 'object' ? draft.answers : {};
+        return answers.allow_gas_source_report !== false;
+    }
+
+    async function uploadGasSourceReport(detail = {}, file) {
+        if (!file) return gasReportFromDraft(state.requirementDraft);
+        const client = ensureClient();
+        if (!client) throw new Error('Supabase client unavailable.');
+        const storagePath = gasReportPath(detail, file.name);
+        const uploadResult = await client.storage.from(STORAGE_BUCKET_REQUIREMENT_FILES).upload(storagePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+        });
+        if (uploadResult.error) throw uploadResult.error;
+        const publicUrlResult = client.storage.from(STORAGE_BUCKET_REQUIREMENT_FILES).getPublicUrl(storagePath);
+        return {
+            name: text(file.name),
+            url: text(publicUrlResult?.data?.publicUrl),
+            path: storagePath,
+            mime: text(file.type),
+        };
+    }
+
+    const INTERNAL_ACTIVITY_TYPES = new Set([
+        'page_view',
+        'button_click',
+        'field_change',
+        'status_change',
+        'stage_advanced',
+        'quote_generated',
+        'public_link_opened'
+    ]);
+
+    const INTERNAL_ACTIVITY_LABEL_PATTERNS = [
+        /^创建客户档案$/,
+        /^更新客户档案$/,
+        /^创建销售流程$/,
+        /^更新销售流程$/,
+        /^创建需求单$/,
+        /^更新需求单$/,
+        /^创建报价草稿$/,
+        /^保存报价草稿$/,
+        /^从产品模板生成报价草稿$/,
+        /^从需求单生成报价草稿$/,
+        /^销售流程推进到/,
+        /^确认报价并转入签约合同$/,
+        /^报价已发布并进入确认报价$/,
+        /^进入客户档案页$/,
+        /^进入阶段总览/,
+        /^进入客户流水线/,
+        /^进入销售总览$/
+    ];
+
+    function isCustomerVisibleActivity(activity = {}) {
+        const actorType = text(activity.actor_type);
+        const activityType = text(activity.activity_type);
+        const actionLabel = text(activity.action_label);
+        const summary = text(activity.summary);
+
+        if (actorType !== 'sales') return false;
+        if (INTERNAL_ACTIVITY_TYPES.has(activityType)) return false;
+        if (INTERNAL_ACTIVITY_LABEL_PATTERNS.some((pattern) => pattern.test(actionLabel))) return false;
+        return Boolean(actionLabel || summary);
+    }
+
+    function customerVisibleActivities(detail = {}) {
+        const list = Array.isArray(detail.activities) ? detail.activities : [];
+        return list.filter((item) => isCustomerVisibleActivity(item)).slice(0, 30);
+    }
+
     function byId(id) {
         return document.getElementById(id);
     }
@@ -264,18 +438,29 @@
         return date.toLocaleString(currentLang() === 'zh' ? 'zh-CN' : 'en-US');
     }
 
+    function isValidEmail(value = '') {
+        const normalized = text(value);
+        if (!normalized) return false;
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized);
+    }
+
     function requirementDraftFromDetail(detail = {}) {
         const req = detail.requirement && typeof detail.requirement === 'object' ? detail.requirement : {};
+        const answers = req.answers && typeof req.answers === 'object' ? req.answers : {};
+        const sessionEmail = text(state.sessionUser?.email);
         return {
             deal_id: text(detail.deal_id || state.selectedDealId),
-            title: text(req.title),
             requirement_type: text(req.requirement_type),
             requester_company: text(req.requester_company, detail.customer_company),
             requester_name: text(req.requester_name),
-            requester_email: text(req.requester_email, detail.customer_email),
+            requester_email: text(req.requester_email, detail.customer_email || sessionEmail),
             requester_phone: text(req.requester_phone),
             country: text(req.country),
             note: text(req.note || req.notes),
+            answers: {
+                allow_gas_source_report: answers.allow_gas_source_report !== false,
+                gas_source_report: answers.gas_source_report && typeof answers.gas_source_report === 'object' ? answers.gas_source_report : {},
+            },
         };
     }
 
@@ -425,6 +610,8 @@
                 id: text(row.id),
                 status,
                 title: text(row.title),
+                public_slug: text(row.public_slug),
+                public_token: text(row.public_token),
                 requirement_type: text(row.requirement_type),
                 country: text(row.country),
                 requester_company: text(row.requester_company || row.customer_company),
@@ -569,16 +756,44 @@
 
     function requirementFormMarkup(detail, editable) {
         const req = ensureRequirementDraft(detail);
+        const gasReport = gasReportFromDraft(req);
+        const showGasReport = allowGasSourceReport(req);
         return `
             <div class="sales-stage-form-grid">
-                <label><span>${esc(tr('stageRequirementTitle'))}</span><input class="field-input px-4 py-3" data-sales-req-field="title" value="${esc(text(req.title))}" ${editable ? '' : 'disabled'}></label>
-                <label><span>${esc(tr('stageRequirementType'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requirement_type" value="${esc(text(req.requirement_type))}" placeholder="${esc(tr('stageRequirementTypePlaceholder'))}" ${editable ? '' : 'disabled'}></label>
+                <label><span>${esc(tr('stageRequirementType'))}</span>${requirementTypeOptionsMarkup(req.requirement_type, editable)}</label>
                 <label><span>${esc(tr('stageCompany'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_company" value="${esc(text(req.requester_company))}" ${editable ? '' : 'disabled'}></label>
                 <label><span>${esc(tr('stageContact'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_name" value="${esc(text(req.requester_name))}" ${editable ? '' : 'disabled'}></label>
-                <label><span>${esc(tr('stageEmail'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_email" value="${esc(text(req.requester_email))}" ${editable ? '' : 'disabled'}></label>
+                <label><span>${esc(tr('stageEmail'))}</span><input type="email" inputmode="email" class="field-input px-4 py-3" data-sales-req-field="requester_email" value="${esc(text(req.requester_email))}" ${editable ? '' : 'disabled'}></label>
                 <label><span>${esc(tr('stagePhone'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_phone" value="${esc(text(req.requester_phone))}" ${editable ? '' : 'disabled'}></label>
                 <label><span>${esc(tr('stageCountry'))}</span><input class="field-input px-4 py-3" data-sales-req-field="country" value="${esc(text(req.country))}" ${editable ? '' : 'disabled'}></label>
+                ${showGasReport ? `<label class="sales-span-2">
+                    <span>${esc(tr('stageGasReport'))}</span>
+                    <div class="sales-stage-note">
+                        <div>${gasReport.url ? `<a href="${esc(gasReport.url)}" target="_blank" rel="noreferrer">${esc(gasReport.name || tr('stageGasReport'))}</a>` : esc(tr('stageGasReportEmpty'))}</div>
+                        <small>${esc(tr('stageGasReportHelp'))}</small>
+                    </div>
+                    <input type="file" id="sales-gas-report-upload" accept="${esc(GAS_REPORT_ACCEPT)}" ${editable ? '' : 'disabled'} hidden>
+                    <button type="button" class="rounded-2xl border border-white/15 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-gray-200" id="sales-gas-report-upload-trigger" ${editable ? '' : 'disabled'}>${esc(tr('stageGasReportUpload'))}</button>
+                </label>` : ''}
                 <label class="sales-span-2"><span>${esc(tr('stageRequirementNote'))}</span><textarea class="field-textarea px-4 py-3" rows="4" data-sales-req-field="note" placeholder="${esc(tr('stageRequirementNotePlaceholder'))}" ${editable ? '' : 'disabled'}>${esc(text(req.note))}</textarea></label>
+            </div>
+        `;
+    }
+
+    function requirementLinkMarkup(detail = {}) {
+        const requirementLink = requirementLinkInfo(detail).url;
+        return `
+            <div class="sales-stage-confirm">
+                <div class="sales-stage-note">
+                    <strong>${esc(tr('stageRequirementLinkTitle'))}</strong>
+                    <p>${esc(tr('stageRequirementLinkHint'))}</p>
+                    ${requirementLink
+                        ? `
+                            <a class="rounded-2xl border border-gas-green/50 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-gas-green inline-flex items-center justify-center" href="${esc(requirementLink)}">${esc(tr('stageRequirementLinkOpen'))}</a>
+                            <div class="mt-3 break-all text-[11px] leading-5 text-gray-400">${esc(requirementLink)}</div>
+                        `
+                        : `<span>${esc(tr('stageRequirementLinkMissing'))}</span>`}
+                </div>
             </div>
         `;
     }
@@ -623,9 +838,10 @@
         let actions = '';
 
         if (stageKey === 'requirement_capture') {
-            body = requirementFormMarkup(detail, editable);
-            actions = editable
-                ? `<button type="button" class="rounded-2xl bg-gas-green px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-black" id="sales-stage-submit-requirement" ${state.pendingReqSubmit ? 'disabled' : ''}>${esc(tr('submitRequirement'))}</button>`
+            body = requirementLinkMarkup(detail);
+            const requirementLink = requirementLinkInfo(detail).url;
+            actions = requirementLink
+                ? `<a class="rounded-2xl bg-gas-green px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-black inline-flex items-center justify-center" href="${esc(requirementLink)}">${esc(tr('stageRequirementLinkOpen'))}</a>`
                 : '';
         } else if (ACTIONABLE_STAGE_SET.has(stageKey)) {
             body = stageConfirmationMarkup(stageKey, detail, editable);
@@ -672,7 +888,7 @@
     }
 
     function activitiesMarkup(detail = {}) {
-        const list = Array.isArray(detail.activities) ? detail.activities : [];
+        const list = customerVisibleActivities(detail);
         if (!list.length) return `<div class="sales-empty">${esc(tr('activitiesEmpty'))}</div>`;
         return list.slice(0, 30).map((item) => `
             <article class="sales-activity-item">
@@ -718,16 +934,9 @@
                     </div>
                     <div class="sales-list-scroll">${renderOverviewCards()}</div>
                 </aside>
-                <section class="sales-detail">
-                    <div class="sales-detail-head">
-                        <div>
-                            <div class="sales-kicker">${esc(trSafe('sales_pipeline', pipelineLabel()))}</div>
-                            <h2>${esc(text(detail.deal_title, tr('dealUntitled')))}</h2>
-                            <p>${esc(text(detail.summary, tr('dealSummary')))}</p>
-                        </div>
-                    </div>
-                    ${stageActionArea(detail)}
-                    <section class="sales-timeline-shell">
+                    <section class="sales-detail">
+                        ${stageActionArea(detail)}
+                        <section class="sales-timeline-shell">
                         <button type="button" class="sales-timeline-toggle ${timelineCollapsed ? 'is-collapsed' : ''}" data-sales-timeline-toggle>
                             <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-300">${esc(tr('timelineTitle'))}</span>
                             <span class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-gas-green">
@@ -764,11 +973,14 @@
         document.querySelectorAll('[data-sales-req-field]').forEach((node) => {
             const key = text(node.dataset.salesReqField);
             if (!key) return;
-            payload[key] = text(node.value);
+            const value = text(node.value);
+            payload[key] = key === 'requirement_type' ? requirementTypeValue(value) : value;
         });
         payload.answers = {
             contact_channel: 'account_portal',
             communication_note_draft: text(payload.note),
+            allow_gas_source_report: allowGasSourceReport(payload),
+            gas_source_report: gasReportFromDraft(payload),
         };
         return payload;
     }
@@ -780,6 +992,10 @@
         const missing = requiredFields.find((key) => !text(payload[key]));
         if (missing) {
             showToast(tr('toastNeedFields'), 'error');
+            return;
+        }
+        if (!isValidEmail(payload.requester_email)) {
+            showToast(tr('toastInvalidEmail'), 'error');
             return;
         }
         if (!window.confirm(tr('confirmRequirement'))) return;
@@ -855,12 +1071,55 @@
             node.addEventListener('input', () => {
                 const key = text(node.dataset.salesReqField);
                 if (!key) return;
+                if (key === 'requester_email') {
+                    const valid = isValidEmail(node.value);
+                    node.setCustomValidity(text(node.value) && !valid ? tr('toastInvalidEmail') : '');
+                }
                 state.requirementDraft = {
                     ...(state.requirementDraft || {}),
                     deal_id: text(state.requirementDraft.deal_id || state.selectedDealId),
                     [key]: text(node.value),
                 };
             });
+            node.addEventListener('change', () => {
+                const key = text(node.dataset.salesReqField);
+                if (!key) return;
+                if (key === 'requester_email') {
+                    const valid = isValidEmail(node.value);
+                    node.setCustomValidity(text(node.value) && !valid ? tr('toastInvalidEmail') : '');
+                    if (text(node.value) && !valid) {
+                        node.reportValidity();
+                    }
+                }
+                state.requirementDraft = {
+                    ...(state.requirementDraft || {}),
+                    deal_id: text(state.requirementDraft.deal_id || state.selectedDealId),
+                    [key]: text(node.value),
+                };
+            });
+        });
+
+        byId('sales-gas-report-upload-trigger')?.addEventListener('click', () => {
+            byId('sales-gas-report-upload')?.click();
+        });
+
+        byId('sales-gas-report-upload')?.addEventListener('change', async (event) => {
+            const detail = state.detail || {};
+            const file = event.target?.files?.[0];
+            event.target.value = '';
+            if (!file) return;
+            showToast(tr('stageGasReportUploading'));
+            try {
+                const report = await uploadGasSourceReport(detail, file);
+                state.requirementDraft = {
+                    ...(state.requirementDraft || {}),
+                    deal_id: text(state.requirementDraft.deal_id || state.selectedDealId),
+                    gas_source_report: report,
+                };
+                render();
+            } catch (error) {
+                showToast(error.message || tr('stageGasReportUploadFailed'), 'error');
+            }
         });
 
         document.querySelectorAll('[data-sales-deal]').forEach((button) => {
@@ -928,6 +1187,26 @@
             stage_records: Array.isArray(row.stage_records) ? row.stage_records : [],
             activities: [],
         };
+    }
+
+    async function loadRequirementLinkFallback(dealId = '') {
+        const targetDealId = text(dealId);
+        if (!targetDealId || targetDealId === 'legacy-public') return {};
+
+        try {
+            const data = await rpc('get_customer_requirement_link', {
+                target_deal_id: targetDealId,
+            });
+            const requirementRow = Array.isArray(data) ? data[0] : null;
+
+            return {
+                id: text(requirementRow?.requirement_id),
+                public_slug: text(requirementRow?.public_slug),
+                public_token: text(requirementRow?.public_token),
+            };
+        } catch (_error) {
+            return {};
+        }
     }
 
     async function resolveLegacyEntryFromUrl() {
@@ -1090,8 +1369,21 @@
                 const data = await rpc('get_customer_pipeline_detail', { target_deal_id: state.selectedDealId });
                 row = Array.isArray(data) ? data[0] : null;
             }
-            state.detail = row || null;
-            if (!state.selectedStage) state.selectedStage = text(row?.current_stage, 'requirement_capture');
+            let detailRow = row || null;
+            if (detailRow && !requirementLinkInfo(detailRow).url) {
+                const requirementFallback = await loadRequirementLinkFallback(text(detailRow.deal_id || state.selectedDealId));
+                if (text(requirementFallback.public_slug) && text(requirementFallback.public_token)) {
+                    detailRow = {
+                        ...detailRow,
+                        requirement: {
+                            ...(detailRow.requirement && typeof detailRow.requirement === 'object' ? detailRow.requirement : {}),
+                            ...requirementFallback,
+                        },
+                    };
+                }
+            }
+            state.detail = detailRow;
+            if (!state.selectedStage) state.selectedStage = text(detailRow?.current_stage, 'requirement_capture');
             syncUrl();
         } catch (error) {
             const message = text(error?.message);
@@ -1106,7 +1398,11 @@
                 )
             );
             if (canFallback) {
-                state.detail = fallbackRow;
+                const requirementFallback = await loadRequirementLinkFallback(state.selectedDealId);
+                state.detail = {
+                    ...fallbackRow,
+                    requirement: requirementFallback,
+                };
                 if (!state.selectedStage) state.selectedStage = text(fallbackRow.current_stage, 'requirement_capture');
                 syncUrl();
                 showToast(tr('toastFallbackDetail'), 'error');
@@ -1129,6 +1425,7 @@
         if (state.overviewLoading || state.detailLoading) return;
         const user = await getSessionUser();
         if (!user) return;
+        state.sessionUser = user;
 
         await resolveLegacyEntryFromUrl();
         await loadOverview();

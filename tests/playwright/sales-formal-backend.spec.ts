@@ -4,10 +4,9 @@ import { bootstrapDealToQuoteConfirmed, forceCustomerQuoteConfirmation } from '.
 const adminEmail = process.env.GX_ADMIN_EMAIL || '';
 const adminPassword = process.env.GX_ADMIN_PASSWORD || '';
 const customerEmail = process.env.GX_CUSTOMER_EMAIL || '';
-const customerPassword = process.env.GX_CUSTOMER_PASSWORD || '';
 
 function mustHaveCreds() {
-  return Boolean(adminEmail && adminPassword && customerEmail && customerPassword);
+  return Boolean(adminEmail && adminPassword && customerEmail);
 }
 
 async function confirmDialog(page: import('@playwright/test').Page, required = true) {
@@ -87,52 +86,49 @@ async function settleToContractStage(page: import('@playwright/test').Page, deal
   throw new Error('Flow did not settle to contract_signed after customer confirmation.');
 }
 
-async function openCustomerSalesEntry(page: import('@playwright/test').Page, entryUrl: string) {
+async function openStandaloneRequirementEntry(page: import('@playwright/test').Page, entryUrl: string) {
   await page.goto(entryUrl);
-
-  const loginVisible = await page.locator('#auth-form').isVisible({ timeout: 8000 }).catch(() => false);
-  if (loginVisible) {
-    await page.fill('#email', customerEmail);
-    await page.fill('#password', customerPassword);
-    await page.locator('#auth-form button[type="submit"]').click();
-  }
-
-  await page.waitForURL((url) => url.pathname.endsWith('/account/sales.html'), { timeout: 30000 });
-  await expect(page.locator('#sales-pipeline-root')).toBeVisible({ timeout: 20000 });
+  await page.waitForURL((url) => url.pathname.endsWith('/quote/requirement.html'), { timeout: 30000 });
+  await expect(page.locator('#requirement-app')).toBeVisible({ timeout: 20000 });
 }
 
-async function submitRequirementInAccount(
+async function openStandaloneConfirmationEntry(page: import('@playwright/test').Page, entryUrl: string) {
+  await page.goto(entryUrl);
+  await page.waitForURL((url) => url.pathname.endsWith('/quote/confirmation.html'), { timeout: 30000 });
+  await expect(page.locator('#stage-confirmation-app')).toBeVisible({ timeout: 20000 });
+}
+
+async function submitRequirementOnPublicPage(
   page: import('@playwright/test').Page,
   requirementLink: string,
   companyName: string,
   contactName: string,
   phone: string,
 ) {
-  await openCustomerSalesEntry(page, requirementLink);
-  await expect(page.locator('[data-sales-req-field="requester_company"]')).toBeVisible({ timeout: 30000 });
+  await openStandaloneRequirementEntry(page, requirementLink);
+  await expect(page.locator('[data-field="requester_company"]')).toBeVisible({ timeout: 30000 });
 
-  await page.fill('[data-sales-req-field="title"]', `Requirement ${Date.now()}`);
-  await page.fill('[data-sales-req-field="requirement_type"]', 'integrated_mining_power');
-  await page.fill('[data-sales-req-field="requester_company"]', companyName);
-  await page.fill('[data-sales-req-field="requester_name"]', contactName);
-  await page.fill('[data-sales-req-field="requester_email"]', customerEmail);
-  await page.fill('[data-sales-req-field="requester_phone"]', phone);
-  await page.fill('[data-sales-req-field="country"]', 'China');
-  await page.fill('[data-sales-req-field="note"]', 'E2E requirement submission from account center');
-
-  await page.evaluate(() => {
-    window.confirm = () => true;
-  });
-  await page.click('#sales-stage-submit-requirement');
-  await page.waitForTimeout(1500);
+  await page.fill('[data-field="requester_company"]', companyName);
+  await page.fill('[data-field="requester_name"]', contactName);
+  await page.fill('[data-field="requester_email"]', customerEmail);
+  await page.fill('[data-field="requester_phone"]', phone);
+  await page.selectOption('[data-field="country"]', 'China');
+  await page.selectOption('[data-field="requirement_type"]', 'integrated_mining_power');
+  await page.locator('[data-answer-check="miner_brands"][value="bitmain"]').check({ force: true });
+  await page.selectOption('[data-answer-field="miner_model"]', 'antminer-s21-200t');
+  await page.fill('textarea[data-answer-field="extra_notes"]', 'E2E requirement submission from standalone public requirement page');
+  await page.check('#requirement-submit-confirm');
+  await page.click('#requirement-submit');
+  await expect(page.locator('#requirement-submit')).toBeDisabled({ timeout: 30000 });
+  await expect(page.locator('#requirement-submit-status')).toContainText('已提交', { timeout: 30000 });
 }
 
-async function submitQuoteConfirmationInAccount(
+async function submitQuoteConfirmationOnPublicPage(
   page: import('@playwright/test').Page,
-  accountStageUrl: string,
+  confirmationUrl: string,
 ) {
-  await openCustomerSalesEntry(page, accountStageUrl);
-  const checkbox = page.locator('#sales-stage-confirm-checkbox');
+  await openStandaloneConfirmationEntry(page, confirmationUrl);
+  const checkbox = page.locator('#stage-confirmation-checkbox');
   const checkboxVisible = await checkbox.isVisible({ timeout: 8000 }).catch(() => false);
 
   if (!checkboxVisible) {
@@ -140,12 +136,10 @@ async function submitQuoteConfirmationInAccount(
   }
 
   await checkbox.check();
-  await page.fill('#sales-stage-confirm-note', 'Confirmed from account portal e2e.');
-  await page.evaluate(() => {
-    window.confirm = () => true;
-  });
-  await page.click('#sales-stage-submit-confirmation');
-  await page.waitForTimeout(1500);
+  await page.fill('#stage-confirmation-note', 'Confirmed from standalone public confirmation page.');
+  await page.click('#stage-confirmation-submit');
+  await expect(page.locator('#stage-confirmation-submit')).toBeDisabled({ timeout: 30000 });
+  await expect(page.locator('#stage-confirmation-status')).not.toHaveText('', { timeout: 30000 });
 }
 
 async function openOrCreateCustomerRequirementFlow(
@@ -228,7 +222,7 @@ test.describe('Sales formal backend flow', () => {
   test.setTimeout(900000);
 
   test('admin + customer complete requirement and quote confirmation chain', async ({ page, browser }) => {
-    test.skip(!mustHaveCreds(), 'Missing GX_ADMIN_* or GX_CUSTOMER_* environment variables');
+    test.skip(!mustHaveCreds(), 'Missing GX_ADMIN_EMAIL, GX_ADMIN_PASSWORD, or GX_CUSTOMER_EMAIL.');
 
     const uniqueTag = `E2E-${Date.now()}`;
     const phone = `+86-13${String(Date.now()).slice(-9)}`;
@@ -243,7 +237,7 @@ test.describe('Sales formal backend flow', () => {
     const entry = await openOrCreateCustomerRequirementFlow(page, uniqueTag);
 
     const customerPage = await browser.newPage();
-    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.companyName, 'Wesley E2E', phone);
+    await submitRequirementOnPublicPage(customerPage, entry.requirementLink, entry.companyName, 'Wesley E2E', phone);
 
     const customerId = entry.customerId;
     const dealId = entry.dealId;
@@ -271,7 +265,7 @@ test.describe('Sales formal backend flow', () => {
     const confirmationEntryUrl = bootstrap.confirmStageSlug && bootstrap.confirmStageToken
       ? `/quote/confirmation.html?stage=${encodeURIComponent(bootstrap.confirmStageSlug)}&token=${encodeURIComponent(bootstrap.confirmStageToken)}`
       : `/account/sales.html?deal=${encodeURIComponent(dealId)}&stage=quote_confirmed`;
-    await submitQuoteConfirmationInAccount(customerPage, confirmationEntryUrl);
+    await submitQuoteConfirmationOnPublicPage(customerPage, confirmationEntryUrl);
 
     await page.reload();
     await settleToContractStage(page, dealId);

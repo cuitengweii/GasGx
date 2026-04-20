@@ -248,3 +248,35 @@
 - Near-term knowledge growth should continue using:
   - FAQ-rule migrations for deterministic answers
   - knowledge-document/chunk migrations for retrievable sales knowledge
+
+## 2026-04-21 sales public-flow decisions
+
+### Decision 30: Customer requirement capture belongs to the standalone public requirement page
+
+- `requirement_capture` in the customer account-center pipeline is no longer the primary requirement-entry runtime.
+- The source of truth for customer requirement submission is:
+  - `D:\code\GasGx\quote\requirement.html`
+- Account center may show status, instructions, and the public-link launcher, but it must not ask the customer to fill a second copy of the same requirement once sales has already issued the dedicated link.
+
+### Decision 31: Public requirement and confirmation links must remain on standalone pages
+
+- Opening a customer requirement link must keep the browser on `/quote/requirement.html?...`
+- Opening a customer stage-confirmation link must keep the browser on `/quote/confirmation.html?...`
+- Legacy behavior that bounced these public links back into `/account/sales.html` or `/account/account.html?tab=sales` is now considered incorrect.
+
+### Decision 32: Customer-side public-link launchers should prefer same-tab navigation
+
+- For customer account-center sales pipeline actions, standalone requirement-link opening now defaults to current-tab navigation rather than `_blank`.
+- Reason:
+  - it better matches the mental model of “continue into the next required step”
+  - it reduces the user perception that the page “opened and immediately came back”
+  - it avoids inconsistent browser/tab behavior on mobile or locked-down environments
+
+### Decision 33: Requirement-link delivery needs a dedicated customer-safe fallback RPC
+
+- Customer-side public requirement link retrieval must not rely on direct table reads from `quote_deals` or `quote_requirements` because RLS/legacy-shape differences can make that path unreliable.
+- `public.get_customer_requirement_link(uuid)` is the dedicated fallback contract for customer runtime recovery of:
+  - `requirement_id`
+  - `public_slug`
+  - `public_token`
+- This fallback remains valid even when `get_customer_pipeline_detail(...)` is incomplete or temporarily in compatibility mode.

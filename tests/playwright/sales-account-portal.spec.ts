@@ -7,43 +7,38 @@ function hasCustomerCreds() {
   return Boolean(customerEmail && customerPassword);
 }
 
-async function expectLegacyFunnel(
+async function expectStandaloneRequirementPage(
   page: import('@playwright/test').Page,
   entryUrl: string,
-  expectedTokens: string[],
 ) {
   await page.goto(entryUrl, { waitUntil: 'domcontentloaded' });
-  await page.waitForURL((url) => {
-    return url.pathname.endsWith('/account/user.html')
-      || url.pathname.endsWith('/account/sales.html');
-  }, { timeout: 20000 });
+  await page.waitForURL((url) => url.pathname.endsWith('/quote/requirement.html'), { timeout: 20000 });
+  await expect(page.locator('#requirement-app')).toBeVisible({ timeout: 20000 });
+  await expect(page).toHaveURL(/\/quote\/requirement\.html\?req=req-demo-001&token=tok-demo-001/);
+}
 
-  const current = new URL(page.url());
-  if (current.pathname.endsWith('/account/user.html')) {
-    const returnUrl = await page.evaluate(() => window.sessionStorage.getItem('gx_main_return_url') || '');
-    expect(returnUrl).toContain('/account/sales.html');
-    expectedTokens.forEach((token) => expect(returnUrl).toContain(token));
-    return;
-  }
-
-  expect(current.pathname).toContain('/account/sales.html');
-  expectedTokens.forEach((token) => expect(current.search).toContain(token));
+async function expectStandaloneConfirmationPage(
+  page: import('@playwright/test').Page,
+  entryUrl: string,
+) {
+  await page.goto(entryUrl, { waitUntil: 'domcontentloaded' });
+  await page.waitForURL((url) => url.pathname.endsWith('/quote/confirmation.html'), { timeout: 20000 });
+  await expect(page.locator('#stage-confirmation-app')).toBeVisible({ timeout: 20000 });
+  await expect(page).toHaveURL(/\/quote\/confirmation\.html\?stage=stage-demo-001&token=tok-demo-001/);
 }
 
 test.describe('Sales account center portal funnel', () => {
-  test('legacy requirement link routes to account-center funnel', async ({ page }) => {
-    await expectLegacyFunnel(
+  test('requirement link stays on standalone requirement page', async ({ page }) => {
+    await expectStandaloneRequirementPage(
       page,
       '/quote/requirement.html?req=req-demo-001&token=tok-demo-001',
-      ['req=req-demo-001', 'req_token=tok-demo-001'],
     );
   });
 
-  test('legacy stage confirmation link routes to account-center funnel', async ({ page }) => {
-    await expectLegacyFunnel(
+  test('stage confirmation link stays on standalone confirmation page', async ({ page }) => {
+    await expectStandaloneConfirmationPage(
       page,
       '/quote/confirmation.html?stage=stage-demo-001&token=tok-demo-001',
-      ['confirm_stage=stage-demo-001', 'confirm_token=tok-demo-001'],
     );
   });
 

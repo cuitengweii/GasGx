@@ -15,6 +15,7 @@
     "test:e2e:sales-formal": "playwright test tests/playwright/sales-formal-backend.spec.ts",
     "test:e2e:sales-governance": "playwright test tests/playwright/sales-governance.spec.ts",
     "test:e2e:sales-execution": "playwright test tests/playwright/sales-execution-chain.spec.ts",
+    "test:e2e:sales-public-flow": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run_sales_public_flow_e2e.ps1",
     "test:e2e:sales-exceptions": "playwright test tests/playwright/sales-exception-branches.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",

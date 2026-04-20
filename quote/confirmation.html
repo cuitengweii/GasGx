@@ -24,48 +24,7 @@
     </main>
 
     <script>
-        (function redirectConfirmationToAccountSales() {
-            const params = new URL(window.location.href).searchParams;
-            const mode = String(params.get('mode') || '').trim().toLowerCase();
-            const stageSlug = String(params.get('stage') || params.get('confirm_stage') || '').trim();
-            const stageToken = String(params.get('token') || params.get('confirm_token') || '').trim();
-            if (mode === 'readonly' || !stageSlug || !stageToken) {
-                window.AMSLoadQuotePublicModule('../shared/quote-system/quote-confirmation.module.js');
-                return;
-            }
-
-            const accountUrl = new URL('/account/sales.html', window.location.origin);
-            accountUrl.searchParams.set('confirm_stage', stageSlug);
-            accountUrl.searchParams.set('confirm_token', stageToken);
-            const targetPath = `${accountUrl.pathname}${accountUrl.search}`;
-
-            const helper = window.GasGxMainAuthShared;
-            if (!helper?.createClient || !window.supabase) {
-                window.location.replace(targetPath);
-                return;
-            }
-
-            const runtime = helper.resolveConfig(window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth);
-            const redirectToAccount = () => {
-                try {
-                    window.sessionStorage.setItem(runtime.returnUrlStorageKey || 'gx_main_return_url', targetPath);
-                } catch (_error) {
-                    // Ignore storage errors and continue redirect.
-                }
-                window.location.replace(targetPath);
-            };
-
-            const client = helper.createClient(window.supabase, runtime);
-            client.auth.getSession()
-                .then(({ data, error }) => {
-                    if (error || !data?.session?.user) {
-                        redirectToAccount();
-                        return;
-                    }
-                    redirectToAccount();
-                })
-                .catch(() => redirectToAccount());
-        })();
+        window.AMSLoadQuotePublicModule('../shared/quote-system/quote-confirmation.module.js');
     </script>
 </body>
 </html>

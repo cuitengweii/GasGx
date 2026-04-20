@@ -231,3 +231,36 @@ News footer 若未取到统一站点壳配置：
 - The final architectural step is still pending:
   - `bindSalesStageListActions(...)` must be reduced to a thin dispatcher that delegates to those helpers
   - the old monolithic binding body has not yet been removed
+
+## 2026-04-21 sales public-flow architecture update
+
+### Runtime split
+
+- Sales customer workflow is now split into three distinct runtime surfaces:
+  - backend orchestration shell
+    - `D:\code\GasGx\article_management\modules\quote-system.module.js`
+  - customer account-center tracker / launcher
+    - `D:\code\GasGx\account\sales-pipeline.portal.js`
+    - `D:\code\GasGx\account\account.html`
+  - standalone public submission pages
+    - `D:\code\GasGx\quote\requirement.html`
+    - `D:\code\GasGx\quote\confirmation.html`
+
+### Link-resolution layers
+
+- Primary customer-detail path:
+  - `get_customer_pipeline_detail(target_deal_id uuid)`
+  - expected to include requirement object plus `public_slug / public_token`
+- Fallback customer-link path:
+  - `get_customer_requirement_link(target_deal_id uuid)`
+  - returns only the minimum public-link fields required to open the standalone requirement page
+- The account-center customer runtime now merges fallback link data into its local `detail.requirement` object when the main detail payload does not contain a usable standalone link.
+
+### Navigation boundary
+
+- Backend sales admin may launch the standalone requirement/confirmation pages, but should not rewrite those pages back into account-center routes.
+- Customer account-center may launch the standalone requirement page, but should not embed or duplicate the full requirement form once the dedicated public page exists.
+- Standalone public pages load their own dedicated modules directly:
+  - `shared/quote-system/quote-requirement.module.js`
+  - `shared/quote-system/quote-confirmation.module.js`
+- Those standalone pages are now treated as terminal public-entry runtimes, not temporary wrappers around account-center sales routes.

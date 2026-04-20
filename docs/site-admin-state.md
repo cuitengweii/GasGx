@@ -554,3 +554,65 @@
 1. Finalize the admin entry wiring for the knowledge module once the unrelated sales/admin worktree changes are ready to merge.
 2. Add finer `products/deployment/container` knowledge chunks to reduce broad fallback sources in container-product answers.
 3. Raise stranded-gas quotation prompts to their dedicated rule path so quote intake answers always use the new playbook first.
+
+## 2026-04-21 sales public requirement / confirmation flow update
+
+### Latest milestone
+
+- Sales pipeline requirement capture is now fully aligned around standalone public pages instead of reusing the customer account-center form as the primary data-entry runtime.
+- The following paths now act as the customer-facing submission surfaces:
+  - `D:\code\GasGx\quote\requirement.html`
+  - `D:\code\GasGx\quote\confirmation.html`
+- Customer account-center sales pipeline (`/account/account.html?tab=sales`) now acts as a workflow tracker and public-link launcher, not as a second requirement-entry form.
+- Backend sales detail pages were pulled back to the latest `quote-pipeline` rendering path instead of falling back to old `quote-customers` layout/redirect behavior.
+
+### Effective behaviors
+
+- Admin creates the customer record and requirement flow first, then issues a dedicated public requirement link to the customer.
+- Customer-side `requirement_capture` stage now shows:
+  - requirement-link status
+  - direct open action
+  - no duplicate requirement-entry form in account center
+- Public requirement runtime now remains on `/quote/requirement.html?...` instead of bouncing to account-center legacy routes.
+- Public confirmation runtime now remains on `/quote/confirmation.html?...` instead of bouncing back to account-center legacy routes.
+- Customer account-center requirement entry now opens the standalone requirement page in the current tab instead of `_blank`, reducing the “opened then jumped back” browser experience.
+- Requirement-link fallback now has two layers:
+  - `get_customer_pipeline_detail(...)` returns `requirement.public_slug / public_token` when available
+  - `get_customer_requirement_link(uuid)` acts as a security-definer fallback RPC when detail payloads or customer-side direct table reads are incomplete
+
+### Solved in this thread
+
+- Replaced customer-side duplicate requirement form with standalone-link guidance and open-link action in `account/sales-pipeline.portal.js`.
+- Added customer-side requirement-link fallback lookup via `get_customer_requirement_link(uuid)` and synced SQL helpers under:
+  - `D:\code\GasGx\article_management\sql\025_customer_pipeline_portal.sql`
+  - `D:\code\GasGx\article_management\sql\029_customer_requirement_link_rpc.sql`
+- Fixed the public requirement and public confirmation entry HTML files so they load their standalone modules directly instead of redirecting into account-center flow.
+- Fixed backend requirement-link open actions so sales operators land on the standalone public requirement page directly.
+- Added customer-portal UX improvements around requirement flow:
+  - requirement type select options and label mapping
+  - optional gas-source-report upload block
+  - login-email default fill plus email-format validation
+  - filtering customer-visible activities to hide internal operator actions
+- Added a backend switch for whether customers are allowed to upload gas-source reports.
+- Added and updated Playwright coverage for the standalone public-flow model, including:
+  - account/public-link sanity tests
+  - formal backend flow
+  - execution-chain flow
+- Added one-command regression script:
+  - `D:\code\GasGx\scripts\run_sales_public_flow_e2e.ps1`
+
+### Unfinished
+
+- `get_customer_pipeline_detail(...)` compatibility remains more complex than ideal because older data and legacy function definitions still needed fallback RPC support during rollout.
+- Customer-side true logged-in account-center clickthrough was partially validated via static checks and standalone-page runtime checks, but one fully clean “new customer account signup -> account center -> open requirement link” replay still depends on the environment’s email-confirmation posture.
+- The working tree still contains unrelated parallel changes and runtime artifacts outside this sales-public-flow slice, so the repo is not yet in a clean single-theme state.
+
+### Next Step
+
+1. Continue one focused regression pass on the exact user path:
+   - existing customer account login
+   - account-center `requirement_capture`
+   - click open requirement link
+   - confirm it stays on `/quote/requirement.html?...`
+2. Once customer clickthrough is stable in production-like sessions, simplify the compatibility/fallback path so account-center no longer needs multiple legacy entry-resolution branches.
+3. Separate unrelated working-tree changes and runtime report artifacts from the sales-public-flow branch before final merge/release packaging.
