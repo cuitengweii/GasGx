@@ -214,9 +214,11 @@
         pendingStageSubmit: false,
         resolvedLegacyEntry: false,
         legacyEntry: null,
+        invalidEntry: false,
         mobileViewport: false,
         mobileListCollapsed: true,
         timelineCollapsed: false,
+        requirementDraft: {},
     };
 
     function isMobileViewport() {
@@ -260,6 +262,31 @@
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return '--';
         return date.toLocaleString(currentLang() === 'zh' ? 'zh-CN' : 'en-US');
+    }
+
+    function requirementDraftFromDetail(detail = {}) {
+        const req = detail.requirement && typeof detail.requirement === 'object' ? detail.requirement : {};
+        return {
+            deal_id: text(detail.deal_id || state.selectedDealId),
+            title: text(req.title),
+            requirement_type: text(req.requirement_type),
+            requester_company: text(req.requester_company, detail.customer_company),
+            requester_name: text(req.requester_name),
+            requester_email: text(req.requester_email, detail.customer_email),
+            requester_phone: text(req.requester_phone),
+            country: text(req.country),
+            note: text(req.note || req.notes),
+        };
+    }
+
+    function ensureRequirementDraft(detail = {}) {
+        const nextDealId = text(detail.deal_id || state.selectedDealId);
+        if (text(state.requirementDraft.deal_id) !== nextDealId) {
+            state.requirementDraft = requirementDraftFromDetail(detail);
+        } else if (!Object.keys(state.requirementDraft || {}).length) {
+            state.requirementDraft = requirementDraftFromDetail(detail);
+        }
+        return state.requirementDraft;
     }
 
     function stageLabel(stageKey = '') {
@@ -541,17 +568,17 @@
     }
 
     function requirementFormMarkup(detail, editable) {
-        const req = detail.requirement && typeof detail.requirement === 'object' ? detail.requirement : {};
+        const req = ensureRequirementDraft(detail);
         return `
             <div class="sales-stage-form-grid">
                 <label><span>${esc(tr('stageRequirementTitle'))}</span><input class="field-input px-4 py-3" data-sales-req-field="title" value="${esc(text(req.title))}" ${editable ? '' : 'disabled'}></label>
                 <label><span>${esc(tr('stageRequirementType'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requirement_type" value="${esc(text(req.requirement_type))}" placeholder="${esc(tr('stageRequirementTypePlaceholder'))}" ${editable ? '' : 'disabled'}></label>
-                <label><span>${esc(tr('stageCompany'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_company" value="${esc(text(req.requester_company, detail.customer_company))}" ${editable ? '' : 'disabled'}></label>
+                <label><span>${esc(tr('stageCompany'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_company" value="${esc(text(req.requester_company))}" ${editable ? '' : 'disabled'}></label>
                 <label><span>${esc(tr('stageContact'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_name" value="${esc(text(req.requester_name))}" ${editable ? '' : 'disabled'}></label>
-                <label><span>${esc(tr('stageEmail'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_email" value="${esc(text(req.requester_email, detail.customer_email))}" ${editable ? '' : 'disabled'}></label>
+                <label><span>${esc(tr('stageEmail'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_email" value="${esc(text(req.requester_email))}" ${editable ? '' : 'disabled'}></label>
                 <label><span>${esc(tr('stagePhone'))}</span><input class="field-input px-4 py-3" data-sales-req-field="requester_phone" value="${esc(text(req.requester_phone))}" ${editable ? '' : 'disabled'}></label>
                 <label><span>${esc(tr('stageCountry'))}</span><input class="field-input px-4 py-3" data-sales-req-field="country" value="${esc(text(req.country))}" ${editable ? '' : 'disabled'}></label>
-                <label class="sales-span-2"><span>${esc(tr('stageRequirementNote'))}</span><textarea class="field-textarea px-4 py-3" rows="4" data-sales-req-field="note" placeholder="${esc(tr('stageRequirementNotePlaceholder'))}" ${editable ? '' : 'disabled'}></textarea></label>
+                <label class="sales-span-2"><span>${esc(tr('stageRequirementNote'))}</span><textarea class="field-textarea px-4 py-3" rows="4" data-sales-req-field="note" placeholder="${esc(tr('stageRequirementNotePlaceholder'))}" ${editable ? '' : 'disabled'}>${esc(text(req.note))}</textarea></label>
             </div>
         `;
     }
@@ -733,7 +760,7 @@
     }
 
     function collectRequirementPayload() {
-        const payload = {};
+        const payload = { ...(state.requirementDraft || {}) };
         document.querySelectorAll('[data-sales-req-field]').forEach((node) => {
             const key = text(node.dataset.salesReqField);
             if (!key) return;
@@ -772,6 +799,7 @@
                     payload,
                 });
             }
+            state.requirementDraft = {};
             showToast(tr('toastSubmittedRequirement'));
             await reloadData();
         } catch (error) {
@@ -823,12 +851,25 @@
     }
 
     function bindRenderedActions() {
+        document.querySelectorAll('[data-sales-req-field]').forEach((node) => {
+            node.addEventListener('input', () => {
+                const key = text(node.dataset.salesReqField);
+                if (!key) return;
+                state.requirementDraft = {
+                    ...(state.requirementDraft || {}),
+                    deal_id: text(state.requirementDraft.deal_id || state.selectedDealId),
+                    [key]: text(node.value),
+                };
+            });
+        });
+
         document.querySelectorAll('[data-sales-deal]').forEach((button) => {
             button.addEventListener('click', async () => {
                 const dealId = text(button.dataset.salesDeal);
                 if (!dealId || dealId === state.selectedDealId) return;
                 state.selectedDealId = dealId;
                 state.selectedStage = '';
+                state.requirementDraft = {};
                 syncUrl();
                 await loadDetail();
                 requestAnimationFrame(() => scrollActiveDealCardIntoView(true));
@@ -892,6 +933,8 @@
     async function resolveLegacyEntryFromUrl() {
         if (state.resolvedLegacyEntry) return;
         state.resolvedLegacyEntry = true;
+        state.invalidEntry = false;
+        let resolverUnavailable = false;
 
         const query = parseQuery();
         const deal = text(query.get('deal'));
@@ -907,12 +950,22 @@
         const confirmSlug = text(query.get('confirm_stage')) || text(query.get('stage_slug'));
         const confirmToken = text(query.get('confirm_token')) || text(query.get('token'));
         const quoteSlug = text(query.get('quote'));
+        const hasEntryParams = Boolean((reqSlug && reqToken) || (confirmSlug && confirmToken) || quoteSlug);
 
         try {
             if (reqSlug && reqToken) {
                 const data = await rpc('resolve_customer_pipeline_entry', { entry_kind: 'requirement', slug: reqSlug, token: reqToken });
                 const row = Array.isArray(data) ? data[0] : null;
                 if (row?.deal_id) {
+                    const publicRequirement = await rpc('get_public_quote_requirement', {
+                        req_slug: reqSlug,
+                        req_token: reqToken,
+                    }).catch(() => []);
+                    const requirementRow = Array.isArray(publicRequirement) ? publicRequirement[0] : null;
+                    if (!requirementRow) {
+                        state.invalidEntry = true;
+                        return;
+                    }
                     state.selectedDealId = text(row.deal_id);
                     state.selectedStage = text(row.stage_key, 'requirement_capture');
                     return;
@@ -922,6 +975,15 @@
                 const data = await rpc('resolve_customer_pipeline_entry', { entry_kind: 'stage', slug: confirmSlug, token: confirmToken });
                 const row = Array.isArray(data) ? data[0] : null;
                 if (row?.deal_id) {
+                    const publicStage = await rpc('get_public_quote_stage_confirmation', {
+                        stage_slug: confirmSlug,
+                        stage_token: confirmToken,
+                    }).catch(() => []);
+                    const stageRow = Array.isArray(publicStage) ? publicStage[0] : null;
+                    if (!stageRow) {
+                        state.invalidEntry = true;
+                        return;
+                    }
                     state.selectedDealId = text(row.deal_id);
                     state.selectedStage = text(row.stage_key);
                     return;
@@ -937,28 +999,41 @@
             }
         } catch (error) {
             if (!missingRpc(error, 'resolve_customer_pipeline_entry')) return;
+            resolverUnavailable = true;
         }
 
-        if (reqSlug && reqToken) {
+        if (resolverUnavailable && reqSlug && reqToken) {
             state.legacyEntry = { kind: 'requirement', slug: reqSlug, token: reqToken };
             state.selectedDealId = 'legacy-public';
             state.selectedStage = 'requirement_capture';
             return;
         }
-        if (confirmSlug && confirmToken) {
+        if (resolverUnavailable && confirmSlug && confirmToken) {
             state.legacyEntry = { kind: 'stage', slug: confirmSlug, token: confirmToken };
             state.selectedDealId = 'legacy-public';
             state.selectedStage = 'quote_confirmed';
             return;
         }
-        if (quoteSlug) {
+        if (resolverUnavailable && quoteSlug) {
             state.legacyEntry = { kind: 'quote', slug: quoteSlug, token: '' };
             state.selectedDealId = 'legacy-public';
+            state.selectedStage = '';
+            return;
+        }
+        if (hasEntryParams) {
+            state.invalidEntry = true;
+            state.selectedDealId = '';
             state.selectedStage = '';
         }
     }
 
     async function loadOverview() {
+        if (state.invalidEntry) {
+            state.overview = [];
+            state.loadedOnce = true;
+            render();
+            return;
+        }
         state.overviewLoading = true;
         render();
         try {

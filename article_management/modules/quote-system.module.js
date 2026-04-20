@@ -13819,7 +13819,14 @@ export async function renderQuoteCustomerFlowPage(input) {
     const stageKey = currentSalesStageParam('customer_profile');
     const requestedDealId = text(readAdminPageParam('deal'));
     let customerId = text(readAdminPageParam('customer'));
-    const requestedDeal = dealById(requestedDealId);
+    let requestedDeal = dealById(requestedDealId);
+    if (requestedDealId && !requestedDeal) {
+        try {
+            requestedDeal = await fetchDealEditor(requestedDealId);
+        } catch (_error) {
+            requestedDeal = null;
+        }
+    }
     if (!customerId && requestedDeal?.customer_id) customerId = requestedDeal.customer_id;
     if (!customerId) {
         renderSalesPageFrame(input, '独立客户流水线', '先从客户档案或总流水线选择一条销售线。', '<section class="ams-card"><div class="ams-empty">当前没有可打开的客户流水线。</div></section>', {
@@ -13834,7 +13841,10 @@ export async function renderQuoteCustomerFlowPage(input) {
 
     await ensureCustomerEditorForSalesFlow(customerId);
     const deals = customerFlowDeals(customerId, input);
-    const activeDeal = deals.find((deal) => deal.id === requestedDealId) || deals[0] || null;
+    const requestedDealFallback = requestedDeal?.id && text(requestedDeal.customer_id) === customerId
+        ? (dealById(requestedDeal.id) || requestedDeal)
+        : null;
+    const activeDeal = deals.find((deal) => deal.id === requestedDealId) || requestedDealFallback || deals[0] || null;
     if (!activeDeal && stageKey !== 'customer_profile') {
         window.history.replaceState({}, '', customerFlowStageUrl('customer_profile', null, customerId));
         await renderQuoteCustomerFlowPage(input);

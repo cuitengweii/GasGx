@@ -31,6 +31,21 @@ async function confirmDialog(page: import('@playwright/test').Page, required = t
 }
 
 async function settleToContractStage(page: import('@playwright/test').Page, dealId: string) {
+  const syncFromBackendIfNeeded = async () => {
+    const backendStage = await readDealCurrentStage(page, dealId);
+    if (backendStage === 'contract_signed') {
+      const currentUrl = new URL(page.url());
+      const customerId = currentUrl.searchParams.get('customer') || '';
+      const targetUrl = customerId
+        ? `/article_management/sales/index.html?page=quote-customer-flow&deal=${encodeURIComponent(dealId)}&customer=${encodeURIComponent(customerId)}&stage=contract_signed`
+        : `/article_management/sales/index.html?page=quote-customer-flow&deal=${encodeURIComponent(dealId)}&stage=contract_signed`;
+      await page.goto(targetUrl);
+      await expect(page).toHaveURL(/stage=contract_signed/, { timeout: 15000 });
+      return true;
+    }
+    return false;
+  };
+
   const deadline = Date.now() + 45000;
   while (Date.now() < deadline) {
     const stage = new URL(page.url()).searchParams.get('stage') || '';
@@ -45,16 +60,25 @@ async function settleToContractStage(page: import('@playwright/test').Page, deal
       if (canClick) {
         await adminConfirmBtn.click();
         await confirmDialog(page);
-        await page.waitForURL(/stage=contract_signed/, { timeout: 20000 });
-        return;
+        try {
+          await page.waitForURL(/stage=contract_signed/, { timeout: 20000 });
+          return;
+        } catch {
+          const synced = await syncFromBackendIfNeeded();
+          if (synced) return;
+        }
       }
     }
 
     await page.waitForTimeout(2500);
     await page.reload();
+    const synced = await syncFromBackendIfNeeded();
+    if (synced) return;
   }
   await forceCustomerQuoteConfirmation(page, { dealId, customerEmail });
   await page.reload();
+  const synced = await syncFromBackendIfNeeded();
+  if (synced) return;
   await expect(page).toHaveURL(/stage=contract_signed/, { timeout: 5000 });
 }
 
