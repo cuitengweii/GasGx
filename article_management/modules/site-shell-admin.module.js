@@ -982,9 +982,10 @@ function renderGeneralPage() {
                                 ${renderTextField('site.features.chatApiUrl', '聊天接口地址', features.chatApiUrl, 'http://localhost:8000/chat')}
                             </div>
                             <div class="ams-site-inline-actions">
-                                <button class="ams-btn" type="button" data-site-action="open-logo-manager">打开 Logo 工作台</button>
+                                <button class="ams-btn ams-btn-muted" type="button" data-site-action="open-logo-manager">打开 Logo 工作台</button>
+                                <button class="ams-btn ams-btn-muted" type="button" data-site-action="open-gasgx-ui-guide">打开 GasGx UI 规范</button>
                             </div>
-                            <div class="ams-footnote">在独立 Logo 工作台中切换主站 Logo 样式、动效开关并恢复原版，改动会同步到头部和页脚。</div>
+                            <div class="ams-footnote">在独立 Logo 工作台中切换主站 Logo 样式、动效开关并恢复原版，改动会同步到头部和页脚。GasGx UI 规范展示页会在新标签页打开，方便随时对照设计令牌与组件样式。</div>
                         `)}
                         ${renderFooterSection('site:auth', '主站认证跳转', mainAuth.signInUrl || '/account/user.html', `
                             <div class="ams-site-field-grid ams-site-field-grid-wide">
@@ -1346,6 +1347,12 @@ async function handleAction(target, deps) {
 
     if (action === 'open-logo-manager') {
         const targetUrl = `${window.location.origin}/article_management/logo/index.html`;
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        return;
+    }
+
+    if (action === 'open-gasgx-ui-guide') {
+        const targetUrl = `${window.location.origin}/article_management/styles/gasgx-ui.html`;
         window.open(targetUrl, '_blank', 'noopener,noreferrer');
         return;
     }
