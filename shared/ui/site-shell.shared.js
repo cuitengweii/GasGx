@@ -442,12 +442,12 @@
                     <span class="text-[10px] text-gray-500 ml-1">GasGx Bot</span>
                 </div>
                 <div class="bg-[#1b1d1f] text-gray-200 px-4 py-3 rounded-2xl rounded-tl-none text-sm border border-white/8 shadow-sm leading-relaxed">
-                    Hello! I am your GasGx Power Assistant.<br><br>
+                    Hello! I am your GasGx project advisor.<br><br>
                     Ask me about:
                     <ul class="list-disc pl-4 mt-1 text-gray-400">
-                        <li>Generator Power Sizing</li>
-                        <li>Crypto Mining Solutions</li>
-                        <li>Gas Consumption Costs</li>
+                        <li>Product selection and power sizing</li>
+                        <li>Oilfield, mining, CHP and industrial solutions</li>
+                        <li>Quotations, delivery, service and support</li>
                     </ul>
                 </div>
             </div>
@@ -3023,6 +3023,8 @@
             ? runtimeConfig.chatApiUrl.trim()
             : `${String(authConfig.supabaseUrl || "").replace(/\/+$/, "")}${DEFAULT_CHAT_API_PATH}`;
         const dockStorageKey = "gasgx-chat-docked";
+        const chatSessionStorageKey = "gasgx-chat-session-id";
+        const conversationHistory = [];
 
         let isChatOpen = false;
         let isChatDocked = false;
@@ -3081,7 +3083,41 @@
             }
         }
 
-        function addMessage(text, sender) {
+        function getChatSessionId() {
+            try {
+                const existing = window.localStorage.getItem(chatSessionStorageKey);
+                if (existing) return existing;
+                const nextId = `gxchat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                window.localStorage.setItem(chatSessionStorageKey, nextId);
+                return nextId;
+            } catch (error) {
+                return `gxchat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            }
+        }
+
+        function buildMessageMeta(meta) {
+            if (!meta || typeof meta !== "object") return "";
+            const sourceList = Array.isArray(meta.sources) ? meta.sources.filter(function (item) {
+                return item && typeof item === "object" && item.title;
+            }).slice(0, 3) : [];
+            const handoff = meta.handoff && typeof meta.handoff === "object" ? meta.handoff : null;
+            const sourceHtml = sourceList.length
+                ? `<div class="mt-2 text-[10px] text-gray-400"><strong class="text-gray-300">Sources:</strong> ${sourceList.map(function (item) {
+                    const title = escapeHtml(item.title || "GasGx Knowledge");
+                    const href = typeof item.url === "string" && item.url.trim() ? item.url.trim() : "";
+                    if (/^https?:\/\//i.test(href)) {
+                        return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="text-gas-green hover:underline">${title}</a>`;
+                    }
+                    return `<span>${title}</span>`;
+                }).join(" · ")}</div>`
+                : "";
+            const handoffHtml = handoff && handoff.required && Array.isArray(handoff.next_fields) && handoff.next_fields.length
+                ? `<div class="mt-2 text-[10px] text-gray-400"><strong class="text-gray-300">Next:</strong> ${handoff.next_fields.map(function (item) { return escapeHtml(item); }).join(", ")}</div>`
+                : "";
+            return sourceHtml + handoffHtml;
+        }
+
+        function addMessage(text, sender, meta) {
             const container = document.createElement("div");
             const isUser = sender === "user";
             const safeText = escapeHtml(text).replace(/\n/g, "<br>");
@@ -3098,11 +3134,43 @@
 
             container.innerHTML =
                 labelHtml +
-                "<div class=\"" + bubbleClass + " px-4 py-2 text-sm leading-relaxed break-words\">" + safeText + "</div>" +
+                "<div class=\"" + bubbleClass + " px-4 py-2 text-sm leading-relaxed break-words\">" + safeText + buildMessageMeta(meta) + "</div>" +
                 "<span class=\"text-[9px] text-gray-600 mt-1\">" + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "</span>";
 
             messagesContainer.appendChild(container);
             scrollToBottom();
+        }
+
+        function rememberChatTurn(role, content) {
+            const safeRole = role === "assistant" ? "assistant" : "user";
+            const safeContent = typeof content === "string" ? content.trim() : "";
+            if (!safeContent) return;
+            conversationHistory.push({ role: safeRole, content: safeContent });
+            if (conversationHistory.length > 8) {
+                conversationHistory.splice(0, conversationHistory.length - 8);
+            }
+        }
+
+        function getChatPayload(messageText) {
+            const currentLang = getCurrentLang();
+            return {
+                message: messageText,
+                sessionId: getChatSessionId(),
+                language: currentLang,
+                history: conversationHistory.slice(-8),
+                pageContext: {
+                    title: document.title || "",
+                    path: window.location.pathname || "",
+                    url: window.location.href || "",
+                    lang: currentLang
+                }
+            };
+        }
+
+        function getChatFailureMessage() {
+            return getCurrentLang() === "zh"
+                ? "GasGx 智能顾问暂时没有连上。请稍后重试，或直接联系 contact@gasgx.com。"
+                : "GasGx Assistant is temporarily unavailable. Please try again later or contact contact@gasgx.com.";
         }
 
         async function sendMessage() {
@@ -3122,17 +3190,23 @@
                         apikey: authConfig.supabaseKey || "",
                         Authorization: `Bearer ${authConfig.supabaseKey || ""}`
                     },
-                    body: JSON.stringify({ message: text })
+                    body: JSON.stringify(getChatPayload(text))
                 });
 
                 if (!response.ok) {
                     throw new Error(`chat_http_${response.status}`);
                 }
                 const data = await response.json();
-                addMessage((data && data.reply) || "No response payload.", "bot");
+                const replyText = (data && data.reply) || "No response payload.";
+                rememberChatTurn("user", text);
+                rememberChatTurn("assistant", replyText);
+                addMessage(replyText, "bot", {
+                    sources: data && data.sources,
+                    handoff: data && data.handoff
+                });
             } catch (error) {
                 console.error("Chat Error:", error);
-                addMessage("Assistant is temporarily unavailable. Please verify the Supabase Edge Function and Spark credentials.", "bot");
+                addMessage(getChatFailureMessage(), "bot");
             } finally {
                 loadingIndicator.classList.add("hidden");
                 sendBtn.disabled = false;

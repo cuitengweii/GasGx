@@ -1,6 +1,6 @@
 # site-chat
 
-GasGx shared-site chatbot edge function backed by XFYUN Spark.
+GasGx shared-site chatbot edge function backed by XFYUN Spark plus Supabase-hosted FAQ and knowledge retrieval.
 
 ## Required environment variables
 
@@ -20,11 +20,30 @@ Optional:
 XFYUN_SPARK_CHAT_SYSTEM_PROMPT=
 ```
 
+Supabase built-in edge-function secrets used by the new retrieval path:
+
+```bash
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
 ## Request
 
 ```json
 {
-  "message": "What generator size fits a 1 MW mining load?"
+  "message": "What generator size fits a 1 MW mining load?",
+  "sessionId": "gxchat_123",
+  "language": "en",
+  "history": [
+    { "role": "user", "content": "Hello" },
+    { "role": "assistant", "content": "Hi, how can I help?" }
+  ],
+  "pageContext": {
+    "title": "GasGx products",
+    "path": "/products/",
+    "url": "https://www.gasgx.com/products/",
+    "lang": "en"
+  }
 }
 ```
 
@@ -33,7 +52,26 @@ XFYUN_SPARK_CHAT_SYSTEM_PROMPT=
 ```json
 {
   "ok": true,
-  "provider": "xfyun_spark",
-  "reply": "..."
+  "provider": "gasgx_policy",
+  "reply": "...",
+  "language": "en",
+  "sources": [
+    {
+      "title": "GasGx Offering Map",
+      "url": "kb://gasgx/offering-overview",
+      "source_type": "internal_sales_kb"
+    }
+  ],
+  "handoff": {
+    "required": false,
+    "reason": "unknown",
+    "next_fields": []
+  }
 }
 ```
+
+## Provider semantics
+
+- `gasgx_policy`: deterministic FAQ rule matched.
+- `gasgx_rag`: response used knowledge retrieval, with Spark generation or a retrieval fallback.
+- `xfyun_spark`: no stored knowledge/rule matched, Spark handled the turn directly.
