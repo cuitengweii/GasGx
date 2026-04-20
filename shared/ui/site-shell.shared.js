@@ -1179,6 +1179,7 @@
     function normalizeLang(lang) {
         const value = String(lang || "").toLowerCase();
         if (value.startsWith("zh")) return "zh";
+        if (value.startsWith("ru")) return "ru";
         return "en";
     }
 
@@ -3025,9 +3026,66 @@
         const dockStorageKey = "gasgx-chat-docked";
         const chatSessionStorageKey = "gasgx-chat-session-id";
         const conversationHistory = [];
+        const chatFieldLabels = {
+            en: {
+                application: "application",
+                power: "power",
+                gas_type: "gas type",
+                gas_quality: "gas quality",
+                country: "country",
+                basin_or_province: "basin / province",
+                site_type: "site type",
+                available_flow: "available flow",
+                voltage_frequency: "voltage / frequency",
+                deployment: "deployment",
+                delivery_scope: "delivery scope",
+                site_conditions: "site conditions",
+                service_scope: "service scope",
+                deployment_scope: "deployment scope",
+                site_constraints: "site constraints",
+                service_model: "service model"
+            },
+            zh: {
+                application: "应用场景",
+                power: "目标功率",
+                gas_type: "气源类型",
+                gas_quality: "气质",
+                country: "国家地区",
+                basin_or_province: "盆地 / 省州",
+                site_type: "站点类型",
+                available_flow: "可用流量",
+                voltage_frequency: "电压 / 频率",
+                deployment: "部署形式",
+                delivery_scope: "交付范围",
+                site_conditions: "现场条件",
+                service_scope: "服务范围",
+                deployment_scope: "部署范围",
+                site_constraints: "现场约束",
+                service_model: "运维模式"
+            },
+            ru: {
+                application: "сценарий проекта",
+                power: "требуемая мощность",
+                gas_type: "тип газа",
+                gas_quality: "качество газа",
+                country: "страна",
+                basin_or_province: "бассейн / регион",
+                site_type: "тип площадки",
+                available_flow: "доступный расход",
+                voltage_frequency: "напряжение / частота",
+                deployment: "формат размещения",
+                delivery_scope: "границы поставки",
+                site_conditions: "условия площадки",
+                service_scope: "сервисный объем",
+                deployment_scope: "границы deployment",
+                site_constraints: "ограничения площадки",
+                service_model: "модель сервиса"
+            }
+        };
 
         let isChatOpen = false;
         let isChatDocked = false;
+        let chatUiLang = getCurrentLang();
 
         function scrollToBottom() {
             requestAnimationFrame(function () {
@@ -3097,30 +3155,91 @@
 
         function buildMessageMeta(meta) {
             if (!meta || typeof meta !== "object") return "";
+            const lang = normalizeLang(chatUiLang || getCurrentLang());
+            const labels = chatFieldLabels[lang] || chatFieldLabels.en;
+            const copy = {
+                en: { sources: "Sources:", next: "Next:" },
+                zh: { sources: "\u6765\u6e90\uff1a", next: "\u4e0b\u4e00\u6b65\uff1a" },
+                ru: { sources: "\u0418\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u0438:", next: "\u0414\u0430\u043b\u044c\u0448\u0435:" }
+            }[lang] || { sources: "Sources:", next: "Next:" };
             const sourceList = Array.isArray(meta.sources) ? meta.sources.filter(function (item) {
                 return item && typeof item === "object" && item.title;
             }).slice(0, 3) : [];
             const handoff = meta.handoff && typeof meta.handoff === "object" ? meta.handoff : null;
             const sourceHtml = sourceList.length
-                ? `<div class="mt-2 text-[10px] text-gray-400"><strong class="text-gray-300">Sources:</strong> ${sourceList.map(function (item) {
+                ? `<div class="mt-2 text-[10px] text-gray-400"><strong class="text-gray-300">${escapeHtml(copy.sources)}</strong> ${sourceList.map(function (item) {
                     const title = escapeHtml(item.title || "GasGx Knowledge");
                     const href = typeof item.url === "string" && item.url.trim() ? item.url.trim() : "";
                     if (/^https?:\/\//i.test(href)) {
                         return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="text-gas-green hover:underline">${title}</a>`;
                     }
                     return `<span>${title}</span>`;
-                }).join(" · ")}</div>`
+                }).join(" | ")}</div>`
                 : "";
             const handoffHtml = handoff && handoff.required && Array.isArray(handoff.next_fields) && handoff.next_fields.length
-                ? `<div class="mt-2 text-[10px] text-gray-400"><strong class="text-gray-300">Next:</strong> ${handoff.next_fields.map(function (item) { return escapeHtml(item); }).join(", ")}</div>`
+                ? `<div class="mt-2 text-[10px] text-gray-400"><strong class="text-gray-300">${escapeHtml(copy.next)}</strong> ${handoff.next_fields.map(function (item) { return escapeHtml(labels[item] || item); }).join(", ")}</div>`
                 : "";
             return sourceHtml + handoffHtml;
+        }
+        function getChatSiteHint(langCandidate) {
+            const lang = normalizeLang(langCandidate || chatUiLang || getCurrentLang());
+            const path = String(window.location.pathname || "").toLowerCase();
+            if (path.indexOf("/products/") === 0) {
+                return lang === "zh"
+                    ? "\u4f60\u53ef\u4ee5\u7ee7\u7eed\u7ed3\u5408\u5f53\u524d\u4ea7\u54c1\u9875\u67e5\u770b\u53c2\u6570\u548c\u90e8\u7f72\u4fe1\u606f\uff0c\u4e5f\u53ef\u4ee5\u76f4\u63a5\u5728\u8fd9\u91cc\u8865\u5145\u9879\u76ee\u6761\u4ef6\uff0c\u6211\u6765\u5e2e\u4f60\u6574\u7406\u6210\u62a5\u4ef7\u7ebf\u7d22\u3002"
+                    : lang === "ru"
+                        ? "\u0432\u044b \u043c\u043e\u0436\u0435\u0442\u0435 \u0441\u0432\u0435\u0440\u044f\u0442\u044c\u0441\u044f \u0441 \u0442\u0435\u043a\u0443\u0449\u0435\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435\u0439 \u043f\u0440\u043e\u0434\u0443\u043a\u0442\u0430 \u043f\u043e \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u0430\u043c \u0438 deployment, \u0430 \u0437\u0434\u0435\u0441\u044c \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u0432\u0432\u043e\u0434\u0438\u0442\u044c \u043f\u0440\u043e\u0435\u043a\u0442\u043d\u044b\u0435 \u0443\u0441\u043b\u043e\u0432\u0438\u044f, \u0447\u0442\u043e\u0431\u044b \u044f \u043f\u043e\u043c\u043e\u0433 \u0441\u043e\u0431\u0440\u0430\u0442\u044c \u043b\u0438\u0434 \u0434\u043b\u044f \u043a\u043e\u043c\u043c\u0435\u0440\u0447\u0435\u0441\u043a\u043e\u0433\u043e \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u044f."
+                        : "You can keep using this product page for specs and deployment context, and continue here with your project inputs for a quotation handoff.";
+            }
+            if (path.indexOf("/solutions/") === 0 || path.indexOf("/use-cases/") === 0) {
+                return lang === "zh"
+                    ? "\u4f60\u53ef\u4ee5\u7ed3\u5408\u5f53\u524d\u65b9\u6848\u9875\u7ee7\u7eed\u5bf9\u6bd4\u573a\u666f\u9002\u914d\uff0c\u4e5f\u53ef\u4ee5\u76f4\u63a5\u628a\u529f\u7387\u3001\u6c14\u6e90\u548c\u56fd\u5bb6\u53d1\u7ed9\u6211\uff0c\u6211\u6765\u5e2e\u4f60\u6536\u655b\u5230\u53ef\u6267\u884c\u65b9\u6848\u3002"
+                    : lang === "ru"
+                        ? "\u043c\u043e\u0436\u043d\u043e \u0441\u043e\u043f\u043e\u0441\u0442\u0430\u0432\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442 \u0441 \u0442\u0435\u043a\u0443\u0449\u0435\u0439 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435\u0439 \u0440\u0435\u0448\u0435\u043d\u0438\u044f \u0438 \u0441\u0440\u0430\u0437\u0443 \u043f\u0440\u0438\u0441\u043b\u0430\u0442\u044c \u043c\u043e\u0449\u043d\u043e\u0441\u0442\u044c, \u0442\u0438\u043f \u0433\u0430\u0437\u0430 \u0438 \u0441\u0442\u0440\u0430\u043d\u0443, \u0447\u0442\u043e\u0431\u044b \u044f \u0441\u0443\u0437\u0438\u043b \u0432\u0430\u0440\u0438\u0430\u043d\u0442 \u0434\u043e \u0440\u0430\u0431\u043e\u0447\u0435\u0433\u043e \u0440\u0435\u0448\u0435\u043d\u0438\u044f."
+                        : "You can compare this answer with the current solution page, or send power, gas type and country here so I can narrow it to an executable direction.";
+            }
+            return lang === "zh"
+                ? "\u4f60\u4e5f\u53ef\u4ee5\u7ee7\u7eed\u7528\u7ad9\u5185\u5bfc\u822a\u67e5\u770b\u4ea7\u54c1\u548c\u65b9\u6848\u9875\uff0c\u6216\u76f4\u63a5\u5728\u8fd9\u91cc\u7ee7\u7eed\u63d0\u95ee\uff0c\u6211\u4f1a\u5e2e\u4f60\u628a\u4fe1\u606f\u6574\u7406\u5230\u7f51\u7ad9\u5bf9\u5e94\u529f\u80fd\u5165\u53e3\u3002"
+                : lang === "ru"
+                    ? "\u043c\u043e\u0436\u043d\u043e \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u044c \u043d\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044e \u0441\u0430\u0439\u0442\u0430 \u0434\u043b\u044f \u043f\u0435\u0440\u0435\u0445\u043e\u0434\u0430 \u043a \u043f\u0440\u043e\u0434\u0443\u043a\u0442\u0430\u043c \u0438 \u0440\u0435\u0448\u0435\u043d\u0438\u044f\u043c, \u0438\u043b\u0438 \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u0432\u043e\u043f\u0440\u043e\u0441 \u0437\u0434\u0435\u0441\u044c, \u0430 \u044f \u0441\u0432\u044f\u0436\u0443 \u043e\u0442\u0432\u0435\u0442 \u0441 \u043d\u0443\u0436\u043d\u044b\u043c \u0440\u0430\u0437\u0434\u0435\u043b\u043e\u043c \u0441\u0430\u0439\u0442\u0430."
+                    : "You can also use the site navigation to open product or solution pages, and keep asking here so I can connect you to the right site flow.";
+        }
+
+        function formatChatMessageBody(text, sender) {
+            const safe = escapeHtml(text || "");
+            if (sender === "user") {
+                return safe.replace(/\n/g, "<br>");
+            }
+            const lines = safe.split(/\n/).map(function (line) {
+                return line.trim();
+            }).filter(Boolean);
+            if (!lines.length) return "";
+            return `<div class="space-y-2">${lines.map(function (line) {
+                const ordered = line.match(/^(\d+)\.\s+(.*)$/);
+                if (ordered) {
+                    return `<div class="flex items-start gap-2 leading-6"><span class="min-w-[1.75rem] shrink-0 text-right text-gas-green/85 font-semibold">${ordered[1]}.</span><div class="min-w-0 flex-1 break-words">${ordered[2]}</div></div>`;
+                }
+                const bullet = line.match(/^[-*]\s+(.*)$/);
+                if (bullet) {
+                    return `<div class="flex items-start gap-2 leading-6"><span class="min-w-[1rem] shrink-0 text-center text-gas-green/85 font-semibold">&bull;</span><div class="min-w-0 flex-1 break-words">${bullet[1]}</div></div>`;
+                }
+                return `<div class="leading-6 break-words">${line}</div>`;
+            }).join("")}</div>`;
+        }
+
+        function buildChatSiteHintHtml(sender) {
+            if (sender === "user") return "";
+            const hint = getChatSiteHint();
+            if (!hint) return "";
+            const lang = normalizeLang(chatUiLang || getCurrentLang());
+            const label = lang === "zh" ? "\u5c0f\u63d0\u793a\uff1a" : (lang === "ru" ? "\u041f\u043e\u0434\u0441\u043a\u0430\u0437\u043a\u0430:" : "Tip:");
+            return `<div class="mt-3 pt-2 border-t border-white/8 text-[10px] leading-relaxed text-gray-400"><span class="text-gas-green/80 font-semibold">${escapeHtml(label)}</span> ${escapeHtml(hint)}</div>`;
         }
 
         function addMessage(text, sender, meta) {
             const container = document.createElement("div");
             const isUser = sender === "user";
-            const safeText = escapeHtml(text).replace(/\n/g, "<br>");
+            const safeText = formatChatMessageBody(text, sender);
 
             container.className = "flex flex-col " + (isUser ? "items-end" : "items-start") + " max-w-[85%] space-y-1 w-full animate-[slideDown_0.3s_ease-out]";
 
@@ -3134,7 +3253,7 @@
 
             container.innerHTML =
                 labelHtml +
-                "<div class=\"" + bubbleClass + " px-4 py-2 text-sm leading-relaxed break-words\">" + safeText + buildMessageMeta(meta) + "</div>" +
+                "<div class=\"" + bubbleClass + " px-4 py-2 text-sm leading-relaxed break-words\">" + safeText + buildMessageMeta(meta) + buildChatSiteHintHtml(sender) + "</div>" +
                 "<span class=\"text-[9px] text-gray-600 mt-1\">" + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "</span>";
 
             messagesContainer.appendChild(container);
@@ -3151,28 +3270,37 @@
             }
         }
 
+        function inferChatMessageLanguage(messageText) {
+            if (/[\u4e00-\u9fff]/.test(messageText || "")) return "zh";
+            if (/[\u0400-\u04FF]/.test(messageText || "")) return "ru";
+            return getCurrentLang();
+        }
+
         function getChatPayload(messageText) {
-            const currentLang = getCurrentLang();
+            const messageLang = inferChatMessageLanguage(messageText);
+            chatUiLang = messageLang;
             return {
                 message: messageText,
                 sessionId: getChatSessionId(),
-                language: currentLang,
+                language: messageLang,
                 history: conversationHistory.slice(-8),
                 pageContext: {
                     title: document.title || "",
                     path: window.location.pathname || "",
                     url: window.location.href || "",
-                    lang: currentLang
+                    lang: messageLang
                 }
             };
         }
 
         function getChatFailureMessage() {
-            return getCurrentLang() === "zh"
-                ? "GasGx 智能顾问暂时没有连上。请稍后重试，或直接联系 contact@gasgx.com。"
-                : "GasGx Assistant is temporarily unavailable. Please try again later or contact contact@gasgx.com.";
+            const lang = normalizeLang(chatUiLang || getCurrentLang());
+            return lang === "zh"
+                ? "GasGx \u667a\u80fd\u987e\u95ee\u6682\u65f6\u6ca1\u6709\u8fde\u4e0a\u3002\u8bf7\u7a0d\u540e\u91cd\u8bd5\uff0c\u6216\u76f4\u63a5\u8054\u7cfb contact@gasgx.com\u3002"
+                : lang === "ru"
+                    ? "GasGx Assistant \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u043f\u043e\u0437\u0436\u0435 \u0438\u043b\u0438 \u043d\u0430\u043f\u0438\u0448\u0438\u0442\u0435 \u043d\u0430 contact@gasgx.com."
+                    : "GasGx Assistant is temporarily unavailable. Please try again later or contact contact@gasgx.com.";
         }
-
         async function sendMessage() {
             const text = userInput.value.trim();
             if (!text) return;
