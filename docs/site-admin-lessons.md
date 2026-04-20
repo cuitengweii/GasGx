@@ -150,20 +150,58 @@ How to prevent recurrence:
   4. run a full flow regression pass
 - Record the partial-state checkpoint in the state doc immediately so the next thread does not mistake helper extraction for a finished event-layer refactor.
 
-## Lesson 9: Sales detail-page UI fixes can appear "not working" when the entry HTML still points at stale asset versions
+## Lesson 9: Supabase remote bundling is sensitive to external import sources during Edge Function deploy
 
 Error symptom:
-- Multiple sales customer-flow UI fixes appeared to have no effect in the browser even though `quote-system.module.js` and `main.css` had already been updated locally.
-- Operators reported that the page looked unchanged across several refreshes.
+- `supabase functions deploy site-chat` failed with:
+  - `Bundle generation timed out`
 
 Root cause:
-- `article_management/sales/index.html` was still referencing older versioned URLs for `main.css` and `sales.bootstrap.js`.
-- The browser therefore kept using cached assets and rendered an older shell than the current source tree.
+- The function entry imported `@supabase/supabase-js` from `https://esm.sh/...`.
+- Local bundle checks passed, but Supabase remote bundle generation timed out when resolving that external source.
 
 How to detect earlier:
-- When a visible sales UI fix "does nothing", inspect the entry HTML asset query strings before debugging layout logic again.
-- Compare the loaded stylesheet/script URL version in the browser with the local file change time or current patch batch.
+- When a function deploy times out during bundle generation rather than runtime execution, inspect remote imports before assuming the business logic is too large.
+- Compare local syntax/bundle success with remote deploy behavior to separate code correctness from bundle-source instability.
 
 How to prevent recurrence:
-- Treat cache-busting as part of the implementation for operator-facing sales UI changes.
-- After a shell/layout fix, bump the version string in `article_management/sales/index.html` and then verify the page with a hard refresh or a clean browser context.
+- Prefer Edge-friendly import sources such as `jsr:@supabase/supabase-js@2` for Supabase functions.
+- Treat `esm.sh` imports as a deployment-risk factor when the function must be bundled remotely by Supabase.
+
+## Lesson 10: Retrieval ranking alone cannot fix missing or weakly shaped knowledge
+
+Error symptom:
+- Product deployment queries kept returning a broad fallback source such as a power-range page even after multiple rerank improvements.
+
+Root cause:
+- The retrieval layer had enough signals to clean cross-section noise, but not enough fine-grained deployment/container knowledge candidates to fully replace broad same-section fallbacks.
+
+How to detect earlier:
+- If repeated rerank tweaks change ordering but the fallback source remains conceptually broad, inspect whether the knowledge base actually contains better candidate chunks.
+
+How to prevent recurrence:
+- Stop tuning weights once the error becomes a knowledge-shape problem.
+- Add tighter domain chunks (for example deployment/container-specific cards) before attempting more rerank complexity.
+
+## Lesson 11: Sensitive sales geography topics should graduate from retrieval to deterministic policy rules
+
+Error symptom:
+- Country-specific stranded-gas mining questions for the United States and Canada initially returned generic solution-page answers or weak free-form text even after country knowledge cards were seeded.
+
+Root cause:
+- These prompts mixed:
+  - country identity
+  - oilfield / flare / APG vocabulary
+  - compliance-sensitive sales language
+- Pure retrieval and generic rule matching were not robust enough for natural phrasings.
+
+How to detect earlier:
+- If a topic is:
+  - high-value sales guidance
+  - compliance-sensitive
+  - repeatedly asked in many phrasings
+  then weak retrieval answers are a sign it should become a dedicated policy rule.
+
+How to prevent recurrence:
+- Promote such topics into deterministic FAQ/policy rules with explicit trigger families and knowledge-card source refs.
+- Leave retrieval to support the answer, not to decide the commercial posture.

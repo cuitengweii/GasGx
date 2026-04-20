@@ -196,30 +196,55 @@
 - Stage-specific business content may differ by node, but action entry placement must not drift between requirement, quote, contract, deposit, production, or later execution stages.
 - The fixed shell lives in `article_management/modules/quote-system.module.js`, and later stage-level UI changes should extend the shared side-rail/action-shell model instead of reintroducing per-node one-off layouts.
 
-### Decision 25: Customer-flow detail pages use one reference visual order derived from the approved `t.html`
+## 2026-04-20 chatbot / knowledge-base decisions
 
-- The approved reference layout for customer-flow detail pages is now:
-  - left: stage intro + stage-specific progress modules
-  - right: action zone first, then status zone, then customer context
-- The action zone is the visual anchor of the right rail and should stay at the top on desktop, matching the operator reading path in the approved mock reference.
-- The change is style/layout-only:
-  - no stage rules changed
-  - no save/advance logic changed
-  - no data model changed
-- Future node-page adjustments should keep reusing the shared shell and CSS tokens instead of hand-moving modules per stage.
+### Decision 25: Public chatbot uses Supabase Edge Function as the fixed runtime gateway
 
-### Decision 26: Customer-flow detail fold cards and activity logs should favor local readability over shell-level compression
+- The public-site chatbot must not call localhost or a browser-direct Spark chain.
+- Runtime path is fixed as:
+  - public site shell
+  - Supabase Edge Function `site-chat`
+  - internal policy / retrieval layer
+  - XFYUN Spark generation when needed
+- The deployed function is intentionally exposed with `--no-verify-jwt` for browser traffic, while business verification remains inside the function and the public shell still sends the publishable key.
 
-- For customer-flow stage detail pages, fold-card headers must remain fully legible in collapsed state, even when the module body is hidden.
-- `节点双负责人` and `用户行为轨迹` belong in the main left reading flow, not at the very bottom after the whole shell.
-- `用户行为轨迹` should use its own taller inner scroll region so long logs can be reviewed without forcing the operator to scroll the entire stage shell for every record check.
-- This remains a presentation-only rule:
-  - no workflow state changes
-  - no save binding changes
-  - no stage data changes
+### Decision 26: GasGx chatbot answers are split into policy, retrieval, and free-generation paths
 
-### Decision 27: Sales entry HTML must version-bump linked assets when shell/UI fixes are meant to be operator-visible immediately
+- `gasgx_policy` is the preferred path for:
+  - high-frequency sales questions
+  - quote guidance
+  - contact/support guidance
+  - country-specific stranded-gas sales positioning
+- `gasgx_rag` is the preferred path for:
+  - product and solution knowledge grounded in seeded site/docs content
+  - deployment-specific guidance
+  - FAQ/resource-backed answers
+- `xfyun_spark` is a fallback generation path only when no stronger stored rule/knowledge path is available.
 
-- When customer-flow UI debugging depends on operators seeing the newest CSS or bootstrap logic right away, `article_management/sales/index.html` must bump the linked asset version string together with the code change.
-- Otherwise the browser can continue serving old `main.css` / `sales.bootstrap.js`, creating false negatives where source is corrected but the rendered page looks unchanged.
-- For this sales console, cache-busting the entry HTML is part of the rollout checklist for visible UI fixes, not an optional cleanup step.
+### Decision 27: Internal sales knowledge is allowed to guide public answers, but must stay boundary-safe
+
+- `internal_sales_kb` content may be used to improve public answers for pre-sales guidance.
+- However, those cards must remain:
+  - qualification-oriented
+  - conservative on compliance
+  - conservative on commercial promises
+- They must not turn the chatbot into a source of final legal/regulatory guarantees, exact profitability claims, or unapproved delivery commitments.
+
+### Decision 28: Country-specific stranded-gas mining guidance should be deterministic, not left to free-form retrieval
+
+- For the United States, Canada, and Russia, stranded-gas / flare-gas / APG mining questions now require deterministic policy answers.
+- Reason:
+  - these topics combine technical fit, regulatory sensitivity, and sales-boundary language
+  - free-form retrieval/generation alone produced noisy or weak answers
+- Stable country rules therefore point to dedicated knowledge cards and structured handoff fields.
+
+### Decision 29: Knowledge seeding should prefer migration-based, reviewable artifacts
+
+- Initial chatbot knowledge is seeded through explicit Supabase migrations, not hidden ad-hoc inserts.
+- This makes knowledge additions:
+  - reviewable in git
+  - reproducible across environments
+  - easier to debug when retrieval quality changes
+- Near-term knowledge growth should continue using:
+  - FAQ-rule migrations for deterministic answers
+  - knowledge-document/chunk migrations for retrievable sales knowledge

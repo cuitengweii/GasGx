@@ -261,3 +261,40 @@ News integration:
 
 Boundary note:
 - This update is UI-only and does not change business data, routing, API behavior, or page-level domain logic.
+
+## 12. 2026-04-20 chatbot production wiring
+
+- Shared shell chatbot traffic is now expected to use the production Supabase Edge Function path:
+  - `/functions/v1/site-chat`
+- Current production chain:
+  - `shared/ui/site-shell.shared.js`
+  - Supabase Edge Function `site-chat`
+  - policy / retrieval logic inside the function
+  - XFYUN Spark generation when needed
+
+Runtime behavior:
+
+- The shell sends:
+  - `message`
+  - `sessionId`
+  - `history`
+  - `pageContext`
+  - existing publishable-key headers
+- The chatbot response can return:
+  - `provider`
+  - `sources`
+  - `handoff`
+
+Current provider meanings:
+
+- `gasgx_policy`
+  - deterministic GasGx answer rule matched
+- `gasgx_rag`
+  - retrieval-backed answer from stored GasGx knowledge
+- `xfyun_spark`
+  - no stronger stored rule/knowledge matched, Spark handled the turn
+
+Boundary note:
+
+- Shared shell only owns the public widget request/response plumbing.
+- Knowledge curation, policy rules, logging, and retrieval ranking belong to `supabase/functions/site-chat/index.ts` and the Supabase knowledge tables/migrations.
