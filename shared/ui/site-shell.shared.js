@@ -1689,6 +1689,26 @@
         }, 0);
     }
 
+    function syncPageAppLanguage(langCandidate) {
+        const finalLang = normalizeLang(langCandidate || getCurrentLang());
+        const app = window.app;
+        if (!app || typeof app !== "object") {
+            return;
+        }
+
+        if (typeof app.setLanguage === "function") {
+            app.setLanguage(finalLang, { __fromShell: true });
+            return;
+        }
+
+        if ("currentLang" in app) {
+            app.currentLang = finalLang;
+        }
+        if ("lang" in app) {
+            app.lang = finalLang;
+        }
+    }
+
     function suppressLegacyShellRenderers() {
         const app = window.app;
         if (!app || app.__ggxLegacyShellSuppressed) {
@@ -3161,11 +3181,18 @@
         if (state.mounted) {
             ensureMainAuthBridge();
             runAppIntegrationHooks();
+            syncPageAppLanguage(getCurrentLang());
             refreshShellNavigation(true);
             syncLanguageSwitcherVisibility();
             syncLanguageUI(getCurrentLang());
             syncPublishedSiteShellConfig();
             mountCookieConsentBanner();
+            window.setTimeout(function () {
+                runAppIntegrationHooks();
+                syncPageAppLanguage(getCurrentLang());
+                refreshShellNavigation(true);
+                syncLanguageUI(getCurrentLang());
+            }, 0);
             return;
         }
 
@@ -3179,10 +3206,7 @@
         bindActionDelegation();
         runAppIntegrationHooks();
         const initialLang = getCurrentLang();
-        const app = window.app;
-        if (app && typeof app.setLanguage === "function") {
-            app.setLanguage(initialLang);
-        }
+        syncPageAppLanguage(initialLang);
         refreshShellNavigation(true);
         syncLanguageUI(initialLang);
         state.mounted = true;
@@ -3195,6 +3219,7 @@
         // Let page scripts finish their own init first, then re-apply shared nav/footer once.
         window.setTimeout(function () {
             runAppIntegrationHooks();
+            syncPageAppLanguage(getCurrentLang());
             refreshShellNavigation(true);
             syncLanguageUI(getCurrentLang());
             syncPublishedSiteShellConfig();
