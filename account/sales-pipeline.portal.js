@@ -1170,49 +1170,49 @@
         const requirementLink = requirementLinkInfo(detail).url;
 
         let body = `
-            <div class="bg-black/40 rounded-xl p-3 border border-white/5 flex flex-col gap-3">
-                <p class="text-xs text-gray-400 leading-relaxed">${esc(tr('stageReadonly'))}</p>
-                <div class="flex justify-end gap-2 mt-1 flex-wrap">
-                    <button type="button" class="px-4 py-2 rounded-full border border-gray-600 text-gray-300 text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
-                    <button type="button" class="px-4 py-2 rounded-full border border-gray-700 text-gray-500 text-xs font-medium cursor-not-allowed" disabled>${esc(tr('actionNone'))}</button>
+                <div class="bg-black/40 rounded-xl p-3 sm:p-3 border border-white/5 flex flex-col gap-2.5">
+                    <p class="text-[11px] sm:text-xs text-gray-400 leading-relaxed">${esc(tr('stageReadonly'))}</p>
+                    <div class="flex justify-end gap-2 mt-1 flex-wrap">
+                        <button type="button" class="px-3 py-2 sm:px-4 rounded-full border border-gray-600 text-gray-300 text-[11px] sm:text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
+                        <button type="button" class="px-3 py-2 sm:px-4 rounded-full border border-gray-700 text-gray-500 text-[11px] sm:text-xs font-medium cursor-not-allowed" disabled>${esc(tr('actionNone'))}</button>
                 </div>
             </div>
         `;
 
         if (activeStageKey === 'requirement_capture') {
             body = `
-                <div class="bg-black/40 rounded-xl p-3 border border-white/5 flex flex-col gap-3">
-                    <p class="text-xs text-gray-400 leading-relaxed">${esc(tr('stageRequirementLinkHint'))}</p>
+                <div class="bg-black/40 rounded-xl p-3 sm:p-3 border border-white/5 flex flex-col gap-2.5">
+                    <p class="text-[11px] sm:text-xs text-gray-400 leading-relaxed">${esc(tr('stageRequirementLinkHint'))}</p>
                     <div class="flex justify-end gap-2 mt-1 flex-wrap">
-                        <button type="button" class="px-4 py-2 rounded-full border border-gray-600 text-gray-300 text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
+                        <button type="button" class="px-3 py-2 sm:px-4 rounded-full border border-gray-600 text-gray-300 text-[11px] sm:text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
                         ${requirementLink
-                            ? `<a class="px-4 py-2 rounded-full bg-[#39b54a] text-black text-xs font-bold shadow-[0_0_15px_rgba(57,181,74,0.2)] hover:bg-[#2e9c3a] transition-all flex items-center gap-1.5" href="${esc(requirementLink)}" data-sales-open-requirement-link="task"><i class="fa-solid fa-link text-[12px]"></i><span>${esc(localeText('去填写表单', 'Open Form'))}</span></a>`
-                            : `<button type="button" class="px-4 py-2 rounded-full border border-gray-700 text-gray-500 text-xs font-medium cursor-not-allowed" disabled>${esc(tr('stageRequirementLinkMissing'))}</button>`}
+                            ? `<a class="px-3 py-2 sm:px-4 rounded-full bg-[#39b54a] text-black text-[11px] sm:text-xs font-bold shadow-[0_0_15px_rgba(57,181,74,0.2)] hover:bg-[#2e9c3a] transition-all flex items-center gap-1.5" href="${esc(requirementLink)}" data-sales-open-requirement-link="task"><i class="fa-solid fa-link text-[12px]"></i><span>${esc(localeText('去填写表单', 'Open Form'))}</span></a>`
+                            : `<button type="button" class="px-3 py-2 sm:px-4 rounded-full border border-gray-700 text-gray-500 text-[11px] sm:text-xs font-medium cursor-not-allowed" disabled>${esc(tr('stageRequirementLinkMissing'))}</button>`}
                     </div>
                 </div>
             `;
         } else if (ACTIONABLE_STAGE_SET.has(activeStageKey)) {
             body = `
-                <div class="bg-black/40 rounded-xl p-3 border border-white/5 flex flex-col gap-3">
+                <div class="bg-black/40 rounded-xl p-3 sm:p-3 border border-white/5 flex flex-col gap-2.5">
                     ${stageConfirmationMarkup(activeStageKey, detail, true)}
                     <div class="flex justify-end gap-2 mt-1 flex-wrap">
-                        <button type="button" class="px-4 py-2 rounded-full border border-gray-600 text-gray-300 text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
-                        <button type="button" class="px-4 py-2 rounded-full bg-[#39b54a] text-black text-xs font-bold shadow-[0_0_15px_rgba(57,181,74,0.2)] hover:bg-[#2e9c3a] transition-all" id="sales-stage-submit-confirmation" ${state.pendingStageSubmit ? 'disabled' : ''}>${esc(tr('submitConfirm'))}</button>
+                        <button type="button" class="px-3 py-2 sm:px-4 rounded-full border border-gray-600 text-gray-300 text-[11px] sm:text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
+                        <button type="button" class="px-3 py-2 sm:px-4 rounded-full bg-[#39b54a] text-black text-[11px] sm:text-xs font-bold shadow-[0_0_15px_rgba(57,181,74,0.2)] hover:bg-[#2e9c3a] transition-all" id="sales-stage-submit-confirmation" ${state.pendingStageSubmit ? 'disabled' : ''}>${esc(tr('submitConfirm'))}</button>
                     </div>
                 </div>
             `;
         }
 
         return `
-            <section class="bg-gradient-to-r from-[#1a2e1e] to-[#121212] border border-[#39b54a]/30 rounded-2xl p-4 relative shadow-md">
-                <div class="flex items-start justify-between mb-4 gap-3">
+            <section class="bg-gradient-to-r from-[#1a2e1e] to-[#121212] border border-[#39b54a]/30 rounded-2xl p-3 sm:p-4 relative shadow-md flex-shrink-0">
+                <div class="flex items-start justify-between mb-3 gap-3">
                     <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-10 h-10 rounded-full bg-[#39b54a]/20 flex items-center justify-center flex-shrink-0">
-                            <i class="fa-solid fa-clock text-[#39b54a]"></i>
+                        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#39b54a]/20 flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid fa-clock text-[#39b54a] text-sm"></i>
                         </div>
                         <div class="min-w-0">
-                            <h2 class="text-lg font-bold text-white mb-0.5">${esc(activeTaskHeadline(activeStageKey))}</h2>
-                            <p class="text-xs text-[#39b54a]">${esc(localeText(`当前任务：${stageLabel(activeStage.key)} (${activeIndex}/${STAGES.length})`, `Current Task: ${stageLabel(activeStage.key)} (${activeIndex}/${STAGES.length})`))}</p>
+                            <h2 class="text-base sm:text-lg font-bold text-white mb-0.5">${esc(activeTaskHeadline(activeStageKey))}</h2>
+                            <p class="text-[11px] sm:text-xs text-[#39b54a]">${esc(localeText(`当前任务：${stageLabel(activeStage.key)} (${activeIndex}/${STAGES.length})`, `Current Task: ${stageLabel(activeStage.key)} (${activeIndex}/${STAGES.length})`))}</p>
                         </div>
                     </div>
                 </div>
@@ -1375,13 +1375,13 @@
 
         const detail = state.detail || {};
         root.innerHTML = `
-            <div class="h-full bg-[#050505] text-gray-200 font-sans flex flex-col relative min-h-0">
-                <main class="sales-pipeline-main-shell flex-1 w-full max-w-xl mx-auto p-4 flex flex-col gap-4 relative pb-28 min-h-0 overflow-hidden">
-                    <section class="mb-2">
+            <div class="bg-[#050505] text-gray-200 font-sans flex flex-col relative min-h-0" style="height:calc(100dvh - 5rem);max-height:calc(100dvh - 5rem);overflow:hidden;">
+                <main class="sales-pipeline-main-shell flex-1 w-full max-w-xl mx-auto p-4 flex flex-col gap-4 relative pb-28 min-h-0 overflow-hidden" style="height:100%;max-height:100%;overflow:hidden;">
+                    <section class="mb-1 flex-shrink-0">
                         <div class="text-[#39b54a] text-xs font-semibold mb-1 tracking-wide">${esc(pipelineLabel())}</div>
-                        <h1 class="text-2xl font-bold text-white mb-2">${esc(localeText('客户交易流程', 'Customer Deal Flow'))}</h1>
-                        <p class="text-xs text-gray-400 leading-relaxed">${esc(localeText('客户端里程碑都在此处处理。节点切换、沟通回复和当前任务提交统一在当前页面完成。', 'Customer-side milestones, discussions, and current-stage actions are all handled here.'))}</p>
-                        <p class="mt-2 text-[11px] text-gray-500">${esc(text(detail.deal_title || detail.customer_company || state.selectedDealId, ''))}</p>
+                        <h1 class="text-xl sm:text-2xl font-bold text-white mb-1">${esc(localeText('客户交易流程', 'Customer Deal Flow'))}</h1>
+                        <p class="hidden sm:block text-xs text-gray-400 leading-relaxed">${esc(localeText('客户端里程碑都在此处处理。节点切换、沟通回复和当前任务提交统一在当前页面完成。', 'Customer-side milestones, discussions, and current-stage actions are all handled here.'))}</p>
+                        <p class="mt-1 sm:mt-2 text-[11px] text-gray-500 truncate">${esc(text(detail.deal_title || detail.customer_company || state.selectedDealId, ''))}</p>
                     </section>
                     ${currentTaskCardMarkup(detail)}
                     ${commentsPanelMarkup(detail)}
