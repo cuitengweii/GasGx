@@ -9,11 +9,17 @@ const corsHeaders = {
 
 const SPARK_TIMEOUT_MS = 45000;
 const DEFAULT_DOMAIN = 'generalv3.5';
-const SUPPORTED_TARGETS = new Set(['en', 'ru']);
+const SUPPORTED_TARGETS = new Set(['en', 'ru', 'ja', 'ar', 'ms', 'id', 'es']);
 
 type TranslateEntry = {
     key: string;
     text: string;
+};
+
+type TargetMeta = {
+    englishName: string;
+    chineseName: string;
+    sample: TranslateEntry[];
 };
 
 const GLOSSARY: Record<string, Record<string, string>> = {
@@ -111,19 +117,17 @@ function env(name: string, fallback = ''): string {
     return text(Deno.env.get(name), fallback);
 }
 
-function targetMeta(target: string) {
-    if (target === 'en') {
-        return {
-            englishName: 'English',
-            chineseName: '英文',
-            sample: [
-                { key: 'supplier', text: 'Supplier' },
-                { key: 'receiver_placeholder', text: 'Please enter customer email' },
-                { key: 'system_total', text: 'Estimated System Total' },
-            ],
-        };
-    }
-    return {
+const TARGET_META: Record<string, TargetMeta> = {
+    en: {
+        englishName: 'English',
+        chineseName: '英语',
+        sample: [
+            { key: 'supplier', text: 'Supplier' },
+            { key: 'receiver_placeholder', text: 'Please enter customer email' },
+            { key: 'system_total', text: 'Estimated System Total' },
+        ],
+    },
+    ru: {
         englishName: 'Russian',
         chineseName: '俄语',
         sample: [
@@ -131,7 +135,56 @@ function targetMeta(target: string) {
             { key: 'receiver_placeholder', text: 'Введите email клиента' },
             { key: 'system_total', text: 'Оценочная общая стоимость системы' },
         ],
-    };
+    },
+    ja: {
+        englishName: 'Japanese',
+        chineseName: '日语',
+        sample: [
+            { key: 'supplier', text: 'サプライヤー' },
+            { key: 'receiver_placeholder', text: '顧客メールを入力してください' },
+            { key: 'system_total', text: 'システム概算総額' },
+        ],
+    },
+    ar: {
+        englishName: 'Arabic',
+        chineseName: '阿拉伯语',
+        sample: [
+            { key: 'supplier', text: 'المورّد' },
+            { key: 'receiver_placeholder', text: 'يرجى إدخال بريد العميل الإلكتروني' },
+            { key: 'system_total', text: 'إجمالي تقديري للنظام' },
+        ],
+    },
+    ms: {
+        englishName: 'Malay',
+        chineseName: '马来语',
+        sample: [
+            { key: 'supplier', text: 'Pembekal' },
+            { key: 'receiver_placeholder', text: 'Sila masukkan e-mel pelanggan' },
+            { key: 'system_total', text: 'Jumlah Anggaran Sistem' },
+        ],
+    },
+    id: {
+        englishName: 'Indonesian',
+        chineseName: '印尼语',
+        sample: [
+            { key: 'supplier', text: 'Pemasok' },
+            { key: 'receiver_placeholder', text: 'Silakan masukkan email pelanggan' },
+            { key: 'system_total', text: 'Perkiraan Total Sistem' },
+        ],
+    },
+    es: {
+        englishName: 'Spanish',
+        chineseName: '西班牙语',
+        sample: [
+            { key: 'supplier', text: 'Proveedor' },
+            { key: 'receiver_placeholder', text: 'Introduzca el correo electrónico del cliente' },
+            { key: 'system_total', text: 'Total estimado del sistema' },
+        ],
+    },
+};
+
+function targetMeta(target: string): TargetMeta {
+    return TARGET_META[target] || TARGET_META.en;
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -200,6 +253,20 @@ function buildPrompt(target: string, entries: TranslateEntry[], strict = false):
         '',
         '待翻译内容：',
         JSON.stringify({ translations: entries }, null, 2),
+    ].join('\n');
+}
+
+function buildPlainTextPrompt(target: string, entry: TranslateEntry): string {
+    const meta = targetMeta(target);
+    return [
+        `请把下面这段中文翻译成${meta.chineseName}（${meta.englishName}）。`,
+        '要求：',
+        '1. 只输出译文，不要解释，不要加引号，不要加代码块。',
+        '2. 保留型号、URL、邮箱、货币代码、品牌型号等字面量。',
+        '3. 语气自然，适合商务沟通。',
+        '',
+        '原文：',
+        text(entry.text),
     ].join('\n');
 }
 
@@ -400,19 +467,68 @@ async function requestTranslations(target: string, entries: TranslateEntry[], st
     };
 }
 
-async function translateEntries(target: string, entries: TranslateEntry[]) {
-    const firstPass = await requestTranslations(target, entries, false);
-    if (!translationLooksUnchanged(entries, firstPass.translations)) {
-        return firstPass;
-    }
-    const secondPass = await requestTranslations(target, entries, true);
+async function translateSingleEntryPlainText(target: string, entry: TranslateEntry) {
+    const raw = await chatWithSpark(buildPlainTextPrompt(target, entry));
+    const translated = text(raw)
+        .replace(/^```(?:text)?/i, '')
+        .replace(/```$/i, '')
+        .replace(/^["']|["']$/g, '')
+        .trim();
     return {
-        ...secondPass,
-        retried: true,
-        firstPassRaw: firstPass.raw,
-        firstPassParsed: firstPass.parsed,
-        firstPassTranslations: firstPass.translations,
+        raw,
+        parsed: null,
+        translations: {
+            [entry.key]: normalizeTranslatedText(target, entry.text, translated || entry.text),
+        },
+        plainTextFallback: true,
     };
+}
+
+async function translateEntries(target: string, entries: TranslateEntry[]) {
+    const allowPlainTextFallback = entries.length === 1;
+    try {
+        const firstPass = await requestTranslations(target, entries, false);
+        if (!translationLooksUnchanged(entries, firstPass.translations)) {
+            return firstPass;
+        }
+        const secondPass = await requestTranslations(target, entries, true);
+        if (!translationLooksUnchanged(entries, secondPass.translations)) {
+            return {
+                ...secondPass,
+                retried: true,
+                firstPassRaw: firstPass.raw,
+                firstPassParsed: firstPass.parsed,
+                firstPassTranslations: firstPass.translations,
+            };
+        }
+        if (allowPlainTextFallback) {
+            const fallback = await translateSingleEntryPlainText(target, entries[0]);
+            return {
+                ...fallback,
+                retried: true,
+                firstPassRaw: firstPass.raw,
+                firstPassParsed: firstPass.parsed,
+                firstPassTranslations: firstPass.translations,
+                secondPassRaw: secondPass.raw,
+                secondPassParsed: secondPass.parsed,
+                secondPassTranslations: secondPass.translations,
+            };
+        }
+        return {
+            ...secondPass,
+            retried: true,
+            firstPassRaw: firstPass.raw,
+            firstPassParsed: firstPass.parsed,
+            firstPassTranslations: firstPass.translations,
+        };
+    } catch (error) {
+        if (!allowPlainTextFallback) throw error;
+        const fallback = await translateSingleEntryPlainText(target, entries[0]);
+        return {
+            ...fallback,
+            initialError: error instanceof Error ? error.message : String(error),
+        };
+    }
 }
 
 Deno.serve(async (req) => {

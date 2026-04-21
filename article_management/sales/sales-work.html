@@ -223,7 +223,6 @@
   <script type="module">
     import { client } from '../modules/supabase.client.js';
 
-    const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=';
     const SALES_CONSOLE_BASE = '/article_management/sales/index.html';
     const STAGES = [
       { id: 1, key: 'customer_profile', name: '客户建档' },
@@ -242,13 +241,13 @@
     ];
     const STAGE_LABELS = Object.fromEntries(STAGES.map((stage) => [stage.key, stage.name]));
     const LANGUAGES = [
-      { name: '英语', code: 'en' },
-      { name: '俄语', code: 'ru' },
-      { name: '日语', code: 'ja' },
-      { name: '阿拉伯语', code: 'ar' },
-      { name: '马来语', code: 'ms' },
-      { name: '印尼语', code: 'id' },
-      { name: '西班牙语', code: 'es' },
+      { label: '英语', code: 'en' },
+      { label: '俄语', code: 'ru' },
+      { label: '日语', code: 'ja' },
+      { label: '阿拉伯语', code: 'ar' },
+      { label: '马来语', code: 'ms' },
+      { label: '印尼语', code: 'id' },
+      { label: '西班牙语', code: 'es' },
     ];
 
     const state = {
@@ -267,7 +266,7 @@
     };
 
     let activeNode = 'requirement_capture';
-    let targetLang = '英语';
+    let targetLang = 'en';
     let isUserInfoExpanded = false;
 
     function byId(id) { return document.getElementById(id); }
@@ -449,7 +448,7 @@
 
     function renderLanguageSelect() {
       const select = byId('target-lang-select');
-      select.innerHTML = LANGUAGES.map((item) => `<option value="${item.name}" ${item.name === targetLang ? 'selected' : ''}>${item.name}</option>`).join('');
+      select.innerHTML = LANGUAGES.map((item) => `<option value="${item.code}" ${item.code === targetLang ? 'selected' : ''}>${item.label}</option>`).join('');
       select.addEventListener('change', (event) => {
         targetLang = event.target.value;
       });
@@ -484,24 +483,26 @@
     };
 
     async function translateText(content, target) {
-      const prompt = `Translate the following Chinese text into ${target}. Only provide the translated text without any explanations.\nText: ${content}`;
-      let delay = 1000;
-      for (let i = 0; i < 5; i += 1) {
+      let delay = 800;
+      for (let i = 0; i < 3; i += 1) {
         try {
-          const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+          const { data, error } = await client.functions.invoke('quote-translate', {
+            body: {
+              entries: [{ key: 'message', text: content }],
+              targets: [target],
+            },
           });
-          const data = await response.json();
-          return data.candidates?.[0]?.content?.parts?.[0]?.text || content;
+          if (error) throw error;
+          const translated = text(data?.translations?.[target]?.message);
+          if (!translated) throw new Error('translation_missing');
+          return translated;
         } catch (error) {
-          if (i === 4) throw error;
+          if (i === 2) throw error;
           await new Promise((resolve) => setTimeout(resolve, delay));
           delay *= 2;
         }
       }
-      return content;
+      throw new Error('translation_failed');
     }
 
     window.handleSend = async function handleSend(withTranslation = false) {
