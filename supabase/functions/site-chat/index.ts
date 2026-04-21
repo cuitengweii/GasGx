@@ -7,25 +7,60 @@ const corsHeaders = {
     'Content-Type': 'application/json; charset=utf-8',
 };
 
+const ROOT_SITE_URL = 'https://www.gasgx.com';
 const CONTACT_EMAIL = 'contact@gasgx.com';
-const REQUIREMENT_INTAKE_URL = 'https://www.gasgx.com/quote/requirement.html';
-const SITE_FIT_URL = 'https://www.gasgx.com/tools/site-fit/';
-const GAS_FIT_URL = 'https://www.gasgx.com/tools/gas-fit/';
-const ENGINE_SELECTION_URL = 'https://www.gasgx.com/tools/engine-selection/';
-const DATASHEETS_URL = 'https://www.gasgx.com/resources/datasheets/';
-const REPORTS_URL = 'https://www.gasgx.com/resources/reports/';
-const FAQ_URL = 'https://www.gasgx.com/resources/faq/';
+const HOME_URL = `${ROOT_SITE_URL}/`;
+const NEWS_URL = `${ROOT_SITE_URL}/news/`;
+const PRODUCTS_URL = `${ROOT_SITE_URL}/products/`;
+const SOLUTIONS_URL = `${ROOT_SITE_URL}/solutions/`;
+const RESOURCES_URL = `${ROOT_SITE_URL}/resources/`;
+const SUPPORT_URL = `${ROOT_SITE_URL}/support/`;
+const RANKINGS_URL = `${ROOT_SITE_URL}/rankings/`;
+const TOOLS_URL = `${ROOT_SITE_URL}/tools/`;
+const ABOUT_CONTACT_URL = `${ROOT_SITE_URL}/about/contact/`;
+const REQUIREMENT_INTAKE_URL = `${ROOT_SITE_URL}/quote/requirement.html`;
+const SITE_FIT_URL = `${ROOT_SITE_URL}/tools/site-fit/`;
+const GAS_FIT_URL = `${ROOT_SITE_URL}/tools/gas-fit/`;
+const ENGINE_SELECTION_URL = `${ROOT_SITE_URL}/tools/engine-selection/`;
+const MINER_BUYING_GUIDE_URL = `${ROOT_SITE_URL}/tools/miner-buying-guide/`;
+const ROI_TOOL_URL = `${ROOT_SITE_URL}/tools/roi/`;
+const LCOE_TOOL_URL = `${ROOT_SITE_URL}/tools/lcoe-calculator/`;
+const GAS_ANALYZER_URL = `${ROOT_SITE_URL}/tools/gas-analyzer/`;
+const GLOBAL_LOGISTICS_URL = `${ROOT_SITE_URL}/tools/global-logistics/`;
+const GLOBAL_COMPLIANCE_URL = `${ROOT_SITE_URL}/tools/global-compliance/`;
+const DATASHEETS_URL = `${ROOT_SITE_URL}/resources/datasheets/`;
+const REPORTS_URL = `${ROOT_SITE_URL}/resources/reports/`;
+const FAQ_URL = `${ROOT_SITE_URL}/resources/faq/`;
+const CASE_STUDIES_URL = `${ROOT_SITE_URL}/resources/case-studies/`;
+const VIDEOS_URL = `${ROOT_SITE_URL}/resources/videos/`;
+const CERTIFICATIONS_URL = `${ROOT_SITE_URL}/resources/certifications/`;
+const WHITEPAPERS_URL = `${ROOT_SITE_URL}/resources/whitepapers/`;
+const SUPPORT_SERVICE_URL = `${ROOT_SITE_URL}/support/service/`;
+const SUPPORT_NETWORK_URL = `${ROOT_SITE_URL}/support/network/`;
+const SUPPORT_TECH_URL = `${ROOT_SITE_URL}/support/tech/`;
+const OILFIELD_SOLUTION_URL = `${ROOT_SITE_URL}/solutions/oilfield/`;
+const MINING_SOLUTION_URL = `${ROOT_SITE_URL}/solutions/mining/`;
+const INDUSTRIAL_SOLUTION_URL = `${ROOT_SITE_URL}/solutions/industrial/`;
+const CHP_SOLUTION_URL = `${ROOT_SITE_URL}/solutions/chp/`;
+const DIGITALIZATION_PLATFORM_URL = `${ROOT_SITE_URL}/digitalization/platform/`;
+const DIGITALIZATION_ECM_URL = `${ROOT_SITE_URL}/digitalization/ecm/`;
+const DIGITALIZATION_IMS_URL = `${ROOT_SITE_URL}/digitalization/ims/`;
+const DIGITALIZATION_SALES_URL = `${ROOT_SITE_URL}/digitalization/sales/`;
+const VMAN_URL = `${ROOT_SITE_URL}/vman/`;
+const MINERPOWER_URL = `${ROOT_SITE_URL}/minerpower/`;
 const DEFAULT_DOMAIN = 'generalv3.5';
 const SPARK_TIMEOUT_MS = 45000;
 const DEFAULT_TOP_K = 6;
 const KNOWLEDGE_SEARCH_LIMIT = 8;
-const SECTION_ROOTS = ['products', 'solutions', 'digitalization', 'support', 'resources', 'use-cases', 'rankings', 'about'] as const;
+const SECTION_ROOTS = ['products', 'solutions', 'digitalization', 'support', 'resources', 'use-cases', 'rankings', 'about', 'tools', 'quote', 'news'] as const;
 const GENERIC_PATH_SEGMENTS = new Set<string>([
     ...SECTION_ROOTS,
     'gas',
     'power-range',
     'cooling',
     'deployment',
+    'brands',
+    'case-studies',
     'overview',
     'page',
     'pages',
@@ -95,6 +130,34 @@ type FaqRule = {
     handoff_reason: HandoffMeta['reason'];
     next_fields: string[];
     source_refs: SourceRef[];
+};
+
+type LocalizedCopy = {
+    en: string;
+    zh: string;
+    ru: string;
+};
+
+type PublicFeatureGroup =
+    | 'site_entry'
+    | 'workflow'
+    | 'tool'
+    | 'resource'
+    | 'support'
+    | 'solution'
+    | 'digitalization'
+    | 'brand';
+
+type PublicFeatureEntry = {
+    id: string;
+    feature_group: PublicFeatureGroup;
+    url: string;
+    label: string;
+    purpose: LocalizedCopy;
+    recommendation: LocalizedCopy;
+    patterns: string[];
+    related_ids?: string[];
+    handoff?: HandoffMeta;
 };
 
 const INTENT_DEFINITIONS = [
@@ -373,10 +436,12 @@ function normalizeLanguage(value: unknown, fallback = 'en'): string {
 }
 
 function detectPreferredLanguage(explicitLanguage: unknown, message: string, pageContext?: PageContext): string {
-    const explicit = normalizeLanguage(explicitLanguage, '');
-    if (/[\u4e00-\u9fff]/.test(message)) return 'zh';
-    if (/[\u0400-\u04FF]/.test(message)) return 'ru';
-    if (explicit) return explicit;
+    const rawMessage = text(message).trim();
+    const rawExplicit = text(explicitLanguage, '').trim();
+    if (/[\u4e00-\u9fff]/.test(rawMessage)) return 'zh';
+    if (/[\u0400-\u04FF]/.test(rawMessage)) return 'ru';
+    if (/[A-Za-z]/.test(rawMessage)) return 'en';
+    if (rawExplicit) return normalizeLanguage(rawExplicit, 'en');
     return normalizeLanguage(pageContext?.lang, 'en');
 }
 
@@ -713,6 +778,1276 @@ function phase1FallbackFaqRules(language: string): FaqRule[] {
         next_fields: item.handoff.next_fields,
         source_refs: item.source_refs,
     }));
+}
+
+function copy(en: string, zh: string, ru: string): LocalizedCopy {
+    return { en, zh, ru };
+}
+
+function copyEn(en: string): LocalizedCopy {
+    return { en, zh: en, ru: en };
+}
+
+function localizedCopy(value: LocalizedCopy, language: string): string {
+    const normalized = normalizeLanguage(language, 'en');
+    return value[normalized as keyof LocalizedCopy] || value.en;
+}
+
+function toolEntryId(slug: string): string {
+    return `tool_${slug.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '').toLowerCase()}`;
+}
+
+function buildToolUrl(slug: string): string {
+    return `${TOOLS_URL}${slug}/`;
+}
+
+function toolPatterns(slug: string, aliases: string[] = []): string[] {
+    const base = [
+        slug,
+        slug.replace(/-/g, ' '),
+        ...aliases,
+    ].map((item) => text(item).toLowerCase()).filter(Boolean);
+    return Array.from(new Set(base));
+}
+
+const PUBLIC_TOOL_BLUEPRINTS = [
+    {
+        slug: 'site-fit',
+        label: 'Site Fit Tool',
+        purpose: copy(
+            'screen overall project feasibility before quotation.',
+            '先做项目整体适配和可研初筛。',
+            'сначала провести общий feasibility-скрининг проекта.',
+        ),
+        recommendation: copy(
+            'If the fuel boundary is still unclear, open Gas Fit next. If equipment direction matters, continue with Engine Selection.',
+            '如果燃料边界还不清楚，下一步看 Gas Fit；如果设备方向更重要，再继续看 Engine Selection。',
+            'Если еще неясна топливная граница, дальше откройте Gas Fit; если важнее выбор оборудования, продолжайте через Engine Selection.',
+        ),
+        aliases: ['site fit', 'site-fit', 'feasibility screening', 'project fit'],
+        related_ids: [toolEntryId('gas-fit'), toolEntryId('engine-selection')],
+    },
+    {
+        slug: 'gas-fit',
+        label: 'Gas Fit Tool',
+        purpose: copy(
+            'check whether the gas source and fuel boundary look workable for GasGx solutions.',
+            '判断气源条件和燃料边界是否适合 GasGx 方案。',
+            'проверить, выглядит ли газовая граница рабочей для решений GasGx.',
+        ),
+        recommendation: copy(
+            'If the project itself is still early-stage, start from Site Fit first.',
+            '如果项目阶段还很早，建议先从 Site Fit 开始。',
+            'Если проект еще на ранней стадии, начните с Site Fit.',
+        ),
+        aliases: ['gas fit', 'gas-fit', 'fuel fit', 'gas boundary'],
+        related_ids: [toolEntryId('site-fit'), toolEntryId('engine-selection')],
+    },
+    {
+        slug: 'engine-selection',
+        label: 'Engine Selection Tool',
+        purpose: copy(
+            'narrow the equipment direction before moving to a formal quotation.',
+            '在正式报价前先收敛设备方向。',
+            'сузить направление по оборудованию перед формальным quotation.',
+        ),
+        recommendation: copy(
+            'When the project is already budget-stage, continue with the requirement intake after this step.',
+            '如果项目已经进入预算阶段，下一步可以直接转 requirement intake。',
+            'Если проект уже перешел к бюджету, после этого шага переходите к requirement intake.',
+        ),
+        aliases: ['engine selection', 'engine-selection', 'generator selection', 'equipment direction'],
+        related_ids: [toolEntryId('site-fit'), toolEntryId('gas-fit')],
+    },
+    {
+        slug: 'miner-buying-guide',
+        label: 'Miner Buying Guide',
+        purpose: copyEn('compare miner procurement direction against the planned power strategy.'),
+        recommendation: copyEn('Pair it with Mining Power Calc if you need to estimate the electrical load as well.'),
+        aliases: ['miner buying guide', 'buying guide', 'miner guide'],
+        related_ids: [toolEntryId('mining-power-calc'), toolEntryId('miner-profitability')],
+    },
+    {
+        slug: 'gas-analyzer',
+        label: 'Gas Analyzer',
+        purpose: copyEn('review gas composition and fuel-side implications.'),
+        recommendation: copyEn('If you also need energy-value conversion, continue with Gas Composition Heat.'),
+        aliases: ['gas analyzer', 'gas analyser', 'gas analysis'],
+        related_ids: [toolEntryId('gas-composition-heat'), toolEntryId('gas-fit')],
+    },
+    {
+        slug: 'gas-cost-analysis',
+        label: 'Gas Cost Analysis',
+        purpose: copyEn('estimate gas-cost assumptions for the project.'),
+        recommendation: copyEn('If you want a broader project-cost direction, pair it with the LCOE Calculator.'),
+        aliases: ['gas cost analysis', 'gas cost', 'fuel cost'],
+        related_ids: [toolEntryId('lcoe-calculator')],
+    },
+    {
+        slug: 'gas-location-analysis',
+        label: 'Gas Location Analysis',
+        purpose: copyEn('review location and regional context for a gas project.'),
+        recommendation: copyEn('Use it together with Global Logistics when transport constraints matter.'),
+        aliases: ['gas location analysis', 'location analysis', 'gas location'],
+        related_ids: [toolEntryId('global-logistics')],
+    },
+    {
+        slug: 'gas-composition-heat',
+        label: 'Gas Composition Heat',
+        purpose: copyEn('convert gas-composition inputs into heat-value context.'),
+        recommendation: copyEn('Use it after Gas Analyzer if you need a clearer fuel-value picture.'),
+        aliases: ['gas composition heat', 'heating value', 'gas heat value', 'methane number'],
+        related_ids: [toolEntryId('gas-analyzer')],
+    },
+    {
+        slug: 'lcoe-calculator',
+        label: 'LCOE Calculator',
+        purpose: copyEn('estimate levelized electricity-cost direction.'),
+        recommendation: copyEn('If you also want investment-return direction, compare it with the ROI Calculator.'),
+        aliases: ['lcoe', 'lcoe calculator', 'levelized cost of electricity'],
+        related_ids: [toolEntryId('roi'), toolEntryId('roce-calculator')],
+    },
+    {
+        slug: 'roi',
+        label: 'ROI Calculator',
+        purpose: copyEn('estimate return-on-investment direction.'),
+        recommendation: copyEn('Use it with LCOE when you need both cost and return direction.'),
+        aliases: ['roi', 'roi calculator', 'return on investment'],
+        related_ids: [toolEntryId('lcoe-calculator'), toolEntryId('roce-calculator')],
+    },
+    {
+        slug: 'roce-calculator',
+        label: 'ROCE Calculator',
+        purpose: copyEn('estimate return-on-capital-employed direction.'),
+        recommendation: copyEn('Use it when the project discussion is already capital-structure oriented.'),
+        aliases: ['roce', 'roce calculator', 'return on capital employed'],
+    },
+    {
+        slug: 'global-logistics',
+        label: 'Global Logistics',
+        purpose: copyEn('review transport, routing and delivery-boundary constraints.'),
+        recommendation: copyEn('This is most useful when logistics limits may affect deployment or quotation scope.'),
+        aliases: ['global logistics', 'logistics', 'shipping', 'delivery logistics'],
+    },
+    {
+        slug: 'global-compliance',
+        label: 'Global Compliance',
+        purpose: copyEn('review high-level compliance and market-entry considerations.'),
+        recommendation: copyEn('Use it early to understand whether local compliance issues may slow the project path.'),
+        aliases: ['global compliance', 'compliance', 'market entry', 'regulatory'],
+    },
+    {
+        slug: 'aeco-price-forecast',
+        label: 'AECO Price Forecast',
+        purpose: copyEn('review AECO gas-price outlook.'),
+        recommendation: copyEn('This is mainly useful for market-context research rather than equipment qualification.'),
+        aliases: ['aeco price forecast', 'aeco', 'gas price forecast'],
+    },
+    {
+        slug: '3y-compare',
+        label: '3Y Compare',
+        purpose: copyEn('compare three-year scenarios in one place.'),
+        recommendation: copyEn('Use it when the discussion is about medium-term comparison rather than a single snapshot.'),
+        aliases: ['3y compare', 'three year compare', '3 year compare'],
+    },
+    {
+        slug: 'emission',
+        label: 'Emission Tool',
+        purpose: copyEn('estimate emissions-related metrics.'),
+        recommendation: copyEn('Use it when emissions direction matters, but do not treat it as a formal compliance approval.'),
+        aliases: ['emission', 'emissions', 'co2'],
+    },
+    {
+        slug: 'energy-conversion',
+        label: 'Energy Conversion',
+        purpose: copyEn('convert energy units and gas-power values.'),
+        recommendation: copyEn('It helps when the team is working across different energy or power units.'),
+        aliases: ['energy conversion', 'unit conversion', 'power conversion'],
+    },
+    {
+        slug: 'miner-profitability',
+        label: 'Miner Profitability',
+        purpose: copyEn('estimate miner profitability direction.'),
+        recommendation: copyEn('Use it for miner-side economics, not as a final project ROI commitment.'),
+        aliases: ['miner profitability', 'miner profit', 'asic profitability'],
+        related_ids: [toolEntryId('miner-buying-guide'), toolEntryId('mining-income-calculator')],
+    },
+    {
+        slug: 'mining-income-calculator',
+        label: 'Mining Income Calculator',
+        purpose: copyEn('estimate mining-income direction.'),
+        recommendation: copyEn('Pair it with Mining Power Calc when you need to connect income and load assumptions.'),
+        aliases: ['mining income calculator', 'mining income', 'mining revenue'],
+        related_ids: [toolEntryId('mining-power-calc'), toolEntryId('miner-profitability')],
+    },
+    {
+        slug: 'mining-power-calc',
+        label: 'Mining Power Calc',
+        purpose: copyEn('calculate mining power demand.'),
+        recommendation: copyEn('Use it before quotation if the compute-side load is still unclear.'),
+        aliases: ['mining power calc', 'mining power calculator', 'miner power'],
+        related_ids: [toolEntryId('mining-income-calculator'), toolEntryId('engine-selection')],
+    },
+    {
+        slug: 'monte-carlo-profit',
+        label: 'Monte Carlo Profit',
+        purpose: copyEn('stress-test profitability assumptions.'),
+        recommendation: copyEn('Use it for scenario analysis, not as a commercial guarantee.'),
+        aliases: ['monte carlo profit', 'monte carlo', 'profit simulation'],
+    },
+    {
+        slug: 'oil-consumption',
+        label: 'Oil Consumption',
+        purpose: copyEn('estimate oil or lubricant-consumption context.'),
+        recommendation: copyEn('This is best used as an operating reference rather than a quotation shortcut.'),
+        aliases: ['oil consumption', 'lubricant consumption'],
+    },
+    {
+        slug: 'vehicle-vs-industrial-10mw',
+        label: 'Vehicle vs Industrial 10MW',
+        purpose: copyEn('compare vehicle-style and industrial-style 10 MW scenarios.'),
+        recommendation: copyEn('Use it when the project discussion is really about scenario comparison at around 10 MW.'),
+        aliases: ['vehicle vs industrial 10mw', '10mw compare', 'vehicle vs industrial'],
+    },
+] as const;
+
+function buildPublicToolEntries(): PublicFeatureEntry[] {
+    return PUBLIC_TOOL_BLUEPRINTS.map((item) => ({
+        id: toolEntryId(item.slug),
+        feature_group: 'tool',
+        url: buildToolUrl(item.slug),
+        label: item.label,
+        purpose: item.purpose,
+        recommendation: item.recommendation,
+        patterns: toolPatterns(item.slug, item.aliases),
+        related_ids: item.related_ids ? [...item.related_ids] : [],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    }));
+}
+
+const PUBLIC_FEATURE_ENTRIES: PublicFeatureEntry[] = [
+    {
+        id: 'site_overview',
+        feature_group: 'site_entry',
+        url: HOME_URL,
+        label: 'GasGx Home',
+        purpose: copy(
+            'start from the public site entry and branch into products, solutions, tools and resources.',
+            '从公开首页进入产品、方案、工具和资料入口。',
+            'начать с публичной главной страницы и перейти к продуктам, решениям, инструментам и ресурсам.',
+        ),
+        recommendation: copy(
+            'If you already know the direction, jump straight to Products or Solutions next.',
+            '如果你已经知道方向，下一步可以直接看 Products 或 Solutions。',
+            'Если направление уже понятно, сразу переходите в Products или Solutions.',
+        ),
+        patterns: [
+            'what can i do on this website',
+            'what features does this site have',
+            'what can i use on gasgx',
+            'website functions',
+            '这个网站有哪些功能',
+            '这个网站有什么功能',
+            '站点功能',
+            '网站功能',
+            'какие функции есть на сайте',
+            'что есть на сайте gasgx',
+        ],
+        related_ids: ['site_products', 'tools_overview'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'site_home',
+        feature_group: 'site_entry',
+        url: HOME_URL,
+        label: 'GasGx Home',
+        purpose: copy(
+            'open the main public homepage.',
+            '打开公开首页。',
+            'открыть главную публичную страницу.',
+        ),
+        recommendation: copy(
+            'Use it when you want the broadest starting point before choosing a product, solution or tool.',
+            '当你还没有确定方向时，这里是最宽的起点。',
+            'Используйте ее, если нужен самый широкий старт до выбора продукта, решения или инструмента.',
+        ),
+        patterns: ['home page', 'homepage', 'main page', '首页', '主页', 'главная страница'],
+        related_ids: ['site_products', 'site_solutions'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'site_news',
+        feature_group: 'site_entry',
+        url: NEWS_URL,
+        label: 'GasGx News',
+        purpose: copy(
+            'open the public News hub for flash, data and market updates.',
+            '打开公开 News 栏目，看 flash、data 和市场更新。',
+            'открыть публичный News hub для flash, data и рыночных обновлений.',
+        ),
+        recommendation: copy(
+            'This is for news and media updates, not for quotation intake.',
+            '这里更适合看资讯，不是提交项目需求单的入口。',
+            'Это раздел для новостей и обновлений, а не для project intake.',
+        ),
+        patterns: ['news page', 'gasgx news', 'where is news', '新闻页', '新闻入口', 'страница news', 'где новости'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'site_products',
+        feature_group: 'site_entry',
+        url: PRODUCTS_URL,
+        label: 'Products',
+        purpose: copy(
+            'browse the public product catalog by power range, gas type, cooling and deployment.',
+            '按功率、气源、冷却和部署方式浏览公开产品目录。',
+            'просматривать публичный каталог продуктов по мощности, типу газа, охлаждению и deployment.',
+        ),
+        recommendation: copy(
+            'Use this section when the question is mainly about equipment direction.',
+            '如果问题主要是设备方向，优先看这里。',
+            'Используйте этот раздел, когда вопрос в первую очередь связан с направлением по оборудованию.',
+        ),
+        patterns: ['products page', 'product catalog', 'where are products', '产品页', '产品目录', 'страница products', 'каталог продуктов'],
+        related_ids: ['site_solutions', 'requirement_intake_public'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'site_solutions',
+        feature_group: 'site_entry',
+        url: SOLUTIONS_URL,
+        label: 'Solutions',
+        purpose: copy(
+            'open the public solution hub for oilfield, mining, industrial and CHP scenarios.',
+            '打开公开 Solutions 栏目，查看油田、矿场、工业和 CHP 场景。',
+            'открыть публичный раздел Solutions для oilfield, mining, industrial и CHP сценариев.',
+        ),
+        recommendation: copy(
+            'Use this section when the question is about scenario fit rather than only equipment.',
+            '如果问题是场景适配而不只是设备本身，优先看这里。',
+            'Используйте этот раздел, когда вопрос о сценарии применения, а не только об оборудовании.',
+        ),
+        patterns: ['solutions page', 'solution page', 'where are solutions', '解决方案页', '方案页', 'страница solutions', 'страница решений'],
+        related_ids: ['solution_oilfield', 'solution_mining'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'site_resources',
+        feature_group: 'site_entry',
+        url: RESOURCES_URL,
+        label: 'Resources',
+        purpose: copy(
+            'open the public resource center for datasheets, reports, FAQ and reference content.',
+            '打开公开资源中心，查看 datasheets、reports、FAQ 等资料。',
+            'открыть публичный resource center для datasheets, reports, FAQ и справочных материалов.',
+        ),
+        recommendation: copy(
+            'Use this section for documentation-stage questions rather than early quotation routing.',
+            '如果你现在主要是资料型问题，优先看这里。',
+            'Используйте этот раздел для документационной стадии, а не как ранний quotation route.',
+        ),
+        patterns: ['resources page', 'resource center', 'where are resources', '资源中心', '资料页', 'resource page', 'центр ресурсов'],
+        related_ids: ['resource_datasheets', 'resource_reports'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'site_support',
+        feature_group: 'site_entry',
+        url: SUPPORT_URL,
+        label: 'Support',
+        purpose: copy(
+            'open the public support section for service, tech and network information.',
+            '打开公开 Support 栏目，查看 service、tech 和 network 信息。',
+            'открыть публичный раздел Support для service, tech и network информации.',
+        ),
+        recommendation: copy(
+            'Use this section when the question is about service boundaries rather than only products.',
+            '如果问题主要是服务边界，而不是单纯产品介绍，优先看这里。',
+            'Используйте этот раздел, когда вопрос касается сервисной границы, а не только продукта.',
+        ),
+        patterns: ['support page', 'support section', 'where is support', '支持页', '支持入口', 'страница support', 'где support'],
+        related_ids: ['contact_entry', 'support_service'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'site_rankings',
+        feature_group: 'site_entry',
+        url: RANKINGS_URL,
+        label: 'Rankings',
+        purpose: copy(
+            'open the public rankings section for comparative views and ranking-based pages.',
+            '打开公开 Rankings 栏目，查看对比和排行类页面。',
+            'открыть публичный раздел Rankings для сравнений и ranking-страниц.',
+        ),
+        recommendation: copy(
+            'Use this section when the discussion is comparative, not when a project is already ready for quotation.',
+            '如果问题偏比较研究而不是立刻报价，优先看这里。',
+            'Используйте этот раздел для сравнительного исследования, а не когда проект уже готов к quotation.',
+        ),
+        patterns: ['rankings page', 'ranking page', 'where are rankings', '排行页', '排名页', 'страница rankings', 'рейтинги'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'site_digitalization',
+        feature_group: 'digitalization',
+        url: DIGITALIZATION_PLATFORM_URL,
+        label: 'O&M Platform',
+        purpose: copy(
+            'open the public digitalization entry and start from the O&M Platform page.',
+            '打开公开 digitalization 入口，从 O&M Platform 页面开始看。',
+            'открыть публичный digitalization-вход и начать со страницы O&M Platform.',
+        ),
+        recommendation: copy(
+            'This is for digital systems and operations visibility, not for public admin access.',
+            '这里是数字化系统和运维可视化入口，不是公开后台入口。',
+            'Это вход в digital systems и operations visibility, а не публичная админка.',
+        ),
+        patterns: ['digitalization', 'o&m platform', 'operations platform', '数字化', '运维平台', 'платформа o&m', 'digitalization page'],
+        related_ids: ['digitalization_ecm', 'digitalization_ims'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'digitalization_ecm',
+        feature_group: 'digitalization',
+        url: DIGITALIZATION_ECM_URL,
+        label: 'ECM Controller',
+        purpose: copyEn('review the ECM controller and diagnostics page.'),
+        recommendation: copyEn('Use it when the question is about engine-control diagnostics rather than sales workflow.'),
+        patterns: ['ecm', 'ecm controller', 'engine controller'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'digitalization_ims',
+        feature_group: 'digitalization',
+        url: DIGITALIZATION_IMS_URL,
+        label: 'IMS',
+        purpose: copyEn('review the IMS spare-parts and inventory-management page.'),
+        recommendation: copyEn('Use it when the discussion is about parts flow and inventory visibility.'),
+        patterns: ['ims', 'inventory management system', 'spare parts system'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'digitalization_sales',
+        feature_group: 'digitalization',
+        url: DIGITALIZATION_SALES_URL,
+        label: 'Sales System',
+        purpose: copyEn('review the public sales-system capability page.'),
+        recommendation: copyEn('This is a public product page, not a public operator console.'),
+        patterns: ['sales system', 'digital sales', 'sales capability page'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'contact_entry',
+        feature_group: 'support',
+        url: ABOUT_CONTACT_URL,
+        label: 'Contact GasGx',
+        purpose: copy(
+            'reach the public contact entry for project, support or cooperation requests.',
+            '进入公开联系入口，提交项目、支持或合作请求。',
+            'перейти к публичному contact-входу для project, support или cooperation запросов.',
+        ),
+        recommendation: copy(
+            'If the request is already quotation-oriented, the requirement intake is usually a better structured entry.',
+            '如果已经是报价导向需求，requirement intake 通常是更结构化的入口。',
+            'Если запрос уже quotation-ориентированный, requirement intake обычно лучше как структурированный вход.',
+        ),
+        patterns: ['contact page', 'how to contact', 'contact gasgx', 'contact support', '联系页面', '联系gasgx', '怎么联系', 'страница контактов', 'как связаться'],
+        related_ids: ['requirement_intake_public', 'support_service'],
+        handoff: { required: true, reason: 'support', next_fields: ['application', 'power', 'gas_type', 'issue_or_goal'] },
+    },
+    {
+        id: 'requirement_intake_public',
+        feature_group: 'workflow',
+        url: REQUIREMENT_INTAKE_URL,
+        label: 'GasGx Requirement Intake',
+        purpose: copy(
+            'submit a structured project brief for quotation follow-up.',
+            '提交结构化项目需求单，用于报价跟进。',
+            'отправить структурированный project brief для quotation follow-up.',
+        ),
+        recommendation: copy(
+            'Prepare application, target power, gas type and gas quality, country, voltage or frequency, deployment preference and scope boundary before opening it.',
+            '打开前最好先准备应用场景、目标功率、气源与气质、国家地区、电压频率、部署偏好和范围边界。',
+            'Перед открытием лучше подготовить сценарий, мощность, тип и качество газа, страну, напряжение/частоту, deployment preference и границы scope.',
+        ),
+        patterns: ['where should i submit a project brief', 'project brief', 'submit requirement', 'requirement form', 'quotation form', 'quote form', '需求应该去哪里提交', '项目需求', '需求单入口', 'где отправить запрос', 'форма запроса', 'коммерческое предложение форма'],
+        related_ids: ['tool_site_fit', 'contact_entry'],
+        handoff: { required: true, reason: 'quote', next_fields: ['application', 'power', 'gas_type', 'gas_quality', 'country', 'site_type', 'delivery_scope', 'service_scope'] },
+    },
+    {
+        id: 'tools_overview',
+        feature_group: 'tool',
+        url: TOOLS_URL,
+        label: 'GasGx Tools',
+        purpose: copy(
+            'browse the public tool hub for screening, calculators, analyzers and comparisons.',
+            '浏览公开工具中心，查看筛选、计算、分析和对比工具。',
+            'просмотреть публичный tool hub для screening, calculators, analyzers и comparisons.',
+        ),
+        recommendation: copy(
+            'If you need the best first screening tool, start from Site Fit.',
+            '如果你想找最适合先开始的工具，优先从 Site Fit 开始。',
+            'Если нужен лучший инструмент для первого шага, начните с Site Fit.',
+        ),
+        patterns: ['what tools', 'which tool', 'available tools', 'tool page', 'tools page', '有什么工具', '哪些工具', '工具页', 'какие инструменты', 'страница инструментов'],
+        related_ids: [toolEntryId('site-fit'), toolEntryId('gas-fit')],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'solution_oilfield',
+        feature_group: 'solution',
+        url: OILFIELD_SOLUTION_URL,
+        label: 'Oilfield Solution',
+        purpose: copy(
+            'open the public oilfield gas-to-power solution page.',
+            '打开公开油田伴生气发电方案页。',
+            'открыть публичную страницу oilfield gas-to-power solution.',
+        ),
+        recommendation: copy(
+            'Use this page when the question is specifically about the oilfield scenario, not just generic gas generation.',
+            '如果问题是油田场景本身，而不是泛泛的燃气发电，优先看这个页面。',
+            'Используйте эту страницу, когда вопрос именно про oilfield-сценарий, а не про общую газовую генерацию.',
+        ),
+        patterns: ['oilfield solution page', 'show me the oilfield solution', '油田方案页', '油田解决方案', 'страница oilfield solution'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'solution_mining',
+        feature_group: 'solution',
+        url: MINING_SOLUTION_URL,
+        label: 'Mining Solution',
+        purpose: copy(
+            'open the public mining or data-center power solution page.',
+            '打开公开矿场 / 数据中心供电方案页。',
+            'открыть публичную страницу mining / data-center power solution.',
+        ),
+        recommendation: copy(
+            'Use this page when the question is about mining solution positioning rather than only miner economics.',
+            '如果问题是矿场方案定位，而不是单纯矿机收益，优先看这个页面。',
+            'Используйте эту страницу, когда вопрос о позиции mining solution, а не только об экономике miners.',
+        ),
+        patterns: ['mining solution page', 'show me the mining solution page', '矿场方案页', '挖矿方案页', 'страница mining solution'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'solution_industrial',
+        feature_group: 'solution',
+        url: INDUSTRIAL_SOLUTION_URL,
+        label: 'Industrial Solution',
+        purpose: copy(
+            'open the public industrial distributed-generation solution page.',
+            '打开公开工业分布式发电方案页。',
+            'открыть публичную страницу industrial distributed-generation solution.',
+        ),
+        recommendation: copy(
+            'Use it when the discussion is about plant-side power scenarios rather than oilfield or mining.',
+            '如果讨论的是工厂侧用能场景，而不是油田或矿场，优先看这里。',
+            'Используйте ее, когда обсуждение про plant-side power scenario, а не oilfield или mining.',
+        ),
+        patterns: ['industrial solution page', 'industrial solution', '工业方案页', '工业解决方案', 'страница industrial solution'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'solution_chp',
+        feature_group: 'solution',
+        url: CHP_SOLUTION_URL,
+        label: 'CHP Solution',
+        purpose: copy(
+            'open the public CHP and cogeneration solution page.',
+            '打开公开 CHP / 热电联供方案页。',
+            'открыть публичную страницу CHP / cogeneration solution.',
+        ),
+        recommendation: copy(
+            'Use it when the project really depends on both power and heat load.',
+            '如果项目同时依赖电负荷和热负荷，优先看这里。',
+            'Используйте ее, когда проект действительно зависит и от power, и от heat load.',
+        ),
+        patterns: ['chp solution page', 'cogeneration page', 'chp page', 'chp方案页', '热电联供方案页', 'страница chp solution'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'resource_datasheets',
+        feature_group: 'resource',
+        url: DATASHEETS_URL,
+        label: 'Datasheets',
+        purpose: copy(
+            'open the public datasheet library for equipment-detail references.',
+            '打开公开 datasheet 资料库，查看设备细节参考。',
+            'открыть публичную библиотеку datasheets для деталей по оборудованию.',
+        ),
+        recommendation: copy(
+            'Use datasheets for equipment details, not as a substitute for a qualified quotation scope.',
+            'datasheet 适合看设备细节，但不能替代已完成资格确认的报价范围。',
+            'Используйте datasheets для деталей по оборудованию, но не как замену квалифицированному quotation scope.',
+        ),
+        patterns: ['datasheet', 'datasheets', 'where can i find datasheets', '参数表', '资料表', 'где посмотреть datasheets', 'даташиты'],
+        related_ids: ['resource_reports', 'resource_faq'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'resource_reports',
+        feature_group: 'resource',
+        url: REPORTS_URL,
+        label: 'Reports',
+        purpose: copy(
+            'open the public reports library for market and scenario context.',
+            '打开公开 reports 资料库，查看市场和场景背景。',
+            'открыть публичную библиотеку reports для рыночного и сценарного контекста.',
+        ),
+        recommendation: copy(
+            'Use reports when the question is research-oriented rather than quotation-ready.',
+            '如果问题偏研究和判断，而不是立刻报价，优先看 reports。',
+            'Используйте reports, когда вопрос исследовательский, а не quotation-ready.',
+        ),
+        patterns: ['report', 'reports', 'where can i find reports', '报告', '研究报告', 'где посмотреть reports', 'отчеты'],
+        related_ids: ['resource_datasheets', 'resource_case_studies'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'resource_faq',
+        feature_group: 'resource',
+        url: FAQ_URL,
+        label: 'FAQ',
+        purpose: copy(
+            'open the public FAQ entry for short operational answers.',
+            '打开公开 FAQ 入口，查看短问短答。',
+            'открыть публичный FAQ для коротких operational answers.',
+        ),
+        recommendation: copy(
+            'Use FAQ when you need a short answer first, then move to datasheets or reports if you need depth.',
+            '如果你先要短答案，看 FAQ；如果需要更深资料，再转 datasheets 或 reports。',
+            'Используйте FAQ для короткого ответа, а если нужна глубина — переходите в datasheets или reports.',
+        ),
+        patterns: ['faq', 'where is faq', 'faq page', '常见问题', 'faq入口', 'faq страница', 'где faq'],
+        related_ids: ['resource_datasheets', 'resource_reports'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'resource_case_studies',
+        feature_group: 'resource',
+        url: CASE_STUDIES_URL,
+        label: 'Case Studies',
+        purpose: copyEn('open the public case-studies library.'),
+        recommendation: copyEn('Use it when you want examples and scenario references rather than only specifications.'),
+        patterns: ['case study', 'case studies', '案例', 'кейсы'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'resource_videos',
+        feature_group: 'resource',
+        url: VIDEOS_URL,
+        label: 'Videos',
+        purpose: copyEn('open the public videos library.'),
+        recommendation: copyEn('Use it when you want a visual overview rather than a text-heavy document first.'),
+        patterns: ['videos', 'video page', '视频', 'видео'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'resource_certifications',
+        feature_group: 'resource',
+        url: CERTIFICATIONS_URL,
+        label: 'Certifications',
+        purpose: copyEn('open the public certifications page.'),
+        recommendation: copyEn('Use it for certification references, but do not assume project-specific compliance approval from it alone.'),
+        patterns: ['certification', 'certifications', '认证', 'сертификация'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'resource_whitepapers',
+        feature_group: 'resource',
+        url: WHITEPAPERS_URL,
+        label: 'Whitepapers',
+        purpose: copyEn('open the public whitepapers library.'),
+        recommendation: copyEn('Use it for longer-form technical or market reading.'),
+        patterns: ['whitepaper', 'whitepapers', '白皮书', 'white paper', 'вайтпейпер'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'support_service',
+        feature_group: 'support',
+        url: SUPPORT_SERVICE_URL,
+        label: 'Service Support',
+        purpose: copyEn('open the public service-support page.'),
+        recommendation: copyEn('Use it when the discussion is about after-sales service scope or service boundaries.'),
+        patterns: ['service support', 'after-sales service', 'service page', '售后服务', '服务支持', 'сервисная поддержка'],
+        handoff: { required: true, reason: 'support', next_fields: ['application', 'power', 'gas_type', 'issue_or_goal'] },
+    },
+    {
+        id: 'support_network',
+        feature_group: 'support',
+        url: SUPPORT_NETWORK_URL,
+        label: 'Service Network',
+        purpose: copyEn('open the public service-network page.'),
+        recommendation: copyEn('Use it when the question is about regional support reach.'),
+        patterns: ['service network', 'support network', '服务网络', 'network page', 'сервисная сеть'],
+        handoff: { required: true, reason: 'support', next_fields: ['country', 'site_type', 'issue_or_goal'] },
+    },
+    {
+        id: 'support_tech',
+        feature_group: 'support',
+        url: SUPPORT_TECH_URL,
+        label: 'Technical Support',
+        purpose: copyEn('open the public technical-support page.'),
+        recommendation: copyEn('Use it when the question is technical support scope rather than quotation routing.'),
+        patterns: ['technical support', 'tech support', '技术支持', 'техническая поддержка'],
+        handoff: { required: true, reason: 'support', next_fields: ['application', 'power', 'gas_type', 'issue_or_goal'] },
+    },
+    {
+        id: 'brand_vman',
+        feature_group: 'brand',
+        url: VMAN_URL,
+        label: 'VMAN',
+        purpose: copyEn('open the public VMAN brand quote/demo entry.'),
+        recommendation: copyEn('Use it when you need the public VMAN-facing quote or brand page.'),
+        patterns: ['vman', 'vman page', 'vman quote'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    {
+        id: 'brand_minerpower',
+        feature_group: 'brand',
+        url: MINERPOWER_URL,
+        label: 'MinerPower',
+        purpose: copyEn('open the public MinerPower brand quote/demo entry.'),
+        recommendation: copyEn('Use it when the request is specifically about the public MinerPower route.'),
+        patterns: ['minerpower', 'miner power', 'minerpower page', 'minerpower quote'],
+        handoff: { required: false, reason: 'unknown', next_fields: [] },
+    },
+    ...buildPublicToolEntries(),
+];
+
+const PUBLIC_FEATURE_ENTRY_MAP = new Map(PUBLIC_FEATURE_ENTRIES.map((item) => [item.id, item] as const));
+
+function publicFeatureEntriesById(ids: string[] = []): PublicFeatureEntry[] {
+    return ids
+        .map((item) => PUBLIC_FEATURE_ENTRY_MAP.get(item) || null)
+        .filter((item): item is PublicFeatureEntry => !!item)
+        .slice(0, 2);
+}
+
+function buildPublicFeatureCraftedReply(entryId: string, language: string, relatedIds: string[] = [], matchedIntent = ''): CraftedReply | null {
+    const entry = PUBLIC_FEATURE_ENTRY_MAP.get(entryId);
+    if (!entry) return null;
+    const relatedEntries = publicFeatureEntriesById(relatedIds.length ? relatedIds : (entry.related_ids || []));
+    return {
+        provider: 'gasgx_policy',
+        reply: buildReadablePublicFeatureReply(entry, language, relatedEntries),
+        sources: publicFeatureSources(entry, relatedEntries),
+        handoff: entry.handoff || { required: false, reason: 'unknown', next_fields: [] },
+        matchedIntent: matchedIntent || `public_feature_${entry.id}`,
+    };
+}
+
+function publicFeatureLink(entry: PublicFeatureEntry): string {
+    return `[${entry.label}](${entry.url})`;
+}
+
+function publicFeatureLead(entry: PublicFeatureEntry, language: string): string {
+    if (language === 'zh') {
+        if (entry.feature_group === 'workflow') return '这个公开入口就是当前最合适的站内流程入口。';
+        if (entry.feature_group === 'tool') return 'GasGx 站内有对应的公开工具可以直接用。';
+        if (entry.feature_group === 'resource') return '这个公开资料入口最适合你现在这个问题。';
+        if (entry.feature_group === 'support') return '这个公开支持入口最适合你现在这个诉求。';
+        if (entry.feature_group === 'solution') return 'GasGx 有对应的公开方案页可以直接打开。';
+        if (entry.feature_group === 'digitalization') return 'GasGx 有对应的公开数字化能力页可以直接查看。';
+        if (entry.feature_group === 'brand') return 'GasGx 也提供这个公开品牌入口。';
+        return '这个公开站点入口就是你现在最该打开的页面。';
+    }
+    if (language === 'ru') {
+        if (entry.feature_group === 'workflow') return 'Это лучший публичный workflow-вход для вашего запроса.';
+        if (entry.feature_group === 'tool') return 'На сайте GasGx есть публичный инструмент под этот запрос.';
+        if (entry.feature_group === 'resource') return 'Этот публичный ресурсный вход подходит сюда лучше всего.';
+        if (entry.feature_group === 'support') return 'Этот публичный support-вход лучше всего подходит под ваш запрос.';
+        if (entry.feature_group === 'solution') return 'У GasGx есть публичная solution-страница под этот сценарий.';
+        if (entry.feature_group === 'digitalization') return 'У GasGx есть публичная digitalization-страница для этого направления.';
+        if (entry.feature_group === 'brand') return 'У GasGx также есть этот публичный brand-вход.';
+        return 'Это правильный публичный раздел сайта для вашего запроса.';
+    }
+    if (entry.feature_group === 'workflow') return 'This is the best public workflow entry for your request.';
+    if (entry.feature_group === 'tool') return 'GasGx has a public website tool for this.';
+    if (entry.feature_group === 'resource') return 'This is the best public resource entry for this question.';
+    if (entry.feature_group === 'support') return 'This is the right public support entry for this request.';
+    if (entry.feature_group === 'solution') return 'GasGx has a public solution page for this scenario.';
+    if (entry.feature_group === 'digitalization') return 'GasGx has a public digitalization page for this capability.';
+    if (entry.feature_group === 'brand') return 'GasGx also exposes this as a public brand entry.';
+    return 'This is the right public site section for your request.';
+}
+
+function publicFeatureLineTwo(entry: PublicFeatureEntry, language: string): string {
+    const link = publicFeatureLink(entry);
+    const purpose = localizedCopy(entry.purpose, language);
+    if (language === 'zh') {
+        return `主入口：${link}。它用于${purpose}`;
+    }
+    if (language === 'ru') {
+        return `Основной вход: ${link}. Он нужен, чтобы ${purpose}`;
+    }
+    return `Primary link: ${link} — use it to ${purpose}`;
+}
+
+function publicFeatureRelatedSentence(relatedEntries: PublicFeatureEntry[], language: string): string {
+    if (!relatedEntries.length) return '';
+    const parts = relatedEntries.slice(0, 2).map((item) => {
+        const link = publicFeatureLink(item);
+        const purpose = localizedCopy(item.purpose, language);
+        if (language === 'zh') return `${link}（${purpose}）`;
+        if (language === 'ru') return `${link} (${purpose})`;
+        return `${link} (${purpose})`;
+    });
+    if (language === 'zh') return `相关入口也可以继续看：${parts.join('；')}`;
+    if (language === 'ru') return `Если нужен соседний вход, также посмотрите: ${parts.join('; ')}`;
+    return `If you need adjacent entries, also see: ${parts.join('; ')}`;
+}
+
+function buildPublicFeatureReply(entry: PublicFeatureEntry, language: string, relatedEntries: PublicFeatureEntry[]): string {
+    const recommendation = localizedCopy(entry.recommendation, language);
+    const relatedSentence = publicFeatureRelatedSentence(relatedEntries, language);
+    const lineThree = relatedSentence ? `${recommendation} ${relatedSentence}`.trim() : recommendation;
+    return [
+        `1. ${publicFeatureLead(entry, language)}`,
+        `2. ${publicFeatureLineTwo(entry, language)}`,
+        `3. ${lineThree}`,
+    ].join('\n');
+}
+
+function publicFeatureSources(entry: PublicFeatureEntry, relatedEntries: PublicFeatureEntry[]): SourceRef[] {
+    return uniqueSources([
+        {
+            title: entry.label,
+            url: entry.url,
+            source_type: 'site_function',
+        },
+        ...relatedEntries.map((item) => ({
+            title: item.label,
+            url: item.url,
+            source_type: 'site_function',
+        })),
+    ], 3);
+}
+
+function readablePublicFeatureLead(entry: PublicFeatureEntry, language: string): string {
+    if (language === 'zh') {
+        if (entry.feature_group === 'workflow') return '\u8fd9\u4e2a\u516c\u5f00\u5165\u53e3\u5c31\u662f\u5f53\u524d\u6700\u5408\u9002\u7684\u7ad9\u5185\u6d41\u7a0b\u5165\u53e3\u3002';
+        if (entry.feature_group === 'tool') return 'GasGx \u7ad9\u5185\u6709\u5bf9\u5e94\u7684\u516c\u5f00\u5de5\u5177\u53ef\u4ee5\u76f4\u63a5\u7528\u3002';
+        if (entry.feature_group === 'resource') return '\u8fd9\u4e2a\u516c\u5f00\u8d44\u6599\u5165\u53e3\u6700\u9002\u5408\u4f60\u73b0\u5728\u8fd9\u4e2a\u95ee\u9898\u3002';
+        if (entry.feature_group === 'support') return '\u8fd9\u4e2a\u516c\u5f00\u652f\u6301\u5165\u53e3\u6700\u9002\u5408\u4f60\u73b0\u5728\u8fd9\u4e2a\u8bc9\u6c42\u3002';
+        if (entry.feature_group === 'solution') return 'GasGx \u6709\u5bf9\u5e94\u7684\u516c\u5f00\u65b9\u6848\u9875\u53ef\u4ee5\u76f4\u63a5\u6253\u5f00\u3002';
+        if (entry.feature_group === 'digitalization') return 'GasGx \u6709\u5bf9\u5e94\u7684\u516c\u5f00\u6570\u5b57\u5316\u80fd\u529b\u9875\u53ef\u4ee5\u76f4\u63a5\u67e5\u770b\u3002';
+        if (entry.feature_group === 'brand') return 'GasGx \u4e5f\u63d0\u4f9b\u8fd9\u4e2a\u516c\u5f00\u54c1\u724c\u5165\u53e3\u3002';
+        return '\u8fd9\u4e2a\u516c\u5f00\u7ad9\u70b9\u5165\u53e3\u5c31\u662f\u4f60\u73b0\u5728\u6700\u8be5\u6253\u5f00\u7684\u9875\u9762\u3002';
+    }
+    if (language === 'ru') {
+        if (entry.feature_group === 'workflow') return '\u042d\u0442\u043e \u043b\u0443\u0447\u0448\u0438\u0439 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 workflow-\u0432\u0445\u043e\u0434 \u0434\u043b\u044f \u0432\u0430\u0448\u0435\u0433\u043e \u0437\u0430\u043f\u0440\u043e\u0441\u0430.';
+        if (entry.feature_group === 'tool') return '\u041d\u0430 \u0441\u0430\u0439\u0442\u0435 GasGx \u0435\u0441\u0442\u044c \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 \u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u0434 \u044d\u0442\u043e\u0442 \u0437\u0430\u043f\u0440\u043e\u0441.';
+        if (entry.feature_group === 'resource') return '\u042d\u0442\u043e\u0442 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 \u0440\u0435\u0441\u0443\u0440\u0441\u043d\u044b\u0439 \u0432\u0445\u043e\u0434 \u043f\u043e\u0434\u0445\u043e\u0434\u0438\u0442 \u0441\u044e\u0434\u0430 \u043b\u0443\u0447\u0448\u0435 \u0432\u0441\u0435\u0433\u043e.';
+        if (entry.feature_group === 'support') return '\u042d\u0442\u043e\u0442 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 support-\u0432\u0445\u043e\u0434 \u043b\u0443\u0447\u0448\u0435 \u0432\u0441\u0435\u0433\u043e \u043f\u043e\u0434\u0445\u043e\u0434\u0438\u0442 \u043f\u043e\u0434 \u0432\u0430\u0448 \u0437\u0430\u043f\u0440\u043e\u0441.';
+        if (entry.feature_group === 'solution') return '\u0423 GasGx \u0435\u0441\u0442\u044c \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f solution-\u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0430 \u043f\u043e\u0434 \u044d\u0442\u043e\u0442 \u0441\u0446\u0435\u043d\u0430\u0440\u0438\u0439.';
+        if (entry.feature_group === 'digitalization') return '\u0423 GasGx \u0435\u0441\u0442\u044c \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u0430\u044f digitalization-\u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0430 \u0434\u043b\u044f \u044d\u0442\u043e\u0433\u043e \u043d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f.';
+        if (entry.feature_group === 'brand') return '\u0423 GasGx \u0442\u0430\u043a\u0436\u0435 \u0435\u0441\u0442\u044c \u044d\u0442\u043e\u0442 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 brand-\u0432\u0445\u043e\u0434.';
+        return '\u042d\u0442\u043e \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0439 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 \u0440\u0430\u0437\u0434\u0435\u043b \u0441\u0430\u0439\u0442\u0430 \u0434\u043b\u044f \u0432\u0430\u0448\u0435\u0433\u043e \u0437\u0430\u043f\u0440\u043e\u0441\u0430.';
+    }
+    return publicFeatureLead(entry, language);
+}
+
+function readablePublicFeatureLineTwo(entry: PublicFeatureEntry, language: string): string {
+    const link = publicFeatureLink(entry);
+    const purpose = localizedPublicFeaturePurpose(entry, language);
+    if (language === 'zh') return `\u4e3b\u5165\u53e3\uff1a${link}\u3002\u5b83\u7528\u4e8e${purpose}`;
+    if (language === 'ru') return `\u041e\u0441\u043d\u043e\u0432\u043d\u043e\u0439 \u0432\u0445\u043e\u0434: ${link}. \u041e\u043d \u043d\u0443\u0436\u0435\u043d, \u0447\u0442\u043e\u0431\u044b ${purpose}`;
+    return `Primary link: ${link} — use it to ${purpose}`;
+}
+
+function readablePublicFeatureRelatedSentence(relatedEntries: PublicFeatureEntry[], language: string): string {
+    if (!relatedEntries.length) return '';
+    const parts = relatedEntries.slice(0, 2).map((item) => {
+        const link = publicFeatureLink(item);
+        const purpose = localizedPublicFeaturePurpose(item, language);
+        if (language === 'zh') return `${link}\uff08${purpose}\uff09`;
+        return `${link} (${purpose})`;
+    });
+    if (language === 'zh') return `\u76f8\u5173\u5165\u53e3\u4e5f\u53ef\u4ee5\u7ee7\u7eed\u770b\uff1a${parts.join('\uff1b')}`;
+    if (language === 'ru') return `\u0415\u0441\u043b\u0438 \u043d\u0443\u0436\u0435\u043d \u0441\u043e\u0441\u0435\u0434\u043d\u0438\u0439 \u0432\u0445\u043e\u0434, \u0442\u0430\u043a\u0436\u0435 \u043f\u043e\u0441\u043c\u043e\u0442\u0440\u0438\u0442\u0435: ${parts.join('; ')}`;
+    return `If you need adjacent entries, also see: ${parts.join('; ')}`;
+}
+
+function buildReadablePublicFeatureReply(entry: PublicFeatureEntry, language: string, relatedEntries: PublicFeatureEntry[]): string {
+    const recommendation = localizedPublicFeatureRecommendation(entry, language);
+    const relatedSentence = readablePublicFeatureRelatedSentence(relatedEntries, language);
+    const lineThree = relatedSentence ? `${recommendation} ${relatedSentence}`.trim() : recommendation;
+    return [
+        `1. ${readablePublicFeatureLead(entry, language)}`,
+        `2. ${readablePublicFeatureLineTwo(entry, language)}`,
+        `3. ${lineThree}`,
+    ].join('\n');
+}
+
+function buildReadablePublicBoundaryReply(message: string, language: string): CraftedReply {
+    const normalized = normalizedPublicFeatureIntentText(message);
+    const mainIsRequirement = /(quote|quotation|pricing|project brief|requirement|commercial)/i.test(normalized);
+    const mainEntry = mainIsRequirement
+        ? PUBLIC_FEATURE_ENTRY_MAP.get('requirement_intake_public')
+        : PUBLIC_FEATURE_ENTRY_MAP.get('contact_entry');
+    const secondaryEntry = mainIsRequirement
+        ? PUBLIC_FEATURE_ENTRY_MAP.get('contact_entry')
+        : PUBLIC_FEATURE_ENTRY_MAP.get('requirement_intake_public');
+    const entry = mainEntry || PUBLIC_FEATURE_ENTRY_MAP.get('contact_entry') || PUBLIC_FEATURE_ENTRIES[0];
+    const relatedEntries = secondaryEntry ? [secondaryEntry] : [];
+    const boundaryLead = language === 'zh'
+        ? '\u4f60\u95ee\u5230\u7684\u662f\u5185\u90e8\u540e\u53f0\u6216\u975e\u516c\u5f00\u64cd\u4f5c\u5165\u53e3\uff0c\u8fd9\u7c7b\u80fd\u529b\u4e0d\u5bf9\u516c\u5f00\u8bbf\u5ba2\u76f4\u63a5\u5f00\u653e\u3002'
+        : language === 'ru'
+            ? '\u0412\u044b \u0441\u043f\u0440\u043e\u0441\u0438\u043b\u0438 \u043f\u0440\u043e \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0439 backend \u0438\u043b\u0438 \u043d\u0435\u043f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u0441\u043a\u0438\u0439 \u0432\u0445\u043e\u0434. \u0422\u0430\u043a\u0438\u0435 \u0432\u043e\u0437\u043c\u043e\u0436\u043d\u043e\u0441\u0442\u0438 \u043d\u0435 \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u044e\u0442\u0441\u044f \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u043c \u043f\u043e\u0441\u0435\u0442\u0438\u0442\u0435\u043b\u044f\u043c \u043d\u0430\u043f\u0440\u044f\u043c\u0443\u044e.'
+            : 'You are asking about an internal backend or non-public operator entry. Those capabilities are not exposed directly to public visitors.';
+    return {
+        provider: 'gasgx_policy',
+        reply: [
+            `1. ${boundaryLead}`,
+            `2. ${readablePublicFeatureLineTwo(entry, language)}`,
+            `3. ${readablePublicFeatureRelatedSentence(relatedEntries, language) || localizedPublicFeatureRecommendation(entry, language)}`,
+        ].join('\n'),
+        sources: publicFeatureSources(entry, relatedEntries),
+        handoff: entry.handoff || { required: false, reason: 'unknown', next_fields: [] },
+        matchedIntent: 'public_access_boundary',
+    };
+}
+
+const PUBLIC_FEATURE_PURPOSE_OVERRIDES: Record<string, LocalizedCopy> = {
+    contact_entry: copy(
+        'reach the public contact entry for project, support or cooperation requests.',
+        '进入公开联系入口，提交项目、支持或合作请求。',
+        'перейти к публичному контакту для проектных, сервисных или партнерских запросов.',
+    ),
+    requirement_intake_public: copy(
+        'submit a structured project brief for quotation follow-up.',
+        '提交结构化项目需求单，用于报价跟进。',
+        'отправить структурированный проектный бриф для дальнейшей подготовки коммерческого предложения.',
+    ),
+    solution_mining: copy(
+        'open the public mining or data-center power solution page.',
+        '打开公开矿场 / 数据中心供电方案页。',
+        'открыть публичную страницу решения для майнинга или питания дата-центров.',
+    ),
+    resource_datasheets: copy(
+        'open the public datasheet library for equipment-detail references.',
+        '打开公开 datasheets 资料库，查看设备细节参考。',
+        'открыть публичную библиотеку datasheets для просмотра параметров и деталей оборудования.',
+    ),
+    resource_reports: copy(
+        'open the public reports library for market and scenario context.',
+        '打开公开 reports 资料库，查看市场和场景背景。',
+        'открыть публичную библиотеку reports для просмотра рыночного и сценарного контекста.',
+    ),
+    resource_faq: copy(
+        'open the public FAQ entry for short operational answers.',
+        '打开公开 FAQ 入口，查看简短常见问题回答。',
+        'открыть публичный FAQ-раздел для быстрых операционных ответов.',
+    ),
+    tool_site_fit: copy(
+        'screen overall project feasibility before quotation.',
+        '先做项目整体适配与可行性初筛。',
+        'сначала проверить общую применимость и базовую реализуемость проекта до этапа коммерческого предложения.',
+    ),
+    tool_gas_fit: copy(
+        'check whether the gas source and fuel boundary look workable for GasGx solutions.',
+        '判断气源与燃气边界是否适合 GasGx 方案。',
+        'проверить, подходит ли источник газа и топливная граница для решений GasGx.',
+    ),
+    tool_engine_selection: copy(
+        'narrow the equipment direction before moving to a formal quotation.',
+        '在正式报价前先收窄设备方向。',
+        'сузить направление по оборудованию перед переходом к формальному报价流程。',
+    ),
+};
+
+const PUBLIC_FEATURE_RECOMMENDATION_OVERRIDES: Record<string, LocalizedCopy> = {
+    contact_entry: copy(
+        'If the request is already quotation-oriented, the requirement intake is usually a better structured entry.',
+        '如果已经进入报价阶段，requirement intake 通常是更结构化的入口。',
+        'Если запрос уже перешел в стадию коммерческого предложения, requirement intake обычно будет более структурированным входом.',
+    ),
+    requirement_intake_public: copy(
+        'Prepare application, target power, gas type and gas quality, country, voltage or frequency, deployment preference and scope boundary before opening it.',
+        '打开前最好先准备应用场景、目标功率、气源与气质、国家地区、电压频率、部署偏好和范围边界。',
+        'Перед открытием лучше подготовить сценарий применения, мощность, тип и качество газа, страну, напряжение/частоту, предпочтение по deployment и границы scope.',
+    ),
+    solution_mining: copy(
+        'Use this page when the question is about mining solution positioning rather than only miner economics.',
+        '如果问题是矿场方案定位，而不是单纯矿机收益，优先看这个页面。',
+        'Используйте эту страницу, когда вопрос про позиционирование решения для майнинга, а не только про экономику майнеров.',
+    ),
+    resource_datasheets: copy(
+        'Use datasheets for equipment details, not as a substitute for a qualified quotation scope.',
+        'datasheets 适合看设备细节，Reports 更适合做场景或市场背景判断。',
+        'Datasheets подходят для деталей оборудования, а reports лучше использовать для оценки сценария и рыночного контекста.',
+    ),
+    resource_reports: copy(
+        'Use reports when you need market context or scenario reading before a detailed quotation.',
+        '如果你先想看市场和场景背景，优先看 reports。',
+        'Используйте reports, когда сначала нужен рыночный или сценарный контекст, а не детальная报价单。',
+    ),
+    resource_faq: copy(
+        'Use FAQ for short repeated questions before opening longer documents.',
+        '如果你只想先看简短高频问题，FAQ 会更快。',
+        'Используйте FAQ, если сначала нужен короткий ответ на повторяющийся вопрос.',
+    ),
+    tool_site_fit: copy(
+        'If the fuel boundary is still unclear, open Gas Fit next. If equipment direction matters, continue with Engine Selection.',
+        '如果燃气边界还不清楚，下一步看 Gas Fit；如果设备方向更重要，再看 Engine Selection。',
+        'Если топливная граница еще не ясна, следующим шагом откройте Gas Fit; если важнее направление по оборудованию, переходите к Engine Selection.',
+    ),
+    tool_gas_fit: copy(
+        'Use it after Site Fit when the main uncertainty is gas quality or fuel boundary.',
+        '如果主要不确定项是气质和燃气边界，Site Fit 之后优先看它。',
+        'Используйте этот инструмент после Site Fit, когда главная неопределенность связана с качеством газа и топливной границей.',
+    ),
+    tool_engine_selection: copy(
+        'Use it after Site Fit when the next question is equipment direction.',
+        '如果下一步重点是设备方向，就接着看它。',
+        'Используйте его после Site Fit, когда следующий关键问题是设备方向。',
+    ),
+};
+
+function localizedPublicFeaturePurpose(entry: PublicFeatureEntry, language: string): string {
+    if (language === 'zh') {
+        if (entry.id === 'contact_entry') return '\u8fdb\u5165\u516c\u5f00\u8054\u7cfb\u5165\u53e3\uff0c\u63d0\u4ea4\u9879\u76ee\u3001\u652f\u6301\u6216\u5408\u4f5c\u8bf7\u6c42\u3002';
+        if (entry.id === 'requirement_intake_public') return '\u63d0\u4ea4\u7ed3\u6784\u5316\u9879\u76ee\u9700\u6c42\u5355\uff0c\u7528\u4e8e\u62a5\u4ef7\u8ddf\u8fdb\u3002';
+        if (entry.id === 'solution_mining') return '\u6253\u5f00\u516c\u5f00\u77ff\u573a / \u6570\u636e\u4e2d\u5fc3\u4f9b\u7535\u65b9\u6848\u9875\u3002';
+        if (entry.id === 'resource_datasheets') return '\u6253\u5f00\u516c\u5f00 datasheets \u8d44\u6599\u5e93\uff0c\u67e5\u770b\u8bbe\u5907\u7ec6\u8282\u53c2\u8003\u3002';
+        if (entry.id === 'resource_reports') return '\u6253\u5f00\u516c\u5f00 reports \u8d44\u6599\u5e93\uff0c\u67e5\u770b\u5e02\u573a\u548c\u573a\u666f\u80cc\u666f\u3002';
+        if (entry.id === 'resource_faq') return '\u6253\u5f00\u516c\u5f00 FAQ \u5165\u53e3\uff0c\u67e5\u770b\u7b80\u77ed\u5e38\u89c1\u95ee\u9898\u56de\u7b54\u3002';
+        if (entry.id === 'tool_site_fit') return '\u5148\u505a\u9879\u76ee\u6574\u4f53\u9002\u914d\u4e0e\u53ef\u884c\u6027\u521d\u7b5b\u3002';
+        if (entry.id === 'tool_gas_fit') return '\u5224\u65ad\u6c14\u6e90\u4e0e\u71c3\u6c14\u8fb9\u754c\u662f\u5426\u9002\u5408 GasGx \u65b9\u6848\u3002';
+        if (entry.id === 'tool_engine_selection') return '\u5728\u6b63\u5f0f\u62a5\u4ef7\u524d\u5148\u6536\u7a84\u8bbe\u5907\u65b9\u5411\u3002';
+    }
+    if (language === 'ru') {
+        if (entry.id === 'contact_entry') return '\u043f\u0435\u0440\u0435\u0439\u0442\u0438 \u043a \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u043c\u0443 \u043a\u043e\u043d\u0442\u0430\u043a\u0442\u0443 \u0434\u043b\u044f \u043f\u0440\u043e\u0435\u043a\u0442\u043d\u044b\u0445, \u0441\u0435\u0440\u0432\u0438\u0441\u043d\u044b\u0445 \u0438\u043b\u0438 \u043f\u0430\u0440\u0442\u043d\u0435\u0440\u0441\u043a\u0438\u0445 \u0437\u0430\u043f\u0440\u043e\u0441\u043e\u0432.';
+        if (entry.id === 'requirement_intake_public') return '\u043e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0439 \u043f\u0440\u043e\u0435\u043a\u0442\u043d\u044b\u0439 \u0431\u0440\u0438\u0444 \u0434\u043b\u044f \u0434\u0430\u043b\u044c\u043d\u0435\u0439\u0448\u0435\u0439 \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0438 \u043a\u043e\u043c\u043c\u0435\u0440\u0447\u0435\u0441\u043a\u043e\u0433\u043e \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u044f.';
+        if (entry.id === 'solution_mining') return '\u043e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u0443\u044e \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443 \u0440\u0435\u0448\u0435\u043d\u0438\u044f \u0434\u043b\u044f \u043c\u0430\u0439\u043d\u0438\u043d\u0433\u0430 \u0438\u043b\u0438 \u043f\u0438\u0442\u0430\u043d\u0438\u044f \u0434\u0430\u0442\u0430-\u0446\u0435\u043d\u0442\u0440\u043e\u0432.';
+        if (entry.id === 'resource_datasheets') return '\u043e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u0443\u044e \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0443 datasheets \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u043e\u0432 \u0438 \u0434\u0435\u0442\u0430\u043b\u0435\u0439 \u043e\u0431\u043e\u0440\u0443\u0434\u043e\u0432\u0430\u043d\u0438\u044f.';
+        if (entry.id === 'resource_reports') return '\u043e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u0443\u044e \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0443 reports \u0434\u043b\u044f \u043f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0430 \u0440\u044b\u043d\u043e\u0447\u043d\u043e\u0433\u043e \u0438 \u0441\u0446\u0435\u043d\u0430\u0440\u043d\u043e\u0433\u043e \u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430.';
+        if (entry.id === 'resource_faq') return '\u043e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0439 FAQ-\u0440\u0430\u0437\u0434\u0435\u043b \u0434\u043b\u044f \u0431\u044b\u0441\u0442\u0440\u044b\u0445 \u043e\u043f\u0435\u0440\u0430\u0446\u0438\u043e\u043d\u043d\u044b\u0445 \u043e\u0442\u0432\u0435\u0442\u043e\u0432.';
+        if (entry.id === 'tool_site_fit') return '\u0441\u043d\u0430\u0447\u0430\u043b\u0430 \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043e\u0431\u0449\u0443\u044e \u043f\u0440\u0438\u043c\u0435\u043d\u0438\u043c\u043e\u0441\u0442\u044c \u0438 \u0431\u0430\u0437\u043e\u0432\u0443\u044e \u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c\u043e\u0441\u0442\u044c \u043f\u0440\u043e\u0435\u043a\u0442\u0430 \u0434\u043e \u044d\u0442\u0430\u043f\u0430 \u043a\u043e\u043c\u043c\u0435\u0440\u0447\u0435\u0441\u043a\u043e\u0433\u043e \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u044f.';
+        if (entry.id === 'tool_gas_fit') return '\u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c, \u043f\u043e\u0434\u0445\u043e\u0434\u0438\u0442 \u043b\u0438 \u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a \u0433\u0430\u0437\u0430 \u0438 \u0442\u043e\u043f\u043b\u0438\u0432\u043d\u0430\u044f \u0433\u0440\u0430\u043d\u0438\u0446\u0430 \u0434\u043b\u044f \u0440\u0435\u0448\u0435\u043d\u0438\u0439 GasGx.';
+        if (entry.id === 'tool_engine_selection') return '\u0441\u0443\u0437\u0438\u0442\u044c \u043d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043f\u043e \u043e\u0431\u043e\u0440\u0443\u0434\u043e\u0432\u0430\u043d\u0438\u044e \u043f\u0435\u0440\u0435\u0434 \u043f\u0435\u0440\u0435\u0445\u043e\u0434\u043e\u043c \u043a \u0444\u043e\u0440\u043c\u0430\u043b\u044c\u043d\u043e\u043c\u0443 \u0446\u0435\u043d\u043e\u0432\u043e\u043c\u0443 \u043f\u0440\u043e\u0446\u0435\u0441\u0441\u0443.';
+    }
+    return localizedCopy(PUBLIC_FEATURE_PURPOSE_OVERRIDES[entry.id] || entry.purpose, language);
+}
+
+function localizedPublicFeatureRecommendation(entry: PublicFeatureEntry, language: string): string {
+    if (language === 'zh') {
+        if (entry.id === 'contact_entry') return '\u5982\u679c\u5df2\u7ecf\u8fdb\u5165\u62a5\u4ef7\u9636\u6bb5\uff0crequirement intake \u901a\u5e38\u662f\u66f4\u7ed3\u6784\u5316\u7684\u5165\u53e3\u3002';
+        if (entry.id === 'requirement_intake_public') return '\u6253\u5f00\u524d\u6700\u597d\u5148\u51c6\u5907\u5e94\u7528\u573a\u666f\u3001\u76ee\u6807\u529f\u7387\u3001\u6c14\u6e90\u4e0e\u6c14\u8d28\u3001\u56fd\u5bb6\u5730\u533a\u3001\u7535\u538b\u9891\u7387\u3001\u90e8\u7f72\u504f\u597d\u548c\u8303\u56f4\u8fb9\u754c\u3002';
+        if (entry.id === 'solution_mining') return '\u5982\u679c\u95ee\u9898\u662f\u77ff\u573a\u65b9\u6848\u5b9a\u4f4d\uff0c\u800c\u4e0d\u662f\u5355\u7eaf\u77ff\u673a\u6536\u76ca\uff0c\u4f18\u5148\u770b\u8fd9\u4e2a\u9875\u9762\u3002';
+        if (entry.id === 'resource_datasheets') return 'datasheets \u9002\u5408\u770b\u8bbe\u5907\u7ec6\u8282\uff0cReports \u66f4\u9002\u5408\u505a\u573a\u666f\u6216\u5e02\u573a\u80cc\u666f\u5224\u65ad\u3002';
+        if (entry.id === 'resource_reports') return '\u5982\u679c\u4f60\u5148\u60f3\u770b\u5e02\u573a\u548c\u573a\u666f\u80cc\u666f\uff0c\u4f18\u5148\u770b reports\u3002';
+        if (entry.id === 'resource_faq') return '\u5982\u679c\u4f60\u53ea\u60f3\u5148\u770b\u7b80\u77ed\u9ad8\u9891\u95ee\u9898\uff0cFAQ \u4f1a\u66f4\u5feb\u3002';
+        if (entry.id === 'tool_site_fit') return '\u5982\u679c\u71c3\u6c14\u8fb9\u754c\u8fd8\u4e0d\u6e05\u695a\uff0c\u4e0b\u4e00\u6b65\u770b Gas Fit\uff1b\u5982\u679c\u8bbe\u5907\u65b9\u5411\u66f4\u91cd\u8981\uff0c\u518d\u770b Engine Selection\u3002';
+        if (entry.id === 'tool_gas_fit') return '\u5982\u679c\u4e3b\u8981\u4e0d\u786e\u5b9a\u9879\u662f\u6c14\u8d28\u548c\u71c3\u6c14\u8fb9\u754c\uff0cSite Fit \u4e4b\u540e\u4f18\u5148\u770b\u5b83\u3002';
+        if (entry.id === 'tool_engine_selection') return '\u5982\u679c\u4e0b\u4e00\u6b65\u91cd\u70b9\u662f\u8bbe\u5907\u65b9\u5411\uff0c\u5c31\u63a5\u7740\u770b\u5b83\u3002';
+    }
+    if (language === 'ru') {
+        if (entry.id === 'contact_entry') return '\u0415\u0441\u043b\u0438 \u0437\u0430\u043f\u0440\u043e\u0441 \u0443\u0436\u0435 \u043f\u0435\u0440\u0435\u0448\u0435\u043b \u0432 \u0441\u0442\u0430\u0434\u0438\u044e \u043a\u043e\u043c\u043c\u0435\u0440\u0447\u0435\u0441\u043a\u043e\u0433\u043e \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u044f, requirement intake \u043e\u0431\u044b\u0447\u043d\u043e \u0431\u0443\u0434\u0435\u0442 \u0431\u043e\u043b\u0435\u0435 \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u043c \u0432\u0445\u043e\u0434\u043e\u043c.';
+        if (entry.id === 'requirement_intake_public') return '\u041f\u0435\u0440\u0435\u0434 \u043e\u0442\u043a\u0440\u044b\u0442\u0438\u0435\u043c \u043b\u0443\u0447\u0448\u0435 \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c \u0441\u0446\u0435\u043d\u0430\u0440\u0438\u0439 \u043f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u0438\u044f, \u043c\u043e\u0449\u043d\u043e\u0441\u0442\u044c, \u0442\u0438\u043f \u0438 \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u043e \u0433\u0430\u0437\u0430, \u0441\u0442\u0440\u0430\u043d\u0443, \u043d\u0430\u043f\u0440\u044f\u0436\u0435\u043d\u0438\u0435/\u0447\u0430\u0441\u0442\u043e\u0442\u0443, \u043f\u0440\u0435\u0434\u043f\u043e\u0447\u0442\u0435\u043d\u0438\u0435 \u043f\u043e deployment \u0438 \u0433\u0440\u0430\u043d\u0438\u0446\u044b scope.';
+        if (entry.id === 'solution_mining') return '\u0418\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439\u0442\u0435 \u044d\u0442\u0443 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443, \u043a\u043e\u0433\u0434\u0430 \u0432\u043e\u043f\u0440\u043e\u0441 \u043f\u0440\u043e \u043f\u043e\u0437\u0438\u0446\u0438\u043e\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u0440\u0435\u0448\u0435\u043d\u0438\u044f \u0434\u043b\u044f \u043c\u0430\u0439\u043d\u0438\u043d\u0433\u0430, \u0430 \u043d\u0435 \u0442\u043e\u043b\u044c\u043a\u043e \u043f\u0440\u043e \u044d\u043a\u043e\u043d\u043e\u043c\u0438\u043a\u0443 \u043c\u0430\u0439\u043d\u0435\u0440\u043e\u0432.';
+        if (entry.id === 'resource_datasheets') return 'Datasheets \u043f\u043e\u0434\u0445\u043e\u0434\u044f\u0442 \u0434\u043b\u044f \u0434\u0435\u0442\u0430\u043b\u0435\u0439 \u043e\u0431\u043e\u0440\u0443\u0434\u043e\u0432\u0430\u043d\u0438\u044f, \u0430 reports \u043b\u0443\u0447\u0448\u0435 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u044c \u0434\u043b\u044f \u043e\u0446\u0435\u043d\u043a\u0438 \u0441\u0446\u0435\u043d\u0430\u0440\u0438\u044f \u0438 \u0440\u044b\u043d\u043e\u0447\u043d\u043e\u0433\u043e \u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430.';
+        if (entry.id === 'resource_reports') return '\u0418\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439\u0442\u0435 reports, \u043a\u043e\u0433\u0434\u0430 \u0441\u043d\u0430\u0447\u0430\u043b\u0430 \u043d\u0443\u0436\u0435\u043d \u0440\u044b\u043d\u043e\u0447\u043d\u044b\u0439 \u0438\u043b\u0438 \u0441\u0446\u0435\u043d\u0430\u0440\u043d\u044b\u0439 \u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442, \u0430 \u043d\u0435 \u0434\u0435\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u0446\u0435\u043d\u043e\u0432\u0430\u044f \u043f\u0440\u043e\u0440\u0430\u0431\u043e\u0442\u043a\u0430.';
+        if (entry.id === 'resource_faq') return '\u0418\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439\u0442\u0435 FAQ, \u0435\u0441\u043b\u0438 \u0441\u043d\u0430\u0447\u0430\u043b\u0430 \u043d\u0443\u0436\u0435\u043d \u043a\u043e\u0440\u043e\u0442\u043a\u0438\u0439 \u043e\u0442\u0432\u0435\u0442 \u043d\u0430 \u043f\u043e\u0432\u0442\u043e\u0440\u044f\u044e\u0449\u0438\u0439\u0441\u044f \u0432\u043e\u043f\u0440\u043e\u0441.';
+        if (entry.id === 'tool_site_fit') return '\u0415\u0441\u043b\u0438 \u0442\u043e\u043f\u043b\u0438\u0432\u043d\u0430\u044f \u0433\u0440\u0430\u043d\u0438\u0446\u0430 \u0435\u0449\u0435 \u043d\u0435 \u044f\u0441\u043d\u0430, \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u043c \u0448\u0430\u0433\u043e\u043c \u043e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 Gas Fit; \u0435\u0441\u043b\u0438 \u0432\u0430\u0436\u043d\u0435\u0435 \u043d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043f\u043e \u043e\u0431\u043e\u0440\u0443\u0434\u043e\u0432\u0430\u043d\u0438\u044e, \u043f\u0435\u0440\u0435\u0445\u043e\u0434\u0438\u0442\u0435 \u043a Engine Selection.';
+        if (entry.id === 'tool_gas_fit') return '\u0418\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439\u0442\u0435 \u044d\u0442\u043e\u0442 \u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442 \u043f\u043e\u0441\u043b\u0435 Site Fit, \u043a\u043e\u0433\u0434\u0430 \u0433\u043b\u0430\u0432\u043d\u0430\u044f \u043d\u0435\u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0435\u043d\u043d\u043e\u0441\u0442\u044c \u0441\u0432\u044f\u0437\u0430\u043d\u0430 \u0441 \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u043e\u043c \u0433\u0430\u0437\u0430 \u0438 \u0442\u043e\u043f\u043b\u0438\u0432\u043d\u043e\u0439 \u0433\u0440\u0430\u043d\u0438\u0446\u0435\u0439.';
+        if (entry.id === 'tool_engine_selection') return '\u0418\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439\u0442\u0435 \u0435\u0433\u043e \u043f\u043e\u0441\u043b\u0435 Site Fit, \u043a\u043e\u0433\u0434\u0430 \u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0438\u0439 \u043a\u043b\u044e\u0447\u0435\u0432\u043e\u0439 \u0432\u043e\u043f\u0440\u043e\u0441 \u2014 \u043d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043f\u043e \u043e\u0431\u043e\u0440\u0443\u0434\u043e\u0432\u0430\u043d\u0438\u044e.';
+    }
+    return localizedCopy(PUBLIC_FEATURE_RECOMMENDATION_OVERRIDES[entry.id] || entry.recommendation, language);
+}
+
+function cleanPublicFeatureLead(entry: PublicFeatureEntry, language: string): string {
+    if (language === 'zh') {
+        if (entry.feature_group === 'workflow') return '这个公开入口就是当前最合适的站内流程入口。';
+        if (entry.feature_group === 'tool') return 'GasGx 站内有对应的公开工具可以直接用。';
+        if (entry.feature_group === 'resource') return '这个公开资料入口最适合你现在这个问题。';
+        if (entry.feature_group === 'support') return '这个公开支持入口最适合你现在这个诉求。';
+        if (entry.feature_group === 'solution') return 'GasGx 有对应的公开方案页可以直接打开。';
+        if (entry.feature_group === 'digitalization') return 'GasGx 有对应的公开数字化能力页可以直接查看。';
+        if (entry.feature_group === 'brand') return 'GasGx 也提供这个公开品牌入口。';
+        return '这个公开站点入口就是你现在最该打开的页面。';
+    }
+    if (language === 'ru') {
+        if (entry.feature_group === 'workflow') return 'Это лучший публичный workflow-вход для вашего запроса.';
+        if (entry.feature_group === 'tool') return 'На сайте GasGx есть публичный инструмент под этот запрос.';
+        if (entry.feature_group === 'resource') return 'Этот публичный ресурсный вход подходит сюда лучше всего.';
+        if (entry.feature_group === 'support') return 'Этот публичный support-вход лучше всего подходит под ваш запрос.';
+        if (entry.feature_group === 'solution') return 'У GasGx есть публичная solution-страница под этот сценарий.';
+        if (entry.feature_group === 'digitalization') return 'У GasGx есть публичная digitalization-страница для этого направления.';
+        if (entry.feature_group === 'brand') return 'У GasGx также есть этот публичный brand-вход.';
+        return 'Это правильный публичный раздел сайта для вашего запроса.';
+    }
+    return publicFeatureLead(entry, language);
+}
+
+function cleanPublicFeatureLineTwo(entry: PublicFeatureEntry, language: string): string {
+    const link = publicFeatureLink(entry);
+    const purpose = localizedPublicFeaturePurpose(entry, language);
+    if (language === 'zh') return `主入口：${link}。它用于${purpose}`;
+    if (language === 'ru') return `Основной вход: ${link}. Он нужен, чтобы ${purpose}`;
+    return `Primary link: ${link} — use it to ${purpose}`;
+}
+
+function cleanPublicFeatureRelatedSentence(relatedEntries: PublicFeatureEntry[], language: string): string {
+    if (!relatedEntries.length) return '';
+    const parts = relatedEntries.slice(0, 2).map((item) => {
+        const link = publicFeatureLink(item);
+        const purpose = localizedPublicFeaturePurpose(item, language);
+        if (language === 'zh') return `${link}（${purpose}）`;
+        return `${link} (${purpose})`;
+    });
+    if (language === 'zh') return `相关入口也可以继续看：${parts.join('；')}`;
+    if (language === 'ru') return `Если нужен соседний вход, также посмотрите: ${parts.join('; ')}`;
+    return `If you need adjacent entries, also see: ${parts.join('; ')}`;
+}
+
+function buildCleanPublicFeatureReply(entry: PublicFeatureEntry, language: string, relatedEntries: PublicFeatureEntry[]): string {
+    const recommendation = localizedPublicFeatureRecommendation(entry, language);
+    const relatedSentence = cleanPublicFeatureRelatedSentence(relatedEntries, language);
+    const lineThree = relatedSentence ? `${recommendation} ${relatedSentence}`.trim() : recommendation;
+    return [
+        `1. ${cleanPublicFeatureLead(entry, language)}`,
+        `2. ${cleanPublicFeatureLineTwo(entry, language)}`,
+        `3. ${lineThree}`,
+    ].join('\n');
+}
+
+function normalizedPublicFeatureIntentText(message: string): string {
+    return normalizedIntentText(message)
+        .replace(/\u9879\u76ee\u9700\u6c42|\u9700\u6c42\u5355|\u62a5\u4ef7|\u8be2\u4ef7|\u9700\u6c42/g, ' requirement quotation ')
+        .replace(/\u63d0\u4ea4|\u5165\u53e3|\u8868\u5355/g, ' submit form ')
+        .replace(/\u540e\u53f0\u6587\u7ae0\u7ba1\u7406|\u6587\u7ae0\u7ba1\u7406\u540e\u53f0|\u540e\u53f0\u7ba1\u7406|\u5185\u90e8\u540e\u53f0|\u7f16\u8f91\u5668\u540e\u53f0|\u5185\u90e8\u7cfb\u7edf/g, ' internal admin backend ')
+        .replace(/\u53ef\u7814|\u521d\u6b65\u7b5b\u9009|\u9879\u76ee\u9002\u914d|\u7b5b\u9009/g, ' screening ')
+        .replace(/\u5de5\u5177|\u8ba1\u7b97\u5668|\u5206\u6790\u5de5\u5177/g, ' tool ')
+        .replace(/\u53c2\u6570\u8868|\u8d44\u6599\u8868/g, ' datasheets ')
+        .replace(/\u62a5\u544a\u5165\u53e3|\u884c\u4e1a\u62a5\u544a|\u7814\u7a76\u62a5\u544a|\u62a5\u544a/g, ' reports ')
+        .replace(/\u5e38\u89c1\u95ee\u9898|\u5e2e\u52a9\u95ee\u7b54/g, ' faq ')
+        .replace(/\u77ff\u573a\u65b9\u6848\u9875|\u6316\u77ff\u65b9\u6848\u9875/g, ' mining solution ')
+        .replace(/\u6cb9\u7530\u65b9\u6848\u9875|\u4f34\u751f\u6c14\u65b9\u6848\u9875/g, ' oilfield solution ')
+        .replace(/\u5de5\u4e1a\u65b9\u6848\u9875|\u5de5\u5382\u65b9\u6848\u9875/g, ' industrial solution ')
+        .replace(/\u70ed\u7535\u8054\u4f9b\u65b9\u6848\u9875|chp \u9875\u9762/g, ' chp solution ')
+        .replace(/\u9879\u76ee\u9002\u914d\u5de5\u5177/g, ' site fit tool ')
+        .replace(/\u6c14\u6e90\u9002\u914d\u5de5\u5177/g, ' gas fit tool ')
+        .replace(/\u9009\u578b\u5de5\u5177|\u53d1\u52a8\u673a\u9009\u578b/g, ' engine selection tool ')
+        .replace(/\u6295\u8d44\u56de\u62a5/g, ' roi ')
+        .replace(/\u5e73\u51c6\u5316\u5ea6\u7535\u6210\u672c/g, ' lcoe ')
+        .replace(/\u6c14\u4f53\u5206\u6790\u5de5\u5177/g, ' gas analyzer ')
+        .replace(/\u8fd0\u8f93\u5206\u6790|\u7269\u6d41\u5de5\u5177/g, ' logistics ')
+        .replace(/\u5408\u89c4\u5de5\u5177|\u6cd5\u89c4\u5de5\u5177/g, ' compliance ')
+        .replace(/\u043e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c|\u0444\u043e\u0440\u043c\u0430 \u0437\u0430\u044f\u0432\u043a\u0438|\u0444\u043e\u0440\u043c\u0430 \u0437\u0430\u043f\u0440\u043e\u0441\u0430|\u043a\u043e\u043c\u043c\u0435\u0440\u0447\u0435\u0441\u043a/g, ' requirement quotation submit ')
+        .replace(/\u043a\u0430\u043a\u043e\u0439 \u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442|\u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442|\u043f\u0435\u0440\u0432\u0438\u0447\u043d|\u0441\u043a\u0440\u0438\u043d\u0438\u043d\u0433|\u043f\u0440\u043e\u0435\u043a\u0442/g, ' tool screening ')
+        .replace(/\u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d|\u0430\u0434\u043c\u0438\u043d\u043a|\u0430\u0434\u043c\u0438\u043d/g, ' internal admin backend ')
+        .replace(/\u043e\u043a\u0443\u043f\u0430\u0435\u043c|\u0432\u043e\u0437\u0432\u0440\u0430\u0442 \u0438\u043d\u0432\u0435\u0441\u0442/g, ' roi ')
+        .replace(/\u0434\u0430\u0442\u0430\u0448\u0438\u0442/g, ' datasheets ')
+        .replace(/\u043e\u0442\u0447\u0435\u0442/g, ' reports ')
+        .replace(/\u0447\u0430\u0441\u0442\u043e \u0437\u0430\u0434\u0430\u0432\u0430\u0435\u043c/g, ' faq ');
+}
+
+function isInternalAdminFeatureQuery(message: string): boolean {
+    const normalized = normalizedPublicFeatureIntentText(message);
+    return /(admin backend|admin panel|internal admin|article management|cms backend|sales portal|operator portal|editor backend|back office|dashboard login|internal.*backend)/i.test(normalized);
+}
+
+function buildPublicBoundaryReply(message: string, language: string): CraftedReply {
+    const normalized = normalizedPublicFeatureIntentText(message);
+    const mainIsRequirement = /(quote|quotation|pricing|project brief|requirement|commercial)/i.test(normalized);
+    const mainEntry = mainIsRequirement
+        ? PUBLIC_FEATURE_ENTRY_MAP.get('requirement_intake_public')
+        : PUBLIC_FEATURE_ENTRY_MAP.get('contact_entry');
+    const secondaryEntry = mainIsRequirement
+        ? PUBLIC_FEATURE_ENTRY_MAP.get('contact_entry')
+        : PUBLIC_FEATURE_ENTRY_MAP.get('requirement_intake_public');
+    const entry = mainEntry || PUBLIC_FEATURE_ENTRY_MAP.get('contact_entry') || PUBLIC_FEATURE_ENTRIES[0];
+    const relatedEntries = secondaryEntry ? [secondaryEntry] : [];
+    const boundaryLead = language === 'zh'
+        ? '你问到的是内部后台或非公开操作入口，这类能力不对公开访客直接开放。'
+        : language === 'ru'
+            ? 'Вы спросили про внутренний backend или непубличный операторский вход. Такие возможности не открываются публичным посетителям напрямую.'
+            : 'You are asking about an internal backend or non-public operator entry. Those capabilities are not exposed directly to public visitors.';
+    const reply = [
+        `1. ${boundaryLead}`,
+        `2. ${publicFeatureLineTwo(entry, language)}`,
+        `3. ${publicFeatureRelatedSentence(relatedEntries, language) || localizedCopy(entry.recommendation, language)}`,
+    ].join('\n');
+    return {
+        provider: 'gasgx_policy',
+        reply,
+        sources: publicFeatureSources(entry, relatedEntries),
+        handoff: entry.handoff || { required: false, reason: 'unknown', next_fields: [] },
+        matchedIntent: 'public_access_boundary',
+    };
+}
+
+function pickPublicFeatureAnswer(message: string, language: string, _pageContext: PageContext): CraftedReply | null {
+    if (isInternalAdminFeatureQuery(message)) {
+        return buildReadablePublicBoundaryReply(message, language);
+    }
+
+    const normalized = normalizedPublicFeatureIntentText(message);
+    if (/(where should i submit|submit.*project brief|submit.*requirement|requirement form|quotation form|quote form|quotation workflow|requirement.*submit|quotation.*submit|requirement quotation)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('requirement_intake_public', language, ['tool_site_fit', 'contact_entry'], 'public_feature_requirement_intake_public');
+    }
+    if (/(which tool.*first|which tool.*feasibility|feasibility screening|first screening tool|project fit tool|tool.*screening|screening.*tool|site fit tool)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('tool_site_fit', language, ['tool_gas_fit', 'tool_engine_selection'], 'public_feature_tool_site_fit');
+    }
+    if (/(datasheet|datasheets|parameter sheet)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('resource_datasheets', language, ['resource_reports', 'resource_faq'], 'public_feature_resource_datasheets');
+    }
+    if (/(report|reports)/i.test(normalized) && !/(datasheet|datasheets|parameter sheet)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('resource_reports', language, ['resource_datasheets', 'resource_faq'], 'public_feature_resource_reports');
+    }
+    if (/(faq|faq entry)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('resource_faq', language, ['resource_datasheets', 'resource_reports'], 'public_feature_resource_faq');
+    }
+    if (/(mining solution|mining solution page)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('solution_mining', language, [], 'public_feature_solution_mining');
+    }
+    if (/(oilfield solution)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('solution_oilfield', language, [], 'public_feature_solution_oilfield');
+    }
+    if (/(industrial solution)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('solution_industrial', language, [], 'public_feature_solution_industrial');
+    }
+    if (/(chp solution|cogeneration page)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('solution_chp', language, [], 'public_feature_solution_chp');
+    }
+    if (/(site fit|site-fit)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('tool_site_fit', language, ['tool_gas_fit', 'tool_engine_selection'], 'public_feature_tool_site_fit');
+    }
+    if (/(gas fit|gas-fit)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('tool_gas_fit', language, ['tool_site_fit', 'tool_engine_selection'], 'public_feature_tool_gas_fit');
+    }
+    if (/(engine selection|engine-selection)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('tool_engine_selection', language, ['tool_site_fit', 'tool_gas_fit'], 'public_feature_tool_engine_selection');
+    }
+    if (/(roi|return on investment)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('tool_roi', language, ['tool_lcoe_calculator', 'tool_roce_calculator'], 'public_feature_tool_roi');
+    }
+    if (/(lcoe|levelized cost)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('tool_lcoe_calculator', language, ['tool_roi', 'tool_roce_calculator'], 'public_feature_tool_lcoe_calculator');
+    }
+    if (/(gas analyzer|gas analyser)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('tool_gas_analyzer', language, ['tool_gas_fit'], 'public_feature_tool_gas_analyzer');
+    }
+    if (/(logistics|shipping)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('tool_global_logistics', language, ['tool_global_compliance'], 'public_feature_tool_global_logistics');
+    }
+    if (/(compliance|regulatory)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('tool_global_compliance', language, ['tool_global_logistics'], 'public_feature_tool_global_compliance');
+    }
+
+    let bestEntry: PublicFeatureEntry | null = null;
+    let bestScore = 0;
+    for (const entry of PUBLIC_FEATURE_ENTRIES) {
+        const score = scorePatterns(normalized, entry.patterns);
+        if (score > bestScore) {
+            bestEntry = entry;
+            bestScore = score;
+        }
+    }
+    if (!bestEntry || bestScore <= 0) return null;
+    return buildPublicFeatureCraftedReply(bestEntry.id, language, bestEntry.related_ids || []);
 }
 
 function phase1CanonicalFallbackRule(intentKey: string, language: string): FaqRule | null {
@@ -1268,11 +2603,24 @@ function inferPreferredSections(message: string, matchedIntent: string, pageCont
         ['support', 'resources', 'about'].forEach((item) => preferred.add(item));
     } else if (matchedIntent === 'mining_associated_gas_1mw') {
         ['solutions', 'products', 'resources'].forEach((item) => preferred.add(item));
+    } else if (matchedIntent.startsWith('public_feature_')) {
+        ['tools', 'resources', 'support', 'quote', 'about', 'solutions', 'products', 'news'].forEach((item) => preferred.add(item));
     }
 
     const normalized = normalizedIntentText(message);
     if (/(datasheet|whitepaper|case stud|certif|faq|brochure|manual|resource)/.test(normalized)) {
         preferred.add('resources');
+    }
+    if (/(tool|calculator|analyzer|analysis|site fit|gas fit|engine selection|roi|lcoe|compliance|logistics|矿机|工具|可研|计算器|分析工具|инструмент|калькулятор|анализатор)/.test(normalized)) {
+        preferred.add('tools');
+    }
+    if (/(requirement|project brief|quotation form|quote form|submit a brief|project intake|需求单|需求表|报价表单|коммерческ|форма запроса|project brief)/.test(normalized)) {
+        preferred.add('quote');
+        preferred.add('about');
+        preferred.add('support');
+    }
+    if (/(news|flash|event|insight|data page|新闻|快讯|数据页|活动|новости|flash|data)/.test(normalized)) {
+        preferred.add('news');
     }
     if (/(support|service|after-sales|commissioning|maintenance|parts)/.test(normalized)) {
         preferred.add('support');
@@ -1575,7 +2923,7 @@ function buildSystemPrompt(language: string, pageContext: PageContext, extraInst
     return [
         'You are GasGx Assistant, the customer-facing pre-sales engineer and solution advisor for www.gasgx.com.',
         buildLanguageRule(language),
-        'Your job is to help prospects, customers and partners understand GasGx products, solutions, quotation requirements, delivery boundaries, service scope and next-step project qualification.',
+        'Your job is to help prospects, customers and partners understand GasGx products, solutions, public site features, quotation requirements, delivery boundaries, service scope and next-step project qualification.',
         '',
         'Priority rules:',
         '- Lead with a direct answer, not a disclaimer.',
@@ -1588,8 +2936,10 @@ function buildSystemPrompt(language: string, pageContext: PageContext, extraInst
         '- Ask only the minimum follow-up questions needed to advance qualification.',
         '- If the current page is a specific product detail page, prioritize that page\'s fit, scope, qualification and quotation details before broader catalog copy.',
         '- Default reply flow: direct answer first, then 2-4 critical missing inputs, then one concrete website action.',
+        '- For public site feature questions, explain the best public entry and include one primary Markdown link with a short explanation.',
         `- Exploration stage should usually point to ${SITE_FIT_URL}, ${GAS_FIT_URL} or ${ENGINE_SELECTION_URL}.`,
         `- Documentation stage should usually point to ${DATASHEETS_URL}, ${REPORTS_URL} or ${FAQ_URL}.`,
+        `- Public contact or support routing should usually point to ${ABOUT_CONTACT_URL}.`,
         '- Do not promise final pricing, ROI, compliance approval or delivery commitments before qualification is complete.',
         '',
         'Known GasGx offering map:',
@@ -1599,6 +2949,7 @@ function buildSystemPrompt(language: string, pageContext: PageContext, extraInst
         '- Deployment forms include containerized, AIS-integrated and skid-mounted units.',
         '- Solution families include oilfield power, mining or data-center power, industrial distributed energy and CHP.',
         '- Digital systems include O&M Platform, ECM, IMS and Sales System.',
+        '- Public workflow and feature entries include requirement intake, tools, resources, support, news and brand quote routes.',
         '- Support resources include technical support, after-sales service, service network, whitepapers, case studies, datasheets, certifications and FAQ.',
         '',
         ...buildKnowledgeBlock(hits),
@@ -1921,10 +3272,11 @@ Deno.serve(async (request) => {
         const matchedIntent = detectIntent(message);
         const craftedReply = pickContainerDeploymentPageReply(message, language, pageContext);
         const faqRules = await loadFaqRules(serviceClient, language);
+        const publicFeatureReply = craftedReply ? null : pickPublicFeatureAnswer(message, language, pageContext);
         const matchedRule = pickStrandedGasQuoteRule(message, language, faqRules)
             || pickCountryStrandedGasRule(message, language, faqRules)
-            || pickPhase1ScenarioRule(message, language, faqRules)
-            || (craftedReply ? null : pickFaqRule(message, language, faqRules, matchedIntent));
+            || (craftedReply || publicFeatureReply ? null : pickPhase1ScenarioRule(message, language, faqRules))
+            || (craftedReply || publicFeatureReply ? null : pickFaqRule(message, language, faqRules, matchedIntent));
 
         if (matchedRule) {
             const reply = localizedPolicyAnswer(matchedRule, language);
@@ -1989,6 +3341,38 @@ Deno.serve(async (request) => {
                 language,
                 sources: craftedReply.sources,
                 handoff: craftedReply.handoff,
+                sessionId,
+            });
+        }
+
+        if (publicFeatureReply) {
+            await insertChatLog(serviceClient, {
+                sessionId,
+                message,
+                reply: publicFeatureReply.reply,
+                language,
+                provider: publicFeatureReply.provider,
+                matchedIntent: publicFeatureReply.matchedIntent,
+                pageContext,
+                sources: publicFeatureReply.sources,
+                handoff: publicFeatureReply.handoff,
+            });
+            await insertLeadIntent(serviceClient, {
+                sessionId,
+                message,
+                intent: publicFeatureReply.matchedIntent,
+                language,
+                provider: publicFeatureReply.provider,
+                sources: publicFeatureReply.sources,
+                handoff: publicFeatureReply.handoff,
+            });
+            return json({
+                ok: true,
+                provider: publicFeatureReply.provider,
+                reply: publicFeatureReply.reply,
+                language,
+                sources: publicFeatureReply.sources,
+                handoff: publicFeatureReply.handoff,
                 sessionId,
             });
         }

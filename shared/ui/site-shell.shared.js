@@ -3405,6 +3405,7 @@
         function inferChatMessageLanguage(messageText) {
             if (/[\u4e00-\u9fff]/.test(messageText || "")) return "zh";
             if (/[\u0400-\u04FF]/.test(messageText || "")) return "ru";
+            if (/[A-Za-z]/.test(messageText || "")) return "en";
             return getCurrentLang();
         }
 
