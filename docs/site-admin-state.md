@@ -676,3 +676,63 @@
 1. Fold the untracked public-site feature migration into the next clean chatbot knowledge commit so local git state matches the already-deployed database shape.
 2. Continue expanding `site_function` coverage for more tools/resources as QA logs reveal new public-site navigation questions.
 3. Separate unrelated worktree changes from the chatbot slice before the next release-oriented archive so the repo can be closed with a cleaner theme boundary.
+## 2026-04-21 sales flow shell archive update
+
+### Latest milestone
+
+- Sales admin `quote-customer-flow` detail pages were unified into one fixed four-tab shell:
+  - `沟通记录`
+  - `节点详情`
+  - `全部历史与轨迹`
+  - `用户信息`
+- The right sidebar for customer-flow detail pages was reduced to `操作区` only; `状态区` and the old right-side `用户信息区` were removed from that shell.
+- Sales-side public communication now matches the customer-side thread model more closely:
+  - reply target can be clicked to focus the referenced message
+  - reply composer is docked at the top of the communication panel
+  - tab switching in customer-flow detail no longer triggers full-page rerender
+  - entering reply state no longer depends on rerendering the full detail shell
+- Sales dashboard no longer renders the `销售推进池 / Pipeline guide` section; the `近期待办` panel remains.
+
+### Effective behaviors
+
+- `D:\code\GasGx\article_management\modules\quote-system.module.js`
+  now owns the stable customer-flow detail shell, including:
+  - tab structure
+  - right-side operation rail
+  - communication-thread rendering
+  - user-info panel rendering
+- Customer-flow detail pages now default to `沟通记录`, but can switch locally between all four tabs without URL change or shell rebuild.
+- The communication panel now keeps reply-state UI in place:
+  - clicking `回复` updates only the local comment panel state
+  - clicking a quoted reply context scrolls and highlights the referenced message
+  - the composer placeholder and reply banner are updated in place
+- The right sidebar on customer-flow detail pages is now action-first:
+  - only `操作区` remains in the side rail
+  - customer context moved into the new `用户信息` tab
+- Sales dashboard keeps metrics / trend / todo content, but no longer includes the stage-guide overview block.
+
+### Solved in this thread
+
+- Rebuilt customer-flow detail pages into one shared shell with four tabs instead of scattered bottom panels and duplicated side cards.
+- Moved customer context into the main reading path so operators can switch to it as a card instead of scanning the right rail.
+- Removed the old right-side `状态区` from customer-flow detail pages and kept `操作区` as the only side rail block.
+- Aligned sales-side communication behavior with the customer-side thread interaction model.
+- Removed the sales dashboard `销售推进池` section after it was explicitly rejected as redundant noise.
+- Added and expanded Playwright regression coverage for:
+  - multi-stage customer-flow shell reuse
+  - no-refresh tab switching
+  - customer info tab visibility
+  - right-side actions-only layout
+  - dashboard pipeline-guide removal
+
+### Unfinished
+
+- Customer-flow visual density is closer to the customer-side discussion panel, but not yet pixel-aligned across desktop/mobile in every spacing detail.
+- The customer-flow detail shell still uses full rerender after actual comment submission; only tab switching and reply-state entry were localized in this thread.
+- Sales dashboard still contains other analytics cards and todo modules; only the `销售推进池` block was removed here.
+
+### Next Step
+
+1. Continue trimming the sales dashboard based on the current visual direction, card by card, instead of broad redesign.
+2. If comment UX still feels heavier than the customer-side page, localize post-submit refresh inside the communication panel instead of rerendering the whole detail shell.
+3. Run one visual pass on mobile/tablet widths for the four-tab customer-flow detail shell, especially `用户信息` and `沟通记录` spacing.

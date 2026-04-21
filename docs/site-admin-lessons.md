@@ -285,3 +285,29 @@ How to detect earlier:
 How to prevent recurrence:
 - Normalize only the action-bearing phrases, not generic interrogatives.
 - For requirement-style intents, prefer explicit submit/form/commercial-request wording over broad location-question words.
+## Lesson 13: Adding a new tab key requires updating every normalization gate, not just the rendered tab list
+
+Error symptom:
+
+- The new `用户信息` tab button rendered correctly in the customer-flow detail shell, but clicking it never activated the panel.
+
+Root cause:
+
+- The rendered tab list and panel map were updated, but `normalizeSalesFlowDetailTab(...)` still allowed only:
+  - `communication`
+  - `details`
+  - `history`
+- The new `customer` key was therefore normalized back to the default tab.
+
+How to detect earlier:
+
+- After adding a new tab or view-state key, test one real click path instead of relying on source checks alone.
+- Any state-machine helper such as `normalize*`, enum guard, or route parser should be treated as part of the feature surface.
+
+How to prevent recurrence:
+
+- When extending a UI state machine, update all of these together:
+  1. tab definitions
+  2. active-panel rendering
+  3. state normalization/guard helpers
+  4. regression tests that click the new state

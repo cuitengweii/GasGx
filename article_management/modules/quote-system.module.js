@@ -102,6 +102,8 @@ const moduleState = {
     dealSearch: '',
     requirementProductSelection: '',
     pipelineProductSelection: '',
+    salesFlowDetailTab: 'communication',
+    salesFlowDetailViewKey: '',
     salesFlowReplyToId: '',
     requirementStatusFilter: 'all',
     dealStageFilter: 'all',
@@ -1350,6 +1352,24 @@ function customerDeals(customerId = '') {
     return moduleState.deals
         .filter((item) => text(item.customer_id) === text(customerId))
         .sort((left, right) => text(right.updated_at).localeCompare(text(left.updated_at)));
+}
+
+function numericDealOrderNumber(deal = {}) {
+    const currentDeal = deal || {};
+    const dealId = text(currentDeal.id).toLowerCase().replace(/-/g, '');
+    if (!dealId) return '';
+    const stampSource = text(currentDeal.created_at || currentDeal.updated_at);
+    const stampDate = stampSource ? new Date(stampSource) : null;
+    const pad = (value, length = 2) => String(value).padStart(length, '0');
+    const prefix = stampDate && Number.isFinite(stampDate.getTime())
+        ? `${stampDate.getFullYear()}${pad(stampDate.getMonth() + 1)}${pad(stampDate.getDate())}${pad(stampDate.getHours())}${pad(stampDate.getMinutes())}`
+        : '000000000000';
+    let suffixSeed = 0;
+    for (let index = 0; index < dealId.length; index += 1) {
+        const code = dealId.charCodeAt(index);
+        suffixSeed = (suffixSeed * 131 + code * (index + 1)) % 1000000;
+    }
+    return `${prefix}${pad(suffixSeed, 6)}`;
 }
 
 function requirementDeal(requirementId = '') {
@@ -5907,9 +5927,10 @@ function filteredCustomers() {
         ].some((value) => text(value).toLowerCase().includes(query));
     });
     return rows.sort((left, right) => {
-        const leftName = customerDisplayName(left).toLowerCase();
-        const rightName = customerDisplayName(right).toLowerCase();
-        return leftName.localeCompare(rightName);
+        const rightStamp = text(right.updated_at || right.created_at);
+        const leftStamp = text(left.updated_at || left.created_at);
+        return rightStamp.localeCompare(leftStamp)
+            || customerDisplayName(left).toLowerCase().localeCompare(customerDisplayName(right).toLowerCase());
     });
 }
 
@@ -7282,6 +7303,10 @@ function customerPrimaryFlowTarget(customerId = '') {
     return customerFlowStageUrl(deal.current_stage, deal, customerId);
 }
 
+function customerPrimaryDeal(customerId = '') {
+    return customerActivePipelineDeals(customerId)[0] || customerDeals(customerId)[0] || null;
+}
+
 function customerPrimaryRequirement(customerId = '') {
     const deals = customerActivePipelineDeals(customerId);
     for (const deal of deals) {
@@ -7416,6 +7441,7 @@ function renderSalesCustomerArchiveList(input = null) {
                 const scopedInput = listMode === 'active' ? input : null;
                 const scopedStage = listMode === 'active' ? stageFilter : 'customer_profile';
                 const deals = customerVisibleStageDeals(customer.id, scopedInput, scopedStage);
+                const primaryDeal = customerPrimaryDeal(customer.id);
                 const quoteSummary = summarizeCustomerQuotes(customer.id);
                 const requirementSummary = summarizeCustomerRequirements(customer.id);
                 const notePreview = text(customer.notes).replace(/\s+/g, ' ').trim();
@@ -7427,6 +7453,7 @@ function renderSalesCustomerArchiveList(input = null) {
                                     <summary class="ams-sales-customer-card-head" aria-label="${expanded ? '收起客户信息' : '展开客户信息'}">
                                         <div class="ams-sales-customer-card-title">
                                             <strong>${esc(customerDisplayName(customer))}</strong>
+                                            ${primaryDeal?.id ? `<span class="ams-sales-customer-order-badge">订单号 ${esc(numericDealOrderNumber(primaryDeal))}</span>` : ''}
                                             <span class="ams-sales-customer-expand" aria-hidden="true">
                                                 <i class="fa-solid fa-chevron-${expanded ? 'up' : 'down'}"></i>
                                             </span>
@@ -7950,10 +7977,35 @@ function customerInsightsMarkup() {
     `;
 }
 
-function customerActivityTimelinePanelMarkup(customerId = '') {
+function customerActivityTimelinePanelMarkup(customerId = '', options = {}) {
     const filter = text(moduleState.customerActivityFilter, 'all');
     const rows = customerActivityTimelineRows(customerId)
         .filter((item) => filter === 'all' ? true : text(item.actor_type) === filter);
+    const bodyMarkup = `
+        <p class="ams-field-help">记录客户、销售和系统在这条客户销售链路上的关键动作。</p>
+        <div class="ams-row-actions">
+            ${['all', 'customer', 'sales', 'system'].map((actorType) => `
+                <button class="ams-btn ${filter === actorType ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" data-customer-activity-filter="${esc(actorType)}">${esc(actorType === 'all' ? '全部' : SALES_ACTIVITY_ACTOR_LABELS[actorType])}</button>
+            `).join('')}
+        </div>
+        <div class="ams-sales-activity-list">
+            ${rows.length ? rows.map((item) => salesActivityTimelineItemMarkup(item)).join('') : '<div class="ams-empty">当前客户还没有可展示的销售活动。</div>'}
+        </div>
+    `;
+    if (options.embedded === true) {
+        return `
+            <section class="ams-card ams-stage-log-card ams-sales-flow-history-card" data-customer-activity-panel="${esc(customerId)}">
+                <div class="ams-sales-flow-section-head">
+                    <span>行为轨迹</span>
+                    <strong>全部历史与轨迹</strong>
+                    <p>这里专门放系统、客户、销售的行为轨迹，不和公开沟通记录混在一起。</p>
+                </div>
+                <div class="ams-sales-flow-history-body">
+                    ${bodyMarkup}
+                </div>
+            </section>
+        `;
+    }
     return `
         <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold" data-customer-activity-panel="${esc(customerId)}">
             <summary class="ams-fold-summary">
@@ -7961,15 +8013,7 @@ function customerActivityTimelinePanelMarkup(customerId = '') {
                 <em>${esc(`${rows.length} 条`)}</em>
             </summary>
             <div class="ams-fold-body">
-                <p class="ams-field-help">记录客户、销售和系统在这条客户销售链路上的关键动作。</p>
-                <div class="ams-row-actions">
-                    ${['all', 'customer', 'sales', 'system'].map((actorType) => `
-                        <button class="ams-btn ${filter === actorType ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" data-customer-activity-filter="${esc(actorType)}">${esc(actorType === 'all' ? '全部' : SALES_ACTIVITY_ACTOR_LABELS[actorType])}</button>
-                    `).join('')}
-                </div>
-                <div class="ams-sales-activity-list">
-                    ${rows.length ? rows.map((item) => salesActivityTimelineItemMarkup(item)).join('') : '<div class="ams-empty">当前客户还没有可展示的销售活动。</div>'}
-                </div>
+                ${bodyMarkup}
             </div>
         </details>
     `;
@@ -11600,6 +11644,11 @@ function currentSalesStageParam(fallback = 'requirement_capture') {
     return normalizeDealStageKey(readAdminPageParam('stage') || fallback);
 }
 
+function normalizeSalesFlowDetailTab(value = '') {
+    const normalized = text(value);
+    return ['communication', 'details', 'history', 'customer'].includes(normalized) ? normalized : 'communication';
+}
+
 function stagePageTitle(stageKey = '') {
     const stage = dealStageDefinition(stageKey);
     if (stage.key === 'customer_profile') return '总流水线 · 客户建档';
@@ -12305,6 +12354,36 @@ function salesStageCustomerCardMarkup(stageKey = '', deal = null, customer = {})
     `);
 }
 
+function salesStageCustomerSectionMarkup(stageKey = '', deal = null, customer = {}) {
+    const record = salesStageStatusRecord(stageKey, deal);
+    const requirement = createRequirementDraft(moduleState.requirementEditor || {});
+    const instance = createInstanceDraft(moduleState.instanceEditor || {});
+    const contactName = text(customer.contact_name, text(requirement.requester_name, text(instance.receiver_name, '--')));
+    const email = text(customer.email, text(requirement.requester_email, text(instance.receiver_email, '--')));
+    const phone = text(customer.phone, text(requirement.requester_phone, '--'));
+    const country = text(customer.country, text(requirement.country, text(instance.customer_country, '--')));
+    const lineLabel = text(deal?.title, stageKey === 'customer_profile' ? '待创建销售线' : '--');
+    return `
+        <section class="ams-card ams-sales-flow-section-card ams-sales-flow-customer-card">
+            <div class="ams-sales-flow-section-head">
+                <div>
+                    <h3>用户信息</h3>
+                    <p>这里集中查看当前客户、联系方式、销售线归属和当前节点双负责人。</p>
+                </div>
+            </div>
+            <div class="ams-sales-stage-side-list">
+                ${salesStageSideTextItemMarkup('客户', customerDisplayName(customer))}
+                ${salesStageSideTextItemMarkup('销售线', lineLabel)}
+                ${salesStageSideTextItemMarkup('联系人', contactName)}
+                ${salesStageSideTextItemMarkup('联系邮箱', email)}
+                ${salesStageSideTextItemMarkup('联系电话', phone)}
+                ${salesStageSideTextItemMarkup('国家 / 地区', country)}
+                ${salesStageSideTextItemMarkup('节点双负责人', deal?.id ? stageContactDisplayLabel(record, deal) : '待保存后补全')}
+            </div>
+        </section>
+    `;
+}
+
 function customerProfileActionCardMarkup() {
     return salesStageActionCardMarkup('客户主档保存后，销售线才会统一进入获取需求节点。', `
         ${salesStageActionGroupMarkup('阶段推进', '当前节点只处理客户主档，需求、报价和履约内容不混放在这里。', `
@@ -12519,19 +12598,88 @@ function salesStageOperationsCardMarkup(stage = {}, deal = null, customer = {}) 
     return executionStageActionCardMarkup(stage, deal);
 }
 
-function salesStageShellMarkup(stage = {}, deal = null, customer = {}, mainMarkup = '') {
+function salesStageShellMarkup(stage = {}, deal = null, customer = {}, mainMarkup = '', options = {}) {
+    const sideCards = options.prioritizeOperations === true
+        ? `
+            ${salesStageOperationsCardMarkup(stage, deal, customer)}
+        `
+        : `
+            ${salesStageStatusCardMarkup(stage.key, deal)}
+            ${salesStageCustomerCardMarkup(stage.key, deal, customer)}
+            ${salesStageOperationsCardMarkup(stage, deal, customer)}
+        `;
     return `
-        <section class="ams-sales-stage-shell">
+        <section class="ams-sales-stage-shell${options.detailMode === true ? ' is-detail-tabs' : ''}">
             <div class="ams-sales-stage-shell-main">
                 ${mainMarkup}
             </div>
             <aside class="ams-sales-stage-shell-side">
-                ${salesStageStatusCardMarkup(stage.key, deal)}
-                ${salesStageCustomerCardMarkup(stage.key, deal, customer)}
-                ${salesStageOperationsCardMarkup(stage, deal, customer)}
+                ${sideCards}
             </aside>
         </section>
     `;
+}
+
+function stageCommunicationConfig(stageKey = '') {
+    const normalized = normalizeDealStageKey(stageKey);
+    const configs = {
+        customer_profile: {
+            title: '客户建档沟通记录',
+            help: '记录客户主档确认、来源背景、联系人信息补充和建档阶段的公开沟通。',
+        },
+        requirement_capture: {
+            title: '需求沟通记录',
+            help: '这里统一记录客户与销售围绕需求单的公开沟通，包含补充说明、澄清问题和节点内回复。',
+        },
+        requirement_confirmed: {
+            title: '需求沟通记录',
+            help: '这里统一记录客户与销售围绕需求单的公开沟通，包含补充说明、澄清问题和节点内回复。',
+        },
+        quote_draft: {
+            title: '报价沟通记录',
+            help: '把客户对报价内容、价格、条款、交付周期的每次反馈和修改要求都记在这里，便于后续签约与溯源。',
+        },
+        quote_confirmed: {
+            title: '报价沟通记录',
+            help: '把客户对报价内容、价格、条款、交付周期的每次反馈和修改要求都记在这里，便于后续签约与溯源。',
+        },
+        contract_signed: {
+            title: '合同沟通记录',
+            help: '记录合同条款往返修改、客户问题、法务确认和最终归档依据。',
+        },
+        deposit_paid: {
+            title: '定金沟通记录',
+            help: '记录催款、付款证明回传、到账确认和异常处理过程。',
+        },
+        production_scheduled: {
+            title: '排产沟通记录',
+            help: '记录排产确认、工期变化、延期说明、发给客户的通知和验收预约。',
+        },
+        factory_accepted: {
+            title: '验收沟通记录',
+            help: '记录客户验收安排、纸质单回传、线上确认单进度和整改结论。',
+        },
+        balance_confirmed: {
+            title: '尾款沟通记录',
+            help: '记录尾款催收、客户确认、付款凭证和异常处理过程。',
+        },
+        shipping_in_transit: {
+            title: '物流沟通记录',
+            help: '记录发运通知、运输异常、清关问题和预计到场协调。',
+        },
+        deployment_completed: {
+            title: '部署沟通记录',
+            help: '记录现场准备、部署窗口、客户反馈和上线后的遗留问题。',
+        },
+        support_active: {
+            title: '运维沟通记录',
+            help: '记录售后沟通、质保范围、问题回访和最终结案依据。',
+        },
+    };
+    return configs[normalized] || {
+        title: '沟通记录',
+        help: '当前节点的公开沟通都会记录在这里，方便客户与销售围绕同一线程继续协作。',
+    };
 }
 
 function customerProfileFlowMarkup(customer = {}, deals = [], activeDeal = null) {
@@ -12559,7 +12707,8 @@ function customerProfileFlowMarkup(customer = {}, deals = [], activeDeal = null)
     `;
 }
 
-function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
+function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}, options = {}) {
+    const { includeCommunication = true } = options;
     const answers = normalizeRequirementAnswers(requirement.answers);
     const stageIntro = normalizeDealStageKey(stageKey) === 'requirement_capture'
         ? (requirementStatusReadyForQuote(requirement.status)
@@ -12571,7 +12720,8 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
             ? '客户已完成提交，当前页只用于回看内容和补充内部沟通备注；下一步请进入确认需求。'
             : '当前阶段只等待客户填写，客户基础信息与需求详情以公开需求页实际提交内容为准。')
         : '当前阶段请基于客户已提交的真实需求内容进行确认。';
-    return `
+    const communication = stageCommunicationConfig(stageKey);
+    const detailMarkup = `
         <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
             <div class="ams-section-head">
                 <div>
@@ -12602,14 +12752,14 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
                 <div class="ams-field"><label>客户填写进度说明</label><input class="ams-input" value="${esc(requirementProgressLabel)}" disabled></div>
             </div>
         </section>
-        ${stageCommunicationSectionMarkup(stageKey, stageRecordByKey(stageKey, moduleState.dealStageRecords), {
-            title: '需求沟通记录',
-            help: '这里统一记录客户与销售围绕需求单的公开沟通，包含补充说明、澄清问题和节点内回复。',
-            deal: moduleState.dealEditor,
-            requirement,
-            replyToId: text(moduleState.salesFlowReplyToId),
-        })}
     `;
+    if (!includeCommunication) return detailMarkup;
+    return `${detailMarkup}${stageCommunicationSectionMarkup(stageKey, stageRecordByKey(stageKey, moduleState.dealStageRecords), {
+        ...communication,
+        deal: moduleState.dealEditor,
+        requirement,
+        replyToId: text(moduleState.salesFlowReplyToId),
+    })}`;
 }
 
 function stageCommunicationRowsForDisplay(stageKey = '', deal = null, requirement = null) {
@@ -12690,9 +12840,9 @@ function communicationMessageMarkup(entry = {}, options = {}) {
     const isReplying = text(currentReplyId) === text(entry.id);
     const showInlineReplyTarget = compact && text(entry.reply_to_id) && text(rootId) && text(entry.reply_to_id) !== text(rootId);
     return `
-        <div class="ams-comment-thread-row ${compact ? 'is-compact' : ''}">
+        <div class="ams-comment-thread-row ${compact ? 'is-compact' : ''}" data-stage-comment-row="${esc(text(entry.id))}">
             <div class="ams-comment-thread-avatar ${communicationActorTone(entry)} ${compact ? 'is-compact' : ''}">${esc(communicationAvatarLabel(entry))}</div>
-            <article class="ams-comment-thread ${communicationActorTone(entry)} ${compact ? 'is-compact' : ''}">
+            <article class="ams-comment-thread ${communicationActorTone(entry)} ${compact ? 'is-compact' : ''}" id="ams-stage-comment-${esc(text(entry.id))}" data-stage-comment-id="${esc(text(entry.id))}">
                 <div class="ams-comment-thread-head">
                     <div class="ams-comment-thread-author">
                         <strong>${esc(actorName)}</strong>
@@ -12702,14 +12852,18 @@ function communicationMessageMarkup(entry = {}, options = {}) {
                     <time>${esc(fmtDate(entry.created_at))}</time>
                 </div>
                 ${showInlineReplyTarget
-                    ? `<div class="ams-comment-thread-inline-reply">回复 <strong>@${esc(communicationDisplayActorName(text(entry.reply_to_actor_label, '上一条沟通'), '上一条沟通'))}</strong></div>`
+                    ? `
+                        <button class="ams-comment-thread-inline-reply ams-comment-focus-link" type="button" data-stage-comment-focus="${esc(text(entry.reply_to_id))}">
+                            回复 <strong>@${esc(communicationDisplayActorName(text(entry.reply_to_actor_label, '上一条沟通'), '上一条沟通'))}</strong>
+                        </button>
+                    `
                     : ''}
                 ${text(entry.reply_to_id) && !compact
                     ? `
-                        <div class="ams-comment-reply-context">
+                        <button class="ams-comment-reply-context ams-comment-focus-link" type="button" data-stage-comment-focus="${esc(text(entry.reply_to_id))}">
                             <span>回复 ${esc(text(entry.reply_to_actor_label, '上一条沟通'))} · ${esc(replyStageLabel)}</span>
                             <strong>${esc(text(entry.reply_to_body, ''))}</strong>
-                        </div>
+                        </button>
                     `
                     : ''}
                 <p>${esc(entry.body)}</p>
@@ -12779,6 +12933,7 @@ function stageCommunicationSectionMarkup(stageKey = '', record = {}, options = {
     const help = text(options.help, '所有节点统一使用公开沟通记录，客户与销售都能看到同一条评论流，并支持引用回复。');
     const deal = options.deal || moduleState.dealEditor || dealById(record?.deal_id) || {};
     const requirement = options.requirement || moduleState.requirementEditor || requirementById(text(deal.primary_requirement_id)) || {};
+    const dockedComposer = options.dockedComposer === true;
     const rows = stageCommunicationRowsForDisplay(stageKey, deal, requirement);
     const threads = buildStageCommunicationThreads(stageKey, deal, requirement);
     const replyId = text(options.replyToId || moduleState.salesFlowReplyToId);
@@ -12786,8 +12941,62 @@ function stageCommunicationSectionMarkup(stageKey = '', record = {}, options = {
     const composerPlaceholder = replyTarget
         ? '输入回复内容...'
         : `在「${dealStageLabel(stageKey)}」节点留言，客户和销售会看到同一条公开对话。`;
+    const composerMarkup = `
+        <div class="ams-comment-composer ${dockedComposer ? 'is-docked' : ''}" data-stage-comment-composer="${esc(stageKey)}">
+            ${replyTarget ? `
+                <div class="ams-comment-reply-banner" data-stage-comment-reply-banner="true">
+                    <div>
+                        <span data-stage-comment-reply-label="true">正在回复 ${esc(text(replyTarget.actor_label, '上一条沟通'))}</span>
+                        <strong data-stage-comment-reply-preview="true">${esc(communicationPreviewText(replyTarget))}</strong>
+                    </div>
+                    <button class="ams-btn ams-btn-muted" type="button" data-stage-comment-reply-cancel="true">取消</button>
+                </div>
+            ` : ''}
+            <div class="ams-field">
+                <label>留言 / 回复</label>
+                <textarea
+                    class="ams-textarea"
+                    rows="${dockedComposer ? '3' : '4'}"
+                    id="ams-stage-comment-input"
+                    data-stage-comment-input="true"
+                    placeholder="${esc(composerPlaceholder)}"
+                ></textarea>
+            </div>
+            <div class="ams-sales-note-submit">
+                <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-comment-submit" data-stage-comment-submit="true" data-stage-comment-stage="${esc(stageKey)}" data-stage-comment-reply-to="${esc(replyId)}">提交沟通记录</button>
+            </div>
+        </div>
+    `;
+    const conversationMarkup = `
+        <div class="ams-stage-current-comments">
+            <div class="ams-stage-current-comments-head">
+                <strong>当前节点对话</strong>
+                <span>${esc(`${dealStageLabel(stageKey)} · ${rows.length} 条`)}</span>
+            </div>
+            <div class="ams-sales-stage-note-list">
+                ${threads.length
+                    ? threads.map((entry) => communicationThreadMarkup(entry, {
+                        stageKey,
+                        allowReply: true,
+                        currentReplyId: replyId,
+                    })).join('')
+                    : '<div class="ams-empty">当前节点还没有沟通记录。</div>'}
+            </div>
+        </div>
+    `;
+    const historyMarkup = `
+        <details class="ams-fold-card ams-stage-module-fold" ${dockedComposer ? 'open' : ''}>
+            <summary class="ams-fold-summary">
+                <span>全部节点沟通回顾</span>
+                <em>按节点展开</em>
+            </summary>
+            <div class="ams-fold-body">
+                ${groupedCommunicationHistoryMarkup(stageKey, deal, requirement)}
+            </div>
+        </details>
+    `;
     return `
-        <section class="ams-card ams-stage-log-card ams-stage-comments-card">
+        <section class="ams-card ams-stage-log-card ams-stage-comments-card ${dockedComposer ? 'is-docked' : ''}">
             <div class="ams-section-head">
                 <div>
                     <h3>${esc(title)}</h3>
@@ -12795,53 +13004,19 @@ function stageCommunicationSectionMarkup(stageKey = '', record = {}, options = {
                 </div>
                 <span class="ams-stage-comments-count">${esc(`${rows.length} 条`)}</span>
             </div>
-            <div class="ams-comment-composer">
-                ${replyTarget ? `
-                    <div class="ams-comment-reply-banner">
-                        <div>
-                            <span>正在回复 ${esc(text(replyTarget.actor_label, '上一条沟通'))}</span>
-                            <strong>${esc(communicationPreviewText(replyTarget))}</strong>
-                        </div>
-                        <button class="ams-btn ams-btn-muted" type="button" data-stage-comment-reply-cancel="true">取消</button>
+            ${dockedComposer
+                ? `
+                    ${composerMarkup}
+                    <div class="ams-stage-comments-body">
+                        ${conversationMarkup}
+                        ${historyMarkup}
                     </div>
-                ` : ''}
-                <div class="ams-field">
-                    <label>留言 / 回复</label>
-                    <textarea
-                        class="ams-textarea"
-                        rows="4"
-                        id="ams-stage-comment-input"
-                        placeholder="${esc(composerPlaceholder)}"
-                    ></textarea>
-                </div>
-                <div class="ams-sales-note-submit">
-                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-comment-submit" data-stage-comment-stage="${esc(stageKey)}" data-stage-comment-reply-to="${esc(replyId)}">提交沟通记录</button>
-                </div>
-            </div>
-            <div class="ams-stage-current-comments">
-                <div class="ams-stage-current-comments-head">
-                    <strong>当前节点对话</strong>
-                    <span>${esc(`${dealStageLabel(stageKey)} · ${rows.length} 条`)}</span>
-                </div>
-                <div class="ams-sales-stage-note-list">
-                    ${threads.length
-                        ? threads.map((entry) => communicationThreadMarkup(entry, {
-                            stageKey,
-                            allowReply: true,
-                            currentReplyId: replyId,
-                        })).join('')
-                        : '<div class="ams-empty">当前节点还没有沟通记录。</div>'}
-                </div>
-            </div>
-            <details class="ams-fold-card ams-stage-module-fold">
-                <summary class="ams-fold-summary">
-                    <span>全部节点沟通回顾</span>
-                    <em>按节点展开</em>
-                </summary>
-                <div class="ams-fold-body">
-                    ${groupedCommunicationHistoryMarkup(stageKey, deal, requirement)}
-                </div>
-            </details>
+                `
+                : `
+                    ${composerMarkup}
+                    ${conversationMarkup}
+                    ${historyMarkup}
+                `}
         </section>
     `;
 }
@@ -12964,8 +13139,9 @@ function quoteSharePosterModalMarkup() {
 }
 
 function quoteDraftStageMarkup(stageKey = '', deal = null, instance = {}, context = {}) {
-    const { record = createDealStageRecord() } = context;
-    return `
+    const { record = createDealStageRecord(), includeCommunication = true } = context;
+    const communication = stageCommunicationConfig(stageKey);
+    const detailMarkup = `
         <div class="ams-stage-detail-stack">
             <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
                 <div class="ams-section-head">
@@ -12981,12 +13157,10 @@ function quoteDraftStageMarkup(stageKey = '', deal = null, instance = {}, contex
                 }
                 ${quoteSharePosterModalMarkup()}
             </section>
-            ${stageCommunicationSectionMarkup(stageKey, record, {
-                title: '报价沟通记录',
-                help: '把客户对报价内容、价格、条款、交付周期的每次反馈和修改要求都记在这里，便于后续签约与溯源。',
-            })}
         </div>
     `;
+    if (!includeCommunication) return detailMarkup;
+    return `${detailMarkup}${stageCommunicationSectionMarkup(stageKey, record, communication)}`;
 }
 
 function quoteStageEntryActionsMarkup(instance = {}, quotePublished = false, publishedText = '', draftText = '') {
@@ -13067,8 +13241,9 @@ function quoteConfirmedActionPanelMarkup(deal = null, instance = {}, quotePublis
 }
 
 function quoteConfirmedStageMarkup(stageKey = '', deal = null, instance = {}, context = {}) {
-    const { record = createDealStageRecord() } = context;
-    return `
+    const { record = createDealStageRecord(), includeCommunication = true } = context;
+    const communication = stageCommunicationConfig(stageKey);
+    const detailMarkup = `
         <div class="ams-stage-detail-stack">
             <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel">
                 <div class="ams-section-head">
@@ -13081,15 +13256,14 @@ function quoteConfirmedStageMarkup(stageKey = '', deal = null, instance = {}, co
                 ${quoteSharePosterModalMarkup()}
             </section>
             ${quoteTermsCardMarkup(record)}
-            ${stageCommunicationSectionMarkup(stageKey, record, {
-                title: '报价沟通记录',
-                help: '把客户对报价内容、价格、条款、交付周期的每次反馈和修改要求都记在这里，便于后续签约与溯源。',
-            })}
         </div>
     `;
+    if (!includeCommunication) return detailMarkup;
+    return `${detailMarkup}${stageCommunicationSectionMarkup(stageKey, record, communication)}`;
 }
 
-function quoteFlowMarkup(stageKey = '', deal = null, instance = {}) {
+function quoteFlowMarkup(stageKey = '', deal = null, instance = {}, options = {}) {
+    const { includeCommunication = true } = options;
     const products = activeProducts();
     if (!products.some((product) => product.id === moduleState.pipelineProductSelection)) {
         moduleState.pipelineProductSelection = instance.product_id || products[0]?.id || '';
@@ -13108,11 +13282,14 @@ function quoteFlowMarkup(stageKey = '', deal = null, instance = {}) {
         record,
         canConfirm,
         quotePublished,
+        includeCommunication,
     });
 }
 
-function contractStageMarkup(stage = {}, deal = null, record = {}) {
-    return `
+function contractStageMarkup(stage = {}, deal = null, record = {}, options = {}) {
+    const { includeCommunication = true } = options;
+    const communication = stageCommunicationConfig(stage.key);
+    const detailMarkup = `
         <div class="ams-stage-detail-stack">
             ${executionStageCardMarkup(stage, {
                 intro: '向客户递送合同、记录客户返修意见，合同确认无误后归档到这里，再推进到定金付款。',
@@ -13135,16 +13312,16 @@ function contractStageMarkup(stage = {}, deal = null, record = {}) {
                     </div>
                 `,
             })}
-            ${stageCommunicationSectionMarkup(stage.key, record, {
-                title: '合同沟通记录',
-                help: '记录合同条款往返修改、客户问题、法务确认和最终归档依据。',
-            })}
         </div>
     `;
+    if (!includeCommunication) return detailMarkup;
+    return `${detailMarkup}${stageCommunicationSectionMarkup(stage.key, record, communication)}`;
 }
 
-function depositStageMarkup(stage = {}, deal = null, record = {}) {
-    return `
+function depositStageMarkup(stage = {}, deal = null, record = {}, options = {}) {
+    const { includeCommunication = true } = options;
+    const communication = stageCommunicationConfig(stage.key);
+    const detailMarkup = `
         <div class="ams-stage-detail-stack">
             ${executionStageCardMarkup(stage, {
                 intro: '跟进客户定金支付、核对电子回单或付款证明，确认到账后推进到排产安排。',
@@ -13162,12 +13339,10 @@ function depositStageMarkup(stage = {}, deal = null, record = {}) {
                     })}
                 `,
             })}
-            ${stageCommunicationSectionMarkup(stage.key, record, {
-                title: '定金沟通记录',
-                help: '记录催款、付款证明回传、到账确认和异常处理过程。',
-            })}
         </div>
     `;
+    if (!includeCommunication) return detailMarkup;
+    return `${detailMarkup}${stageCommunicationSectionMarkup(stage.key, record, communication)}`;
 }
 
 function productionSubflowStatusLabel(value = '') {
@@ -13234,8 +13409,10 @@ function productionSubflowMarkup(record = {}) {
     `;
 }
 
-function productionStageMarkup(stage = {}, deal = null, record = {}) {
-    return `
+function productionStageMarkup(stage = {}, deal = null, record = {}, options = {}) {
+    const { includeCommunication = true } = options;
+    const communication = stageCommunicationConfig(stage.key);
+    const detailMarkup = `
         <div class="ams-stage-detail-stack">
             ${executionStageCardMarkup(stage, {
                 intro: '按生产流程更新集装箱、发电机、矿箱模块等环节状态，记录工期和是否延误，并保留通知客户的方式。',
@@ -13265,16 +13442,16 @@ function productionStageMarkup(stage = {}, deal = null, record = {}) {
                     })}
                 `,
             })}
-            ${stageCommunicationSectionMarkup(stage.key, record, {
-                title: '排产沟通记录',
-                help: '记录排产确认、工期变化、延期说明、发给客户的通知和验收预约。',
-            })}
         </div>
     `;
+    if (!includeCommunication) return detailMarkup;
+    return `${detailMarkup}${stageCommunicationSectionMarkup(stage.key, record, communication)}`;
 }
 
-function factoryAcceptanceStageMarkup(stage = {}, deal = null, record = {}) {
-    return `
+function factoryAcceptanceStageMarkup(stage = {}, deal = null, record = {}, options = {}) {
+    const { includeCommunication = true } = options;
+    const communication = stageCommunicationConfig(stage.key);
+    const detailMarkup = `
         <div class="ams-stage-detail-stack">
             ${executionStageCardMarkup(stage, {
                 intro: '支持上传纸质验收单图片，或发给客户线上验收确认入口。客户完成验收后，再推进到尾款确认。',
@@ -13292,16 +13469,16 @@ function factoryAcceptanceStageMarkup(stage = {}, deal = null, record = {}) {
                     })}
                 `,
             })}
-            ${stageCommunicationSectionMarkup(stage.key, record, {
-                title: '验收沟通记录',
-                help: '记录客户验收安排、纸质单回传、线上确认单进度和整改结论。',
-            })}
         </div>
     `;
+    if (!includeCommunication) return detailMarkup;
+    return `${detailMarkup}${stageCommunicationSectionMarkup(stage.key, record, communication)}`;
 }
 
-function balanceStageMarkup(stage = {}, deal = null, record = {}) {
-    return `
+function balanceStageMarkup(stage = {}, deal = null, record = {}, options = {}) {
+    const { includeCommunication = true } = options;
+    const communication = stageCommunicationConfig(stage.key);
+    const detailMarkup = `
         <div class="ams-stage-detail-stack">
             ${executionStageCardMarkup(stage, {
                 intro: '确认客户尾款金额、到账结果和尾款回单。尾款确认后，销售线推进到物流运输。',
@@ -13319,16 +13496,16 @@ function balanceStageMarkup(stage = {}, deal = null, record = {}) {
                     })}
                 `,
             })}
-            ${stageCommunicationSectionMarkup(stage.key, record, {
-                title: '尾款沟通记录',
-                help: '记录尾款催收、客户确认、付款凭证和异常处理过程。',
-            })}
         </div>
     `;
+    if (!includeCommunication) return detailMarkup;
+    return `${detailMarkup}${stageCommunicationSectionMarkup(stage.key, record, communication)}`;
 }
 
-function shippingStageMarkup(stage = {}, deal = null, record = {}) {
-    return `
+function shippingStageMarkup(stage = {}, deal = null, record = {}, options = {}) {
+    const { includeCommunication = true } = options;
+    const communication = stageCommunicationConfig(stage.key);
+    const detailMarkup = `
         <div class="ams-stage-detail-stack">
             ${executionStageCardMarkup(stage, {
                 intro: '记录承运商、运单号和到货预估，并保留发运通知客户的方式。物流确认后进入到场部署。',
@@ -13348,16 +13525,16 @@ function shippingStageMarkup(stage = {}, deal = null, record = {}) {
                     })}
                 `,
             })}
-            ${stageCommunicationSectionMarkup(stage.key, record, {
-                title: '物流沟通记录',
-                help: '记录发运通知、运输异常、清关问题和预计到场协调。',
-            })}
         </div>
     `;
+    if (!includeCommunication) return detailMarkup;
+    return `${detailMarkup}${stageCommunicationSectionMarkup(stage.key, record, communication)}`;
 }
 
-function deploymentStageMarkup(stage = {}, deal = null, record = {}) {
-    return `
+function deploymentStageMarkup(stage = {}, deal = null, record = {}, options = {}) {
+    const { includeCommunication = true } = options;
+    const communication = stageCommunicationConfig(stage.key);
+    const detailMarkup = `
         <div class="ams-stage-detail-stack">
             ${executionStageCardMarkup(stage, {
                 intro: '跟踪现场条件、部署时间和部署结论。部署完成后进入运维支持。',
@@ -13375,16 +13552,16 @@ function deploymentStageMarkup(stage = {}, deal = null, record = {}) {
                     })}
                 `,
             })}
-            ${stageCommunicationSectionMarkup(stage.key, record, {
-                title: '部署沟通记录',
-                help: '记录现场准备、部署窗口、客户反馈和上线后的遗留问题。',
-            })}
         </div>
     `;
+    if (!includeCommunication) return detailMarkup;
+    return `${detailMarkup}${stageCommunicationSectionMarkup(stage.key, record, communication)}`;
 }
 
-function supportStageMarkup(stage = {}, deal = null, record = {}) {
-    return `
+function supportStageMarkup(stage = {}, deal = null, record = {}, options = {}) {
+    const { includeCommunication = true } = options;
+    const communication = stageCommunicationConfig(stage.key);
+    const detailMarkup = `
         <div class="ams-stage-detail-stack">
             ${executionStageCardMarkup(stage, {
                 intro: '进入长期运维支持阶段，记录质保到期、支持负责人和客户服务渠道。完成后整条销售线可结案。',
@@ -13402,12 +13579,10 @@ function supportStageMarkup(stage = {}, deal = null, record = {}) {
                     })}
                 `,
             })}
-            ${stageCommunicationSectionMarkup(stage.key, record, {
-                title: '运维沟通记录',
-                help: '记录售后沟通、质保范围、问题回访和最终结案依据。',
-            })}
         </div>
     `;
+    if (!includeCommunication) return detailMarkup;
+    return `${detailMarkup}${stageCommunicationSectionMarkup(stage.key, record, communication)}`;
 }
 
 function executionStageRecord(stage = {}, deal = null) {
@@ -13464,11 +13639,13 @@ function executionStageCardMarkup(stage = {}, options = {}) {
     `;
 }
 
-function executionStageFlowMarkup(stage = {}, deal = null) {
+function executionStageFlowMarkup(stage = {}, deal = null, options = {}) {
+    const { includeCommunication = true } = options;
     const record = executionStageRecord(stage, deal);
     const renderer = executionStageRenderer(stage);
-    if (renderer) return renderer(stage, deal, record);
-    return `
+    if (renderer) return renderer(stage, deal, record, { includeCommunication });
+    const communication = stageCommunicationConfig(stage.key);
+    const detailMarkup = `
         <div class="ams-stage-detail-stack">
             ${executionStageCardMarkup(stage, {
                 intro: `当前页面只处理 ${esc(stage.label)} 节点内容，不混放其他阶段入口。`,
@@ -13490,9 +13667,10 @@ function executionStageFlowMarkup(stage = {}, deal = null) {
                     </div>
                 `,
             })}
-            ${stageCommunicationSectionMarkup(stage.key, record)}
         </div>
     `;
+    if (!includeCommunication) return detailMarkup;
+    return `${detailMarkup}${stageCommunicationSectionMarkup(stage.key, record, communication)}`;
 }
 
 function salesStageDetailRenderer(stage = {}) {
@@ -13501,15 +13679,41 @@ function salesStageDetailRenderer(stage = {}) {
         return (deal, customer, input) => customerProfileFlowMarkup(customer, customerFlowDeals(customer.id, input), deal);
     }
     if (stage.scope === 'requirement') {
-        return (deal) => requirementFlowMarkup(key, deal, moduleState.requirementEditor || createRequirementDraft());
+        return (deal) => requirementFlowMarkup(key, deal, moduleState.requirementEditor || createRequirementDraft(), {
+            includeCommunication: true,
+        });
     }
     if (stage.scope === 'quote') {
-        return (deal) => quoteFlowMarkup(key, deal, moduleState.instanceEditor || createInstanceDraft());
+        return (deal) => quoteFlowMarkup(key, deal, moduleState.instanceEditor || createInstanceDraft(), {
+            includeCommunication: true,
+        });
     }
-    return (deal) => executionStageFlowMarkup(stage, deal);
+    return (deal) => executionStageFlowMarkup(stage, deal, {
+        includeCommunication: true,
+    });
 }
 
-function salesStageContactsCardMarkup(stageKey = '', deal = null) {
+function salesStageDetailContentRenderer(stage = {}) {
+    const key = normalizeDealStageKey(stage.key);
+    if (key === 'customer_profile') {
+        return (deal, customer, input) => customerProfileFlowMarkup(customer, customerFlowDeals(customer.id, input), deal);
+    }
+    if (stage.scope === 'requirement') {
+        return (deal) => requirementFlowMarkup(key, deal, moduleState.requirementEditor || createRequirementDraft(), {
+            includeCommunication: false,
+        });
+    }
+    if (stage.scope === 'quote') {
+        return (deal) => quoteFlowMarkup(key, deal, moduleState.instanceEditor || createInstanceDraft(), {
+            includeCommunication: false,
+        });
+    }
+    return (deal) => executionStageFlowMarkup(stage, deal, {
+        includeCommunication: false,
+    });
+}
+
+function salesStageContactsSectionMarkup(stageKey = '', deal = null, options = {}) {
     if (!deal?.id) return '';
     const record = stageRecordByKey(stageKey, moduleState.dealStageRecords) || createDealStageRecord({
         deal_id: deal.id,
@@ -13517,6 +13721,21 @@ function salesStageContactsCardMarkup(stageKey = '', deal = null) {
         owner_name: deal.owner_name,
         owner_email: deal.owner_email,
     });
+    if (options.embedded === true) {
+        return `
+            <section class="ams-card ams-quote-editor-panel ams-instance-editor-panel ams-sales-flow-section-card">
+                <div class="ams-sales-flow-section-head">
+                    <span>节点责任</span>
+                    <strong>节点责任人</strong>
+                    <p>把当前节点的售前与售后负责人并在这里统一维护，不再单独放到底部独立区块。</p>
+                </div>
+                ${stageContactFieldsMarkup(stageKey, record)}
+                <div class="ams-row-actions">
+                    <button class="ams-btn ams-btn-muted" type="button" id="ams-sales-stage-contacts-save">保存双负责人</button>
+                </div>
+            </section>
+        `;
+    }
     return `
         <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold">
             <summary class="ams-fold-summary">
@@ -13534,16 +13753,193 @@ function salesStageContactsCardMarkup(stageKey = '', deal = null) {
     `;
 }
 
+function salesStageContactsCardMarkup(stageKey = '', deal = null) {
+    return salesStageContactsSectionMarkup(stageKey, deal);
+}
+
 function salesStageDetailMarkup(stageKey = '', deal = null, customer = {}, input = null) {
     const stage = dealStageDefinition(stageKey);
     if (!deal?.id && stage.key !== 'customer_profile') {
         return '<section class="ams-card"><div class="ams-empty">当前阶段还没有可处理的销售线。</div></section>';
     }
     const mainMarkup = salesStageDetailRenderer(stage)(deal, customer, input);
+    return salesStageShellMarkup(stage, deal, customer, mainMarkup);
+}
+
+function salesFlowDetailTabOptions() {
+    return [
+        {
+            key: 'communication',
+            label: '沟通记录',
+            hint: '公开评论 / 回复',
+        },
+        {
+            key: 'details',
+            label: '节点详情',
+            hint: '表单 / 双负责人',
+        },
+        {
+            key: 'history',
+            label: '全部历史与轨迹',
+            hint: '系统 / 客户 / 销售',
+        },
+        {
+            key: 'customer',
+            label: '用户信息',
+            hint: '客户 / 联系方式 / 双负责人',
+        },
+    ];
+}
+
+function salesCustomerFlowPanelSummary(stageKey = '', deal = null, customer = {}) {
+    const stageRecord = stageRecordByKey(stageKey, moduleState.dealStageRecords) || {};
+    const orderNumber = numericDealOrderNumber(deal);
+    const customerLabel = flowCustomerLabel(customer, deal);
+    const stageStatus = deal?.id
+        ? dealStageStatusLabel(text(stageRecord.stage_status, normalizeDealStageKey(deal.current_stage) === normalizeDealStageKey(stageKey) ? 'active' : 'pending'))
+        : '待创建';
+    const pipelineStatus = deal?.id
+        ? `${dealStatusLabel(deal.deal_status)} · ${dealStageLabel(text(deal.current_stage, stageKey))}`
+        : '当前客户还没有独立销售流程';
     return `
-        ${salesStageShellMarkup(stage, deal, customer, mainMarkup)}
-        ${salesStageContactsCardMarkup(stage.key, deal)}
+        <div class="ams-sales-flow-panel-meta">
+            <span class="ams-summary-chip"><strong>客户</strong><span>${esc(customerLabel)}</span></span>
+            <span class="ams-summary-chip"><strong>当前节点</strong><span>${esc(dealStageLabel(stageKey))}</span></span>
+            <span class="ams-summary-chip"><strong>节点状态</strong><span>${esc(stageStatus)}</span></span>
+            <span class="ams-summary-chip"><strong>流程状态</strong><span>${esc(pipelineStatus)}</span></span>
+            ${orderNumber ? `<span class="ams-summary-chip"><strong>订单号</strong><span>${esc(orderNumber)}</span></span>` : ''}
+        </div>
     `;
+}
+
+function salesCustomerFlowTabsMarkup(activeTab = 'communication') {
+    return `
+        <div class="ams-sales-flow-tabbar" role="tablist" aria-label="节点详情视图">
+            ${salesFlowDetailTabOptions().map((tab) => `
+                <button
+                    class="ams-sales-flow-tab ${activeTab === tab.key ? 'is-active' : ''}"
+                    type="button"
+                    role="tab"
+                    aria-selected="${activeTab === tab.key ? 'true' : 'false'}"
+                    data-sales-flow-detail-tab="${esc(tab.key)}"
+                >
+                    <strong>${esc(tab.label)}</strong>
+                    <span>${esc(tab.hint)}</span>
+                </button>
+            `).join('')}
+        </div>
+    `;
+}
+
+function salesCustomerFlowCommunicationMarkup(stageKey = '', deal = null, customer = {}) {
+    const communication = stageCommunicationConfig(stageKey);
+    if (!deal?.id) {
+        return `
+            <section class="ams-card ams-stage-log-card ams-stage-comments-card is-docked">
+                <div class="ams-section-head">
+                    <div>
+                        <h3>沟通记录</h3>
+                        <p>当前节点会默认聚焦在这里，但客户主档还没有生成独立销售流程时，只展示入口说明，不写入公开评论。</p>
+                    </div>
+                    <span class="ams-stage-comments-count">等待销售流程</span>
+                </div>
+                <div class="ams-stage-comments-body">
+                    <div class="ams-stage-current-comments">
+                        <div class="ams-stage-current-comments-head">
+                            <strong>${esc(`${dealStageLabel(stageKey)} · 当前节点`)}</strong>
+                            <span>${esc(customerDisplayName(customer || {}))}</span>
+                        </div>
+                        <div class="ams-empty">先在“节点详情”里保存客户档案并生成销售流程，再从这里开始客户与销售共享的公开沟通记录。</div>
+                    </div>
+                    <details class="ams-fold-card ams-stage-module-fold" open>
+                        <summary class="ams-fold-summary">
+                            <span>全部节点沟通回顾</span>
+                            <em>暂无销售流程</em>
+                        </summary>
+                        <div class="ams-fold-body">
+                            <div class="ams-empty">当前还没有历史节点沟通可回顾。</div>
+                        </div>
+                    </details>
+                </div>
+            </section>
+        `;
+    }
+    const stageRecord = stageRecordByKey(stageKey, moduleState.dealStageRecords) || createDealStageRecord({
+        deal_id: deal.id,
+        stage_key: stageKey,
+        stage_status: normalizeDealStageKey(deal.current_stage) === normalizeDealStageKey(stageKey) ? 'active' : 'pending',
+        owner_name: deal.owner_name,
+        owner_email: deal.owner_email,
+    });
+    return stageCommunicationSectionMarkup(stageKey, stageRecord, {
+        title: '沟通记录',
+        help: `当前节点：${dealStageLabel(stageKey)}。${communication.help}`,
+        deal,
+        requirement: moduleState.requirementEditor || requirementById(text(deal.primary_requirement_id)) || {},
+        replyToId: text(moduleState.salesFlowReplyToId),
+        dockedComposer: true,
+    });
+}
+
+function salesCustomerFlowDetailsMarkup(stageKey = '', deal = null, customer = {}, input = null) {
+    const stage = dealStageDefinition(stageKey);
+    const detailMarkup = salesStageDetailContentRenderer(stage)(deal, customer, input);
+    const contactsMarkup = stage.key === 'customer_profile'
+        ? ''
+        : salesStageContactsSectionMarkup(stage.key, deal, { embedded: true });
+    return `
+        <div class="ams-sales-flow-tab-stack">
+            ${detailMarkup}
+            ${contactsMarkup}
+        </div>
+    `;
+}
+
+function salesCustomerFlowHistoryMarkup(customerId = '') {
+    return customerActivityTimelinePanelMarkup(customerId, { embedded: true });
+}
+
+function salesCustomerFlowCustomerMarkup(stageKey = '', deal = null, customer = {}) {
+    return salesStageCustomerSectionMarkup(stageKey, deal, customer);
+}
+
+function salesCustomerFlowDetailMarkup(stageKey = '', deal = null, customer = {}, customerId = '', input = null) {
+    const stage = dealStageDefinition(stageKey);
+    const activeTab = normalizeSalesFlowDetailTab(moduleState.salesFlowDetailTab);
+    const orderNumber = numericDealOrderNumber(deal);
+    const panels = {
+        communication: salesCustomerFlowCommunicationMarkup(stage.key, deal, customer),
+        details: salesCustomerFlowDetailsMarkup(stage.key, deal, customer, input),
+        history: salesCustomerFlowHistoryMarkup(customerId),
+        customer: salesCustomerFlowCustomerMarkup(stage.key, deal, customer),
+    };
+    const mainMarkup = `
+        <section class="ams-card ams-sales-flow-detail-panel" data-sales-flow-detail-root="${esc(stage.key)}">
+            <div class="ams-sales-flow-panel-head">
+                <div>
+                    <span class="ams-sales-flow-panel-kicker">独立客户流水线</span>
+                    <h2>${esc(stage.label)}</h2>
+                    <p>围绕单个客户统一处理公开沟通、节点表单和历史轨迹，避免重复说明与分散区块。</p>
+                </div>
+                ${orderNumber ? `<span class="ams-sales-flow-panel-order">订单号 ${esc(orderNumber)}</span>` : ''}
+            </div>
+            ${salesCustomerFlowPanelSummary(stage.key, deal, customer)}
+            ${salesCustomerFlowTabsMarkup(activeTab)}
+            ${Object.entries(panels).map(([tabKey, panelMarkup]) => `
+                <div
+                    class="ams-sales-flow-tab-panel ${activeTab === tabKey ? 'is-active' : ''}"
+                    data-sales-flow-tab-panel="${esc(tabKey)}"
+                    ${activeTab === tabKey ? `data-sales-flow-active-tab="${esc(tabKey)}"` : 'hidden'}
+                >
+                    ${panelMarkup}
+                </div>
+            `).join('')}
+        </section>
+    `;
+    return salesStageShellMarkup(stage, deal, customer, mainMarkup, {
+        detailMode: true,
+        prioritizeOperations: true,
+    });
 }
 
 function flowCustomerLabel(customer = {}, deal = null) {
@@ -13993,18 +14389,81 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
 }
 
 function bindSalesStageCommentActions(input, stageKey = '') {
+    const syncStageCommentReplyUi = () => {
+        const replyId = text(moduleState.salesFlowReplyToId);
+        const replyTarget = communicationReplyTarget(replyId, stageKey, moduleState.dealEditor, moduleState.requirementEditor);
+        const composer = document.querySelector('[data-stage-comment-composer]');
+        const inputNode = document.querySelector('[data-stage-comment-input]');
+        const submitButton = document.querySelector('[data-stage-comment-submit]');
+        if (submitButton instanceof HTMLElement) {
+            submitButton.dataset.stageCommentReplyTo = replyId;
+        }
+        if (inputNode instanceof HTMLTextAreaElement) {
+            inputNode.placeholder = replyTarget
+                ? '输入回复内容...'
+                : `在「${dealStageLabel(stageKey)}」节点留言，客户和销售会看到同一条公开对话。`;
+        }
+        if (composer instanceof HTMLElement) {
+            let banner = composer.querySelector('[data-stage-comment-reply-banner]');
+            if (replyTarget) {
+                if (!(banner instanceof HTMLElement)) {
+                    banner = document.createElement('div');
+                    banner.className = 'ams-comment-reply-banner';
+                    banner.setAttribute('data-stage-comment-reply-banner', 'true');
+                    banner.innerHTML = `
+                        <div>
+                            <span data-stage-comment-reply-label="true"></span>
+                            <strong data-stage-comment-reply-preview="true"></strong>
+                        </div>
+                        <button class="ams-btn ams-btn-muted" type="button" data-stage-comment-reply-cancel="true">取消</button>
+                    `;
+                    composer.insertBefore(banner, composer.firstElementChild || null);
+                    banner.querySelector('[data-stage-comment-reply-cancel]')?.addEventListener('click', async () => {
+                        moduleState.salesFlowReplyToId = '';
+                        syncStageCommentReplyUi();
+                    });
+                }
+                const label = banner.querySelector('[data-stage-comment-reply-label]');
+                const preview = banner.querySelector('[data-stage-comment-reply-preview]');
+                if (label) label.textContent = `正在回复 ${text(replyTarget.actor_label, '上一条沟通')}`;
+                if (preview) preview.textContent = communicationPreviewText(replyTarget);
+            } else if (banner instanceof HTMLElement) {
+                banner.remove();
+            }
+        }
+        document.querySelectorAll('[data-stage-comment-reply]').forEach((button) => {
+            const isActive = text(button.dataset.stageCommentReply) === replyId;
+            button.textContent = isActive ? '取消回复' : '回复';
+            button.classList.toggle('ams-btn-primary', isActive);
+            button.classList.toggle('ams-btn-muted', !isActive);
+        });
+    };
+
     document.querySelectorAll('[data-stage-comment-reply]').forEach((button) => {
-        button.addEventListener('click', async () => {
+        button.addEventListener('click', () => {
             const targetId = text(button.dataset.stageCommentReply);
             moduleState.salesFlowReplyToId = moduleState.salesFlowReplyToId === targetId ? '' : targetId;
-            await input.rerender();
+            syncStageCommentReplyUi();
             document.getElementById('ams-stage-comment-input')?.focus();
         });
     });
 
-    document.querySelector('[data-stage-comment-reply-cancel]')?.addEventListener('click', async () => {
+    document.querySelector('[data-stage-comment-reply-cancel]')?.addEventListener('click', () => {
         moduleState.salesFlowReplyToId = '';
-        await input.rerender();
+        syncStageCommentReplyUi();
+    });
+
+    document.querySelectorAll('[data-stage-comment-focus]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const targetId = text(button.dataset.stageCommentFocus);
+            if (!targetId) return;
+            const node = document.querySelector(`[data-stage-comment-id="${targetId}"]`);
+            if (!(node instanceof HTMLElement)) return;
+            document.querySelectorAll('.ams-comment-thread.is-focused').forEach((entry) => entry.classList.remove('is-focused'));
+            node.classList.add('is-focused');
+            node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            window.setTimeout(() => node.classList.remove('is-focused'), 1800);
+        });
     });
 
     document.getElementById('ams-sales-flow-stage-comment-submit')?.addEventListener('click', async (event) => {
@@ -14032,6 +14491,8 @@ function bindSalesStageCommentActions(input, stageKey = '') {
             await input.rerender();
         });
     });
+
+    syncStageCommentReplyUi();
 }
 
 function bindSalesExecutionActions(input, stageKey = '', customerId = '', customerFlow = false) {
@@ -14105,6 +14566,35 @@ function bindSalesExecutionActions(input, stageKey = '', customerId = '', custom
 function bindSalesStageListActions(input, stageKey = '', customerId = '', customerFlow = false) {
     const content = document.getElementById('ams-content');
     if (content) hydrateCustomSelects(content);
+
+    document.querySelectorAll('[data-sales-flow-detail-tab]').forEach((button) => {
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            const nextTab = normalizeSalesFlowDetailTab(button.dataset.salesFlowDetailTab);
+            if (moduleState.salesFlowDetailTab === nextTab) return;
+            moduleState.salesFlowDetailTab = nextTab;
+            if (customerFlow) {
+                document.querySelectorAll('[data-sales-flow-detail-tab]').forEach((tabButton) => {
+                    const selected = normalizeSalesFlowDetailTab(tabButton.dataset.salesFlowDetailTab) === nextTab;
+                    tabButton.classList.toggle('is-active', selected);
+                    tabButton.setAttribute('aria-selected', selected ? 'true' : 'false');
+                });
+                document.querySelectorAll('[data-sales-flow-tab-panel]').forEach((panel) => {
+                    const active = text(panel.dataset.salesFlowTabPanel) === nextTab;
+                    panel.classList.toggle('is-active', active);
+                    if (active) {
+                        panel.removeAttribute('hidden');
+                        panel.setAttribute('data-sales-flow-active-tab', nextTab);
+                    } else {
+                        panel.setAttribute('hidden', 'hidden');
+                        panel.removeAttribute('data-sales-flow-active-tab');
+                    }
+                });
+                return;
+            }
+            void input.rerender();
+        });
+    });
 
     document.getElementById('ams-sales-stage-search')?.addEventListener('input', (event) => {
         moduleState.dealSearch = event.currentTarget.value || '';
@@ -14265,7 +14755,10 @@ export async function renderQuotePipelinePage(input) {
                     ${stageDeals.length ? stageDeals.map((deal) => pipelineListCardMarkup(stageKey, deal, { selectedDealId: activeDeal?.id })).join('') : '<div class="ams-empty">当前阶段没有待处理销售线。</div>'}
                 </div>
             </aside>
-            ${salesStageDetailMarkup(stageKey, activeDeal, moduleState.customerEditor || createCustomerDraft(), input)}
+            <div class="ams-sales-flow-detail-stack">
+                ${salesStageDetailMarkup(stageKey, activeDeal, moduleState.customerEditor || createCustomerDraft(), input)}
+                ${salesStageContactsCardMarkup(stageKey, activeDeal)}
+            </div>
         </section>
     `, {
         deal: null,
@@ -14373,6 +14866,13 @@ export async function renderQuoteCustomerFlowPage(input) {
     }
     moduleState.dealEditor = syncedActiveDeal ? createDealDraft(moduleState.dealEditor || syncedActiveDeal) : createDealDraft();
     moduleState.dealStageRecords = syncedActiveDeal ? dealCurrentRecords(moduleState.dealEditor) : [];
+    const nextDetailViewKey = [customerId, text(syncedActiveDeal?.id), stageKey].join(':');
+    if (moduleState.salesFlowDetailViewKey !== nextDetailViewKey) {
+        moduleState.salesFlowDetailViewKey = nextDetailViewKey;
+        moduleState.salesFlowDetailTab = 'communication';
+        moduleState.salesFlowReplyToId = '';
+        moduleState.customerActivityFilter = DEFAULT_CUSTOMER_ACTIVITY_FILTER;
+    }
     const customerLabel = flowCustomerLabel(moduleState.customerEditor || {}, syncedActiveDeal);
     await appendSalesActivity({
         customer_id: customerId,
@@ -14399,10 +14899,7 @@ export async function renderQuoteCustomerFlowPage(input) {
     const stageLabel = dealStageLabel(stageKey);
     renderSalesPageFrame(input, `独立客户流水线 · ${stageLabel}`, `客户模式：${customerLabel} · 围绕单个客户回看已完成节点，并继续推进当前节点。`, `
         <section class="ams-quote-layout ams-sales-stage-layout ams-quote-layout-single">
-            <div class="ams-sales-flow-detail-stack">
-                ${salesStageDetailMarkup(stageKey, syncedActiveDeal, moduleState.customerEditor || createCustomerDraft(), input)}
-                ${customerActivityTimelinePanelMarkup(customerId)}
-            </div>
+            ${salesCustomerFlowDetailMarkup(stageKey, syncedActiveDeal, moduleState.customerEditor || createCustomerDraft(), customerId, input)}
         </section>
     `, {
         deal: syncedActiveDeal,
@@ -14595,54 +15092,6 @@ export async function renderQuoteSalesDashboardPage(input) {
                     </div>
                 </div>
             </article>
-        </section>
-        <section class="ams-card ams-dashboard-stage-panel">
-            <div class="ams-section-head">
-                <div>
-                    <span class="ams-section-kicker">Pipeline guide</span>
-                    <h3>销售推进池</h3>
-                    <p>先用这里判断当前流程位于哪一段，再点击进入对应阶段页处理。</p>
-                </div>
-            </div>
-            <div class="ams-sales-stage-guide">
-                ${salesOverviewStageGuideLanes().map((lane) => `
-                    <article class="ams-sales-stage-guide-lane">
-                        <div class="ams-sales-stage-guide-head">
-                            <div>
-                                <div class="ams-sales-stage-guide-title">
-                                    <span class="ams-sales-stage-guide-phase">${esc(lane.phase)}</span>
-                                    <strong>${esc(lane.title)}</strong>
-                                </div>
-                                <p>${esc(lane.summary)}</p>
-                            </div>
-                            <span class="ams-sales-stage-guide-range">${esc(`${stageOrderIndex(lane.stages[0].key) + 1}-${stageOrderIndex(lane.stages[lane.stages.length - 1].key) + 1}`)}</span>
-                        </div>
-                        <div class="ams-sales-stage-guide-track">
-                            ${lane.stages.map((stage, stageIndex) => {
-                                const count = salesStageCount(stage.key, input);
-                                const countUnit = stage.key === 'customer_profile' ? '个客户' : '条销售线';
-                                const countTone = count <= 0 ? 'is-empty' : count === 1 ? 'is-warm' : 'is-hot';
-                                const countIcon = count <= 0
-                                    ? 'fa-circle-minus'
-                                    : count === 1
-                                        ? 'fa-briefcase'
-                                        : 'fa-chart-line';
-                                return `
-                                <a class="ams-sales-stage-guide-card ${countTone} ${stageHasUnreadActivity(stage.key) ? 'has-activity-dot' : ''}" href="${esc(stage.key === 'customer_profile' ? adminPageUrl('quote-customers') : adminPageUrl('quote-pipeline', { stage: stage.key }))}">
-                                    ${stageHasUnreadActivity(stage.key) ? '<span class="ams-activity-dot" aria-hidden="true"></span>' : ''}
-                                    <span class="ams-sales-stage-guide-index">${esc(stageOrderIndex(stage.key) + 1)}</span>
-                                    <div class="ams-sales-stage-guide-copy">
-                                        <strong>${esc(stage.label)}</strong>
-                                        <span class="ams-sales-stage-guide-metric ${countTone}"><em><i class="fa-solid ${countIcon}" aria-hidden="true"></i></em>${esc(`${count} ${countUnit}`)}</span>
-                                    </div>
-                                </a>
-                                ${stageIndex < lane.stages.length - 1 ? '<span class="ams-sales-stage-guide-sep" aria-hidden="true"></span>' : ''}
-                            `;
-                            }).join('')}
-                        </div>
-                    </article>
-                `).join('')}
-            </div>
         </section>
         <section class="ams-card ams-dashboard-todo-panel">
             <div class="ams-section-head">

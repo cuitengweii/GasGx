@@ -258,6 +258,34 @@
   - `D:\code\GasGx\quote\requirement.html`
 - Account center may show status, instructions, and the public-link launcher, but it must not ask the customer to fill a second copy of the same requirement once sales has already issued the dedicated link.
 
+### Decision 31: Customer-flow detail pages use a fixed four-tab main panel and an actions-only side rail
+
+- The sales admin `quote-customer-flow` detail shell is now fixed to four main-panel tabs:
+  - `沟通记录`
+  - `节点详情`
+  - `全部历史与轨迹`
+  - `用户信息`
+- The right side rail for this shell should contain `操作区` only.
+- `状态区` and `用户信息区` should not reappear in the right rail for customer-flow detail pages.
+
+Reason:
+
+- Operators read the page left-to-right around one customer and one active node.
+- Customer context is reference information, not a higher-priority action block than the node discussion and node form.
+- Keeping only actions on the right rail reduces duplicated summaries and stabilizes the page reading order.
+
+### Decision 32: Customer-flow tab switching and reply-state entry should be local UI state, not full-shell rerender
+
+- Switching between customer-flow detail tabs must stay on the same URL and update only local panel visibility.
+- Entering or cancelling comment reply state should update the communication panel in place.
+- Full rerender remains acceptable after server-mutating actions such as successful comment submit, save, or stage transition, but not for simple local navigation state.
+
+Reason:
+
+- Full rerender for local state made the shell feel like a page refresh and increased interaction jitter.
+- The customer-side discussion panel already established the expected interaction model for comment focus, reply entry, and tab-like navigation.
+- Local-only state updates reduce regression risk in unrelated side cards and improve perceived stability.
+
 ### Decision 31: Public requirement and confirmation links must remain on standalone pages
 
 - Opening a customer requirement link must keep the browser on `/quote/requirement.html?...`
