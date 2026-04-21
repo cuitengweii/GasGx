@@ -7303,6 +7303,16 @@ function customerPrimaryFlowTarget(customerId = '') {
     return customerFlowStageUrl(deal.current_stage, deal, customerId);
 }
 
+function customerWorkbenchUrl(customerId = '') {
+    const deal = customerActivePipelineDeals(customerId)[0] || customerDeals(customerId)[0] || null;
+    if (!deal?.id) return '';
+    const url = new URL('/article_management/sales/sales-work.html', window.location.origin);
+    url.searchParams.set('customer', text(customerId || deal.customer_id));
+    url.searchParams.set('deal', text(deal.id));
+    url.searchParams.set('stage', text(deal.current_stage, 'requirement_capture'));
+    return url.toString();
+}
+
 function customerPrimaryDeal(customerId = '') {
     return customerActivePipelineDeals(customerId)[0] || customerDeals(customerId)[0] || null;
 }
@@ -7382,6 +7392,29 @@ async function ensureCustomerRequirementFlow(user, customer) {
     };
 }
 
+function customerWorkbenchModalMarkup() {
+    return `
+        <div class="ams-workbench-modal" id="ams-customer-workbench-modal" hidden>
+            <div class="ams-workbench-modal-backdrop" data-customer-workbench-close></div>
+            <div class="ams-workbench-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="ams-customer-workbench-title">
+                <div class="ams-workbench-modal-head">
+                    <div>
+                        <strong id="ams-customer-workbench-title">销售工作台</strong>
+                        <span id="ams-customer-workbench-subtitle">在当前页内查看这个客户的工作台。</span>
+                    </div>
+                    <div class="ams-row-actions">
+                        <a class="ams-btn ams-btn-muted" id="ams-customer-workbench-open-new" href="#" target="_blank" rel="noopener">新标签打开</a>
+                        <button class="ams-btn ams-btn-muted" type="button" data-customer-workbench-close>关闭</button>
+                    </div>
+                </div>
+                <div class="ams-workbench-modal-frame-shell">
+                    <iframe class="ams-workbench-modal-frame" id="ams-customer-workbench-frame" title="销售工作台"></iframe>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function salesCustomerStageStripMarkup(customerId = '', input = null, stageScope = 'customer_profile') {
     const normalizedScope = normalizeDealStageKey(stageScope || 'customer_profile');
     const stageCounts = customerStageCounts(customerId, input, normalizedScope);
@@ -7442,6 +7475,7 @@ function renderSalesCustomerArchiveList(input = null) {
                 const scopedStage = listMode === 'active' ? stageFilter : 'customer_profile';
                 const deals = customerVisibleStageDeals(customer.id, scopedInput, scopedStage);
                 const primaryDeal = customerPrimaryDeal(customer.id);
+                const workbenchUrl = customerWorkbenchUrl(customer.id);
                 const quoteSummary = summarizeCustomerQuotes(customer.id);
                 const requirementSummary = summarizeCustomerRequirements(customer.id);
                 const notePreview = text(customer.notes).replace(/\s+/g, ' ').trim();
@@ -7469,6 +7503,9 @@ function renderSalesCustomerArchiveList(input = null) {
                                     </div>
                                 </details>
                                 <div class="ams-sales-customer-card-actions">
+                                  ${workbenchUrl
+                                    ? `<button class="ams-btn ams-btn-primary" type="button" data-customer-workbench="${esc(customer.id)}">工作台</button>`
+                                    : '<button class="ams-btn ams-btn-primary" type="button" disabled>工作台</button>'}
                                   ${customer.is_deleted
                                     ? `<button class="ams-btn ams-btn-muted" type="button" data-customer-restore="${esc(customer.id)}">恢复</button>`
                                     : customer.is_active === false
@@ -9717,6 +9754,15 @@ function bindCustomerEditor(input) {
     const closeGraphModal = () => {
         if (graphModal) graphModal.hidden = true;
     };
+    const workbenchModal = document.getElementById('ams-customer-workbench-modal');
+    const workbenchFrame = document.getElementById('ams-customer-workbench-frame');
+    const workbenchOpenNew = document.getElementById('ams-customer-workbench-open-new');
+    const workbenchSubtitle = document.getElementById('ams-customer-workbench-subtitle');
+    const closeWorkbenchModal = () => {
+        if (workbenchModal) workbenchModal.hidden = true;
+        if (workbenchFrame) workbenchFrame.removeAttribute('src');
+        if (workbenchOpenNew) workbenchOpenNew.setAttribute('href', '#');
+    };
 
     document.getElementById('ams-customer-graph-open')?.addEventListener('click', () => {
         if (graphModal) graphModal.hidden = false;
@@ -9724,6 +9770,30 @@ function bindCustomerEditor(input) {
 
     content.querySelectorAll('[data-customer-graph-close]').forEach((button) => {
         button.addEventListener('click', closeGraphModal);
+    });
+
+    content.querySelectorAll('[data-customer-workbench-close]').forEach((button) => {
+        button.addEventListener('click', closeWorkbenchModal);
+    });
+
+    document.querySelectorAll('[data-customer-workbench]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const customerId = text(button.dataset.customerWorkbench);
+            const workbenchUrl = customerWorkbenchUrl(customerId);
+            if (!workbenchUrl) {
+                input.showToast('当前客户还没有可打开的工作台。', true);
+                return;
+            }
+            const deal = customerPrimaryDeal(customerId);
+            if (workbenchOpenNew) workbenchOpenNew.setAttribute('href', workbenchUrl);
+            if (workbenchSubtitle) {
+                workbenchSubtitle.textContent = deal?.id
+                    ? `${customerDisplayName(moduleState.customers.find((item) => item.id === customerId) || {})} · ${text(deal.title, deal.id)}`
+                    : '在当前页内查看这个客户的工作台。';
+            }
+            if (workbenchFrame) workbenchFrame.setAttribute('src', workbenchUrl);
+            if (workbenchModal) workbenchModal.hidden = false;
+        });
     });
 
     const switchCustomerListMode = (mode) => {
@@ -11263,6 +11333,7 @@ export async function renderQuoteCustomersPage(input) {
         </section>
         ` : ''}
         ${salesConsole ? '' : customerRelationshipGraphMarkup(activeCustomerId)}
+        ${salesConsole ? customerWorkbenchModalMarkup() : ''}
     `, {
         deal: salesConsole ? null : currentDeal,
         currentStage: currentSalesStageParam('customer_profile'),

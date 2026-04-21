@@ -6568,6 +6568,79 @@ textarea {
     line-height: 1.5;
 }
 
+.ams-workbench-modal[hidden] {
+    display: none;
+}
+
+.ams-workbench-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 230;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.ams-workbench-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.74);
+    backdrop-filter: blur(6px);
+}
+
+.ams-workbench-modal-dialog {
+    position: relative;
+    width: min(1440px, calc(100vw - 28px));
+    height: min(920px, calc(100vh - 28px));
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 18px;
+    border-radius: 24px;
+    border: 1px solid rgba(101, 219, 53, 0.22);
+    background:
+        linear-gradient(180deg, rgba(18, 22, 18, 0.98), rgba(10, 12, 10, 0.99)),
+        radial-gradient(circle at top right, rgba(101, 219, 53, 0.08), transparent 42%);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.42);
+}
+
+.ams-workbench-modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.ams-workbench-modal-head strong {
+    display: block;
+    color: #fff;
+    font-size: 20px;
+    margin-bottom: 6px;
+}
+
+.ams-workbench-modal-head span {
+    color: #9a9a9a;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.ams-workbench-modal-frame-shell {
+    flex: 1;
+    min-height: 0;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.ams-workbench-modal-frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #0c0e0c;
+}
+
 .ams-field-help.is-error {
     color: #ff8f8f;
 }

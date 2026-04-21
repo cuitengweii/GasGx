@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GasGx Sales Workbench</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 999px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(132, 204, 22, 0.35); }
+    @media (max-width: 640px) {
+      .xs\:inline { display: none; }
+    }
+  </style>
+</head>
+<body class="bg-[#0c0e0c] text-white font-sans overflow-hidden select-none relative">
+  <div class="flex h-screen relative">
+    <aside id="left-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#141614] border-r border-white/10 transition-transform duration-300 transform -translate-x-full lg:relative lg:translate-x-0">
+      <div class="p-4 border-b border-white/5 bg-[#0c0e0c] flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded bg-lime-500 flex items-center justify-center text-black font-bold">
+            <i data-lucide="clipboard-check" class="w-[18px] h-[18px]"></i>
+          </div>
+          <div>
+            <div class="text-[11px] font-bold text-lime-400 tracking-tight">销售工作台</div>
+            <div class="text-[9px] text-white/30 font-mono italic">Sales Pipeline Workbench</div>
+          </div>
+        </div>
+        <button class="lg:hidden p-1 text-white/20 hover:text-white" onclick="toggleLeftSidebar(false)">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-4 border-b border-white/5">
+        <input id="node-search-input" type="text" placeholder="搜索阶段..." class="w-full bg-white/5 border border-white/10 rounded-md py-1.5 px-3 text-[11px] focus:outline-none focus:border-lime-500/50">
+      </div>
+
+      <div id="node-list" class="flex-1 overflow-y-auto py-2 custom-scrollbar"></div>
+    </aside>
+
+    <section class="flex-1 flex flex-col bg-[#0c0e0c] relative min-w-0 border-r border-white/10">
+      <header class="px-4 lg:px-6 py-4 border-b border-white/10 flex justify-between items-center bg-[#0c0e0c]/80 backdrop-blur-md z-40">
+        <div class="flex items-center gap-3 min-w-0">
+          <button class="lg:hidden p-1.5 bg-white/5 rounded-lg text-white/60" onclick="toggleLeftSidebar(true)">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+          <div class="hidden sm:flex w-10 h-10 rounded-xl border border-white/10 bg-zinc-900 items-center justify-center text-lime-500">
+            <i data-lucide="briefcase-business" class="w-5 h-5"></i>
+          </div>
+          <div class="min-w-0">
+            <h2 id="workbench-customer-name" class="text-base font-bold truncate">Loading...</h2>
+            <div class="text-[10px] text-white/40 flex items-center gap-2 font-bold uppercase">
+              <span id="active-node-display" class="text-lime-400 animate-pulse truncate max-w-[120px] sm:max-w-none">● --</span>
+              <span class="w-1 h-1 rounded-full bg-white/10"></span>
+              <span id="workbench-customer-tag" class="hidden xs:inline truncate">--</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="toggleMailModal(true)" class="p-2 lg:px-3 lg:py-1.5 bg-indigo-500/10 rounded-lg text-[11px] font-bold text-indigo-400 border border-indigo-500/20 flex items-center">
+            <i data-lucide="mail" class="w-4 h-4 lg:mr-1"></i> <span class="hidden lg:inline">邮件联系</span>
+          </button>
+          <button onclick="toggleMeetingModal(true)" class="p-2 lg:px-3 lg:py-1.5 bg-orange-500/10 rounded-lg text-[11px] font-bold text-orange-400 border border-orange-500/20 flex items-center">
+            <i data-lucide="calendar" class="w-4 h-4 lg:mr-1"></i> <span class="hidden lg:inline">预约会议</span>
+          </button>
+          <button class="lg:hidden p-2 bg-white/5 rounded-lg text-white/60" onclick="toggleRightSidebar(true)">
+            <i data-lucide="activity" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </header>
+
+      <div id="message-container" class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-8 bg-[radial-gradient(circle_at_bottom_left,_#141614_0%,_#0c0e0c_100%)]">
+        <div id="message-list" class="space-y-8"></div>
+        <div id="translating-indicator" class="hidden flex gap-4 flex-row-reverse animate-pulse mt-8">
+          <div class="w-8 h-8 rounded-lg bg-lime-500/20 flex items-center justify-center">
+            <i data-lucide="loader-2" class="w-4 h-4 text-lime-500 animate-spin"></i>
+          </div>
+          <div class="bg-lime-500/10 border border-lime-500/20 p-3 rounded-2xl rounded-tr-none text-xs text-lime-400 font-bold italic tracking-tighter">
+            AI 翻译中...
+          </div>
+        </div>
+      </div>
+
+      <div class="px-4 lg:px-6 py-4 border-t border-white/5 bg-[#0c0e0c]">
+        <div class="bg-zinc-900 border border-white/10 rounded-2xl p-2 focus-within:border-lime-500/50 transition-all shadow-2xl relative">
+          <div class="flex items-center gap-2 px-2 py-1 border-b border-white/5 mb-2">
+            <button class="p-1.5 text-white/30 hover:text-white transition-colors"><i data-lucide="smile" class="w-[18px] h-[18px]"></i></button>
+            <button class="p-1.5 text-white/30 hover:text-white transition-colors"><i data-lucide="paperclip" class="w-[18px] h-[18px]"></i></button>
+            <button class="p-1.5 text-white/30 hover:text-white transition-colors"><i data-lucide="image" class="w-[18px] h-[18px]"></i></button>
+            <div class="w-[1px] h-3 bg-white/10 mx-1"></div>
+            <div class="ml-auto flex items-center gap-2">
+              <span class="hidden xs:inline text-[9px] text-white/20 font-bold uppercase font-mono">译至:</span>
+              <select id="target-lang-select" class="bg-black/50 border border-white/10 rounded px-2 py-0.5 text-[10px] font-bold text-lime-400 focus:outline-none cursor-pointer"></select>
+            </div>
+          </div>
+
+          <textarea id="input-text" placeholder="输入消息内容..." class="w-full bg-transparent p-3 text-sm text-white focus:outline-none resize-none min-h-[60px] lg:min-h-[70px]"></textarea>
+          <div class="flex justify-end gap-3 p-2">
+            <button onclick="handleSend(false)" class="text-[11px] font-bold text-white/30 hover:text-white px-3 transition-colors">仅发原文</button>
+            <button id="send-translate-btn" onclick="handleSend(true)" class="bg-lime-500 text-black px-5 py-2 rounded-xl font-black text-[11px] flex items-center gap-2 hover:bg-lime-400 transition-all shadow-[0_10px_20px_rgba(132,204,22,0.15)] active:scale-95 disabled:opacity-50">
+              <i data-lucide="languages" class="w-[14px] h-[14px] translate-icon"></i>
+              <i data-lucide="loader-2" class="w-[14px] h-[14px] animate-spin hidden loading-icon"></i>
+              <span class="btn-text">翻译发送</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside id="right-sidebar" class="fixed inset-y-0 right-0 z-50 w-80 bg-[#141614] border-l border-white/10 transition-transform duration-300 transform translate-x-full lg:relative lg:translate-x-0">
+      <div class="p-4 border-b border-white/5 bg-[#0c0e0c] flex justify-between items-center">
+        <h3 class="text-[10px] text-white/30 font-bold tracking-widest uppercase">业务操作与轨迹</h3>
+        <button class="lg:hidden p-1 text-white/20 hover:text-white" onclick="toggleRightSidebar(false)">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 flex flex-col gap-5 overflow-y-auto h-full custom-scrollbar pb-32">
+        <div>
+          <button id="open-sales-flow-btn" class="w-full bg-orange-500 hover:bg-orange-600 text-black py-3.5 rounded-2xl font-black text-xs transition-all shadow-xl flex items-center justify-center gap-2 uppercase tracking-tighter mb-4 active:scale-[0.98]">
+            进入当前正式流水线 <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+          <div class="bg-black/40 border border-white/5 rounded-xl p-3 space-y-2">
+            <div class="flex justify-between items-center text-[10px] font-bold">
+              <span class="text-white/40 italic">流水线进度轨迹</span>
+              <span id="progress-fraction" class="text-lime-400 font-mono italic">0 / 13</span>
+            </div>
+            <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+              <div id="progress-bar" class="bg-lime-500 h-full w-0 shadow-[0_0_8px_#84cc16] transition-all duration-300"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-2 text-[10px] font-bold text-white/40 uppercase tracking-widest px-1">
+            <i data-lucide="activity" class="w-[14px] h-[14px] text-lime-400"></i> 用户操作轨迹
+          </div>
+          <div id="activity-list" class="divide-y divide-white/5 bg-black/20 rounded-xl border border-white/5"></div>
+        </div>
+      </div>
+
+      <div id="user-info-panel" class="absolute bottom-0 left-0 right-0 z-[60] bg-zinc-900 border-t border-white/10 transition-all duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] h-14">
+        <div class="h-14 px-5 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors" onclick="toggleUserInfo()">
+          <div class="flex items-center gap-2 text-[11px] font-bold tracking-widest text-white/60">
+            <i data-lucide="info" class="w-[14px] h-[14px] text-lime-400"></i> 用户信息
+          </div>
+          <div id="user-info-chevron" class="transition-transform duration-300">
+            <i data-lucide="chevron-up" class="w-4 h-4 text-white/20"></i>
+          </div>
+        </div>
+        <div class="p-5 space-y-4 overflow-y-auto h-48 custom-scrollbar">
+          <div class="space-y-2">
+            <div class="text-[10px] text-white/30 font-bold uppercase tracking-widest">基础信息</div>
+            <div class="flex justify-between text-xs py-1 border-b border-white/5">
+              <span class="text-white/40">当前客户:</span>
+              <span id="user-info-customer" class="font-bold text-lime-400">--</span>
+            </div>
+            <div class="flex justify-between text-xs py-1 border-b border-white/5">
+              <span class="text-white/40">所属国家:</span>
+              <span id="user-info-country" class="font-bold">--</span>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <div class="text-[10px] text-white/30 font-bold uppercase tracking-widest">访问入口</div>
+            <div id="user-info-entry-link" class="bg-black/40 border border-white/5 rounded-lg p-2.5 text-[9px] font-mono text-white/40 break-all leading-relaxed relative group active:bg-white/5 cursor-pointer">
+              --
+              <div class="absolute inset-0 bg-lime-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center font-bold text-lime-400 text-[8px]">
+                点击复制 / 打开
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div id="mobile-overlay" class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity hidden" onclick="closeAllSidebars()"></div>
+
+    <div id="mail-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-md p-4">
+      <div class="bg-zinc-900 border border-white/10 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl">
+        <div class="bg-zinc-800 p-5 flex justify-between items-center border-b border-white/5 text-indigo-400">
+          <h3 class="font-bold flex items-center gap-3 uppercase tracking-tighter"><i data-lucide="mail" class="w-5 h-5"></i> 撰写正式外贸邮件</h3>
+          <button onclick="toggleMailModal(false)" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/5 text-white/20"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-8 space-y-4">
+          <div class="flex items-center gap-4 py-2 border-b border-white/5 text-xs">
+            <span class="text-white/30 w-16 font-bold uppercase">收件人</span>
+            <span id="mail-modal-recipient" class="font-mono text-indigo-300">--</span>
+          </div>
+          <textarea class="w-full bg-black/50 border border-white/5 rounded-2xl p-5 text-sm h-52 focus:outline-none" placeholder="输入邮件正文..."></textarea>
+          <div class="flex justify-end pt-2">
+            <button class="bg-indigo-600 text-white px-10 py-3 rounded-2xl text-xs font-black hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-500/20">发送邮件</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="meeting-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-md p-4">
+      <div class="bg-zinc-900 border border-white/10 w-full max-w-md rounded-3xl overflow-hidden shadow-2xl">
+        <div class="bg-zinc-800 p-5 flex justify-between items-center border-b border-white/5 text-orange-400">
+          <h3 class="font-bold flex items-center gap-3 uppercase tracking-tighter"><i data-lucide="calendar" class="w-5 h-5"></i> 预约远程会议</h3>
+          <button onclick="toggleMeetingModal(false)" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/5 text-white/20"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-8 space-y-6">
+          <div class="space-y-4">
+            <label class="text-[10px] text-white/40 font-bold uppercase tracking-widest text-center block">选择时段 (北京时间)</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button class="py-3 bg-white/5 border border-white/5 rounded-xl text-xs font-mono font-bold hover:border-orange-500/50 hover:text-orange-400 transition-all">09:00</button>
+              <button class="py-3 bg-white/5 border border-white/5 rounded-xl text-xs font-mono font-bold hover:border-orange-500/50 hover:text-orange-400 transition-all">14:30</button>
+              <button class="py-3 bg-white/5 border border-white/5 rounded-xl text-xs font-mono font-bold hover:border-orange-500/50 hover:text-orange-400 transition-all">19:00</button>
+              <button class="py-3 bg-white/5 border border-white/5 rounded-xl text-xs font-mono font-bold hover:border-orange-500/50 hover:text-orange-400 transition-all">21:30</button>
+            </div>
+          </div>
+          <button class="w-full bg-orange-500 text-black py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-orange-500/20 active:scale-95 transition-all">生成并同步链接</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { client } from '../modules/supabase.client.js';
+
+    const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=';
+    const SALES_CONSOLE_BASE = '/article_management/sales/index.html';
+    const STAGES = [
+      { id: 1, key: 'customer_profile', name: '客户建档' },
+      { id: 2, key: 'requirement_capture', name: '获取需求' },
+      { id: 3, key: 'requirement_confirmed', name: '确认需求' },
+      { id: 4, key: 'quote_draft', name: '转入报价' },
+      { id: 5, key: 'quote_confirmed', name: '确认报价' },
+      { id: 6, key: 'contract_signed', name: '签约合同' },
+      { id: 7, key: 'deposit_paid', name: '定金付款' },
+      { id: 8, key: 'production_scheduled', name: '排产安排' },
+      { id: 9, key: 'factory_accepted', name: '出厂验收' },
+      { id: 10, key: 'balance_confirmed', name: '尾款确认' },
+      { id: 11, key: 'shipping_in_transit', name: '物流运输' },
+      { id: 12, key: 'deployment_completed', name: '到场部署' },
+      { id: 13, key: 'support_active', name: '运维支持' },
+    ];
+    const STAGE_LABELS = Object.fromEntries(STAGES.map((stage) => [stage.key, stage.name]));
+    const LANGUAGES = [
+      { name: '英语', code: 'en' },
+      { name: '俄语', code: 'ru' },
+      { name: '日语', code: 'ja' },
+      { name: '阿拉伯语', code: 'ar' },
+      { name: '马来语', code: 'ms' },
+      { name: '印尼语', code: 'id' },
+      { name: '西班牙语', code: 'es' },
+    ];
+
+    const state = {
+      customer: null,
+      deal: null,
+      requirement: null,
+      instance: null,
+      stageRecords: [],
+      activities: [],
+      messages: [],
+      currentPublicUrl: '',
+      flowUrl: '',
+      nodeSearch: '',
+      loading: true,
+      error: '',
+    };
+
+    let activeNode = 'requirement_capture';
+    let targetLang = '英语';
+    let isUserInfoExpanded = false;
+
+    function byId(id) { return document.getElementById(id); }
+    function text(value, fallback = '') { const v = String(value ?? '').trim(); return v || fallback; }
+    function esc(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+    function stageLabel(stageKey = '') { return STAGE_LABELS[stageKey] || '获取需求'; }
+    function stageIndex(stageKey = '') { return Math.max(0, STAGES.findIndex((item) => item.key === stageKey)); }
+    function fmtTime(value = '') {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '--:--';
+      return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    }
+    function readParams() {
+      const url = new URL(window.location.href);
+      return {
+        customerId: text(url.searchParams.get('customer')),
+        dealId: text(url.searchParams.get('deal')),
+        stageKey: text(url.searchParams.get('stage')),
+      };
+    }
+    function buildFlowUrl(stageKey = activeNode) {
+      if (!state.customer?.id || !state.deal?.id) return '';
+      const url = new URL(SALES_CONSOLE_BASE, window.location.origin);
+      url.searchParams.set('page', 'quote-customer-flow');
+      url.searchParams.set('customer', state.customer.id);
+      url.searchParams.set('deal', state.deal.id);
+      url.searchParams.set('stage', stageKey);
+      return url.toString();
+    }
+    function buildCustomerArchiveUrl() {
+      if (!state.customer?.id) return '';
+      const url = new URL(SALES_CONSOLE_BASE, window.location.origin);
+      url.searchParams.set('page', 'quote-customers');
+      url.searchParams.set('customer', state.customer.id);
+      if (state.deal?.id) url.searchParams.set('deal', state.deal.id);
+      return url.toString();
+    }
+    function requirementUrl() {
+      if (!text(state.requirement?.public_slug) || !text(state.requirement?.public_token)) return '';
+      const url = new URL('/quote/requirement.html', window.location.origin);
+      url.searchParams.set('req', text(state.requirement.public_slug));
+      url.searchParams.set('token', text(state.requirement.public_token));
+      return url.toString();
+    }
+    function quoteUrl() {
+      if (!text(state.instance?.public_slug)) return '';
+      const url = new URL('/quote/view.html', window.location.origin);
+      url.searchParams.set('quote', text(state.instance.public_slug));
+      return url.toString();
+    }
+    function countryLabel() {
+      return text(state.customer?.country || state.requirement?.country, '--');
+    }
+    function syncUrlStage(stageKey = '') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('stage', stageKey);
+      window.history.replaceState({}, '', url);
+    }
+
+    function visibleNodes() {
+      const query = text(state.nodeSearch).toLowerCase();
+      return STAGES
+        .map((stage) => {
+          const record = state.stageRecords.find((item) => text(item.stage_key) === stage.key) || null;
+          let status = 'pending';
+          if (text(record?.stage_status) === 'blocked') status = 'blocked';
+          else if (text(record?.stage_status) === 'completed') status = 'completed';
+          else if (text(state.deal?.current_stage) === stage.key) status = 'active';
+          else if (stageIndex(stage.key) < stageIndex(text(state.deal?.current_stage, 'requirement_capture'))) status = 'completed';
+          return { ...stage, status };
+        })
+        .filter((stage) => !query || stage.name.toLowerCase().includes(query));
+    }
+
+    function renderNodes() {
+      const rows = visibleNodes();
+      const nodeList = byId('node-list');
+      if (!rows.length) {
+        nodeList.innerHTML = '<div class="px-4 py-4 text-[11px] text-white/35">没有匹配的阶段。</div>';
+        return;
+      }
+      nodeList.innerHTML = rows.map((node) => {
+        const isActive = node.key === activeNode;
+        const iconHtml = node.status === 'completed'
+          ? '<i data-lucide="check" class="w-3 h-3" stroke-width="4"></i>'
+          : node.status === 'blocked'
+            ? '<i data-lucide="alert-triangle" class="w-3 h-3" stroke-width="3"></i>'
+            : isActive
+              ? '<i data-lucide="clock" class="w-3 h-3" stroke-width="4"></i>'
+              : `<span class="text-[9px] font-mono">${node.id}</span>`;
+        const iconClass = node.status === 'completed'
+          ? 'bg-white/10 border-transparent text-white/40'
+          : node.status === 'blocked'
+            ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+            : isActive
+              ? 'bg-lime-500 border-lime-500 text-black shadow-[0_0_10px_rgba(132,204,22,0.3)]'
+              : 'bg-transparent border-white/10 text-white/20';
+        return `
+          <div onclick="handleNodeClick('${node.key}')" class="px-4 py-2 flex items-center gap-3 cursor-pointer transition-all hover:bg-white/5 relative group ${isActive ? 'bg-white/5' : ''}">
+            ${isActive ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-lime-500 shadow-[0_0_10px_#84cc16]"></div>' : ''}
+            <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 border transition-all ${iconClass}">
+              ${iconHtml}
+            </div>
+            <div class="text-[12px] font-bold truncate ${isActive ? 'text-lime-400' : node.status === 'completed' ? 'text-white/40' : 'text-white/20'}">${node.name}</div>
+          </div>
+        `;
+      }).join('');
+      byId('active-node-display').textContent = `● ${stageLabel(activeNode)}`;
+      lucide.createIcons();
+    }
+
+    function renderMessages() {
+      const rows = state.messages.filter((msg) => msg.stageKey === activeNode);
+      const node = byId('message-list');
+      if (state.loading) {
+        node.innerHTML = '<div class="text-center text-sm text-white/40 py-12">正在加载阶段沟通记录...</div>';
+        return;
+      }
+      if (state.error) {
+        node.innerHTML = `<div class="text-center text-sm text-rose-300 py-12">${esc(state.error)}</div>`;
+        return;
+      }
+      if (!rows.length) {
+        node.innerHTML = `<div class="text-center text-sm text-white/35 py-12">当前阶段「${esc(stageLabel(activeNode))}」还没有沟通记录。</div>`;
+        return;
+      }
+      node.innerHTML = rows.map((msg) => {
+        const isSales = msg.role === 'sales';
+        return `
+          <div class="flex gap-3 lg:gap-4 ${isSales ? 'flex-row-reverse' : 'flex-row'}">
+            <div class="w-8 h-8 lg:w-9 lg:h-9 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs ${isSales ? 'bg-lime-500 text-black' : 'bg-zinc-800 text-white/60 border border-white/10'}">${esc(msg.name.charAt(0).toUpperCase())}</div>
+            <div class="flex flex-col gap-2 max-w-[85%] lg:max-w-[75%] ${isSales ? 'items-end text-right' : 'items-start text-left'}">
+              <div class="flex items-center gap-2 px-1 text-[9px] lg:text-[10px] font-mono text-white/30 tracking-tight">${esc(msg.name)} · ${esc(msg.time)}</div>
+              <div class="p-3 lg:p-4 rounded-2xl text-[13px] leading-relaxed shadow-xl ${isSales ? 'bg-lime-500 text-black rounded-tr-none font-medium' : 'bg-zinc-900 border border-white/10 text-white/80 rounded-tl-none'}">
+                ${msg.translation ? `<div class="mb-2 pb-2 border-b ${isSales ? 'border-black/10' : 'border-white/5'} font-bold italic">${esc(msg.translation)}</div>` : ''}
+                <div>${esc(msg.content)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      scrollToBottom();
+    }
+
+    function renderActivities() {
+      const rows = state.activities.slice(0, 40);
+      const node = byId('activity-list');
+      if (state.loading) {
+        node.innerHTML = '<div class="p-4 text-[11px] text-white/35">正在加载活动轨迹...</div>';
+        return;
+      }
+      if (!rows.length) {
+        node.innerHTML = '<div class="p-4 text-[11px] text-white/35">当前还没有活动轨迹。</div>';
+        return;
+      }
+      node.innerHTML = rows.map((log) => `
+        <div class="p-3 transition-all hover:bg-white/5 ${log.isImportant ? 'bg-lime-500/[0.03]' : ''}">
+          <div class="flex justify-between items-start mb-0.5">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="text-[11px] font-bold truncate ${log.isImportant ? 'text-lime-400' : 'text-white/80'}">${esc(log.title)}</span>
+              <span class="bg-amber-500/10 text-amber-500 text-[8px] font-black px-1 rounded border border-amber-500/20">${esc(log.user)}</span>
+            </div>
+            <span class="text-[9px] text-white/20 font-mono font-bold ml-2">${esc(log.time)}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[8px] text-white/20 font-bold border border-white/5 px-1 rounded uppercase">${esc(log.node)}</span>
+            <span class="text-[10px] text-white/30 truncate italic">${esc(log.detail)}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderLanguageSelect() {
+      const select = byId('target-lang-select');
+      select.innerHTML = LANGUAGES.map((item) => `<option value="${item.name}" ${item.name === targetLang ? 'selected' : ''}>${item.name}</option>`).join('');
+      select.addEventListener('change', (event) => {
+        targetLang = event.target.value;
+      });
+    }
+
+    function renderMeta() {
+      const customerName = text(state.customer?.company_name || state.customer?.contact_name, '未选择客户');
+      byId('workbench-customer-name').textContent = customerName;
+      byId('workbench-customer-tag').textContent = text(state.deal?.title || countryLabel(), '--');
+      byId('user-info-customer').textContent = customerName;
+      byId('user-info-country').textContent = countryLabel();
+      byId('mail-modal-recipient').textContent = text(state.customer?.email || state.requirement?.requester_email || state.instance?.receiver_email, '--');
+      const entryUrl = text(buildCustomerArchiveUrl() || state.flowUrl || state.currentPublicUrl, '--');
+      byId('user-info-entry-link').textContent = entryUrl;
+      byId('user-info-entry-link').title = entryUrl;
+      const currentIndex = stageIndex(text(state.deal?.current_stage, activeNode)) + 1;
+      byId('progress-fraction').textContent = `${currentIndex} / ${STAGES.length}`;
+      byId('progress-bar').style.width = `${(currentIndex / STAGES.length) * 100}%`;
+      const btn = byId('open-sales-flow-btn');
+      btn.disabled = !state.flowUrl;
+      btn.classList.toggle('opacity-50', !state.flowUrl);
+    }
+
+    window.handleNodeClick = function handleNodeClick(stageKey) {
+      activeNode = stageKey;
+      state.flowUrl = buildFlowUrl(stageKey);
+      syncUrlStage(stageKey);
+      if (window.innerWidth < 1024) toggleLeftSidebar(false);
+      renderNodes();
+      renderMessages();
+      renderMeta();
+    };
+
+    async function translateText(content, target) {
+      const prompt = `Translate the following Chinese text into ${target}. Only provide the translated text without any explanations.\nText: ${content}`;
+      let delay = 1000;
+      for (let i = 0; i < 5; i += 1) {
+        try {
+          const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+          });
+          const data = await response.json();
+          return data.candidates?.[0]?.content?.parts?.[0]?.text || content;
+        } catch (error) {
+          if (i === 4) throw error;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          delay *= 2;
+        }
+      }
+      return content;
+    }
+
+    window.handleSend = async function handleSend(withTranslation = false) {
+      const inputEl = byId('input-text');
+      const inputText = inputEl.value;
+      if (!inputText.trim()) return;
+
+      const sendBtn = byId('send-translate-btn');
+      const translatingIndicator = byId('translating-indicator');
+      const iconLang = sendBtn.querySelector('.translate-icon');
+      const iconLoad = sendBtn.querySelector('.loading-icon');
+      let finalTranslation = '';
+
+      if (withTranslation) {
+        sendBtn.disabled = true;
+        translatingIndicator.classList.remove('hidden');
+        iconLang.classList.add('hidden');
+        iconLoad.classList.remove('hidden');
+        scrollToBottom();
+        try {
+          finalTranslation = await translateText(inputText, targetLang);
+        } catch (_error) {
+          finalTranslation = '[翻译失败]';
+        }
+        sendBtn.disabled = false;
+        translatingIndicator.classList.add('hidden');
+        iconLang.classList.remove('hidden');
+        iconLoad.classList.add('hidden');
+      }
+
+      const now = new Date();
+      state.messages.push({
+        id: `local-${Date.now()}`,
+        role: 'sales',
+        name: 'sales',
+        time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+        content: inputText,
+        translation: finalTranslation,
+        stageKey: activeNode,
+      });
+      inputEl.value = '';
+      renderMessages();
+    };
+
+    byId('input-text').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        window.handleSend(true);
+      }
+    });
+
+    function scrollToBottom() {
+      const container = byId('message-container');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    window.toggleLeftSidebar = function toggleLeftSidebar(show) {
+      const sidebar = byId('left-sidebar');
+      const overlay = byId('mobile-overlay');
+      if (show) {
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('translate-x-0', 'shadow-2xl');
+        overlay.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        sidebar.classList.remove('translate-x-0', 'shadow-2xl');
+        if (!byId('right-sidebar').classList.contains('translate-x-0')) overlay.classList.add('hidden');
+      }
+    };
+
+    window.toggleRightSidebar = function toggleRightSidebar(show) {
+      const sidebar = byId('right-sidebar');
+      const overlay = byId('mobile-overlay');
+      if (show) {
+        sidebar.classList.remove('translate-x-full');
+        sidebar.classList.add('translate-x-0', 'shadow-2xl');
+        overlay.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('translate-x-full');
+        sidebar.classList.remove('translate-x-0', 'shadow-2xl');
+        if (!byId('left-sidebar').classList.contains('translate-x-0')) overlay.classList.add('hidden');
+      }
+    };
+
+    window.closeAllSidebars = function closeAllSidebars() {
+      window.toggleLeftSidebar(false);
+      window.toggleRightSidebar(false);
+    };
+
+    window.toggleUserInfo = function toggleUserInfo() {
+      isUserInfoExpanded = !isUserInfoExpanded;
+      const panel = byId('user-info-panel');
+      const chevron = byId('user-info-chevron');
+      if (isUserInfoExpanded) {
+        panel.classList.remove('h-14');
+        panel.classList.add('h-64');
+        chevron.classList.add('rotate-180');
+      } else {
+        panel.classList.remove('h-64');
+        panel.classList.add('h-14');
+        chevron.classList.remove('rotate-180');
+      }
+    };
+
+    window.toggleMailModal = function toggleMailModal(show) {
+      byId('mail-modal').style.display = show ? 'flex' : 'none';
+    };
+
+    window.toggleMeetingModal = function toggleMeetingModal(show) {
+      byId('meeting-modal').style.display = show ? 'flex' : 'none';
+    };
+
+    async function loadWorkbenchData() {
+      state.loading = true;
+      state.error = '';
+      renderMessages();
+      renderActivities();
+
+      const params = readParams();
+      if (!params.customerId && !params.dealId) {
+        state.loading = false;
+        state.error = '缺少 customer 或 deal 参数，暂时无法定位销售流水线。';
+        renderNodes();
+        renderMessages();
+        renderActivities();
+        renderMeta();
+        return;
+      }
+
+      try {
+        let deal = null;
+        if (params.dealId) {
+          const dealResult = await client
+            .from('quote_deals')
+            .select('id, customer_id, title, current_stage, deal_status, summary, next_action, owner_name, owner_email, primary_requirement_id, primary_instance_id, updated_at')
+            .eq('id', params.dealId)
+            .maybeSingle();
+          if (dealResult.error) throw dealResult.error;
+          deal = dealResult.data;
+        }
+
+        let customer = null;
+        const customerId = text(params.customerId || deal?.customer_id);
+        if (customerId) {
+          const customerResult = await client
+            .from('quote_customers')
+            .select('id, company_name, contact_name, email, phone, country, notes, updated_at')
+            .eq('id', customerId)
+            .maybeSingle();
+          if (customerResult.error) throw customerResult.error;
+          customer = customerResult.data;
+        }
+
+        if (!deal && customer?.id) {
+          const dealListResult = await client
+            .from('quote_deals')
+            .select('id, customer_id, title, current_stage, deal_status, summary, next_action, owner_name, owner_email, primary_requirement_id, primary_instance_id, updated_at')
+            .eq('customer_id', customer.id)
+            .order('updated_at', { ascending: false })
+            .limit(1);
+          if (dealListResult.error) throw dealListResult.error;
+          deal = Array.isArray(dealListResult.data) ? dealListResult.data[0] || null : null;
+        }
+
+        if (!customer?.id || !deal?.id) {
+          throw new Error('没有找到对应的客户或销售线，请从销售后台重新打开工作台。');
+        }
+
+        const [stageRows, activityRows, communicationRows, requirementRows, instanceRows] = await Promise.all([
+          client.from('quote_deal_stage_records')
+            .select('id, deal_id, stage_key, stage_status, planned_at, completed_at, owner_name, owner_email, notes, meta, created_at, updated_at')
+            .eq('deal_id', deal.id)
+            .order('created_at', { ascending: true }),
+          client.from('quote_customer_activities')
+            .select('id, actor_type, actor_label, activity_type, stage_key, action_label, detail_json, occurred_at')
+            .eq('customer_id', customer.id)
+            .eq('deal_id', deal.id)
+            .order('occurred_at', { ascending: false })
+            .limit(80),
+          client.from('quote_stage_communications')
+            .select('id, stage_key, actor_type, actor_label, body, created_at')
+            .eq('deal_id', deal.id)
+            .order('created_at', { ascending: true }),
+          client.from('quote_requirements')
+            .select('id, deal_id, title, status, country, requester_company, requester_name, requester_email, requester_phone, public_slug, public_token, updated_at')
+            .eq('deal_id', deal.id)
+            .order('updated_at', { ascending: false })
+            .limit(1),
+          client.from('quote_instances')
+            .select('id, deal_id, status, customer_name, receiver_name, receiver_email, public_slug, updated_at, published_at')
+            .eq('deal_id', deal.id)
+            .order('updated_at', { ascending: false })
+            .limit(1),
+        ]);
+
+        if (stageRows.error) throw stageRows.error;
+        if (activityRows.error) throw activityRows.error;
+        if (communicationRows.error) throw communicationRows.error;
+        if (requirementRows.error) throw requirementRows.error;
+        if (instanceRows.error) throw instanceRows.error;
+
+        state.customer = customer;
+        state.deal = deal;
+        state.requirement = Array.isArray(requirementRows.data) ? requirementRows.data[0] || null : null;
+        state.instance = Array.isArray(instanceRows.data) ? instanceRows.data[0] || null : null;
+        state.stageRecords = Array.isArray(stageRows.data) ? stageRows.data : [];
+        state.activities = (Array.isArray(activityRows.data) ? activityRows.data : []).map((item) => ({
+          title: text(item.action_label, '活动'),
+          user: text(item.actor_label, item.actor_type === 'customer' ? 'CUSTOMER' : 'SALES'),
+          node: stageLabel(text(item.stage_key, deal.current_stage)),
+          time: fmtTime(item.occurred_at),
+          detail: text(item.detail_json?.summary || item.activity_type, '--'),
+          isImportant: ['status_change', 'stage_advanced', 'quote_generated'].includes(text(item.activity_type)),
+        }));
+        state.messages = (Array.isArray(communicationRows.data) ? communicationRows.data : []).map((item) => ({
+          id: item.id,
+          role: item.actor_type === 'customer' ? 'customer' : 'sales',
+          name: text(item.actor_label, item.actor_type === 'customer' ? '客户' : '销售'),
+          time: fmtTime(item.created_at),
+          content: text(item.body),
+          translation: '',
+          stageKey: text(item.stage_key, deal.current_stage),
+        }));
+        activeNode = STAGE_LABELS[params.stageKey] ? params.stageKey : text(deal.current_stage, 'requirement_capture');
+        state.flowUrl = buildFlowUrl(activeNode);
+        state.currentPublicUrl = requirementUrl() || quoteUrl() || state.flowUrl;
+      } catch (error) {
+        state.error = error?.message || '加载销售工作台失败。';
+      } finally {
+        state.loading = false;
+        renderNodes();
+        renderMessages();
+        renderActivities();
+        renderMeta();
+        lucide.createIcons();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      byId('node-search-input').addEventListener('input', (event) => {
+        state.nodeSearch = event.currentTarget.value || '';
+        renderNodes();
+      });
+      byId('open-sales-flow-btn').addEventListener('click', () => {
+        if (state.flowUrl) window.location.assign(state.flowUrl);
+      });
+      byId('user-info-entry-link').addEventListener('click', async () => {
+        const value = text(buildCustomerArchiveUrl() || state.flowUrl || state.currentPublicUrl);
+        if (!value || value === '--') return;
+        try {
+          await navigator.clipboard.writeText(value);
+        } catch (_error) {
+          window.open(value, '_blank', 'noopener');
+        }
+      });
+      renderNodes();
+      renderMessages();
+      renderActivities();
+      renderLanguageSelect();
+      lucide.createIcons();
+      void loadWorkbenchData();
+    });
+  </script>
+</body>
+</html>
