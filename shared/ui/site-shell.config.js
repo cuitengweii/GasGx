@@ -1038,8 +1038,8 @@
                 },
                 features: {
                         backToTopEnabled: true,
-                        chatbotEnabled: false,
-                        chatApiUrl: ""
+                        chatbotEnabled: true,
+                        chatApiUrl: "https://mkpcliytqudclkwtewru.supabase.co/functions/v1/site-chat"
                 },
                 mainAuth: {
                         storageKey: "gasgx-main-auth",

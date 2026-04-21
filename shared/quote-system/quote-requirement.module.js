@@ -4,7 +4,10 @@ const TABLE_CUSTOMER_ACTIVITIES = 'quote_customer_activities';
 
 const REQUIREMENT_TYPE_OPTIONS = Object.freeze([
     { value: '', label: '请选择需求类型' },
-    { value: 'integrated_mining_power', label: '燃气发电+矿箱一体化' },
+    { value: 'oilfield_gas_to_power', label: '油田伴生气发电' },
+    { value: 'integrated_mining_power', label: '燃气发电+算力一体化' },
+    { value: 'industrial_power_generation', label: '工业分布式发电' },
+    { value: 'chp_project', label: 'CHP 热电联供项目' },
     { value: 'miner_only', label: '独立矿机矿箱' },
     { value: 'power_only', label: '独立燃气发电机组' },
     { value: 'unclear', label: '需要推荐' },
@@ -229,6 +232,38 @@ const COUNTRY_OPTIONS = Object.freeze([
 ]);
 
 const REQUIREMENT_SELECT_OPTIONS = Object.freeze({
+    site_type: [
+        { value: 'new_greenfield', label: '新建项目' },
+        { value: 'existing_brownfield', label: '既有站点改造' },
+        { value: 'remote_oilfield', label: '远程油田 / 井场' },
+        { value: 'industrial_plant', label: '工业园区 / 工厂' },
+        { value: 'chp_site', label: '热电联供 / 热负荷场景' },
+        { value: 'unknown', label: '待确认' },
+    ],
+    target_power: [
+        { value: 'under_500kw', label: '500kW 以下' },
+        { value: '500kw_1mw', label: '500kW - 1MW' },
+        { value: '1mw_5mw', label: '1MW - 5MW' },
+        { value: '5mw_10mw', label: '5MW - 10MW' },
+        { value: 'over_10mw', label: '10MW 以上' },
+        { value: 'need_recommendation', label: '需要推荐' },
+    ],
+    gas_type: [
+        { value: 'natural_gas', label: '天然气' },
+        { value: 'associated_gas', label: '伴生气 / APG' },
+        { value: 'flare_gas', label: '火炬气 / flare gas' },
+        { value: 'biogas', label: '沼气 / landfill gas' },
+        { value: 'cbm_cmm', label: '煤层气 / CBM/CMM' },
+        { value: 'unknown', label: '待确认' },
+    ],
+    gas_quality: [
+        { value: 'pipeline_grade', label: '管道气 / 稳定气' },
+        { value: 'field_gas_treatable', label: '现场气（可预处理）' },
+        { value: 'raw_wet_or_sour', label: '原始湿气 / 含硫气' },
+        { value: 'low_methane', label: '低甲烷气体' },
+        { value: 'report_available', label: '已有气体分析报告' },
+        { value: 'unknown', label: '待确认' },
+    ],
     deployment_mode: [
         { value: 'new_site', label: '新建站点' },
         { value: 'existing_site_upgrade', label: '已有站点扩容' },
@@ -272,11 +307,32 @@ const REQUIREMENT_SELECT_OPTIONS = Object.freeze({
         { value: '480v_60hz', label: '480V / 60Hz' },
         { value: 'custom', label: '其他 / 待确认' },
     ],
+    deployment_preference: [
+        { value: 'containerized', label: '集装箱化' },
+        { value: 'ais_integrated', label: 'AIS 一体化' },
+        { value: 'skid_mounted', label: '撬装 / skid' },
+        { value: 'site_built', label: '场站定制' },
+        { value: 'need_recommendation', label: '需要推荐' },
+    ],
     container_preference: [
         { value: 'integrated_container', label: '整柜一体化' },
         { value: 'rack_only', label: '仅机架 / 机位' },
         { value: 'site_buildout', label: '场站部署' },
         { value: 'need_recommendation', label: '需要推荐' },
+    ],
+    delivery_scope: [
+        { value: 'generator_only', label: '仅发电机组' },
+        { value: 'generator_plus_switchgear', label: '发电机组 + 开关柜 / 配电' },
+        { value: 'generator_plus_enclosure', label: '发电机组 + 冷却 / 箱体' },
+        { value: 'packaged_solution', label: '成套交付（含控制与调试）' },
+        { value: 'unknown', label: '待确认' },
+    ],
+    service_scope: [
+        { value: 'equipment_only', label: '仅设备供货' },
+        { value: 'commissioning_support', label: '指导安装 / 调试支持' },
+        { value: 'long_term_om', label: '长期运维支持' },
+        { value: 'spares_and_network', label: '备件与服务网络' },
+        { value: 'unknown', label: '待确认' },
     ],
     silent_requirement: [
         { value: 'standard', label: '常规即可' },
@@ -635,7 +691,7 @@ const state = {
     validationErrors: {},
 };
 
-const params = new URL(window.location.href).searchParams;
+let params = new URL(window.location.href).searchParams;
 const SUPPORTED_LOCALES = ['zh', 'en', 'ru'];
 function isViewOnlyAccess() {
     return text(params.get('mode')).toLowerCase() === 'readonly';
@@ -656,14 +712,58 @@ const LABEL_MAP = Object.freeze({
     },
     '需求类型': { en: 'Requirement Type', ru: 'Тип запроса' },
     '请选择需求类型': { en: 'Select requirement type', ru: 'Выберите тип запроса' },
+    '油田伴生气发电': { en: 'Oilfield Associated Gas Power', ru: 'Энергоснабжение oilfield на попутном газе' },
+    '燃气发电+算力一体化': { en: 'Integrated Gas Power + Compute', ru: 'Интегрированный gas power + compute' },
+    '工业分布式发电': { en: 'Industrial Distributed Generation', ru: 'Промышленная распределенная генерация' },
+    'CHP 热电联供项目': { en: 'CHP / Cogeneration Project', ru: 'Проект CHP / когенерации' },
     '客户提交时间': { en: 'Submitted At', ru: 'Время отправки' },
     '说明': { en: 'Note', ru: 'Примечание' },
     '这份需求已经提交，目前为只读状态。': { en: 'This request has been submitted and is now read-only.', ru: 'Этот запрос отправлен и теперь доступен только для чтения.' },
     '提交后将自动锁定，避免后续报价依据反复变化。': { en: 'After submission it will be locked to avoid changes to the pricing baseline.', ru: 'После отправки он будет заблокирован, чтобы избежать изменений базы для расчета.' },
+    '售前项目需求收集': { en: 'Pre-Sales Project Intake', ru: 'Сбор проектных данных для pre-sales' },
     '联系人信息': { en: 'Contact Details', ru: 'Контактные данные' },
     '这里只保留最必要的联系方式，方便我们确认后续报价和交付细节。': {
         en: 'Only essential contact details are collected to confirm pricing and delivery.',
         ru: 'Собираются только основные контакты для уточнения цены и поставки.',
+    },
+    '项目基础信息': { en: 'Project Basics', ru: 'Базовая информация по проекту' },
+    '请先确认项目场景、目标规模和气源条件，这些信息决定推荐方向。': {
+        en: 'Start with the project scenario, target scale and gas boundary. These inputs shape the recommendation direction.',
+        ru: 'Сначала уточните сценарий проекта, масштаб и параметры газа. Эти данные определяют направление рекомендации.',
+    },
+    '项目技术与交付范围': { en: 'Technical & Delivery Scope', ru: 'Технические и поставочные границы' },
+    '这些信息会直接影响报价边界、交付范围和后续服务方式。': {
+        en: 'These inputs directly shape the quotation boundary, delivery scope and service model.',
+        ru: 'Эти данные напрямую влияют на рамку предложения, границы поставки и сервисную модель.',
+    },
+    '矿机与负载信息': { en: 'Miner & Load Details', ru: 'Данные по майнерам и нагрузке' },
+    '仅当项目包含算力 / 矿机负载时填写这一组信息。': {
+        en: 'Fill this section only when the project includes compute or miner load.',
+        ru: 'Заполняйте этот раздел только если проект включает вычислительную или miner-нагрузку.',
+    },
+    '站点类型': { en: 'Site Type', ru: 'Тип площадки' },
+    '目标功率': { en: 'Target Power', ru: 'Требуемая мощность' },
+    '气源类型': { en: 'Gas Type', ru: 'Тип газа' },
+    '气质情况': { en: 'Gas Quality', ru: 'Качество газа' },
+    '可用气量 / 压力': { en: 'Available Flow / Pressure', ru: 'Доступный расход / давление' },
+    '部署偏好': { en: 'Deployment Preference', ru: 'Предпочтительный deployment' },
+    '交付范围': { en: 'Delivery Scope', ru: 'Границы поставки' },
+    '服务范围': { en: 'Service Scope', ru: 'Сервисный объем' },
+    '例如：2 MMSCFD @ 5 bar，或已具备气体分析报告': {
+        en: 'Example: 2 MMSCFD @ 5 bar, or gas analysis report available',
+        ru: 'Например: 2 MMSCFD @ 5 bar, или уже есть анализ газа',
+    },
+    '这里可填写可用流量、压力、气体报告编号或其他关键约束': {
+        en: 'Use this field for available flow, pressure, gas report reference, or other critical constraints.',
+        ru: 'Здесь можно указать расход, давление, номер анализа газа или другие ключевые ограничения.',
+    },
+    '如涉及指定机型、并网限制、冬化、防爆、噪音或物流限制，请在这里补充说明。': {
+        en: 'Use this field for requested models, grid limits, winterization, hazardous-area, noise, or logistics constraints.',
+        ru: 'Используйте это поле для указания нужных моделей, ограничений по сети, winterization, hazardous-area, шуму или логистике.',
+    },
+    '当前为公开售前收资入口，填写后会自动创建专属需求单。': {
+        en: 'This is the public pre-sales intake. A dedicated requirement record will be created automatically after you start filling it.',
+        ru: 'Это публичный pre-sales intake. После начала заполнения система автоматически создаст отдельный requirement record.',
     },
     '客户公司': { en: 'Company', ru: 'Компания' },
     '联系人': { en: 'Contact Person', ru: 'Контактное лицо' },
@@ -673,6 +773,37 @@ const LABEL_MAP = Object.freeze({
     '填写账号或手机号': { en: 'Enter handle or phone number', ru: 'Введите аккаунт или номер телефона' },
     '国家 / 地区': { en: 'Country / Region', ru: 'Страна / Регион' },
     '请选择国家 / 地区': { en: 'Select country / region', ru: 'Выберите страну / регион' },
+    '新建项目': { en: 'New project', ru: 'Новый проект' },
+    '既有站点改造': { en: 'Existing site upgrade', ru: 'Модернизация существующей площадки' },
+    '远程油田 / 井场': { en: 'Remote oilfield / wellsite', ru: 'Удаленный oilfield / wellsite' },
+    '工业园区 / 工厂': { en: 'Industrial park / factory', ru: 'Промышленная площадка / завод' },
+    '热电联供 / 热负荷场景': { en: 'CHP / heat-use scenario', ru: 'CHP / сценарий с тепловой нагрузкой' },
+    '500kW 以下': { en: 'Under 500 kW', ru: 'Менее 500 кВт' },
+    '500kW - 1MW': { en: '500 kW - 1 MW', ru: '500 кВт - 1 МВт' },
+    '5MW - 10MW': { en: '5 MW - 10 MW', ru: '5 МВт - 10 МВт' },
+    '10MW 以上': { en: 'Over 10 MW', ru: 'Более 10 МВт' },
+    '天然气': { en: 'Natural gas', ru: 'Природный газ' },
+    '伴生气 / APG': { en: 'Associated gas / APG', ru: 'Попутный газ / APG' },
+    '火炬气 / flare gas': { en: 'Flare gas', ru: 'Факельный газ' },
+    '沼气 / landfill gas': { en: 'Biogas / landfill gas', ru: 'Биогаз / landfill gas' },
+    '煤层气 / CBM/CMM': { en: 'CBM / CMM', ru: 'CBM / CMM' },
+    '管道气 / 稳定气': { en: 'Pipeline-grade / stable gas', ru: 'Трубопроводный / стабильный газ' },
+    '现场气（可预处理）': { en: 'Field gas (treatable)', ru: 'Площадочный газ (с возможностью подготовки)' },
+    '原始湿气 / 含硫气': { en: 'Raw wet / sour gas', ru: 'Сырой влажный / сернистый газ' },
+    '低甲烷气体': { en: 'Low-methane gas', ru: 'Газ с низким метановым числом' },
+    '已有气体分析报告': { en: 'Gas analysis report available', ru: 'Есть анализ газа' },
+    '集装箱化': { en: 'Containerized', ru: 'Контейнерный формат' },
+    'AIS 一体化': { en: 'AIS-integrated', ru: 'AIS-интеграция' },
+    '撬装 / skid': { en: 'Skid-mounted', ru: 'Skid-mounted' },
+    '场站定制': { en: 'Site-built customization', ru: 'Кастомизация под площадку' },
+    '仅发电机组': { en: 'Generator set only', ru: 'Только генераторный блок' },
+    '发电机组 + 开关柜 / 配电': { en: 'Generator set + switchgear / distribution', ru: 'Генераторный блок + switchgear / распределение' },
+    '发电机组 + 冷却 / 箱体': { en: 'Generator set + cooling / enclosure', ru: 'Генераторный блок + охлаждение / enclosure' },
+    '成套交付（含控制与调试）': { en: 'Packaged delivery (including controls and commissioning)', ru: 'Комплектная поставка (включая управление и commissioning)' },
+    '仅设备供货': { en: 'Equipment supply only', ru: 'Только поставка оборудования' },
+    '指导安装 / 调试支持': { en: 'Installation guidance / commissioning support', ru: 'Шефмонтаж / commissioning support' },
+    '长期运维支持': { en: 'Long-term O&M support', ru: 'Долгосрочная O&M поддержка' },
+    '备件与服务网络': { en: 'Spares and service network', ru: 'Запчасти и сервисная сеть' },
     '矿机偏好': { en: 'Miner Preferences', ru: 'Предпочтения по майнерам' },
     '尽量用选择题完成首轮确认，减少自由输入。': {
         en: 'Use selections for the first pass to reduce free text.',
@@ -857,7 +988,14 @@ function normalizeStringList(value) {
 
 function normalizeAnswers(value = {}) {
     const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const normalizedTargetPower = text(source.target_power || source.power_capacity_band || 'need_recommendation');
+    const normalizedDeploymentPreference = text(source.deployment_preference || source.container_preference || 'need_recommendation');
     return {
+        site_type: text(source.site_type || 'unknown'),
+        target_power: normalizedTargetPower,
+        gas_type: text(source.gas_type || 'unknown'),
+        gas_quality: text(source.gas_quality || 'unknown'),
+        available_flow: text(source.available_flow),
         deployment_mode: text(source.deployment_mode || 'new_site'),
         contact_channel: text(source.contact_channel || 'whatsapp'),
         miner_brands: normalizeStringList(source.miner_brands),
@@ -866,9 +1004,12 @@ function normalizeAnswers(value = {}) {
         miner_hashrate_band: text(source.miner_hashrate_band || 'need_recommendation'),
         miner_power_band: text(source.miner_power_band || 'need_recommendation'),
         miner_quantity_band: text(source.miner_quantity_band || 'unknown'),
-        power_capacity_band: text(source.power_capacity_band || 'unknown'),
+        power_capacity_band: normalizedTargetPower,
         voltage_frequency: text(source.voltage_frequency || 'custom'),
-        container_preference: text(source.container_preference || 'need_recommendation'),
+        deployment_preference: normalizedDeploymentPreference,
+        container_preference: normalizedDeploymentPreference,
+        delivery_scope: text(source.delivery_scope || 'unknown'),
+        service_scope: text(source.service_scope || 'unknown'),
         silent_requirement: text(source.silent_requirement || 'unknown'),
         budget_band: text(source.budget_band || 'need_recommendation'),
         timeline_band: text(source.timeline_band || 'unknown'),
@@ -881,6 +1022,8 @@ function normalizeRequirement(row = {}) {
     return {
         id: text(row.id),
         customer_id: text(row.customer_id),
+        public_slug: text(row.public_slug || row.publicSlug || state?.requirement?.public_slug),
+        public_token: text(row.public_token || row.publicToken || state?.requirement?.public_token),
         title: text(row.title),
         status: text(row.status, 'draft'),
         requirement_type: text(row.requirement_type),
@@ -893,6 +1036,37 @@ function normalizeRequirement(row = {}) {
         updated_at: text(row.updated_at),
         answers: normalizeAnswers(row.answers),
     };
+}
+
+function isMiningRequirementType(requirementType = '') {
+    return ['integrated_mining_power', 'miner_only'].includes(text(requirementType));
+}
+
+function createEmptyRequirementDraft(seed = {}) {
+    return normalizeRequirement({
+        status: 'draft',
+        requirement_type: '',
+        requester_company: '',
+        requester_name: '',
+        requester_email: '',
+        requester_phone: '',
+        country: '',
+        public_slug: '',
+        public_token: '',
+        answers: {
+            contact_channel: 'whatsapp',
+            deployment_mode: 'new_site',
+            site_type: 'unknown',
+            target_power: 'need_recommendation',
+            gas_type: 'unknown',
+            gas_quality: 'unknown',
+            deployment_preference: 'need_recommendation',
+            delivery_scope: 'unknown',
+            service_scope: 'unknown',
+            ...normalizeAnswers(seed.answers || {}),
+        },
+        ...seed,
+    });
 }
 
 function requirementStageKey(status = '') {
@@ -931,8 +1105,24 @@ async function logRequirementActivity(activityType, actionLabel, detail = {}) {
 function requirementDraftStorageKey() {
     const req = text(params.get('req'));
     const token = text(params.get('token'));
-    if (!req || !token) return '';
+    if (!req || !token) return 'gasgx.requirement.draft:public-intake';
     return `gasgx.requirement.draft:${req}:${token}`;
+}
+
+function currentRequirementLink() {
+    return {
+        req: text(params.get('req')),
+        token: text(params.get('token')),
+    };
+}
+
+function setRequirementLink(req = '', token = '') {
+    if (!req || !token) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('req', req);
+    url.searchParams.set('token', token);
+    window.history.replaceState({}, '', url.toString());
+    params = url.searchParams;
 }
 
 function buildRequirementPayload(requirement = {}) {
@@ -1039,6 +1229,26 @@ function queueRequirementAutoSave(options = {}) {
     }, options.immediate ? 0 : 900);
 }
 
+async function ensurePublicRequirementOnServer(supabase, payload) {
+    const link = currentRequirementLink();
+    if (link.req && link.token) return link;
+
+    const { data, error } = await supabase.rpc('create_public_quote_requirement', {
+        payload,
+    });
+    if (error) throw error;
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) {
+        throw new Error(localize('公开需求链接不可用'));
+    }
+
+    state.requirement = normalizeRequirement(row);
+    setRequirementLink(state.requirement.public_slug, state.requirement.public_token);
+    writeRequirementDraft(state.requirement);
+    return currentRequirementLink();
+}
+
 async function saveRequirementDraftToServer(force = false) {
     const supabase = getClient();
     if (!supabase || !state.requirement || isReadOnlyMode(state.requirement)) return;
@@ -1056,11 +1266,10 @@ async function saveRequirementDraftToServer(force = false) {
     updateAutoSaveIndicators();
 
     try {
-        const req = text(params.get('req'));
-        const token = text(params.get('token'));
+        const link = await ensurePublicRequirementOnServer(supabase, payload);
         const { data, error } = await supabase.rpc('save_public_quote_requirement_draft', {
-            req_slug: req,
-            req_token: token,
+            req_slug: link.req,
+            req_token: link.token,
             payload,
         });
         if (error) throw error;
@@ -1151,7 +1360,7 @@ function localizedCountryOptionsMarkup(selected = '') {
 }
 
 function requirementHeading(requirement = {}) {
-    return text(requirement.requester_company || requirement.requester_name || '', localize('矿机与供电需求收集'));
+    return text(requirement.requester_company || requirement.requester_name || '', localize('售前项目需求收集'));
 }
 
 function choiceChipMarkup(field, options = [], selectedValues = [], disabled = false, mode = 'multiple') {
@@ -1248,24 +1457,34 @@ function fieldErrorMarkup(field) {
     return error ? `<small class="requirement-field-error">${esc(error)}</small>` : '';
 }
 
-const REQUIRED_FIELD_ORDER = [
+const CONTACT_REQUIRED_FIELDS = [
     'requester_company',
     'requester_name',
     'requester_email',
     'contact_channel',
     'requester_phone',
     'country',
+];
+
+const PROJECT_REQUIRED_FIELDS = [
     'requirement_type',
-    'deployment_mode',
+    'site_type',
+    'target_power',
+    'gas_type',
+    'gas_quality',
+    'available_flow',
+    'voltage_frequency',
+    'deployment_preference',
+    'delivery_scope',
+    'service_scope',
+    'budget_band',
+    'timeline_band',
+];
+
+const MINING_REQUIRED_FIELDS = [
     'miner_brands',
     'miner_model',
     'miner_quantity_band',
-    'voltage_frequency',
-    'power_capacity_band',
-    'container_preference',
-    'silent_requirement',
-    'budget_band',
-    'timeline_band',
 ];
 
 const REQUIRED_FIELD_LABELS = {
@@ -1276,7 +1495,11 @@ const REQUIRED_FIELD_LABELS = {
     requester_phone: '账号 / 电话',
     country: '国家 / 地区',
     requirement_type: '需求类型',
-    deployment_mode: '部署模式',
+    site_type: '站点类型',
+    target_power: '目标功率',
+    gas_type: '气源类型',
+    gas_quality: '气质情况',
+    available_flow: '可用气量 / 压力',
     miner_model: '推荐机型',
     miner_hashrate_band: '矿机算力范围',
     miner_power_band: '矿机功耗范围',
@@ -1284,51 +1507,72 @@ const REQUIRED_FIELD_LABELS = {
     voltage_frequency: '电压 / 频率',
     miner_brands: '矿机品牌',
     miner_cooling: '散热机位类型',
-    power_capacity_band: '供电规模',
-    container_preference: '部署偏好',
-    silent_requirement: '噪音要求',
+    deployment_preference: '部署偏好',
+    delivery_scope: '交付范围',
+    service_scope: '服务范围',
     budget_band: '每 MW 预算',
     timeline_band: '期望周期',
 };
+
+function requiredFieldOrderForRequirement(requirement = state.requirement) {
+    return [
+        ...CONTACT_REQUIRED_FIELDS,
+        ...PROJECT_REQUIRED_FIELDS,
+        ...(isMiningRequirementType(requirement?.requirement_type) ? MINING_REQUIRED_FIELDS : []),
+    ];
+}
 
 function requiredFieldLabel(field) {
     return localize(REQUIRED_FIELD_LABELS[field] || field);
 }
 
-function missingRequiredFieldLabels(requirement = state.requirement, fields = REQUIRED_FIELD_ORDER) {
+function requiredFieldMessage(field) {
+    const label = requiredFieldLabel(field);
+    if (state.locale === 'en') return `${label} is required.`;
+    if (state.locale === 'ru') return `Поле "${label}" обязательно.`;
+    return `请先填写或选择${label}。`;
+}
+
+function missingRequiredFieldLabels(requirement = state.requirement, fields = requiredFieldOrderForRequirement(requirement)) {
     return fields
         .filter((field) => validateRequirementField(field, requirement))
         .map((field) => requiredFieldLabel(field));
 }
 
 function validateRequirementField(field, requirement = state.requirement) {
-    if (['requester_company', 'requester_name', 'requester_email', 'contact_channel', 'requester_phone', 'country'].includes(field)) {
+    if (CONTACT_REQUIRED_FIELDS.includes(field)) {
         return validateRequirementContactField(field, requirement);
     }
 
     const answers = normalizeAnswers(requirement?.answers);
     const selectFields = new Set([
         'requirement_type',
-        'deployment_mode',
+        'site_type',
+        'target_power',
+        'gas_type',
+        'gas_quality',
         'miner_quantity_band',
         'voltage_frequency',
-        'power_capacity_band',
-        'container_preference',
-        'silent_requirement',
+        'deployment_preference',
+        'delivery_scope',
+        'service_scope',
         'budget_band',
         'timeline_band',
     ]);
     if (selectFields.has(field)) {
         const value = field === 'requirement_type' ? text(requirement?.requirement_type) : text(answers[field]);
-        if (!value) return localize(`请先选择${requiredFieldLabel(field)}。`);
+        if (!value || value === 'unknown') return requiredFieldMessage(field);
         return '';
     }
 
+    if (field === 'available_flow' && !text(answers.available_flow)) {
+        return requiredFieldMessage(field);
+    }
     if (field === 'miner_brands' && !answers.miner_brands?.length) {
-        return localize('请先选择矿机品牌。');
+        return requiredFieldMessage(field);
     }
     if (field === 'miner_model' && !answers.miner_models?.length) {
-        return localize('请先选择推荐机型。');
+        return requiredFieldMessage(field);
     }
 
     return '';
@@ -1336,7 +1580,7 @@ function validateRequirementField(field, requirement = state.requirement) {
 
 function validateRequirementSubmission(requirement = state.requirement) {
     const nextErrors = {};
-    REQUIRED_FIELD_ORDER.forEach((field) => {
+    requiredFieldOrderForRequirement(requirement).forEach((field) => {
         const error = validateRequirementField(field, requirement);
         if (error) nextErrors[field] = error;
     });
@@ -1346,7 +1590,7 @@ function validateRequirementSubmission(requirement = state.requirement) {
 
 function validationFieldSelector(field) {
     if (field === 'contact_channel') return '[data-answer-field="contact_channel"]';
-    if (['deployment_mode', 'miner_model', 'miner_quantity_band', 'voltage_frequency', 'power_capacity_band', 'container_preference', 'silent_requirement', 'budget_band', 'timeline_band'].includes(field)) {
+    if (['site_type', 'target_power', 'gas_type', 'gas_quality', 'available_flow', 'deployment_preference', 'miner_model', 'miner_quantity_band', 'voltage_frequency', 'delivery_scope', 'service_scope', 'budget_band', 'timeline_band'].includes(field)) {
         return `[data-answer-field="${field}"]`;
     }
     if (['miner_brands', 'miner_cooling'].includes(field)) {
@@ -1477,7 +1721,7 @@ function renderApp() {
         requirement.answers.miner_models = filteredModels;
     }
 
-    document.title = `${text(requirement.requester_company || requirement.requester_name || localize('矿机与供电需求收集') || 'Requirement Intake')} | GasGx`;
+    document.title = `${text(requirement.requester_company || requirement.requester_name || localize('售前项目需求收集') || 'Requirement Intake')} | GasGx`;
     root().innerHTML = `
         <div class="requirement-page ${locked ? 'is-locked' : ''}">
         <div class="requirement-toolbar">
@@ -1556,86 +1800,11 @@ function renderApp() {
                     </select>
                     ${fieldErrorMarkup('country')}
                 </label>
-                <label class="requirement-field ${state.validationErrors.requirement_type ? 'is-invalid' : ''}" data-required-field="requirement_type">
-                    <span>${esc(localize('需求类型'))}</span>
-                    <select class="share-select" data-field="requirement_type" ${locked ? 'disabled' : ''}>
-                        ${selectOptionsMarkup(REQUIREMENT_TYPE_OPTIONS, requirement.requirement_type)}
-                    </select>
-                    ${fieldErrorMarkup('requirement_type')}
-                </label>
             </div>
         </section>
-
-        <section class="requirement-card">
-            <div class="requirement-section-head">
-                <div>
-                    <h2>${esc(localize('矿机偏好'))}</h2>
-                    <p>${esc(localize('尽量用选择题完成首轮确认，减少自由输入。'))}</p>
-                </div>
-            </div>
-            <div class="requirement-grid">
-                <label class="requirement-field ${state.validationErrors.deployment_mode ? 'is-invalid' : ''}" data-required-field="deployment_mode">
-                    <span>${esc(localize('部署模式'))}</span>
-                    <select class="share-select" data-answer-field="deployment_mode" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.deployment_mode, answers.deployment_mode)}</select>
-                    ${fieldErrorMarkup('deployment_mode')}
-                </label>
-            </div>
-            <div class="requirement-field ${state.validationErrors.miner_brands ? 'is-invalid' : ''}" data-required-field="miner_brands">
-                <span>${esc(localize('矿机品牌'))}</span>
-                ${choiceChipMarkup('miner_brands', REQUIREMENT_MULTI_OPTIONS.miner_brands, answers.miner_brands, locked, 'single')}
-                ${fieldErrorMarkup('miner_brands')}
-            </div>
-            <div class="requirement-field ${state.validationErrors.miner_model ? 'is-invalid' : ''}" data-required-field="miner_model">
-                <span>${esc(localize('推荐机型 (Top 10)'))}</span>
-                <div id="requirement-miner-model-wrap">${minerModelChoiceSelectMarkup(filteredModels, answers.miner_brands, locked)}</div>
-                ${fieldErrorMarkup('miner_model')}
-            </div>
-            <div id="requirement-miner-derived-fields">${minerDerivedFieldsMarkup(answers, locked)}</div>
-        </section>
-
-        <section class="requirement-card">
-            <div class="requirement-section-head">
-                <div>
-                    <h2>${esc(localize('交付与现场条件'))}</h2>
-                    <p>${esc(localize('这些信息会直接影响配置推荐、报价和交付节奏。'))}</p>
-                </div>
-            </div>
-            <div class="requirement-grid">
-                <label class="requirement-field ${state.validationErrors.power_capacity_band ? 'is-invalid' : ''}" data-required-field="power_capacity_band">
-                    <span>${esc(localize('供电规模'))}</span>
-                    <select class="share-select" data-answer-field="power_capacity_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.power_capacity_band, answers.power_capacity_band)}</select>
-                    ${fieldErrorMarkup('power_capacity_band')}
-                </label>
-                <label class="requirement-field ${state.validationErrors.container_preference ? 'is-invalid' : ''}" data-required-field="container_preference">
-                    <span>${esc(localize('部署偏好'))}</span>
-                    <select class="share-select" data-answer-field="container_preference" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.container_preference, answers.container_preference)}</select>
-                    ${fieldErrorMarkup('container_preference')}
-                </label>
-                <label class="requirement-field ${state.validationErrors.silent_requirement ? 'is-invalid' : ''}" data-required-field="silent_requirement">
-                    <span>${esc(localize('噪音要求'))}</span>
-                    <select class="share-select" data-answer-field="silent_requirement" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.silent_requirement, answers.silent_requirement)}</select>
-                    ${fieldErrorMarkup('silent_requirement')}
-                </label>
-                <label class="requirement-field ${state.validationErrors.budget_band ? 'is-invalid' : ''}" data-required-field="budget_band">
-                    <span>${esc(localize('每 MW 预算'))}</span>
-                    <select class="share-select" data-answer-field="budget_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.budget_band, answers.budget_band)}</select>
-                    ${fieldErrorMarkup('budget_band')}
-                </label>
-                <label class="requirement-field ${state.validationErrors.timeline_band ? 'is-invalid' : ''}" data-required-field="timeline_band">
-                    <span>${esc(localize('期望周期'))}</span>
-                    <select class="share-select" data-answer-field="timeline_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.timeline_band, answers.timeline_band)}</select>
-                    ${fieldErrorMarkup('timeline_band')}
-                </label>
-            </div>
-            <div class="requirement-field">
-                <span>${esc(localize('认证 / 合规要求'))}</span>
-                ${choiceChipMarkup('certification_needs', REQUIREMENT_MULTI_OPTIONS.certification_needs, answers.certification_needs, locked)}
-            </div>
-            <label class="requirement-field">
-                <span>${esc(localize('补充说明'))}</span>
-                <textarea class="share-input requirement-textarea" data-answer-field="extra_notes" placeholder="${esc(localize('只填写必须说明的现场条件、指定机型或其他特殊要求。'))}" ${locked ? 'disabled' : ''}>${esc(answers.extra_notes)}</textarea>
-            </label>
-        </section>
+        ${projectBasicsMarkup(requirement, answers, locked)}
+        ${projectScopeMarkup(answers, locked)}
+        ${miningSectionMarkup(requirement, answers, locked, filteredModels)}
 
         <section class="requirement-card requirement-submit-card">
             <div class="requirement-submit-main">
@@ -1698,6 +1867,11 @@ function bindEvents() {
             const field = node.dataset.field;
             if (!field) return;
             requirement[field] = node.value;
+            if (field === 'requirement_type') {
+                renderApp();
+                queueRequirementAutoSave({ field, immediate: true });
+                return;
+            }
             updateFieldValidation(field);
             syncFieldValidationUI(field);
             queueRequirementAutoSave({ field });
@@ -1713,6 +1887,11 @@ function bindEvents() {
                 const field = node.dataset.field;
                 if (!field) return;
                 requirement[field] = node.value;
+                if (field === 'requirement_type') {
+                    renderApp();
+                    queueRequirementAutoSave({ field, immediate: true });
+                    return;
+                }
                 updateFieldValidation(field);
                 syncFieldValidationUI(field);
                 queueRequirementAutoSave({ field });
@@ -1768,16 +1947,158 @@ function bindEvents() {
     });
 }
 
-async function fetchRequirement() {
-    const req = text(params.get('req'));
-    const token = text(params.get('token'));
-    if (!req || !token) {
-        throw new Error(localize('缺少 req 或 token，无法打开这份公开需求链接。'));
-    }
+function projectBasicsMarkup(requirement, answers, locked) {
+    return `
+        <section class="requirement-card">
+            <div class="requirement-section-head">
+                <div>
+                    <h2>${esc(localize('项目基础信息'))}</h2>
+                    <p>${esc(localize('请先确认项目场景、目标规模和气源条件，这些信息决定推荐方向。'))}</p>
+                </div>
+            </div>
+            <div class="requirement-grid">
+                <label class="requirement-field ${state.validationErrors.requirement_type ? 'is-invalid' : ''}" data-required-field="requirement_type">
+                    <span>${esc(localize('需求类型'))}</span>
+                    <select class="share-select" data-field="requirement_type" ${locked ? 'disabled' : ''}>
+                        ${selectOptionsMarkup(REQUIREMENT_TYPE_OPTIONS, requirement.requirement_type)}
+                    </select>
+                    ${fieldErrorMarkup('requirement_type')}
+                </label>
+                <label class="requirement-field ${state.validationErrors.site_type ? 'is-invalid' : ''}" data-required-field="site_type">
+                    <span>${esc(localize('站点类型'))}</span>
+                    <select class="share-select" data-answer-field="site_type" ${locked ? 'disabled' : ''}>
+                        ${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.site_type, answers.site_type)}
+                    </select>
+                    ${fieldErrorMarkup('site_type')}
+                </label>
+                <label class="requirement-field ${state.validationErrors.target_power ? 'is-invalid' : ''}" data-required-field="target_power">
+                    <span>${esc(localize('目标功率'))}</span>
+                    <select class="share-select" data-answer-field="target_power" ${locked ? 'disabled' : ''}>
+                        ${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.target_power, answers.target_power)}
+                    </select>
+                    ${fieldErrorMarkup('target_power')}
+                </label>
+                <label class="requirement-field ${state.validationErrors.gas_type ? 'is-invalid' : ''}" data-required-field="gas_type">
+                    <span>${esc(localize('气源类型'))}</span>
+                    <select class="share-select" data-answer-field="gas_type" ${locked ? 'disabled' : ''}>
+                        ${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.gas_type, answers.gas_type)}
+                    </select>
+                    ${fieldErrorMarkup('gas_type')}
+                </label>
+                <label class="requirement-field ${state.validationErrors.gas_quality ? 'is-invalid' : ''}" data-required-field="gas_quality">
+                    <span>${esc(localize('气质情况'))}</span>
+                    <select class="share-select" data-answer-field="gas_quality" ${locked ? 'disabled' : ''}>
+                        ${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.gas_quality, answers.gas_quality)}
+                    </select>
+                    ${fieldErrorMarkup('gas_quality')}
+                </label>
+                <label class="requirement-field ${state.validationErrors.available_flow ? 'is-invalid' : ''}" data-required-field="available_flow">
+                    <span>${esc(localize('可用气量 / 压力'))}</span>
+                    <input class="share-input" data-answer-field="available_flow" value="${esc(answers.available_flow)}" placeholder="${esc(localize('例如：2 MMSCFD @ 5 bar，或已具备气体分析报告'))}" ${locked ? 'disabled' : ''}>
+                    <small>${esc(localize('这里可填写可用流量、压力、气体报告编号或其他关键约束'))}</small>
+                    ${fieldErrorMarkup('available_flow')}
+                </label>
+            </div>
+        </section>
+    `;
+}
 
+function projectScopeMarkup(answers, locked) {
+    return `
+        <section class="requirement-card">
+            <div class="requirement-section-head">
+                <div>
+                    <h2>${esc(localize('项目技术与交付范围'))}</h2>
+                    <p>${esc(localize('这些信息会直接影响报价边界、交付范围和后续服务方式。'))}</p>
+                </div>
+            </div>
+            <div class="requirement-grid">
+                <label class="requirement-field ${state.validationErrors.voltage_frequency ? 'is-invalid' : ''}" data-required-field="voltage_frequency">
+                    <span>${esc(localize('电压 / 频率'))}</span>
+                    <select class="share-select" data-answer-field="voltage_frequency" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.voltage_frequency, answers.voltage_frequency)}</select>
+                    ${fieldErrorMarkup('voltage_frequency')}
+                </label>
+                <label class="requirement-field ${state.validationErrors.deployment_preference ? 'is-invalid' : ''}" data-required-field="deployment_preference">
+                    <span>${esc(localize('部署偏好'))}</span>
+                    <select class="share-select" data-answer-field="deployment_preference" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.deployment_preference, answers.deployment_preference)}</select>
+                    ${fieldErrorMarkup('deployment_preference')}
+                </label>
+                <label class="requirement-field ${state.validationErrors.delivery_scope ? 'is-invalid' : ''}" data-required-field="delivery_scope">
+                    <span>${esc(localize('交付范围'))}</span>
+                    <select class="share-select" data-answer-field="delivery_scope" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.delivery_scope, answers.delivery_scope)}</select>
+                    ${fieldErrorMarkup('delivery_scope')}
+                </label>
+                <label class="requirement-field ${state.validationErrors.service_scope ? 'is-invalid' : ''}" data-required-field="service_scope">
+                    <span>${esc(localize('服务范围'))}</span>
+                    <select class="share-select" data-answer-field="service_scope" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.service_scope, answers.service_scope)}</select>
+                    ${fieldErrorMarkup('service_scope')}
+                </label>
+                <label class="requirement-field ${state.validationErrors.budget_band ? 'is-invalid' : ''}" data-required-field="budget_band">
+                    <span>${esc(localize('每 MW 预算'))}</span>
+                    <select class="share-select" data-answer-field="budget_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.budget_band, answers.budget_band)}</select>
+                    ${fieldErrorMarkup('budget_band')}
+                </label>
+                <label class="requirement-field ${state.validationErrors.timeline_band ? 'is-invalid' : ''}" data-required-field="timeline_band">
+                    <span>${esc(localize('期望周期'))}</span>
+                    <select class="share-select" data-answer-field="timeline_band" ${locked ? 'disabled' : ''}>${selectOptionsMarkup(REQUIREMENT_SELECT_OPTIONS.timeline_band, answers.timeline_band)}</select>
+                    ${fieldErrorMarkup('timeline_band')}
+                </label>
+            </div>
+            <div class="requirement-field">
+                <span>${esc(localize('认证 / 合规要求'))}</span>
+                ${choiceChipMarkup('certification_needs', REQUIREMENT_MULTI_OPTIONS.certification_needs, answers.certification_needs, locked)}
+            </div>
+            <label class="requirement-field">
+                <span>${esc(localize('补充说明'))}</span>
+                <textarea class="share-input requirement-textarea" data-answer-field="extra_notes" placeholder="${esc(localize('如涉及指定机型、并网限制、冬化、防爆、噪音或物流限制，请在这里补充说明。'))}" ${locked ? 'disabled' : ''}>${esc(answers.extra_notes)}</textarea>
+            </label>
+        </section>
+    `;
+}
+
+function miningSectionMarkup(requirement, answers, locked, filteredModels) {
+    if (!isMiningRequirementType(requirement?.requirement_type)) return '';
+    return `
+        <section class="requirement-card">
+            <div class="requirement-section-head">
+                <div>
+                    <h2>${esc(localize('矿机与负载信息'))}</h2>
+                    <p>${esc(localize('仅当项目包含算力 / 矿机负载时填写这一组信息。'))}</p>
+                </div>
+            </div>
+            <div class="requirement-field ${state.validationErrors.miner_brands ? 'is-invalid' : ''}" data-required-field="miner_brands">
+                <span>${esc(localize('矿机品牌'))}</span>
+                ${choiceChipMarkup('miner_brands', REQUIREMENT_MULTI_OPTIONS.miner_brands, answers.miner_brands, locked, 'single')}
+                ${fieldErrorMarkup('miner_brands')}
+            </div>
+            <div class="requirement-field ${state.validationErrors.miner_model ? 'is-invalid' : ''}" data-required-field="miner_model">
+                <span>${esc(localize('推荐机型 (Top 10)'))}</span>
+                <div id="requirement-miner-model-wrap">${minerModelChoiceSelectMarkup(filteredModels, answers.miner_brands, locked)}</div>
+                ${fieldErrorMarkup('miner_model')}
+            </div>
+            <div id="requirement-miner-derived-fields">${minerDerivedFieldsMarkup(answers, locked)}</div>
+        </section>
+    `;
+}
+
+async function fetchRequirement() {
     const supabase = getClient();
     if (!supabase) {
         throw new Error('Supabase client is unavailable.');
+    }
+
+    const { req, token } = currentRequirementLink();
+    if (!req || !token) {
+        const localDraft = readRequirementDraft();
+        const serverRequirement = createEmptyRequirementDraft();
+        state.requirement = applyRequirementDraft(serverRequirement, localDraft);
+        state.submitConfirmed = false;
+        state.lastSavedSignature = '';
+        state.lastAutoSavedAt = text(localDraft?.saved_at || '');
+        state.autoSavePending = Boolean(localDraft?.payload);
+        state.autoSaveError = false;
+        state.autoSaveMessage = localize('当前为公开售前收资入口，填写后会自动创建专属需求单。');
+        return;
     }
 
     const { data, error } = await supabase.rpc('get_public_quote_requirement', {
@@ -1816,7 +2137,7 @@ async function submitCurrentRequirement() {
 
     if (!validateRequirementSubmission(state.requirement)) {
         renderApp();
-        const firstInvalidField = REQUIRED_FIELD_ORDER.find((field) => state.validationErrors[field]);
+        const firstInvalidField = requiredFieldOrderForRequirement(state.requirement).find((field) => state.validationErrors[field]);
         const missingLabels = missingRequiredFieldLabels(state.requirement);
         setSubmitStatus(
             missingLabels.length
@@ -1869,13 +2190,12 @@ async function submitCurrentRequirement() {
         if (state.autoSavePending) {
             await saveRequirementDraftToServer(true);
         }
-        const req = text(params.get('req'));
-        const token = text(params.get('token'));
+        const link = await ensurePublicRequirementOnServer(supabase, buildRequirementPayload(state.requirement));
         const payload = buildRequirementPayload(state.requirement);
 
         const { error } = await supabase.rpc('submit_public_quote_requirement', {
-            req_slug: req,
-            req_token: token,
+            req_slug: link.req,
+            req_token: link.token,
             payload,
         });
         if (error) throw error;

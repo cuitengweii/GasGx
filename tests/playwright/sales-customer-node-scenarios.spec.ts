@@ -315,6 +315,7 @@ async function openOrCreateCustomerRequirementFlow(
 async function submitRequirementInAccount(
   page: import('@playwright/test').Page,
   requirementLink: string,
+  dealId: string,
   companyName: string,
   contactName: string,
   phone: string,
@@ -332,8 +333,14 @@ async function submitRequirementInAccount(
     ]);
   }
 
-  await openCustomerSalesEntry(page, requirementLink);
-  await expect(page.locator('[data-sales-req-field="requester_company"]')).toBeVisible({ timeout: 30000 });
+  await page.goto(`/account/account.html?tab=sales&deal=${encodeURIComponent(dealId)}&stage=requirement_capture`);
+  await expect(page.locator('#sales-pipeline-root')).toBeVisible({ timeout: 30000 });
+  const requirementLinkButton = page.locator('[data-sales-open-requirement-link]').first();
+  await expect(requirementLinkButton).toHaveAttribute('href', requirementLink);
+  await requirementLinkButton.click();
+  await page.waitForURL((url) => url.pathname.endsWith('/quote/requirement.html'), { timeout: 30000 });
+  await expect(page.locator('#requirement-app')).toBeVisible({ timeout: 30000 });
+  await expect(page).toHaveURL(requirementLink);
   const currentCompany = await page.locator('[data-sales-req-field="requester_company"]').inputValue();
   const currentName = await page.locator('[data-sales-req-field="requester_name"]').inputValue();
   const currentEmail = await page.locator('[data-sales-req-field="requester_email"]').inputValue();
@@ -383,7 +390,7 @@ test.describe('Sales customer node scenarios', () => {
 
     const customerContext = await browser.newContext();
     const customerPage = await customerContext.newPage();
-    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.companyName, 'Scenario Customer', phone);
+    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.dealId, entry.companyName, 'Scenario Customer', phone);
 
     await customerPage.goto(entry.requirementLink);
     await expect(customerPage.locator('#sales-pipeline-root')).toBeVisible({ timeout: 20000 });
@@ -401,7 +408,7 @@ test.describe('Sales customer node scenarios', () => {
 
     const customerContext = await browser.newContext();
     const customerPage = await customerContext.newPage();
-    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.companyName, 'Scenario Quote Customer', phone);
+    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.dealId, entry.companyName, 'Scenario Quote Customer', phone);
 
     await bootstrapDealToQuoteConfirmed(page, {
       dealId: entry.dealId,
@@ -458,7 +465,7 @@ test.describe('Sales customer node scenarios', () => {
 
     const customerContext = await browser.newContext();
     const customerPage = await customerContext.newPage();
-    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.companyName, 'Scenario Contract Customer', phone);
+    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.dealId, entry.companyName, 'Scenario Contract Customer', phone);
 
     await bootstrapDealToQuoteConfirmed(page, {
       dealId: entry.dealId,
@@ -509,7 +516,7 @@ test.describe('Sales customer node scenarios', () => {
 
     const customerContext = await browser.newContext();
     const customerPage = await customerContext.newPage();
-    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.companyName, 'Scenario FAT Customer', phone);
+    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.dealId, entry.companyName, 'Scenario FAT Customer', phone);
 
     await bootstrapDealToQuoteConfirmed(page, {
       dealId: entry.dealId,
@@ -560,7 +567,7 @@ test.describe('Sales customer node scenarios', () => {
 
     const customerContext = await browser.newContext();
     const customerPage = await customerContext.newPage();
-    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.companyName, 'Scenario Late Customer', phone);
+    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.dealId, entry.companyName, 'Scenario Late Customer', phone);
 
     await bootstrapDealToQuoteConfirmed(page, {
       dealId: entry.dealId,
@@ -614,7 +621,7 @@ test.describe('Sales customer node scenarios', () => {
     const tabA = await customerContext.newPage();
     const tabB = await customerContext.newPage();
 
-    await submitRequirementInAccount(tabA, entry.requirementLink, entry.companyName, 'Scenario Race Customer A', phoneA);
+    await submitRequirementInAccount(tabA, entry.requirementLink, entry.dealId, entry.companyName, 'Scenario Race Customer A', phoneA);
 
     await openCustomerSalesEntry(tabB, entry.requirementLink);
     await expect(tabB.locator('#sales-stage-submit-requirement')).toHaveCount(0, { timeout: 20000 });
@@ -633,7 +640,7 @@ test.describe('Sales customer node scenarios', () => {
 
     const customerContext = await browser.newContext();
     const customerPage = await customerContext.newPage();
-    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.companyName, 'Scenario Repeat Customer', phone);
+    await submitRequirementInAccount(customerPage, entry.requirementLink, entry.dealId, entry.companyName, 'Scenario Repeat Customer', phone);
 
     await bootstrapDealToQuoteConfirmed(page, {
       dealId: entry.dealId,
@@ -689,7 +696,7 @@ test.describe('Sales customer node scenarios', () => {
 
     const firstContext = await browser.newContext();
     const firstPage = await firstContext.newPage();
-    await submitRequirementInAccount(firstPage, entry.requirementLink, entry.companyName, 'Scenario Browser Customer', phone);
+    await submitRequirementInAccount(firstPage, entry.requirementLink, entry.dealId, entry.companyName, 'Scenario Browser Customer', phone);
 
     await bootstrapDealToQuoteConfirmed(page, {
       dealId: entry.dealId,

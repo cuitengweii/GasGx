@@ -55,6 +55,7 @@ const TABLE_DEALS = 'quote_deals';
 const TABLE_DEAL_STAGE_RECORDS = 'quote_deal_stage_records';
 const TABLE_CUSTOMER_ACTIVITIES = 'quote_customer_activities';
 const TABLE_ACTIVITY_READS = 'quote_activity_reads';
+const TABLE_STAGE_COMMUNICATIONS = 'quote_stage_communications';
 const STORAGE_BUCKET_PRODUCT_MEDIA = 'quote-product-media';
 const DEFAULT_CUSTOMER_ACTIVITY_FILTER = 'customer';
 
@@ -85,6 +86,8 @@ const moduleState = {
     unreadCustomerActivityMap: {},
     unreadStageCustomerActivityMap: {},
     activityThrottleMap: {},
+    dealCommunications: [],
+    dealCommunicationLoadedId: '',
     customerSends: [],
     customerArchiveExpandedMap: {},
     dealStageRecords: [],
@@ -99,6 +102,7 @@ const moduleState = {
     dealSearch: '',
     requirementProductSelection: '',
     pipelineProductSelection: '',
+    salesFlowReplyToId: '',
     requirementStatusFilter: 'all',
     dealStageFilter: 'all',
     dealStatusFilter: 'all',
@@ -247,6 +251,34 @@ function createSalesActivityRecord(row = {}) {
         occurred_at: text(row.occurred_at || row.created_at),
         source: text(row.source, 'activity'),
     };
+}
+
+function createStageCommunicationRecord(row = {}) {
+    return {
+        id: text(row.id),
+        customer_id: text(row.customer_id || row.customerId),
+        deal_id: text(row.deal_id || row.dealId),
+        stage_key: normalizeDealStageKey(row.stage_key || row.stageKey),
+        requirement_id: text(row.requirement_id || row.requirementId),
+        instance_id: text(row.instance_id || row.instanceId),
+        reply_to_id: text(row.reply_to_id || row.replyToId),
+        actor_type: text(row.actor_type || row.actorType, 'sales'),
+        actor_id: text(row.actor_id || row.actorId),
+        actor_label: text(row.actor_label || row.actorLabel),
+        body: text(row.body || row.note),
+        visibility: text(row.visibility, 'public'),
+        created_at: text(row.created_at || row.createdAt),
+        updated_at: text(row.updated_at || row.updatedAt || row.created_at || row.createdAt),
+        reply_to_body: text(row.reply_to_body || row.replyToBody),
+        reply_to_actor_label: text(row.reply_to_actor_label || row.replyToActorLabel),
+        reply_to_stage_key: normalizeDealStageKey(row.reply_to_stage_key || row.replyToStageKey),
+        source: text(row.source, 'stage-communication'),
+    };
+}
+
+function stageCommunicationTimestampMs(entry = {}) {
+    const stamp = Date.parse(text(entry.created_at || entry.updated_at));
+    return Number.isFinite(stamp) ? stamp : 0;
 }
 
 function salesActivityTimestampMs(activity = {}) {
@@ -511,7 +543,10 @@ const REQUIREMENT_STATUS_OPTIONS = Object.freeze([
 ]);
 
 const REQUIREMENT_TYPE_OPTIONS = Object.freeze([
+    { value: 'oilfield_gas_to_power', label: '油田伴生气发电' },
     { value: 'integrated_mining_power', label: '燃气发电+矿箱一体化' },
+    { value: 'industrial_power_generation', label: '工业分布式发电' },
+    { value: 'chp_project', label: 'CHP 热电联供项目' },
     { value: 'miner_only', label: '独立矿机矿箱' },
     { value: 'power_only', label: '独立燃气发电机组' },
     { value: 'unclear', label: '需要推荐' },
@@ -918,6 +953,68 @@ function stageCommunicationLogs(record = {}) {
     return normalizeStageCommunicationLogs(record?.meta?.communication_logs);
 }
 
+function legacyRequirementCommunicationRecords(requirement = {}) {
+    const answers = normalizeRequirementAnswers(requirement?.answers);
+    const requirementId = text(requirement?.id);
+    const dealId = text(requirement?.deal_id);
+    const customerId = text(requirement?.customer_id);
+    return (answers.communication_notes || []).map((item, index) => createStageCommunicationRecord({
+        id: `legacy:req:${requirementId}:${index}`,
+        customer_id: customerId,
+        deal_id: dealId,
+        stage_key: 'requirement_capture',
+        requirement_id: requirementId,
+        actor_type: 'sales',
+        actor_label: text(item.author, '销售沟通'),
+        body: item.note,
+        created_at: item.created_at,
+        updated_at: item.created_at,
+        source: 'legacy-requirement',
+    }));
+}
+
+function legacyStageCommunicationRecords(records = [], deal = null) {
+    return (Array.isArray(records) ? records : []).flatMap((record) => (
+        stageCommunicationLogs(record).map((item, index) => createStageCommunicationRecord({
+            id: `legacy:stage:${text(record.stage_key)}:${index}:${text(item.created_at)}`,
+            customer_id: text(deal?.customer_id),
+            deal_id: text(deal?.id || record.deal_id),
+            stage_key: text(record.stage_key),
+            requirement_id: text(deal?.primary_requirement_id),
+            instance_id: text(deal?.primary_instance_id),
+            actor_type: 'sales',
+            actor_label: text(item.author, '销售沟通'),
+            body: item.note,
+            created_at: item.created_at,
+            updated_at: item.created_at,
+            source: 'legacy-stage',
+        }))
+    ));
+}
+
+function mergeStageCommunicationRecords(rows = [], fallbackRows = []) {
+    const merged = [];
+    const seen = new Set();
+    [...(Array.isArray(rows) ? rows : []), ...(Array.isArray(fallbackRows) ? fallbackRows : [])]
+        .map((entry) => createStageCommunicationRecord(entry))
+        .filter((entry) => entry.body && entry.stage_key)
+        .sort((left, right) => stageCommunicationTimestampMs(left) - stageCommunicationTimestampMs(right))
+        .forEach((entry) => {
+            const key = [
+                text(entry.id) && !text(entry.id).startsWith('legacy:') ? text(entry.id) : '',
+                text(entry.deal_id),
+                text(entry.stage_key),
+                text(entry.actor_label),
+                text(entry.body),
+                text(entry.created_at),
+            ].join('|');
+            if (seen.has(key)) return;
+            seen.add(key);
+            merged.push(entry);
+        });
+    return merged;
+}
+
 function appendStageCommunicationLog(stageKey = '', note = '', author = '') {
     const message = text(note);
     if (!message) return;
@@ -1053,17 +1150,27 @@ function normalizeRequirementAnswers(value = {}) {
             }))
             .filter((item) => item.note)
         : [];
+    const normalizedTargetPower = text(source.target_power || source.power_capacity_band || 'unknown');
+    const normalizedDeploymentPreference = text(source.deployment_preference || source.container_preference || 'need_recommendation');
     return {
         allow_gas_source_report: source.allow_gas_source_report !== false,
+        site_type: text(source.site_type || 'unknown'),
+        target_power: normalizedTargetPower,
+        gas_type: text(source.gas_type || 'unknown'),
+        gas_quality: text(source.gas_quality || 'unknown'),
+        available_flow: text(source.available_flow),
         deployment_mode: text(source.deployment_mode || 'new_site'),
         miner_brands: normalizeStringList(source.miner_brands),
         miner_cooling: normalizeStringList(source.miner_cooling),
         miner_hashrate_band: text(source.miner_hashrate_band || 'need_recommendation'),
         miner_power_band: text(source.miner_power_band || 'need_recommendation'),
         miner_quantity_band: text(source.miner_quantity_band || 'unknown'),
-        power_capacity_band: text(source.power_capacity_band || 'unknown'),
+        power_capacity_band: normalizedTargetPower,
         voltage_frequency: text(source.voltage_frequency || 'custom'),
-        container_preference: text(source.container_preference || 'need_recommendation'),
+        deployment_preference: normalizedDeploymentPreference,
+        container_preference: normalizedDeploymentPreference,
+        delivery_scope: text(source.delivery_scope || 'unknown'),
+        service_scope: text(source.service_scope || 'unknown'),
         silent_requirement: text(source.silent_requirement || 'unknown'),
         budget_band: text(source.budget_band || 'need_recommendation'),
         timeline_band: text(source.timeline_band || 'unknown'),
@@ -1121,22 +1228,30 @@ const REQUIREMENT_SUBMISSION_FIELD_LABELS = {
     requester_phone: '账号 / 电话',
     country: '国家 / 地区',
     requirement_type: '需求类型',
-    deployment_mode: '部署模式',
+    site_type: '站点类型',
+    target_power: '目标功率',
+    gas_type: '气源类型',
+    gas_quality: '气质情况',
+    available_flow: '可用气量 / 压力',
     miner_hashrate_band: '矿机算力范围',
     miner_power_band: '矿机功耗范围',
     miner_quantity_band: '矿机数量范围',
     voltage_frequency: '电压 / 频率',
     miner_brands: '矿机品牌',
     miner_cooling: '矿机冷却方式',
-    power_capacity_band: '供电规模',
-    container_preference: '部署偏好',
-    silent_requirement: '噪音要求',
+    deployment_preference: '部署偏好',
+    delivery_scope: '交付范围',
+    service_scope: '服务范围',
     budget_band: '每 MW 预算',
     timeline_band: '期望周期',
 };
 
 function requirementSubmissionFieldLabel(field = '') {
     return REQUIREMENT_SUBMISSION_FIELD_LABELS[text(field)] || text(field);
+}
+
+function requirementNeedsMiningFields(requirementType = '') {
+    return ['integrated_mining_power', 'miner_only'].includes(text(requirementType));
 }
 
 function requirementMissingSubmissionFields(requirement = {}) {
@@ -1152,18 +1267,21 @@ function requirementMissingSubmissionFields(requirement = {}) {
     pushMissing('requester_phone', text(requirement.requester_phone).length < 5);
     pushMissing('country', !text(requirement.country));
     pushMissing('requirement_type', !text(requirement.requirement_type));
-    pushMissing('deployment_mode', !text(answers.deployment_mode));
-    pushMissing('miner_hashrate_band', !text(answers.miner_hashrate_band));
-    pushMissing('miner_power_band', !text(answers.miner_power_band));
-    pushMissing('miner_quantity_band', !text(answers.miner_quantity_band));
+    pushMissing('site_type', !text(answers.site_type));
+    pushMissing('target_power', !text(answers.target_power));
+    pushMissing('gas_type', !text(answers.gas_type));
+    pushMissing('gas_quality', !text(answers.gas_quality));
+    pushMissing('available_flow', !text(answers.available_flow));
     pushMissing('voltage_frequency', !text(answers.voltage_frequency));
-    pushMissing('miner_brands', !Array.isArray(answers.miner_brands) || answers.miner_brands.length === 0);
-    pushMissing('miner_cooling', !Array.isArray(answers.miner_cooling) || answers.miner_cooling.length === 0);
-    pushMissing('power_capacity_band', !text(answers.power_capacity_band));
-    pushMissing('container_preference', !text(answers.container_preference));
-    pushMissing('silent_requirement', !text(answers.silent_requirement));
+    pushMissing('deployment_preference', !text(answers.deployment_preference));
+    pushMissing('delivery_scope', !text(answers.delivery_scope));
+    pushMissing('service_scope', !text(answers.service_scope));
     pushMissing('budget_band', !text(answers.budget_band));
     pushMissing('timeline_band', !text(answers.timeline_band));
+    if (requirementNeedsMiningFields(requirement.requirement_type)) {
+        pushMissing('miner_quantity_band', !text(answers.miner_quantity_band));
+        pushMissing('miner_brands', !Array.isArray(answers.miner_brands) || answers.miner_brands.length === 0);
+    }
     return missing;
 }
 
@@ -2485,11 +2603,46 @@ async function fetchDealStageRecords(dealId) {
     return moduleState.dealStageRecords;
 }
 
+async function fetchDealCommunications(dealId, options = {}) {
+    const targetDealId = text(dealId);
+    if (!targetDealId) {
+        moduleState.dealCommunications = [];
+        moduleState.dealCommunicationLoadedId = '';
+        return [];
+    }
+    const deal = options.deal || dealById(targetDealId) || moduleState.dealEditor || {};
+    const requirement = options.requirement || requirementById(text(deal.primary_requirement_id)) || moduleState.requirementEditor || {};
+    let rows = [];
+    try {
+        const { data, error } = await client
+            .from(TABLE_STAGE_COMMUNICATIONS)
+            .select('*')
+            .eq('deal_id', targetDealId)
+            .eq('visibility', 'public')
+            .order('created_at', { ascending: true });
+        if (error) throw error;
+        rows = Array.isArray(data) ? data : [];
+    } catch (_error) {
+        rows = [];
+    }
+    moduleState.dealCommunications = mergeStageCommunicationRecords(
+        rows,
+        [
+            ...legacyRequirementCommunicationRecords(requirement),
+            ...legacyStageCommunicationRecords(moduleState.dealStageRecords, deal),
+        ],
+    );
+    moduleState.dealCommunicationLoadedId = targetDealId;
+    return moduleState.dealCommunications;
+}
+
 async function fetchDealEditor(dealId) {
     if (!dealId) {
         moduleState.dealLoadedId = '';
         moduleState.dealEditor = createDealDraft();
         moduleState.dealStageRecords = mergeDealStageRecords(moduleState.dealEditor, []);
+        moduleState.dealCommunications = [];
+        moduleState.dealCommunicationLoadedId = '';
         moduleState.dealCreateMode = true;
         return moduleState.dealEditor;
     }
@@ -2499,6 +2652,7 @@ async function fetchDealEditor(dealId) {
     moduleState.dealEditor = createDealDraft(data);
     moduleState.dealCreateMode = false;
     await fetchDealStageRecords(dealId);
+    await fetchDealCommunications(dealId, { deal: moduleState.dealEditor });
     return moduleState.dealEditor;
 }
 
@@ -2651,14 +2805,21 @@ async function fetchActivityReadsForUser(inputUser = null, activityIds = []) {
         return moduleState.activityReadMap;
     }
     try {
-        const { data, error } = await client
-            .from(TABLE_ACTIVITY_READS)
-            .select('activity_id,reader_email,reader_user_id,read_at')
-            .eq('reader_email', reader.email)
-            .in('activity_id', activityIds);
-        if (error) throw error;
+        const dedupedIds = [...new Set((Array.isArray(activityIds) ? activityIds : []).map((item) => text(item)).filter(Boolean))];
+        const activityReadBatchSize = 120;
+        const rows = [];
+        for (let start = 0; start < dedupedIds.length; start += activityReadBatchSize) {
+            const batch = dedupedIds.slice(start, start + activityReadBatchSize);
+            const { data, error } = await client
+                .from(TABLE_ACTIVITY_READS)
+                .select('activity_id,reader_email,reader_user_id,read_at')
+                .eq('reader_email', reader.email)
+                .in('activity_id', batch);
+            if (error) throw error;
+            rows.push(...(Array.isArray(data) ? data : []));
+        }
         moduleState.activityReadMap = Object.fromEntries(
-            (Array.isArray(data) ? data : []).map((row) => [text(row.activity_id), text(row.read_at || new Date().toISOString())]),
+            rows.map((row) => [text(row.activity_id), text(row.read_at || new Date().toISOString())]),
         );
         return moduleState.activityReadMap;
     } catch (_error) {
@@ -2717,6 +2878,93 @@ function customerHasUnreadActivityInStage(customerId = '', stageKey = '') {
     const stage = normalizeDealStageKey(stageKey);
     if (!customer || !stage) return customerHasUnreadActivity(customer);
     return Boolean(moduleState.unreadStageCustomerActivityMap[`${stage}:${customer}`]);
+}
+
+function dealCommunicationRows(dealId = '', fallbackDeal = null, fallbackRequirement = null) {
+    const targetDealId = text(dealId || fallbackDeal?.id || moduleState.dealEditor?.id);
+    if (targetDealId && moduleState.dealCommunicationLoadedId !== targetDealId) {
+        const deal = fallbackDeal || dealById(targetDealId) || moduleState.dealEditor || {};
+        const requirement = fallbackRequirement
+            || requirementById(text(deal.primary_requirement_id))
+            || requirementById(text(moduleState.requirementEditor?.id))
+            || moduleState.requirementEditor
+            || {};
+        return mergeStageCommunicationRecords(
+            [],
+            [
+                ...legacyRequirementCommunicationRecords(requirement),
+                ...legacyStageCommunicationRecords(moduleState.dealStageRecords, deal),
+            ],
+        );
+    }
+    return Array.isArray(moduleState.dealCommunications) ? moduleState.dealCommunications : [];
+}
+
+function stageCommunicationRows(stageKey = '', deal = null, requirement = null) {
+    const normalizedStageKey = normalizeDealStageKey(stageKey);
+    return dealCommunicationRows(text(deal?.id), deal, requirement).filter((entry) => entry.stage_key === normalizedStageKey);
+}
+
+function communicationReplyTarget(replyToId = '', stageKey = '', deal = null, requirement = null) {
+    const targetId = text(replyToId);
+    if (!targetId) return null;
+    return stageCommunicationRows(stageKey, deal, requirement).find((entry) => text(entry.id) === targetId) || null;
+}
+
+async function addSalesStageCommunication(user, payload = {}) {
+    const dealId = text(payload.deal_id || payload.dealId || moduleState.dealEditor?.id);
+    const stageKey = normalizeDealStageKey(payload.stage_key || payload.stageKey);
+    const body = text(payload.body).trim();
+    const replyToId = text(payload.reply_to_id || payload.replyToId) || null;
+    if (!dealId || !stageKey || !body) throw new Error('请先填写沟通记录内容。');
+    const deal = dealById(dealId) || moduleState.dealEditor || {};
+    const requirement = requirementById(text(payload.requirement_id || payload.requirementId || deal.primary_requirement_id)) || moduleState.requirementEditor || {};
+    const instance = instanceById(text(payload.instance_id || payload.instanceId || deal.primary_instance_id)) || moduleState.instanceEditor || {};
+    const actor = currentSalesOwner(user);
+    const insertPayload = {
+        customer_id: text(deal.customer_id || requirement.customer_id),
+        deal_id: dealId,
+        stage_key: stageKey,
+        requirement_id: text(requirement.id) || null,
+        instance_id: text(instance.id) || null,
+        reply_to_id: replyToId,
+        actor_type: 'sales',
+        actor_id: user?.id || null,
+        actor_label: actor.email || actor.name,
+        body,
+        visibility: 'public',
+    };
+    const { data, error } = await client
+        .from(TABLE_STAGE_COMMUNICATIONS)
+        .insert(insertPayload)
+        .select('*')
+        .single();
+    if (error) throw error;
+    moduleState.dealCommunications = mergeStageCommunicationRecords(
+        [...dealCommunicationRows(dealId, deal, requirement), data],
+        [],
+    );
+    moduleState.dealCommunicationLoadedId = dealId;
+    await appendSalesActivity({
+        customer_id: insertPayload.customer_id,
+        deal_id: dealId,
+        requirement_id: insertPayload.requirement_id,
+        instance_id: insertPayload.instance_id,
+        stage_key: stageKey,
+        actor_type: 'sales',
+        actor_id: user?.id || null,
+        actor_label: actor.email || actor.name,
+        activity_type: 'button_click',
+        entity_type: 'deal_stage',
+        entity_id: stageKey,
+        page_key: 'quote-pipeline',
+        action_label: '销售新增沟通记录',
+        detail_json: {
+            summary: body.length > 80 ? `${body.slice(0, 77)}...` : body,
+            reply_to_id: replyToId || '',
+        },
+    });
+    return createStageCommunicationRecord(data);
 }
 
 async function fetchUnreadStageActivitySummary(reader = null) {
@@ -12313,7 +12561,6 @@ function customerProfileFlowMarkup(customer = {}, deals = [], activeDeal = null)
 
 function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
     const answers = normalizeRequirementAnswers(requirement.answers);
-    const communicationNotes = answers.communication_notes || [];
     const stageIntro = normalizeDealStageKey(stageKey) === 'requirement_capture'
         ? (requirementStatusReadyForQuote(requirement.status)
             ? '客户已经提交需求。这里改为只读回看客户提交内容，并转入“确认需求”阶段锁定报价基线。'
@@ -12354,66 +12601,248 @@ function requirementFlowMarkup(stageKey = '', deal = null, requirement = {}) {
             <div class="ams-site-field-grid ams-site-field-grid-wide">
                 <div class="ams-field"><label>客户填写进度说明</label><input class="ams-input" value="${esc(requirementProgressLabel)}" disabled></div>
             </div>
-            <div class="ams-field">
-                <label>销售沟通备注</label>
-                <textarea class="ams-textarea" rows="4" data-sales-flow-requirement-answer="communication_note_draft" placeholder="记录客户在微信、电话、邮件等私下沟通里的新增信息；每次保存都会追加一条沟通记录。">${esc(answers.communication_note_draft)}</textarea>
-                <div class="ams-sales-note-submit">
-                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-requirement-note-submit">提交备注</button>
-                </div>
-            </div>
-            <details class="ams-fold-card">
-                <summary class="ams-fold-summary">
-                    <span>沟通备注列表</span>
-                    <em>${esc(communicationNotes.length)} 条</em>
-                </summary>
-                <div class="ams-fold-body">
-                    ${communicationNotes.length
-                        ? communicationNotes.map((item) => `
-                            <article class="ams-note-log-item">
-                                <strong>${esc(text(item.author, '销售备注'))}</strong>
-                                <time>${esc(fmtDate(item.created_at))}</time>
-                                <p>${esc(item.note)}</p>
-                            </article>
-                        `).join('')
-                        : '<div class="ams-empty">当前还没有沟通备注记录。</div>'}
-                </div>
-            </details>
         </section>
+        ${stageCommunicationSectionMarkup(stageKey, stageRecordByKey(stageKey, moduleState.dealStageRecords), {
+            title: '需求沟通记录',
+            help: '这里统一记录客户与销售围绕需求单的公开沟通，包含补充说明、澄清问题和节点内回复。',
+            deal: moduleState.dealEditor,
+            requirement,
+            replyToId: text(moduleState.salesFlowReplyToId),
+        })}
     `;
 }
 
-function stageCommunicationSectionMarkup(stageKey = '', record = {}, options = {}) {
-    const logs = stageCommunicationLogs(record);
-    const title = text(options.title, '沟通记录');
-    const help = text(options.help, '记录这个节点里与客户沟通、内部确认、修改原因和关键结论。每次保存都会追加一条历史。');
+function stageCommunicationRowsForDisplay(stageKey = '', deal = null, requirement = null) {
+    return stageCommunicationRows(stageKey, deal, requirement);
+}
+
+function communicationPreviewText(entry = {}) {
+    const body = text(entry.body);
+    if (body.length <= 80) return body;
+    return `${body.slice(0, 77)}...`;
+}
+
+function communicationActorTone(entry = {}) {
+    const actorType = text(entry.actor_type);
+    if (actorType === 'customer') return 'is-customer';
+    if (actorType === 'system') return 'is-system';
+    return 'is-sales';
+}
+
+function communicationDisplayActorName(value = '', fallback = '沟通') {
+    const normalized = text(value, fallback);
+    if (!normalized) return fallback;
+    return normalized.includes('@') ? normalized.split('@')[0] : normalized;
+}
+
+function communicationAvatarLabel(entry = {}) {
+    const actorType = text(entry.actor_type);
+    const fallback = actorType === 'customer' ? '客户' : actorType === 'system' ? '系统' : '销售';
+    const display = communicationDisplayActorName(text(entry.actor_label, fallback), fallback).replace(/\s+/g, '');
+    if (!display) return fallback.slice(0, 1);
+    return display.slice(0, 2).toUpperCase();
+}
+
+function buildStageCommunicationThreads(stageKey = '', deal = null, requirement = null) {
+    const currentList = stageCommunicationRowsForDisplay(stageKey, deal, requirement);
+    const map = new Map(currentList.map((item) => [item.id, { ...item, replies: [] }]));
+    const roots = [];
+
+    currentList.forEach((item) => {
+        const node = map.get(item.id);
+        if (!node) return;
+        const parentId = text(item.reply_to_id);
+        if (parentId && map.has(parentId)) {
+            let rootId = parentId;
+            while (map.has(rootId) && text(map.get(rootId).reply_to_id) && map.has(text(map.get(rootId).reply_to_id))) {
+                rootId = text(map.get(rootId).reply_to_id);
+            }
+            map.get(rootId)?.replies.push(node);
+            return;
+        }
+        roots.push(node);
+    });
+
+    roots.forEach((root) => {
+        root.replies.sort((left, right) => stageCommunicationTimestampMs(right) - stageCommunicationTimestampMs(left));
+    });
+    roots.sort((left, right) => {
+        const leftLatest = Math.max(stageCommunicationTimestampMs(left), ...left.replies.map((item) => stageCommunicationTimestampMs(item)), 0);
+        const rightLatest = Math.max(stageCommunicationTimestampMs(right), ...right.replies.map((item) => stageCommunicationTimestampMs(item)), 0);
+        return rightLatest - leftLatest;
+    });
+    return roots;
+}
+
+function communicationMessageMarkup(entry = {}, options = {}) {
+    const {
+        stageKey = '',
+        allowReply = true,
+        currentReplyId = '',
+        compact = false,
+        rootId = '',
+    } = options;
+    const actorType = text(entry.actor_type);
+    const roleLabel = actorType === 'customer' ? '客户' : actorType === 'sales' ? '销售' : '系统';
+    const actorLabel = text(entry.actor_label, roleLabel);
+    const actorName = communicationDisplayActorName(actorLabel, roleLabel);
+    const replyStageLabel = text(entry.reply_to_stage_key) ? dealStageLabel(entry.reply_to_stage_key) : dealStageLabel(stageKey);
+    const isReplying = text(currentReplyId) === text(entry.id);
+    const showInlineReplyTarget = compact && text(entry.reply_to_id) && text(rootId) && text(entry.reply_to_id) !== text(rootId);
     return `
-        <details class="ams-card ams-stage-log-card ams-fold-card ams-stage-module-fold">
-            <summary class="ams-fold-summary">
-                <span>${esc(title)}</span>
-                <em>${esc(`${logs.length} 条`)}</em>
-            </summary>
-            <div class="ams-fold-body">
-                <p class="ams-field-help">${esc(help)}</p>
-                <div class="ams-field">
-                    <label>新增沟通备注</label>
-                    <textarea class="ams-textarea" rows="3" data-sales-flow-stage-meta="communication_note_draft" placeholder="记录本次和客户沟通的要点、变更原因、承诺事项或内部判断。">${esc(stageMetaValue(record, 'communication_note_draft'))}</textarea>
-                    <div class="ams-sales-note-submit">
-                        <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-note-submit">提交备注</button>
+        <div class="ams-comment-thread-row ${compact ? 'is-compact' : ''}">
+            <div class="ams-comment-thread-avatar ${communicationActorTone(entry)} ${compact ? 'is-compact' : ''}">${esc(communicationAvatarLabel(entry))}</div>
+            <article class="ams-comment-thread ${communicationActorTone(entry)} ${compact ? 'is-compact' : ''}">
+                <div class="ams-comment-thread-head">
+                    <div class="ams-comment-thread-author">
+                        <strong>${esc(actorName)}</strong>
+                        <span class="ams-comment-role">${esc(roleLabel)}</span>
+                        <em>${esc(dealStageLabel(entry.stage_key || stageKey))}</em>
                     </div>
+                    <time>${esc(fmtDate(entry.created_at))}</time>
+                </div>
+                ${showInlineReplyTarget
+                    ? `<div class="ams-comment-thread-inline-reply">回复 <strong>@${esc(communicationDisplayActorName(text(entry.reply_to_actor_label, '上一条沟通'), '上一条沟通'))}</strong></div>`
+                    : ''}
+                ${text(entry.reply_to_id) && !compact
+                    ? `
+                        <div class="ams-comment-reply-context">
+                            <span>回复 ${esc(text(entry.reply_to_actor_label, '上一条沟通'))} · ${esc(replyStageLabel)}</span>
+                            <strong>${esc(text(entry.reply_to_body, ''))}</strong>
+                        </div>
+                    `
+                    : ''}
+                <p>${esc(entry.body)}</p>
+                ${allowReply ? `
+                    <div class="ams-comment-thread-actions">
+                        <button class="ams-btn ${isReplying ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" data-stage-comment-reply="${esc(entry.id)}">
+                            ${isReplying ? '取消回复' : '回复'}
+                        </button>
+                    </div>
+                ` : ''}
+            </article>
+        </div>
+    `;
+}
+
+function communicationThreadMarkup(entry = {}, options = {}) {
+    const replies = Array.isArray(entry.replies) ? entry.replies : [];
+    const rootId = text(entry.id);
+    return `
+        <div class="ams-comment-thread-stream">
+            ${communicationMessageMarkup(entry, {
+                ...options,
+                compact: false,
+                rootId,
+            })}
+            ${replies.length ? `
+                <div class="ams-comment-thread-replies">
+                    ${replies.map((reply) => communicationMessageMarkup(reply, {
+                        ...options,
+                        compact: true,
+                        rootId,
+                    })).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function groupedCommunicationHistoryMarkup(stageKey = '', deal = null, requirement = null) {
+    const rows = dealCommunicationRows(text(deal?.id), deal, requirement);
+    const groups = DEAL_STAGE_DEFINITIONS
+        .map((stage) => ({
+            stage,
+            rows: rows.filter((entry) => entry.stage_key === stage.key),
+            threads: buildStageCommunicationThreads(stage.key, deal, requirement),
+        }))
+        .filter((entry) => entry.rows.length);
+    if (!groups.length) return '<div class="ams-empty">当前销售流程还没有公开沟通记录。</div>';
+    return groups.map(({ stage, rows, threads }) => `
+        <details class="ams-comment-history-group ${stage.key === normalizeDealStageKey(stageKey) ? 'is-current' : ''}" ${stage.key === normalizeDealStageKey(stageKey) ? 'open' : ''}>
+            <summary class="ams-comment-history-summary">
+                <span>${esc(dealStageLabel(stage.key))}</span>
+                <em>${esc(`${rows.length} 条`)}</em>
+            </summary>
+            <div class="ams-comment-history-body">
+                ${threads.map((entry) => communicationThreadMarkup(entry, {
+                    stageKey: stage.key,
+                    allowReply: false,
+                })).join('')}
+            </div>
+        </details>
+    `).join('');
+}
+
+function stageCommunicationSectionMarkup(stageKey = '', record = {}, options = {}) {
+    const title = text(options.title, '沟通记录');
+    const help = text(options.help, '所有节点统一使用公开沟通记录，客户与销售都能看到同一条评论流，并支持引用回复。');
+    const deal = options.deal || moduleState.dealEditor || dealById(record?.deal_id) || {};
+    const requirement = options.requirement || moduleState.requirementEditor || requirementById(text(deal.primary_requirement_id)) || {};
+    const rows = stageCommunicationRowsForDisplay(stageKey, deal, requirement);
+    const threads = buildStageCommunicationThreads(stageKey, deal, requirement);
+    const replyId = text(options.replyToId || moduleState.salesFlowReplyToId);
+    const replyTarget = communicationReplyTarget(replyId, stageKey, deal, requirement);
+    const composerPlaceholder = replyTarget
+        ? '输入回复内容...'
+        : `在「${dealStageLabel(stageKey)}」节点留言，客户和销售会看到同一条公开对话。`;
+    return `
+        <section class="ams-card ams-stage-log-card ams-stage-comments-card">
+            <div class="ams-section-head">
+                <div>
+                    <h3>${esc(title)}</h3>
+                    <p>${esc(help)}</p>
+                </div>
+                <span class="ams-stage-comments-count">${esc(`${rows.length} 条`)}</span>
+            </div>
+            <div class="ams-comment-composer">
+                ${replyTarget ? `
+                    <div class="ams-comment-reply-banner">
+                        <div>
+                            <span>正在回复 ${esc(text(replyTarget.actor_label, '上一条沟通'))}</span>
+                            <strong>${esc(communicationPreviewText(replyTarget))}</strong>
+                        </div>
+                        <button class="ams-btn ams-btn-muted" type="button" data-stage-comment-reply-cancel="true">取消</button>
+                    </div>
+                ` : ''}
+                <div class="ams-field">
+                    <label>留言 / 回复</label>
+                    <textarea
+                        class="ams-textarea"
+                        rows="4"
+                        id="ams-stage-comment-input"
+                        placeholder="${esc(composerPlaceholder)}"
+                    ></textarea>
+                </div>
+                <div class="ams-sales-note-submit">
+                    <button class="ams-btn ams-btn-primary" type="button" id="ams-sales-flow-stage-comment-submit" data-stage-comment-stage="${esc(stageKey)}" data-stage-comment-reply-to="${esc(replyId)}">提交沟通记录</button>
+                </div>
+            </div>
+            <div class="ams-stage-current-comments">
+                <div class="ams-stage-current-comments-head">
+                    <strong>当前节点对话</strong>
+                    <span>${esc(`${dealStageLabel(stageKey)} · ${rows.length} 条`)}</span>
                 </div>
                 <div class="ams-sales-stage-note-list">
-                    ${logs.length
-                        ? logs.map((item) => `
-                            <article class="ams-note-log-item">
-                                <strong>${esc(text(item.author, '销售沟通'))}</strong>
-                                <time>${esc(fmtDate(item.created_at))}</time>
-                                <p>${esc(item.note)}</p>
-                            </article>
-                        `).join('')
+                    ${threads.length
+                        ? threads.map((entry) => communicationThreadMarkup(entry, {
+                            stageKey,
+                            allowReply: true,
+                            currentReplyId: replyId,
+                        })).join('')
                         : '<div class="ams-empty">当前节点还没有沟通记录。</div>'}
                 </div>
             </div>
-        </details>
+            <details class="ams-fold-card ams-stage-module-fold">
+                <summary class="ams-fold-summary">
+                    <span>全部节点沟通回顾</span>
+                    <em>按节点展开</em>
+                </summary>
+                <div class="ams-fold-body">
+                    ${groupedCommunicationHistoryMarkup(stageKey, deal, requirement)}
+                </div>
+            </details>
+        </section>
     `;
 }
 
@@ -13227,30 +13656,7 @@ function bindSalesRequirementActions(input, stageKey = '', customerId = '', cust
         });
     });
 
-    document.getElementById('ams-sales-flow-requirement-note-submit')?.addEventListener('click', async (event) => {
-        await input.withButtonBusy(event.currentTarget, '提交中...', async () => {
-            const answers = normalizeRequirementAnswers(moduleState.requirementEditor.answers);
-            const noteDraft = text(answers.communication_note_draft);
-            if (!noteDraft) {
-                input.showToast('请先填写沟通备注。', true);
-                return;
-            }
-            answers.communication_notes = [
-                {
-                    note: noteDraft,
-                    created_at: new Date().toISOString(),
-                    author: text(input.user?.email || input.user?.id, 'sales'),
-                },
-                ...(answers.communication_notes || []),
-            ];
-            answers.communication_note_draft = '';
-            moduleState.requirementEditor.answers = answers;
-            const saved = await saveRequirementDraft(input.user, moduleState.requirementEditor);
-            moduleState.requirementEditor = createRequirementDraft(saved);
-            input.showToast('沟通备注已提交。');
-            await input.rerender();
-        });
-    });
+    bindSalesStageCommentActions(input, 'requirement_capture');
 
     document.getElementById('ams-sales-flow-requirement-open-link')?.addEventListener('click', () => {
         const requirement = createRequirementDraft(moduleState.requirementEditor);
@@ -13346,6 +13752,7 @@ function bindSalesRequirementActions(input, stageKey = '', customerId = '', cust
 
 function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFlow = false) {
     const quotePublicReady = () => quotePublishedForStage(stageKey, moduleState.instanceEditor);
+    bindSalesStageCommentActions(input, stageKey);
 
     document.getElementById('ams-sales-flow-instance-product')?.addEventListener('change', (event) => {
         moduleState.pipelineProductSelection = event.currentTarget.value || '';
@@ -13548,7 +13955,6 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
         }));
         if (!confirmed) return;
         await input.withButtonBusy(event.currentTarget, '保存中...', async () => {
-            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
             if (moduleState.instanceEditor?.id) {
                 await saveInstanceDraft(input.user, moduleState.instanceEditor);
             }
@@ -13577,7 +13983,6 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
         });
         if (!confirmed) return;
         await input.withButtonBusy(event.currentTarget, '确认中...', async () => {
-            flushStageCommunicationDraft(stageKey, input.user?.email || input.user?.id || '销售沟通');
             const saved = await confirmQuoteForDeal(input.user, moduleState.instanceEditor);
             input.showToast('报价已确认。');
             window.location.assign(customerFlow
@@ -13587,27 +13992,50 @@ function bindSalesQuoteActions(input, stageKey = '', customerId = '', customerFl
     });
 }
 
-function bindSalesExecutionActions(input, stageKey = '', customerId = '', customerFlow = false) {
-    document.getElementById('ams-sales-flow-stage-note-submit')?.addEventListener('click', async (event) => {
+function bindSalesStageCommentActions(input, stageKey = '') {
+    document.querySelectorAll('[data-stage-comment-reply]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const targetId = text(button.dataset.stageCommentReply);
+            moduleState.salesFlowReplyToId = moduleState.salesFlowReplyToId === targetId ? '' : targetId;
+            await input.rerender();
+            document.getElementById('ams-stage-comment-input')?.focus();
+        });
+    });
+
+    document.querySelector('[data-stage-comment-reply-cancel]')?.addEventListener('click', async () => {
+        moduleState.salesFlowReplyToId = '';
+        await input.rerender();
+    });
+
+    document.getElementById('ams-sales-flow-stage-comment-submit')?.addEventListener('click', async (event) => {
         await input.withButtonBusy(event.currentTarget, '提交中...', async () => {
-            const record = stageRecordByKey(stageKey, moduleState.dealStageRecords);
-            const noteDraft = text(record?.meta?.communication_note_draft);
-            if (!noteDraft) {
-                input.showToast('请先填写沟通备注。', true);
+            const body = text(document.getElementById('ams-stage-comment-input')?.value).trim();
+            if (!body) {
+                input.showToast('请先填写沟通记录。', true);
                 return;
             }
-            appendStageCommunicationLog(stageKey, noteDraft, input.user?.email || input.user?.id || '销售沟通');
-            if (moduleState.dealEditor?.id) {
-                const saved = await saveDealDraft(input.user, moduleState.dealEditor, {
-                    stageRecords: moduleState.dealStageRecords,
-                    currentStage: stageKey,
+            const activeDealId = text(moduleState.dealEditor?.id || readAdminPageParam('deal'));
+            await addSalesStageCommunication(input.user, {
+                deal_id: activeDealId,
+                stage_key: stageKey,
+                body,
+                reply_to_id: text(moduleState.salesFlowReplyToId) || null,
+            });
+            moduleState.salesFlowReplyToId = '';
+            if (activeDealId) {
+                await fetchDealCommunications(activeDealId, {
+                    deal: moduleState.dealEditor,
+                    requirement: moduleState.requirementEditor,
                 });
-                await fetchDealEditor(saved.id);
             }
-            input.showToast('沟通备注已提交。');
+            input.showToast('沟通记录已提交。');
             await input.rerender();
         });
     });
+}
+
+function bindSalesExecutionActions(input, stageKey = '', customerId = '', customerFlow = false) {
+    bindSalesStageCommentActions(input, stageKey);
 
     document.querySelectorAll('[data-sales-flow-stage-field]').forEach((node) => {
         const apply = () => {

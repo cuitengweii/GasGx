@@ -149,6 +149,23 @@
             border-radius: 8px;
             image-rendering: pixelated;
         }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #333;
+            border-radius: 999px;
+        }
         .sales-main-grid {
             display: grid;
             gap: 20px;
@@ -255,6 +272,7 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
+            min-width: 0;
         }
         .sales-timeline-shell {
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -420,6 +438,9 @@
             color: #b2b2b2;
             font-size: 13px;
             line-height: 1.6;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
         .sales-stage-form-grid,
         .sales-stage-readonly-grid {
@@ -500,6 +521,8 @@
             display: flex;
             gap: 10px;
             align-items: center;
+            min-width: 0;
+            flex-wrap: wrap;
         }
         .sales-activity-list {
             display: flex;
@@ -538,6 +561,180 @@
             color: #7f7f7f;
             font-style: normal;
             white-space: nowrap;
+        }
+        .sales-comments-card {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .sales-comment-composer,
+        .sales-comment-stage-block {
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.02);
+            padding: 14px;
+        }
+        .sales-comment-compose-field,
+        .sales-comment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 0;
+        }
+        .sales-comment-compose-field > span,
+        .sales-comment-stage-head span,
+        .sales-comment-history-summary span,
+        .sales-comment-history-group-summary span,
+        .sales-comment-role,
+        .sales-comment-author em,
+        .sales-comment-head time {
+            color: #9ca3af;
+            font-size: 11px;
+        }
+        .sales-comment-stage-head,
+        .sales-comment-head,
+        .sales-comment-actions,
+        .sales-comment-history-summary,
+        .sales-comment-history-group-summary {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sales-comment-head {
+            align-items: flex-start;
+        }
+        .sales-comment-author {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+            flex: 1;
+        }
+        .sales-comment-stage-head,
+        .sales-comment-head,
+        .sales-comment-history-summary,
+        .sales-comment-history-group-summary {
+            justify-content: space-between;
+            min-width: 0;
+            flex-wrap: wrap;
+        }
+        .sales-comment-avatar {
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            color: #d9ffd0;
+            background: linear-gradient(180deg, rgba(93,214,44,0.25), rgba(93,214,44,0.08));
+            border: 1px solid rgba(93,214,44,0.26);
+        }
+        .sales-comment-author-line,
+        .sales-comment-meta-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            flex-wrap: wrap;
+        }
+        .sales-comment-stage-head strong,
+        .sales-comment-history-summary strong,
+        .sales-comment-history-group-summary strong,
+        .sales-comment-author strong {
+            color: #fff;
+        }
+        .sales-comment-role {
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: rgba(93,214,44,0.12);
+            color: #8be65f;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .sales-comment-item {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+        }
+        .sales-comment-item.is-customer {
+            border-color: rgba(96, 165, 250, 0.2);
+            background: linear-gradient(180deg, rgba(30,41,59,0.55), rgba(15,23,42,0.72));
+        }
+        .sales-comment-item.is-customer .sales-comment-avatar {
+            color: #dbeafe;
+            background: linear-gradient(180deg, rgba(96,165,250,0.28), rgba(96,165,250,0.1));
+            border-color: rgba(96,165,250,0.3);
+        }
+        .sales-comment-item.is-system .sales-comment-avatar {
+            color: #fef3c7;
+            background: linear-gradient(180deg, rgba(245,158,11,0.24), rgba(245,158,11,0.08));
+            border-color: rgba(245,158,11,0.26);
+        }
+        .sales-comment-item p,
+        .sales-comment-reply-context strong {
+            margin: 0;
+            color: #e5e7eb;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        .sales-comment-body {
+            color: #f3f4f6;
+            font-size: 14px;
+            line-height: 1.72;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        .sales-comment-reply-banner,
+        .sales-comment-reply-context {
+            display: grid;
+            gap: 4px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-left: 3px solid rgba(93,214,44,0.5);
+            background: rgba(255,255,255,0.04);
+            min-width: 0;
+        }
+        .sales-comment-reply-context span {
+            color: #9ca3af;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        .sales-comment-history,
+        .sales-comment-history-group {
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.02);
+            overflow: hidden;
+        }
+        .sales-comment-history-summary,
+        .sales-comment-history-group-summary {
+            cursor: pointer;
+            padding: 14px;
+        }
+        .sales-comment-history-body,
+        .sales-comment-history-group .sales-comment-list {
+            padding: 0 14px 14px;
+        }
+        .sales-comment-history summary,
+        .sales-comment-history-group summary {
+            list-style: none;
+        }
+        .sales-comment-history summary::-webkit-details-marker,
+        .sales-comment-history-group summary::-webkit-details-marker {
+            display: none;
         }
         .sales-empty,
         .sales-loading,
@@ -625,12 +822,21 @@
             .sales-action-buttons {
                 width: 100%;
             }
-            .sales-action-buttons button {
+            .sales-action-buttons button,
+            .sales-action-buttons a {
                 width: 100%;
                 justify-content: center;
             }
             .sales-activity-item {
                 flex-direction: column;
+            }
+            .sales-comment-stage-head,
+            .sales-comment-head,
+            .sales-comment-author,
+            .sales-comment-actions,
+            .sales-comment-history-summary,
+            .sales-comment-history-group-summary {
+                align-items: flex-start;
             }
         }
     </style>
@@ -901,13 +1107,8 @@
                     </article>
                 </section>
 
-                <section id="tab-sales" class="tab-content space-y-6">
-                    <header>
-                        <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-gas-green" data-i18n="salesKicker">Sales Pipeline</p>
-                        <h2 class="mt-3 font-header text-3xl uppercase text-white sm:text-4xl" data-i18n="salesTitle">Customer Deal Workflow</h2>
-                        <p class="mt-2 max-w-4xl text-sm text-gray-400" data-i18n="salesDesc">All customer-side milestones are handled here. Requirement, quote, contract, and factory acceptance confirmations are submitted in this tab only.</p>
-                    </header>
-                    <div id="sales-pipeline-root" class="rounded-xl border border-white/10 bg-[#0F0F0F]/60 p-4 md:p-6 shadow-lg hover:border-gas-green/30 transition-colors duration-500"></div>
+                <section id="tab-sales" class="tab-content">
+                    <div id="sales-pipeline-root"></div>
                 </section>
 
             </div>
@@ -919,7 +1120,7 @@
     <script src="/shared/ui/site-shell.config.js?v=20260321auth02"></script>
     <script src="/shared/ui/site-shell.shared.js?v=20260412shell03"></script>
     <script src="/shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
-<script src="/account/sales-pipeline.portal.js?v=20260420salesTab04"></script>
+<script src="/account/sales-pipeline.portal.js?v=20260421salesTab05"></script>
     <script>
         const MAIN_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
         const MAIN_AUTH_HELPER = window.GasGxMainAuthShared;

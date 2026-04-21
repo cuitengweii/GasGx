@@ -190,7 +190,7 @@
         <div class="ggx-lang-switch ggx-lang-switch-mobile">
             <button id="ggx-mob-lang-en" data-ggx-action="set-lang" data-ggx-lang="en" class="ggx-lang-btn ggx-lang-btn-mobile text-gas-green font-semibold">EN</button>
             <span class="ggx-lang-sep">/</span>
-            <button id="ggx-mob-lang-zh" data-ggx-action="set-lang" data-ggx-lang="zh" class="ggx-lang-btn ggx-lang-btn-mobile text-gray-400">中文</button>
+            <button id="ggx-mob-lang-zh" data-ggx-action="set-lang" data-ggx-lang="zh" class="ggx-lang-btn ggx-lang-btn-mobile text-gray-400">CN</button>
         </div>
     </div>
     <div class="mb-6 border-b border-white/10 pb-4 flex justify-center">
@@ -210,7 +210,7 @@
                 <a id="mob-auth-sales-link" href="/account/account.html?tab=sales" class="hidden w-full text-xs text-gray-200 hover:text-gas-green border border-white/20 bg-white/5 px-3 py-1.5 rounded">
                     <i class="fa-solid fa-diagram-project mr-1"></i><span data-ggx-text="orders">Orders</span>
                 </a>
-                <button data-ggx-action="auth-sign-out" class="text-xs text-red-400 hover:text-red-300 border border-red-900/50 bg-red-900/20 px-3 py-1.5 rounded">
+                <button data-ggx-action="auth-sign-out" class="shrink-0 whitespace-nowrap text-xs text-red-400 hover:text-red-300 border border-red-900/50 bg-red-900/20 px-3 py-1.5 rounded">
                     <span data-ggx-text="auth-logout">Logout</span>
                 </button>
             </div>
@@ -414,8 +414,8 @@
 
     const CHATBOT_TEMPLATE = `
 <div id="ggx-chat-wrapper" class="fixed bottom-44 right-5 z-[88] flex flex-col items-end font-sans font-inter">
-    <div id="ggx-chat-window" class="hidden flex flex-col w-[320px] md:w-[360px] h-[460px] max-h-[75vh] bg-[#101214]/92 backdrop-blur-xl border border-white/12 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.45)] overflow-hidden transition-all duration-300 origin-bottom-right transform scale-95 opacity-0 mb-3">
-        <div class="bg-[#0d0f10]/85 p-4 flex justify-between items-center border-b border-white/8 z-10 shrink-0">
+    <div id="ggx-chat-window" class="hidden flex flex-col w-[320px] md:w-[360px] h-[460px] max-h-[75vh] bg-[#101214]/94 backdrop-blur-xl border border-gas-green/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.45),0_0_0_1px_rgba(93,214,44,0.08)] overflow-hidden transition-all duration-300 origin-bottom-right transform scale-95 opacity-0 mb-3">
+        <div class="bg-[#0d0f10]/88 p-4 flex justify-between items-center border-b border-gas-green/10 z-10 shrink-0">
             <div class="flex items-center gap-3">
                 <div class="w-8 h-8 rounded-full bg-[#141a16] border border-gas-green/45 flex items-center justify-center">
                     <i class="fa-solid fa-robot text-gas-green text-[13px]"></i>
@@ -428,7 +428,7 @@
                     </div>
                 </div>
             </div>
-            <button id="ggx-chat-close-btn" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors" aria-label="Close chat window">
+            <button id="ggx-chat-close-btn" class="w-8 h-8 rounded-full hover:bg-gas-green/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors" aria-label="Close chat window">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -439,16 +439,23 @@
             </div>
             <div class="flex flex-col items-start max-w-[85%] space-y-1">
                 <div class="flex items-center gap-2 mb-1">
-                    <span class="text-[10px] text-gray-500 ml-1">GasGx Bot</span>
+                    <span class="text-[10px] text-gas-green/80 ml-1 tracking-[0.12em] uppercase">GasGx Assistant</span>
                 </div>
-                <div class="bg-[#1b1d1f] text-gray-200 px-4 py-3 rounded-2xl rounded-tl-none text-sm border border-white/8 shadow-sm leading-relaxed">
-                    Hello! I am your GasGx project advisor.<br><br>
-                    Ask me about:
-                    <ul class="list-disc pl-4 mt-1 text-gray-400">
-                        <li>Product selection and power sizing</li>
-                        <li>Oilfield, mining, CHP and industrial solutions</li>
-                        <li>Quotations, delivery, service and support</li>
-                    </ul>
+                <div class="bg-[#151817] text-gray-100 px-4 py-3.5 rounded-2xl rounded-tl-none text-sm border border-gas-green/12 shadow-[0_10px_28px_rgba(0,0,0,0.24)] leading-relaxed">
+                    <div class="space-y-3">
+                        <div class="rounded-2xl border border-gas-green/10 bg-[#111513] px-3.5 py-3 flex items-start gap-3">
+                            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gas-green/35 bg-gas-green/10 text-[11px] font-bold text-gas-green">1</span>
+                            <div class="min-w-0 flex-1">Tell me your project scenario, target power and gas source.</div>
+                        </div>
+                        <div class="rounded-2xl border border-gas-green/10 bg-[#111513] px-3.5 py-3 flex items-start gap-3">
+                            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gas-green/35 bg-gas-green/10 text-[11px] font-bold text-gas-green">2</span>
+                            <div class="min-w-0 flex-1">Ask about oilfield, mining, CHP, industrial power, quotations, delivery or support.</div>
+                        </div>
+                        <div class="rounded-2xl border border-gas-green/10 bg-[#111513] px-3.5 py-3 flex items-start gap-3">
+                            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gas-green/35 bg-gas-green/10 text-[11px] font-bold text-gas-green">3</span>
+                            <div class="min-w-0 flex-1">If a website link is relevant, I will show it as a clickable link with a short explanation.</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -460,9 +467,9 @@
             </div>
         </div>
 
-        <div class="p-3 bg-[#0d0f10]/90 border-t border-white/8 shrink-0">
+        <div class="p-3 bg-[#0d0f10]/90 border-t border-gas-green/10 shrink-0">
             <div class="relative flex items-center gap-2">
-                <input type="text" id="ggx-chat-user-input" class="flex-1 bg-[#17191b] border border-white/12 rounded-full pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-gas-green/60 transition-all placeholder-gray-600" placeholder="Type a question..." autocomplete="off">
+                <input type="text" id="ggx-chat-user-input" class="flex-1 bg-[#17191b] border border-gas-green/15 rounded-full pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-gas-green/60 transition-all placeholder-gray-600" placeholder="Type a question..." autocomplete="off">
                 <button id="ggx-chat-send-btn" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#121915] border border-gas-green/40 rounded-full flex items-center justify-center text-gas-green hover:border-gas-green hover:bg-[#162019] transition-all cursor-pointer" aria-label="Send chat message">
                     <i class="fa-solid fa-paper-plane text-xs"></i>
                 </button>
@@ -474,7 +481,7 @@
     </div>
 
     <div class="flex items-center gap-2">
-        <button id="ggx-chat-dock-btn" class="w-8 h-8 rounded-full bg-[#0e1210]/88 border border-white/10 text-gray-400 hover:text-white hover:border-gas-green/45 transition-colors flex items-center justify-center" aria-label="Hide chat to right side">
+        <button id="ggx-chat-dock-btn" class="w-8 h-8 rounded-full bg-[#0e1210]/88 border border-gas-green/15 text-gray-400 hover:text-white hover:border-gas-green/45 transition-colors flex items-center justify-center" aria-label="Hide chat to right side">
             <i class="fa-solid fa-angle-right text-xs"></i>
         </button>
         <button id="ggx-chat-toggle-btn" class="w-12 h-12 bg-[#0f1311]/88 border border-gas-green/35 rounded-full ggx-chat-attention flex items-center justify-center text-gas-green text-lg hover:border-gas-green hover:bg-[#121913] transition-all duration-300 group z-50 relative shadow-[0_10px_28px_rgba(0,0,0,0.45)]" aria-label="Open chat window">
@@ -3166,20 +3173,150 @@
                 return item && typeof item === "object" && item.title;
             }).slice(0, 3) : [];
             const handoff = meta.handoff && typeof meta.handoff === "object" ? meta.handoff : null;
+            function sourceDescriptor(item) {
+                const href = typeof item.url === "string" && item.url.trim() ? item.url.trim() : "";
+                if (/^https?:\/\//i.test(href)) {
+                    try {
+                        const parsed = new URL(href);
+                        const compactPath = parsed.pathname && parsed.pathname !== "/" ? parsed.pathname.replace(/\/$/, "") : "";
+                        return (parsed.hostname.replace(/^www\./i, "") + compactPath).slice(0, 60);
+                    } catch (error) {
+                        return href;
+                    }
+                }
+                return item.source_type === "internal_sales_kb" ? "GasGx knowledge" : (item.source_type || "Reference");
+            }
             const sourceHtml = sourceList.length
-                ? `<div class="mt-2 text-[10px] text-gray-400"><strong class="text-gray-300">${escapeHtml(copy.sources)}</strong> ${sourceList.map(function (item) {
+                ? `<div class="mt-4 space-y-2"><div class="text-[10px] uppercase tracking-[0.18em] text-gray-400">${escapeHtml(copy.sources)}</div><div class="space-y-2">${sourceList.map(function (item) {
                     const title = escapeHtml(item.title || "GasGx Knowledge");
                     const href = typeof item.url === "string" && item.url.trim() ? item.url.trim() : "";
+                    const desc = escapeHtml(sourceDescriptor(item));
                     if (/^https?:\/\//i.test(href)) {
-                        return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="text-gas-green hover:underline">${title}</a>`;
+                        return `<div class="rounded-2xl border border-gas-green/10 bg-[#111513] px-3 py-2.5"><a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="text-gas-green font-semibold hover:underline underline-offset-2">${title}</a><div class="mt-1 text-[10px] text-gray-500">${desc}</div></div>`;
                     }
-                    return `<span>${title}</span>`;
-                }).join(" | ")}</div>`
+                    return `<div class="rounded-2xl border border-gas-green/10 bg-[#111513] px-3 py-2.5"><div class="text-gray-200 font-medium">${title}</div><div class="mt-1 text-[10px] text-gray-500">${desc}</div></div>`;
+                }).join("")}</div></div>`
                 : "";
             const handoffHtml = handoff && handoff.required && Array.isArray(handoff.next_fields) && handoff.next_fields.length
-                ? `<div class="mt-2 text-[10px] text-gray-400"><strong class="text-gray-300">${escapeHtml(copy.next)}</strong> ${handoff.next_fields.map(function (item) { return escapeHtml(labels[item] || item); }).join(", ")}</div>`
+                ? `<div class="mt-4 space-y-2"><div class="text-[10px] uppercase tracking-[0.18em] text-gray-400">${escapeHtml(copy.next)}</div><div class="flex flex-wrap gap-2">${handoff.next_fields.map(function (item, index) {
+                    return `<span class="inline-flex items-center gap-2 rounded-full border border-gas-green/12 bg-[#111513] px-3 py-1.5 text-[10px] text-gray-300"><span class="flex h-4 w-4 items-center justify-center rounded-full bg-gas-green/12 text-[9px] font-bold text-gas-green">${index + 1}</span><span>${escapeHtml(labels[item] || item)}</span></span>`;
+                }).join("")}</div></div>`
                 : "";
             return sourceHtml + handoffHtml;
+        }
+        function simplifyChatUrl(url) {
+            try {
+                const parsed = new URL(url);
+                const host = parsed.hostname.replace(/^www\./i, "");
+                const compactPath = parsed.pathname && parsed.pathname !== "/" ? parsed.pathname.replace(/\/$/, "") : "";
+                const display = host + compactPath;
+                return display.length > 56 ? display.slice(0, 53) + "..." : display;
+            } catch (error) {
+                return url;
+            }
+        }
+        function splitChatMessageSegments(text) {
+            const normalized = String(text || "")
+                .replace(/\r\n/g, "\n")
+                .replace(/[ \t]+\n/g, "\n")
+                .replace(/\n{3,}/g, "\n\n")
+                .trim();
+            if (!normalized) return [];
+            const explicitLines = normalized.split("\n").map(function (line) {
+                return line.trim();
+            }).filter(Boolean);
+            const explicitMarker = /^(\d+[.)]|[-*])\s+/;
+            const hasExplicitList = explicitLines.some(function (line) {
+                return explicitMarker.test(line);
+            });
+            if (hasExplicitList) {
+                return explicitLines.map(function (line) {
+                    return line.replace(explicitMarker, "").trim();
+                }).filter(Boolean);
+            }
+            const paragraphs = normalized.split(/\n{2,}/).map(function (part) {
+                return part.trim();
+            }).filter(Boolean);
+            const segments = [];
+            paragraphs.forEach(function (paragraph) {
+                const sentenceParts = paragraph
+                    .split(/(?<=[.!?。！？；;：:])(?:\s+|(?=[A-Z0-9\u4e00-\u9fff\u0400-\u04FF]))/)
+                    .map(function (part) {
+                        return part.trim();
+                    })
+                    .filter(Boolean);
+                if (sentenceParts.length > 1) {
+                    sentenceParts.forEach(function (part) {
+                        segments.push(part);
+                    });
+                    return;
+                }
+                if (paragraph.length > 170 && /[，,、]\s*/.test(paragraph)) {
+                    paragraph
+                        .split(/[，,、]\s*/)
+                        .map(function (part) {
+                            return part.trim();
+                        })
+                        .filter(Boolean)
+                        .forEach(function (part) {
+                            segments.push(part);
+                        });
+                    return;
+                }
+                segments.push(paragraph);
+            });
+            const compactSegments = [];
+            segments.filter(Boolean).forEach(function (segment) {
+                const current = segment.trim();
+                if (!current) return;
+                const previous = compactSegments[compactSegments.length - 1];
+                if (previous && previous.length < 38 && current.length < 38 && compactSegments.length >= 3) {
+                    compactSegments[compactSegments.length - 1] = previous + " " + current;
+                    return;
+                }
+                compactSegments.push(current);
+            });
+            return compactSegments;
+        }
+        function getChatInlineLinkCopy() {
+            const lang = normalizeLang(chatUiLang || getCurrentLang());
+            return lang === "zh"
+                ? { open: "点击打开", internal: "站内页面", external: "外部链接" }
+                : lang === "ru"
+                    ? { open: "Нажмите, чтобы открыть", internal: "Страница GasGx", external: "Внешняя ссылка" }
+                    : { open: "Click to open", internal: "GasGx page", external: "External link" };
+        }
+        function buildChatInlineLink(url, label) {
+            const href = String(url || "").trim();
+            if (!/^https?:\/\//i.test(href)) return escapeHtml(label || href);
+            const copy = getChatInlineLinkCopy();
+            const compact = simplifyChatUrl(href);
+            const linkText = label && label.trim() ? label.trim() : compact;
+            const descriptor = label && label.trim() ? compact : copy.open;
+            const kind = /^https?:\/\/([a-z0-9-]+\.)*gasgx\.com(?:\/|$)/i.test(href) ? copy.internal : copy.external;
+            return `<span class="my-1 inline-flex max-w-full flex-wrap items-center gap-2 rounded-2xl border border-gas-green/12 bg-[#101513] px-2.5 py-1.5 align-middle"><a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="min-w-0 break-all text-gas-green font-semibold hover:underline underline-offset-2">${escapeHtml(linkText)}</a><span class="text-[10px] text-gray-500">${escapeHtml(descriptor)}</span><span class="rounded-full border border-gas-green/12 bg-gas-green/8 px-2 py-0.5 text-[9px] uppercase tracking-[0.12em] text-gas-green/80">${escapeHtml(kind)}</span></span>`;
+        }
+        function renderChatInlineText(text) {
+            const source = String(text || "");
+            const pattern = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]+)/g;
+            let cursor = 0;
+            let output = "";
+            let match;
+            while ((match = pattern.exec(source))) {
+                output += escapeHtml(source.slice(cursor, match.index));
+                if (match[3]) {
+                    const rawUrl = match[3];
+                    const url = rawUrl.replace(/[),.;!?，。；：！？、）】》」]+$/g, "");
+                    const trailing = rawUrl.slice(url.length);
+                    output += buildChatInlineLink(url);
+                    output += escapeHtml(trailing);
+                } else {
+                    output += buildChatInlineLink(match[2], match[1]);
+                }
+                cursor = match.index + match[0].length;
+            }
+            output += escapeHtml(source.slice(cursor));
+            return output;
         }
         function getChatSiteHint(langCandidate) {
             const lang = normalizeLang(langCandidate || chatUiLang || getCurrentLang());
@@ -3206,24 +3343,19 @@
         }
 
         function formatChatMessageBody(text, sender) {
-            const safe = escapeHtml(text || "");
             if (sender === "user") {
-                return safe.replace(/\n/g, "<br>");
+                return renderChatInlineText(text).replace(/\n/g, "<br>");
             }
-            const lines = safe.split(/\n/).map(function (line) {
-                return line.trim();
-            }).filter(Boolean);
-            if (!lines.length) return "";
-            return `<div class="space-y-2">${lines.map(function (line) {
-                const ordered = line.match(/^(\d+)\.\s+(.*)$/);
-                if (ordered) {
-                    return `<div class="flex items-start gap-2 leading-6"><span class="min-w-[1.75rem] shrink-0 text-right text-gas-green/85 font-semibold">${ordered[1]}.</span><div class="min-w-0 flex-1 break-words">${ordered[2]}</div></div>`;
+            const segments = splitChatMessageSegments(text);
+            if (!segments.length) return "";
+            const useNumbers = segments.length > 1;
+            const cardClass = "rounded-2xl border border-gas-green/10 bg-[#111513] px-3.5 py-3 leading-7 break-words text-gray-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]";
+            return `<div class="space-y-3">${segments.map(function (segment, index) {
+                const content = renderChatInlineText(segment);
+                if (useNumbers) {
+                    return `<div class="${cardClass} flex items-start gap-3"><span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gas-green/35 bg-gas-green/10 text-[11px] font-bold text-gas-green">${index + 1}</span><div class="min-w-0 flex-1">${content}</div></div>`;
                 }
-                const bullet = line.match(/^[-*]\s+(.*)$/);
-                if (bullet) {
-                    return `<div class="flex items-start gap-2 leading-6"><span class="min-w-[1rem] shrink-0 text-center text-gas-green/85 font-semibold">&bull;</span><div class="min-w-0 flex-1 break-words">${bullet[1]}</div></div>`;
-                }
-                return `<div class="leading-6 break-words">${line}</div>`;
+                return `<div class="${cardClass}">${content}</div>`;
             }).join("")}</div>`;
         }
 
@@ -3233,7 +3365,7 @@
             if (!hint) return "";
             const lang = normalizeLang(chatUiLang || getCurrentLang());
             const label = lang === "zh" ? "\u5c0f\u63d0\u793a\uff1a" : (lang === "ru" ? "\u041f\u043e\u0434\u0441\u043a\u0430\u0437\u043a\u0430:" : "Tip:");
-            return `<div class="mt-3 pt-2 border-t border-white/8 text-[10px] leading-relaxed text-gray-400"><span class="text-gas-green/80 font-semibold">${escapeHtml(label)}</span> ${escapeHtml(hint)}</div>`;
+            return `<div class="mt-4 rounded-2xl border border-gas-green/10 bg-[#101513] px-3 py-2.5 text-[10px] leading-6 text-gray-400"><div class="mb-1 uppercase tracking-[0.16em] text-gas-green/80 font-semibold">${escapeHtml(label)}</div><div>${renderChatInlineText(hint)}</div></div>`;
         }
 
         function addMessage(text, sender, meta) {
@@ -3241,19 +3373,19 @@
             const isUser = sender === "user";
             const safeText = formatChatMessageBody(text, sender);
 
-            container.className = "flex flex-col " + (isUser ? "items-end" : "items-start") + " max-w-[85%] space-y-1 w-full animate-[slideDown_0.3s_ease-out]";
+            container.className = "flex flex-col " + (isUser ? "items-end" : "items-start") + " " + (isUser ? "max-w-[84%]" : "max-w-[92%]") + " space-y-1 w-full animate-[slideDown_0.3s_ease-out]";
 
             const labelHtml = isUser
                 ? ""
-                : "<div class=\"flex items-center gap-2 mb-1\"><span class=\"text-[10px] text-gray-500 ml-1\">GasGx Bot</span></div>";
+                : "<div class=\"flex items-center gap-2 mb-1\"><span class=\"text-[10px] text-gas-green/80 ml-1 tracking-[0.12em] uppercase\">GasGx Assistant</span></div>";
 
             const bubbleClass = isUser
                 ? "bg-gas-green text-black rounded-2xl rounded-tr-none font-medium shadow-[0_0_15px_rgba(93,214,44,0.2)]"
-                : "bg-[#252525] text-gray-200 rounded-2xl rounded-tl-none border border-white/5";
+                : "bg-[#151817] text-gray-100 rounded-2xl rounded-tl-none border border-gas-green/12 shadow-[0_10px_28px_rgba(0,0,0,0.24)]";
 
             container.innerHTML =
                 labelHtml +
-                "<div class=\"" + bubbleClass + " px-4 py-2 text-sm leading-relaxed break-words\">" + safeText + buildMessageMeta(meta) + buildChatSiteHintHtml(sender) + "</div>" +
+                "<div class=\"" + bubbleClass + " px-4 py-3 text-sm leading-relaxed break-words\">" + safeText + buildMessageMeta(meta) + buildChatSiteHintHtml(sender) + "</div>" +
                 "<span class=\"text-[9px] text-gray-600 mt-1\">" + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "</span>";
 
             messagesContainer.appendChild(container);

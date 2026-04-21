@@ -68,10 +68,25 @@
             stageOutOfTurn: 'You are viewing a past/future stage. Submission is only allowed when the flow reaches "{stage}".',
             actionHint: 'Critical actions will ask for confirmation first.',
             actionNone: 'No action required now',
-            activitiesKicker: 'Customer Activity',
-            activitiesTitle: 'Interaction Records',
-            activitiesDesc: 'Only customer-visible timeline is shown here. Internal drafts are hidden.',
-            activitiesEmpty: 'No customer-visible activity yet.',
+            commentsKicker: 'Communication',
+            commentsTitle: '沟通记录',
+            commentsDesc: 'This node uses one shared public comment flow for both sales and customer replies.',
+            commentsCurrentTitle: 'Current Stage',
+            commentsHistoryTitle: 'All Stages',
+            commentsHistoryDesc: 'Expand previous nodes to review the whole sales lifecycle.',
+            commentsEmpty: 'No communication record for this stage yet.',
+            commentsHistoryEmpty: 'No public communication record yet.',
+            commentsReplying: 'Replying to',
+            commentsReplyCancel: 'Cancel Reply',
+            commentsReplyAction: 'Reply',
+            commentsComposerLabel: 'New Communication',
+            commentsComposerPlaceholder: 'Leave a message for this stage, or reply to a specific message.',
+            commentsSubmit: 'Post Communication',
+            commentsPosted: 'Communication posted.',
+            commentsPostFailed: 'Failed to post communication.',
+            commentsNeedBody: 'Please enter communication content first.',
+            commentsReplyPrefix: 'Reply to',
+            commentsEdited: 'Edited',
             submitRequirement: 'Submit Requirement',
             submitConfirm: 'Confirm & Proceed',
             toastNeedFields: 'Please complete required requirement fields before submitting.',
@@ -143,10 +158,25 @@
             stageOutOfTurn: '当前查看的是历史/未来节点。仅当流程到达「{stage}」时才允许客户提交动作。',
             actionHint: '关键动作执行前会弹窗确认。',
             actionNone: '当前无需操作',
-            activitiesKicker: '客户活动',
-            activitiesTitle: '对接记录',
-            activitiesDesc: '仅展示客户可见轨迹，不包含内部沟通草稿。',
-            activitiesEmpty: '暂无客户侧活动记录。',
+            commentsKicker: '沟通记录',
+            commentsTitle: '沟通记录',
+            commentsDesc: '当前节点与历史节点统一使用同一套公开评论流，客户和销售都看到同样内容。',
+            commentsCurrentTitle: '当前节点',
+            commentsHistoryTitle: '全部节点回顾',
+            commentsHistoryDesc: '可展开以往节点，回顾整个销售生命周期内的沟通记录。',
+            commentsEmpty: '当前节点还没有沟通记录。',
+            commentsHistoryEmpty: '当前销售流程还没有公开沟通记录。',
+            commentsReplying: '正在回复',
+            commentsReplyCancel: '取消回复',
+            commentsReplyAction: '回复',
+            commentsComposerLabel: '新增沟通记录',
+            commentsComposerPlaceholder: '像评论一样记录当前节点沟通，或先点“回复这条”再针对性回应。',
+            commentsSubmit: '提交沟通记录',
+            commentsPosted: '沟通记录已提交。',
+            commentsPostFailed: '提交沟通记录失败。',
+            commentsNeedBody: '请先填写沟通记录。',
+            commentsReplyPrefix: '回复给',
+            commentsEdited: '已编辑',
             submitRequirement: '提交需求',
             submitConfirm: '确认并推进',
             toastNeedFields: '请先完整填写客户需求核心字段。',
@@ -185,10 +215,23 @@
     };
 
     const REQUIREMENT_TYPE_LABELS = Object.freeze({
+        oilfield_gas_to_power: { zh: '油田伴生气发电', en: 'Oilfield Associated Gas Power' },
         integrated_mining_power: { zh: '燃气发电集成矿箱', en: 'Integrated Mining Container + Gas Power' },
-        power_only: { zh: '独立燃气发电机组', en: 'Standalone Gas Power Unit' }
+        industrial_power_generation: { zh: '工业分布式发电', en: 'Industrial Distributed Generation' },
+        chp_project: { zh: 'CHP 热电联供项目', en: 'CHP / Cogeneration Project' },
+        power_only: { zh: '独立燃气发电机组', en: 'Standalone Gas Power Unit' },
+        miner_only: { zh: '独立矿机矿箱', en: 'Standalone Miner Container' },
+        unclear: { zh: '需要推荐', en: 'Need Recommendation' }
     });
-    const REQUIREMENT_TYPE_OPTIONS = Object.freeze(['power_only', 'integrated_mining_power']);
+    const REQUIREMENT_TYPE_OPTIONS = Object.freeze([
+        'oilfield_gas_to_power',
+        'integrated_mining_power',
+        'industrial_power_generation',
+        'chp_project',
+        'power_only',
+        'miner_only',
+        'unclear'
+    ]);
     const STORAGE_BUCKET_REQUIREMENT_FILES = 'quote-product-media';
     const GAS_REPORT_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png';
 
@@ -209,6 +252,10 @@
 
     function pipelineLabel() {
         return currentLang() === 'zh' ? '销售流水线' : 'Sales Pipeline';
+    }
+
+    function localeText(zh, en) {
+        return currentLang() === 'zh' ? zh : en;
     }
 
     const STAGES = [
@@ -238,6 +285,7 @@
         detailLoading: false,
         overview: [],
         detail: null,
+        commentReplyToId: '',
         selectedDealId: '',
         selectedStage: '',
         pendingReqSubmit: false,
@@ -248,6 +296,7 @@
         mobileViewport: false,
         mobileListCollapsed: true,
         timelineCollapsed: false,
+        showFullMap: false,
         requirementDraft: {},
         sessionUser: null,
     };
@@ -339,7 +388,7 @@
         return {
             slug,
             token,
-            url: slug ? requirementPublicUrl(slug, token) : '',
+            url: slug && token ? requirementPublicUrl(slug, token) : '',
         };
     }
 
@@ -425,6 +474,80 @@
     function customerVisibleActivities(detail = {}) {
         const list = Array.isArray(detail.activities) ? detail.activities : [];
         return list.filter((item) => isCustomerVisibleActivity(item)).slice(0, 30);
+    }
+
+    function communicationRows(detail = {}) {
+        const list = Array.isArray(detail.communications) ? detail.communications : [];
+        return list
+            .map((item) => ({
+                id: text(item.id),
+                stage_key: text(item.stage_key),
+                reply_to_id: text(item.reply_to_id),
+                actor_type: text(item.actor_type, 'sales'),
+                actor_label: text(item.actor_label),
+                body: text(item.body),
+                created_at: text(item.created_at),
+                updated_at: text(item.updated_at || item.created_at),
+                reply_to_body: text(item.reply_to_body),
+                reply_to_actor_label: text(item.reply_to_actor_label),
+                reply_to_stage_key: text(item.reply_to_stage_key),
+            }))
+            .filter((item) => item.body && item.stage_key)
+            .sort((left, right) => {
+                const rightTime = new Date(text(right.updated_at || right.created_at)).getTime() || 0;
+                const leftTime = new Date(text(left.updated_at || left.created_at)).getTime() || 0;
+                return rightTime - leftTime;
+            });
+    }
+
+    function currentStageCommunications(detail = {}) {
+        const currentStage = resolveDisplayStage(detail);
+        return communicationRows(detail).filter((item) => item.stage_key === currentStage);
+    }
+
+    function communicationRowsByStage(detail = {}) {
+        const groups = {};
+        communicationRows(detail).forEach((item) => {
+            if (!groups[item.stage_key]) groups[item.stage_key] = [];
+            groups[item.stage_key].push(item);
+        });
+        return groups;
+    }
+
+    function communicationReplyTarget(detail = {}) {
+        const replyId = text(state.commentReplyToId);
+        if (!replyId) return null;
+        return communicationRows(detail).find((item) => item.id === replyId) || null;
+    }
+
+    function communicationActorRole(entry = {}) {
+        if (text(entry.actor_type) === 'customer') return currentLang() === 'zh' ? '客户' : 'Customer';
+        if (text(entry.actor_type) === 'system') return currentLang() === 'zh' ? '系统' : 'System';
+        return currentLang() === 'zh' ? '销售' : 'Sales';
+    }
+
+    function communicationToneClass(entry = {}) {
+        if (text(entry.actor_type) === 'customer') return 'is-customer';
+        if (text(entry.actor_type) === 'system') return 'is-system';
+        return 'is-sales';
+    }
+
+    function communicationPreview(entry = {}) {
+        const body = text(entry.body);
+        return body.length > 80 ? `${body.slice(0, 77)}...` : body;
+    }
+
+    function communicationAvatar(entry = {}) {
+        const label = text(entry.actor_label, communicationActorRole(entry));
+        const compact = Array.from(label.replace(/\s+/g, '')).slice(0, 2).join('');
+        return (compact || communicationActorRole(entry).slice(0, 1)).toUpperCase();
+    }
+
+    function communicationMeta(entry = {}) {
+        const createdAt = formatDate(entry.created_at);
+        const updatedAt = text(entry.updated_at);
+        if (updatedAt && updatedAt !== text(entry.created_at)) return `${createdAt} · ${tr('commentsEdited')}`;
+        return createdAt;
     }
 
     function byId(id) {
@@ -789,7 +912,7 @@
                     <p>${esc(tr('stageRequirementLinkHint'))}</p>
                     ${requirementLink
                         ? `
-                            <a class="rounded-2xl border border-gas-green/50 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-gas-green inline-flex items-center justify-center" href="${esc(requirementLink)}">${esc(tr('stageRequirementLinkOpen'))}</a>
+                            <a class="rounded-2xl border border-gas-green/50 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-gas-green inline-flex items-center justify-center" href="${esc(requirementLink)}" data-sales-open-requirement-link="inline">${esc(tr('stageRequirementLinkOpen'))}</a>
                             <div class="mt-3 break-all text-[11px] leading-5 text-gray-400">${esc(requirementLink)}</div>
                         `
                         : `<span>${esc(tr('stageRequirementLinkMissing'))}</span>`}
@@ -841,7 +964,7 @@
             body = requirementLinkMarkup(detail);
             const requirementLink = requirementLinkInfo(detail).url;
             actions = requirementLink
-                ? `<a class="rounded-2xl bg-gas-green px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-black inline-flex items-center justify-center" href="${esc(requirementLink)}">${esc(tr('stageRequirementLinkOpen'))}</a>`
+                ? `<a class="rounded-2xl bg-gas-green px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-black inline-flex items-center justify-center" href="${esc(requirementLink)}" data-sales-open-requirement-link="action">${esc(tr('stageRequirementLinkOpen'))}</a>`
                 : '';
         } else if (ACTIONABLE_STAGE_SET.has(stageKey)) {
             body = stageConfirmationMarkup(stageKey, detail, editable);
@@ -887,18 +1010,351 @@
         `;
     }
 
-    function activitiesMarkup(detail = {}) {
-        const list = customerVisibleActivities(detail);
-        if (!list.length) return `<div class="sales-empty">${esc(tr('activitiesEmpty'))}</div>`;
-        return list.slice(0, 30).map((item) => `
-            <article class="sales-activity-item">
-                <div>
-                    <strong>${esc(text(item.action_label, '--'))}</strong>
-                    <span>${esc(text(item.summary, ''))}</span>
+    function communicationItemMarkup(item = {}) {
+        const replyLabel = text(item.reply_to_actor_label);
+        const replyStage = text(item.reply_to_stage_key);
+        return `
+            <article class="sales-comment-item ${communicationToneClass(item)}">
+                <div class="sales-comment-head">
+                    <div class="sales-comment-avatar">${esc(communicationAvatar(item))}</div>
+                    <div class="sales-comment-author">
+                        <div class="sales-comment-author-line">
+                            <strong>${esc(text(item.actor_label, communicationActorRole(item)))}</strong>
+                            <span class="sales-comment-role">${esc(communicationActorRole(item))}</span>
+                        </div>
+                        <div class="sales-comment-meta-line">
+                            <em>${esc(stageLabel(item.stage_key))}</em>
+                            <time>${esc(communicationMeta(item))}</time>
+                        </div>
+                    </div>
                 </div>
-                <em>${esc(formatDate(item.occurred_at))}</em>
+                ${replyLabel
+                    ? `
+                        <div class="sales-comment-reply-context">
+                            <span>${esc(`${tr('commentsReplyPrefix')} ${replyLabel}${replyStage ? ` · ${stageLabel(replyStage)}` : ''}`)}</span>
+                            <strong>${esc(text(item.reply_to_body))}</strong>
+                        </div>
+                    `
+                    : ''}
+                <div class="sales-comment-body">${esc(item.body)}</div>
+                <div class="sales-comment-actions">
+                    <button type="button" class="rounded-full border border-white/15 px-3 py-1 text-[11px] font-bold tracking-[0.08em] text-gray-300 transition hover:border-gas-green/60 hover:text-gas-green" data-sales-comment-reply="${esc(item.id)}">
+                        ${esc(text(state.commentReplyToId) === text(item.id) ? tr('commentsReplyCancel') : tr('commentsReplyAction'))}
+                    </button>
+                </div>
             </article>
-        `).join('');
+        `;
+    }
+
+    function commentsMarkup(detail = {}) {
+        const currentList = currentStageCommunications(detail);
+        const grouped = communicationRowsByStage(detail);
+        const currentStage = resolveDisplayStage(detail);
+        const replyTarget = communicationReplyTarget(detail);
+        const historyStages = STAGES
+            .map((stage) => ({ stage, rows: grouped[stage.key] || [] }))
+            .filter((entry) => entry.rows.length);
+
+        return `
+            <section class="sales-stage-card sales-comments-card">
+                <div class="sales-stage-head">
+                    <div>
+                        <div class="sales-kicker">${esc(tr('commentsKicker'))}</div>
+                        <h3>${esc(tr('commentsTitle'))}</h3>
+                        <p>${esc(tr('commentsDesc'))}</p>
+                    </div>
+                </div>
+                <div class="sales-comment-composer">
+                    ${replyTarget
+                        ? `
+                            <div class="sales-comment-reply-banner">
+                                <div>
+                                    <span>${esc(`${tr('commentsReplying')} ${text(replyTarget.actor_label, communicationActorRole(replyTarget))}`)}</span>
+                                    <strong>${esc(communicationPreview(replyTarget))}</strong>
+                                </div>
+                                <button type="button" class="rounded-full border border-white/15 px-3 py-1 text-[11px] font-bold tracking-[0.08em] text-gray-300 transition hover:border-red-400 hover:text-red-300" data-sales-comment-reply-cancel="true">${esc(tr('commentsReplyCancel'))}</button>
+                            </div>
+                        `
+                        : ''}
+                    <label class="sales-comment-compose-field">
+                        <span>${esc(tr('commentsComposerLabel'))}</span>
+                        <textarea id="sales-comment-input" class="field-textarea px-4 py-3" rows="4" placeholder="${esc(tr('commentsComposerPlaceholder'))}"></textarea>
+                    </label>
+                    <div class="sales-action-buttons">
+                        <button type="button" class="rounded-2xl bg-gas-green px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-black" id="sales-comment-submit">${esc(tr('commentsSubmit'))}</button>
+                    </div>
+                </div>
+                <div class="sales-comment-stage-block">
+                    <div class="sales-comment-stage-head">
+                        <strong>${esc(tr('commentsCurrentTitle'))}</strong>
+                        <span>${esc(stageLabel(currentStage))}</span>
+                    </div>
+                    <div class="sales-comment-list">
+                        ${currentList.length ? currentList.map((item) => communicationItemMarkup(item)).join('') : `<div class="sales-empty">${esc(tr('commentsEmpty'))}</div>`}
+                    </div>
+                </div>
+                <details class="sales-comment-history" ${historyStages.length ? '' : 'open'}>
+                    <summary class="sales-comment-history-summary">
+                        <strong>${esc(tr('commentsHistoryTitle'))}</strong>
+                        <span>${esc(tr('commentsHistoryDesc'))}</span>
+                    </summary>
+                    <div class="sales-comment-history-body">
+                        ${historyStages.length
+                            ? historyStages.map(({ stage, rows }) => `
+                                <details class="sales-comment-history-group ${stage.key === currentStage ? 'is-current' : ''}" ${stage.key === currentStage ? 'open' : ''}>
+                                    <summary class="sales-comment-history-group-summary">
+                                        <strong>${esc(stageLabel(stage.key))}</strong>
+                                        <span>${esc(`${rows.length} 条`)}</span>
+                                    </summary>
+                                    <div class="sales-comment-list">
+                                        ${rows.map((item) => communicationItemMarkup(item)).join('')}
+                                    </div>
+                                </details>
+                            `).join('')
+                            : `<div class="sales-empty">${esc(tr('commentsHistoryEmpty'))}</div>`}
+                    </div>
+                </details>
+            </section>
+        `;
+    }
+
+    function displayActorName(value = '') {
+        const normalized = text(value);
+        if (!normalized) return localeText('用户', 'User');
+        return normalized.includes('@') ? normalized.split('@')[0] : normalized;
+    }
+
+    function communicationTimeValue(entry = {}) {
+        return new Date(text(entry.updated_at || entry.created_at)).getTime() || 0;
+    }
+
+    function buildCurrentStageThreads(detail = {}) {
+        const currentList = currentStageCommunications(detail);
+        const map = new Map(currentList.map((item) => [item.id, { ...item, replies: [] }]));
+        const roots = [];
+
+        currentList.forEach((item) => {
+            const node = map.get(item.id);
+            const parentId = text(item.reply_to_id);
+            if (parentId && map.has(parentId)) {
+                let rootId = parentId;
+                while (map.has(rootId) && text(map.get(rootId).reply_to_id) && map.has(text(map.get(rootId).reply_to_id))) {
+                    rootId = text(map.get(rootId).reply_to_id);
+                }
+                map.get(rootId)?.replies.push(node);
+                return;
+            }
+            roots.push(node);
+        });
+
+        roots.forEach((root) => {
+            root.replies.sort((left, right) => communicationTimeValue(right) - communicationTimeValue(left));
+        });
+        roots.sort((left, right) => {
+            const leftLatest = Math.max(communicationTimeValue(left), ...left.replies.map((item) => communicationTimeValue(item)));
+            const rightLatest = Math.max(communicationTimeValue(right), ...right.replies.map((item) => communicationTimeValue(item)));
+            return rightLatest - leftLatest;
+        });
+        return roots;
+    }
+
+    function activeTaskHeadline(stageKey = '') {
+        if (stageKey === 'requirement_capture') return localeText('等待填写需求', 'Waiting for Requirement');
+        return localeText(`处理中：${stageLabel(stageKey)}`, `In Progress: ${stageLabel(stageKey)}`);
+    }
+
+    function currentTaskCardMarkup(detail = {}) {
+        const activeStageKey = resolveDealCurrentStage(detail);
+        const activeStage = STAGES.find((item) => item.key === activeStageKey) || STAGES[0];
+        const activeIndex = (STAGE_INDEX[activeStageKey] ?? 0) + 1;
+        const requirementLink = requirementLinkInfo(detail).url;
+
+        let body = `
+            <div class="bg-black/40 rounded-xl p-3 border border-white/5 flex flex-col gap-3">
+                <p class="text-xs text-gray-400 leading-relaxed">${esc(tr('stageReadonly'))}</p>
+                <div class="flex justify-end gap-2 mt-1 flex-wrap">
+                    <button type="button" class="px-4 py-2 rounded-full border border-gray-600 text-gray-300 text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
+                    <button type="button" class="px-4 py-2 rounded-full border border-gray-700 text-gray-500 text-xs font-medium cursor-not-allowed" disabled>${esc(tr('actionNone'))}</button>
+                </div>
+            </div>
+        `;
+
+        if (activeStageKey === 'requirement_capture') {
+            body = `
+                <div class="bg-black/40 rounded-xl p-3 border border-white/5 flex flex-col gap-3">
+                    <p class="text-xs text-gray-400 leading-relaxed">${esc(tr('stageRequirementLinkHint'))}</p>
+                    <div class="flex justify-end gap-2 mt-1 flex-wrap">
+                        <button type="button" class="px-4 py-2 rounded-full border border-gray-600 text-gray-300 text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
+                        ${requirementLink
+                            ? `<a class="px-4 py-2 rounded-full bg-[#39b54a] text-black text-xs font-bold shadow-[0_0_15px_rgba(57,181,74,0.2)] hover:bg-[#2e9c3a] transition-all flex items-center gap-1.5" href="${esc(requirementLink)}" data-sales-open-requirement-link="task"><i class="fa-solid fa-link text-[12px]"></i><span>${esc(localeText('去填写表单', 'Open Form'))}</span></a>`
+                            : `<button type="button" class="px-4 py-2 rounded-full border border-gray-700 text-gray-500 text-xs font-medium cursor-not-allowed" disabled>${esc(tr('stageRequirementLinkMissing'))}</button>`}
+                    </div>
+                </div>
+            `;
+        } else if (ACTIONABLE_STAGE_SET.has(activeStageKey)) {
+            body = `
+                <div class="bg-black/40 rounded-xl p-3 border border-white/5 flex flex-col gap-3">
+                    ${stageConfirmationMarkup(activeStageKey, detail, true)}
+                    <div class="flex justify-end gap-2 mt-1 flex-wrap">
+                        <button type="button" class="px-4 py-2 rounded-full border border-gray-600 text-gray-300 text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
+                        <button type="button" class="px-4 py-2 rounded-full bg-[#39b54a] text-black text-xs font-bold shadow-[0_0_15px_rgba(57,181,74,0.2)] hover:bg-[#2e9c3a] transition-all" id="sales-stage-submit-confirmation" ${state.pendingStageSubmit ? 'disabled' : ''}>${esc(tr('submitConfirm'))}</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        return `
+            <section class="bg-gradient-to-r from-[#1a2e1e] to-[#121212] border border-[#39b54a]/30 rounded-2xl p-4 relative shadow-md">
+                <div class="flex items-start justify-between mb-4 gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-full bg-[#39b54a]/20 flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid fa-clock text-[#39b54a]"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h2 class="text-lg font-bold text-white mb-0.5">${esc(activeTaskHeadline(activeStageKey))}</h2>
+                            <p class="text-xs text-[#39b54a]">${esc(localeText(`当前任务：${stageLabel(activeStage.key)} (${activeIndex}/${STAGES.length})`, `Current Task: ${stageLabel(activeStage.key)} (${activeIndex}/${STAGES.length})`))}</p>
+                        </div>
+                    </div>
+                </div>
+                ${body}
+            </section>
+        `;
+    }
+
+    function pipelineTabsMarkup(detail = {}) {
+        const currentStageKey = resolveDealCurrentStage(detail);
+        const selectedStageKey = resolveDisplayStage(detail);
+        return `
+            <div class="bg-[#0a0a0a] border-b border-gray-800 pt-3 pb-2 px-3 transition-all ${state.showFullMap ? '' : 'overflow-x-auto hide-scrollbar'}">
+                <div class="flex gap-2 ${state.showFullMap ? 'flex-wrap' : 'items-center'}">
+                    <div class="flex items-center gap-2 flex-shrink-0 mr-1 ${state.showFullMap ? 'w-full mb-2 justify-between border-b border-gray-800/50 pb-2' : ''}">
+                        <span class="text-[10px] text-gray-500 whitespace-nowrap uppercase font-semibold">${esc(localeText(`全流程 (${STAGES.length}步)`, `Full Flow (${STAGES.length})`))}</span>
+                        <button type="button" class="text-[#39b54a] text-[10px] bg-[#39b54a]/10 hover:bg-[#39b54a]/20 px-2 py-1 rounded flex items-center gap-1 transition-colors" data-sales-map-toggle>${esc(state.showFullMap ? localeText('收起导航', 'Collapse') : localeText('展开全景', 'Expand'))}</button>
+                    </div>
+                    ${STAGES.map((stage, index) => {
+                        const status = stageStatusForKey(stage.key, currentStageKey, parseStageRecords(detail));
+                        const selected = stage.key === selectedStageKey;
+                        let styleClass = '';
+                        let icon = `<span class="text-[10px] font-mono">${index + 1}.</span>`;
+                        if (status === 'completed') {
+                            styleClass = selected ? 'bg-[#39b54a]/20 text-[#39b54a] border-[#39b54a]/50' : 'bg-gray-800/50 text-gray-400 border-gray-800';
+                            icon = `<i class="fa-solid fa-circle-check ${selected ? 'text-[#39b54a]' : 'text-gray-500'} text-[12px]"></i>`;
+                        } else if (status === 'active') {
+                            styleClass = selected ? 'bg-[#39b54a] text-black border-[#39b54a]' : 'bg-[#39b54a]/10 text-[#39b54a] border-[#39b54a]/30';
+                            icon = `<i class="fa-solid fa-clock ${selected ? 'text-black' : 'text-[#39b54a]'} text-[12px]"></i>`;
+                        } else {
+                            styleClass = 'bg-transparent text-gray-600 border-transparent opacity-50 cursor-not-allowed';
+                        }
+                        return `
+                            <button type="button" data-sales-stage-node="${esc(stage.key)}" data-stage-status="${esc(status)}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap transition-all ${state.showFullMap ? 'mb-1' : 'flex-shrink-0'} ${styleClass}">
+                                ${icon}
+                                <span>${esc(stageLabel(stage.key))}</span>
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderReferenceCommentThread(message = {}) {
+        const replies = Array.isArray(message.replies) ? message.replies : [];
+        return `
+            <div class="py-4 flex gap-3 group">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] shadow-sm ${text(message.actor_type) === 'customer' ? 'bg-[#1e4a25] text-[#39b54a] border border-[#39b54a]/30' : 'bg-gray-800 text-gray-300 border border-gray-700'}">
+                        ${esc(communicationAvatar(message))}
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-gray-300 text-xs font-medium truncate">${esc(displayActorName(message.actor_label))}</span>
+                        <span class="text-[9px] px-1 py-0.5 rounded-sm flex-shrink-0 leading-none ${text(message.actor_type) === 'customer' ? 'bg-[#39b54a]/20 text-[#39b54a]' : 'bg-gray-800 text-gray-400'}">${esc(communicationActorRole(message))}</span>
+                    </div>
+                    <div class="text-gray-200 text-sm mt-1 leading-relaxed whitespace-pre-wrap break-words">${esc(message.body)}</div>
+                    <div class="flex items-center gap-3 mt-1.5">
+                        <span class="text-gray-500 text-[10px]">${esc(communicationMeta(message))}</span>
+                        <button type="button" data-sales-comment-reply="${esc(message.id)}" class="text-gray-500 text-[11px] font-medium hover:text-gray-200 transition-colors">${esc(tr('commentsReplyAction'))}</button>
+                    </div>
+                    ${replies.length ? `
+                        <div class="mt-3 flex flex-col gap-3">
+                            ${replies.map((reply) => `
+                                <div class="flex gap-2">
+                                    <div class="flex-shrink-0 mt-0.5">
+                                        <div class="w-6 h-6 rounded-full flex items-center justify-center font-bold text-[9px] ${text(reply.actor_type) === 'customer' ? 'bg-[#1e4a25] text-[#39b54a] border border-[#39b54a]/30' : 'bg-gray-800 text-gray-400 border border-gray-700'}">
+                                            ${esc(communicationAvatar(reply))}
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 flex flex-col min-w-0">
+                                        <div class="text-gray-400 text-xs flex items-center flex-wrap gap-1">
+                                            <span class="font-medium text-gray-300">${esc(displayActorName(reply.actor_label))}</span>
+                                            <span class="text-[8px] px-1 py-[1px] rounded-sm leading-none ${text(reply.actor_type) === 'customer' ? 'bg-[#39b54a]/20 text-[#39b54a]' : 'bg-gray-800 text-gray-500'}">${esc(communicationActorRole(reply))}</span>
+                                            ${text(reply.reply_to_id) && text(reply.reply_to_id) !== text(message.id)
+                                                ? `<span class="ml-1 text-gray-500">${esc(localeText('回复', 'Reply'))} <span class="font-medium text-gray-400">@${esc(displayActorName(reply.reply_to_actor_label))}</span></span>`
+                                                : ''}
+                                        </div>
+                                        <div class="text-gray-200 text-sm mt-0.5 leading-relaxed break-words whitespace-pre-wrap">${esc(reply.body)}</div>
+                                        <div class="flex items-center gap-3 mt-1">
+                                            <span class="text-gray-500 text-[10px]">${esc(communicationMeta(reply))}</span>
+                                            <button type="button" data-sales-comment-reply="${esc(reply.id)}" class="text-gray-500 text-[10px] font-medium hover:text-gray-200 transition-colors">${esc(tr('commentsReplyAction'))}</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    function commentsPanelMarkup(detail = {}) {
+        const selectedStage = resolveDisplayStage(detail);
+        const threads = buildCurrentStageThreads(detail);
+        const selectedMessages = currentStageCommunications(detail);
+        const replyTarget = communicationReplyTarget(detail);
+        return `
+            <section class="bg-[#121212] border border-gray-800 rounded-2xl overflow-hidden mt-1 shadow-md flex flex-col flex-1 min-h-0">
+                ${pipelineTabsMarkup(detail)}
+                <div class="p-3 px-4 border-b border-gray-800/50 bg-[#121212] z-10 flex justify-between items-center gap-3">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <i class="fa-regular fa-message text-gray-400"></i>
+                        <h3 class="text-sm font-bold text-gray-200 truncate"><span class="text-[#39b54a]">${esc(stageLabel(selectedStage))}</span> ${esc(localeText('沟通记录', 'Comments'))}</h3>
+                    </div>
+                    <span class="text-[10px] text-gray-500 whitespace-nowrap">${esc(localeText(`${selectedMessages.length} 条互动`, `${selectedMessages.length} interactions`))}</span>
+                </div>
+                <div id="sales-comment-scroll" class="sales-comment-scroll-region p-4 pb-28 sm:pb-24 overflow-y-auto custom-scrollbar">
+                    <div class="divide-y divide-gray-800/50">
+                        ${threads.length
+                            ? threads.map((thread) => renderReferenceCommentThread(thread)).join('')
+                            : `<div class="flex flex-col items-center justify-center py-10 text-gray-500"><i class="fa-regular fa-message text-3xl opacity-20 mb-2"></i><div class="text-xs">${esc(tr('commentsEmpty'))}</div></div>`}
+                    </div>
+                    <div class="sales-comment-scroll-indicator" aria-hidden="true">
+                        <span id="sales-comment-scroll-thumb" class="sales-comment-scroll-thumb"></span>
+                    </div>
+                </div>
+            </section>
+            <div class="fixed bottom-0 left-0 right-0 bg-[#0f0f0f]/95 backdrop-blur-md border-t border-gray-800 p-3 pb-[calc(env(safe-area-inset-bottom)+12px)] z-40 shadow-[0_-15px_30px_rgba(0,0,0,0.6)]">
+                <div class="max-w-xl mx-auto">
+                    <div class="bg-gray-900 border border-gray-700 rounded-2xl flex flex-col focus-within:border-[#39b54a] transition-colors overflow-hidden">
+                        ${replyTarget
+                            ? `
+                                <div class="flex items-center justify-between bg-gray-800/60 px-3 py-1.5 border-b border-gray-800 gap-2">
+                                    <span class="text-[11px] text-gray-400 flex items-center gap-1 min-w-0">${esc(tr('commentsReplying'))} <span class="text-[#39b54a] font-medium truncate">@${esc(displayActorName(replyTarget.actor_label))}</span></span>
+                                    <button type="button" class="text-gray-500 hover:text-gray-300 p-0.5 transition-colors" data-sales-comment-reply-cancel="true"><i class="fa-solid fa-xmark text-[12px]"></i></button>
+                                </div>
+                            `
+                            : ''}
+                        <div class="flex gap-2 items-end px-2 py-2">
+                            <textarea id="sales-comment-input" placeholder="${esc(replyTarget ? localeText('输入回复内容...', 'Write a reply...') : localeText(`在「${stageLabel(selectedStage)}」节点留言...`, `Leave a comment in ${stageLabel(selectedStage)}...`))}" class="flex-1 bg-transparent border-none px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-0 resize-none min-h-[32px] max-h-[100px] hide-scrollbar" rows="1"></textarea>
+                            <button type="button" id="sales-comment-submit" ${!text(state.selectedDealId) ? 'disabled' : ''} class="rounded-full p-2 flex items-center justify-center transition-all flex-shrink-0 bg-[#39b54a] text-black hover:bg-[#2e9c3a] disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-paper-plane text-[14px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     function render() {
@@ -918,54 +1374,22 @@
         }
 
         const detail = state.detail || {};
-        const canToggleList = state.mobileViewport && state.overview.length > 1;
-        const timelineCollapsed = state.timelineCollapsed === true;
         root.innerHTML = `
-            <div class="sales-main-grid">
-                <aside class="sales-deal-list">
-                    <div class="sales-list-head">
-                        <strong>${esc(tr('listTitle'))}</strong>
-                        <div class="sales-list-actions">
-                            ${canToggleList
-                                ? `<button type="button" class="sales-list-toggle rounded-full border border-white/15 px-3 py-1 text-[10px] font-bold tracking-[0.08em] text-gray-300 transition hover:border-gas-green/60 hover:text-gas-green" data-sales-list-toggle>${esc(state.mobileListCollapsed ? tr('listExpand') : tr('listCollapse'))}</button>`
-                                : ''}
-                            <span class="sales-list-count">${state.overview.length} ${esc(tr('listCountSuffix'))}</span>
-                        </div>
-                    </div>
-                    <div class="sales-list-scroll">${renderOverviewCards()}</div>
-                </aside>
-                    <section class="sales-detail">
-                        ${stageActionArea(detail)}
-                        <section class="sales-timeline-shell">
-                        <button type="button" class="sales-timeline-toggle ${timelineCollapsed ? 'is-collapsed' : ''}" data-sales-timeline-toggle>
-                            <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-300">${esc(tr('timelineTitle'))}</span>
-                            <span class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-gas-green">
-                                <span>${esc(timelineCollapsed ? tr('timelineExpand') : tr('timelineCollapse'))}</span>
-                                <i class="fa-solid fa-chevron-down"></i>
-                            </span>
-                        </button>
-                        <div class="sales-timeline-panel ${timelineCollapsed ? 'is-collapsed' : ''}">
-                            <div class="sales-timeline">${renderTimeline(detail)}</div>
-                        </div>
+            <div class="h-full bg-[#050505] text-gray-200 font-sans flex flex-col relative min-h-0">
+                <main class="sales-pipeline-main-shell flex-1 w-full max-w-xl mx-auto p-4 flex flex-col gap-4 relative pb-28 min-h-0 overflow-hidden">
+                    <section class="mb-2">
+                        <div class="text-[#39b54a] text-xs font-semibold mb-1 tracking-wide">${esc(pipelineLabel())}</div>
+                        <h1 class="text-2xl font-bold text-white mb-2">${esc(localeText('客户交易流程', 'Customer Deal Flow'))}</h1>
+                        <p class="text-xs text-gray-400 leading-relaxed">${esc(localeText('客户端里程碑都在此处处理。节点切换、沟通回复和当前任务提交统一在当前页面完成。', 'Customer-side milestones, discussions, and current-stage actions are all handled here.'))}</p>
+                        <p class="mt-2 text-[11px] text-gray-500">${esc(text(detail.deal_title || detail.customer_company || state.selectedDealId, ''))}</p>
                     </section>
-                    <section class="sales-stage-card">
-                        <div class="sales-stage-head">
-                            <div>
-                                <div class="sales-kicker">${esc(tr('activitiesKicker'))}</div>
-                                <h3>${esc(tr('activitiesTitle'))}</h3>
-                                <p>${esc(tr('activitiesDesc'))}</p>
-                            </div>
-                        </div>
-                        <div class="sales-activity-scroll">
-                            <div class="sales-activity-list">${activitiesMarkup(detail)}</div>
-                        </div>
-                    </section>
-                </section>
+                    ${currentTaskCardMarkup(detail)}
+                    ${commentsPanelMarkup(detail)}
+                </main>
             </div>
         `;
 
         bindRenderedActions();
-        requestAnimationFrame(() => scrollActiveDealCardIntoView(false));
     }
 
     function collectRequirementPayload() {
@@ -1066,6 +1490,29 @@
         }
     }
 
+    async function submitCommunication() {
+        const detail = state.detail || {};
+        const targetStage = resolveDisplayStage(detail);
+        const body = text(byId('sales-comment-input')?.value).trim();
+        if (!body) {
+            showToast(tr('commentsNeedBody'), 'error');
+            return;
+        }
+        try {
+            await rpc('add_customer_pipeline_comment', {
+                target_deal_id: state.selectedDealId,
+                target_stage_key: targetStage,
+                comment_body: body,
+                target_reply_to_id: text(state.commentReplyToId) || null,
+            });
+            state.commentReplyToId = '';
+            showToast(tr('commentsPosted'));
+            await reloadData();
+        } catch (error) {
+            showToast(error.message || tr('commentsPostFailed'), 'error');
+        }
+    }
+
     function bindRenderedActions() {
         document.querySelectorAll('[data-sales-req-field]').forEach((node) => {
             node.addEventListener('input', () => {
@@ -1128,6 +1575,7 @@
                 if (!dealId || dealId === state.selectedDealId) return;
                 state.selectedDealId = dealId;
                 state.selectedStage = '';
+                state.commentReplyToId = '';
                 state.requirementDraft = {};
                 syncUrl();
                 await loadDetail();
@@ -1135,22 +1583,28 @@
             });
         });
 
-        byId('sales-pipeline-root')?.querySelector('[data-sales-list-toggle]')?.addEventListener('click', () => {
-            state.mobileListCollapsed = !state.mobileListCollapsed;
+        byId('sales-pipeline-root')?.querySelector('[data-sales-map-toggle]')?.addEventListener('click', () => {
+            state.showFullMap = !state.showFullMap;
             render();
-            requestAnimationFrame(() => scrollActiveDealCardIntoView(true));
         });
 
-        byId('sales-pipeline-root')?.querySelector('[data-sales-timeline-toggle]')?.addEventListener('click', () => {
-            state.timelineCollapsed = !state.timelineCollapsed;
-            render();
+        document.querySelectorAll('[data-sales-focus-composer]').forEach((button) => {
+            button.addEventListener('click', () => {
+                byId('sales-comment-input')?.focus();
+            });
         });
 
         document.querySelectorAll('[data-sales-stage-node]').forEach((button) => {
             button.addEventListener('click', () => {
                 const stageKey = text(button.dataset.salesStageNode);
+                const stageStatus = text(button.dataset.stageStatus);
                 if (!stageKey || STAGE_INDEX[stageKey] == null) return;
+                if (stageStatus === 'pending') {
+                    showToast(localeText(`「${stageLabel(stageKey)}」阶段尚未开始，暂无内容。`, `"${stageLabel(stageKey)}" has not started yet.`), 'error');
+                    return;
+                }
                 state.selectedStage = stageKey;
+                state.commentReplyToId = '';
                 syncUrl();
                 render();
             });
@@ -1162,6 +1616,61 @@
         byId('sales-stage-submit-confirmation')?.addEventListener('click', () => {
             void submitStageConfirmation();
         });
+        byId('sales-comment-submit')?.addEventListener('click', () => {
+            void submitCommunication();
+        });
+        const commentInput = byId('sales-comment-input');
+        const commentSubmit = byId('sales-comment-submit');
+        const syncCommentSubmitState = () => {
+            if (!commentSubmit) return;
+            commentSubmit.disabled = !text(commentInput?.value).trim();
+        };
+        syncCommentSubmitState();
+        commentInput?.addEventListener('input', () => {
+            syncCommentSubmitState();
+        });
+        commentInput?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                void submitCommunication();
+            }
+        });
+        document.querySelectorAll('[data-sales-comment-reply]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const nextId = text(button.dataset.salesCommentReply);
+                state.commentReplyToId = state.commentReplyToId === nextId ? '' : nextId;
+                render();
+                requestAnimationFrame(() => byId('sales-comment-input')?.focus());
+            });
+        });
+        document.querySelector('[data-sales-comment-reply-cancel]')?.addEventListener('click', () => {
+            state.commentReplyToId = '';
+            render();
+        });
+
+        const commentScroll = byId('sales-comment-scroll');
+        const commentScrollThumb = byId('sales-comment-scroll-thumb');
+        const syncCommentScrollIndicator = () => {
+            if (!commentScroll || !commentScrollThumb) return;
+            const { scrollHeight, clientHeight, scrollTop } = commentScroll;
+            const maxScroll = Math.max(scrollHeight - clientHeight, 0);
+            const hasOverflow = maxScroll > 4;
+            commentScroll.dataset.scrollable = hasOverflow ? 'true' : 'false';
+            if (!hasOverflow) {
+                commentScrollThumb.style.height = '0px';
+                commentScrollThumb.style.transform = 'translateY(0)';
+                return;
+            }
+            const trackHeight = Math.max(clientHeight - 24, 0);
+            const thumbHeight = Math.max((clientHeight / scrollHeight) * trackHeight, 36);
+            const travel = Math.max(trackHeight - thumbHeight, 0);
+            const progress = maxScroll > 0 ? scrollTop / maxScroll : 0;
+            commentScrollThumb.style.height = `${thumbHeight}px`;
+            commentScrollThumb.style.transform = `translateY(${progress * travel}px)`;
+        };
+        syncCommentScrollIndicator();
+        commentScroll?.addEventListener('scroll', syncCommentScrollIndicator, { passive: true });
+        window.addEventListener('resize', syncCommentScrollIndicator);
     }
 
     function overviewRowByDealId(dealId = '') {
@@ -1383,6 +1892,7 @@
                 }
             }
             state.detail = detailRow;
+            state.commentReplyToId = '';
             if (!state.selectedStage) state.selectedStage = text(detailRow?.current_stage, 'requirement_capture');
             syncUrl();
         } catch (error) {

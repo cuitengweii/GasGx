@@ -27,6 +27,22 @@ SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
+## Deploy
+
+`site-chat` is called by the public-site widget, so it must accept anonymous website traffic that only carries the publishable key headers from `site-shell.shared.js`.
+
+Use:
+
+```bash
+supabase functions deploy site-chat --no-verify-jwt
+```
+
+Repo-local Supabase config also pins this behavior in:
+
+```text
+supabase/config.toml
+```
+
 ## Request
 
 ```json

@@ -32,4 +32,22 @@ test.describe('Sales console safety checks', () => {
     expect(source).toContain('bindSalesQuoteActions(input, stageKey, customerId, customerFlow);');
     expect(source).toContain('bindSalesExecutionActions(input, stageKey, customerId, customerFlow);');
   });
+
+  test('sales communication panel keeps threaded comment/reply structure', async () => {
+    const source = readFileSync(resolve(process.cwd(), 'article_management/modules/quote-system.module.js'), 'utf8');
+
+    expect(source).toContain('function buildStageCommunicationThreads(');
+    expect(source).toContain('class="ams-comment-thread-replies"');
+    expect(source).toContain('class="ams-comment-thread-row');
+    expect(source).toContain('留言 / 回复');
+    expect(source).toContain('当前节点对话');
+  });
+
+  test('activity read loader batches large quote_activity_reads requests', async () => {
+    const source = readFileSync(resolve(process.cwd(), 'article_management/modules/quote-system.module.js'), 'utf8');
+
+    expect(source).toContain('const activityReadBatchSize = 120;');
+    expect(source).toContain('dedupedIds.slice(start, start + activityReadBatchSize)');
+    expect(source).toContain(".in('activity_id', batch)");
+  });
 });

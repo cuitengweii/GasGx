@@ -8,6 +8,13 @@ const corsHeaders = {
 };
 
 const CONTACT_EMAIL = 'contact@gasgx.com';
+const REQUIREMENT_INTAKE_URL = 'https://www.gasgx.com/quote/requirement.html';
+const SITE_FIT_URL = 'https://www.gasgx.com/tools/site-fit/';
+const GAS_FIT_URL = 'https://www.gasgx.com/tools/gas-fit/';
+const ENGINE_SELECTION_URL = 'https://www.gasgx.com/tools/engine-selection/';
+const DATASHEETS_URL = 'https://www.gasgx.com/resources/datasheets/';
+const REPORTS_URL = 'https://www.gasgx.com/resources/reports/';
+const FAQ_URL = 'https://www.gasgx.com/resources/faq/';
 const DEFAULT_DOMAIN = 'generalv3.5';
 const SPARK_TIMEOUT_MS = 45000;
 const DEFAULT_TOP_K = 6;
@@ -61,6 +68,14 @@ type KnowledgeChunkHit = {
     chunk_summary: string;
     keywords: string[];
     score: number;
+};
+
+type CraftedReply = {
+    provider: 'gasgx_rag' | 'gasgx_policy';
+    reply: string;
+    sources: SourceRef[];
+    handoff: HandoffMeta;
+    matchedIntent: string;
 };
 
 type KnowledgeSearchContext = {
@@ -141,6 +156,138 @@ const INTENT_DEFINITIONS = [
         ],
     },
     {
+        key: 'requirement_intake',
+        patterns: [
+            'requirement form',
+            'requirement intake',
+            'project intake',
+            'sales brief',
+            'quotation form',
+            'quote form',
+            '需求单',
+            '需求表',
+            '填写需求',
+            '售前表单',
+            'форма заявки',
+            'форма запроса',
+            'коммерческая форма',
+        ],
+    },
+    {
+        key: 'site_fit_tool',
+        patterns: [
+            'site fit',
+            'gas fit',
+            'engine selection',
+            'fit tool',
+            'which tool',
+            '站点适配',
+            '气源适配',
+            '选型工具',
+            '可研工具',
+            'подбор площадки',
+            'подбор газа',
+            'подбор двигателя',
+        ],
+    },
+    {
+        key: 'deployment_compare',
+        patterns: [
+            'container vs ais',
+            'container vs skid',
+            'ais vs skid',
+            'deployment compare',
+            'containerized vs ais',
+            '部署区别',
+            '部署差别',
+            '集装箱 和 ais',
+            '撬装 和 集装箱',
+            'контейнер или ais',
+            'контейнер или skid',
+            'сравнение deployment',
+        ],
+    },
+    {
+        key: 'oilfield_scenario_fit',
+        patterns: [
+            'oilfield power',
+            'oilfield associated gas',
+            'wellhead power',
+            'flare mitigation',
+            '油田',
+            '伴生气发电',
+            '井口供电',
+            'нефтепромысел',
+            'попутный газ на месторождении',
+            'энергия для oilfield',
+        ],
+    },
+    {
+        key: 'mining_scenario_fit',
+        patterns: [
+            'mining power',
+            'bitcoin mining',
+            'gas power mining',
+            'data center power',
+            '矿场',
+            '算力',
+            '比特币挖矿',
+            'майнинг',
+            'энергия для майнинга',
+            'мощность для дата центра',
+        ],
+    },
+    {
+        key: 'industrial_scenario_fit',
+        patterns: [
+            'industrial power',
+            'distributed generation',
+            'factory power',
+            'industrial plant',
+            '工业发电',
+            '工厂供电',
+            '分布式能源',
+            'промышленная генерация',
+            'энергия для завода',
+            'распределенная генерация',
+        ],
+    },
+    {
+        key: 'chp_scenario_fit',
+        patterns: [
+            'chp',
+            'combined heat and power',
+            'cogeneration',
+            'heat recovery',
+            '热电联供',
+            '余热利用',
+            '供热',
+            'когенерация',
+            'тепло и электроэнергия',
+            'утилизация тепла',
+        ],
+    },
+    {
+        key: 'resource_guidance',
+        patterns: [
+            'datasheet',
+            'data sheet',
+            'report',
+            'whitepaper',
+            'faq',
+            'case study',
+            '参数表',
+            '报告',
+            '白皮书',
+            '案例',
+            '资料',
+            'даташит',
+            'отчет',
+            'кейс',
+            'faq',
+        ],
+    },
+    {
         key: 'mining_associated_gas_1mw',
         patterns: [
             '1 mw mining',
@@ -162,6 +309,10 @@ const INTENT_DEFINITIONS = [
 
 function text(value: unknown, fallback = ''): string {
     return String(value ?? fallback).trim();
+}
+
+function rawText(value: unknown, fallback = ''): string {
+    return String(value ?? fallback);
 }
 
 function env(name: string, fallback = ''): string {
@@ -223,9 +374,9 @@ function normalizeLanguage(value: unknown, fallback = 'en'): string {
 
 function detectPreferredLanguage(explicitLanguage: unknown, message: string, pageContext?: PageContext): string {
     const explicit = normalizeLanguage(explicitLanguage, '');
-    if (explicit) return explicit;
     if (/[\u4e00-\u9fff]/.test(message)) return 'zh';
     if (/[\u0400-\u04FF]/.test(message)) return 'ru';
+    if (explicit) return explicit;
     return normalizeLanguage(pageContext?.lang, 'en');
 }
 
@@ -375,7 +526,7 @@ function fallbackFaqRules(language: string): FaqRule[] {
             answer_template: localized.quote_requirements,
             handoff_required: true,
             handoff_reason: 'quote',
-            next_fields: ['application', 'power', 'gas_type', 'country', 'voltage_frequency', 'deployment'],
+            next_fields: ['application', 'power', 'gas_type', 'gas_quality', 'country', 'site_type', 'delivery_scope', 'service_scope'],
             source_refs: sourceByIntent.quote_requirements,
         },
         {
@@ -414,7 +565,7 @@ function canonicalFallbackRule(intentKey: string, language: string): FaqRule | n
 
     const handoffByIntent: Record<string, HandoffMeta> = {
         product_overview: { required: false, reason: 'unknown', next_fields: [] },
-        quote_requirements: { required: true, reason: 'quote', next_fields: ['application', 'power', 'gas_type', 'country', 'voltage_frequency', 'deployment'] },
+        quote_requirements: { required: true, reason: 'quote', next_fields: ['application', 'power', 'gas_type', 'gas_quality', 'country', 'site_type', 'delivery_scope', 'service_scope'] },
         contact_support: { required: true, reason: 'support', next_fields: ['application', 'power', 'gas_type', 'issue_or_goal'] },
         mining_associated_gas_1mw: { required: true, reason: 'lead', next_fields: ['application', 'power', 'gas_quality', 'country', 'voltage_frequency', 'deployment'] },
     };
@@ -459,6 +610,134 @@ function canonicalFallbackRule(intentKey: string, language: string): FaqRule | n
     };
 }
 
+function phase1FallbackFaqCatalog(): Array<{
+    intent_key: string;
+    answer_template: string;
+    handoff: HandoffMeta;
+    source_refs: SourceRef[];
+}> {
+    return [
+        {
+            intent_key: 'requirement_intake',
+            answer_template: `If the project is already moving toward budget, implementation or supplier comparison, the best next step is the GasGx requirement intake: ${REQUIREMENT_INTAKE_URL}. It captures application, power, gas type, gas quality, country, voltage and frequency, deployment preference, delivery scope and service scope in one place.`,
+            handoff: {
+                required: true,
+                reason: 'quote',
+                next_fields: ['application', 'power', 'gas_type', 'gas_quality', 'country', 'site_type', 'delivery_scope', 'service_scope'],
+            },
+            source_refs: [{ title: 'GasGx Requirement Intake', url: REQUIREMENT_INTAKE_URL, source_type: 'public_page' }],
+        },
+        {
+            intent_key: 'site_fit_tool',
+            answer_template: `For exploration-stage qualification, GasGx normally points users to the website tools rather than a quotation form. Site-fit is the best first screen for overall feasibility, gas-fit helps qualify the fuel boundary, and engine-selection helps narrow equipment direction.`,
+            handoff: { required: false, reason: 'unknown', next_fields: [] },
+            source_refs: [
+                { title: 'Site Fit Tool', url: SITE_FIT_URL, source_type: 'public_page' },
+                { title: 'Gas Fit Tool', url: GAS_FIT_URL, source_type: 'public_page' },
+                { title: 'Engine Selection Tool', url: ENGINE_SELECTION_URL, source_type: 'public_page' },
+            ],
+        },
+        {
+            intent_key: 'deployment_compare',
+            answer_template: 'Containerized deployment is usually the fastest packaged field option, AIS-integrated deployment is stronger when the project needs a tighter electrical or integration boundary, and skid-mounted deployment is more open when the site team or EPC side will absorb more balance-of-plant work.',
+            handoff: {
+                required: true,
+                reason: 'lead',
+                next_fields: ['application', 'power', 'gas_type', 'site_type', 'deployment', 'delivery_scope'],
+            },
+            source_refs: [{ title: 'Deployment Format Guide', url: 'kb://gasgx/deployment-compare', source_type: 'internal_sales_kb' }],
+        },
+        {
+            intent_key: 'oilfield_scenario_fit',
+            answer_template: `Oilfield gas-to-power is usually a strong fit when the site has repeatable gas availability, a defined electrical load and a clear field-service boundary. GasGx would normally qualify gas type and quality, available flow or pressure, target power, site conditions and service scope before moving to quotation.`,
+            handoff: {
+                required: true,
+                reason: 'lead',
+                next_fields: ['power', 'gas_type', 'gas_quality', 'available_flow', 'country', 'site_type'],
+            },
+            source_refs: [{ title: 'GasGx Solutions | Oilfield', url: 'https://www.gasgx.com/solutions/oilfield/', source_type: 'public_page' }],
+        },
+        {
+            intent_key: 'mining_scenario_fit',
+            answer_template: `Gas-to-power mining is usually a good fit when the site has repeatable gas supply, a stable compute load and a practical field O&M model. GasGx would normally confirm gas quality, target power or miner load, country, voltage or frequency and deployment preference before recommending a direction.`,
+            handoff: {
+                required: true,
+                reason: 'lead',
+                next_fields: ['power', 'gas_type', 'gas_quality', 'country', 'voltage_frequency', 'deployment'],
+            },
+            source_refs: [{ title: 'GasGx Solutions | Mining', url: 'https://www.gasgx.com/solutions/mining/', source_type: 'public_page' }],
+        },
+        {
+            intent_key: 'industrial_scenario_fit',
+            answer_template: `Industrial distributed generation is usually the right fit when the plant has a defined power profile, clear fuel availability and a realistic boundary for heat, cooling, grid interaction and service responsibility. GasGx would normally qualify power, gas type, site type, voltage or frequency and service scope before moving deeper.`,
+            handoff: {
+                required: true,
+                reason: 'lead',
+                next_fields: ['power', 'gas_type', 'site_type', 'voltage_frequency', 'service_scope'],
+            },
+            source_refs: [{ title: 'GasGx Solutions | Industrial', url: 'https://www.gasgx.com/solutions/industrial/', source_type: 'public_page' }],
+        },
+        {
+            intent_key: 'chp_scenario_fit',
+            answer_template: `CHP is usually a good fit only when the project has both a stable electrical load and a useful heat load that can actually be recovered. GasGx would normally confirm power, gas type, heat-use scenario, site type, service scope and delivery boundary before treating CHP as the preferred direction.`,
+            handoff: {
+                required: true,
+                reason: 'lead',
+                next_fields: ['power', 'gas_type', 'site_type', 'delivery_scope', 'service_scope'],
+            },
+            source_refs: [{ title: 'GasGx Solutions | CHP', url: 'https://www.gasgx.com/solutions/chp/', source_type: 'public_page' }],
+        },
+        {
+            intent_key: 'resource_guidance',
+            answer_template: `For documentation-stage questions, GasGx normally points users to the site resources first: datasheets for equipment details, reports or whitepapers for market and scenario context, and FAQ for short operational answers.`,
+            handoff: { required: false, reason: 'unknown', next_fields: [] },
+            source_refs: [
+                { title: 'GasGx Datasheets', url: DATASHEETS_URL, source_type: 'public_page' },
+                { title: 'GasGx Reports', url: REPORTS_URL, source_type: 'public_page' },
+                { title: 'GasGx FAQ', url: FAQ_URL, source_type: 'public_page' },
+            ],
+        },
+    ];
+}
+
+function phase1FallbackFaqRules(language: string): FaqRule[] {
+    const normalizedLanguage = normalizeLanguage(language, 'en');
+    return phase1FallbackFaqCatalog().map((item) => ({
+        id: `phase1:${normalizedLanguage}:${item.intent_key}`,
+        intent_key: item.intent_key,
+        language: normalizedLanguage,
+        trigger_patterns: INTENT_DEFINITIONS.find((definition) => definition.key === item.intent_key)?.patterns || [],
+        answer_template: item.answer_template,
+        handoff_required: item.handoff.required,
+        handoff_reason: item.handoff.reason,
+        next_fields: item.handoff.next_fields,
+        source_refs: item.source_refs,
+    }));
+}
+
+function phase1CanonicalFallbackRule(intentKey: string, language: string): FaqRule | null {
+    const normalizedLanguage = normalizeLanguage(language, 'en');
+    return phase1FallbackFaqRules(normalizedLanguage).find((rule) => rule.intent_key === intentKey) || null;
+}
+
+function pickPhase1ScenarioRule(message: string, language: string, rules: FaqRule[]): FaqRule | null {
+    const normalized = normalizedIntentText(message);
+    const mentionsOilfield = /(oilfield|wellhead|well site|井口|油田|伴生气发电|нефтепромыс|месторожд)/i.test(normalized);
+    const mentionsMining = /(mining|bitcoin|miner|mining power|矿场|矿机|算力|挖矿|майнинг|дата центр)/i.test(normalized);
+    const mentionsIndustrial = /(industrial|factory|plant|distributed generation|工厂|工业|分布式能源|промышлен|распределенн)/i.test(normalized);
+    const mentionsChp = /(chp|combined heat and power|cogeneration|heat recovery|热电联供|余热利用|供热|когенерац|утилизац)/i.test(normalized);
+
+    const byIntent = (intentKey: string) =>
+        rules.find((rule) => rule.intent_key === intentKey && rule.language === language)
+        || rules.find((rule) => rule.intent_key === intentKey);
+
+    if (mentionsChp) return byIntent('chp_scenario_fit');
+    if (mentionsOilfield && !mentionsMining) return byIntent('oilfield_scenario_fit');
+    if (mentionsIndustrial && !mentionsMining) return byIntent('industrial_scenario_fit');
+    if (mentionsMining) return byIntent('mining_scenario_fit');
+    return null;
+}
+
 function pickFaqRule(message: string, language: string, rules: FaqRule[], preferredIntent = ''): FaqRule | null {
     const normalized = normalizedIntentText(message);
     let bestRule: FaqRule | null = null;
@@ -478,7 +757,8 @@ function pickFaqRule(message: string, language: string, rules: FaqRule[], prefer
     if (!preferredIntent) {
         return null;
     }
-    const localizedFallback = canonicalFallbackRule(preferredIntent, language);
+    const localizedFallback = phase1CanonicalFallbackRule(preferredIntent, language)
+        || canonicalFallbackRule(preferredIntent, language);
     if (localizedFallback) {
         return localizedFallback;
     }
@@ -510,12 +790,258 @@ function pickCountryStrandedGasRule(message: string, language: string, rules: Fa
 
 function pickStrandedGasQuoteRule(message: string, language: string, rules: FaqRule[]): FaqRule | null {
     const normalized = normalizedIntentText(message);
-    const mentionsStrandedTopic = /(stranded gas|associated gas|flare gas|flared gas|apg|bitcoin mining|mining power|gas power mining)/.test(normalized);
-    const mentionsQuoteIntent = /(quote|quotation|price|pricing|budget|cost|how much|proposal)/.test(normalized);
+    const strandedTopicPattern = new RegExp([
+        'stranded gas',
+        'associated gas',
+        'flare gas',
+        'flared gas',
+        'apg',
+        'bitcoin mining',
+        'mining power',
+        'gas power mining',
+        '\u4f34\u751f\u6c14',
+        '\u706b\u70ac\u6c14',
+        '\u653e\u7a7a\u6c14',
+        '\u653e\u6563\u6c14',
+        '\u5f03\u6c14',
+        '\u6cb9\u7530\u6c14',
+        '\u77ff\u573a\u4f9b\u7535',
+        '\u6cb9\u7530\u4f34\u751f\u6c14',
+        '\u043f\u043e\u043f\u0443\u0442\u043d[\u0430-\u044f\u0451-]*\\s+\u0433\u0430\u0437[\u0430-\u044f\u0451-]*',
+        '\u0444\u0430\u043a\u0435\u043b\u044c\u043d[\u0430-\u044f\u0451-]*\\s+\u0433\u0430\u0437[\u0430-\u044f\u0451-]*',
+        '\u0430\u043f\u0433',
+        '\u043d\u0435\u0444\u0442\u044f\u043d[\u0430-\u044f\u0451-]*\\s+\u0433\u0430\u0437[\u0430-\u044f\u0451-]*',
+        '\u043c\u0430\u0439\u043d\u0438\u043d\u0433\\s+\u043d\u0430\\s+\u0433\u0430\u0437\u0435',
+        '\u0433\u0430\u0437\u043e\u0432[\u0430-\u044f\u0451-]*\\s+\u0433\u0435\u043d\u0435\u0440\u0430\u0446[\u0430-\u044f\u0451-]*',
+    ].join('|'), 'i');
+    const quoteIntentPattern = new RegExp([
+        'quote',
+        'quotation',
+        'price',
+        'pricing',
+        'budget',
+        'cost',
+        'how much',
+        'proposal',
+        'commercial offer',
+        '\u62a5\u4ef7',
+        '\u62a5\u4ef7\u5355',
+        '\u8be2\u4ef7',
+        '\u4ef7\u683c',
+        '\u6210\u672c',
+        '\u9884\u7b97',
+        '\u591a\u5c11\u94b1',
+        '\u0441\u0442\u043e\u0438\u043c\u043e\u0441\u0442[\u0430-\u044f\u0451-]*',
+        '\u0446\u0435\u043d[\u0430-\u044f\u0451-]*',
+        '\u0431\u044e\u0434\u0436\u0435\u0442[\u0430-\u044f\u0451-]*',
+        '\u0440\u0430\u0441\u0447[\u0435\u0451]\u0442[\u0430-\u044f\u0451-]*',
+        '\u043a\u043e\u043c\u043c\u0435\u0440\u0447\u0435\u0441\u043a[\u0430-\u044f\u0451-]*\\s+\u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d[\u0430-\u044f\u0451-]*',
+        '\u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d[\u0430-\u044f\u0451-]*',
+    ].join('|'), 'i');
+    const mentionsStrandedTopic = strandedTopicPattern.test(normalized);
+    const mentionsQuoteIntent = quoteIntentPattern.test(normalized);
     if (!mentionsStrandedTopic || !mentionsQuoteIntent) return null;
 
     return rules.find((rule) => rule.intent_key === 'stranded_gas_quote_checklist' && rule.language === language)
         || rules.find((rule) => rule.intent_key === 'stranded_gas_quote_checklist');
+}
+
+function localizedPolicyAnswer(rule: FaqRule, language: string): string {
+    const usePhase1Override = rule.id.startsWith('phase1:') || rule.intent_key === 'quote_requirements';
+    if (usePhase1Override) {
+        const normalizedLanguage = normalizeLanguage(language, 'en');
+        const catalog = {
+            en: {
+                quote_requirements: `GasGx can support a formal quotation, but it should be built from a structured project brief rather than a loose price request. The fastest path is the requirement intake at ${REQUIREMENT_INTAKE_URL}. Please prepare application, target power, gas type and gas quality, country, voltage and frequency, deployment preference, delivery scope and service scope.`,
+                requirement_intake: `If the project is already moving toward budget, implementation or supplier comparison, the best next step is the GasGx requirement intake: ${REQUIREMENT_INTAKE_URL}. It captures application, power, gas type, gas quality, country, voltage and frequency, deployment preference, delivery scope and service scope in one place.`,
+                site_fit_tool: `For exploration-stage qualification, GasGx normally points users to the website tools first. Use site-fit for overall feasibility, gas-fit for fuel boundary checks, and engine-selection when you want to narrow the equipment direction before asking for a quote.`,
+                deployment_compare: 'Containerized deployment is usually best when the project needs a faster packaged field rollout; AIS-integrated deployment is stronger when the electrical interface and integrated balance of plant matter more; skid-mounted deployment is better when the site team or EPC side will absorb more custom field work.',
+                oilfield_scenario_fit: `Oilfield gas-to-power is usually a strong fit when the site has repeatable gas availability, a defined electrical load and a workable field-service boundary. The next qualification inputs are normally gas type and quality, available flow or pressure, target power, country, site conditions and service scope. For an active project, move to ${REQUIREMENT_INTAKE_URL}; for early feasibility, start with ${SITE_FIT_URL}.`,
+                mining_scenario_fit: `Gas-to-power mining is usually a good fit when the site has repeatable gas supply, a stable compute load and a practical field O&M model. GasGx would normally confirm gas quality, target power or miner load, country, voltage or frequency and deployment preference before recommending a direction. Early-stage screening fits ${SITE_FIT_URL}; project-stage qualification fits ${REQUIREMENT_INTAKE_URL}.`,
+                industrial_scenario_fit: `Industrial distributed generation is usually the right fit when the plant has a defined power profile, clear fuel availability and a realistic boundary for grid interaction, cooling and service responsibility. GasGx would normally qualify power, gas type, site type, voltage or frequency and service scope before moving deeper.`,
+                chp_scenario_fit: `CHP is usually the right fit only when the project has both a stable electrical load and a useful heat load that can actually be recovered. GasGx would normally confirm power, gas type, heat-use scenario, site type, delivery scope and service scope before treating CHP as the preferred direction.`,
+                resource_guidance: `For documentation-stage questions, GasGx normally points users to site resources first: datasheets for equipment details, reports for market or scenario context, and FAQ for short operational answers. Start with ${DATASHEETS_URL}, ${REPORTS_URL} and ${FAQ_URL}.`,
+            },
+            zh: {
+                quote_requirements: `GasGx 可以支持正式报价，但应该先基于结构化需求单，而不是只给一个松散的询价。最快的方式是填写公开需求入口：${REQUIREMENT_INTAKE_URL}。建议先准备应用场景、目标功率、气源类型与气质、国家地区、电压频率、部署偏好、交付范围和服务范围。`,
+                requirement_intake: `如果项目已经进入预算、落地或供应商比较阶段，最合适的下一步就是填写 GasGx 公开需求单：${REQUIREMENT_INTAKE_URL}。这个入口会统一收集应用场景、目标功率、气源类型、气质、国家地区、电压频率、部署偏好、交付范围和服务范围。`,
+                site_fit_tool: `如果你现在还处于可研或方向筛选阶段，GasGx 更建议先用站内工具而不是直接报价。整体可研先看 ${SITE_FIT_URL}，气源边界先看 ${GAS_FIT_URL}，设备方向筛选可以看 ${ENGINE_SELECTION_URL}。`,
+                deployment_compare: '一般来说，集装箱化更适合追求快速打包部署的项目；AIS 一体化更适合电气边界和集成度要求更高的项目；撬装更适合由现场团队或 EPC 侧吸收更多定制化土建与配套工作的项目。',
+                oilfield_scenario_fit: `油田伴生气发电通常适合那些气源相对稳定、站内负载明确、现场服务边界可控的项目。下一步通常要确认气源类型、气质、可用流量或压力、目标功率、国家地区、现场条件和服务范围。早期可研可先看 ${SITE_FIT_URL}，如果项目已经在推进，建议直接进入 ${REQUIREMENT_INTAKE_URL}。`,
+                mining_scenario_fit: `燃气供能的算力 / 矿场项目，通常适合那些气源相对稳定、负载明确、现场运维模式清晰的站点。GasGx 下一步一般会确认气质、目标功率或矿机负载、国家地区、电压频率和部署偏好。早期筛选适合先看 ${SITE_FIT_URL}，项目推进阶段适合直接填写 ${REQUIREMENT_INTAKE_URL}。`,
+                industrial_scenario_fit: '工业分布式发电通常适合那些用能轮廓明确、燃料边界清晰、并网 / 冷却 / 运维责任边界可定义的项目。GasGx 一般会先确认目标功率、气源类型、站点类型、电压频率和服务范围，再继续缩小方案。',
+                chp_scenario_fit: 'CHP 热电联供只有在项目同时具备稳定电负荷和可被实际消纳的热负荷时才真正成立。GasGx 一般会先确认目标功率、气源类型、热利用场景、站点类型、交付范围和服务范围，再判断 CHP 是否应作为优先方向。',
+                resource_guidance: `如果你当前主要是资料型需求，GasGx 更建议先看站内资源：设备细节优先看参数表，市场和场景背景优先看研究报告，简短运营问答优先看 FAQ。入口分别是 ${DATASHEETS_URL}、${REPORTS_URL} 和 ${FAQ_URL}。`,
+            },
+            ru: {
+                quote_requirements: `GasGx может подготовить коммерческое предложение, но оно должно строиться на структурированном проектном брифе, а не на свободном запросе цены. Самый быстрый путь — заполнить публичный intake: ${REQUIREMENT_INTAKE_URL}. Подготовьте сценарий проекта, требуемую мощность, тип и качество газа, страну, напряжение и частоту, предпочтительный формат размещения, границы поставки и сервисный объем.`,
+                requirement_intake: `Если проект уже перешел к бюджету, внедрению или сравнению поставщиков, лучший следующий шаг — публичная форма intake GasGx: ${REQUIREMENT_INTAKE_URL}. Она собирает сценарий проекта, мощность, тип и качество газа, страну, напряжение и частоту, предпочтительный deployment, границы поставки и сервисный объем.`,
+                site_fit_tool: `Если вы еще на стадии предварительной оценки, GasGx обычно рекомендует сначала использовать инструменты сайта, а не идти сразу в quotation. Для общей feasibility — ${SITE_FIT_URL}, для оценки газа — ${GAS_FIT_URL}, для narrowing оборудования — ${ENGINE_SELECTION_URL}.`,
+                deployment_compare: 'Как правило, контейнерный формат лучше, когда нужен быстрый упакованный запуск на площадке; AIS-интеграция сильнее там, где важнее электрическая граница и более плотная интеграция; skid лучше там, где команда площадки или EPC берут на себя больше кастомной полевой работы.',
+                oilfield_scenario_fit: `Газопоршневая генерация для oilfield обычно хорошо подходит, когда на площадке есть повторяемый объем газа, понятная электрическая нагрузка и реалистичная сервисная граница. Дальше GasGx обычно уточняет тип и качество газа, доступный расход или давление, требуемую мощность, страну, условия площадки и сервисный объем. Для ранней оценки подходит ${SITE_FIT_URL}, для активного проекта — ${REQUIREMENT_INTAKE_URL}.`,
+                mining_scenario_fit: `Gas-to-power для майнинга обычно подходит там, где есть повторяемый объем газа, стабильная вычислительная нагрузка и рабочая модель field O&M. Дальше GasGx обычно подтверждает качество газа, требуемую мощность или miner load, страну, напряжение и частоту, а также формат размещения. Для раннего screening подойдет ${SITE_FIT_URL}, для проектной qualification — ${REQUIREMENT_INTAKE_URL}.`,
+                industrial_scenario_fit: 'Промышленная распределенная генерация обычно подходит там, где у площадки есть понятный профиль нагрузки, доступное топливо и реалистичная граница по сети, охлаждению и сервисной ответственности. GasGx обычно уточняет мощность, тип газа, тип площадки, напряжение и частоту, а также сервисный объем.',
+                chp_scenario_fit: 'CHP действительно имеет смысл только тогда, когда у проекта есть и стабильная электрическая нагрузка, и полезная тепловая нагрузка, которую реально можно утилизировать. GasGx обычно уточняет мощность, тип газа, сценарий использования тепла, тип площадки, границы поставки и сервисный объем, прежде чем рекомендовать CHP как приоритетный путь.',
+                resource_guidance: `Если запрос сейчас больше документный, GasGx обычно сначала направляет на ресурсы сайта: datasheets для деталей оборудования, reports для рыночного и сценарного контекста, FAQ для коротких operational answers. Начните с ${DATASHEETS_URL}, ${REPORTS_URL} и ${FAQ_URL}.`,
+            },
+        } as const;
+        const localized = catalog[normalizedLanguage as keyof typeof catalog] || catalog.en;
+        const override = localized[rule.intent_key as keyof typeof localized];
+        if (override) {
+            return override;
+        }
+    }
+    if (rule.intent_key !== 'stranded_gas_quote_checklist') {
+        return rule.answer_template;
+    }
+    if (language === 'zh') {
+        return '如果是伴生气或火炬气发电、矿场供电类项目报价，GasGx 通常需要先确认：所在国家、盆地或省州，站点类型，目标功率或算力负载，气源类型，气体组分与杂质，可用流量与压力，电压频率，并网或离网模式，环境与防寒条件，期望部署形式，以及是否包含开关柜、冷却、箱体、监控和运维范围。还需要补充机动性要求、物流限制、调试模式、服务可达范围、燃气预处理边界，以及这是试点还是批量项目。在这些输入没有确认前，任何报价都应视为初步报价。';
+    }
+    if (language === 'ru') {
+        return 'Для расчета коммерческого предложения по попутному или факельному газу GasGx обычно сначала уточняет: страну, бассейн или регион, тип площадки, целевую мощность или вычислительную нагрузку, тип газа, состав и примеси, доступный расход и давление, напряжение и частоту, режим работы с сетью или автономно, климатические условия и требования к зимизации, предпочтительный формат размещения, а также входят ли в объем switchgear, охлаждение, enclosure, мониторинг и сервис. Дополнительно нужно подтвердить требования к мобильности, логистические ограничения, модель пусконаладки, доступность сервиса, границы gas treatment и пилотный это проект или полномасштабное развертывание. До подтверждения этих данных любое предложение следует считать предварительным.';
+    }
+    return rule.answer_template;
+}
+
+function isContainerDeploymentPage(pageContext?: PageContext): boolean {
+    const currentPath = normalizeUrlPath(pageContext?.url || pageContext?.path || '');
+    return currentPath === '/products/deployment/container/';
+}
+
+function classifyContainerDeploymentQuery(message: string): 'quote' | 'qualification' | 'fit' | 'overview' | '' {
+    const normalized = normalizedIntentText(message);
+    if (!normalized) return '';
+    if (/(quote|quotation|pricing|price|proposal|prepare|报价|询价|准备|стоимост|цен|коммерческ|предложен|подготов)/.test(normalized)) {
+        return 'quote';
+    }
+    if (/(confirm|qualification|qualify|requirements|checklist|scope|what should be confirmed|需要确认|确认|清单|条件|подтверд|квалификац|чек|что нужно подготовить)/.test(normalized)) {
+        return 'qualification';
+    }
+    if (/(fit|good fit|when is|when should|site fit|适合|适用|场景|подходит|когда|сценар)/.test(normalized)) {
+        return 'fit';
+    }
+    if (/(container|containerized|deployment|集装箱|部署|контейнер|размещени)/.test(normalized)) {
+        return 'overview';
+    }
+    return '';
+}
+
+function containerDeploymentSource(): SourceRef[] {
+    return [{
+        title: 'GasGx Product Catalog | Containerized',
+        url: 'https://www.gasgx.com/products/deployment/container/',
+        source_type: 'public_page',
+    }];
+}
+
+function localizedContainerDeploymentReply(language: string, mode: 'quote' | 'qualification' | 'fit' | 'overview'): string {
+    const catalog = {
+        en: {
+            quote: [
+                'For a container deployment quotation, GasGx usually needs six items up front:',
+                '- Application and target load, including whether the project is for oilfield power, mining, CHP or industrial use.',
+                '- Gas source, gas quality, available flow and pressure.',
+                '- Electrical target: required power, voltage, frequency, and whether the site is grid-tied or islanded.',
+                '- Delivery scope: generator only, or generator plus switchgear, cooling, controls, enclosure, monitoring and commissioning support.',
+                '- Site conditions: ambient temperature, altitude, dust, rain, winterization and noise limits.',
+                '- Logistics and service boundaries: transport envelope, lifting access, installation window and service region.',
+                `If you send those inputs, GasGx can turn them into a practical pre-sales brief and quotation scope for ${CONTACT_EMAIL}.`,
+            ].join('\n'),
+            qualification: [
+                'For container deployment qualification, GasGx normally confirms these points first:',
+                '- Whether the project needs a packaged outdoor power block with faster field installation and repeatable delivery.',
+                '- Gas interface, electrical interface and target operating mode.',
+                '- Enclosure scope, cooling path, controls and monitoring boundary.',
+                '- Site civil and logistics constraints, including transport size, lifting access and commissioning conditions.',
+                '- Service model, spare-parts expectation and who will operate the unit after start-up.',
+            ].join('\n'),
+            fit: 'Container deployment is usually the right fit when the project needs a packaged outdoor power block, faster field installation, repeatable rollout, clearer logistics boundaries and a cleaner O&M handoff than a loose equipment set.',
+            overview: 'GasGx container deployment is positioned as a packaged outdoor power solution for projects that need faster deployment, repeatable site rollout and clearer scope control across power generation, enclosure and field delivery.',
+        },
+        zh: {
+            quote: [
+                '如果是集装箱部署项目报价，GasGx 通常会先确认六类信息：',
+                '- 应用场景和目标负载，例如油田供电、矿场、CHP 或工业项目。',
+                '- 气源类型、气质、可用流量和压力。',
+                '- 电气目标，包括目标功率、电压、频率，以及并网还是离网。',
+                '- 交付范围：是只要发电机组，还是同时包含开关柜、冷却、控制、箱体、监控和调试支持。',
+                '- 现场条件，包括环境温度、海拔、粉尘、雨雪、防寒和噪音限制。',
+                '- 物流与服务边界，包括运输尺寸、吊装条件、安装窗口和后续服务区域。',
+                `如果你把这些信息发给我，GasGx 就可以进一步整理成一份可执行的售前简表和报价范围，继续交给 ${CONTACT_EMAIL} 跟进。`,
+            ].join('\n'),
+            qualification: [
+                '如果要判断集装箱部署是否成立，GasGx 一般会先确认这些点：',
+                '- 项目是否需要一体化户外电站，而不是分散设备拼装。',
+                '- 气源接口、电气接口，以及目标运行模式。',
+                '- 箱体范围、冷却路径、控制系统和监控边界。',
+                '- 现场土建与物流限制，包括运输尺寸、吊装条件和调试环境。',
+                '- 后续运维模式、备件预期，以及项目投运后由谁负责操作。',
+            ].join('\n'),
+            fit: '如果项目更看重一体化户外部署、现场安装更快、批量复制更容易，以及物流和运维边界更清晰，那么集装箱部署通常会比散装设备方案更合适。',
+            overview: 'GasGx 的集装箱部署定位，是把发电、箱体和现场交付范围打包成更易落地的户外电力模块，适合追求部署速度、复制效率和边界清晰度的项目。',
+        },
+        ru: {
+            quote: [
+                'Для коммерческого предложения по контейнерному размещению GasGx обычно сначала уточняет шесть блоков данных:',
+                '- Сценарий проекта и целевую нагрузку: нефтепромысловое энергоснабжение, майнинг, CHP или промышленное применение.',
+                '- Тип газа, качество газа, доступный расход и давление.',
+                '- Электрическую цель: требуемую мощность, напряжение, частоту и режим работы с сетью или автономно.',
+                '- Границы поставки: только генераторный блок или также распределительное оборудование, охлаждение, систему управления, контейнер, мониторинг и пусконаладочную поддержку.',
+                '- Условия площадки: температура, высота, пыль, осадки, требования к зимизации и ограничения по шуму.',
+                '- Логистические и сервисные границы: транспортный габарит, подъемный доступ, окно монтажа и сервисный регион.',
+                `Если вы пришлете эти данные, GasGx сможет собрать практичный пресейл-бриф и рамку коммерческого предложения для дальнейшей работы через ${CONTACT_EMAIL}.`,
+            ].join('\n'),
+            qualification: [
+                'Для квалификации проекта по контейнерному размещению GasGx обычно подтверждает следующие точки:',
+                '- Нужен ли проекту пакетный наружный энергоблок вместо набора разрозненного оборудования.',
+                '- Газовый интерфейс, электрический интерфейс и целевой режим работы.',
+                '- Границы контейнера, схема охлаждения, система управления и контур мониторинга.',
+                '- Ограничения площадки и логистики: габарит перевозки, подъемный доступ и условия пусконаладки.',
+                '- Модель сервиса, ожидания по запасным частям и кто будет эксплуатировать установку после запуска.',
+            ].join('\n'),
+            fit: 'Контейнерное размещение обычно подходит там, где проекту нужен пакетный наружный энергоблок, более быстрый монтаж на площадке, повторяемое развертывание и более чистая граница между поставкой, логистикой и эксплуатацией.',
+            overview: 'GasGx позиционирует контейнерное размещение как пакетное наружное энергорешение для проектов, которым важны скорость развертывания, повторяемость площадок и более понятная граница поставки.',
+        },
+    } as const;
+    const localized = catalog[language as keyof typeof catalog] || catalog.en;
+    return localized[mode];
+}
+
+function pickContainerDeploymentPageReply(message: string, language: string, pageContext: PageContext): CraftedReply | null {
+    if (!isContainerDeploymentPage(pageContext)) return null;
+    const mode = classifyContainerDeploymentQuery(message);
+    if (!mode) return null;
+    const handoff = mode === 'quote'
+        ? {
+            required: true,
+            reason: 'quote' as const,
+            next_fields: ['application', 'power', 'gas_type', 'gas_quality', 'country', 'voltage_frequency', 'delivery_scope', 'site_conditions'],
+        }
+        : mode === 'qualification'
+            ? {
+                required: true,
+                reason: 'lead' as const,
+                next_fields: ['application', 'power', 'gas_type', 'deployment_scope', 'site_constraints', 'service_model'],
+            }
+            : {
+                required: false,
+                reason: 'unknown' as const,
+                next_fields: [],
+            };
+    const matchedIntent = mode === 'quote'
+        ? 'container_deployment_quote'
+        : mode === 'qualification'
+            ? 'container_deployment_qualification'
+            : mode === 'fit'
+                ? 'container_deployment_fit'
+                : 'container_deployment_overview';
+    return {
+        provider: 'gasgx_rag',
+        reply: localizedContainerDeploymentReply(language, mode),
+        sources: containerDeploymentSource(),
+        handoff,
+        matchedIntent,
+    };
 }
 
 function normalizeSource(value: unknown): SourceRef | null {
@@ -562,6 +1088,10 @@ function toKnowledgeHit(row: Record<string, unknown>): KnowledgeChunkHit {
 }
 
 async function loadFaqRules(client: ReturnType<typeof createServiceClient>, language: string): Promise<FaqRule[]> {
+    const fallbackRules = [
+        ...fallbackFaqRules(language),
+        ...phase1FallbackFaqRules(language),
+    ];
     const { data, error } = await client
         .from('chat_faq_rules')
         .select('id, intent_key, language, trigger_patterns, answer_template, handoff_required, handoff_reason, next_fields, source_refs')
@@ -570,10 +1100,19 @@ async function loadFaqRules(client: ReturnType<typeof createServiceClient>, lang
         .order('updated_at', { ascending: false });
     if (error) {
         console.warn('site-chat faq load failed', error);
-        return fallbackFaqRules(language);
+        return fallbackRules;
     }
     const rows = Array.isArray(data) ? data.map((row) => toFaqRule(row as Record<string, unknown>)) : [];
-    return rows.length ? rows : fallbackFaqRules(language);
+    const merged = [...rows];
+    const seen = new Set(rows.map((row) => `${row.intent_key}:${row.language}`));
+    for (const rule of fallbackRules) {
+        const key = `${rule.intent_key}:${rule.language}`;
+        if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(rule);
+        }
+    }
+    return merged.length ? merged : fallbackRules;
 }
 
 function extractSearchTerms(message: string): string[] {
@@ -918,6 +1457,7 @@ function dedupeKnowledgeHits(hits: KnowledgeChunkHit[], pageContext?: PageContex
     const sourcePrimaryPaths = new Map<string, string>();
     const pathCounts = new Map<string, number>();
     const currentPath = normalizeUrlPath(pageContext?.url || pageContext?.path || '');
+    const currentPathDepth = pathSegments(currentPath).length;
     const output: KnowledgeChunkHit[] = [];
     for (const hit of hits) {
         const exactKey = `${hit.document_id}:${hit.section_path}:${hit.chunk_text}`;
@@ -936,7 +1476,9 @@ function dedupeKnowledgeHits(hits: KnowledgeChunkHit[], pageContext?: PageContex
 
         const pathKey = sourcePrimaryPaths.get(sourceKey) || canonicalPathKey;
         const nextCount = (pathCounts.get(pathKey) || 0) + 1;
-        const maxPerPath = hitPath && hitPath === currentPath ? 2 : 1;
+        const maxPerPath = hitPath && hitPath === currentPath
+            ? (currentPathDepth >= 3 ? 4 : 2)
+            : 1;
         if (nextCount > maxPerPath) continue;
         pathCounts.set(pathKey, nextCount);
 
@@ -947,13 +1489,21 @@ function dedupeKnowledgeHits(hits: KnowledgeChunkHit[], pageContext?: PageContex
 }
 
 function focusKnowledgeHitsForCurrentSection(hits: KnowledgeChunkHit[], pageContext?: PageContext): KnowledgeChunkHit[] {
+    const currentPath = normalizeUrlPath(pageContext?.url || pageContext?.path || '');
+    const currentSection = primarySection(currentPath);
+    if (!currentSection) return hits;
+    const currentPathDepth = pathSegments(currentPath).length;
+    const exactCurrentPageHits = hits.filter((hit) => normalizeUrlPath(hit.canonical_url) === currentPath);
+    const isSpecificProductPage = currentSection === 'products' && currentPathDepth >= 3;
+
+    if (isSpecificProductPage && exactCurrentPageHits.length) {
+        return exactCurrentPageHits;
+    }
+
     const hasInternalSalesKb = hits.some((hit) => hit.source_type === 'internal_sales_kb');
     if (hasInternalSalesKb) {
         return hits;
     }
-    const currentPath = normalizeUrlPath(pageContext?.url || pageContext?.path || '');
-    const currentSection = primarySection(currentPath);
-    if (!currentSection) return hits;
 
     const sameSectionHits = hits.filter((hit) => primarySection(hit.canonical_url) === currentSection);
     const hasExactCurrentPageHit = sameSectionHits.some((hit) => normalizeUrlPath(hit.canonical_url) === currentPath);
@@ -992,12 +1542,12 @@ function buildKnowledgeSources(hits: KnowledgeChunkHit[], pageContext?: PageCont
 
 function buildLanguageRule(language: string): string {
     if (language === 'zh') {
-        return 'Reply in Simplified Chinese unless the user explicitly asks for another language. Keep technical units such as kW, MW, V, Hz, container, AIS and skid terms accurate.';
+        return 'Reply in natural, customer-facing Simplified Chinese unless the user explicitly asks for another language. Keep technical units such as kW, MW, V, Hz, container, AIS and skid terms accurate.';
     }
     if (language === 'ru') {
-        return 'Reply in Russian unless the user explicitly asks for another language. Keep technical units and product-family labels accurate.';
+        return 'Reply in natural, customer-facing Russian unless the user explicitly asks for another language. Keep technical units and product-family labels accurate.';
     }
-    return 'Reply in clear English unless the user explicitly asks for another language.';
+    return 'Reply in natural, customer-facing English unless the user explicitly asks for another language.';
 }
 
 function buildPageContextBlock(pageContext: PageContext): string[] {
@@ -1031,9 +1581,16 @@ function buildSystemPrompt(language: string, pageContext: PageContext, extraInst
         '- Lead with a direct answer, not a disclaimer.',
         '- If retrieved GasGx knowledge exists, use it as the primary factual basis.',
         '- Keep the first answer concise but commercially useful.',
+        '- Write with normal spacing and punctuation. Avoid robotic phrasing, broken word joins and repeated filler.',
+        '- Prefer short paragraphs or flat bullets for fit, scope, checklist and qualification questions.',
         '- Never fabricate exact inventory, lead time, pricing, warranty, certification status or contractual commitments.',
-        `- When the conversation reaches quotation or project-intent stage, guide the user toward a structured handoff or ${CONTACT_EMAIL}.`,
+        `- When the conversation reaches quotation or project-intent stage, guide the user toward the structured requirement intake at ${REQUIREMENT_INTAKE_URL} before falling back to ${CONTACT_EMAIL}.`,
         '- Ask only the minimum follow-up questions needed to advance qualification.',
+        '- If the current page is a specific product detail page, prioritize that page\'s fit, scope, qualification and quotation details before broader catalog copy.',
+        '- Default reply flow: direct answer first, then 2-4 critical missing inputs, then one concrete website action.',
+        `- Exploration stage should usually point to ${SITE_FIT_URL}, ${GAS_FIT_URL} or ${ENGINE_SELECTION_URL}.`,
+        `- Documentation stage should usually point to ${DATASHEETS_URL}, ${REPORTS_URL} or ${FAQ_URL}.`,
+        '- Do not promise final pricing, ROI, compliance approval or delivery commitments before qualification is complete.',
         '',
         'Known GasGx offering map:',
         '- Generator products are organized by power range, gas source, cooling and deployment form.',
@@ -1060,12 +1617,23 @@ function buildSparkMessages(systemPrompt: string, history: ChatTurn[], message: 
     ];
 }
 
+function normalizeGeneratedReply(value: string): string {
+    return rawText(value)
+        .replace(/\r\n/g, '\n')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/\s+([,.;:!?])/g, '$1')
+        .replace(/([,.;:!?])(?=[^\s)\]}])/g, '$1 ')
+        .replace(/([)\]}])(?=[A-Za-z\u0400-\u04FF])/g, '$1 ')
+        .trim();
+}
+
 function handoffFromIntent(intentKey: string): HandoffMeta {
-    if (intentKey === 'quote_requirements') {
+    if (intentKey === 'quote_requirements' || intentKey === 'requirement_intake') {
         return {
             required: true,
             reason: 'quote',
-            next_fields: ['application', 'power', 'gas_type', 'country', 'voltage_frequency', 'deployment'],
+            next_fields: ['application', 'power', 'gas_type', 'gas_quality', 'country', 'site_type', 'delivery_scope', 'service_scope'],
         };
     }
     if (intentKey === 'contact_support') {
@@ -1082,6 +1650,13 @@ function handoffFromIntent(intentKey: string): HandoffMeta {
             next_fields: ['application', 'power', 'gas_quality', 'country', 'voltage_frequency', 'deployment'],
         };
     }
+    if (['oilfield_scenario_fit', 'mining_scenario_fit', 'industrial_scenario_fit', 'chp_scenario_fit', 'deployment_compare'].includes(intentKey)) {
+        return {
+            required: true,
+            reason: 'lead',
+            next_fields: ['application', 'power', 'gas_type', 'country', 'site_type', 'delivery_scope'],
+        };
+    }
     return {
         required: false,
         reason: 'unknown',
@@ -1091,6 +1666,18 @@ function handoffFromIntent(intentKey: string): HandoffMeta {
 
 function deriveHandoff(message: string, matchedIntent: string, matchedRule: FaqRule | null): HandoffMeta {
     if (matchedRule) {
+        const overrideIntent = text(matchedRule.intent_key || matchedIntent);
+        if ([
+            'quote_requirements',
+            'requirement_intake',
+            'oilfield_scenario_fit',
+            'mining_scenario_fit',
+            'industrial_scenario_fit',
+            'chp_scenario_fit',
+            'deployment_compare',
+        ].includes(overrideIntent)) {
+            return handoffFromIntent(overrideIntent);
+        }
         return {
             required: matchedRule.handoff_required,
             reason: matchedRule.handoff_reason || 'unknown',
@@ -1137,7 +1724,7 @@ function composeKnowledgeFallbackReply(language: string, hits: KnowledgeChunkHit
         'Here is the most relevant GasGx knowledge I can confirm right now:',
         ...sourceLines,
         handoff.required && handoff.next_fields.length
-            ? `To move toward a solution or quotation, please share: ${handoff.next_fields.join(', ')}.`
+            ? `To move toward a solution or quotation, please share: ${handoff.next_fields.join(', ')}. You can also fill the structured intake at ${REQUIREMENT_INTAKE_URL}.`
             : `If helpful, I can also turn this into a short pre-sales brief for ${CONTACT_EMAIL}.`,
     ].join('\n');
 }
@@ -1272,7 +1859,7 @@ async function chatWithSpark(messages: Array<{ role: string; content: string }>)
                 const status = Number(choices?.status ?? -1);
                 const parts = Array.isArray(choices?.text) ? choices.text : [];
                 for (const item of parts) {
-                    const content = text(item?.content);
+                    const content = rawText(item?.content);
                     if (content) chunks += content;
                 }
 
@@ -1280,7 +1867,7 @@ async function chatWithSpark(messages: Array<{ role: string; content: string }>)
                     settled = true;
                     clearTimeout(timer);
                     socket.close();
-                    resolve(chunks.trim());
+                    resolve(normalizeGeneratedReply(chunks));
                 }
             } catch (error) {
                 if (settled) return;
@@ -1296,7 +1883,7 @@ async function chatWithSpark(messages: Array<{ role: string; content: string }>)
             settled = true;
             clearTimeout(timer);
             if (chunks.trim()) {
-                resolve(chunks.trim());
+                resolve(normalizeGeneratedReply(chunks));
             } else {
                 reject(new Error('spark_closed_without_reply'));
             }
@@ -1332,18 +1919,21 @@ Deno.serve(async (request) => {
         serviceClient = createServiceClient();
 
         const matchedIntent = detectIntent(message);
+        const craftedReply = pickContainerDeploymentPageReply(message, language, pageContext);
         const faqRules = await loadFaqRules(serviceClient, language);
         const matchedRule = pickStrandedGasQuoteRule(message, language, faqRules)
             || pickCountryStrandedGasRule(message, language, faqRules)
-            || pickFaqRule(message, language, faqRules, matchedIntent);
+            || pickPhase1ScenarioRule(message, language, faqRules)
+            || (craftedReply ? null : pickFaqRule(message, language, faqRules, matchedIntent));
 
         if (matchedRule) {
+            const reply = localizedPolicyAnswer(matchedRule, language);
             const sources = uniqueSources(matchedRule.source_refs || []);
             const handoff = deriveHandoff(message, matchedIntent || matchedRule.intent_key, matchedRule);
             await insertChatLog(serviceClient, {
                 sessionId,
                 message,
-                reply: matchedRule.answer_template,
+                reply,
                 language,
                 provider: 'gasgx_policy',
                 matchedIntent: matchedRule.intent_key,
@@ -1363,10 +1953,42 @@ Deno.serve(async (request) => {
             return json({
                 ok: true,
                 provider: 'gasgx_policy',
-                reply: matchedRule.answer_template,
+                reply,
                 language,
                 sources,
                 handoff,
+                sessionId,
+            });
+        }
+
+        if (craftedReply) {
+            await insertChatLog(serviceClient, {
+                sessionId,
+                message,
+                reply: craftedReply.reply,
+                language,
+                provider: craftedReply.provider,
+                matchedIntent: craftedReply.matchedIntent,
+                pageContext,
+                sources: craftedReply.sources,
+                handoff: craftedReply.handoff,
+            });
+            await insertLeadIntent(serviceClient, {
+                sessionId,
+                message,
+                intent: craftedReply.matchedIntent,
+                language,
+                provider: craftedReply.provider,
+                sources: craftedReply.sources,
+                handoff: craftedReply.handoff,
+            });
+            return json({
+                ok: true,
+                provider: craftedReply.provider,
+                reply: craftedReply.reply,
+                language,
+                sources: craftedReply.sources,
+                handoff: craftedReply.handoff,
                 sessionId,
             });
         }
