@@ -552,14 +552,14 @@ function fallbackFaqRules(language: string): FaqRule[] {
     const catalog = {
         en: {
             product_overview: 'GasGx mainly covers generator product lines by power range, gas source, cooling and deployment format; solution families for oilfield, mining, industrial energy and CHP; digital systems such as O&M Platform, ECM, IMS and Sales System; plus support resources including case studies, datasheets, certifications and FAQ. If you share your scenario, target power and gas source, I can narrow the recommendation.',
-            quote_requirements: `GasGx can support a formal quotation, but exact pricing depends on the application, target load, gas type and gas quality, deployment format, country, voltage and frequency, plus whether controls, cooling, switchgear, miners and remote O&M are in scope. If you share those inputs, I can turn them into a concise pre-sales brief for follow-up at ${CONTACT_EMAIL}.`,
-            contact_support: `You can contact GasGx at ${CONTACT_EMAIL}. GasGx also supports technical support, after-sales service and service-network coordination. If you share the scenario, power range and gas source first, I can help structure the request before manual follow-up.`,
+            quote_requirements: `GasGx can support a formal quotation, but reliable pricing still depends on the application, target load, gas type and gas quality, deployment format, country, voltage and frequency, plus whether controls, cooling, switchgear, miners and remote O&M are in scope. Send those inputs and I can tighten the quotation scope before it continues through ${CONTACT_EMAIL}.`,
+            contact_support: `You can reach GasGx at ${CONTACT_EMAIL}. If you share the scenario, power range, gas source and current issue first, I can help sort whether this should go to technical support, after-sales or the service network.`,
             mining_associated_gas_1mw: 'For a 1 MW mining site powered by associated or flare gas, GasGx would usually start with a 1 MW+ gas-power solution, typically containerized or AIS-integrated for field deployment. The next critical checks are gas quality, miner load, voltage and frequency, grid mode, country, ambient conditions and the O&M model.',
         },
         zh: {
             product_overview: 'GasGx 目前主要覆盖四类能力：燃气发电机组产品线、油田伴生气/矿场/工业能源/CHP 等解决方案、O&M Platform/ECM/IMS/Sales System 等数字化系统，以及技术支持、售后服务、服务网络、案例、参数表、认证和 FAQ 等配套资源。如果你告诉我场景、目标功率和气源，我可以继续缩小到更合适的方向。',
-            quote_requirements: `GasGx 可以配合正式报价，但准确价格通常取决于应用场景、目标负载、气源类型与气质、部署形式、国家地区、电压频率，以及是否包含电控、冷却、矿机、开关柜和远程运维等范围。如果你把这些信息发给我，我可以先帮你整理成一份售前简表，再转给 ${CONTACT_EMAIL} 跟进。`,
-            contact_support: `你可以通过 ${CONTACT_EMAIL} 联系 GasGx。GasGx 也支持技术支持、售后服务和服务网络协调。如果你先告诉我项目场景、功率范围和气源类型，我可以先帮你整理需求，再交给人工继续跟进。`,
+            quote_requirements: `GasGx 可以配合正式报价。要把价格收得靠谱，通常还要先确认应用场景、目标负载、气源类型与气质、部署形式、国家地区、电压频率，以及是否包含电控、冷却、矿机、开关柜和远程运维。你把这些信息发我后，我就能先帮你收成报价范围，再由 ${CONTACT_EMAIL} 接着跟。`,
+            contact_support: `你可以直接发邮件到 ${CONTACT_EMAIL}。如果你先把项目场景、功率范围、气源类型和当前问题发我，我可以先帮你判断更适合走技术支持、售后，还是服务网络这条线。`,
             mining_associated_gas_1mw: '如果是 1MW 级矿场使用伴生气或火炬气供电，GasGx 通常会优先从 1MW+ 级燃气发电方案切入，常见部署形式是集装箱化或 AIS 一体化。下一步最关键的是确认气质、矿机负载、电压频率、并网还是离网、所在国家与环境条件，以及后续运维模式。',
         },
         ru: {
@@ -638,14 +638,14 @@ function canonicalFallbackRule(intentKey: string, language: string): FaqRule | n
     const answerCatalog = {
         en: {
             product_overview: 'GasGx mainly covers generator product lines by power range, gas source, cooling and deployment format; solution families for oilfield, mining, industrial energy and CHP; digital systems such as O&M Platform, ECM, IMS and Sales System; plus support resources including case studies, datasheets, certifications and FAQ. If you share your scenario, target power and gas source, I can narrow the recommendation.',
-            quote_requirements: `GasGx can support a formal quotation, but exact pricing depends on the application, target load, gas type and gas quality, deployment format, country, voltage and frequency, plus whether controls, cooling, switchgear, miners and remote O&M are in scope. If you share those inputs, I can turn them into a concise pre-sales brief for follow-up at ${CONTACT_EMAIL}.`,
-            contact_support: `You can contact GasGx at ${CONTACT_EMAIL}. GasGx also supports technical support, after-sales service and service-network coordination. If you share the scenario, power range and gas source first, I can help structure the request before manual follow-up.`,
+            quote_requirements: `GasGx can support a formal quotation, but reliable pricing still depends on the application, target load, gas type and gas quality, deployment format, country, voltage and frequency, plus whether controls, cooling, switchgear, miners and remote O&M are in scope. Send those inputs and I can tighten the quotation scope before it continues through ${CONTACT_EMAIL}.`,
+            contact_support: `You can reach GasGx at ${CONTACT_EMAIL}. If you share the scenario, power range, gas source and current issue first, I can help sort whether this should go to technical support, after-sales or the service network.`,
             mining_associated_gas_1mw: 'For a 1 MW mining site powered by associated or flare gas, GasGx would usually start with a 1 MW+ gas-power solution, typically containerized or AIS-integrated for field deployment. The next critical checks are gas quality, miner load, voltage and frequency, grid mode, country, ambient conditions and the O&M model.',
         },
         zh: {
             product_overview: 'GasGx 目前主要覆盖四类能力：一是燃气发电机组产品线，按功率段、气源、冷却方式和部署形式组织；二是油田伴生气、矿场供电、工业分布式能源和 CHP 等解决方案；三是 O&M Platform、ECM、IMS、Sales System 等数字化系统；四是技术支持、售后服务、服务网络、案例、白皮书、参数表、认证和 FAQ 等配套资源。如果你告诉我应用场景、目标功率和气源类型，我可以继续缩小到更合适的产品方向。',
-            quote_requirements: `GasGx 可以配合正式报价，但准确价格通常取决于应用场景、目标负载、气源类型与气质、部署形式、国家地区、电压频率，以及是否包含控制、冷却、开关柜、矿机和远程运维等范围。如果你把这些信息发给我，我可以先帮你整理成一份售前需求简表，再转给 ${CONTACT_EMAIL} 跟进。`,
-            contact_support: `你可以通过 ${CONTACT_EMAIL} 联系 GasGx。GasGx 也支持技术支持、售后服务和服务网络协调。如果你先告诉我项目场景、功率范围和气源类型，我可以先帮你整理需求，再交给人工继续跟进。`,
+            quote_requirements: `GasGx 可以配合正式报价。要把价格收得靠谱，通常还要先确认应用场景、目标负载、气源类型与气质、部署形式、国家地区、电压频率，以及是否包含控制、冷却、开关柜、矿机和远程运维。你把这些信息发我后，我就能先帮你收成报价范围，再由 ${CONTACT_EMAIL} 接着跟。`,
+            contact_support: `你可以直接发邮件到 ${CONTACT_EMAIL}。如果你先把项目场景、功率范围、气源类型和当前问题发我，我可以先帮你判断更适合走技术支持、售后，还是服务网络这条线。`,
             mining_associated_gas_1mw: '如果是 1MW 级矿场使用伴生气或火炬气供电，GasGx 通常会优先从 1MW+ 级燃气发电方案切入，常见部署形式是集装箱化或 AIS 一体化。下一步最关键的是确认气质、矿机负载、电压频率、并网还是离网、所在国家与环境条件，以及后续运维模式。',
         },
         ru: {
@@ -1917,12 +1917,18 @@ function normalizedPublicFeatureIntentText(message: string): string {
     return normalizedIntentText(message)
         .replace(/\u9879\u76ee\u9700\u6c42|\u9700\u6c42\u5355|\u62a5\u4ef7|\u8be2\u4ef7|\u9700\u6c42/g, ' requirement quotation ')
         .replace(/\u63d0\u4ea4|\u5165\u53e3|\u8868\u5355/g, ' submit form ')
+        .replace(/\u8d44\u6e90\u4e2d\u5fc3|\u8d44\u6599\u4e2d\u5fc3|\u8d44\u6e90\u9875|\u8d44\u6599\u9875/g, ' resources hub ')
+        .replace(/\u5de5\u5177\u4e2d\u5fc3|\u5de5\u5177\u9875/g, ' tools hub ')
         .replace(/\u540e\u53f0\u6587\u7ae0\u7ba1\u7406|\u6587\u7ae0\u7ba1\u7406\u540e\u53f0|\u540e\u53f0\u7ba1\u7406|\u5185\u90e8\u540e\u53f0|\u7f16\u8f91\u5668\u540e\u53f0|\u5185\u90e8\u7cfb\u7edf/g, ' internal admin backend ')
         .replace(/\u53ef\u7814|\u521d\u6b65\u7b5b\u9009|\u9879\u76ee\u9002\u914d|\u7b5b\u9009/g, ' screening ')
         .replace(/\u5de5\u5177|\u8ba1\u7b97\u5668|\u5206\u6790\u5de5\u5177/g, ' tool ')
         .replace(/\u53c2\u6570\u8868|\u8d44\u6599\u8868/g, ' datasheets ')
         .replace(/\u62a5\u544a\u5165\u53e3|\u884c\u4e1a\u62a5\u544a|\u7814\u7a76\u62a5\u544a|\u62a5\u544a/g, ' reports ')
         .replace(/\u5e38\u89c1\u95ee\u9898|\u5e2e\u52a9\u95ee\u7b54/g, ' faq ')
+        .replace(/\u6848\u4f8b|\u6210\u529f\u6848\u4f8b/g, ' case studies ')
+        .replace(/\u89c6\u9891|\u89c6\u9891\u8d44\u6599/g, ' videos ')
+        .replace(/\u767d\u76ae\u4e66/g, ' whitepapers ')
+        .replace(/\u8ba4\u8bc1|\u8bc1\u4e66/g, ' certifications ')
         .replace(/\u77ff\u573a\u65b9\u6848\u9875|\u6316\u77ff\u65b9\u6848\u9875/g, ' mining solution ')
         .replace(/\u6cb9\u7530\u65b9\u6848\u9875|\u4f34\u751f\u6c14\u65b9\u6848\u9875/g, ' oilfield solution ')
         .replace(/\u5de5\u4e1a\u65b9\u6848\u9875|\u5de5\u5382\u65b9\u6848\u9875/g, ' industrial solution ')
@@ -1930,15 +1936,25 @@ function normalizedPublicFeatureIntentText(message: string): string {
         .replace(/\u9879\u76ee\u9002\u914d\u5de5\u5177/g, ' site fit tool ')
         .replace(/\u6c14\u6e90\u9002\u914d\u5de5\u5177/g, ' gas fit tool ')
         .replace(/\u9009\u578b\u5de5\u5177|\u53d1\u52a8\u673a\u9009\u578b/g, ' engine selection tool ')
+        .replace(/\u77ff\u673a\u9009\u8d2d|\u77ff\u673a\u9009\u578b/g, ' miner buying guide ')
         .replace(/\u6295\u8d44\u56de\u62a5/g, ' roi ')
+        .replace(/\u8d44\u672c\u56de\u62a5|\u8d44\u672c\u56de\u62a5\u7387/g, ' roce ')
         .replace(/\u5e73\u51c6\u5316\u5ea6\u7535\u6210\u672c/g, ' lcoe ')
         .replace(/\u6c14\u4f53\u5206\u6790\u5de5\u5177/g, ' gas analyzer ')
         .replace(/\u8fd0\u8f93\u5206\u6790|\u7269\u6d41\u5de5\u5177/g, ' logistics ')
         .replace(/\u5408\u89c4\u5de5\u5177|\u6cd5\u89c4\u5de5\u5177/g, ' compliance ')
         .replace(/\u043e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c|\u0444\u043e\u0440\u043c\u0430 \u0437\u0430\u044f\u0432\u043a\u0438|\u0444\u043e\u0440\u043c\u0430 \u0437\u0430\u043f\u0440\u043e\u0441\u0430|\u043a\u043e\u043c\u043c\u0435\u0440\u0447\u0435\u0441\u043a/g, ' requirement quotation submit ')
+        .replace(/\u0446\u0435\u043d\u0442\u0440 \u0440\u0435\u0441\u0443\u0440\u0441\u043e\u0432|\u0440\u0430\u0437\u0434\u0435\u043b \u0440\u0435\u0441\u0443\u0440\u0441\u043e\u0432/g, ' resources hub ')
+        .replace(/\u0446\u0435\u043d\u0442\u0440 \u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442\u043e\u0432|\u0440\u0430\u0437\u0434\u0435\u043b \u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442\u043e\u0432/g, ' tools hub ')
         .replace(/\u043a\u0430\u043a\u043e\u0439 \u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442|\u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442|\u043f\u0435\u0440\u0432\u0438\u0447\u043d|\u0441\u043a\u0440\u0438\u043d\u0438\u043d\u0433|\u043f\u0440\u043e\u0435\u043a\u0442/g, ' tool screening ')
         .replace(/\u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d|\u0430\u0434\u043c\u0438\u043d\u043a|\u0430\u0434\u043c\u0438\u043d/g, ' internal admin backend ')
         .replace(/\u043e\u043a\u0443\u043f\u0430\u0435\u043c|\u0432\u043e\u0437\u0432\u0440\u0430\u0442 \u0438\u043d\u0432\u0435\u0441\u0442/g, ' roi ')
+        .replace(/\u043a\u0435\u0439\u0441|\u043a\u0435\u0439\u0441\u044b/g, ' case studies ')
+        .replace(/\u0432\u0438\u0434\u0435\u043e/g, ' videos ')
+        .replace(/\u0432\u0430\u0439\u0442\u043f\u0435\u0439\u043f\u0435\u0440/g, ' whitepapers ')
+        .replace(/\u0441\u0435\u0440\u0442\u0438\u0444\u0438\u043a\u0430\u0446/g, ' certifications ')
+        .replace(/\u043f\u043e\u043a\u0443\u043f\u043a\u0430 \u043c\u0430\u0439\u043d\u0435\u0440|\u0432\u044b\u0431\u043e\u0440 \u043c\u0430\u0439\u043d\u0435\u0440/g, ' miner buying guide ')
+        .replace(/\u043e\u043a\u0443\u043f\u0430\u0435\u043c\u043e\u0441\u0442\u044c \u043a\u0430\u043f\u0438\u0442\u0430\u043b|\u0440\u0435\u043d\u0442\u0430\u0431\u0435\u043b\u044c\u043d\u043e\u0441\u0442\u044c \u043a\u0430\u043f\u0438\u0442\u0430\u043b/g, ' roce ')
         .replace(/\u0434\u0430\u0442\u0430\u0448\u0438\u0442/g, ' datasheets ')
         .replace(/\u043e\u0442\u0447\u0435\u0442/g, ' reports ')
         .replace(/\u0447\u0430\u0441\u0442\u043e \u0437\u0430\u0434\u0430\u0432\u0430\u0435\u043c/g, ' faq ');
@@ -1988,6 +2004,12 @@ function pickPublicFeatureAnswer(message: string, language: string, _pageContext
     if (/(where should i submit|submit.*project brief|submit.*requirement|requirement form|quotation form|quote form|quotation workflow|requirement.*submit|quotation.*submit|requirement quotation)/i.test(normalized)) {
         return buildPublicFeatureCraftedReply('requirement_intake_public', language, ['tool_site_fit', 'contact_entry'], 'public_feature_requirement_intake_public');
     }
+    if (/(resources hub|resources page|resource center|resource library)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('site_resources', language, ['resource_datasheets', 'resource_reports'], 'public_feature_site_resources');
+    }
+    if (/(tools hub|tools page|tool center|tool library|available tools)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('tools_overview', language, ['tool_site_fit', 'tool_gas_fit'], 'public_feature_tools_overview');
+    }
     if (/(which tool.*first|which tool.*feasibility|feasibility screening|first screening tool|project fit tool|tool.*screening|screening.*tool|site fit tool)/i.test(normalized)) {
         return buildPublicFeatureCraftedReply('tool_site_fit', language, ['tool_gas_fit', 'tool_engine_selection'], 'public_feature_tool_site_fit');
     }
@@ -1999,6 +2021,18 @@ function pickPublicFeatureAnswer(message: string, language: string, _pageContext
     }
     if (/(faq|faq entry)/i.test(normalized)) {
         return buildPublicFeatureCraftedReply('resource_faq', language, ['resource_datasheets', 'resource_reports'], 'public_feature_resource_faq');
+    }
+    if (/(case stud|case studies|example projects|reference cases)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('resource_case_studies', language, ['resource_reports', 'resource_datasheets'], 'public_feature_resource_case_studies');
+    }
+    if (/(videos|video library|video page|visual overview)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('resource_videos', language, ['resource_case_studies', 'resource_whitepapers'], 'public_feature_resource_videos');
+    }
+    if (/(whitepaper|whitepapers|white paper|long-form resource)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('resource_whitepapers', language, ['resource_reports', 'resource_case_studies'], 'public_feature_resource_whitepapers');
+    }
+    if (/(certification|certifications|certificate references|certificate page)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('resource_certifications', language, ['tool_global_compliance', 'resource_datasheets'], 'public_feature_resource_certifications');
     }
     if (/(mining solution|mining solution page)/i.test(normalized)) {
         return buildPublicFeatureCraftedReply('solution_mining', language, [], 'public_feature_solution_mining');
@@ -2021,8 +2055,14 @@ function pickPublicFeatureAnswer(message: string, language: string, _pageContext
     if (/(engine selection|engine-selection)/i.test(normalized)) {
         return buildPublicFeatureCraftedReply('tool_engine_selection', language, ['tool_site_fit', 'tool_gas_fit'], 'public_feature_tool_engine_selection');
     }
+    if (/(miner buying guide|buying guide|miner guide)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('tool_miner_buying_guide', language, ['tool_mining_power_calc', 'tool_miner_profitability'], 'public_feature_tool_miner_buying_guide');
+    }
     if (/(roi|return on investment)/i.test(normalized)) {
         return buildPublicFeatureCraftedReply('tool_roi', language, ['tool_lcoe_calculator', 'tool_roce_calculator'], 'public_feature_tool_roi');
+    }
+    if (/(roce|return on capital employed|capital return)/i.test(normalized)) {
+        return buildPublicFeatureCraftedReply('tool_roce_calculator', language, ['tool_roi', 'tool_lcoe_calculator'], 'public_feature_tool_roce_calculator');
     }
     if (/(lcoe|levelized cost)/i.test(normalized)) {
         return buildPublicFeatureCraftedReply('tool_lcoe_calculator', language, ['tool_roi', 'tool_roce_calculator'], 'public_feature_tool_lcoe_calculator');
@@ -2198,15 +2238,15 @@ function localizedPolicyAnswer(rule: FaqRule, language: string): string {
                 resource_guidance: `For documentation-stage questions, GasGx normally points users to site resources first: datasheets for equipment details, reports for market or scenario context, and FAQ for short operational answers. Start with ${DATASHEETS_URL}, ${REPORTS_URL} and ${FAQ_URL}.`,
             },
             zh: {
-                quote_requirements: `GasGx 可以支持正式报价，但应该先基于结构化需求单，而不是只给一个松散的询价。最快的方式是填写公开需求入口：${REQUIREMENT_INTAKE_URL}。建议先准备应用场景、目标功率、气源类型与气质、国家地区、电压频率、部署偏好、交付范围和服务范围。`,
-                requirement_intake: `如果项目已经进入预算、落地或供应商比较阶段，最合适的下一步就是填写 GasGx 公开需求单：${REQUIREMENT_INTAKE_URL}。这个入口会统一收集应用场景、目标功率、气源类型、气质、国家地区、电压频率、部署偏好、交付范围和服务范围。`,
-                site_fit_tool: `如果你现在还处于可研或方向筛选阶段，GasGx 更建议先用站内工具而不是直接报价。整体可研先看 ${SITE_FIT_URL}，气源边界先看 ${GAS_FIT_URL}，设备方向筛选可以看 ${ENGINE_SELECTION_URL}。`,
+                quote_requirements: `GasGx 可以支持正式报价，但别只丢一个泛泛的询价。要往报价走，最省时间的是直接填这个公开需求单：${REQUIREMENT_INTAKE_URL}。先准备应用场景、目标功率、气源类型与气质、国家地区、电压频率、部署偏好、交付范围和服务范围。`,
+                requirement_intake: `如果项目已经进入预算、落地或供应商比较阶段，直接填 GasGx 公开需求单最合适：${REQUIREMENT_INTAKE_URL}。这个入口会把应用场景、目标功率、气源类型、气质、国家地区、电压频率、部署偏好、交付范围和服务范围一次收齐。`,
+                site_fit_tool: `如果你还在可研或方向筛选阶段，先用站内工具更合适，不用急着直接问报价。整体可研看 ${SITE_FIT_URL}，气源边界看 ${GAS_FIT_URL}，设备方向筛选看 ${ENGINE_SELECTION_URL}。`,
                 deployment_compare: '一般来说，集装箱化更适合追求快速打包部署的项目；AIS 一体化更适合电气边界和集成度要求更高的项目；撬装更适合由现场团队或 EPC 侧吸收更多定制化土建与配套工作的项目。',
                 oilfield_scenario_fit: `油田伴生气发电通常适合那些气源相对稳定、站内负载明确、现场服务边界可控的项目。下一步通常要确认气源类型、气质、可用流量或压力、目标功率、国家地区、现场条件和服务范围。早期可研可先看 ${SITE_FIT_URL}，如果项目已经在推进，建议直接进入 ${REQUIREMENT_INTAKE_URL}。`,
                 mining_scenario_fit: `燃气供能的算力 / 矿场项目，通常适合那些气源相对稳定、负载明确、现场运维模式清晰的站点。GasGx 下一步一般会确认气质、目标功率或矿机负载、国家地区、电压频率和部署偏好。早期筛选适合先看 ${SITE_FIT_URL}，项目推进阶段适合直接填写 ${REQUIREMENT_INTAKE_URL}。`,
                 industrial_scenario_fit: '工业分布式发电通常适合那些用能轮廓明确、燃料边界清晰、并网 / 冷却 / 运维责任边界可定义的项目。GasGx 一般会先确认目标功率、气源类型、站点类型、电压频率和服务范围，再继续缩小方案。',
                 chp_scenario_fit: 'CHP 热电联供只有在项目同时具备稳定电负荷和可被实际消纳的热负荷时才真正成立。GasGx 一般会先确认目标功率、气源类型、热利用场景、站点类型、交付范围和服务范围，再判断 CHP 是否应作为优先方向。',
-                resource_guidance: `如果你当前主要是资料型需求，GasGx 更建议先看站内资源：设备细节优先看参数表，市场和场景背景优先看研究报告，简短运营问答优先看 FAQ。入口分别是 ${DATASHEETS_URL}、${REPORTS_URL} 和 ${FAQ_URL}。`,
+                resource_guidance: `如果你现在主要是找资料，先看站内资源就够了：设备细节看参数表，市场和场景背景看研究报告，短问题先看 FAQ。入口分别是 ${DATASHEETS_URL}、${REPORTS_URL} 和 ${FAQ_URL}。`,
             },
             ru: {
                 quote_requirements: `GasGx может подготовить коммерческое предложение, но оно должно строиться на структурированном проектном брифе, а не на свободном запросе цены. Самый быстрый путь — заполнить публичный intake: ${REQUIREMENT_INTAKE_URL}. Подготовьте сценарий проекта, требуемую мощность, тип и качество газа, страну, напряжение и частоту, предпочтительный формат размещения, границы поставки и сервисный объем.`,
@@ -2280,7 +2320,7 @@ function localizedContainerDeploymentReply(language: string, mode: 'quote' | 'qu
                 '- Delivery scope: generator only, or generator plus switchgear, cooling, controls, enclosure, monitoring and commissioning support.',
                 '- Site conditions: ambient temperature, altitude, dust, rain, winterization and noise limits.',
                 '- Logistics and service boundaries: transport envelope, lifting access, installation window and service region.',
-                `If you send those inputs, GasGx can turn them into a practical pre-sales brief and quotation scope for ${CONTACT_EMAIL}.`,
+                `If you send those inputs, GasGx can tighten the quotation scope and move the project forward through ${CONTACT_EMAIL}.`,
             ].join('\n'),
             qualification: [
                 'For container deployment qualification, GasGx normally confirms these points first:',
@@ -2302,7 +2342,7 @@ function localizedContainerDeploymentReply(language: string, mode: 'quote' | 'qu
                 '- 交付范围：是只要发电机组，还是同时包含开关柜、冷却、控制、箱体、监控和调试支持。',
                 '- 现场条件，包括环境温度、海拔、粉尘、雨雪、防寒和噪音限制。',
                 '- 物流与服务边界，包括运输尺寸、吊装条件、安装窗口和后续服务区域。',
-                `如果你把这些信息发给我，GasGx 就可以进一步整理成一份可执行的售前简表和报价范围，继续交给 ${CONTACT_EMAIL} 跟进。`,
+                `如果你把这些信息发我，GasGx 就能先把报价范围收出来，再由 ${CONTACT_EMAIL} 接着往下跟。`,
             ].join('\n'),
             qualification: [
                 '如果要判断集装箱部署是否成立，GasGx 一般会先确认这些点：',
@@ -2927,9 +2967,14 @@ function buildSystemPrompt(language: string, pageContext: PageContext, extraInst
         '',
         'Priority rules:',
         '- Lead with a direct answer, not a disclaimer.',
+        '- Your external identity is always GasGx Assistant / GasGx 智能顾问. Never say you are Spark, XFYUN, iFlytek, a large language model, or the underlying model provider.',
+        '- If the user asks who you are, answer as the GasGx website assistant and solution advisor. Do not expose the model vendor as your identity.',
         '- If retrieved GasGx knowledge exists, use it as the primary factual basis.',
         '- Keep the first answer concise but commercially useful.',
         '- Write with normal spacing and punctuation. Avoid robotic phrasing, broken word joins and repeated filler.',
+        '- Never narrate your own process or retrieval with lead-ins like "根据当前知识库", "以下是", "为了更好地帮助你", "Here is the most relevant...", or "If helpful, I can also...". Start from the answer, recommendation or next step itself.',
+        '- Sound like an experienced human pre-sales engineer, not a scripted chatbot or customer-service template.',
+        '- Avoid formulaic sales filler such as "我可以帮你整理成售前简表" unless the user explicitly asks for a brief or a draft email.',
         '- Prefer short paragraphs or flat bullets for fit, scope, checklist and qualification questions.',
         '- Never fabricate exact inventory, lead time, pricing, warranty, certification status or contractual commitments.',
         `- When the conversation reaches quotation or project-intent stage, guide the user toward the structured requirement intake at ${REQUIREMENT_INTAKE_URL} before falling back to ${CONTACT_EMAIL}.`,
@@ -2977,6 +3022,68 @@ function normalizeGeneratedReply(value: string): string {
         .replace(/([,.;:!?])(?=[^\s)\]}])/g, '$1 ')
         .replace(/([)\]}])(?=[A-Za-z\u0400-\u04FF])/g, '$1 ')
         .trim();
+}
+
+function hasAssistantIdentityLeak(reply: string): boolean {
+    const head = normalizeGeneratedReply(reply).slice(0, 240);
+    if (!head) return false;
+    return [
+        /(?:^|[\n。！？.!?])\s*(?:我是|我叫|我是由).{0,24}(?:讯飞|星火|科大讯飞)/,
+        /(?:^|[\n。！？.!?])\s*我是.{0,18}(?:认知大模型|大语言模型|语言模型|AI模型)/,
+        /(?:^|[\n.!?])\s*(?:i am|i'm|this is)\s+.{0,32}(?:spark|xfyun|iflytek|large language model|language model|ai model)/i,
+        /(?:^|[\n.!?])\s*(?:i was built by|built by|developed by)\s+.{0,24}(?:xfyun|iflytek|spark)/i,
+        /(?:^|[\n.!?])\s*(?:я|это)\s+.{0,28}(?:spark|xfyun|iflytek|языковая модель|модель ии)/i,
+    ].some((pattern) => pattern.test(head));
+}
+
+function genericIdentitySafeReply(language: string): string {
+    if (language === 'zh') {
+        return `我是 GasGx 智能顾问，主要帮助你了解 GasGx 的产品、解决方案、公开工具、资料入口和报价流程。你可以直接告诉我你的应用场景、目标功率和气源类型，我会继续给你收敛到合适方向。`;
+    }
+    if (language === 'ru') {
+        return `Я GasGx Assistant. Я помогаю разобраться в продуктах GasGx, сценариях применения, публичных инструментах, ресурсах сайта и входе в процесс коммерческого предложения. Сообщите сценарий, целевую мощность и тип газа, и я сузю следующий шаг.`;
+    }
+    return `I am GasGx Assistant. I help with GasGx products, solution paths, public tools, website resources and quotation intake. Share your scenario, target power and gas type, and I will narrow the next step.`;
+}
+
+function recoverIdentityLeakReply(
+    language: string,
+    message: string,
+    matchedIntent: string,
+    knowledgeHits: KnowledgeChunkHit[],
+    handoff: HandoffMeta,
+): CraftedReply {
+    const fallbackRule = phase1CanonicalFallbackRule(matchedIntent, language)
+        || canonicalFallbackRule(matchedIntent, language);
+
+    if (fallbackRule) {
+        const safeHandoff = deriveHandoff(message, matchedIntent || fallbackRule.intent_key, fallbackRule);
+        return {
+            provider: 'gasgx_policy',
+            reply: localizedPolicyAnswer(fallbackRule, language),
+            sources: uniqueSources(fallbackRule.source_refs || []),
+            handoff: safeHandoff,
+            matchedIntent: fallbackRule.intent_key,
+        };
+    }
+
+    if (knowledgeHits.length) {
+        return {
+            provider: 'gasgx_rag',
+            reply: composeKnowledgeFallbackReply(language, knowledgeHits, handoff),
+            sources: buildKnowledgeSources(knowledgeHits, { title: '', path: '', url: '', lang: language }),
+            handoff,
+            matchedIntent: matchedIntent || 'identity_safe_knowledge_fallback',
+        };
+    }
+
+    return {
+        provider: 'gasgx_policy',
+        reply: genericIdentitySafeReply(language),
+        sources: [],
+        handoff,
+        matchedIntent: matchedIntent || 'identity_safe_fallback',
+    };
 }
 
 function handoffFromIntent(intentKey: string): HandoffMeta {
@@ -3055,28 +3162,25 @@ function composeKnowledgeFallbackReply(language: string, hits: KnowledgeChunkHit
 
     if (language === 'zh') {
         return [
-            '我先根据当前 GasGx 知识库里最相关的内容给你一个直接结论：',
             ...sourceLines,
             handoff.required && handoff.next_fields.length
-                ? `如果你希望我继续往方案或报价方向推进，请补充：${handoff.next_fields.join('、')}。`
-                : `如果你愿意，我也可以继续帮你整理成一份发给 ${CONTACT_EMAIL} 的售前需求简表。`,
+                ? `如果你想继续往方案或报价走，把这些信息发我：${handoff.next_fields.join('、')}。`
+                : `如果你想继续，我可以帮你把需求收齐后发到 ${CONTACT_EMAIL}。`,
         ].join('\n');
     }
     if (language === 'ru') {
         return [
-            'Вот самый релевантный вывод по текущей базе знаний GasGx:',
             ...sourceLines,
             handoff.required && handoff.next_fields.length
-                ? `Чтобы перейти к подбору решения или коммерческому предложению, пришлите: ${handoff.next_fields.join(', ')}.`
-                : `При необходимости я также могу помочь оформить краткий пресейл-бриф для ${CONTACT_EMAIL}.`,
+                ? `Если хотите двигаться дальше по решению или коммерческому предложению, пришлите: ${handoff.next_fields.join(', ')}.`
+                : `Если хотите продолжить, я помогу собрать вводные и отправить их на ${CONTACT_EMAIL}.`,
         ].join('\n');
     }
     return [
-        'Here is the most relevant GasGx knowledge I can confirm right now:',
         ...sourceLines,
         handoff.required && handoff.next_fields.length
-            ? `To move toward a solution or quotation, please share: ${handoff.next_fields.join(', ')}. You can also fill the structured intake at ${REQUIREMENT_INTAKE_URL}.`
-            : `If helpful, I can also turn this into a short pre-sales brief for ${CONTACT_EMAIL}.`,
+            ? `If you want to keep moving toward a solution or quotation, send me: ${handoff.next_fields.join(', ')}. You can also use ${REQUIREMENT_INTAKE_URL}.`
+            : `If you want to keep going, I can help gather the key inputs and send them to ${CONTACT_EMAIL}.`,
     ].join('\n');
 }
 
@@ -3389,8 +3493,9 @@ Deno.serve(async (request) => {
             dedupeKnowledgeHits(rankedKnowledgeHits, pageContext),
             pageContext,
         );
-        const sources = buildKnowledgeSources(knowledgeHits, pageContext);
-        const handoff = deriveHandoff(message, matchedIntent, null);
+        let sources = buildKnowledgeSources(knowledgeHits, pageContext);
+        let handoff = deriveHandoff(message, matchedIntent, null);
+        let responseIntent = matchedIntent;
 
         let reply = '';
         let provider = knowledgeHits.length ? 'gasgx_rag' : 'xfyun_spark';
@@ -3407,13 +3512,22 @@ Deno.serve(async (request) => {
             }
         }
 
+        if (hasAssistantIdentityLeak(reply)) {
+            const recovered = recoverIdentityLeakReply(language, message, matchedIntent, knowledgeHits, handoff);
+            reply = recovered.reply;
+            provider = recovered.provider;
+            sources = recovered.sources;
+            handoff = recovered.handoff;
+            responseIntent = recovered.matchedIntent;
+        }
+
         await insertChatLog(serviceClient, {
             sessionId,
             message,
             reply,
             language,
             provider,
-            matchedIntent,
+            matchedIntent: responseIntent,
             pageContext,
             sources,
             handoff,
@@ -3421,7 +3535,7 @@ Deno.serve(async (request) => {
         await insertLeadIntent(serviceClient, {
             sessionId,
             message,
-            intent: matchedIntent,
+            intent: responseIntent,
             language,
             provider,
             sources,
@@ -3435,6 +3549,7 @@ Deno.serve(async (request) => {
             language,
             sources,
             handoff,
+            matchedIntent: responseIntent,
             sessionId,
         });
     } catch (error) {

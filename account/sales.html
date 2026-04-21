@@ -282,7 +282,35 @@
         .sales-comment-item p, .sales-comment-reply-context strong { margin: 0; color: #e5e7eb; font-size: 13px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
         .sales-comment-body { color: #f3f4f6; font-size: 14px; line-height: 1.72; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
         .sales-comment-reply-banner, .sales-comment-reply-context { display: grid; gap: 4px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid rgba(93,214,44,0.5); background: rgba(255,255,255,0.04); min-width: 0; }
-        .sales-comment-reply-context span { color: #9ca3af; font-size: 11px; line-height: 1.5; }
+        .sales-comment-reply-context {
+            gap: 6px;
+            padding: 8px 10px;
+            background: rgba(38, 53, 85, 0.34);
+            border: 1px solid rgba(90, 110, 160, 0.28);
+            border-left: 3px solid rgba(120, 146, 214, 0.65);
+        }
+        .sales-comment-reply-context strong,
+        .sales-comment-inline-quote {
+            display: inline-flex;
+            align-items: center;
+            max-width: 100%;
+            border-radius: 10px;
+            background: rgba(59, 76, 116, 0.45);
+            color: #9fb3ea;
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 6px 8px;
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+        .sales-comment-inline-stage {
+            display: inline-flex;
+            align-items: center;
+            color: #7f8db3;
+            font-size: 10px;
+            margin-top: -1px;
+        }
         .sales-comment-scroll-region {
             position: relative;
             min-height: min(58vh, 46rem);
@@ -321,6 +349,24 @@
         .sales-pipeline-main-shell {
             height: calc(100dvh - 5rem);
         }
+        .sales-task-actions {
+            width: 100%;
+            min-width: 0;
+        }
+        .sales-task-action-btn {
+            min-width: 0;
+        }
+        .sales-stage-tabs-shell {
+            padding-top: 14px;
+            padding-bottom: 12px;
+            overflow-x: auto;
+            overflow-y: visible;
+            min-height: 58px;
+        }
+        .sales-stage-tabs-row {
+            min-height: 30px;
+            align-items: center;
+        }
         .sales-comment-history, .sales-comment-history-group { border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); overflow: hidden; }
         .sales-comment-history-summary, .sales-comment-history-group-summary { cursor: pointer; padding: 14px; }
         .sales-comment-history-body, .sales-comment-history-group .sales-comment-list { padding: 0 14px 14px; }
@@ -336,6 +382,19 @@
         @media (max-width: 767px) {
             .sales-pipeline-main-shell {
                 height: calc(100dvh - 5rem);
+            }
+            .sales-pipeline-main-shell > section:first-child {
+                margin-bottom: 2px;
+            }
+            .sales-task-actions {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                align-items: stretch;
+            }
+            .sales-task-action-btn {
+                width: 100%;
+                justify-content: center;
+                text-align: center;
             }
             .sales-list-head { align-items: center; padding: 14px 14px 10px; }
             .sales-list-actions { max-width: 68%; justify-content: flex-end; }

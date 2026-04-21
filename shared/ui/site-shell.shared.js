@@ -414,8 +414,8 @@
 
     const CHATBOT_TEMPLATE = `
 <div id="ggx-chat-wrapper" class="fixed bottom-44 right-5 z-[88] flex flex-col items-end font-sans font-inter">
-    <div id="ggx-chat-window" class="hidden flex flex-col w-[320px] md:w-[360px] h-[460px] max-h-[75vh] bg-[#101214]/94 backdrop-blur-xl border border-gas-green/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.45),0_0_0_1px_rgba(93,214,44,0.08)] overflow-hidden transition-all duration-300 origin-bottom-right transform scale-95 opacity-0 mb-3">
-        <div class="bg-[#0d0f10]/88 p-4 flex justify-between items-center border-b border-gas-green/10 z-10 shrink-0">
+    <div id="ggx-chat-window" class="hidden flex flex-col w-[320px] md:w-[368px] h-[560px] max-h-[82vh] bg-[#101214]/94 backdrop-blur-xl border border-gas-green/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.45),0_0_0_1px_rgba(93,214,44,0.08)] overflow-hidden transition-all duration-300 origin-bottom-right transform scale-95 opacity-0 mb-3">
+        <div class="bg-[#0d0f10]/88 px-4 py-3.5 flex justify-between items-center border-b border-gas-green/10 z-10 shrink-0">
             <div class="flex items-center gap-3">
                 <div class="w-8 h-8 rounded-full bg-[#141a16] border border-gas-green/45 flex items-center justify-center">
                     <i class="fa-solid fa-robot text-gas-green text-[13px]"></i>
@@ -433,25 +433,25 @@
             </button>
         </div>
 
-        <div id="ggx-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0c0e0f]/95 min-h-0 scroll-smooth">
-            <div class="text-center mb-2">
-                <span class="text-[10px] text-gray-600 bg-[#17191a] px-2 py-1 rounded-full">Today</span>
+        <div id="ggx-chat-messages" class="flex-1 overflow-y-auto px-3.5 py-3 space-y-3 bg-[#0c0e0f]/95 min-h-0 scroll-smooth">
+            <div class="text-center mb-1.5">
+                <span class="text-[9px] text-gray-600 bg-[#17191a] px-2 py-0.5 rounded-full">Today</span>
             </div>
             <div class="flex flex-col items-start max-w-[85%] space-y-1">
                 <div class="flex items-center gap-2 mb-1">
                     <span class="text-[10px] text-gas-green/80 ml-1 tracking-[0.12em] uppercase">GasGx Assistant</span>
                 </div>
-                <div class="bg-[#151817] text-gray-100 px-4 py-3.5 rounded-2xl rounded-tl-none text-sm border border-gas-green/12 shadow-[0_10px_28px_rgba(0,0,0,0.24)] leading-relaxed">
-                    <div class="space-y-3">
-                        <div class="rounded-2xl border border-gas-green/10 bg-[#111513] px-3.5 py-3 flex items-start gap-3">
+                <div class="bg-[#151817] text-gray-100 px-3.5 py-2.5 rounded-2xl rounded-tl-none text-[13px] border border-gas-green/12 shadow-[0_10px_28px_rgba(0,0,0,0.24)] leading-6">
+                    <div class="space-y-2.5">
+                        <div class="rounded-2xl border border-gas-green/10 bg-[#111513] px-3 py-2.5 flex items-start gap-2.5">
                             <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gas-green/35 bg-gas-green/10 text-[11px] font-bold text-gas-green">1</span>
                             <div class="min-w-0 flex-1">Tell me your project scenario, target power and gas source.</div>
                         </div>
-                        <div class="rounded-2xl border border-gas-green/10 bg-[#111513] px-3.5 py-3 flex items-start gap-3">
+                        <div class="rounded-2xl border border-gas-green/10 bg-[#111513] px-3 py-2.5 flex items-start gap-2.5">
                             <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gas-green/35 bg-gas-green/10 text-[11px] font-bold text-gas-green">2</span>
                             <div class="min-w-0 flex-1">Ask about oilfield, mining, CHP, industrial power, quotations, delivery or support.</div>
                         </div>
-                        <div class="rounded-2xl border border-gas-green/10 bg-[#111513] px-3.5 py-3 flex items-start gap-3">
+                        <div class="rounded-2xl border border-gas-green/10 bg-[#111513] px-3 py-2.5 flex items-start gap-2.5">
                             <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gas-green/35 bg-gas-green/10 text-[11px] font-bold text-gas-green">3</span>
                             <div class="min-w-0 flex-1">If a website link is relevant, I will show it as a clickable link with a short explanation.</div>
                         </div>
@@ -460,21 +460,21 @@
             </div>
         </div>
 
-        <div id="ggx-chat-loading" class="hidden px-4 pb-2 bg-[#0c0e0f]/95 shrink-0">
+        <div id="ggx-chat-loading" class="hidden px-3.5 pb-2 bg-[#0c0e0f]/95 shrink-0">
             <div class="flex items-center gap-2 text-gas-green bg-[#161a18] w-fit px-3 py-1.5 rounded-full text-xs border border-gas-green/20">
                 <i class="fa-solid fa-circle-notch fa-spin"></i>
                 <span>Thinking...</span>
             </div>
         </div>
 
-        <div class="p-3 bg-[#0d0f10]/90 border-t border-gas-green/10 shrink-0">
+        <div class="px-3.5 py-3 bg-[#0d0f10]/90 border-t border-gas-green/10 shrink-0">
             <div class="relative flex items-center gap-2">
-                <input type="text" id="ggx-chat-user-input" class="flex-1 bg-[#17191b] border border-gas-green/15 rounded-full pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-gas-green/60 transition-all placeholder-gray-600" placeholder="Type a question..." autocomplete="off">
+                <input type="text" id="ggx-chat-user-input" class="flex-1 bg-[#17191b] border border-gas-green/15 rounded-full pl-4 pr-10 py-2.5 text-[13px] text-white focus:outline-none focus:border-gas-green/60 transition-all placeholder-gray-600" placeholder="Type a question..." autocomplete="off">
                 <button id="ggx-chat-send-btn" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#121915] border border-gas-green/40 rounded-full flex items-center justify-center text-gas-green hover:border-gas-green hover:bg-[#162019] transition-all cursor-pointer" aria-label="Send chat message">
                     <i class="fa-solid fa-paper-plane text-xs"></i>
                 </button>
             </div>
-            <div class="text-center mt-2">
+            <div class="text-center mt-1.5">
                 <p class="text-[9px] text-gray-600">AI Powered by GasGx Engine Database</p>
             </div>
         </div>
@@ -3187,20 +3187,20 @@
                 return item.source_type === "internal_sales_kb" ? "GasGx knowledge" : (item.source_type || "Reference");
             }
             const sourceHtml = sourceList.length
-                ? `<div class="mt-4 space-y-2"><div class="text-[10px] uppercase tracking-[0.18em] text-gray-400">${escapeHtml(copy.sources)}</div><div class="space-y-2">${sourceList.map(function (item) {
+                ? `<div class="ggx-chat-meta-block"><div class="ggx-chat-meta-heading">${escapeHtml(copy.sources)}</div><div class="ggx-chat-source-list">${sourceList.map(function (item) {
                     const title = escapeHtml(item.title || "GasGx Knowledge");
                     const href = typeof item.url === "string" && item.url.trim() ? item.url.trim() : "";
                     const desc = escapeHtml(sourceDescriptor(item));
                     if (/^https?:\/\//i.test(href)) {
-                        return `<div class="rounded-2xl border border-gas-green/10 bg-[#111513] px-3 py-2.5"><a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="text-gas-green font-semibold hover:underline underline-offset-2">${title}</a><div class="mt-1 text-[10px] text-gray-500">${desc}</div></div>`;
+                        return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="ggx-chat-source-item"><span class="ggx-chat-source-title">${title}</span><span class="ggx-chat-source-desc">${desc}</span></a>`;
                     }
-                    return `<div class="rounded-2xl border border-gas-green/10 bg-[#111513] px-3 py-2.5"><div class="text-gray-200 font-medium">${title}</div><div class="mt-1 text-[10px] text-gray-500">${desc}</div></div>`;
+                    return `<div class="ggx-chat-source-item is-static"><span class="ggx-chat-source-title">${title}</span><span class="ggx-chat-source-desc">${desc}</span></div>`;
                 }).join("")}</div></div>`
                 : "";
             const handoffHtml = handoff && handoff.required && Array.isArray(handoff.next_fields) && handoff.next_fields.length
-                ? `<div class="mt-4 space-y-2"><div class="text-[10px] uppercase tracking-[0.18em] text-gray-400">${escapeHtml(copy.next)}</div><div class="flex flex-wrap gap-2">${handoff.next_fields.map(function (item, index) {
-                    return `<span class="inline-flex items-center gap-2 rounded-full border border-gas-green/12 bg-[#111513] px-3 py-1.5 text-[10px] text-gray-300"><span class="flex h-4 w-4 items-center justify-center rounded-full bg-gas-green/12 text-[9px] font-bold text-gas-green">${index + 1}</span><span>${escapeHtml(labels[item] || item)}</span></span>`;
-                }).join("")}</div></div>`
+                ? `<div class="ggx-chat-meta-block"><div class="ggx-chat-meta-heading">${escapeHtml(copy.next)}</div><ul class="ggx-chat-next-list">${handoff.next_fields.map(function (item) {
+                    return `<li class="ggx-chat-next-item">${escapeHtml(labels[item] || item)}</li>`;
+                }).join("")}</ul></div>`
                 : "";
             return sourceHtml + handoffHtml;
         }
@@ -3289,12 +3289,12 @@
         function buildChatInlineLink(url, label) {
             const href = String(url || "").trim();
             if (!/^https?:\/\//i.test(href)) return escapeHtml(label || href);
-            const copy = getChatInlineLinkCopy();
             const compact = simplifyChatUrl(href);
             const linkText = label && label.trim() ? label.trim() : compact;
-            const descriptor = label && label.trim() ? compact : copy.open;
-            const kind = /^https?:\/\/([a-z0-9-]+\.)*gasgx\.com(?:\/|$)/i.test(href) ? copy.internal : copy.external;
-            return `<span class="my-1 inline-flex max-w-full flex-wrap items-center gap-2 rounded-2xl border border-gas-green/12 bg-[#101513] px-2.5 py-1.5 align-middle"><a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="min-w-0 break-all text-gas-green font-semibold hover:underline underline-offset-2">${escapeHtml(linkText)}</a><span class="text-[10px] text-gray-500">${escapeHtml(descriptor)}</span><span class="rounded-full border border-gas-green/12 bg-gas-green/8 px-2 py-0.5 text-[9px] uppercase tracking-[0.12em] text-gas-green/80">${escapeHtml(kind)}</span></span>`;
+            const kindCopy = getChatInlineLinkCopy();
+            const kind = /^https?:\/\/([a-z0-9-]+\.)*gasgx\.com(?:\/|$)/i.test(href) ? kindCopy.internal : kindCopy.external;
+            const title = label && label.trim() ? compact : href;
+            return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="ggx-chat-inline-link" title="${escapeHtml(title)}">${escapeHtml(linkText)}<span class="ggx-chat-inline-link-kind">${escapeHtml(kind)}</span></a>`;
         }
         function renderChatInlineText(text) {
             const source = String(text || "");
@@ -3317,6 +3317,90 @@
             }
             output += escapeHtml(source.slice(cursor));
             return output;
+        }
+        function flushChatParagraphBlock(blocks, buffer) {
+            if (!buffer.length) return;
+            const text = buffer.join(" ").replace(/\s+/g, " ").trim();
+            buffer.length = 0;
+            if (!text) return;
+            if (/[:：]$/.test(text) && text.length <= 72) {
+                blocks.push({ type: "subhead", text: text });
+                return;
+            }
+            blocks.push({ type: "paragraph", text: text });
+        }
+        function flushChatListBlock(blocks, listType, listItems) {
+            if (!listType || !listItems.length) return;
+            blocks.push({ type: listType, items: listItems.slice() });
+            listItems.length = 0;
+        }
+        function parseChatMessageBlocks(text) {
+            const normalized = String(text || "")
+                .replace(/\r\n/g, "\n")
+                .replace(/[ \t]+\n/g, "\n")
+                .replace(/\n{3,}/g, "\n\n")
+                .trim();
+            if (!normalized) return [];
+            const orderedMarker = /^\d+[.)]\s+/;
+            const unorderedMarker = /^[-*•]\s+/;
+            const blocks = [];
+            const paragraphBuffer = [];
+            const listItems = [];
+            let listType = "";
+
+            normalized.split("\n").forEach(function (rawLine) {
+                const line = rawLine.trim();
+                if (!line) {
+                    flushChatListBlock(blocks, listType, listItems);
+                    listType = "";
+                    flushChatParagraphBlock(blocks, paragraphBuffer);
+                    return;
+                }
+                if (orderedMarker.test(line)) {
+                    flushChatParagraphBlock(blocks, paragraphBuffer);
+                    if (listType && listType !== "ordered") {
+                        flushChatListBlock(blocks, listType, listItems);
+                    }
+                    listType = "ordered";
+                    listItems.push(line.replace(orderedMarker, "").trim());
+                    return;
+                }
+                if (unorderedMarker.test(line)) {
+                    flushChatParagraphBlock(blocks, paragraphBuffer);
+                    if (listType && listType !== "unordered") {
+                        flushChatListBlock(blocks, listType, listItems);
+                    }
+                    listType = "unordered";
+                    listItems.push(line.replace(unorderedMarker, "").trim());
+                    return;
+                }
+                if (listType) {
+                    flushChatListBlock(blocks, listType, listItems);
+                    listType = "";
+                }
+                paragraphBuffer.push(line);
+            });
+
+            flushChatListBlock(blocks, listType, listItems);
+            flushChatParagraphBlock(blocks, paragraphBuffer);
+            return blocks;
+        }
+        function renderChatMessageBlock(block) {
+            if (!block || typeof block !== "object") return "";
+            if (block.type === "ordered" || block.type === "unordered") {
+                const items = Array.isArray(block.items) ? block.items.filter(Boolean) : [];
+                if (!items.length) return "";
+                return `<ul class="ggx-chat-list ${block.type === "ordered" ? "is-ordered" : "is-unordered"}">${items.map(function (item, index) {
+                    const marker = block.type === "ordered"
+                        ? `<span class="ggx-chat-list-marker">${index + 1}.</span>`
+                        : `<span class="ggx-chat-list-marker">•</span>`;
+                    return `<li class="ggx-chat-list-item">${marker}<div class="ggx-chat-list-content">${renderChatInlineText(item)}</div></li>`;
+                }).join("")}</ul>`;
+            }
+            if (block.type === "subhead") {
+                return `<div class="ggx-chat-subhead">${renderChatInlineText(block.text)}</div>`;
+            }
+            return `<p class="ggx-chat-paragraph">${renderChatInlineText(block.text)}</p>`;
         }
         function getChatSiteHint(langCandidate) {
             const lang = normalizeLang(langCandidate || chatUiLang || getCurrentLang());
@@ -3346,16 +3430,10 @@
             if (sender === "user") {
                 return renderChatInlineText(text).replace(/\n/g, "<br>");
             }
-            const segments = splitChatMessageSegments(text);
-            if (!segments.length) return "";
-            const useNumbers = segments.length > 1;
-            const cardClass = "rounded-2xl border border-gas-green/10 bg-[#111513] px-3.5 py-3 leading-7 break-words text-gray-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]";
-            return `<div class="space-y-3">${segments.map(function (segment, index) {
-                const content = renderChatInlineText(segment);
-                if (useNumbers) {
-                    return `<div class="${cardClass} flex items-start gap-3"><span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gas-green/35 bg-gas-green/10 text-[11px] font-bold text-gas-green">${index + 1}</span><div class="min-w-0 flex-1">${content}</div></div>`;
-                }
-                return `<div class="${cardClass}">${content}</div>`;
+            const blocks = parseChatMessageBlocks(text);
+            if (!blocks.length) return "";
+            return `<div class="ggx-chat-richtext">${blocks.map(function (block) {
+                return renderChatMessageBlock(block);
             }).join("")}</div>`;
         }
 
@@ -3365,7 +3443,7 @@
             if (!hint) return "";
             const lang = normalizeLang(chatUiLang || getCurrentLang());
             const label = lang === "zh" ? "\u5c0f\u63d0\u793a\uff1a" : (lang === "ru" ? "\u041f\u043e\u0434\u0441\u043a\u0430\u0437\u043a\u0430:" : "Tip:");
-            return `<div class="mt-4 rounded-2xl border border-gas-green/10 bg-[#101513] px-3 py-2.5 text-[10px] leading-6 text-gray-400"><div class="mb-1 uppercase tracking-[0.16em] text-gas-green/80 font-semibold">${escapeHtml(label)}</div><div>${renderChatInlineText(hint)}</div></div>`;
+            return `<div class="ggx-chat-hint"><div class="ggx-chat-hint-label">${escapeHtml(label)}</div><div class="ggx-chat-hint-body">${renderChatInlineText(hint)}</div></div>`;
         }
 
         function addMessage(text, sender, meta) {
@@ -3373,7 +3451,7 @@
             const isUser = sender === "user";
             const safeText = formatChatMessageBody(text, sender);
 
-            container.className = "flex flex-col " + (isUser ? "items-end" : "items-start") + " " + (isUser ? "max-w-[84%]" : "max-w-[92%]") + " space-y-1 w-full animate-[slideDown_0.3s_ease-out]";
+            container.className = "flex flex-col " + (isUser ? "items-end" : "items-start") + " " + (isUser ? "max-w-[84%]" : "max-w-[92%]") + " space-y-0.5 w-full animate-[slideDown_0.3s_ease-out]";
 
             const labelHtml = isUser
                 ? ""
@@ -3381,12 +3459,12 @@
 
             const bubbleClass = isUser
                 ? "bg-gas-green text-black rounded-2xl rounded-tr-none font-medium shadow-[0_0_15px_rgba(93,214,44,0.2)]"
-                : "bg-[#151817] text-gray-100 rounded-2xl rounded-tl-none border border-gas-green/12 shadow-[0_10px_28px_rgba(0,0,0,0.24)]";
+                : "ggx-chat-bubble--assistant bg-[#151817] text-gray-100 rounded-2xl rounded-tl-none border border-gas-green/12 shadow-[0_10px_28px_rgba(0,0,0,0.24)]";
 
             container.innerHTML =
                 labelHtml +
-                "<div class=\"" + bubbleClass + " px-4 py-3 text-sm leading-relaxed break-words\">" + safeText + buildMessageMeta(meta) + buildChatSiteHintHtml(sender) + "</div>" +
-                "<span class=\"text-[9px] text-gray-600 mt-1\">" + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "</span>";
+                "<div class=\"" + bubbleClass + " px-3.5 py-2.5 text-[13px] leading-6 break-words\">" + safeText + buildMessageMeta(meta) + buildChatSiteHintHtml(sender) + "</div>" +
+                "<span class=\"text-[9px] text-gray-600 mt-0.5\">" + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "</span>";
 
             messagesContainer.appendChild(container);
             scrollToBottom();

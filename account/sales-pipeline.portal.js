@@ -537,6 +537,30 @@
         return body.length > 80 ? `${body.slice(0, 77)}...` : body;
     }
 
+    function numericDealOrderNumber(deal = {}) {
+        const dealId = text(deal.id || deal.deal_id).toLowerCase().replace(/-/g, '');
+        if (!dealId) return '';
+        const stampSource = text(deal.created_at || deal.updated_at);
+        const stampDate = stampSource ? new Date(stampSource) : null;
+        const pad = (value, length = 2) => String(value).padStart(length, '0');
+        const prefix = stampDate && Number.isFinite(stampDate.getTime())
+            ? `${stampDate.getFullYear()}${pad(stampDate.getMonth() + 1)}${pad(stampDate.getDate())}${pad(stampDate.getHours())}${pad(stampDate.getMinutes())}`
+            : '000000000000';
+        let suffixSeed = 0;
+        for (let index = 0; index < dealId.length; index += 1) {
+            const code = dealId.charCodeAt(index);
+            suffixSeed = (suffixSeed * 131 + code * (index + 1)) % 1000000;
+        }
+        return `${prefix}${pad(suffixSeed, 6)}`;
+    }
+
+    function quotedReplySnippet(actorLabel = '', body = '') {
+        const actor = displayActorName(actorLabel);
+        const snippet = text(body).replace(/\s+/g, ' ').trim();
+        const compact = snippet.length > 72 ? `${snippet.slice(0, 69)}...` : snippet;
+        return `@${actor}: ${compact}`;
+    }
+
     function communicationAvatar(entry = {}) {
         const label = text(entry.actor_label, communicationActorRole(entry));
         const compact = Array.from(label.replace(/\s+/g, '')).slice(0, 2).join('');
@@ -1031,8 +1055,7 @@
                 ${replyLabel
                     ? `
                         <div class="sales-comment-reply-context">
-                            <span>${esc(`${tr('commentsReplyPrefix')} ${replyLabel}${replyStage ? ` · ${stageLabel(replyStage)}` : ''}`)}</span>
-                            <strong>${esc(text(item.reply_to_body))}</strong>
+                            <strong>${esc(quotedReplySnippet(replyLabel, text(item.reply_to_body)))}</strong>${replyStage ? `<span class="sales-comment-inline-stage">${esc(stageLabel(replyStage))}</span>` : ''}
                         </div>
                     `
                     : ''}
@@ -1172,9 +1195,9 @@
         let body = `
                 <div class="bg-black/40 rounded-xl p-3 sm:p-3 border border-white/5 flex flex-col gap-2.5">
                     <p class="hidden sm:block text-[11px] sm:text-xs text-gray-400 leading-relaxed">${esc(tr('stageReadonly'))}</p>
-                    <div class="flex justify-end gap-2 mt-1 flex-wrap">
-                        <button type="button" class="px-3 py-2 sm:px-4 rounded-full border border-gray-600 text-gray-300 text-[11px] sm:text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
-                        <button type="button" class="px-3 py-2 sm:px-4 rounded-full border border-gray-700 text-gray-500 text-[11px] sm:text-xs font-medium cursor-not-allowed" disabled>${esc(tr('actionNone'))}</button>
+                    <div class="sales-task-actions flex justify-end gap-2 mt-1 flex-wrap">
+                        <button type="button" class="sales-task-action-btn px-3 py-2 sm:px-4 rounded-full border border-gray-600 text-gray-300 text-[11px] sm:text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
+                        <button type="button" class="sales-task-action-btn px-3 py-2 sm:px-4 rounded-full border border-gray-700 text-gray-500 text-[11px] sm:text-xs font-medium cursor-not-allowed" disabled>${esc(tr('actionNone'))}</button>
                 </div>
             </div>
         `;
@@ -1183,11 +1206,11 @@
             body = `
                 <div class="bg-black/40 rounded-xl p-3 sm:p-3 border border-white/5 flex flex-col gap-2.5">
                     <p class="hidden sm:block text-[11px] sm:text-xs text-gray-400 leading-relaxed">${esc(tr('stageRequirementLinkHint'))}</p>
-                    <div class="flex justify-end gap-2 mt-1 flex-wrap">
-                        <button type="button" class="px-3 py-2 sm:px-4 rounded-full border border-gray-600 text-gray-300 text-[11px] sm:text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
+                    <div class="sales-task-actions flex justify-end gap-2 mt-1 flex-wrap">
+                        <button type="button" class="sales-task-action-btn px-3 py-2 sm:px-4 rounded-full border border-gray-600 text-gray-300 text-[11px] sm:text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
                         ${requirementLink
-                            ? `<a class="px-3 py-2 sm:px-4 rounded-full bg-[#39b54a] text-black text-[11px] sm:text-xs font-bold shadow-[0_0_15px_rgba(57,181,74,0.2)] hover:bg-[#2e9c3a] transition-all flex items-center gap-1.5" href="${esc(requirementLink)}" data-sales-open-requirement-link="task"><i class="fa-solid fa-link text-[12px]"></i><span>${esc(localeText('去填写表单', 'Open Form'))}</span></a>`
-                            : `<button type="button" class="px-3 py-2 sm:px-4 rounded-full border border-gray-700 text-gray-500 text-[11px] sm:text-xs font-medium cursor-not-allowed" disabled>${esc(tr('stageRequirementLinkMissing'))}</button>`}
+                            ? `<a class="sales-task-action-btn px-3 py-2 sm:px-4 rounded-full bg-[#39b54a] text-black text-[11px] sm:text-xs font-bold shadow-[0_0_15px_rgba(57,181,74,0.2)] hover:bg-[#2e9c3a] transition-all flex items-center gap-1.5" href="${esc(requirementLink)}" data-sales-open-requirement-link="task"><i class="fa-solid fa-link text-[12px]"></i><span>${esc(localeText('去填写表单', 'Open Form'))}</span></a>`
+                            : `<button type="button" class="sales-task-action-btn px-3 py-2 sm:px-4 rounded-full border border-gray-700 text-gray-500 text-[11px] sm:text-xs font-medium cursor-not-allowed" disabled>${esc(tr('stageRequirementLinkMissing'))}</button>`}
                     </div>
                 </div>
             `;
@@ -1195,9 +1218,9 @@
             body = `
                 <div class="bg-black/40 rounded-xl p-3 sm:p-3 border border-white/5 flex flex-col gap-2.5">
                     ${stageConfirmationMarkup(activeStageKey, detail, true)}
-                    <div class="flex justify-end gap-2 mt-1 flex-wrap">
-                        <button type="button" class="px-3 py-2 sm:px-4 rounded-full border border-gray-600 text-gray-300 text-[11px] sm:text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
-                        <button type="button" class="px-3 py-2 sm:px-4 rounded-full bg-[#39b54a] text-black text-[11px] sm:text-xs font-bold shadow-[0_0_15px_rgba(57,181,74,0.2)] hover:bg-[#2e9c3a] transition-all" id="sales-stage-submit-confirmation" ${state.pendingStageSubmit ? 'disabled' : ''}>${esc(tr('submitConfirm'))}</button>
+                    <div class="sales-task-actions flex justify-end gap-2 mt-1 flex-wrap">
+                        <button type="button" class="sales-task-action-btn px-3 py-2 sm:px-4 rounded-full border border-gray-600 text-gray-300 text-[11px] sm:text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
+                        <button type="button" class="sales-task-action-btn px-3 py-2 sm:px-4 rounded-full bg-[#39b54a] text-black text-[11px] sm:text-xs font-bold shadow-[0_0_15px_rgba(57,181,74,0.2)] hover:bg-[#2e9c3a] transition-all" id="sales-stage-submit-confirmation" ${state.pendingStageSubmit ? 'disabled' : ''}>${esc(tr('submitConfirm'))}</button>
                     </div>
                 </div>
             `;
@@ -1225,8 +1248,8 @@
         const currentStageKey = resolveDealCurrentStage(detail);
         const selectedStageKey = resolveDisplayStage(detail);
         return `
-            <div class="bg-[#0a0a0a] border-b border-gray-800 pt-3 pb-2 px-3 transition-all ${state.showFullMap ? '' : 'overflow-x-auto hide-scrollbar'}">
-                <div class="flex gap-2 ${state.showFullMap ? 'flex-wrap' : 'items-center'}">
+            <div class="sales-stage-tabs-shell bg-[#0a0a0a] border-b border-gray-800 px-3 transition-all ${state.showFullMap ? 'is-expanded' : 'hide-scrollbar'}">
+                <div class="sales-stage-tabs-row flex gap-2 ${state.showFullMap ? 'flex-wrap' : 'items-center'}">
                     <div class="flex items-center gap-2 flex-shrink-0 mr-1 ${state.showFullMap ? 'w-full mb-2 justify-between border-b border-gray-800/50 pb-2' : ''}">
                         <span class="text-[10px] text-gray-500 whitespace-nowrap uppercase font-semibold">${esc(localeText(`全流程 (${STAGES.length}步)`, `Full Flow (${STAGES.length})`))}</span>
                         <button type="button" class="text-[#39b54a] text-[10px] bg-[#39b54a]/10 hover:bg-[#39b54a]/20 px-2 py-1 rounded flex items-center gap-1 transition-colors" data-sales-map-toggle>${esc(state.showFullMap ? localeText('收起导航', 'Collapse') : localeText('展开全景', 'Expand'))}</button>
@@ -1290,7 +1313,7 @@
                                             <span class="font-medium text-gray-300">${esc(displayActorName(reply.actor_label))}</span>
                                             <span class="text-[8px] px-1 py-[1px] rounded-sm leading-none ${text(reply.actor_type) === 'customer' ? 'bg-[#39b54a]/20 text-[#39b54a]' : 'bg-gray-800 text-gray-500'}">${esc(communicationActorRole(reply))}</span>
                                             ${text(reply.reply_to_id) && text(reply.reply_to_id) !== text(message.id)
-                                                ? `<span class="ml-1 text-gray-500">${esc(localeText('回复', 'Reply'))} <span class="font-medium text-gray-400">@${esc(displayActorName(reply.reply_to_actor_label))}</span></span>`
+                                                ? `<span class="sales-comment-inline-quote">${esc(quotedReplySnippet(reply.reply_to_actor_label, reply.reply_to_body))}</span>`
                                                 : ''}
                                         </div>
                                         <div class="text-gray-200 text-sm mt-0.5 leading-relaxed break-words whitespace-pre-wrap">${esc(reply.body)}</div>
@@ -1314,7 +1337,7 @@
         const selectedMessages = currentStageCommunications(detail);
         const replyTarget = communicationReplyTarget(detail);
         return `
-            <section class="bg-[#121212] border border-gray-800 rounded-2xl overflow-hidden mt-1 shadow-md flex flex-col flex-1 min-h-0">
+            <section class="bg-[#121212] border border-gray-800 rounded-2xl overflow-hidden mt-3 shadow-md flex flex-col flex-1 min-h-0">
                 ${pipelineTabsMarkup(detail)}
                 <div class="p-3 px-4 border-b border-gray-800/50 bg-[#121212] z-10 flex justify-between items-center gap-3">
                     <div class="flex items-center gap-2 min-w-0">
@@ -1374,6 +1397,13 @@
         }
 
         const detail = state.detail || {};
+        const summaryLabel = text(detail.deal_title || detail.customer_company || state.selectedDealId, '');
+        const overviewRow = overviewRowByDealId(text(detail.deal_id || state.selectedDealId));
+        const orderId = numericDealOrderNumber({
+            id: text(detail.deal_id || overviewRow?.deal_id || state.selectedDealId),
+            created_at: text(detail.created_at || overviewRow?.created_at),
+            updated_at: text(detail.updated_at || overviewRow?.updated_at),
+        });
         root.innerHTML = `
             <div class="bg-[#050505] text-gray-200 font-sans flex flex-col relative min-h-0" style="height:calc(100dvh - 5rem);max-height:calc(100dvh - 5rem);overflow:hidden;">
                 <main class="sales-pipeline-main-shell flex-1 w-full max-w-xl mx-auto p-4 flex flex-col gap-4 relative pb-28 min-h-0 overflow-hidden" style="height:100%;max-height:100%;overflow:hidden;">
@@ -1381,7 +1411,7 @@
                         <div class="hidden sm:block text-[#39b54a] text-xs font-semibold mb-1 tracking-wide">${esc(pipelineLabel())}</div>
                         <h1 class="text-lg sm:text-2xl font-bold text-white mb-1">${esc(localeText('客户交易流程', 'Customer Deal Flow'))}</h1>
                         <p class="hidden sm:block text-xs text-gray-400 leading-relaxed">${esc(localeText('客户端里程碑都在此处处理。节点切换、沟通回复和当前任务提交统一在当前页面完成。', 'Customer-side milestones, discussions, and current-stage actions are all handled here.'))}</p>
-                        <p class="mt-1 text-[11px] text-gray-500 truncate">${esc(text(detail.deal_title || detail.customer_company || state.selectedDealId, ''))}</p>
+                        <p class="mt-1 text-[11px] text-gray-500 truncate">${esc(summaryLabel)}${summaryLabel && orderId ? '<span class="mx-1 text-gray-600">/</span>' : ''}${orderId ? `<span class="text-gray-400">订单号 ${esc(orderId)}</span>` : ''}</p>
                     </section>
                     ${currentTaskCardMarkup(detail)}
                     ${commentsPanelMarkup(detail)}

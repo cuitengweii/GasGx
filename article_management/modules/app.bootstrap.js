@@ -43,7 +43,7 @@ import {
     updateQueueStatus,
 } from './review-queue.module.js?v=20260311ams40';
 import { renderAdminSecurityPage, renderAdminUsersPage } from './admin-users.module.js?v=20260419adminusers03';
-import { renderChatQaAdminPage, renderKnowledgeAdminPage, renderKnowledgeIngestionAdminPage } from './chat-knowledge-admin.module.js?v=20260420chatkb01';
+import { renderChatQaAdminPage, renderKnowledgeAdminPage, renderKnowledgeIngestionAdminPage } from './chat-knowledge-admin.module.js?v=20260421chatkb02';
 import { renderSiteFooterAdmin, renderSiteGeneralAdmin, renderSiteNavigationAdmin } from './site-shell-admin.module.js?v=20260414site09';
 import { client, DEFAULT_FEATURED_LIMIT } from './supabase.client.js?v=20260321admin01';
 
@@ -2949,6 +2949,15 @@ async function refreshAdminAccess(forceRefresh = false) {
     return state.adminAccess?.allowed === true;
 }
 
+async function navigateToPage(page = 'dashboard') {
+    const nextPage = ADMIN_PAGE_IDS.has(page) ? page : 'dashboard';
+    if (nextPage === 'editor' && !confirmDiscardEditorChanges()) return false;
+    state.page = nextPage;
+    syncPageToUrl();
+    await renderPage();
+    return true;
+}
+
 async function renderPage() {
     if (!state.user || !(await refreshAdminAccess(false))) {
         state.renderedUserId = null;
@@ -3006,6 +3015,7 @@ async function renderPage() {
             setContent,
             showToast,
             withButtonBusy,
+            navigateToPage,
             rerender: () => renderPage(),
         });
         else if (state.page === 'knowledge-ingestion') await renderKnowledgeIngestionAdminPage({
@@ -3014,6 +3024,7 @@ async function renderPage() {
             setContent,
             showToast,
             withButtonBusy,
+            navigateToPage,
             rerender: () => renderPage(),
         });
         else if (state.page === 'chat-qa') await renderChatQaAdminPage({
@@ -3022,6 +3033,7 @@ async function renderPage() {
             setContent,
             showToast,
             withButtonBusy,
+            navigateToPage,
             rerender: () => renderPage(),
         });
         else if (state.page === 'admin-users') await renderAdminUsersPage({
