@@ -1171,7 +1171,7 @@
 
         let body = `
                 <div class="bg-black/40 rounded-xl p-3 sm:p-3 border border-white/5 flex flex-col gap-2.5">
-                    <p class="text-[11px] sm:text-xs text-gray-400 leading-relaxed">${esc(tr('stageReadonly'))}</p>
+                    <p class="hidden sm:block text-[11px] sm:text-xs text-gray-400 leading-relaxed">${esc(tr('stageReadonly'))}</p>
                     <div class="flex justify-end gap-2 mt-1 flex-wrap">
                         <button type="button" class="px-3 py-2 sm:px-4 rounded-full border border-gray-600 text-gray-300 text-[11px] sm:text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
                         <button type="button" class="px-3 py-2 sm:px-4 rounded-full border border-gray-700 text-gray-500 text-[11px] sm:text-xs font-medium cursor-not-allowed" disabled>${esc(tr('actionNone'))}</button>
@@ -1182,7 +1182,7 @@
         if (activeStageKey === 'requirement_capture') {
             body = `
                 <div class="bg-black/40 rounded-xl p-3 sm:p-3 border border-white/5 flex flex-col gap-2.5">
-                    <p class="text-[11px] sm:text-xs text-gray-400 leading-relaxed">${esc(tr('stageRequirementLinkHint'))}</p>
+                    <p class="hidden sm:block text-[11px] sm:text-xs text-gray-400 leading-relaxed">${esc(tr('stageRequirementLinkHint'))}</p>
                     <div class="flex justify-end gap-2 mt-1 flex-wrap">
                         <button type="button" class="px-3 py-2 sm:px-4 rounded-full border border-gray-600 text-gray-300 text-[11px] sm:text-xs font-medium hover:bg-gray-800 transition-colors" data-sales-focus-composer>${esc(localeText('联系销售', 'Contact Sales'))}</button>
                         ${requirementLink
@@ -1378,10 +1378,10 @@
             <div class="bg-[#050505] text-gray-200 font-sans flex flex-col relative min-h-0" style="height:calc(100dvh - 5rem);max-height:calc(100dvh - 5rem);overflow:hidden;">
                 <main class="sales-pipeline-main-shell flex-1 w-full max-w-xl mx-auto p-4 flex flex-col gap-4 relative pb-28 min-h-0 overflow-hidden" style="height:100%;max-height:100%;overflow:hidden;">
                     <section class="mb-1 flex-shrink-0">
-                        <div class="text-[#39b54a] text-xs font-semibold mb-1 tracking-wide">${esc(pipelineLabel())}</div>
-                        <h1 class="text-xl sm:text-2xl font-bold text-white mb-1">${esc(localeText('客户交易流程', 'Customer Deal Flow'))}</h1>
+                        <div class="hidden sm:block text-[#39b54a] text-xs font-semibold mb-1 tracking-wide">${esc(pipelineLabel())}</div>
+                        <h1 class="text-lg sm:text-2xl font-bold text-white mb-1">${esc(localeText('客户交易流程', 'Customer Deal Flow'))}</h1>
                         <p class="hidden sm:block text-xs text-gray-400 leading-relaxed">${esc(localeText('客户端里程碑都在此处处理。节点切换、沟通回复和当前任务提交统一在当前页面完成。', 'Customer-side milestones, discussions, and current-stage actions are all handled here.'))}</p>
-                        <p class="mt-1 sm:mt-2 text-[11px] text-gray-500 truncate">${esc(text(detail.deal_title || detail.customer_company || state.selectedDealId, ''))}</p>
+                        <p class="mt-1 text-[11px] text-gray-500 truncate">${esc(text(detail.deal_title || detail.customer_company || state.selectedDealId, ''))}</p>
                     </section>
                     ${currentTaskCardMarkup(detail)}
                     ${commentsPanelMarkup(detail)}
