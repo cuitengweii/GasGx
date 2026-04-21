@@ -246,3 +246,42 @@ How to detect earlier:
 How to prevent recurrence:
 - For function hotfixes, verify the final override order across all migration/compatibility files.
 - If only one minimal function is needed for rollout recovery, prefer a dedicated one-purpose SQL file over re-executing a large historical migration bundle.
+
+## Lesson 14: Message language and page language are different acceptance checkpoints for chat UX
+
+Error symptom:
+- A public-feature answer was logically correct, but English questions on a Chinese page still came back with Chinese meta framing such as `来源 / 下一步 / 小提示`.
+
+Root cause:
+- Page language and message language were treated as if they were the same signal.
+- The server-side answer path and the front-end meta-rendering path did not both prioritize the user message language strongly enough.
+
+How to detect earlier:
+- For multilingual chat, always test at least this matrix:
+  1. English question on Chinese page
+  2. Russian question on Chinese page
+  3. Chinese question on English page
+
+How to prevent recurrence:
+- Treat message language as the first-class signal for reply framing.
+- Let page language act only as a fallback when the message itself is linguistically ambiguous.
+- Verify both:
+  - reply body language
+  - UI meta labels and link descriptors
+
+## Lesson 15: Aggressive multilingual normalization can create false intent matches
+
+Error symptom:
+- A Russian resource question such as `Где посмотреть datasheets и reports?` was incorrectly routed to the quotation-intake answer path.
+
+Root cause:
+- Public-feature normalization mapped very broad Russian tokens like `где` into the quotation/submit intent family.
+- That made unrelated discovery questions collide with the requirement-intake trigger set.
+
+How to detect earlier:
+- When adding multilingual normalization, test not only the target intent but also nearby intents in the same language.
+- Broad question words like `where`, `how`, `где`, `как` should be treated as especially high-risk normalization inputs.
+
+How to prevent recurrence:
+- Normalize only the action-bearing phrases, not generic interrogatives.
+- For requirement-style intents, prefer explicit submit/form/commercial-request wording over broad location-question words.

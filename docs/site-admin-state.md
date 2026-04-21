@@ -616,3 +616,63 @@
    - confirm it stays on `/quote/requirement.html?...`
 2. Once customer clickthrough is stable in production-like sessions, simplify the compatibility/fallback path so account-center no longer needs multiple legacy entry-resolution branches.
 3. Separate unrelated working-tree changes and runtime report artifacts from the sales-public-flow branch before final merge/release packaging.
+
+## 2026-04-21 public site feature chatbot archive update
+
+### Latest milestone
+
+- Public-site chatbot is no longer limited to product/pre-sales Q&A; it now also answers public site-function questions deterministically and places the best public entry link directly in the reply body.
+- The live `site-chat` runtime now recognizes public workflow, tools, resources, solution-entry, contact/support, and public-brand entry questions before generic FAQ/RAG fallback.
+- Formal public-feature support is now online for:
+  - `/quote/requirement.html`
+  - `/tools/*`
+  - `/resources/*`
+  - `/solutions/*`
+  - `/support/*`
+  - `/about/contact/`
+  - `/news/`
+  - `/vman/`
+  - `/minerpower/`
+
+### Effective behaviors
+
+- Public feature questions now prefer a deterministic `gasgx_policy` answer path instead of free Spark generation.
+- The reply body for public feature questions now follows a fixed shape:
+  1. direct explanation of the best matching public function
+  2. one primary clickable link with usage explanation
+  3. at most two related public links when needed
+- Internal/admin/backend questions are now boundary-safe:
+  - no internal route exposure
+  - redirect only to public contact or requirement intake paths
+- Formal site-function coverage is seeded both in runtime logic and knowledge data:
+  - runtime deterministic routing in `supabase/functions/site-chat/index.ts`
+  - `site_function` knowledge/chunk seed in `supabase/migrations/20260421110000_chat_public_site_feature_directory.sql`
+  - ingestion/admin support in `article_management/modules/chat-knowledge-admin.module.js`
+
+### Solved in this thread
+
+- Added a public-feature deterministic routing layer after stranded-gas/container special rules and before generic FAQ/RAG fallback.
+- Brought `/tools/` and public workflow entries into the chatbot’s first-class knowledge domain.
+- Added `site_function` support in the knowledge admin/ingestion flow so QA can maintain public-feature cards instead of only patching prompts.
+- Fixed language selection so public-feature answers follow the user message language first:
+  - English input returns English reply even on Chinese pages
+  - Russian input returns Russian reply
+  - Chinese input returns Chinese reply
+- Fixed front-end chat meta labels and link descriptors so `Sources / Next / Tip` and link hints follow the user message language rather than only the page language.
+- Verified the live public site with real browser regression for:
+  - quotation-entry routing
+  - tool screening routing
+  - datasheets/reports routing
+  - Russian quotation and resource questions
+
+### Unfinished
+
+- The migration file `D:\code\GasGx\supabase\migrations\20260421110000_chat_public_site_feature_directory.sql` is still untracked in the current worktree, even though the remote database state for this rollout was already pushed earlier in the thread.
+- The repo still contains unrelated in-progress sales/admin changes and temporary verification artifacts outside this chatbot/site-feature slice.
+- Public-feature answers are functionally correct, but the content library is still hand-curated; broader long-tail public-site coverage will continue to grow through QA feedback and site-function knowledge cards.
+
+### Next Step
+
+1. Fold the untracked public-site feature migration into the next clean chatbot knowledge commit so local git state matches the already-deployed database shape.
+2. Continue expanding `site_function` coverage for more tools/resources as QA logs reveal new public-site navigation questions.
+3. Separate unrelated worktree changes from the chatbot slice before the next release-oriented archive so the repo can be closed with a cleaner theme boundary.

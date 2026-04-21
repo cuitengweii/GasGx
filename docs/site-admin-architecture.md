@@ -258,6 +258,64 @@ News footer 若未取到统一站点壳配置：
 
 ### Navigation boundary
 
+## 2026-04-21 public site feature chatbot architecture update
+
+### Runtime decision layers
+
+- `supabase/functions/site-chat/index.ts` now has an additional deterministic public-feature layer between special-case policy logic and generic FAQ/RAG logic.
+- Effective priority is:
+  1. stranded-gas dedicated policy rules
+  2. container current-page dedicated answers
+  3. public-feature deterministic answers
+  4. generic FAQ/scenario rules
+  5. retrieval-backed answer generation
+  6. Spark fallback
+
+### Public feature directory layer
+
+- Public site-function coverage is now modeled explicitly instead of being left as accidental page retrieval.
+- The first formal public-feature directory is seeded via:
+  - `D:\code\GasGx\supabase\migrations\20260421110000_chat_public_site_feature_directory.sql`
+- That directory covers:
+  - site-entry pages
+  - public workflows
+  - tools
+  - resources
+  - support/contact
+  - solutions
+  - digitalization public entries
+  - public brand quote entries
+
+### Knowledge/admin support layer
+
+- `article_management/modules/chat-knowledge-admin.module.js` now recognizes `site_function` as a supported knowledge source type.
+- Ingestion scope now includes `/tools/` and selected public workflow/brand URLs, while explicitly excluding internal/admin/operator areas.
+- This creates a maintainable QA loop:
+  - deterministic runtime routing for highest-confidence public entries
+  - explicit `site_function` knowledge cards for broader searchable public-feature coverage
+
+### Language-selection boundary
+
+- Server-side reply language is now driven by user-message script detection first:
+  - Chinese characters -> `zh`
+  - Cyrillic -> `ru`
+  - Latin letters -> `en`
+  - page language only as fallback
+- Front-end chat rendering mirrors that rule for:
+  - meta labels
+  - link descriptors
+  - site hint language
+
+### Frontend rendering boundary
+
+- `shared/ui/site-shell.shared.js` remains the shared public-chat window runtime.
+- It is responsible for:
+  - numbering reply segments into 1/2/3 blocks
+  - rendering clickable Markdown/URL links
+  - rendering `Sources / Next / Tip`
+  - appending contextual site hints
+- The function runtime owns answer selection; the shared shell owns visual presentation and message-language-following meta labels.
+
 - Backend sales admin may launch the standalone requirement/confirmation pages, but should not rewrite those pages back into account-center routes.
 - Customer account-center may launch the standalone requirement page, but should not embed or duplicate the full requirement form once the dedicated public page exists.
 - Standalone public pages load their own dedicated modules directly:

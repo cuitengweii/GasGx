@@ -280,3 +280,53 @@
   - `public_slug`
   - `public_token`
 - This fallback remains valid even when `get_customer_pipeline_detail(...)` is incomplete or temporarily in compatibility mode.
+
+## 2026-04-21 public site feature chatbot decisions
+
+### Decision 34: Public site-function questions must be answered by a deterministic layer before generic FAQ/RAG
+
+- Public feature questions such as:
+  - where to submit a quotation/project brief
+  - which tool to use first
+  - where to find datasheets/reports/FAQ
+  - where to open a solution page
+  - whether a public tool exists
+  should not be left to generic retrieval or free generation first.
+- Runtime priority is now:
+  1. stranded-gas special policy
+  2. container current-page special logic
+  3. public-feature deterministic routing
+  4. generic FAQ / scenario / RAG / Spark fallback
+
+### Decision 35: Public feature replies must contain one primary public link in the body
+
+- For public-site function questions, the answer body itself must include the best public entry link.
+- `sources` remain useful as provenance, but they are not enough for navigation-style questions.
+- The reply shape is fixed to:
+  1. explain the matched public function
+  2. show one primary clickable link with purpose explanation
+  3. optionally add up to two related public links
+
+### Decision 36: Public chatbot scope stops at public site entries and must not expose internal/admin routes
+
+- The public chatbot may describe public site capabilities, but it must not reveal internal admin/backend/operator entry paths.
+- If a user asks about internal management/backend functionality, the answer must stay on boundary-safe public exits:
+  - `About Contact`
+  - `quote/requirement.html`
+
+### Decision 37: User message language overrides page language for chatbot reply framing
+
+- Chatbot reply language and chat-meta labels must follow the user message language first.
+- Page language is only a fallback when the user message itself does not provide a strong language signal.
+- This rule applies both to:
+  - server-side public-feature answer selection
+  - front-end message meta rendering (`Sources / Next / Tip` and link descriptors)
+
+### Decision 38: Public site-function knowledge is a first-class knowledge type
+
+- Public site functions are no longer treated as incidental page text only.
+- `site_function` is now a first-class knowledge classification for:
+  - knowledge ingestion
+  - chunk metadata
+  - admin QA maintenance
+- The public-site function directory should therefore be maintained as explicit, reviewable knowledge rather than only through prompt engineering.
