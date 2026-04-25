@@ -104,9 +104,9 @@ function renderNewsHomeHeader({ idPrefix, appGlobal }) {
             <div class="max-w-[1600px] mx-auto px-4 lg:px-6 h-full flex justify-between items-center">
                 <div class="flex items-center gap-8 h-full">
                     <a href="/news/index.html" class="flex items-center gap-1 group" aria-label="GasGx News Home">
-                        <div class="flex flex-col justify-center -space-y-1">
+                        <div class="flex items-baseline justify-center gap-1.5">
                             <span class="text-2xl font-bold italic text-white tracking-tighter font-header group-hover:text-gas-green transition-colors">GasGx</span>
-                            <span class="text-[9px] font-bold text-gas-green tracking-[0.2em] uppercase leading-none pl-0.5">NEWS</span>
+                            <span class="text-[9px] font-bold text-gas-green tracking-[0.16em] uppercase leading-none">NEWS</span>
                         </div>
                     </a>
 
@@ -168,9 +168,9 @@ function renderFlashHeader({ idPrefix, appGlobal }) {
             <div class="max-w-[1600px] mx-auto px-6 h-full flex justify-between items-center">
                 <div class="flex items-center gap-8 h-full">
                     <a href="/news/index.html" class="flex items-center gap-1 group" aria-label="GasGx News Home">
-                        <div class="flex flex-col justify-center -space-y-1">
+                        <div class="flex items-baseline justify-center gap-1.5">
                             <span class="text-2xl font-bold italic text-white tracking-tighter font-header group-hover:text-gas-green transition-colors">GasGx</span>
-                            <span class="text-[9px] font-bold text-gas-green tracking-[0.2em] uppercase leading-none pl-0.5">NEWS</span>
+                            <span class="text-[9px] font-bold text-gas-green tracking-[0.16em] uppercase leading-none">NEWS</span>
                         </div>
                     </a>
 

@@ -14,6 +14,7 @@ import {
 const SUPABASE_URL = 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
 const API_BASE = 'https://api.theblockbeats.news/v1/open-api/open-flash';
+const FLASH_HTML_URL = 'https://en.theblockbeats.news/newsflash/';
 const FLASH_PROXY_BASES = ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='];
 const FLASH_FETCH_TIMEOUT_MS = 15000;
 const FEED_PAGE_SIZE = 15;
@@ -552,7 +553,10 @@ export function createNewsHomeApp() {
                     if (!json) throw new Error('Invalid JSON payload');
 
                     const parsed = this.parseFlashApiData(json);
-                    if (parsed.length === 0) throw new Error('No flash records in payload');
+                    if (parsed.length === 0) {
+                        lastError = new Error('No flash records in payload');
+                        break;
+                    }
                     return parsed;
                 } catch (error) {
                     lastError = error;
@@ -560,6 +564,12 @@ export function createNewsHomeApp() {
                     if (timeoutId) clearTimeout(timeoutId);
                 }
             }
+
+            const htmlItems = await this.fetchFlashHtmlItems().catch((error) => {
+                lastError = error;
+                return [];
+            });
+            if (htmlItems.length > 0) return htmlItems;
 
             throw lastError || new Error('Flash API and proxy fallbacks all failed');
         },
@@ -570,6 +580,83 @@ export function createNewsHomeApp() {
             } catch {
                 return null;
             }
+        },
+
+        getFlashHtmlCandidates() {
+            return [
+                ...FLASH_PROXY_BASES.map((proxyBase) => `${proxyBase}${encodeURIComponent(FLASH_HTML_URL)}`),
+                FLASH_HTML_URL,
+            ];
+        },
+
+        async fetchFlashHtmlItems() {
+            const candidates = this.getFlashHtmlCandidates();
+            let lastError = null;
+
+            for (const candidateUrl of candidates) {
+                let timeoutId = null;
+                try {
+                    const controller = new AbortController();
+                    timeoutId = setTimeout(() => controller.abort(), FLASH_FETCH_TIMEOUT_MS);
+                    const response = await fetch(candidateUrl, {
+                        method: 'GET',
+                        headers: { Accept: 'text/html,application/xhtml+xml' },
+                        credentials: 'omit',
+                        cache: 'default',
+                        signal: controller.signal,
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    const html = await response.text();
+                    const parsed = this.parseFlashHtmlData(html);
+                    if (parsed.length === 0) throw new Error('No flash records in HTML payload');
+                    return parsed;
+                } catch (error) {
+                    lastError = error;
+                } finally {
+                    if (timeoutId) clearTimeout(timeoutId);
+                }
+            }
+
+            throw lastError || new Error('Flash HTML fallbacks all failed');
+        },
+
+        decodeHtmlEntities(value) {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = String(value || '');
+            return textarea.value;
+        },
+
+        parseFlashHtmlData(html) {
+            const source = String(html || '');
+            const sharePattern = /share\.php\?([^"']+)/gi;
+            const seen = new Set();
+            const items = [];
+            let match = null;
+
+            while ((match = sharePattern.exec(source)) && items.length < FLASH_FETCH_LIMIT) {
+                const queryText = this.decodeHtmlEntities(match[1]);
+                const query = new URLSearchParams(queryText);
+                const flashUrl = query.get('url') || '';
+                const idMatch = flashUrl.match(/\/flash\/(\d+)/);
+                const id = idMatch && idMatch[1];
+                const rawTitle = query.get('title') || '';
+                if (!id || seen.has(id)) continue;
+                const title = this.decodeHtmlEntities(rawTitle).trim();
+                if (!title) continue;
+                seen.add(id);
+                items.push({
+                    id: `html-${id}`,
+                    title,
+                    content: title,
+                    link: `https://en.theblockbeats.news/flash/${id}`,
+                    time: new Date(),
+                });
+            }
+
+            return items;
         },
 
         cleanContent(htmlString) {
