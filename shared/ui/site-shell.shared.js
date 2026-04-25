@@ -72,8 +72,8 @@
             orders: "Orders",
             welcome: "Welcome,",
             privacyPolicy: "Privacy Policy",
-            languageEnglish: "English",
-            languageChinese: "简体中文"
+            languageEnglish: "EN",
+            languageChinese: "中文"
         },
         zh: {
             tagline: "天然气发电挖矿助手",
@@ -85,8 +85,8 @@
             account: "账号",
             welcome: "欢迎，",
             privacyPolicy: "隐私政策",
-            languageEnglish: "English",
-            languageChinese: "简体中文"
+            languageEnglish: "EN",
+            languageChinese: "中文"
         }
     };
 
@@ -102,8 +102,8 @@
             orders: "Orders",
             welcome: "Welcome,",
             privacyPolicy: "Privacy Policy",
-            languageEnglish: "English",
-            languageChinese: "简体中文"
+            languageEnglish: "EN",
+            languageChinese: "中文"
         },
         zh: {
             tagline: "天然气发电挖矿助手",
@@ -116,8 +116,8 @@
             orders: "订单",
             welcome: "欢迎，",
             privacyPolicy: "隐私政策",
-            languageEnglish: "English",
-            languageChinese: "简体中文"
+            languageEnglish: "EN",
+            languageChinese: "中文"
         }
     };
 
@@ -128,7 +128,7 @@
             <a id="ggx-header-home-link" href="/index.html" class="group">
                 <h1 id="ggx-header-brand-text" class="text-xl md:text-2xl font-bold tracking-wider text-gas-green hover:text-white transition-colors cursor-pointer">GasGx</h1>
             </a>
-            <span id="header-tagline" class="block text-gas-green text-[8px] sm:text-[9px] xl:text-[10px] font-bold tracking-wide leading-tight max-w-[240px] truncate">Natural Gas Power Mining Assistant</span>
+            <span id="header-tagline" class="block text-gas-green text-[7px] sm:text-[8px] xl:text-[9px] font-bold tracking-wide leading-tight max-w-[330px] whitespace-normal break-words">Natural Gas Power Mining Assistant</span>
         </div>
 
         <nav id="desktop-nav" class="hidden xl:flex items-center justify-center gap-1 xl:gap-2 2xl:gap-6 h-full flex-1 min-w-0 px-1"></nav>
@@ -167,8 +167,8 @@
                         <i class="fa-solid fa-globe"></i>
                     </button>
                     <div id="ggx-lang-dropdown" class="ggx-lang-dropdown hidden">
-                        <button id="ggx-btn-lang-en" data-ggx-action="set-lang" data-ggx-lang="en" class="ggx-lang-option is-active">English</button>
-                        <button id="ggx-btn-lang-zh" data-ggx-action="set-lang" data-ggx-lang="zh" class="ggx-lang-option">简体中文</button>
+                        <button id="ggx-btn-lang-en" data-ggx-action="set-lang" data-ggx-lang="en" class="ggx-lang-option is-active">EN</button>
+                        <button id="ggx-btn-lang-zh" data-ggx-action="set-lang" data-ggx-lang="zh" class="ggx-lang-option">中文</button>
                     </div>
                 </div>
             </div>
@@ -256,7 +256,7 @@
                 },
                 ranking: {
                     title: {
-                        zh: "总分排行",
+                        zh: "全球天然气排行榜",
                         en: "Total Score Ranking"
                     },
                     legendLegal: {
@@ -408,7 +408,7 @@
     };
 
     const BACK_TO_TOP_TEMPLATE = `
-<button id="backToTopBtn" class="fixed bottom-60 right-6 w-10 h-10 rounded-full border border-gas-green bg-gas-green/[0.08] text-white shadow-[0_10px_24px_rgba(0,0,0,0.22),0_0_0_1px_rgba(93,214,44,0.2)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 hover:opacity-100 z-40 cursor-grab touch-none select-none" aria-label="Back to top">
+<button id="backToTopBtn" class="fixed bottom-6 right-6 w-10 h-10 rounded-full border border-gas-green bg-gas-green/[0.08] text-white shadow-[0_10px_24px_rgba(0,0,0,0.22),0_0_0_1px_rgba(93,214,44,0.2)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 hover:opacity-100 z-[96] cursor-pointer select-none" aria-label="Back to top">
     <i class="fa-solid fa-arrow-up text-gas-green drop-shadow-[0_0_6px_rgba(93,214,44,0.45)]"></i>
 </button>`;
 
@@ -1266,13 +1266,13 @@
         setSharedTextByKey("privacy-policy", text.privacyPolicy);
 
         const desktopLangEn = document.getElementById("ggx-btn-lang-en");
-        if (desktopLangEn && typeof text.languageEnglish === "string") {
-            desktopLangEn.textContent = text.languageEnglish;
+        if (desktopLangEn) {
+            desktopLangEn.textContent = "EN";
         }
 
         const desktopLangZh = document.getElementById("ggx-btn-lang-zh");
-        if (desktopLangZh && typeof text.languageChinese === "string") {
-            desktopLangZh.textContent = text.languageChinese;
+        if (desktopLangZh) {
+            desktopLangZh.textContent = "中文";
         }
 
         document.querySelectorAll("#ggx-site-footer-slot .ggx-partner-label").forEach((el) => {
@@ -2910,47 +2910,6 @@
     function initBackToTop() {
         const backToTopBtn = document.getElementById("backToTopBtn");
         if (!backToTopBtn || backToTopBtn.dataset.ggxBound === "1") return;
-        const minBottom = 24;
-        const topPadding = 96;
-        const dragThreshold = 6;
-        let activePointerId = null;
-        let dragStartY = 0;
-        let dragStartBottom = 0;
-        let suppressClick = false;
-
-        const getCurrentBottom = function () {
-            const rect = backToTopBtn.getBoundingClientRect();
-            return window.innerHeight - rect.bottom;
-        };
-
-        const getMaxBottom = function () {
-            return Math.max(minBottom, window.innerHeight - topPadding - backToTopBtn.offsetHeight);
-        };
-
-        const applyBottom = function (bottomValue) {
-            const boundedBottom = Math.min(Math.max(bottomValue, minBottom), getMaxBottom());
-            backToTopBtn.classList.remove("bottom-60");
-            backToTopBtn.style.bottom = `${boundedBottom}px`;
-        };
-
-        const handlePointerMove = function (event) {
-            if (event.pointerId !== activePointerId) return;
-            const deltaY = event.clientY - dragStartY;
-            if (Math.abs(deltaY) > dragThreshold) {
-                suppressClick = true;
-            }
-            applyBottom(dragStartBottom - deltaY);
-        };
-
-        const handlePointerEnd = function (event) {
-            if (event.pointerId !== activePointerId) return;
-            if (typeof backToTopBtn.releasePointerCapture === "function") {
-                backToTopBtn.releasePointerCapture(activePointerId);
-            }
-            activePointerId = null;
-            backToTopBtn.classList.remove("cursor-grabbing");
-            backToTopBtn.classList.add("cursor-grab");
-        };
 
         const updateButtonVisibility = function () {
             if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
@@ -2963,35 +2922,11 @@
             }
         };
 
-        backToTopBtn.addEventListener("pointerdown", function (event) {
-            activePointerId = event.pointerId;
-            dragStartY = event.clientY;
-            dragStartBottom = getCurrentBottom();
-            suppressClick = false;
-            backToTopBtn.classList.remove("cursor-grab");
-            backToTopBtn.classList.add("cursor-grabbing");
-            if (typeof backToTopBtn.setPointerCapture === "function") {
-                backToTopBtn.setPointerCapture(activePointerId);
-            }
-        });
-
-        backToTopBtn.addEventListener("pointermove", handlePointerMove);
-        backToTopBtn.addEventListener("pointerup", handlePointerEnd);
-        backToTopBtn.addEventListener("pointercancel", handlePointerEnd);
-
-        backToTopBtn.addEventListener("click", function (event) {
-            if (suppressClick) {
-                event.preventDefault();
-                suppressClick = false;
-                return;
-            }
+        backToTopBtn.addEventListener("click", function () {
             window.scrollTo({ top: 0, behavior: "smooth" });
         });
 
         window.addEventListener("scroll", updateButtonVisibility, { passive: true });
-        window.addEventListener("resize", function () {
-            applyBottom(getCurrentBottom());
-        });
         updateButtonVisibility();
         backToTopBtn.dataset.ggxBound = "1";
     }

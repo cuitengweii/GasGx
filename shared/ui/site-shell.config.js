@@ -889,8 +889,8 @@
                         account: "Account",
                         welcome: "Welcome,",
                         privacyPolicy: "Privacy Policy",
-                        languageEnglish: "English",
-                        languageChinese: "简体中文"
+                        languageEnglish: "EN",
+                        languageChinese: "中文"
                 },
                 zh: {
                         tagline: "天然气发电挖矿助手",
@@ -902,8 +902,8 @@
                         account: "账号",
                         welcome: "欢迎，",
                         privacyPolicy: "隐私政策",
-                        languageEnglish: "English",
-                        languageChinese: "简体中文"
+                        languageEnglish: "EN",
+                        languageChinese: "中文"
                 }
         },
         pages: {
@@ -941,7 +941,7 @@
                         },
                         ranking: {
                                 title: {
-                                        zh: "总分排行",
+                                        zh: "全球天然气排行榜",
                                         en: "Total Score Ranking"
                                 },
                                 legendLegal: {

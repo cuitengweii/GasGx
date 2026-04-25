@@ -1129,7 +1129,7 @@
                 rotateHint: { zh: '拖拽旋转', en: 'Drag to Rotate' }
             },
             ranking: {
-                title: { zh: '总分排行', en: 'Total Score Ranking' },
+                title: { zh: '全球天然气排行榜', en: 'Total Score Ranking' },
                 legendLegal: { zh: '合法 / 高分', en: 'Legal / High Score' },
                 legendRestricted: { zh: '受限', en: 'Restricted' },
                 legendBanned: { zh: '禁止', en: 'Banned' }
@@ -1218,7 +1218,10 @@
                     analysis_scope: getLocalizedValue(homeConfig.heroCard && homeConfig.heroCard.label, lang, result[lang].analysis_scope || ''),
                     countries_label: getLocalizedValue(homeConfig.heroCard && homeConfig.heroCard.unit, lang, result[lang].countries_label || ''),
                     drag_to_rotate: getLocalizedValue(homeConfig.map && homeConfig.map.rotateHint, lang, result[lang].drag_to_rotate || ''),
-                    top_producers: getLocalizedValue(homeConfig.ranking && homeConfig.ranking.title, lang, result[lang].top_producers || ''),
+                    top_producers: (() => {
+                        const title = getLocalizedValue(homeConfig.ranking && homeConfig.ranking.title, lang, result[lang].top_producers || '');
+                        return lang === 'zh' && title === '总分排行' ? '全球天然气排行榜' : title;
+                    })(),
                     legend_legal: getLocalizedValue(homeConfig.ranking && homeConfig.ranking.legendLegal, lang, result[lang].legend_legal || ''),
                     legend_restricted: getLocalizedValue(homeConfig.ranking && homeConfig.ranking.legendRestricted, lang, result[lang].legend_restricted || ''),
                     legend_banned: getLocalizedValue(homeConfig.ranking && homeConfig.ranking.legendBanned, lang, result[lang].legend_banned || '')
@@ -1515,8 +1518,8 @@ window.app = {
                             },
                             {
                                 key: 'navEntry',
-                                title: '这是右上角导航入口',
-                                text: '右上角菜单入口可打开全站导航，快速跳转到产品、工具、资源与支持页面。'
+                                title: '这是顶部导航栏',
+                                text: '顶部导航栏可快速跳转到新闻、数字化、机型库、排行榜、工具、资源与支持页面。'
                             },
                             {
                                 key: 'hotspots',
@@ -1561,8 +1564,8 @@ window.app = {
                         },
                         {
                             key: 'navEntry',
-                            title: 'This is the top-right navigation entry',
-                            text: 'Use the top-right menu entry to open site navigation and jump to products, tools, resources, and support pages quickly.'
+                            title: 'This is the top navigation',
+                            text: 'Use the top navigation to jump to news, digitalization, products, rankings, tools, resources, and support quickly.'
                         },
                         {
                             key: 'hotspots',
@@ -1699,14 +1702,24 @@ window.app = {
                 }
 
                 if (stepKey === 'navEntry') {
-                    const navRect = getVisibleRect([
-                        '#ggx-site-header-slot #mobile-menu-btn',
-                        '#ggx-site-header-slot #desktop-nav'
-                    ]);
-                    if (navRect) {
-                        const width = navRect.width > 140 ? 140 : navRect.width;
-                        const left = navRect.width > 140 ? navRect.right - width : navRect.left;
-                        return clampRect(toRect(left - 4, navRect.top - 4, width + 8, navRect.height + 8));
+                    const desktopNavRect = getVisibleRect(['#ggx-site-header-slot #desktop-nav']);
+                    if (desktopNavRect && window.innerWidth >= 1280) {
+                        return clampRect(toRect(
+                            desktopNavRect.left - 6,
+                            desktopNavRect.top - 6,
+                            desktopNavRect.width + 12,
+                            desktopNavRect.height + 12
+                        ));
+                    }
+
+                    const mobileNavRect = getVisibleRect(['#ggx-site-header-slot #mobile-menu-btn']);
+                    if (mobileNavRect) {
+                        return clampRect(toRect(
+                            mobileNavRect.left - 4,
+                            mobileNavRect.top - 4,
+                            mobileNavRect.width + 8,
+                            mobileNavRect.height + 8
+                        ));
                     }
                     return clampRect(toRect(window.innerWidth - 62, 12, 44, 44));
                 }
@@ -2118,8 +2131,6 @@ window.app = {
             // Rendering
             updateStaticText() {
                 applyHomePageConfig(this.currentLang);
-                const taglineEl = document.getElementById('header-tagline');
-                if(taglineEl) taglineEl.innerText = this.t('tagline');
                 document.querySelectorAll('[data-i18n]').forEach(el => {
                     const key = el.getAttribute('data-i18n');
                     if(key !== 'tagline') el.innerText = this.t(key);
