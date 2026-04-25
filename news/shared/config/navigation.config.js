@@ -16,6 +16,12 @@ export const HEADER_NAVIGATION = [
         ],
     },
     {
+        title: 'GASGX',
+        path: '/index.html',
+        icon: 'fa-arrow-up-right-from-square',
+        children: [],
+    },
+    {
         title: 'FLASH',
         path: '/news/flash',
         icon: 'fa-bolt',
@@ -83,6 +89,7 @@ const SITE_SHELL_CONFIG_SCOPE = 'global';
 
 const NAV_ICON_BY_SLUG = Object.freeze({
     home: 'fa-house',
+    gasgx: 'fa-arrow-up-right-from-square',
     flash: 'fa-bolt',
     'gas-energy': 'fa-fire',
     generators: 'fa-gears',
