@@ -106,7 +106,7 @@ function renderNewsHomeHeader({ idPrefix, appGlobal }) {
                     <a href="/news/index.html" class="flex items-center gap-1 group" aria-label="GasGx News Home">
                         <div class="flex flex-col justify-center -space-y-1">
                             <span class="text-2xl font-bold italic text-white tracking-tighter font-header group-hover:text-gas-green transition-colors">GasGx</span>
-                            <span class="text-[9px] font-bold text-gas-green tracking-[0.2em] uppercase leading-none pl-0.5">MINING NEWS</span>
+                            <span class="text-[9px] font-bold text-gas-green tracking-[0.2em] uppercase leading-none pl-0.5">NEWS</span>
                         </div>
                     </a>
 
@@ -170,7 +170,7 @@ function renderFlashHeader({ idPrefix, appGlobal }) {
                     <a href="/news/index.html" class="flex items-center gap-1 group" aria-label="GasGx News Home">
                         <div class="flex flex-col justify-center -space-y-1">
                             <span class="text-2xl font-bold italic text-white tracking-tighter font-header group-hover:text-gas-green transition-colors">GasGx</span>
-                            <span class="text-[9px] font-bold text-gas-green tracking-[0.2em] uppercase leading-none pl-0.5">MINING NEWS</span>
+                            <span class="text-[9px] font-bold text-gas-green tracking-[0.2em] uppercase leading-none pl-0.5">NEWS</span>
                         </div>
                     </a>
 

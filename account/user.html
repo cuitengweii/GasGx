@@ -124,7 +124,7 @@
 
             <button type="button" id="google-login-btn" data-busy-label="Connecting..." onclick="handleOAuthLogin('google', this)" class="group mb-4 flex w-full items-center justify-center gap-3 rounded-lg bg-white px-4 py-3 font-bold text-black transition-all duration-200 hover:bg-gray-200 active:scale-95">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="h-5 w-5" alt="Google">
-                <span class="text-sm font-sans">Continue with Google</span>
+                <span id="google-login-text" class="text-sm font-sans">Continue with Google</span>
             </button>
 
             <div id="extra-social-logins" class="mb-6 hidden grid gap-3">
@@ -140,7 +140,7 @@
 
             <div class="relative mb-6 flex items-center py-2">
                 <div class="flex-grow border-t border-white/10"></div>
-                <span class="mx-4 flex-shrink-0 text-[10px] font-bold uppercase tracking-widest text-gray-600">Or with Email</span>
+                <span id="email-divider-text" class="mx-4 flex-shrink-0 text-[10px] font-bold uppercase tracking-widest text-gray-600">Or with Email</span>
                 <div class="flex-grow border-t border-white/10"></div>
             </div>
 
@@ -150,6 +150,9 @@
                 </div>
                 <div>
                     <input type="password" id="password" required minlength="6" autocomplete="current-password" placeholder="Password" class="field">
+                </div>
+                <div id="confirm-password-field" class="hidden">
+                    <input type="password" id="confirm-password" minlength="6" autocomplete="new-password" placeholder="Confirm Password" class="field">
                 </div>
                 <button type="submit" id="submit-btn" data-busy-label="Processing..." class="flex w-full items-center justify-center gap-2 rounded-lg bg-gas-green py-3.5 text-sm font-bold uppercase tracking-wide text-black transition-all duration-200 hover:bg-white active:scale-95">
                     <span id="btn-text">Sign In</span>
@@ -182,6 +185,98 @@
 
         let isSignUp = false;
         let redirectScheduled = false;
+        let currentLang = 'en';
+
+        const AUTH_COPY = {
+            en: {
+                signInTitle: 'Welcome Back',
+                signInSubtitle: 'Sign in to access your workspace',
+                signUpTitle: 'Create Account',
+                signUpSubtitle: 'Create your GasGx account',
+                google: 'Continue with Google',
+                emailDivider: 'Or with Email',
+                emailPlaceholder: 'Email Address',
+                passwordPlaceholder: 'Password',
+                confirmPasswordPlaceholder: 'Confirm Password',
+                signInButton: 'Sign In',
+                signUpButton: 'Create Account',
+                signInToggleText: "Don't have an account?",
+                signUpToggleText: 'Already have an account?',
+                signInToggleButton: 'Sign Up',
+                signUpToggleButton: 'Sign In',
+                processing: 'Processing...',
+                connecting: 'Connecting...',
+                verifying: 'VERIFYING...',
+                redirecting: 'REDIRECTING...',
+                passwordMismatch: 'Please enter the same password twice.',
+                signupConfirm: 'Success! Please check your email to confirm.',
+                signupSignedIn: 'Account created and signed in.',
+                loginSuccess: 'Login successful.',
+                supabaseError: 'Supabase SDK Error',
+                authFailed: 'Email auth failed.'
+            },
+            zh: {
+                signInTitle: '欢迎回来',
+                signInSubtitle: '登录以访问你的工作区',
+                signUpTitle: '创建账号',
+                signUpSubtitle: '创建你的 GasGx 账号',
+                google: '使用 Google 继续',
+                emailDivider: '或使用邮箱',
+                emailPlaceholder: '邮箱地址',
+                passwordPlaceholder: '密码',
+                confirmPasswordPlaceholder: '再次输入密码',
+                signInButton: '登录',
+                signUpButton: '创建账号',
+                signInToggleText: '还没有账号？',
+                signUpToggleText: '已有账号？',
+                signInToggleButton: '注册',
+                signUpToggleButton: '登录',
+                processing: '处理中...',
+                connecting: '连接中...',
+                verifying: '验证中...',
+                redirecting: '正在跳转...',
+                passwordMismatch: '两次输入的密码不一致。',
+                signupConfirm: '创建成功，请查看邮箱完成确认。',
+                signupSignedIn: '账号已创建并登录。',
+                loginSuccess: '登录成功。',
+                supabaseError: 'Supabase 客户端不可用',
+                authFailed: '邮箱认证失败。'
+            }
+        };
+
+        function normalizeLang(lang) {
+            return String(lang || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+        }
+
+        function resolvePageLang() {
+            try {
+                const storedLang = localStorage.getItem('gasgx-lang') || localStorage.getItem('gas_lang');
+                if (storedLang) return normalizeLang(storedLang);
+            } catch (_error) {
+                // Fall through to the document language.
+            }
+            return normalizeLang(document.documentElement.getAttribute('lang') || 'en');
+        }
+
+        function getCopy() {
+            return AUTH_COPY[currentLang] || AUTH_COPY.en;
+        }
+
+        function applyAuthText() {
+            currentLang = resolvePageLang();
+            const copy = getCopy();
+            document.documentElement.setAttribute('lang', currentLang);
+            document.title = currentLang === 'zh' ? '登录 - GasGx' : 'Sign In - GasGx';
+            document.getElementById('google-login-text').textContent = copy.google;
+            document.getElementById('email-divider-text').textContent = copy.emailDivider;
+            document.getElementById('email').setAttribute('placeholder', copy.emailPlaceholder);
+            document.getElementById('password').setAttribute('placeholder', copy.passwordPlaceholder);
+            document.getElementById('confirm-password').setAttribute('placeholder', copy.confirmPasswordPlaceholder);
+            document.getElementById('google-login-btn').dataset.busyLabel = copy.connecting;
+            document.getElementById('submit-btn').dataset.busyLabel = copy.processing;
+            document.getElementById('loading-text').textContent = copy.verifying;
+            toggleModeState(isSignUp);
+        }
 
         function getAuthRedirectUrl() {
             return new URL(SIGN_IN_URL, window.location.origin).toString();
@@ -223,7 +318,7 @@
             if (redirectScheduled) return;
             redirectScheduled = true;
             document.getElementById('loading-overlay').classList.remove('hidden');
-            document.getElementById('loading-text').textContent = 'REDIRECTING...';
+            document.getElementById('loading-text').textContent = getCopy().redirecting;
             setTimeout(() => { window.location.href = getTargetUrl(); }, 500);
         }
 
@@ -246,12 +341,18 @@
 
         function toggleModeState(nextMode) {
             isSignUp = nextMode;
-            document.getElementById('page-title').textContent = isSignUp ? 'Create Account' : 'Welcome Back';
-            document.getElementById('page-subtitle').textContent = isSignUp ? 'Create your GasGx account' : 'Sign in to access your workspace';
-            document.getElementById('btn-text').textContent = isSignUp ? 'Create Account' : 'Sign In';
-            document.getElementById('toggle-text').textContent = isSignUp ? 'Already have an account?' : "Don't have an account?";
-            document.getElementById('toggle-btn').textContent = isSignUp ? 'Sign In' : 'Sign Up';
+            const copy = getCopy();
+            document.getElementById('page-title').textContent = isSignUp ? copy.signUpTitle : copy.signInTitle;
+            document.getElementById('page-subtitle').textContent = isSignUp ? copy.signUpSubtitle : copy.signInSubtitle;
+            document.getElementById('btn-text').textContent = isSignUp ? copy.signUpButton : copy.signInButton;
+            document.getElementById('toggle-text').textContent = isSignUp ? copy.signUpToggleText : copy.signInToggleText;
+            document.getElementById('toggle-btn').textContent = isSignUp ? copy.signUpToggleButton : copy.signInToggleButton;
             document.getElementById('password').setAttribute('autocomplete', isSignUp ? 'new-password' : 'current-password');
+            const confirmField = document.getElementById('confirm-password-field');
+            const confirmInput = document.getElementById('confirm-password');
+            confirmField.classList.toggle('hidden', !isSignUp);
+            confirmInput.required = isSignUp;
+            if (!isSignUp) confirmInput.value = '';
         }
 
         async function loadProviderFlags() {
@@ -290,7 +391,7 @@
         };
 
         window.handleOAuthLogin = async function(provider, button) {
-            if (!gxClient) return showToast('Supabase SDK Error', 'error');
+            if (!gxClient) return showToast(getCopy().supabaseError, 'error');
             saveReturnUrl();
             setButtonBusy(button, true);
             try {
@@ -307,11 +408,17 @@
 
         window.handleEmailAuth = async function(event) {
             event.preventDefault();
-            if (!gxClient) return showToast('Supabase SDK Error', 'error');
+            if (!gxClient) return showToast(getCopy().supabaseError, 'error');
 
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
             const button = document.getElementById('submit-btn');
+
+            if (isSignUp && password !== confirmPassword) {
+                showToast(getCopy().passwordMismatch, 'error');
+                return;
+            }
 
             saveReturnUrl();
             setButtonBusy(button, true);
@@ -324,29 +431,31 @@
                 if (error) throw error;
 
                 if (isSignUp && !data.session) {
-                    showToast('Success! Please check your email to confirm.');
+                    showToast(getCopy().signupConfirm);
                     setButtonBusy(button, false);
                     toggleModeState(false);
                     document.getElementById('password').value = '';
+                    document.getElementById('confirm-password').value = '';
                     return;
                 }
 
-                showToast(isSignUp ? 'Account created and signed in.' : 'Login successful.');
+                showToast(isSignUp ? getCopy().signupSignedIn : getCopy().loginSuccess);
                 performRedirect();
             } catch (error) {
-                showToast(error.message || 'Email auth failed.', 'error');
+                showToast(error.message || getCopy().authFailed, 'error');
             } finally {
                 setButtonBusy(button, false);
             }
         };
 
         window.onload = async function() {
-            toggleModeState(false);
+            currentLang = resolvePageLang();
+            applyAuthText();
             handleCallbackErrors();
 
             if (!gxClient) {
                 document.getElementById('loading-overlay').classList.add('hidden');
-                showToast('Supabase client unavailable. Check the SDK script or site config.', 'error');
+                showToast(getCopy().supabaseError, 'error');
                 return;
             }
 
@@ -369,6 +478,12 @@
                 document.getElementById('loading-overlay').classList.add('hidden');
             }
         };
+
+        applyAuthText();
+        setTimeout(applyAuthText, 250);
+        setTimeout(applyAuthText, 900);
+        document.addEventListener('gasgx:lang-changed', applyAuthText);
+        document.addEventListener('gasgx:site-shell-config-updated', applyAuthText);
     </script>
 </body>
 </html>
