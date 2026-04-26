@@ -340,7 +340,13 @@
                     en: {},
                     ru: {}
                 },
-                contactEmail: "contact@gasgx.com"
+                contactEmail: "contact@gasgx.com",
+                socialLinks: [
+                    { id: "wechat", enabled: true, mode: "qr", qrType: "wechat", iconClass: "fa-brands fa-weixin", ariaLabel: "Open WeChat QR" },
+                    { id: "telegram", enabled: true, mode: "qr", qrType: "telegram", iconClass: "fa-brands fa-telegram", ariaLabel: "Open Telegram QR" },
+                    { id: "twitter", enabled: true, mode: "qr", qrType: "twitter", iconClass: "fa-brands fa-x-twitter", ariaLabel: "Open Twitter QR" },
+                    { id: "whatsapp", enabled: true, mode: "qr", qrType: "whatsapp", iconClass: "fa-brands fa-whatsapp", ariaLabel: "Open WhatsApp QR" }
+                ]
             }
         },
         site: {
@@ -813,7 +819,10 @@
                     zh: Object.assign({}, base.aboutContact && base.aboutContact.texts && base.aboutContact.texts.zh || {}, source.aboutContact && source.aboutContact.texts && source.aboutContact.texts.zh || {}),
                     en: Object.assign({}, base.aboutContact && base.aboutContact.texts && base.aboutContact.texts.en || {}, source.aboutContact && source.aboutContact.texts && source.aboutContact.texts.en || {}),
                     ru: Object.assign({}, base.aboutContact && base.aboutContact.texts && base.aboutContact.texts.ru || {}, source.aboutContact && source.aboutContact.texts && source.aboutContact.texts.ru || {})
-                }
+                },
+                socialLinks: Array.isArray(source.aboutContact && source.aboutContact.socialLinks)
+                    ? source.aboutContact.socialLinks.slice()
+                    : (Array.isArray(base.aboutContact && base.aboutContact.socialLinks) ? base.aboutContact.socialLinks.slice() : [])
             })
         });
     }

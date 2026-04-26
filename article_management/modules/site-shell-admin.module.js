@@ -809,6 +809,47 @@ function renderSocialRow(item, index) {
     `;
 }
 
+function renderContactSocialRow(item, index) {
+    const key = `site:about-contact:social:${index}`;
+    const expanded = isExpanded(key, false);
+    const basePath = `pages.aboutContact.socialLinks.${index}`;
+    return `
+        <div class="ams-site-tree-node ams-site-tree-node-child">
+            <div class="ams-site-tree-row">
+                <div class="ams-site-tree-main">
+                    ${renderToggleButton('toggle-expand', key, expanded)}
+                    <div class="ams-site-tree-copy ams-site-tree-copy-toggle" data-site-action="toggle-expand" data-site-toggle-path="${esc(key)}">
+                        <strong>${esc(item.id || `contact-social-${index + 1}`)}</strong>
+                        <span>${esc(item.mode === 'qr' ? 'QR' : 'Link')} · ${item.enabled === false ? 'Disabled' : 'Enabled'}</span>
+                    </div>
+                </div>
+                <div class="ams-site-tree-actions">
+                    <button class="ams-btn ams-btn-muted" type="button" data-site-action="move-array-item" data-site-array-path="pages.aboutContact.socialLinks" data-site-index="${index}" data-site-direction="-1" ${index <= 0 ? 'disabled' : ''}>Up</button>
+                    <button class="ams-btn ams-btn-muted" type="button" data-site-action="move-array-item" data-site-array-path="pages.aboutContact.socialLinks" data-site-index="${index}" data-site-direction="1">Down</button>
+                    <button class="ams-btn ams-btn-danger" type="button" data-site-action="delete-array-item" data-site-array-path="pages.aboutContact.socialLinks" data-site-index="${index}">Delete</button>
+                </div>
+            </div>
+            ${expanded ? `
+                <div class="ams-site-editor-panel">
+                    <div class="ams-site-field-grid ams-site-field-grid-wide">
+                        <div class="ams-field"><label>ID</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.id`)}" value="${esc(item.id || '')}" placeholder="telegram"></div>
+                        <div class="ams-field"><label>Mode</label><select class="ams-select" data-site-config-path="${esc(`${basePath}.mode`)}"><option value="link" ${item.mode === 'link' ? 'selected' : ''}>Link</option><option value="qr" ${item.mode === 'qr' ? 'selected' : ''}>QR</option></select></div>
+                        <div class="ams-field"><label>Link URL</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.href`)}" value="${esc(item.href || '')}" placeholder="https://..."></div>
+                        <div class="ams-field"><label>QR type</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.qrType`)}" value="${esc(item.qrType || '')}" placeholder="wechat"></div>
+                        <div class="ams-field"><label>Icon class</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.iconClass`)}" value="${esc(item.iconClass || '')}" placeholder="fa-brands fa-telegram"></div>
+                        <div class="ams-field"><label>Text icon</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.text`)}" value="${esc(item.text || '')}" placeholder="XHS"></div>
+                        <div class="ams-field"><label>Accessible label</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.ariaLabel`)}" value="${esc(item.ariaLabel || '')}" placeholder="Open Telegram"></div>
+                        <div class="ams-field"><label>Target</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.target`)}" value="${esc(item.target || '')}" placeholder="_blank"></div>
+                        <div class="ams-field"><label>Rel</label><input class="ams-input" data-site-config-path="${esc(`${basePath}.rel`)}" value="${esc(item.rel || '')}" placeholder="noopener noreferrer"></div>
+                        <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="${esc(`${basePath}.enabled`)}" data-site-input-type="boolean" ${item.enabled === false ? '' : 'checked'}><span>Enabled</span></label>
+                        <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="${esc(`${basePath}.visible`)}" data-site-input-type="boolean" ${item.visible === false ? '' : 'checked'}><span>Visible</span></label>
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
 function renderPartnerRow(item, index) {
     const key = `footer:partner:${index}`;
     const expanded = isExpanded(key, false);
@@ -906,6 +947,7 @@ function renderGeneralPage() {
     const home = config.pages?.home || {};
     const aboutCompany = config.pages?.aboutCompany || {};
     const aboutContact = config.pages?.aboutContact || {};
+    const contactSocialLinks = Array.isArray(aboutContact.socialLinks) ? aboutContact.socialLinks : [];
     const brand = site.brand || {};
     const features = site.features || {};
     const mainAuth = site.mainAuth || {};
@@ -968,6 +1010,14 @@ function renderGeneralPage() {
                             </div>
                             <div class="ams-site-tree-children">
                                 ${ABOUT_CONTACT_LOCALIZED_FIELDS.map((field) => renderDescriptorField(field, config)).join('')}
+                                ${renderFooterSection('site:about-contact:social', '社交方式', `${contactSocialLinks.length} entries`, `
+                                    <div class="ams-site-inline-actions">
+                                        <button class="ams-btn ams-btn-muted" type="button" data-site-action="push-array-item" data-site-array-path="pages.aboutContact.socialLinks" data-site-template="social-link">Add social</button>
+                                    </div>
+                                    <div class="ams-site-tree-children">
+                                        ${contactSocialLinks.length ? contactSocialLinks.map((item, index) => renderContactSocialRow(item, index)).join('') : '<div class="ams-empty">No contact social entries.</div>'}
+                                    </div>
+                                `)}
                             </div>
                         `)}
                         ${renderFooterSection('site:features', '运行开关', features.chatbotEnabled === true ? '聊天机器人已开启' : '共享壳运行开关', `
@@ -1171,11 +1221,15 @@ function collapseAllNav() {
 }
 
 function expandAllGeneral() {
-    ['site:brand', 'site:shared-text', 'site:home', 'site:about-company', 'site:about-contact', 'site:features', 'site:auth'].forEach((key) => setExpanded(key, true));
+    ['site:brand', 'site:shared-text', 'site:home', 'site:about-company', 'site:about-contact', 'site:about-contact:social', 'site:features', 'site:auth'].forEach((key) => setExpanded(key, true));
+    const aboutContact = getDraftConfig().pages?.aboutContact || {};
+    (aboutContact.socialLinks || []).forEach((_, index) => setExpanded(`site:about-contact:social:${index}`, true));
 }
 
 function collapseAllGeneral() {
-    ['site:brand', 'site:shared-text', 'site:home', 'site:about-company', 'site:about-contact', 'site:features', 'site:auth'].forEach((key) => setExpanded(key, false));
+    ['site:brand', 'site:shared-text', 'site:home', 'site:about-company', 'site:about-contact', 'site:about-contact:social', 'site:features', 'site:auth'].forEach((key) => setExpanded(key, false));
+    const aboutContact = getDraftConfig().pages?.aboutContact || {};
+    (aboutContact.socialLinks || []).forEach((_, index) => setExpanded(`site:about-contact:social:${index}`, false));
 }
 
 function expandAllFooter() {
@@ -1228,6 +1282,13 @@ function expandNewNode(arrayPath, index, template) {
     if (arrayPath === 'footer.socialLinks') {
         setExpanded('footer:social', true);
         setExpanded(`footer:social:${index}`, true);
+        return;
+    }
+
+    if (arrayPath === 'pages.aboutContact.socialLinks') {
+        setExpanded('site:about-contact', true);
+        setExpanded('site:about-contact:social', true);
+        setExpanded(`site:about-contact:social:${index}`, true);
         return;
     }
 

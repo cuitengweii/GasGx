@@ -104,24 +104,7 @@
 
                 <div class="gas-card rounded-xl p-8">
                     <h3 class="text-xl font-bold text-white mb-6 text-center" data-i18n="social_title">Social Networks</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div onclick="window.app.showQR('wechat', 'WeChat')" class="bg-[#111] border border-white/10 rounded-lg p-4 flex flex-col items-center justify-center hover:border-gas-green hover:bg-gas-green/5 cursor-pointer transition-all">
-                            <i class="fa-brands fa-weixin text-3xl text-green-500 mb-2"></i>
-                            <span class="text-sm text-gas-subtext">WeChat</span>
-                        </div>
-                        <div onclick="window.app.showQR('telegram', 'Telegram')" class="bg-[#111] border border-white/10 rounded-lg p-4 flex flex-col items-center justify-center hover:border-gas-green hover:bg-gas-green/5 cursor-pointer transition-all">
-                            <i class="fa-brands fa-telegram text-3xl text-blue-400 mb-2"></i>
-                            <span class="text-sm text-gas-subtext">Telegram</span>
-                        </div>
-                        <div onclick="window.app.showQR('twitter', 'Twitter / X')" class="bg-[#111] border border-white/10 rounded-lg p-4 flex flex-col items-center justify-center hover:border-gas-green hover:bg-gas-green/5 cursor-pointer transition-all">
-                            <i class="fa-brands fa-x-twitter text-3xl text-white mb-2"></i>
-                            <span class="text-sm text-gas-subtext">Twitter</span>
-                        </div>
-                        <div onclick="window.app.showQR('whatsapp', 'WhatsApp')" class="bg-[#111] border border-white/10 rounded-lg p-4 flex flex-col items-center justify-center hover:border-gas-green hover:bg-gas-green/5 cursor-pointer transition-all">
-                            <i class="fa-brands fa-whatsapp text-3xl text-green-400 mb-2"></i>
-                            <span class="text-sm text-gas-subtext">WhatsApp</span>
-                        </div>
-                    </div>
+                    <div id="contact-social-grid" class="grid grid-cols-2 gap-4"></div>
                     <p class="text-xs text-center text-gas-subtext mt-6" data-i18n="social_hint">Click icon to scan QR code</p>
                 </div>
             </div>
@@ -222,7 +205,13 @@
                 }
             },
             texts: { zh: {}, en: {}, ru: {} },
-            contactEmail: 'contact@gasgx.com'
+            contactEmail: 'contact@gasgx.com',
+            socialLinks: [
+                { id: 'wechat', enabled: true, mode: 'qr', qrType: 'wechat', iconClass: 'fa-brands fa-weixin', ariaLabel: 'Open WeChat QR' },
+                { id: 'telegram', enabled: true, mode: 'qr', qrType: 'telegram', iconClass: 'fa-brands fa-telegram', ariaLabel: 'Open Telegram QR' },
+                { id: 'twitter', enabled: true, mode: 'qr', qrType: 'twitter', iconClass: 'fa-brands fa-x-twitter', ariaLabel: 'Open Twitter QR' },
+                { id: 'whatsapp', enabled: true, mode: 'qr', qrType: 'whatsapp', iconClass: 'fa-brands fa-whatsapp', ariaLabel: 'Open WhatsApp QR' }
+            ]
         };
 
         function cloneJson(value) {
@@ -244,6 +233,15 @@
             };
         }
 
+        function normalizeSocialLinks(sourceValue, fallbackValue) {
+            const sourceLinks = Array.isArray(sourceValue) ? sourceValue : [];
+            const fallbackLinks = Array.isArray(fallbackValue) ? fallbackValue : [];
+            const rawLinks = sourceLinks.length ? sourceLinks : fallbackLinks;
+            return rawLinks
+                .filter(item => item && item.enabled !== false && item.visible !== false && item.hidden !== true)
+                .map(item => ({ ...item }));
+        }
+
         function getAboutContactConfig() {
             const source = window.GASGX_SITE_SHELL_CONFIG?.pages?.aboutContact || {};
             return {
@@ -255,7 +253,8 @@
                     en: { ...(DEFAULT_ABOUT_CONTACT_CONFIG.texts.en || {}), ...(source.texts?.en || {}) },
                     ru: { ...(DEFAULT_ABOUT_CONTACT_CONFIG.texts.ru || {}), ...(source.texts?.ru || {}) }
                 },
-                contactEmail: source.contactEmail || DEFAULT_ABOUT_CONTACT_CONFIG.contactEmail
+                contactEmail: source.contactEmail || DEFAULT_ABOUT_CONTACT_CONFIG.contactEmail,
+                socialLinks: normalizeSocialLinks(source.socialLinks, DEFAULT_ABOUT_CONTACT_CONFIG.socialLinks)
             };
         }
 
@@ -291,6 +290,103 @@
             'twitter': 'assets/qr_twitter.png',
             'whatsapp': 'assets/qr_whatsapp.png'
         };
+
+        const SOCIAL_LABELS = {
+            wechat: 'WeChat',
+            telegram: 'Telegram',
+            twitter: 'Twitter',
+            x: 'Twitter',
+            whatsapp: 'WhatsApp',
+            discord: 'Discord',
+            youtube: 'YouTube',
+            linkedin: 'LinkedIn',
+            facebook: 'Facebook',
+            tiktok: 'TikTok',
+            instagram: 'Instagram',
+            xhs: 'XHS'
+        };
+
+        const SOCIAL_ICON_COLORS = {
+            wechat: 'text-green-500',
+            telegram: 'text-blue-400',
+            twitter: 'text-white',
+            x: 'text-white',
+            whatsapp: 'text-green-400',
+            discord: 'text-indigo-400',
+            youtube: 'text-red-500',
+            linkedin: 'text-blue-500',
+            facebook: 'text-blue-500',
+            tiktok: 'text-white',
+            instagram: 'text-pink-400',
+            xhs: 'text-red-400'
+        };
+
+        function getSocialId(item) {
+            return String(item?.id || item?.qrType || '').trim().toLowerCase();
+        }
+
+        function getSocialLabel(item) {
+            const id = getSocialId(item);
+            return item?.ariaLabel?.replace(/^Open\s+/i, '').replace(/\s+QR$/i, '') || SOCIAL_LABELS[id] || item?.id || 'Social';
+        }
+
+        function getSocialIconClass(item) {
+            const id = getSocialId(item);
+            return item?.iconClass || (id === 'xhs' ? '' : 'fa-solid fa-link');
+        }
+
+        function getSocialIconColor(item) {
+            return SOCIAL_ICON_COLORS[getSocialId(item)] || 'text-gas-green';
+        }
+
+        function isQrSocialMode(item) {
+            const mode = String(item?.mode || 'qr').trim().toLowerCase();
+            return mode === 'qr' || mode === 'qrcode' || mode === '二维码';
+        }
+
+        function getSocialQrType(item) {
+            return String(item?.qrType || item?.id || '').trim().toLowerCase();
+        }
+
+        function renderContactSocialLinks(config) {
+            const grid = document.getElementById('contact-social-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            config.socialLinks.forEach((item) => {
+                const isQrMode = isQrSocialMode(item);
+                const label = getSocialLabel(item);
+                const button = document.createElement(!isQrMode && item.href ? 'a' : 'button');
+                button.className = 'bg-[#111] border border-white/10 rounded-lg p-4 min-h-[6rem] flex flex-col items-center justify-center hover:border-gas-green hover:bg-gas-green/5 cursor-pointer transition-all';
+                button.setAttribute('aria-label', item.ariaLabel || label);
+
+                if (button.tagName === 'A') {
+                    button.href = item.href;
+                    button.target = item.target || '_blank';
+                    button.rel = item.rel || 'noopener noreferrer';
+                } else {
+                    button.type = 'button';
+                    button.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        window.app.showQR(getSocialQrType(item), label);
+                    });
+                }
+
+                const iconNode = document.createElement(item.text ? 'span' : 'i');
+                if (item.text) {
+                    iconNode.className = `text-2xl font-black ${getSocialIconColor(item)} mb-2`;
+                    iconNode.textContent = item.text;
+                } else {
+                    iconNode.className = `${getSocialIconClass(item)} text-3xl ${getSocialIconColor(item)} mb-2`;
+                }
+
+                const labelNode = document.createElement('span');
+                labelNode.className = 'text-sm text-gas-subtext';
+                labelNode.textContent = label;
+                button.append(iconNode, labelNode);
+                grid.appendChild(button);
+            });
+        }
 
         window.app = {
             lang: localStorage.getItem('gas_lang') || 'en',
@@ -343,6 +439,7 @@
 
                 const contactEmailValue = document.getElementById('contact-email-value');
                 if (contactEmailValue) contactEmailValue.innerText = config.contactEmail || 'contact@gasgx.com';
+                renderContactSocialLinks(config);
             },
 
             openMail() {
@@ -356,10 +453,11 @@
                 const img = document.getElementById('modal-qr-img');
                 const fallback = document.getElementById('qr-fallback');
                 const missingText = document.getElementById('missing-filename');
+                const qrType = String(platform || '').trim().toLowerCase();
 
                 // 1. 设置内容
                 modalTitle.innerText = title;
-                const src = QR_ASSETS[platform];
+                const src = QR_ASSETS[qrType] || `assets/qr_${qrType}.png`;
                 img.src = src;
                 missingText.innerText = src;
 

@@ -1024,7 +1024,13 @@
                                 en: {},
                                 ru: {}
                         },
-                        contactEmail: "contact@gasgx.com"
+                        contactEmail: "contact@gasgx.com",
+                        socialLinks: [
+                                { id: "wechat", enabled: true, mode: "qr", qrType: "wechat", iconClass: "fa-brands fa-weixin", ariaLabel: "Open WeChat QR" },
+                                { id: "telegram", enabled: true, mode: "qr", qrType: "telegram", iconClass: "fa-brands fa-telegram", ariaLabel: "Open Telegram QR" },
+                                { id: "twitter", enabled: true, mode: "qr", qrType: "twitter", iconClass: "fa-brands fa-x-twitter", ariaLabel: "Open Twitter QR" },
+                                { id: "whatsapp", enabled: true, mode: "qr", qrType: "whatsapp", iconClass: "fa-brands fa-whatsapp", ariaLabel: "Open WhatsApp QR" }
+                        ]
                 }
         },
         site: {
