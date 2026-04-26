@@ -421,12 +421,49 @@
             // 点击“联系区域团队”的处理函数
             contactRegional() {
                 // 根据当前语言设置邮件主题
-                let subject = "Regional Team Connection"; // Default EN
-                if (this.lang === 'zh') subject = "区域团队对接";
-                if (this.lang === 'ru') subject = "Связь с региональной командой";
+                let subject = "GasGx UI Spec Template - Regional Team Connection"; // Default EN
+                if (this.lang === 'zh') subject = "GasGx UI规范模板 - 区域团队对接";
+                if (this.lang === 'ru') subject = "GasGx UI Spec Template - Regional Team";
+
+                const bodyLines = [
+                    "Hello GasGx team,",
+                    "",
+                    "Please use the GasGx UI specification template below for this regional support request.",
+                    "",
+                    "[GasGx UI Spec Template]",
+                    "1. Page / module:",
+                    "2. Business goal:",
+                    "3. Target user / region:",
+                    "4. Required components:",
+                    "5. Layout notes:",
+                    "6. Data / content fields:",
+                    "7. Interaction states:",
+                    "8. Responsive requirements:",
+                    "9. Accessibility requirements:",
+                    "10. Delivery deadline:",
+                    "",
+                    "[GasGx Visual Rules]",
+                    "- Theme: Cyber-industrial, data-driven, dark-first.",
+                    "- Primary color: #5DD62C aurora green.",
+                    "- Main background: #0F0F0F; card background: #202020.",
+                    "- Primary buttons on aurora green must use dark text for contrast.",
+                    "- Inputs should use dark recessed surfaces with clear borders.",
+                    "- Hover/active states should use subtle green or neutral overlays.",
+                    "- Avoid default blue UI-library hover/active colors.",
+                    "",
+                    "Reference: article_management/styles/gasgx-ui.html",
+                    "",
+                    "Project context:",
+                    "- Company / site:",
+                    "- Contact person:",
+                    "- Phone / WhatsApp / Telegram:",
+                    "- Notes:",
+                    "",
+                    "Thank you."
+                ];
                 
                 // 唤起邮件客户端
-                window.location.href = `mailto:contact@gasgx.com?subject=${encodeURIComponent(subject)}`;
+                window.location.href = `mailto:contact@gasgx.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join('\n'))}`;
             }
         };
 
