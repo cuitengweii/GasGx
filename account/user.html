@@ -427,6 +427,7 @@
             ['id', 'first_name', 'last_name', 'username', 'photo_url', 'auth_date', 'hash'].forEach((key) => {
                 url.searchParams.delete(key);
             });
+            url.hash = '';
             return url.toString();
         }
 
@@ -472,13 +473,27 @@
         async function handleTelegramRedirectParams() {
             const search = new URLSearchParams(window.location.search);
             const telegramKeys = ['id', 'first_name', 'last_name', 'username', 'photo_url', 'auth_date', 'hash'];
-            if (!telegramKeys.every((key) => search.has(key))) return false;
+            let user = null;
 
-            const user = {};
-            telegramKeys.forEach((key) => {
-                const value = search.get(key);
-                if (value) user[key] = value;
-            });
+            if (telegramKeys.every((key) => search.has(key))) {
+                user = {};
+                telegramKeys.forEach((key) => {
+                    const value = search.get(key);
+                    if (value) user[key] = value;
+                });
+            } else {
+                const hashParams = new URLSearchParams(String(window.location.hash || '').replace(/^#/, ''));
+                const authResults = hashParams.getAll('tgAuthResult');
+                const encoded = authResults[authResults.length - 1];
+                if (!encoded) return false;
+                try {
+                    user = JSON.parse(decodeURIComponent(escape(window.atob(encoded))));
+                } catch (_error) {
+                    showToast(getCopy().telegramFailed, 'error');
+                    return true;
+                }
+            }
+
             await window.handleTelegramAuth(user);
             return true;
         }

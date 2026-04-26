@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
         user_metadata: metadata,
         app_metadata: { provider: 'telegram', providers: ['telegram'] },
     });
-    if (createResult.error && !/already registered|already exists|duplicate/i.test(createResult.error.message)) {
+    if (createResult.error && !/already.*registered|already.*exists|duplicate/i.test(createResult.error.message)) {
         return jsonResponse({ error: createResult.error.message }, 500);
     }
 
