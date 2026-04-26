@@ -295,14 +295,24 @@
 
         function setButtonBusy(button, busy) {
             if (!button) return;
+            let spinner = button.querySelector('[data-auth-busy-spinner="true"]');
             if (busy) {
-                if (!button.dataset.originalHtml) button.dataset.originalHtml = button.innerHTML;
                 button.disabled = true;
-                button.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+                button.setAttribute('aria-busy', 'true');
+                if (!spinner) {
+                    spinner = document.createElement('i');
+                    spinner.setAttribute('data-auth-busy-spinner', 'true');
+                    spinner.setAttribute('aria-hidden', 'true');
+                    spinner.className = 'fa-solid fa-circle-notch fa-spin text-gas-green text-sm leading-none';
+                    const label = button.querySelector('span');
+                    if (label) label.insertAdjacentElement('afterend', spinner);
+                    else button.appendChild(spinner);
+                }
                 return;
             }
             button.disabled = false;
-            if (button.dataset.originalHtml) button.innerHTML = button.dataset.originalHtml;
+            button.removeAttribute('aria-busy');
+            if (spinner) spinner.remove();
         }
 
         function saveReturnUrl() {
