@@ -9,9 +9,12 @@
         returnUrlStorageKey: "gx_main_return_url",
         supabaseUrl: "https://mkpcliytqudclkwtewru.supabase.co",
         supabaseKey: "sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw",
+        telegramBotName: "gasgx_bot",
+        telegramAuthUrl: "https://mkpcliytqudclkwtewru.supabase.co/functions/v1/auth-telegram",
         providerRollout: {
             twitter: false,
-            linkedin: false
+            linkedin: false,
+            telegram: false
         }
     });
 
@@ -37,9 +40,12 @@
             returnUrlStorageKey: pickString(source, "returnUrlStorageKey", DEFAULTS.returnUrlStorageKey),
             supabaseUrl: pickString(source, "supabaseUrl", DEFAULTS.supabaseUrl),
             supabaseKey: pickString(source, "supabaseKey", DEFAULTS.supabaseKey),
+            telegramBotName: pickString(source, "telegramBotName", DEFAULTS.telegramBotName),
+            telegramAuthUrl: pickString(source, "telegramAuthUrl", DEFAULTS.telegramAuthUrl),
             providerRollout: {
                 twitter: Boolean(source?.providerRollout?.twitter === true),
-                linkedin: Boolean(source?.providerRollout?.linkedin === true)
+                linkedin: Boolean(source?.providerRollout?.linkedin === true),
+                telegram: Boolean(source?.providerRollout?.telegram === true)
             }
         };
 
@@ -57,7 +63,8 @@
         if (overrides.providerRollout && typeof overrides.providerRollout === "object") {
             resolved.providerRollout = {
                 twitter: Boolean(overrides.providerRollout.twitter === true || resolved.providerRollout.twitter),
-                linkedin: Boolean(overrides.providerRollout.linkedin === true || resolved.providerRollout.linkedin)
+                linkedin: Boolean(overrides.providerRollout.linkedin === true || resolved.providerRollout.linkedin),
+                telegram: Boolean(overrides.providerRollout.telegram === true || resolved.providerRollout.telegram)
             };
         }
 

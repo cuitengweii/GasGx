@@ -1055,9 +1055,12 @@
                         returnUrlStorageKey: "gx_main_return_url",
                         supabaseUrl: "https://mkpcliytqudclkwtewru.supabase.co",
                         supabaseKey: "sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw",
+                        telegramBotName: "gasgx_bot",
+                        telegramAuthUrl: "https://mkpcliytqudclkwtewru.supabase.co/functions/v1/auth-telegram",
                         providerRollout: {
                                 twitter: false,
-                                linkedin: false
+                                linkedin: false,
+                                telegram: true
                         }
                 }
         },

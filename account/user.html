@@ -11,8 +11,8 @@
     <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
     <link rel="stylesheet" href="/shared/ui/loading.shared.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/shared/ui/site-shell.config.js?v=20260321auth02"></script>
-    <script src="/shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
+    <script src="/shared/ui/site-shell.config.js?v=20260426telegram01"></script>
+    <script src="/shared/ui/main-auth.shared.js?v=20260426telegram01"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -136,6 +136,11 @@
                     <i class="fa-brands fa-linkedin"></i>
                     <span>Continue with LinkedIn</span>
                 </button>
+                <button type="button" id="telegram-login-btn" data-busy-label="Connecting..." onclick="toggleTelegramWidget(this)" class="hidden w-full items-center justify-center gap-3 rounded-lg border border-white/10 bg-[#111] px-4 py-3 text-sm font-bold text-white transition-all duration-200 hover:border-gas-green hover:text-gas-green active:scale-95">
+                    <i class="fa-brands fa-telegram"></i>
+                    <span id="telegram-login-text">Continue with Telegram</span>
+                </button>
+                <div id="telegram-widget-container" class="hidden justify-center rounded-lg border border-white/10 bg-[#111] px-3 py-3"></div>
             </div>
 
             <div class="relative mb-6 flex items-center py-2">
@@ -172,20 +177,21 @@
     <div id="ggx-back-to-top-slot"></div>
     <div id="ggx-chatbot-slot"></div>
 
-    <script src="/shared/ui/site-shell.shared.js?v=20260322logout01"></script>
+    <script src="/shared/ui/site-shell.shared.js?v=20260426telegram01"></script>
     <script>
         const HOME_SHELL_SITE_AUTH = window.GASGX_SITE_SHELL_CONFIG?.site?.mainAuth || {};
         const MAIN_AUTH_HELPER = window.GasGxMainAuthShared;
         const MAIN_AUTH_CONFIG = MAIN_AUTH_HELPER.resolveConfig(HOME_SHELL_SITE_AUTH);
         const SIGN_IN_URL = MAIN_AUTH_CONFIG.signInUrl;
         const DEFAULT_HOME_PATH = MAIN_AUTH_CONFIG.accountUrl;
-        const DEFAULT_PROVIDER_FLAGS = { twitter: false, linkedin: false };
+        const DEFAULT_PROVIDER_FLAGS = { twitter: false, linkedin: false, telegram: false };
 
         const gxClient = window.supabase ? MAIN_AUTH_HELPER.createClient(window.supabase, MAIN_AUTH_CONFIG) : null;
 
         let isSignUp = false;
         let redirectScheduled = false;
         let currentLang = 'en';
+        let telegramWidgetLoaded = false;
 
         const AUTH_COPY = {
             en: {
@@ -194,6 +200,7 @@
                 signUpTitle: 'Create Account',
                 signUpSubtitle: 'Create your GasGx account',
                 google: 'Continue with Google',
+                telegram: 'Continue with Telegram',
                 emailDivider: 'Or with Email',
                 emailPlaceholder: 'Email Address',
                 passwordPlaceholder: 'Password',
@@ -213,7 +220,8 @@
                 signupSignedIn: 'Account created and signed in.',
                 loginSuccess: 'Login successful.',
                 supabaseError: 'Supabase SDK Error',
-                authFailed: 'Email auth failed.'
+                authFailed: 'Email auth failed.',
+                telegramFailed: 'Telegram login failed.'
             },
             zh: {
                 signInTitle: '欢迎回来',
@@ -221,6 +229,7 @@
                 signUpTitle: '创建账号',
                 signUpSubtitle: '创建你的 GasGx 账号',
                 google: '使用 Google 继续',
+                telegram: '使用 Telegram 继续',
                 emailDivider: '或使用邮箱',
                 emailPlaceholder: '邮箱地址',
                 passwordPlaceholder: '密码',
@@ -240,7 +249,8 @@
                 signupSignedIn: '账号已创建并登录。',
                 loginSuccess: '登录成功。',
                 supabaseError: 'Supabase 客户端不可用',
-                authFailed: '邮箱认证失败。'
+                authFailed: '邮箱认证失败。',
+                telegramFailed: 'Telegram 登录失败。'
             }
         };
 
@@ -268,6 +278,7 @@
             document.documentElement.setAttribute('lang', currentLang);
             document.title = currentLang === 'zh' ? '登录 - GasGx' : 'Sign In - GasGx';
             document.getElementById('google-login-text').textContent = copy.google;
+            document.getElementById('telegram-login-text').textContent = copy.telegram;
             document.getElementById('email-divider-text').textContent = copy.emailDivider;
             document.getElementById('email').setAttribute('placeholder', copy.emailPlaceholder);
             document.getElementById('password').setAttribute('placeholder', copy.passwordPlaceholder);
@@ -360,7 +371,8 @@
             return {
                 ...DEFAULT_PROVIDER_FLAGS,
                 twitter: configuredFlags.twitter === true,
-                linkedin: configuredFlags.linkedin === true
+                linkedin: configuredFlags.linkedin === true,
+                telegram: configuredFlags.telegram === true
             };
         }
 
@@ -368,14 +380,37 @@
             const wrapper = document.getElementById('extra-social-logins');
             const twitterBtn = document.getElementById('twitter-login-btn');
             const linkedinBtn = document.getElementById('linkedin-login-btn');
+            const telegramBtn = document.getElementById('telegram-login-btn');
             const showTwitter = Boolean(flags.twitter);
             const showLinkedin = Boolean(flags.linkedin);
+            const showTelegram = Boolean(flags.telegram);
 
-            wrapper.classList.toggle('hidden', !showTwitter && !showLinkedin);
+            wrapper.classList.toggle('hidden', !showTwitter && !showLinkedin && !showTelegram);
             twitterBtn.classList.toggle('hidden', !showTwitter);
             twitterBtn.classList.toggle('flex', showTwitter);
             linkedinBtn.classList.toggle('hidden', !showLinkedin);
             linkedinBtn.classList.toggle('flex', showLinkedin);
+            telegramBtn.classList.toggle('hidden', !showTelegram);
+            telegramBtn.classList.toggle('flex', showTelegram);
+            document.getElementById('telegram-widget-container').classList.toggle('hidden', true);
+            if (showTelegram) renderTelegramWidget();
+        }
+
+        function renderTelegramWidget() {
+            const container = document.getElementById('telegram-widget-container');
+            const botName = String(MAIN_AUTH_CONFIG.telegramBotName || 'gasgx_bot').replace(/^@/, '').trim();
+            if (!container || !botName || telegramWidgetLoaded) return;
+
+            const script = document.createElement('script');
+            script.async = true;
+            script.src = 'https://telegram.org/js/telegram-widget.js?22';
+            script.setAttribute('data-telegram-login', botName);
+            script.setAttribute('data-size', 'large');
+            script.setAttribute('data-userpic', 'false');
+            script.setAttribute('data-request-access', 'write');
+            script.setAttribute('data-onauth', 'handleTelegramAuth(user)');
+            container.appendChild(script);
+            telegramWidgetLoaded = true;
         }
 
         function handleCallbackErrors() {
@@ -403,6 +438,38 @@
             } catch (error) {
                 showToast(error.message || `Unable to start ${provider} login.`, 'error');
                 setButtonBusy(button, false);
+            }
+        };
+
+        window.toggleTelegramWidget = function(button) {
+            const container = document.getElementById('telegram-widget-container');
+            if (!container) return;
+            renderTelegramWidget();
+            container.classList.toggle('hidden');
+            container.classList.toggle('flex', !container.classList.contains('hidden'));
+            if (button) button.setAttribute('aria-expanded', String(!container.classList.contains('hidden')));
+        };
+
+        window.handleTelegramAuth = async function(user) {
+            const authUrl = MAIN_AUTH_CONFIG.telegramAuthUrl;
+            if (!authUrl) return showToast(getCopy().telegramFailed, 'error');
+            saveReturnUrl();
+            try {
+                const response = await fetch(authUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user,
+                        redirectTo: getAuthRedirectUrl()
+                    })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.actionLink) {
+                    throw new Error(data.error || getCopy().telegramFailed);
+                }
+                window.location.href = data.actionLink;
+            } catch (error) {
+                showToast(error.message || getCopy().telegramFailed, 'error');
             }
         };
 

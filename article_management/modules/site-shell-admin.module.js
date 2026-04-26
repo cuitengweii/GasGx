@@ -1046,12 +1046,15 @@ function renderGeneralPage() {
                                 ${renderTextField('site.mainAuth.storageKey', '认证缓存键', mainAuth.storageKey, 'gasgx-main-auth')}
                                 ${renderTextField('site.mainAuth.supabaseUrl', '认证 Supabase 地址', mainAuth.supabaseUrl, 'https://mkpcliytqudclkwtewru.supabase.co')}
                                 ${renderTextField('site.mainAuth.supabaseKey', '认证 Supabase 密钥', mainAuth.supabaseKey, 'sb_publishable_...')}
+                                ${renderTextField('site.mainAuth.telegramBotName', 'Telegram Bot 名称', mainAuth.telegramBotName, 'gasgx_bot')}
+                                ${renderTextField('site.mainAuth.telegramAuthUrl', 'Telegram 登录函数地址', mainAuth.telegramAuthUrl, 'https://mkpcliytqudclkwtewru.supabase.co/functions/v1/auth-telegram')}
                             </div>
                             <div class="ams-site-inline-actions">
                                 <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="site.mainAuth.providerRollout.twitter" data-site-input-type="boolean" ${providerRollout.twitter === true ? 'checked' : ''}><span>启用 X 登录按钮</span></label>
                                 <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="site.mainAuth.providerRollout.linkedin" data-site-input-type="boolean" ${providerRollout.linkedin === true ? 'checked' : ''}><span>启用 LinkedIn 登录按钮</span></label>
+                                <label class="ams-social-toggle"><input type="checkbox" data-site-config-path="site.mainAuth.providerRollout.telegram" data-site-input-type="boolean" ${providerRollout.telegram === true ? 'checked' : ''}><span>启用 Telegram 登录按钮</span></label>
                             </div>
-                            <div class="ams-footnote">Google 和邮箱登录默认常开。这里仅控制前台登录页是否显示 X / LinkedIn 按钮；实际 Client ID / Secret 仍需在 Supabase Authentication Providers 中配置。</div>
+                            <div class="ams-footnote">Google 和邮箱登录默认常开。这里仅控制前台登录页是否显示 X / LinkedIn / Telegram 按钮；实际 Client ID / Secret / Bot Token 仍需在 Supabase Authentication Providers 中配置。</div>
                         `)}
                     </div>
                 </article>

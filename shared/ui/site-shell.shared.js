@@ -17,9 +17,12 @@
         returnUrlStorageKey: "gx_main_return_url",
         supabaseUrl: "https://mkpcliytqudclkwtewru.supabase.co",
         supabaseKey: "sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw",
+        telegramBotName: "gasgx_bot",
+        telegramAuthUrl: "https://mkpcliytqudclkwtewru.supabase.co/functions/v1/auth-telegram",
         providerRollout: {
             twitter: false,
-            linkedin: false
+            linkedin: false,
+            telegram: false
         }
     });
     const SITE_SHELL_CONFIG_TABLE = "site_shell_configs";
@@ -2468,9 +2471,12 @@
             returnUrlStorageKey: pickString("returnUrlStorageKey", MAIN_AUTH_DEFAULTS.returnUrlStorageKey),
             supabaseUrl: pickString("supabaseUrl", MAIN_AUTH_DEFAULTS.supabaseUrl),
             supabaseKey: pickString("supabaseKey", MAIN_AUTH_DEFAULTS.supabaseKey),
+            telegramBotName: pickString("telegramBotName", MAIN_AUTH_DEFAULTS.telegramBotName),
+            telegramAuthUrl: pickString("telegramAuthUrl", MAIN_AUTH_DEFAULTS.telegramAuthUrl),
             providerRollout: {
                 twitter: Boolean(sourceConfig.providerRollout && sourceConfig.providerRollout.twitter === true),
-                linkedin: Boolean(sourceConfig.providerRollout && sourceConfig.providerRollout.linkedin === true)
+                linkedin: Boolean(sourceConfig.providerRollout && sourceConfig.providerRollout.linkedin === true),
+                telegram: Boolean(sourceConfig.providerRollout && sourceConfig.providerRollout.telegram === true)
             }
         };
     }
