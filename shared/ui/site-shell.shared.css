@@ -1173,11 +1173,19 @@ button[onclick*="captureAndShare"] {
     top: 4.5rem;
     bottom: clamp(4.5rem, 16vh, 11rem);
     justify-content: flex-end;
+    pointer-events: none;
 }
 
 #ggx-chatbot-slot #ggx-chat-window {
     max-height: calc(100% - 2.75rem);
     min-height: min(560px, 82vh);
+}
+
+#ggx-chatbot-slot #ggx-chat-window,
+#ggx-chatbot-slot #ggx-chat-toggle-btn,
+#ggx-chatbot-slot #ggx-chat-dock-btn,
+#ggx-chatbot-slot #ggx-chat-undock-btn {
+    pointer-events: auto;
 }
 
 #ggx-chatbot-slot #ggx-chat-undock-btn {
