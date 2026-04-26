@@ -297,21 +297,23 @@
             if (!button) return;
             let spinner = button.querySelector('[data-auth-busy-spinner="true"]');
             if (busy) {
-                button.disabled = true;
                 button.setAttribute('aria-busy', 'true');
+                button.setAttribute('aria-disabled', 'true');
+                button.classList.add('pointer-events-none');
                 if (!spinner) {
-                    spinner = document.createElement('i');
+                    spinner = document.createElement('span');
                     spinner.setAttribute('data-auth-busy-spinner', 'true');
                     spinner.setAttribute('aria-hidden', 'true');
-                    spinner.className = 'fa-solid fa-circle-notch fa-spin text-gas-green text-sm leading-none';
+                    spinner.className = 'inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-gas-green border-t-transparent align-[-2px]';
                     const label = button.querySelector('span');
                     if (label) label.insertAdjacentElement('afterend', spinner);
                     else button.appendChild(spinner);
                 }
                 return;
             }
-            button.disabled = false;
             button.removeAttribute('aria-busy');
+            button.removeAttribute('aria-disabled');
+            button.classList.remove('pointer-events-none');
             if (spinner) spinner.remove();
         }
 
