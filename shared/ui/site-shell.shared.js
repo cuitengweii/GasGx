@@ -6,6 +6,7 @@
     }
 
     const DEFAULT_CHAT_API_PATH = "/functions/v1/site-chat";
+    const INITIAL_SITE_SHELL_CONFIG_TIMEOUT_MS = 5000;
     const SUPABASE_SDK_URL = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
     const MAIN_AUTH_DEFAULTS = Object.freeze({
         storageKey: "gasgx-main-auth",
@@ -407,6 +408,44 @@
         }
     };
 
+    const CURRENT_SITE_SHELL_FALLBACK_CONFIG = {
+        navigation: [
+            { title: { en: "GasGx", zh: "\u9996\u9875" }, path: "/index.html", type: "link", icon: "fa-solid fa-house" },
+            { title: { en: "News", zh: "\u65b0\u95fb" }, path: "/news/", type: "menu", icon: "fa-solid fa-newspaper" },
+            { title: { en: "Digitalization", zh: "\u6570\u5b57\u5316" }, path: "/digitalization", type: "menu" },
+            { title: { en: "Tools", zh: "\u5de5\u5177\u7bb1" }, path: "/tools", type: "mega" },
+            { title: { en: "Rankings", zh: "\u6392\u884c\u699c" }, path: "/rankings", type: "mega" },
+            { title: { en: "Products", zh: "\u673a\u578b\u5e93" }, path: "/products", type: "mega" },
+            { title: { en: "Use Cases", zh: "\u5e94\u7528\u573a\u666f" }, path: "/use-cases", type: "mega" },
+            { title: { en: "Resources", zh: "\u8d44\u6599\u4e2d\u5fc3" }, path: "/resources", type: "mega" },
+            { title: { en: "Support", zh: "\u670d\u52a1\u652f\u6301" }, path: "/support", type: "menu" },
+            { title: { en: "About Us", zh: "\u5173\u4e8e\u6211\u4eec" }, path: "/about", type: "menu" }
+        ],
+        sharedText: {
+            en: {
+                tagline: "The World's leading engine for monetizing stranded natural gas computing power",
+                footerTagline: "Making stranded natural gas power generation easier",
+                languageEnglish: "EN",
+                languageChinese: "中文"
+            },
+            zh: {
+                tagline: "\u5168\u7403\u9886\u5148\u7684\u6401\u6d45\u5929\u7136\u6c14\u7b97\u529b\u53d8\u73b0\u5f15\u64ce",
+                footerTagline: "\u8ba9\u6401\u6d45\u5929\u7136\u6c14\u53d1\u7535\u66f4\u7b80\u5355",
+                languageEnglish: "EN",
+                languageChinese: "\u4e2d\u6587"
+            }
+        },
+        site: {
+            brand: {
+                name: "GasGx",
+                homeHref: "/index.html",
+                footerMeta: "The World's leading engine for monetizing stranded natural gas computing power",
+                copyright: "© 2026 GasGx. All rights reserved.",
+                logoAnimationEnabled: false
+            }
+        }
+    };
+
     const BACK_TO_TOP_TEMPLATE = `
 <button id="backToTopBtn" class="fixed bottom-6 right-6 w-10 h-10 rounded-full border border-gas-green bg-gas-green/[0.08] text-white shadow-[0_10px_24px_rgba(0,0,0,0.22),0_0_0_1px_rgba(93,214,44,0.2)] flex items-center justify-center translate-y-20 opacity-0 transition-all duration-300 hover:scale-110 hover:opacity-100 z-[96] cursor-pointer select-none" aria-label="Back to top">
     <i class="fa-solid fa-arrow-up text-gas-green drop-shadow-[0_0_6px_rgba(93,214,44,0.45)]"></i>
@@ -496,7 +535,8 @@
 
     const state = {
         mounted: false,
-        actionBound: false
+        actionBound: false,
+        mountPromise: null
     };
     const authBridgeState = {
         initPromise: null,
@@ -800,15 +840,26 @@
 
     function applySiteShellConfig(config) {
         if (!config || typeof config !== "object") return;
-        window.GASGX_SITE_SHELL_CONFIG = mergeSiteShellConfig(DEFAULT_SITE_SHELL_CONFIG, config);
+        window.GASGX_SITE_SHELL_CONFIG = Object.assign(
+            mergeSiteShellConfig(getSiteShellBaseConfig(), config),
+            { __ggxPublishedSiteShellConfig: true }
+        );
+    }
+
+    function getSiteShellBaseConfig() {
+        return mergeSiteShellConfig(DEFAULT_SITE_SHELL_CONFIG, CURRENT_SITE_SHELL_FALLBACK_CONFIG);
     }
 
     function getSiteShellConfig() {
         const config = window.GASGX_SITE_SHELL_CONFIG;
         if (config && typeof config === "object") {
-            return mergeSiteShellConfig(DEFAULT_SITE_SHELL_CONFIG, config);
+            if (config.__ggxPublishedSiteShellConfig) {
+                return mergeSiteShellConfig(getSiteShellBaseConfig(), config);
+            }
+            const pageLocalConfig = mergeSiteShellConfig(DEFAULT_SITE_SHELL_CONFIG, config);
+            return mergeSiteShellConfig(pageLocalConfig, CURRENT_SITE_SHELL_FALLBACK_CONFIG);
         }
-        return DEFAULT_SITE_SHELL_CONFIG;
+        return getSiteShellBaseConfig();
     }
 
     function getSiteBrandConfig() {
@@ -1115,6 +1166,19 @@
             document.dispatchEvent(new CustomEvent("gasgx:site-shell-config-updated"));
             return config;
         });
+    }
+
+    function applyInitialPublishedSiteShellConfig() {
+        const timeout = new Promise((resolve) => {
+            window.setTimeout(() => resolve(null), INITIAL_SITE_SHELL_CONFIG_TIMEOUT_MS);
+        });
+
+        return Promise.race([fetchPublishedSiteShellConfig(), timeout])
+            .then((config) => {
+                if (config) applySiteShellConfig(config);
+                return config;
+            })
+            .catch(() => null);
     }
 
     function getFooterConfig() {
@@ -3533,7 +3597,7 @@
         wrapper.dataset.ggxBound = "1";
     }
 
-    function mount() {
+    function mountShellNow() {
         if (state.mounted) {
             ensureMainAuthBridge();
             runAppIntegrationHooks();
@@ -3581,6 +3645,27 @@
             syncPublishedSiteShellConfig();
             mountCookieConsentBanner();
         }, 0);
+    }
+
+    function mount() {
+        if (state.mounted) {
+            mountShellNow();
+            return;
+        }
+
+        if (state.mountPromise) {
+            return state.mountPromise;
+        }
+
+        state.mountPromise = applyInitialPublishedSiteShellConfig()
+            .then(() => {
+                mountShellNow();
+            })
+            .finally(() => {
+                state.mountPromise = null;
+            });
+
+        return state.mountPromise;
     }
 
     function ensureFooterOnlySlot(container) {

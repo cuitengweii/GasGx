@@ -815,7 +815,7 @@
             </div>
 
             <!-- 通过包裹 overflow-x-auto 实现复杂桌面 UI 在手机端的平滑滚动展示 -->
-            <div class="w-full overflow-x-auto pb-6">
+            <div class="w-full overflow-x-auto pb-6" data-scada-scroll-wrap>
                 <div class="ui-window min-w-[1120px] h-[700px] flex flex-col shadow-[0_0_60px_rgba(93,214,44,0.1)] border border-white/10 mx-auto">
                     <div class="ui-header justify-between">
                         <div class="flex gap-2">
@@ -1583,10 +1583,19 @@
                 const buttons = Array.from(root.querySelectorAll('[data-scada-tab]'));
                 const panels = Array.from(root.querySelectorAll('[data-scada-panel]'));
                 const contentHost = root.querySelector('[data-scada-content-host]');
+                const scrollWrap = root.closest('[data-scada-scroll-wrap]');
 
                 if (!buttons.length || !panels.length) return;
 
-                const activateTab = function (tabName) {
+                const scrollContentIntoMobileView = function () {
+                    if (!scrollWrap || !contentHost || window.matchMedia('(min-width: 768px)').matches) return;
+                    const wrapRect = scrollWrap.getBoundingClientRect();
+                    const contentRect = contentHost.getBoundingClientRect();
+                    const targetLeft = Math.max(0, scrollWrap.scrollLeft + contentRect.left - wrapRect.left - 12);
+                    scrollWrap.scrollTo({ left: targetLeft, behavior: 'smooth' });
+                };
+
+                const activateTab = function (tabName, options) {
                     buttons.forEach(function (button) {
                         const active = button.dataset.scadaTab === tabName;
                         button.classList.toggle('is-active', active);
@@ -1604,11 +1613,15 @@
                     if (contentHost) {
                         contentHost.scrollTop = 0;
                     }
+
+                    if (options && options.scrollContent) {
+                        scrollContentIntoMobileView();
+                    }
                 };
 
                 buttons.forEach(function (button, index) {
                     button.addEventListener('click', function () {
-                        activateTab(button.dataset.scadaTab);
+                        activateTab(button.dataset.scadaTab, { scrollContent: true });
                     });
 
                     button.addEventListener('keydown', function (event) {

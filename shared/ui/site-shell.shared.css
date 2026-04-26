@@ -854,6 +854,33 @@
 }
 
 @media (max-width: 640px) {
+    #ggx-site-header-slot header > div > div:first-child {
+        flex: 1 1 auto !important;
+        min-width: 0;
+        max-width: calc(100vw - 8.75rem);
+        margin-right: 0.5rem !important;
+    }
+
+    #ggx-site-header-slot #ggx-header-home-link {
+        max-width: 100%;
+    }
+
+    #ggx-site-header-slot #header-tagline {
+        display: block;
+        max-width: 100%;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal !important;
+        font-size: 6px !important;
+        line-height: 1.08 !important;
+        letter-spacing: 0 !important;
+    }
+
+    #ggx-site-header-slot header > div > div:last-child {
+        flex: 0 0 auto;
+        min-width: max-content;
+    }
+
     .ggx-cookie-consent-text {
         font-size: 12px;
     }
