@@ -1149,7 +1149,7 @@
                 navProfile: 'Profile',
                 navSecurity: 'Security',
                 navPreferences: 'Preferences',
-                navSales: 'Sales Pipeline',
+                navSales: 'Order',
                 signOut: 'Sign out',
                 dashboardKicker: 'Overview',
                 dashboardWelcome: 'Welcome,',
@@ -1270,7 +1270,7 @@
                 navProfile: '资料',
                 navSecurity: '安全',
                 navPreferences: '偏好',
-                navSales: '销售流水线',
+                navSales: '订单',
                 signOut: '退出登录',
                 dashboardKicker: '总览',
                 dashboardWelcome: '欢迎，',
@@ -1523,10 +1523,10 @@
                 mobileMenuProfile?.classList.remove('hidden');
                 mobileMenuProfile?.classList.add('flex');
                 if (mobileHeaderLink) {
-                    mobileHeaderLink.href = '#mobile-menu';
-                    mobileHeaderLink.dataset.ggxAction = 'toggle-mobile-menu';
+                    mobileHeaderLink.href = '#account-sidebar';
+                    mobileHeaderLink.dataset.sidebarToggle = 'account';
+                    mobileHeaderLink.removeAttribute('data-ggx-action');
                     mobileHeaderLink.className = 'xl:hidden flex items-center justify-center text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full p-1.5';
-                    mobileHeaderLink.removeAttribute('data-sidebar-toggle');
                     mobileHeaderLink.setAttribute('aria-label', 'Open user menu');
                 }
                 if (mobileHeaderIcon) mobileHeaderIcon.classList.add('hidden');
@@ -1577,9 +1577,26 @@
             const sidebar = document.getElementById('account-sidebar');
             const overlay = document.getElementById('sidebar-overlay');
             if (!sidebar || !overlay || !sidebar.classList.contains('translate-x-full')) return;
+            const mobileMenu = document.getElementById('mobile-menu-container');
+            const mobileMenuIcon = document.querySelector('#mobile-menu-btn i');
+            if (mobileMenu) {
+                mobileMenu.style.transform = 'translateX(100%)';
+                mobileMenu.dataset.ggxOpen = '0';
+            }
+            if (mobileMenuIcon) {
+                mobileMenuIcon.classList.add('fa-bars');
+                mobileMenuIcon.classList.remove('fa-xmark');
+            }
             sidebar.classList.remove('translate-x-full');
             overlay.classList.remove('hidden');
         }
+
+        document.addEventListener('click', (event) => {
+            const sidebarTrigger = event.target.closest('[data-sidebar-toggle="account"]');
+            if (!sidebarTrigger) return;
+            event.preventDefault();
+            openAccountSidebar();
+        });
 
         function setButtonBusy(button, busy) {
             if (!button) return;

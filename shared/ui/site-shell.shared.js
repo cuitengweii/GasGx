@@ -2552,9 +2552,15 @@
 
         if (user) {
             if (els.mobHeaderAuthLink) {
-                els.mobHeaderAuthLink.href = "#mobile-menu";
-                els.mobHeaderAuthLink.dataset.ggxAction = "toggle-mobile-menu";
-                els.mobHeaderAuthLink.removeAttribute("data-sidebar-toggle");
+                if (isAccountPagePath()) {
+                    els.mobHeaderAuthLink.href = "#account-sidebar";
+                    els.mobHeaderAuthLink.dataset.sidebarToggle = "account";
+                    els.mobHeaderAuthLink.removeAttribute("data-ggx-action");
+                } else {
+                    els.mobHeaderAuthLink.href = "#mobile-menu";
+                    els.mobHeaderAuthLink.dataset.ggxAction = "toggle-mobile-menu";
+                    els.mobHeaderAuthLink.removeAttribute("data-sidebar-toggle");
+                }
                 els.mobHeaderAuthLink.className = "xl:hidden flex items-center justify-center text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full p-1.5";
                 els.mobHeaderAuthLink.setAttribute("aria-label", "Open user menu");
             }
@@ -2612,7 +2618,15 @@
             const avatar = resolveMainAuthAvatar(user);
             if (els.accountLink) els.accountLink.href = accountUrl;
             if (els.userAvatar) els.userAvatar.src = avatar;
-            if (els.mobAccountLink) els.mobAccountLink.href = accountUrl;
+            if (els.mobAccountLink) {
+                if (isAccountPagePath()) {
+                    els.mobAccountLink.href = "#account-sidebar";
+                    els.mobAccountLink.dataset.sidebarToggle = "account";
+                } else {
+                    els.mobAccountLink.href = accountUrl;
+                    els.mobAccountLink.removeAttribute("data-sidebar-toggle");
+                }
+            }
             if (els.mobUserAvatar) els.mobUserAvatar.src = avatar;
             if (els.mobUsername) els.mobUsername.textContent = displayName;
             applyMobileHeaderAuthState(user, displayName, authConfig);
