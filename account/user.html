@@ -219,6 +219,7 @@
                 signupConfirm: 'Success! Please check your email to confirm.',
                 signupSignedIn: 'Account created and signed in.',
                 loginSuccess: 'Login successful.',
+                existingAccount: 'This email is already registered. Switched to sign in.',
                 supabaseError: 'Supabase SDK Error',
                 authFailed: 'Email auth failed.',
                 telegramFailed: 'Telegram login failed.'
@@ -248,6 +249,7 @@
                 signupConfirm: '创建成功，请查看邮箱完成确认。',
                 signupSignedIn: '账号已创建并登录。',
                 loginSuccess: '登录成功。',
+                existingAccount: '该邮箱已注册，已切换到登录。',
                 supabaseError: 'Supabase 客户端不可用',
                 authFailed: '邮箱认证失败。',
                 telegramFailed: 'Telegram 登录失败。'
@@ -390,9 +392,10 @@
             twitterBtn.classList.toggle('flex', showTwitter);
             linkedinBtn.classList.toggle('hidden', !showLinkedin);
             linkedinBtn.classList.toggle('flex', showLinkedin);
-            telegramBtn.classList.toggle('hidden', !showTelegram);
-            telegramBtn.classList.toggle('flex', showTelegram);
-            document.getElementById('telegram-widget-container').classList.toggle('hidden', true);
+            telegramBtn.classList.toggle('hidden', true);
+            telegramBtn.classList.toggle('flex', false);
+            document.getElementById('telegram-widget-container').classList.toggle('hidden', !showTelegram);
+            document.getElementById('telegram-widget-container').classList.toggle('flex', showTelegram);
             if (showTelegram) renderTelegramWidget();
         }
 
@@ -445,8 +448,6 @@
             const container = document.getElementById('telegram-widget-container');
             if (!container) return;
             renderTelegramWidget();
-            container.classList.toggle('hidden');
-            container.classList.toggle('flex', !container.classList.contains('hidden'));
             if (button) button.setAttribute('aria-expanded', String(!container.classList.contains('hidden')));
         };
 
@@ -495,7 +496,16 @@
                     ? await gxClient.auth.signUp({ email, password, options: { emailRedirectTo: getAuthRedirectUrl() } })
                     : await gxClient.auth.signInWithPassword({ email, password });
 
-                if (error) throw error;
+                if (error) {
+                    const message = String(error.message || '');
+                    if (isSignUp && /already.*registered|already.*exists|user.*exists/i.test(message)) {
+                        toggleModeState(false);
+                        document.getElementById('confirm-password').value = '';
+                        showToast(getCopy().existingAccount, 'info');
+                        return;
+                    }
+                    throw error;
+                }
 
                 if (isSignUp && !data.session) {
                     showToast(getCopy().signupConfirm);
