@@ -494,9 +494,9 @@
             }))
             .filter((item) => item.body && item.stage_key)
             .sort((left, right) => {
-                const rightTime = new Date(text(right.updated_at || right.created_at)).getTime() || 0;
-                const leftTime = new Date(text(left.updated_at || left.created_at)).getTime() || 0;
-                return rightTime - leftTime;
+                const rightTime = new Date(text(right.created_at || right.updated_at)).getTime() || 0;
+                const leftTime = new Date(text(left.created_at || left.updated_at)).getTime() || 0;
+                return leftTime - rightTime;
             });
     }
 
@@ -1148,7 +1148,7 @@
     }
 
     function communicationTimeValue(entry = {}) {
-        return new Date(text(entry.updated_at || entry.created_at)).getTime() || 0;
+        return new Date(text(entry.created_at || entry.updated_at)).getTime() || 0;
     }
 
     function buildCurrentStageThreads(detail = {}) {
@@ -1171,12 +1171,12 @@
         });
 
         roots.forEach((root) => {
-            root.replies.sort((left, right) => communicationTimeValue(right) - communicationTimeValue(left));
+            root.replies.sort((left, right) => communicationTimeValue(left) - communicationTimeValue(right));
         });
         roots.sort((left, right) => {
             const leftLatest = Math.max(communicationTimeValue(left), ...left.replies.map((item) => communicationTimeValue(item)));
             const rightLatest = Math.max(communicationTimeValue(right), ...right.replies.map((item) => communicationTimeValue(item)));
-            return rightLatest - leftLatest;
+            return leftLatest - rightLatest;
         });
         return roots;
     }
@@ -1282,42 +1282,54 @@
 
     function renderReferenceCommentThread(message = {}) {
         const replies = Array.isArray(message.replies) ? message.replies : [];
+        const actorType = text(message.actor_type);
+        const isSales = actorType === 'sales';
+        const isSystem = actorType === 'system';
+        const rowAlignClass = isSystem ? 'justify-center' : 'justify-start';
+        const rowDirectionClass = isSales ? 'flex-row-reverse' : '';
+        const bubbleToneClass = isSystem
+            ? 'max-w-[88%] bg-amber-950/25 border border-amber-500/20'
+            : (isSales
+                ? 'max-w-[82%] bg-[#12301a] border border-[#39b54a]/25 rounded-tr-md'
+                : 'max-w-[82%] bg-gray-900/80 border border-gray-700 rounded-tl-md');
+        const metaAlignClass = isSales ? 'items-end text-right' : (isSystem ? 'items-center text-center' : 'items-start');
+        const bodyAlignClass = isSales ? 'text-right' : (isSystem ? 'text-center' : 'text-left');
         return `
-            <div class="py-4 flex gap-3 group">
+            <div class="py-3 flex gap-3 group ${rowAlignClass} ${rowDirectionClass}">
                 <div class="flex-shrink-0">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] shadow-sm ${text(message.actor_type) === 'customer' ? 'bg-[#1e4a25] text-[#39b54a] border border-[#39b54a]/30' : 'bg-gray-800 text-gray-300 border border-gray-700'}">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] shadow-sm ${actorType === 'customer' ? 'bg-[#1e4a25] text-[#39b54a] border border-[#39b54a]/30' : 'bg-gray-800 text-gray-300 border border-gray-700'}">
                         ${esc(communicationAvatar(message))}
                     </div>
                 </div>
-                <div class="flex-1 flex flex-col min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
+                <div class="flex flex-col min-w-0 px-3 py-2.5 rounded-2xl shadow-sm ${bubbleToneClass} ${metaAlignClass}">
+                    <div class="flex items-center gap-2 flex-wrap ${isSales ? 'justify-end' : (isSystem ? 'justify-center' : 'justify-start')}">
                         <span class="text-gray-300 text-xs font-medium truncate">${esc(displayActorName(message.actor_label))}</span>
-                        <span class="text-[9px] px-1 py-0.5 rounded-sm flex-shrink-0 leading-none ${text(message.actor_type) === 'customer' ? 'bg-[#39b54a]/20 text-[#39b54a]' : 'bg-gray-800 text-gray-400'}">${esc(communicationActorRole(message))}</span>
+                        <span class="text-[9px] px-1 py-0.5 rounded-sm flex-shrink-0 leading-none ${actorType === 'customer' ? 'bg-[#39b54a]/20 text-[#39b54a]' : 'bg-gray-800 text-gray-400'}">${esc(communicationActorRole(message))}</span>
                     </div>
-                    <div class="text-gray-200 text-sm mt-1 leading-relaxed whitespace-pre-wrap break-words">${esc(message.body)}</div>
-                    <div class="flex items-center gap-3 mt-1.5">
+                    <div class="text-gray-200 text-sm mt-1 leading-relaxed whitespace-pre-wrap break-words ${bodyAlignClass}">${esc(message.body)}</div>
+                    <div class="flex items-center gap-3 mt-1.5 ${isSales ? 'justify-end' : (isSystem ? 'justify-center' : 'justify-start')}">
                         <span class="text-gray-500 text-[10px]">${esc(communicationMeta(message))}</span>
                         <button type="button" data-sales-comment-reply="${esc(message.id)}" class="text-gray-500 text-[11px] font-medium hover:text-gray-200 transition-colors">${esc(tr('commentsReplyAction'))}</button>
                     </div>
                     ${replies.length ? `
                         <div class="mt-3 flex flex-col gap-3">
                             ${replies.map((reply) => `
-                                <div class="flex gap-2">
+                                <div class="flex gap-2 ${text(reply.actor_type) === 'sales' ? 'flex-row-reverse text-right' : ''}">
                                     <div class="flex-shrink-0 mt-0.5">
                                         <div class="w-6 h-6 rounded-full flex items-center justify-center font-bold text-[9px] ${text(reply.actor_type) === 'customer' ? 'bg-[#1e4a25] text-[#39b54a] border border-[#39b54a]/30' : 'bg-gray-800 text-gray-400 border border-gray-700'}">
                                             ${esc(communicationAvatar(reply))}
                                         </div>
                                     </div>
-                                    <div class="flex-1 flex flex-col min-w-0">
-                                        <div class="text-gray-400 text-xs flex items-center flex-wrap gap-1">
+                                    <div class="flex flex-col min-w-0 max-w-[88%] px-2.5 py-2 rounded-xl ${text(reply.actor_type) === 'sales' ? 'items-end bg-[#12301a]/80 border border-[#39b54a]/20 rounded-tr-sm' : 'items-start bg-black/20 border border-white/5 rounded-tl-sm'}">
+                                        <div class="text-gray-400 text-xs flex items-center flex-wrap gap-1 ${text(reply.actor_type) === 'sales' ? 'justify-end' : 'justify-start'}">
                                             <span class="font-medium text-gray-300">${esc(displayActorName(reply.actor_label))}</span>
                                             <span class="text-[8px] px-1 py-[1px] rounded-sm leading-none ${text(reply.actor_type) === 'customer' ? 'bg-[#39b54a]/20 text-[#39b54a]' : 'bg-gray-800 text-gray-500'}">${esc(communicationActorRole(reply))}</span>
                                             ${text(reply.reply_to_id) && text(reply.reply_to_id) !== text(message.id)
                                                 ? `<span class="sales-comment-inline-quote">${esc(quotedReplySnippet(reply.reply_to_actor_label, reply.reply_to_body))}</span>`
                                                 : ''}
                                         </div>
-                                        <div class="text-gray-200 text-sm mt-0.5 leading-relaxed break-words whitespace-pre-wrap">${esc(reply.body)}</div>
-                                        <div class="flex items-center gap-3 mt-1">
+                                        <div class="text-gray-200 text-sm mt-0.5 leading-relaxed break-words whitespace-pre-wrap ${text(reply.actor_type) === 'sales' ? 'text-right' : 'text-left'}">${esc(reply.body)}</div>
+                                        <div class="flex items-center gap-3 mt-1 ${text(reply.actor_type) === 'sales' ? 'justify-end' : 'justify-start'}">
                                             <span class="text-gray-500 text-[10px]">${esc(communicationMeta(reply))}</span>
                                             <button type="button" data-sales-comment-reply="${esc(reply.id)}" class="text-gray-500 text-[10px] font-medium hover:text-gray-200 transition-colors">${esc(tr('commentsReplyAction'))}</button>
                                         </div>
@@ -1342,12 +1354,12 @@
                 <div class="p-3 px-4 border-b border-gray-800/50 bg-[#121212] z-10 flex justify-between items-center gap-3">
                     <div class="flex items-center gap-2 min-w-0">
                         <i class="fa-regular fa-message text-gray-400"></i>
-                        <h3 class="text-sm font-bold text-gray-200 truncate"><span class="text-[#39b54a]">${esc(stageLabel(selectedStage))}</span> ${esc(localeText('沟通记录', 'Comments'))}</h3>
+                        <h3 class="text-sm font-bold text-[#39b54a] truncate">GxChat</h3>
                     </div>
                     <span class="text-[10px] text-gray-500 whitespace-nowrap">${esc(localeText(`${selectedMessages.length} 条互动`, `${selectedMessages.length} interactions`))}</span>
                 </div>
                 <div id="sales-comment-scroll" class="sales-comment-scroll-region p-4 pb-28 sm:pb-24 overflow-y-auto custom-scrollbar">
-                    <div class="divide-y divide-gray-800/50">
+                    <div class="flex flex-col gap-1">
                         ${threads.length
                             ? threads.map((thread) => renderReferenceCommentThread(thread)).join('')
                             : `<div class="flex flex-col items-center justify-center py-10 text-gray-500"><i class="fa-regular fa-message text-3xl opacity-20 mb-2"></i><div class="text-xs">${esc(tr('commentsEmpty'))}</div></div>`}
@@ -1698,7 +1710,12 @@
             commentScrollThumb.style.height = `${thumbHeight}px`;
             commentScrollThumb.style.transform = `translateY(${progress * travel}px)`;
         };
-        syncCommentScrollIndicator();
+        requestAnimationFrame(() => {
+            if (commentScroll) {
+                commentScroll.scrollTop = commentScroll.scrollHeight;
+            }
+            syncCommentScrollIndicator();
+        });
         commentScroll?.addEventListener('scroll', syncCommentScrollIndicator, { passive: true });
         window.addEventListener('resize', syncCommentScrollIndicator);
     }

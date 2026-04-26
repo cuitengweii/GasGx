@@ -1617,20 +1617,6 @@ function salesStageCount(stageKey = '', input = null) {
     return visibleDealsForInput(input).filter((deal) => normalizeDealStageKey(deal.current_stage) === normalizeDealStageKey(stageKey)).length;
 }
 
-function salesStageCustomerCount(stageKey = '', input = null) {
-    const normalizedStage = normalizeDealStageKey(stageKey);
-    if (normalizedStage === 'customer_profile') {
-        return moduleState.customers.filter((customer) => customer.is_active !== false && !customer.is_deleted).length;
-    }
-    const customerIds = new Set(
-        visibleDealsForInput(input)
-            .filter((deal) => normalizeDealStageKey(deal.current_stage) === normalizedStage)
-            .map((deal) => text(deal.customer_id))
-            .filter(Boolean),
-    );
-    return customerIds.size;
-}
-
 function pipelineStageUrl(stageKey = '', deal = null) {
     const stage = dealStageDefinition(stageKey);
     const params = {};
@@ -1738,35 +1724,18 @@ function salesPipelineMarkup(input, options = {}) {
                                 : isDisabled
                                     ? 'is-muted'
                                     : '';
-                    const useCustomerCount = isSalesConsole(input) && text(options.page) === 'quote-customers';
-                    const stageCount = useCustomerCount
-                        ? salesStageCustomerCount(stage.key, input)
-                        : salesStageCount(stage.key, input);
-                    const countUnit = useCustomerCount ? '客' : '条';
+                    const stageCount = salesStageCount(stage.key, input);
                     const badgeLabel = pipelineMode === 'detail' && activeDeal?.id
                         ? dealStageStatusLabel(stageStatus)
                         : isDisabled
                             ? '需销售线'
-                            : `${stageCount} ${countUnit}`;
-                    const description = pipelineMode === 'detail' && activeDeal?.id
-                        ? dealStageStatusLabel(stageStatus)
-                        : stage.key === 'customer_profile'
-                            ? '建档入口'
-                            : '阶段列表';
+                            : `${stageCount} 条`;
                     const body = `
                         <div class="ams-sales-pipeline-stage-head">
                             <span class="ams-customer-pipeline-icon">${esc(index + 1)}</span>
                             <span class="ams-customer-pipeline-badge">${esc(badgeLabel)}</span>
                         </div>
                         <strong>${esc(stage.label)}</strong>
-                        <span>${esc(description)}</span>
-                        <em>${esc(
-                            pipelineMode === 'detail' && activeDeal?.id
-                                ? (text(stageRecord.completed_at)
-                                    ? `完成于 ${fmtDate(stageRecord.completed_at)} · ${stageContactDisplayLabel(stageRecord, activeDeal)}`
-                                    : stageContactDisplayLabel(stageRecord, activeDeal))
-                                : (isDisabled ? '先创建销售线' : (stage.key === 'customer_profile' ? '打开客户档案' : '打开列表'))
-                        )}</em>
                     `;
                     if (isDisabled) {
                         return `<div class="ams-customer-pipeline-node ams-sales-pipeline-stage ${className}">${body}</div>`;
@@ -7288,15 +7257,6 @@ function customerMatchesStageFilter(customerId = '', stageKey = 'customer_profil
     return customerVisibleStageDeals(customerId, input, normalizedStage).length > 0;
 }
 
-function customerStageCounts(customerId = '', input = null, stageScope = 'customer_profile') {
-    const counts = new Map(DEAL_STAGE_DEFINITIONS.map((stage) => [stage.key, 0]));
-    customerVisibleStageDeals(customerId, input, stageScope).forEach((deal) => {
-        const key = normalizeDealStageKey(deal.current_stage);
-        counts.set(key, (counts.get(key) || 0) + 1);
-    });
-    return counts;
-}
-
 function customerPrimaryFlowTarget(customerId = '') {
     const deal = customerActivePipelineDeals(customerId)[0] || customerDeals(customerId)[0] || null;
     if (!deal?.id) return '';
@@ -7417,16 +7377,15 @@ function customerWorkbenchModalMarkup() {
 
 function salesCustomerStageStripMarkup(customerId = '', input = null, stageScope = 'customer_profile') {
     const normalizedScope = normalizeDealStageKey(stageScope || 'customer_profile');
-    const stageCounts = customerStageCounts(customerId, input, normalizedScope);
-    const deal = customerVisibleStageDeals(customerId, input, normalizedScope)[0]
-        || customerVisibleStageDeals(customerId, input)[0]
+    const scopedDeals = customerVisibleStageDeals(customerId, input, normalizedScope);
+    const visibleDeals = scopedDeals.length ? scopedDeals : customerVisibleStageDeals(customerId, input);
+    const deal = visibleDeals[0]
         || customerDeals(customerId)[0]
         || null;
     const dealRecords = deal ? dealCurrentRecords(deal) : [];
     return `
         <div class="ams-sales-customer-stage-strip">
             ${DEAL_STAGE_DEFINITIONS.map((stage) => {
-                const count = stageCounts.get(stage.key) || 0;
                 const stageRecord = deal
                     ? stageRecordByKey(stage.key, dealRecords) || createDealStageRecord({
                         deal_id: deal.id,
@@ -7437,10 +7396,9 @@ function salesCustomerStageStripMarkup(customerId = '', input = null, stageScope
                 const stageStatus = normalizeDealStageStatus(stageRecord.stage_status);
                 const clickable = Boolean(
                     deal?.id
-                    && count > 0
                     && ['completed', 'active', 'blocked'].includes(stageStatus),
                 );
-                const tone = count <= 0
+                const tone = stageStatus === 'pending'
                     ? 'is-muted'
                     : stageStatus === 'completed'
                         ? 'is-completed'
@@ -7448,9 +7406,8 @@ function salesCustomerStageStripMarkup(customerId = '', input = null, stageScope
                             ? 'is-warning'
                             : 'is-active';
                 const body = `
-                    ${count > 0 ? '<span class="ams-sales-customer-stage-pin" aria-hidden="true">📌</span>' : ''}
+                    ${stageStatus !== 'pending' ? '<span class="ams-sales-customer-stage-pin" aria-hidden="true">📌</span>' : ''}
                     <strong>${esc(stage.shortLabel || stage.label)}</strong>
-                    <span>${esc(count)}</span>
                 `;
                 if (!clickable) {
                     return `<div class="ams-sales-customer-stage-chip ${tone}">${body}</div>`;
@@ -7504,8 +7461,8 @@ function renderSalesCustomerArchiveList(input = null) {
                                 </details>
                                 <div class="ams-sales-customer-card-actions">
                                   ${workbenchUrl
-                                    ? `<button class="ams-btn ams-btn-primary" type="button" data-customer-workbench="${esc(customer.id)}">工作台</button>`
-                                    : '<button class="ams-btn ams-btn-primary" type="button" disabled>工作台</button>'}
+                                    ? `<button class="ams-btn ams-btn-primary ams-gxchat-btn" type="button" data-customer-workbench="${esc(customer.id)}"><svg class="ams-gxchat-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 6.5A5.5 5.5 0 0 1 11 1h2a5.5 5.5 0 0 1 5.5 5.5v2A5.5 5.5 0 0 1 13 14h-1.8l-4.1 3.1a.7.7 0 0 1-1.12-.56V14A4.48 4.48 0 0 1 1.5 9.5v-3A5 5 0 0 1 6.5 1.6h.95A6.9 6.9 0 0 0 5.5 6.5Zm3 1.1a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8Zm3.5 0a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8Zm3.5 0a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8Z"/></svg><span>GxChat</span></button>`
+                                    : '<button class="ams-btn ams-btn-primary ams-gxchat-btn" type="button" disabled><svg class="ams-gxchat-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.5 6.5A5.5 5.5 0 0 1 11 1h2a5.5 5.5 0 0 1 5.5 5.5v2A5.5 5.5 0 0 1 13 14h-1.8l-4.1 3.1a.7.7 0 0 1-1.12-.56V14A4.48 4.48 0 0 1 1.5 9.5v-3A5 5 0 0 1 6.5 1.6h.95A6.9 6.9 0 0 0 5.5 6.5Zm3 1.1a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8Zm3.5 0a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8Zm3.5 0a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8Z"/></svg><span>GxChat</span></button>'}
                                   ${customer.is_deleted
                                     ? `<button class="ams-btn ams-btn-muted" type="button" data-customer-restore="${esc(customer.id)}">恢复</button>`
                                     : customer.is_active === false
@@ -9838,6 +9795,16 @@ function bindCustomerEditor(input) {
         void renderQuoteCustomersPage(input);
     });
 
+    document.getElementById('ams-quote-customer-back-list')?.addEventListener('click', () => {
+        moduleState.customerListMode = 'active';
+        moduleState.customerLoadedId = '';
+        moduleState.customerEditor = createCustomerDraft();
+        moduleState.customerEvents = [];
+        moduleState.customerSends = [];
+        moduleState.customerCreateMode = false;
+        void renderQuoteCustomersPage(input);
+    });
+
     document.querySelectorAll('[data-customer-expand-wrap]').forEach((disclosure) => {
         disclosure.addEventListener('toggle', () => {
             const customerId = text(disclosure.dataset.customerExpandWrap);
@@ -11228,6 +11195,7 @@ export async function renderQuoteCustomersPage(input) {
                         <p>客户主档是后台关系视图；报价单内的 <code>customer_snapshot</code> 仍用于保留发布时的业务历史。</p>
                     </div>
                     <div class="ams-row-actions">
+                        ${salesConsole && moduleState.customerCreateMode ? '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-customer-back-list"><i class="fa-solid fa-arrow-left"></i><span>返回列表</span></button>' : ''}
                         <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-save">${salesConsole ? '保存并生成客户需求链接' : '保存客户档案'}</button>
                     </div>
                 </div>
@@ -11255,24 +11223,42 @@ export async function renderQuoteCustomersPage(input) {
         `
         : '';
 
+    const customerEntryMarkup = salesConsole
+        ? `
+            <section class="ams-sales-customer-toolbar">
+                <div class="ams-sales-customer-toolbar-title">
+                    <span>Customer Archive</span>
+                    <strong>客户建档起点</strong>
+                </div>
+                <div class="ams-row-actions">
+                    <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-new"><i class="fa-solid fa-address-book"></i><span>新建客户档案</span></button>
+                    <button class="ams-btn ${listMode === 'archived' ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-archive-entry">${listMode === 'archived' ? '返回主列表' : `归档列表（${archivedCustomerCount()}）`}</button>
+                    <button class="ams-btn ${listMode === 'deleted' ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-delete-entry">${listMode === 'deleted' ? '返回主列表' : `作废列表（${deletedCustomerCount()}）`}</button>
+                </div>
+            </section>
+        `
+        : `
+            <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-instance-hero">
+                <div class="ams-hero-copy">
+                    <p class="ams-eyebrow">Quote Customers</p>
+                    <h2>客户是报价系统里的主业务对象。</h2>
+                    <p class="ams-hero-text">这里按客户聚合相关报价单、访问时间线和分享行为。报价单继续保留自己的客户快照，客户主档则作为后台的长期关系入口。</p>
+                </div>
+                <div class="ams-quick-actions ams-quote-instance-quick-actions">
+                    <button class="ams-quick-link" type="button" id="ams-quote-customer-new">
+                        <div class="ams-quick-link-icon"><i class="fa-solid fa-address-book"></i></div>
+                        <div class="ams-quick-link-body">
+                            <strong>新建客户档案</strong>
+                            <span>先建立长期客户主档，再复用客户名称和邮箱到后续需求与报价流程。</span>
+                        </div>
+                    </button>
+                    ${customerListSwitchActions}
+                </div>
+            </section>
+        `;
+
     renderSalesPageFrame(input, customerPageTitle, customerPageSub, `
-        <section class="ams-card ams-hero-card ams-hero-card-compact ams-quote-instance-hero">
-            <div class="ams-hero-copy">
-                <p class="ams-eyebrow">${salesConsole ? 'Customer Archive' : 'Quote Customers'}</p>
-                <h2>${salesConsole ? '所有销售流程都从客户建档开始。' : '客户是报价系统里的主业务对象。'}</h2>
-                <p class="ams-hero-text">${salesConsole ? '客户档案页只做第一节点的事情：维护客户主档、查看当前客户下的销售流程，并从这里开始新的销售流程。' : '这里按客户聚合相关报价单、访问时间线和分享行为。报价单继续保留自己的客户快照，客户主档则作为后台的长期关系入口。'}</p>
-            </div>
-            <div class="ams-quick-actions ams-quote-instance-quick-actions">
-                <button class="ams-quick-link" type="button" id="ams-quote-customer-new">
-                    <div class="ams-quick-link-icon"><i class="fa-solid fa-address-book"></i></div>
-                    <div class="ams-quick-link-body">
-                        <strong>新建客户档案</strong>
-<span>先建立长期客户主档，再复用客户名称和邮箱到后续需求与报价流程。</span>
-                    </div>
-                </button>
-                ${customerListSwitchActions}
-            </div>
-        </section>
+        ${customerEntryMarkup}
         ${salesConsole ? '' : customerPipelineMarkup(activeCustomerId)}
         ${salesConsole ? salesCustomerEditorMarkup : ''}
         ${showSalesCustomerList ? `
@@ -11340,6 +11326,7 @@ export async function renderQuoteCustomersPage(input) {
         page: 'quote-customers',
         pipelineMode: 'overview',
         hidePageHeader: salesConsole,
+        showPipeline: !salesConsole,
     });
     bindCustomerEditor(input);
     bindSalesPageChrome(input);

@@ -97,6 +97,16 @@
               <select id="target-lang-select" class="bg-black/50 border border-white/10 rounded px-2 py-0.5 text-[10px] font-bold text-lime-400 focus:outline-none cursor-pointer"></select>
             </div>
           </div>
+          <div id="reply-preview" class="hidden mx-2 mb-2 rounded-xl border border-lime-500/20 bg-lime-500/5 px-3 py-2">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <div class="text-[10px] font-black uppercase tracking-widest text-lime-400">引用回复</div>
+                <div id="reply-preview-meta" class="mt-1 text-[10px] font-mono text-white/35"></div>
+                <div id="reply-preview-text" class="mt-1 truncate text-[11px] text-white/70"></div>
+              </div>
+              <button id="reply-preview-cancel" type="button" class="rounded-full border border-white/10 px-2 py-1 text-[10px] font-bold text-white/45 transition-colors hover:text-white">取消</button>
+            </div>
+          </div>
 
           <textarea id="input-text" placeholder="输入消息内容..." class="w-full bg-transparent p-3 text-sm text-white focus:outline-none resize-none min-h-[60px] lg:min-h-[70px]"></textarea>
           <div class="flex justify-end gap-3 p-2">
@@ -263,6 +273,9 @@
       nodeSearch: '',
       loading: true,
       error: '',
+      replyTo: null,
+      messageTranslations: {},
+      translatingMessageId: '',
     };
 
     let activeNode = 'requirement_capture';
@@ -283,8 +296,35 @@
     function stageIndex(stageKey = '') { return Math.max(0, STAGES.findIndex((item) => item.key === stageKey)); }
     function fmtTime(value = '') {
       const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return '--:--';
-      return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+      if (Number.isNaN(date.getTime())) return '---- -- -- --:--';
+      return [
+        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
+        `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`,
+      ].join(' ');
+    }
+    function mapCommunicationMessage(item, fallbackStage = '') {
+      return {
+        id: text(item.id),
+        role: item.actor_type === 'customer' ? 'customer' : 'sales',
+        name: text(item.actor_label, item.actor_type === 'customer' ? '客户' : '销售'),
+        time: fmtTime(item.created_at),
+        content: text(item.body),
+        translation: '',
+        stageKey: text(item.stage_key, fallbackStage),
+        replyTo: text(item.reply_to_id) ? {
+          id: text(item.reply_to_id),
+          name: text(item.reply_to_actor_label, '上一条沟通'),
+          time: '',
+          content: text(item.reply_to_body, ''),
+          stageKey: text(item.reply_to_stage_key || item.stage_key || fallbackStage),
+        } : null,
+      };
+    }
+    function salesActorLabel(user = null) {
+      return text(user?.email || user?.user_metadata?.email || user?.user_metadata?.name, 'sales');
+    }
+    function languageLabel(code = '') {
+      return LANGUAGES.find((item) => item.code === code)?.label || code || '目标语言';
     }
     function readParams() {
       const url = new URL(window.location.href);
@@ -402,20 +442,103 @@
       }
       node.innerHTML = rows.map((msg) => {
         const isSales = msg.role === 'sales';
+        const translationText = text(state.messageTranslations[msg.id]);
+        const isTranslating = state.translatingMessageId === msg.id;
+        const quoted = msg.replyTo
+          ? `
+              <div class="mb-2 rounded-xl border ${isSales ? 'border-black/10 bg-black/10 text-black/70' : 'border-white/10 bg-white/[0.03] text-white/65'} px-3 py-2 text-left">
+                <div class="text-[9px] font-mono uppercase tracking-widest ${isSales ? 'text-black/45' : 'text-white/35'}">${esc(msg.replyTo.name)} · ${esc(msg.replyTo.time)}</div>
+                <div class="mt-1 line-clamp-2 text-[11px] leading-relaxed">${esc(msg.replyTo.content)}</div>
+              </div>
+            `
+          : '';
         return `
-          <div class="flex gap-3 lg:gap-4 ${isSales ? 'flex-row-reverse' : 'flex-row'}">
+          <div class="group flex gap-3 lg:gap-4 ${isSales ? 'flex-row-reverse' : 'flex-row'}">
             <div class="w-8 h-8 lg:w-9 lg:h-9 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs ${isSales ? 'bg-lime-500 text-black' : 'bg-zinc-800 text-white/60 border border-white/10'}">${esc(msg.name.charAt(0).toUpperCase())}</div>
             <div class="flex flex-col gap-2 max-w-[85%] lg:max-w-[75%] ${isSales ? 'items-end text-right' : 'items-start text-left'}">
-              <div class="flex items-center gap-2 px-1 text-[9px] lg:text-[10px] font-mono text-white/30 tracking-tight">${esc(msg.name)} · ${esc(msg.time)}</div>
+              <div class="flex items-center gap-2 px-1 text-[9px] lg:text-[10px] font-mono text-white/30 tracking-tight">
+                <span>${esc(msg.name)} · ${esc(msg.time)}</span>
+                <button type="button" data-reply-message="${esc(msg.id)}" class="rounded-full border border-white/10 px-2 py-0.5 text-[9px] font-bold text-white/35 opacity-0 transition-all hover:text-lime-400 group-hover:opacity-100">引用</button>
+              </div>
               <div class="p-3 lg:p-4 rounded-2xl text-[13px] leading-relaxed shadow-xl ${isSales ? 'bg-lime-500 text-black rounded-tr-none font-medium' : 'bg-zinc-900 border border-white/10 text-white/80 rounded-tl-none'}">
-                ${msg.translation ? `<div class="mb-2 pb-2 border-b ${isSales ? 'border-black/10' : 'border-white/5'} font-bold italic">${esc(msg.translation)}</div>` : ''}
+                ${quoted}
                 <div>${esc(msg.content)}</div>
+                ${translationText ? `<div class="mt-2 border-t ${isSales ? 'border-black/10 text-black/75' : 'border-white/5 text-lime-300'} pt-2 text-[12px] leading-relaxed">${esc(translationText)}</div>` : ''}
+                <div class="mt-2 flex ${isSales ? 'justify-end' : 'justify-start'}">
+                  <button type="button" data-translate-message="${esc(msg.id)}" class="rounded-full border ${isSales ? 'border-black/15 text-black/55 hover:text-black' : 'border-white/10 text-white/35 hover:text-lime-400'} px-2 py-0.5 text-[9px] font-bold transition-colors" ${isTranslating ? 'disabled' : ''}>
+                    ${esc(isTranslating ? '翻译中...' : `翻译为${languageLabel(targetLang)}`)}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         `;
       }).join('');
+      node.querySelectorAll('[data-reply-message]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const target = state.messages.find((item) => item.id === button.dataset.replyMessage);
+          if (!target) return;
+          state.replyTo = {
+            id: target.id,
+            name: target.name,
+            time: target.time,
+            content: text(target.translation || target.content),
+            stageKey: target.stageKey,
+          };
+          renderReplyPreview();
+          byId('input-text')?.focus();
+        });
+      });
+      node.querySelectorAll('[data-translate-message]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const target = state.messages.find((item) => item.id === button.dataset.translateMessage);
+          if (!target) return;
+          state.translatingMessageId = target.id;
+          renderMessages();
+          try {
+            state.messageTranslations[target.id] = await translateText(target.content, targetLang);
+          } catch (_error) {
+            window.alert('翻译失败，请稍后重试。');
+          } finally {
+            state.translatingMessageId = '';
+            renderMessages();
+          }
+        });
+      });
       scrollToBottom();
+    }
+
+    function renderReplyPreview() {
+      const panel = byId('reply-preview');
+      if (!state.replyTo || text(state.replyTo.stageKey) !== activeNode) {
+        state.replyTo = null;
+        panel.classList.add('hidden');
+        byId('reply-preview-meta').textContent = '';
+        byId('reply-preview-text').textContent = '';
+        return;
+      }
+      byId('reply-preview-meta').textContent = `${text(state.replyTo.name, '--')} · ${text(state.replyTo.time, '--:--')}`;
+      byId('reply-preview-text').textContent = text(state.replyTo.content, '--');
+      panel.classList.remove('hidden');
+    }
+
+    async function refreshLatestMessages() {
+      if (!state.deal?.id) return;
+      const { data, error } = await client
+        .from('quote_stage_communications')
+        .select('*')
+        .eq('deal_id', state.deal.id)
+        .eq('visibility', 'public')
+        .order('created_at', { ascending: true })
+        .limit(200);
+      if (error) throw error;
+      const localMessages = state.messages.filter((item) => text(item.id).startsWith('local-'));
+      state.messages = [
+        ...(Array.isArray(data) ? data : []).map((item) => mapCommunicationMessage(item, text(state.deal?.current_stage, activeNode))),
+        ...localMessages,
+      ];
+      renderMessages();
+      renderReplyPreview();
     }
 
     function renderActivities() {
@@ -451,6 +574,8 @@
       select.innerHTML = LANGUAGES.map((item) => `<option value="${item.code}" ${item.code === targetLang ? 'selected' : ''}>${item.label}</option>`).join('');
       select.addEventListener('change', (event) => {
         targetLang = event.target.value;
+        state.messageTranslations = {};
+        renderMessages();
       });
     }
 
@@ -476,10 +601,14 @@
       activeNode = stageKey;
       state.flowUrl = buildFlowUrl(stageKey);
       syncUrlStage(stageKey);
+      if (text(state.replyTo?.stageKey) && text(state.replyTo?.stageKey) !== stageKey) {
+        state.replyTo = null;
+      }
       if (window.innerWidth < 1024) toggleLeftSidebar(false);
       renderNodes();
       renderMessages();
       renderMeta();
+      renderReplyPreview();
     };
 
     async function translateText(content, target) {
@@ -509,6 +638,7 @@
       const inputEl = byId('input-text');
       const inputText = inputEl.value;
       if (!inputText.trim()) return;
+      if (!state.customer?.id || !state.deal?.id) return;
 
       const sendBtn = byId('send-translate-btn');
       const translatingIndicator = byId('translating-indicator');
@@ -525,7 +655,12 @@
         try {
           finalTranslation = await translateText(inputText, targetLang);
         } catch (_error) {
-          finalTranslation = '[翻译失败]';
+          window.alert('翻译失败，请稍后重试。');
+          sendBtn.disabled = false;
+          translatingIndicator.classList.add('hidden');
+          iconLang.classList.remove('hidden');
+          iconLoad.classList.add('hidden');
+          return;
         }
         sendBtn.disabled = false;
         translatingIndicator.classList.add('hidden');
@@ -533,18 +668,34 @@
         iconLoad.classList.add('hidden');
       }
 
-      const now = new Date();
-      state.messages.push({
-        id: `local-${Date.now()}`,
-        role: 'sales',
-        name: 'sales',
-        time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
-        content: inputText,
-        translation: finalTranslation,
-        stageKey: activeNode,
-      });
-      inputEl.value = '';
-      renderMessages();
+      try {
+        const { data: authData } = await client.auth.getUser();
+        const user = authData?.user || null;
+        const body = finalTranslation || inputText;
+        const { error } = await client
+          .from('quote_stage_communications')
+          .insert({
+            customer_id: state.customer.id,
+            deal_id: state.deal.id,
+            stage_key: activeNode,
+            requirement_id: text(state.requirement?.id) || null,
+            instance_id: text(state.instance?.id) || null,
+            reply_to_id: text(state.replyTo?.id) || null,
+            actor_type: 'sales',
+            actor_id: text(user?.id) || null,
+            actor_label: salesActorLabel(user),
+            body,
+            visibility: 'public',
+          });
+        if (error) throw error;
+        state.replyTo = null;
+        inputEl.value = '';
+        await refreshLatestMessages();
+      } catch (error) {
+        window.alert(error?.message || '发送沟通记录失败，请稍后重试。');
+      } finally {
+        renderReplyPreview();
+      }
     };
 
     byId('input-text').addEventListener('keydown', (event) => {
@@ -683,9 +834,11 @@
             .order('occurred_at', { ascending: false })
             .limit(80),
           client.from('quote_stage_communications')
-            .select('id, stage_key, actor_type, actor_label, body, created_at')
+            .select('*')
             .eq('deal_id', deal.id)
-            .order('created_at', { ascending: true }),
+            .eq('visibility', 'public')
+            .order('created_at', { ascending: true })
+            .limit(200),
           client.from('quote_requirements')
             .select('id, deal_id, title, status, country, requester_company, requester_name, requester_email, requester_phone, public_slug, public_token, updated_at')
             .eq('deal_id', deal.id)
@@ -717,15 +870,8 @@
           detail: text(item.detail_json?.summary || item.activity_type, '--'),
           isImportant: ['status_change', 'stage_advanced', 'quote_generated'].includes(text(item.activity_type)),
         }));
-        state.messages = (Array.isArray(communicationRows.data) ? communicationRows.data : []).map((item) => ({
-          id: item.id,
-          role: item.actor_type === 'customer' ? 'customer' : 'sales',
-          name: text(item.actor_label, item.actor_type === 'customer' ? '客户' : '销售'),
-          time: fmtTime(item.created_at),
-          content: text(item.body),
-          translation: '',
-          stageKey: text(item.stage_key, deal.current_stage),
-        }));
+        state.messages = (Array.isArray(communicationRows.data) ? communicationRows.data : [])
+          .map((item) => mapCommunicationMessage(item, deal.current_stage));
         activeNode = STAGE_LABELS[params.stageKey] ? params.stageKey : text(deal.current_stage, 'requirement_capture');
         state.flowUrl = buildFlowUrl(activeNode);
         state.currentPublicUrl = requirementUrl() || quoteUrl() || state.flowUrl;
@@ -737,6 +883,7 @@
         renderMessages();
         renderActivities();
         renderMeta();
+        renderReplyPreview();
         lucide.createIcons();
       }
     }
@@ -758,10 +905,20 @@
           window.open(value, '_blank', 'noopener');
         }
       });
+      byId('reply-preview-cancel').addEventListener('click', () => {
+        state.replyTo = null;
+        renderReplyPreview();
+      });
+      window.setInterval(() => {
+        if (!state.loading && state.deal?.id) {
+          refreshLatestMessages().catch(() => {});
+        }
+      }, 15000);
       renderNodes();
       renderMessages();
       renderActivities();
       renderLanguageSelect();
+      renderReplyPreview();
       lucide.createIcons();
       void loadWorkbenchData();
     });

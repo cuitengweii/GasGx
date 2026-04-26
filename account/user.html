@@ -254,6 +254,18 @@
             }
         };
 
+        Object.assign(AUTH_COPY.en, {
+            requiredField: 'Please fill out this field.',
+            invalidEmail: 'Please include an "@" in the email address.',
+            passwordTooShort: 'Please lengthen this text to 6 characters or more.'
+        });
+
+        Object.assign(AUTH_COPY.zh, {
+            requiredField: '\u8bf7\u586b\u5199\u6b64\u5b57\u6bb5\u3002',
+            invalidEmail: '\u8bf7\u5728\u7535\u5b50\u90ae\u4ef6\u5730\u5740\u4e2d\u5305\u542b\u201c@\u201d\u3002',
+            passwordTooShort: '\u8bf7\u5c06\u6b64\u6587\u672c\u52a0\u957f\u5230 6 \u4e2a\u5b57\u7b26\u6216\u66f4\u591a\u3002'
+        });
+
         function normalizeLang(lang) {
             return String(lang || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
         }
@@ -286,7 +298,43 @@
             document.getElementById('google-login-btn').dataset.busyLabel = copy.connecting;
             document.getElementById('submit-btn').dataset.busyLabel = copy.processing;
             document.getElementById('loading-text').textContent = copy.verifying;
+            updateAuthValidationMessages();
             toggleModeState(isSignUp);
+        }
+
+        function getAuthValidationInputs() {
+            return ['email', 'password', 'confirm-password']
+                .map((id) => document.getElementById(id))
+                .filter(Boolean);
+        }
+
+        function getLocalizedValidityMessage(input) {
+            const copy = getCopy();
+            if (input.validity.valueMissing) return copy.requiredField;
+            if (input.validity.typeMismatch && input.type === 'email') return copy.invalidEmail;
+            if (input.validity.tooShort) return copy.passwordTooShort;
+            return '';
+        }
+
+        function updateInputValidityMessage(input) {
+            input.setCustomValidity('');
+            if (!input.validity.valid) {
+                input.setCustomValidity(getLocalizedValidityMessage(input));
+            }
+        }
+
+        function updateAuthValidationMessages() {
+            getAuthValidationInputs().forEach((input) => {
+                if (!input.validationMessage) return;
+                updateInputValidityMessage(input);
+            });
+        }
+
+        function bindAuthValidationMessages() {
+            getAuthValidationInputs().forEach((input) => {
+                input.addEventListener('invalid', () => updateInputValidityMessage(input));
+                input.addEventListener('input', () => input.setCustomValidity(''));
+            });
         }
 
         function getAuthRedirectUrl() {
@@ -594,6 +642,7 @@
         };
 
         applyAuthText();
+        bindAuthValidationMessages();
         setTimeout(applyAuthText, 250);
         setTimeout(applyAuthText, 900);
         document.addEventListener('gasgx:lang-changed', applyAuthText);

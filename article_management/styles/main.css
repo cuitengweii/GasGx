@@ -4148,6 +4148,7 @@ textarea {
     overflow: hidden;
     width: 100%;
     min-width: 0;
+    padding: 0;
     border: 1px solid rgba(101, 219, 53, 0.16);
     background:
         linear-gradient(180deg, rgba(16, 18, 16, 0.94), rgba(10, 12, 10, 0.96)),
@@ -4159,49 +4160,68 @@ textarea {
 .ams-sales-pipeline-summary {
     display: flex;
     align-items: center;
-    min-height: 30px;
-    padding: 6px 14px 4px;
+    min-height: 28px;
+    padding: 7px 24px 5px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     min-width: 0;
 }
 
 .ams-sales-pipeline-track {
     display: grid;
-    grid-template-columns: repeat(13, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+    gap: 6px;
     overflow-x: hidden;
     overflow-y: hidden;
-    padding: 8px 14px 10px;
+    padding: 8px 24px 10px;
     max-width: 100%;
     min-width: 0;
     scrollbar-width: none;
 }
 
 .ams-sales-pipeline-stage {
-    min-height: 108px;
+    min-height: 36px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    padding: 7px 9px;
+    border-radius: 999px;
 }
 
 .ams-sales-pipeline-track .ams-sales-pipeline-stage:not(:last-child)::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    right: -14px;
-    width: 22px;
-    height: 10px;
-    transform: translateY(-50%);
-    background:
-        linear-gradient(90deg, rgba(255, 191, 72, 0.28), rgba(255, 191, 72, 0.92));
-    clip-path: polygon(0 42%, 70% 42%, 70% 0, 100% 50%, 70% 100%, 70% 58%, 0 58%);
-    filter: drop-shadow(0 0 10px rgba(255, 191, 72, 0.34));
-    pointer-events: none;
-    z-index: 3;
+    display: none;
 }
 
 .ams-sales-pipeline-stage-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: flex-start;
+    gap: 4px;
+    min-width: 0;
+    flex: 0 0 auto;
+}
+
+.ams-sales-pipeline .ams-customer-pipeline-node strong {
+    display: block;
+    min-width: 0;
+    text-align: left;
+    font-size: 11px;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ams-sales-pipeline .ams-customer-pipeline-icon {
+    flex: 0 0 auto;
+}
+
+.ams-sales-pipeline .ams-customer-pipeline-badge {
+    min-width: 0;
+    max-width: 34px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .ams-sales-pipeline-stage.is-overview-filter {
@@ -4223,8 +4243,42 @@ textarea {
 
 @media (max-width: 1560px) {
     .ams-sales-pipeline-track {
-        grid-template-columns: repeat(13, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     }
+}
+
+.ams-sales-customer-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    padding: 8px 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(101, 219, 53, 0.14);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ams-sales-customer-toolbar-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.ams-sales-customer-toolbar-title span {
+    color: #5dd62c;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.ams-sales-customer-toolbar-title strong {
+    color: #fff;
+    font-size: 13px;
+    white-space: nowrap;
 }
 
 .ams-confirm-dialog[hidden] {
@@ -4302,6 +4356,10 @@ textarea {
 
 .ams-sales-customer-archive-panel {
     width: 100%;
+}
+
+.ams-sales-customer-archive-panel > .ams-field {
+    margin-bottom: 16px;
 }
 
 .ams-sales-customer-archive-list {
@@ -4422,6 +4480,25 @@ textarea {
     padding-inline: 12px;
 }
 
+.ams-sales-customer-card-actions .ams-gxchat-btn {
+    gap: 6px;
+    min-height: 34px;
+    padding-inline: 12px;
+    border: 1px solid rgba(147, 255, 83, 0.72);
+    background: linear-gradient(135deg, #8cff4f, #4fd82b);
+    box-shadow: 0 0 0 1px rgba(147, 255, 83, 0.16), 0 0 12px rgba(93, 214, 44, 0.22);
+    font-size: 12px;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.ams-gxchat-icon {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
+    fill: currentColor;
+}
+
 .ams-sales-customer-card-meta {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4470,20 +4547,20 @@ textarea {
 
 .ams-sales-customer-stage-strip {
     display: grid;
-    grid-template-columns: repeat(13, minmax(78px, 1fr));
+    grid-template-columns: repeat(13, minmax(0, 1fr));
     gap: 8px;
-    overflow-x: auto;
+    overflow-x: hidden;
     padding-bottom: 4px;
 }
 
 .ams-sales-customer-stage-chip {
     position: relative;
     display: flex;
-    min-height: 56px;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 6px;
-    padding: 10px 10px 9px;
+    min-height: 48px;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 8px;
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.07);
     background: rgba(255, 255, 255, 0.02);
@@ -4512,7 +4589,9 @@ textarea {
 .ams-sales-customer-stage-chip strong {
     color: #d7d7d7;
     font-size: 11px;
-    line-height: 1.25;
+    line-height: 1.2;
+    text-align: center;
+    overflow-wrap: anywhere;
 }
 
 .ams-sales-customer-stage-chip span {
@@ -4590,7 +4669,7 @@ textarea {
     }
 
     .ams-sales-customer-stage-strip {
-        grid-template-columns: repeat(13, minmax(74px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
     }
 }
 
