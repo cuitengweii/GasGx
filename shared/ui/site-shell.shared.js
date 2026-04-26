@@ -1898,13 +1898,30 @@
         document.body.style.overflow = isOpen ? "" : "hidden";
     }
 
+    function closeMobileMenuFallback() {
+        const menu = document.getElementById("mobile-menu-container");
+        if (!menu) return;
+
+        menu.style.transform = "translateX(100%)";
+        menu.dataset.ggxOpen = "0";
+
+        const icon = document.querySelector("#mobile-menu-btn i");
+        if (icon) {
+            icon.classList.add("fa-bars");
+            icon.classList.remove("fa-xmark");
+        }
+
+        document.body.style.overflow = "";
+    }
+
     function toggleAccordionById(contentId, iconSelector, options) {
         if (!contentId) return;
 
         const content = document.getElementById(contentId);
         if (!content) return;
 
-        const isOpen = content.style.maxHeight && content.style.maxHeight !== "0px";
+        const isOpen = content.classList.contains("is-open") || (content.style.maxHeight && content.style.maxHeight !== "0px");
+        content.classList.toggle("is-open", !isOpen);
         content.style.maxHeight = isOpen ? "0px" : content.scrollHeight + "px";
 
         const trigger = document.querySelector(`[data-ggx-target="${contentId}"]`);
@@ -2906,6 +2923,11 @@
                 closeLangMenu();
             }
 
+            const mobileNavLink = event.target.closest("#mobile-menu-container a[href]");
+            if (mobileNavLink) {
+                closeMobileMenuFallback();
+            }
+
             const trigger = event.target.closest("[data-ggx-action]");
             if (!trigger) return;
 
@@ -3597,6 +3619,57 @@
         wrapper.dataset.ggxBound = "1";
     }
 
+    function shouldShowMobilePageLoader() {
+        if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+            return false;
+        }
+        return window.matchMedia("(max-width: 767px)").matches;
+    }
+
+    function ensureMobilePageLoader() {
+        if (!shouldShowMobilePageLoader() || !shouldAutoMountShell()) {
+            return null;
+        }
+
+        let loader = document.getElementById("ggx-mobile-page-loader");
+        if (!loader) {
+            loader = document.createElement("div");
+            loader.id = "ggx-mobile-page-loader";
+            loader.setAttribute("role", "status");
+            loader.setAttribute("aria-live", "polite");
+            loader.innerHTML = '<div class="ggx-mobile-page-loader-spinner" aria-hidden="true"></div><span class="ggx-mobile-page-loader-text">Loading...</span>';
+            document.body.appendChild(loader);
+        }
+        loader.dataset.ggxVisible = "1";
+        return loader;
+    }
+
+    function hideMobilePageLoader() {
+        const loader = document.getElementById("ggx-mobile-page-loader");
+        if (!loader) return;
+        loader.dataset.ggxVisible = "0";
+        window.setTimeout(function () {
+            if (loader.dataset.ggxVisible === "0") {
+                loader.remove();
+            }
+        }, 240);
+    }
+
+    function bindMobilePageLoaderLifecycle() {
+        const loader = ensureMobilePageLoader();
+        if (!loader || loader.dataset.ggxLifecycleBound === "1") {
+            return;
+        }
+
+        loader.dataset.ggxLifecycleBound = "1";
+        if (document.readyState === "complete") {
+            window.requestAnimationFrame(hideMobilePageLoader);
+        } else {
+            window.addEventListener("load", hideMobilePageLoader, { once: true });
+            window.setTimeout(hideMobilePageLoader, 8000);
+        }
+    }
+
     function mountShellNow() {
         if (state.mounted) {
             ensureMainAuthBridge();
@@ -3750,12 +3823,14 @@
 
     if (document.readyState === "loading") {
         if (shouldAutoMountShell()) {
+            bindMobilePageLoaderLifecycle();
             mount();
         } else {
             mountCookieConsentBanner();
         }
         document.addEventListener("DOMContentLoaded", function () {
             if (shouldAutoMountShell()) {
+                bindMobilePageLoaderLifecycle();
                 mount();
             } else {
                 mountCookieConsentBanner();
@@ -3763,6 +3838,7 @@
         }, { once: true });
     } else {
         if (shouldAutoMountShell()) {
+            bindMobilePageLoaderLifecycle();
             mount();
         } else {
             mountCookieConsentBanner();
