@@ -136,11 +136,10 @@
                     <i class="fa-brands fa-linkedin"></i>
                     <span>Continue with LinkedIn</span>
                 </button>
-                <button type="button" id="telegram-login-btn" data-busy-label="Connecting..." onclick="toggleTelegramWidget(this)" class="hidden w-full items-center justify-center gap-3 rounded-lg border border-white/10 bg-[#111] px-4 py-3 text-sm font-bold text-white transition-all duration-200 hover:border-gas-green hover:text-gas-green active:scale-95">
-                    <i class="fa-brands fa-telegram"></i>
-                    <span id="telegram-login-text">Continue with Telegram</span>
+                <button type="button" id="telegram-login-btn" data-busy-label="Connecting..." onclick="handleTelegramLogin(this)" class="hidden w-full items-center justify-center gap-3 rounded-lg bg-white px-4 py-3 font-bold text-black transition-all duration-200 hover:bg-gray-200 active:scale-95">
+                    <i class="fa-brands fa-telegram flex h-5 w-5 items-center justify-center text-[20px] leading-none text-[#229ED9]"></i>
+                    <span id="telegram-login-text" class="text-sm font-sans">Continue with Telegram</span>
                 </button>
-                <div id="telegram-widget-container" class="hidden justify-center rounded-lg border border-white/10 bg-[#111] px-3 py-3"></div>
             </div>
 
             <div class="relative mb-6 flex items-center py-2">
@@ -191,7 +190,6 @@
         let isSignUp = false;
         let redirectScheduled = false;
         let currentLang = 'en';
-        let telegramWidgetLoaded = false;
 
         const AUTH_COPY = {
             en: {
@@ -392,28 +390,8 @@
             twitterBtn.classList.toggle('flex', showTwitter);
             linkedinBtn.classList.toggle('hidden', !showLinkedin);
             linkedinBtn.classList.toggle('flex', showLinkedin);
-            telegramBtn.classList.toggle('hidden', true);
-            telegramBtn.classList.toggle('flex', false);
-            document.getElementById('telegram-widget-container').classList.toggle('hidden', !showTelegram);
-            document.getElementById('telegram-widget-container').classList.toggle('flex', showTelegram);
-            if (showTelegram) renderTelegramWidget();
-        }
-
-        function renderTelegramWidget() {
-            const container = document.getElementById('telegram-widget-container');
-            const botName = String(MAIN_AUTH_CONFIG.telegramBotName || 'gasgx_bot').replace(/^@/, '').trim();
-            if (!container || !botName || telegramWidgetLoaded) return;
-
-            const script = document.createElement('script');
-            script.async = true;
-            script.src = 'https://telegram.org/js/telegram-widget.js?22';
-            script.setAttribute('data-telegram-login', botName);
-            script.setAttribute('data-size', 'large');
-            script.setAttribute('data-userpic', 'false');
-            script.setAttribute('data-request-access', 'write');
-            script.setAttribute('data-onauth', 'handleTelegramAuth(user)');
-            container.appendChild(script);
-            telegramWidgetLoaded = true;
+            telegramBtn.classList.toggle('hidden', !showTelegram);
+            telegramBtn.classList.toggle('flex', showTelegram);
         }
 
         function handleCallbackErrors() {
@@ -444,11 +422,28 @@
             }
         };
 
-        window.toggleTelegramWidget = function(button) {
-            const container = document.getElementById('telegram-widget-container');
-            if (!container) return;
-            renderTelegramWidget();
-            if (button) button.setAttribute('aria-expanded', String(!container.classList.contains('hidden')));
+        function getTelegramRedirectUrl() {
+            const url = new URL(window.location.href);
+            ['id', 'first_name', 'last_name', 'username', 'photo_url', 'auth_date', 'hash'].forEach((key) => {
+                url.searchParams.delete(key);
+            });
+            return url.toString();
+        }
+
+        function getTelegramOAuthUrl() {
+            const botId = String(MAIN_AUTH_CONFIG.telegramBotId || '8741028670').trim();
+            const url = new URL('https://oauth.telegram.org/auth');
+            url.searchParams.set('bot_id', botId);
+            url.searchParams.set('origin', window.location.origin);
+            url.searchParams.set('return_to', getTelegramRedirectUrl());
+            url.searchParams.set('request_access', 'write');
+            return url.toString();
+        }
+
+        window.handleTelegramLogin = function(button) {
+            saveReturnUrl();
+            setButtonBusy(button, true);
+            window.location.href = getTelegramOAuthUrl();
         };
 
         window.handleTelegramAuth = async function(user) {
@@ -473,6 +468,20 @@
                 showToast(error.message || getCopy().telegramFailed, 'error');
             }
         };
+
+        async function handleTelegramRedirectParams() {
+            const search = new URLSearchParams(window.location.search);
+            const telegramKeys = ['id', 'first_name', 'last_name', 'username', 'photo_url', 'auth_date', 'hash'];
+            if (!telegramKeys.every((key) => search.has(key))) return false;
+
+            const user = {};
+            telegramKeys.forEach((key) => {
+                const value = search.get(key);
+                if (value) user[key] = value;
+            });
+            await window.handleTelegramAuth(user);
+            return true;
+        }
 
         window.handleEmailAuth = async function(event) {
             event.preventDefault();
@@ -528,6 +537,7 @@
         window.onload = async function() {
             currentLang = resolvePageLang();
             applyAuthText();
+            if (await handleTelegramRedirectParams()) return;
             handleCallbackErrors();
 
             if (!gxClient) {
