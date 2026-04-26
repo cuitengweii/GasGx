@@ -196,11 +196,6 @@
                      <span id="mob-auth-username" class="text-sm text-white font-bold truncate">User</span>
                  </div>
             </a>
-            <div class="flex items-center gap-2">
-                <button data-ggx-action="auth-sign-out" class="shrink-0 whitespace-nowrap text-xs text-red-400 hover:text-red-300 border border-red-900/50 bg-red-900/20 px-3 py-1.5 rounded">
-                    <span data-ggx-text="auth-logout">Logout</span>
-                </button>
-            </div>
          </div>
     </div>
     <nav id="mobile-nav-content" class="flex flex-col space-y-1"></nav>
@@ -2557,15 +2552,11 @@
 
         if (user) {
             if (els.mobHeaderAuthLink) {
-                if (isAccountPagePath()) {
-                    els.mobHeaderAuthLink.href = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
-                    els.mobHeaderAuthLink.removeAttribute("data-sidebar-toggle");
-                } else {
-                    els.mobHeaderAuthLink.href = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
-                    els.mobHeaderAuthLink.removeAttribute("data-sidebar-toggle");
-                }
+                els.mobHeaderAuthLink.href = "#mobile-menu";
+                els.mobHeaderAuthLink.dataset.ggxAction = "toggle-mobile-menu";
+                els.mobHeaderAuthLink.removeAttribute("data-sidebar-toggle");
                 els.mobHeaderAuthLink.className = "xl:hidden flex items-center justify-center text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full p-1.5";
-                els.mobHeaderAuthLink.setAttribute("aria-label", displayName || "Account");
+                els.mobHeaderAuthLink.setAttribute("aria-label", "Open user menu");
             }
             if (els.mobHeaderAuthIcon) {
                 els.mobHeaderAuthIcon.classList.add("hidden");
@@ -2590,6 +2581,7 @@
 
         if (els.mobHeaderAuthLink) {
             els.mobHeaderAuthLink.href = authConfig.signInUrl || MAIN_AUTH_DEFAULTS.signInUrl;
+            els.mobHeaderAuthLink.removeAttribute("data-ggx-action");
             els.mobHeaderAuthLink.removeAttribute("data-sidebar-toggle");
             els.mobHeaderAuthLink.className = "xl:hidden flex items-center gap-2 text-[10px] font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-3 py-1.5 shadow-glow max-w-[132px]";
             els.mobHeaderAuthLink.setAttribute("aria-label", text.authLogin || "Login");

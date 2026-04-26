@@ -1118,7 +1118,7 @@
     <div id="ggx-back-to-top-slot"></div>
     <div id="ggx-chatbot-slot"></div>
     <script src="/shared/ui/site-shell.config.js?v=20260321auth02"></script>
-    <script src="/shared/ui/site-shell.shared.js?v=20260412shell03"></script>
+    <script src="/shared/ui/site-shell.shared.js?v=20260426userMenu01"></script>
     <script src="/shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
 <script src="/account/sales-pipeline.portal.js?v=20260421salesTab05"></script>
     <script>
@@ -1523,13 +1523,18 @@
                 mobileMenuProfile?.classList.remove('hidden');
                 mobileMenuProfile?.classList.add('flex');
                 if (mobileHeaderLink) {
-                    mobileHeaderLink.href = '/account/account.html';
-                    mobileHeaderLink.className = 'xl:hidden flex items-center gap-2 text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full px-3 py-1.5 max-w-[180px]';
+                    mobileHeaderLink.href = '#mobile-menu';
+                    mobileHeaderLink.dataset.ggxAction = 'toggle-mobile-menu';
+                    mobileHeaderLink.className = 'xl:hidden flex items-center justify-center text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full p-1.5';
                     mobileHeaderLink.removeAttribute('data-sidebar-toggle');
+                    mobileHeaderLink.setAttribute('aria-label', 'Open user menu');
                 }
                 if (mobileHeaderIcon) mobileHeaderIcon.classList.add('hidden');
                 if (mobileHeaderAvatar) mobileHeaderAvatar.classList.remove('hidden');
-                if (mobileHeaderLabel) mobileHeaderLabel.textContent = currentViewModel?.fullName || user.email?.split('@')[0] || 'Account';
+                if (mobileHeaderLabel) {
+                    mobileHeaderLabel.textContent = currentViewModel?.fullName || user.email?.split('@')[0] || 'Account';
+                    mobileHeaderLabel.classList.add('hidden');
+                }
                 return;
             }
 
@@ -1541,15 +1546,20 @@
             mobileMenuProfile?.classList.remove('flex');
             if (mobileHeaderLink) {
                 mobileHeaderLink.href = '/account/user.html';
+                mobileHeaderLink.removeAttribute('data-ggx-action');
                 mobileHeaderLink.removeAttribute('data-sidebar-toggle');
                 mobileHeaderLink.className = 'xl:hidden flex items-center gap-2 text-[10px] font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-3 py-1.5 shadow-glow max-w-[132px]';
+                mobileHeaderLink.setAttribute('aria-label', 'Login');
             }
             if (mobileHeaderIcon) {
                 mobileHeaderIcon.className = 'fa-solid fa-right-to-bracket';
                 mobileHeaderIcon.classList.remove('hidden');
             }
             if (mobileHeaderAvatar) mobileHeaderAvatar.classList.add('hidden');
-            if (mobileHeaderLabel) mobileHeaderLabel.textContent = 'Login';
+            if (mobileHeaderLabel) {
+                mobileHeaderLabel.textContent = 'Login';
+                mobileHeaderLabel.classList.remove('hidden');
+            }
         }
 
         function ensureMobileHeaderAvatar() {
@@ -2034,18 +2044,25 @@
             tabContent.classList.add('active');
         }
 
+        function redirectGuestToSignIn() {
+            try {
+                window.sessionStorage.setItem(MAIN_AUTH_CONFIG.returnUrlStorageKey, window.location.pathname + window.location.search + window.location.hash);
+            } catch (_error) {
+                // Continue with the sign-in redirect if storage is unavailable.
+            }
+            window.location.replace(SIGN_IN_URL);
+        }
+
         function enterGuestMode(message) {
             currentSession = null;
             currentUser = null;
             syncHeaderAuthState(null);
-            const fallbackTab = normalizeTabId(new URL(window.location.href).searchParams.get('tab')) || 'dashboard';
-            switchTab(fallbackTab);
-            ensureActiveTabVisible(fallbackTab);
             const loader = document.getElementById('auth-loader');
             if (loader) loader.classList.add('hidden');
             if (message) {
                 showToast(message, 'error');
             }
+            redirectGuestToSignIn();
         }
 
         window.handleSignOut = async function() {
