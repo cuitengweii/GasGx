@@ -35,26 +35,11 @@
         pointer-events: none;
     }
 
-    #ggx-mobile-page-loader .ggx-mobile-page-loader-spinner {
-        width: 2.5rem;
-        height: 2.5rem;
-        border: 3px solid rgba(93, 214, 44, 0.18);
-        border-top-color: #5DD62C;
-        border-radius: 999px;
-        animation: ggx-mobile-page-loader-spin 0.78s linear infinite;
-    }
-
     #ggx-mobile-page-loader .ggx-mobile-page-loader-text {
-        font-size: 0.78rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0;
-        color: rgba(229, 247, 223, 0.78);
-    }
-}
-
-@keyframes ggx-mobile-page-loader-spin {
-    to {
-        transform: rotate(360deg);
+        color: #e5f7df;
     }
 }
 
@@ -1282,7 +1267,7 @@ button[onclick*="captureAndShare"] {
     #ggx-site-footer-slot .footer-link,
     #ggx-site-footer-slot .ggx-social-btn,
     #ggx-site-footer-slot .ggx-partner-pill,
-    #ggx-mobile-page-loader .ggx-mobile-page-loader-spinner,
+    #ggx-mobile-page-loader .gas-loading-spinner,
     #ggx-chatbot-slot .ggx-chat-attention {
         animation: none !important;
         transition: none !important;

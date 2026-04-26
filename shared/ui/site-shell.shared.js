@@ -3635,7 +3635,7 @@
             loader.id = "ggx-mobile-page-loader";
             loader.setAttribute("role", "status");
             loader.setAttribute("aria-live", "polite");
-            loader.innerHTML = '<div class="ggx-mobile-page-loader-spinner" aria-hidden="true"></div><span class="ggx-mobile-page-loader-text">Loading...</span>';
+            loader.innerHTML = '<div class="gas-loading-spinner gas-loading-spinner-sm" aria-hidden="true"></div><span class="ggx-mobile-page-loader-text">Loading...</span>';
             document.body.appendChild(loader);
         }
         loader.dataset.ggxVisible = "1";
