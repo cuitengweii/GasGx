@@ -2568,7 +2568,8 @@
         if (user) {
             if (els.mobHeaderAuthLink) {
                 els.mobHeaderAuthLink.href = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
-                els.mobHeaderAuthLink.className = "xl:hidden flex items-center gap-2 text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full px-3 py-1.5 max-w-[180px]";
+                els.mobHeaderAuthLink.className = "xl:hidden flex items-center justify-center text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full p-1.5";
+                els.mobHeaderAuthLink.setAttribute("aria-label", displayName || "Account");
             }
             if (els.mobHeaderAuthIcon) {
                 els.mobHeaderAuthIcon.classList.add("hidden");
@@ -2586,6 +2587,7 @@
             }
             if (els.mobHeaderAuthLabel) {
                 els.mobHeaderAuthLabel.textContent = displayName;
+                els.mobHeaderAuthLabel.classList.add("hidden");
             }
             return;
         }
@@ -2593,6 +2595,7 @@
         if (els.mobHeaderAuthLink) {
             els.mobHeaderAuthLink.href = authConfig.signInUrl || MAIN_AUTH_DEFAULTS.signInUrl;
             els.mobHeaderAuthLink.className = "xl:hidden flex items-center gap-2 text-[10px] font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-3 py-1.5 shadow-glow max-w-[132px]";
+            els.mobHeaderAuthLink.setAttribute("aria-label", text.authLogin || "Login");
         }
         if (els.mobHeaderAuthIcon) {
             els.mobHeaderAuthIcon.className = "fa-solid fa-right-to-bracket";
@@ -2603,6 +2606,7 @@
         }
         if (els.mobHeaderAuthLabel) {
             els.mobHeaderAuthLabel.textContent = text.authLogin || "Login";
+            els.mobHeaderAuthLabel.classList.remove("hidden");
         }
     }
 
