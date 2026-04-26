@@ -25,6 +25,7 @@
         color: #e5f7df;
         opacity: 1;
         visibility: visible;
+        pointer-events: none;
         transition: opacity 0.22s ease, visibility 0.22s ease;
     }
 
@@ -192,6 +193,7 @@
 
 #ggx-site-header-slot #mobile-menu-container {
     transition: transform 0.3s ease-in-out;
+    transform: translateX(100%);
     left: auto;
     right: 0;
     width: min(82vw, 20rem);
@@ -201,6 +203,10 @@
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     z-index: 250;
+}
+
+#ggx-site-header-slot #mobile-menu-container[data-ggx-open="1"] {
+    transform: translateX(0);
 }
 
 #ggx-site-header-slot #mobile-menu-overlay {

@@ -2560,6 +2560,32 @@
         return meta.avatar_url || meta.picture || MAIN_AUTH_FALLBACK_AVATAR;
     }
 
+    function buildAccountMenuUrl(authConfig) {
+        const accountUrl = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
+        try {
+            const url = new URL(accountUrl, window.location.origin);
+            url.searchParams.set("openUserMenu", "1");
+            return `${url.pathname}${url.search}${url.hash}`;
+        } catch (_error) {
+            return accountUrl.includes("?")
+                ? `${accountUrl}&openUserMenu=1`
+                : `${accountUrl}?openUserMenu=1`;
+        }
+    }
+
+    function isAccountPagePath() {
+        const pathname = String((window.location && window.location.pathname) || "").toLowerCase();
+        return pathname.endsWith("/account/account.html") || pathname.endsWith("/account/account");
+    }
+
+    function handleMobileAccountMenuClick(event) {
+        if (window.innerWidth >= 1280 || typeof window.toggleAccountSidebar !== "function") return;
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        window.toggleAccountSidebar();
+    }
+
     function applyMobileHeaderAuthState(user, displayName, authConfig) {
         const els = getMainAuthElements();
         const text = getSharedText(getCurrentLang());
@@ -2567,7 +2593,17 @@
 
         if (user) {
             if (els.mobHeaderAuthLink) {
-                els.mobHeaderAuthLink.href = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
+                if (isAccountPagePath()) {
+                    els.mobHeaderAuthLink.href = "#";
+                    els.mobHeaderAuthLink.setAttribute("data-sidebar-toggle", "1");
+                    if (els.mobHeaderAuthLink.dataset.ggxAccountMenuClickBound !== "1") {
+                        els.mobHeaderAuthLink.addEventListener("click", handleMobileAccountMenuClick, true);
+                        els.mobHeaderAuthLink.dataset.ggxAccountMenuClickBound = "1";
+                    }
+                } else {
+                    els.mobHeaderAuthLink.href = buildAccountMenuUrl(authConfig);
+                    els.mobHeaderAuthLink.removeAttribute("data-sidebar-toggle");
+                }
                 els.mobHeaderAuthLink.className = "xl:hidden flex items-center justify-center text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full p-1.5";
                 els.mobHeaderAuthLink.setAttribute("aria-label", displayName || "Account");
             }
@@ -2594,6 +2630,7 @@
 
         if (els.mobHeaderAuthLink) {
             els.mobHeaderAuthLink.href = authConfig.signInUrl || MAIN_AUTH_DEFAULTS.signInUrl;
+            els.mobHeaderAuthLink.removeAttribute("data-sidebar-toggle");
             els.mobHeaderAuthLink.className = "xl:hidden flex items-center gap-2 text-[10px] font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-3 py-1.5 shadow-glow max-w-[132px]";
             els.mobHeaderAuthLink.setAttribute("aria-label", text.authLogin || "Login");
         }
@@ -2939,6 +2976,17 @@
             const mobileNavLink = event.target.closest("#mobile-menu-container a[href]");
             if (mobileNavLink) {
                 closeMobileMenuFallback();
+            }
+
+            const mobileAccountMenuTrigger = event.target.closest("#mob-header-auth-link[data-sidebar-toggle='1']");
+            if (
+                mobileAccountMenuTrigger
+                && window.innerWidth < 1280
+                && typeof window.toggleAccountSidebar === "function"
+            ) {
+                event.preventDefault();
+                window.toggleAccountSidebar();
+                return;
             }
 
             const trigger = event.target.closest("[data-ggx-action]");

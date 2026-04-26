@@ -1530,6 +1530,7 @@
                 if (mobileHeaderIcon) mobileHeaderIcon.classList.add('hidden');
                 if (mobileHeaderAvatar) mobileHeaderAvatar.classList.remove('hidden');
                 if (mobileHeaderLabel) mobileHeaderLabel.textContent = currentViewModel?.fullName || user.email?.split('@')[0] || 'Account';
+                bindMobileHeaderSidebarTrigger();
                 return;
             }
 
@@ -1573,6 +1574,18 @@
                 toggleAccountSidebar();
             });
             link.dataset.boundSidebarToggle = '1';
+        }
+
+        function shouldOpenUserMenuFromUrl() {
+            return new URL(window.location.href).searchParams.get('openUserMenu') === '1';
+        }
+
+        function openAccountSidebar() {
+            const sidebar = document.getElementById('account-sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (!sidebar || !overlay || !sidebar.classList.contains('translate-x-full')) return;
+            sidebar.classList.remove('translate-x-full');
+            overlay.classList.remove('hidden');
         }
 
         function setButtonBusy(button, busy) {
@@ -2088,6 +2101,9 @@
                 : (allowedTabs.has(fallbackTab) ? fallbackTab : 'dashboard');
             switchTab(targetTab);
             syncHeaderAuthState(currentUser);
+            if (shouldOpenUserMenuFromUrl()) {
+                openAccountSidebar();
+            }
             document.dispatchEvent(new CustomEvent('gasgx-account-ready'));
         }
 
@@ -2199,7 +2215,7 @@
             }
         });
 
-        window.addEventListener('DOMContentLoaded', () => {
+        function initializeMobileHeaderBindings() {
             setAccountLang(readAccountLang(), { persist: false });
             ensureMobileHeaderAvatar();
             bindMobileHeaderSidebarTrigger();
@@ -2212,7 +2228,13 @@
             window.setTimeout(() => ensureActiveTabVisible(requestedTab || 'dashboard'), 0);
             window.setTimeout(() => ensureActiveTabVisible(requestedTab || 'dashboard'), 800);
             bootstrapAccount();
-        });
+        }
+
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', initializeMobileHeaderBindings, { once: true });
+        } else {
+            initializeMobileHeaderBindings();
+        }
     </script>
 </body>
 </html>
