@@ -845,7 +845,7 @@
     <div id="auth-loader" class="fixed inset-0 bg-[#050505] z-[80] flex items-center justify-center">
         <div class="flex flex-col items-center gap-4">
             <div class="gas-loading-spinner"></div>
-            <span class="text-gray-500 font-mono text-xs uppercase tracking-widest">Verifying Identity...</span>
+            <span class="text-xs font-bold text-[#e5f7df]">Loading...</span>
         </div>
     </div>
     <div id="toast-container" class="fixed top-20 right-5 z-[100] flex flex-col gap-2 pointer-events-none"></div>
@@ -1091,6 +1091,7 @@
                                     <option value="saved" data-i18n="navSaved">Saved</option>
                                     <option value="profile" data-i18n="navProfile">Profile</option>
                                     <option value="security" data-i18n="navSecurity">Security</option>
+                                    <option value="preferences" data-i18n="navPreferences">Preferences</option>
                                     <option value="sales" data-i18n="navSales">Sales Pipeline</option>
                                 </select>
                             </div>
@@ -1523,11 +1524,11 @@
                 mobileMenuProfile?.classList.remove('hidden');
                 mobileMenuProfile?.classList.add('flex');
                 if (mobileHeaderLink) {
-                    mobileHeaderLink.href = '#account-sidebar';
-                    mobileHeaderLink.dataset.sidebarToggle = 'account';
+                    mobileHeaderLink.href = MAIN_AUTH_CONFIG.accountUrl || '/account/account.html';
                     mobileHeaderLink.removeAttribute('data-ggx-action');
+                    mobileHeaderLink.removeAttribute('data-sidebar-toggle');
                     mobileHeaderLink.className = 'xl:hidden flex items-center justify-center text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full p-1.5';
-                    mobileHeaderLink.setAttribute('aria-label', 'Open user menu');
+                    mobileHeaderLink.setAttribute('aria-label', 'Open account');
                 }
                 if (mobileHeaderIcon) mobileHeaderIcon.classList.add('hidden');
                 if (mobileHeaderAvatar) mobileHeaderAvatar.classList.remove('hidden');
@@ -1615,6 +1616,17 @@
             const date = new Date(value);
             if (Number.isNaN(date.getTime())) return '-';
             return date.toLocaleString(accountLang === 'zh' ? 'zh-CN' : 'en-US');
+        }
+
+        function resolveSafeBookmarkHref(link) {
+            const rawLink = String(link || '').trim();
+            if (!rawLink) return '#';
+            try {
+                const url = new URL(rawLink, window.location.origin);
+                return ['http:', 'https:', 'mailto:'].includes(url.protocol) ? url.href : '#';
+            } catch (_error) {
+                return '#';
+            }
         }
 
         function getProviders(user) {
@@ -1826,22 +1838,49 @@
                     return;
                 }
 
-                list.innerHTML = data.map((item) => `
-                    <article class="rounded-xl border border-white/10 bg-[#0F0F0F] p-6 shadow-lg hover:border-gas-green/30 transition-colors duration-500">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-gas-green">${t('savedItemLabel')}</div>
-                                <h3 class="mt-3 line-clamp-2 text-sm font-bold text-white">${item.title || t('savedUntitled')}</h3>
-                            </div>
-                            <button type="button" onclick="removeSavedItem('${item.id}')" class="rounded-full border border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-300 transition hover:border-red-500 hover:text-red-400">${t('savedRemove')}</button>
-                        </div>
-                        <p class="mt-3 line-clamp-2 text-sm text-gray-400">${item.content || t('savedNoPreview')}</p>
-                        <div class="mt-4 flex items-center justify-between gap-4">
-                            <span class="font-mono text-xs text-gray-500">${formatDate(item.news_time || item.created_at)}</span>
-                            <a href="${item.link || '#'}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold uppercase tracking-[0.16em] text-gas-green hover:text-white">${t('savedOpenSource')}</a>
-                        </div>
-                    </article>
-                `).join('');
+                data.forEach((item) => {
+                    const article = document.createElement('article');
+                    article.className = 'rounded-xl border border-white/10 bg-[#0F0F0F] p-6 shadow-lg hover:border-gas-green/30 transition-colors duration-500';
+
+                    const header = document.createElement('div');
+                    header.className = 'flex items-start justify-between gap-4';
+
+                    const titleWrap = document.createElement('div');
+                    const label = document.createElement('div');
+                    label.className = 'text-[10px] font-bold uppercase tracking-[0.16em] text-gas-green';
+                    label.textContent = t('savedItemLabel');
+                    const title = document.createElement('h3');
+                    title.className = 'mt-3 line-clamp-2 text-sm font-bold text-white';
+                    title.textContent = item.title || t('savedUntitled');
+                    titleWrap.append(label, title);
+
+                    const removeButton = document.createElement('button');
+                    removeButton.type = 'button';
+                    removeButton.className = 'rounded-full border border-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-gray-300 transition hover:border-red-500 hover:text-red-400';
+                    removeButton.textContent = t('savedRemove');
+                    removeButton.addEventListener('click', () => removeSavedItem(item.id));
+                    header.append(titleWrap, removeButton);
+
+                    const content = document.createElement('p');
+                    content.className = 'mt-3 line-clamp-2 text-sm text-gray-400';
+                    content.textContent = item.content || t('savedNoPreview');
+
+                    const footer = document.createElement('div');
+                    footer.className = 'mt-4 flex items-center justify-between gap-4';
+                    const timestamp = document.createElement('span');
+                    timestamp.className = 'font-mono text-xs text-gray-500';
+                    timestamp.textContent = formatDate(item.news_time || item.created_at);
+                    const sourceLink = document.createElement('a');
+                    sourceLink.href = resolveSafeBookmarkHref(item.link);
+                    sourceLink.target = '_blank';
+                    sourceLink.rel = 'noopener noreferrer';
+                    sourceLink.className = 'text-xs font-bold uppercase tracking-[0.16em] text-gas-green hover:text-white';
+                    sourceLink.textContent = t('savedOpenSource');
+                    footer.append(timestamp, sourceLink);
+
+                    article.append(header, content, footer);
+                    list.appendChild(article);
+                });
             } catch (error) {
                 if (isMissingBookmarksTable(error)) {
                     list.innerHTML = '';

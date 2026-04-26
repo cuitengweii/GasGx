@@ -2552,17 +2552,11 @@
 
         if (user) {
             if (els.mobHeaderAuthLink) {
-                if (isAccountPagePath()) {
-                    els.mobHeaderAuthLink.href = "#account-sidebar";
-                    els.mobHeaderAuthLink.dataset.sidebarToggle = "account";
-                    els.mobHeaderAuthLink.removeAttribute("data-ggx-action");
-                } else {
-                    els.mobHeaderAuthLink.href = "#mobile-menu";
-                    els.mobHeaderAuthLink.dataset.ggxAction = "toggle-mobile-menu";
-                    els.mobHeaderAuthLink.removeAttribute("data-sidebar-toggle");
-                }
+                els.mobHeaderAuthLink.href = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
+                els.mobHeaderAuthLink.removeAttribute("data-ggx-action");
+                els.mobHeaderAuthLink.removeAttribute("data-sidebar-toggle");
                 els.mobHeaderAuthLink.className = "xl:hidden flex items-center justify-center text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full p-1.5";
-                els.mobHeaderAuthLink.setAttribute("aria-label", "Open user menu");
+                els.mobHeaderAuthLink.setAttribute("aria-label", "Open account");
             }
             if (els.mobHeaderAuthIcon) {
                 els.mobHeaderAuthIcon.classList.add("hidden");
@@ -2619,13 +2613,8 @@
             if (els.accountLink) els.accountLink.href = accountUrl;
             if (els.userAvatar) els.userAvatar.src = avatar;
             if (els.mobAccountLink) {
-                if (isAccountPagePath()) {
-                    els.mobAccountLink.href = "#account-sidebar";
-                    els.mobAccountLink.dataset.sidebarToggle = "account";
-                } else {
-                    els.mobAccountLink.href = accountUrl;
-                    els.mobAccountLink.removeAttribute("data-sidebar-toggle");
-                }
+                els.mobAccountLink.href = accountUrl;
+                els.mobAccountLink.removeAttribute("data-sidebar-toggle");
             }
             if (els.mobUserAvatar) els.mobUserAvatar.src = avatar;
             if (els.mobUsername) els.mobUsername.textContent = displayName;
