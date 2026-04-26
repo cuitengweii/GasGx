@@ -145,20 +145,6 @@
                         <img id="auth-user-avatar" src="" alt="User" class="w-6 h-6 rounded-full border border-gas-green p-0 transition-transform group-hover:scale-105">
                         <div class="absolute bottom-1.5 right-1.5 w-2 h-2 bg-gas-green rounded-full border border-[#151515]"></div>
                     </a>
-                    <div class="absolute right-0 top-[calc(100%-2px)] pt-2 w-56 hidden group-hover:block group-focus-within:block z-[80]">
-                        <div class="bg-[#151515] border border-white/10 rounded-xl shadow-2xl py-2 mt-1">
-                            <a id="dropdown-account-link" href="/account/account.html" class="block px-4 py-2 border-b border-white/5 mb-1 hover:bg-white/5 transition-colors">
-                                <span data-ggx-text="account" class="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Account</span>
-                                <div id="dropdown-username" class="text-xs text-white font-bold truncate mt-1">User</div>
-                            </a>
-                            <a id="dropdown-sales-link" href="/account/account.html?tab=sales" class="hidden block w-full px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors border-b border-white/5 mb-1">
-                                <i class="fa-solid fa-diagram-project mr-2"></i><span data-ggx-text="orders">Orders</span>
-                            </a>
-                            <button data-ggx-action="auth-sign-out" class="w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-gas-green hover:bg-white/5 transition-colors flex items-center">
-                                <i class="fa-solid fa-right-from-bracket mr-2"></i> <span data-ggx-text="auth-logout">Logout</span>
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -208,9 +194,6 @@
                  </div>
             </a>
             <div class="flex items-center gap-2">
-                <a id="mob-auth-sales-link" href="/account/account.html?tab=sales" class="hidden w-full text-xs text-gray-200 hover:text-gas-green border border-white/20 bg-white/5 px-3 py-1.5 rounded">
-                    <i class="fa-solid fa-diagram-project mr-1"></i><span data-ggx-text="orders">Orders</span>
-                </a>
                 <button data-ggx-action="auth-sign-out" class="shrink-0 whitespace-nowrap text-xs text-red-400 hover:text-red-300 border border-red-900/50 bg-red-900/20 px-3 py-1.5 rounded">
                     <span data-ggx-text="auth-logout">Logout</span>
                 </button>
@@ -2498,13 +2481,9 @@
             userProfile: document.getElementById("auth-user-profile"),
             accountLink: document.getElementById("auth-account-link"),
             userAvatar: document.getElementById("auth-user-avatar"),
-            dropdownAccountLink: document.getElementById("dropdown-account-link"),
-            dropdownUsername: document.getElementById("dropdown-username"),
-            dropdownSalesLink: document.getElementById("dropdown-sales-link"),
             mobLoginBtn: document.getElementById("mob-auth-login-btn"),
             mobUserProfile: document.getElementById("mob-auth-user-profile"),
             mobAccountLink: document.getElementById("mob-auth-account-link"),
-            mobSalesLink: document.getElementById("mob-auth-sales-link"),
             mobUserAvatar: document.getElementById("mob-auth-user-avatar"),
             mobUsername: document.getElementById("mob-auth-username"),
             mobHeaderAuthLink: document.getElementById("mob-header-auth-link"),
@@ -2560,30 +2539,9 @@
         return meta.avatar_url || meta.picture || MAIN_AUTH_FALLBACK_AVATAR;
     }
 
-    function buildAccountMenuUrl(authConfig) {
-        const accountUrl = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
-        try {
-            const url = new URL(accountUrl, window.location.origin);
-            url.searchParams.set("openUserMenu", "1");
-            return `${url.pathname}${url.search}${url.hash}`;
-        } catch (_error) {
-            return accountUrl.includes("?")
-                ? `${accountUrl}&openUserMenu=1`
-                : `${accountUrl}?openUserMenu=1`;
-        }
-    }
-
     function isAccountPagePath() {
         const pathname = String((window.location && window.location.pathname) || "").toLowerCase();
         return pathname.endsWith("/account/account.html") || pathname.endsWith("/account/account");
-    }
-
-    function handleMobileAccountMenuClick(event) {
-        if (window.innerWidth >= 1280 || typeof window.toggleAccountSidebar !== "function") return;
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        window.toggleAccountSidebar();
     }
 
     function applyMobileHeaderAuthState(user, displayName, authConfig) {
@@ -2594,14 +2552,10 @@
         if (user) {
             if (els.mobHeaderAuthLink) {
                 if (isAccountPagePath()) {
-                    els.mobHeaderAuthLink.href = "#";
-                    els.mobHeaderAuthLink.setAttribute("data-sidebar-toggle", "1");
-                    if (els.mobHeaderAuthLink.dataset.ggxAccountMenuClickBound !== "1") {
-                        els.mobHeaderAuthLink.addEventListener("click", handleMobileAccountMenuClick, true);
-                        els.mobHeaderAuthLink.dataset.ggxAccountMenuClickBound = "1";
-                    }
+                    els.mobHeaderAuthLink.href = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
+                    els.mobHeaderAuthLink.removeAttribute("data-sidebar-toggle");
                 } else {
-                    els.mobHeaderAuthLink.href = buildAccountMenuUrl(authConfig);
+                    els.mobHeaderAuthLink.href = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
                     els.mobHeaderAuthLink.removeAttribute("data-sidebar-toggle");
                 }
                 els.mobHeaderAuthLink.className = "xl:hidden flex items-center justify-center text-[10px] font-bold text-gas-green border border-gas-green/30 bg-gas-green/10 hover:bg-gas-green hover:text-black transition-all rounded-full p-1.5";
@@ -2651,8 +2605,6 @@
         const els = getMainAuthElements();
         const authConfig = authBridgeState.runtimeConfig || getMainAuthConfig();
         const accountUrl = authConfig.accountUrl || MAIN_AUTH_DEFAULTS.accountUrl;
-        const salesUrl = authConfig.salesUrl || MAIN_AUTH_DEFAULTS.salesUrl;
-        const hasOrders = options && options.hasOrders === true;
         if (user) {
             setAuthElementVisibility(els.loginBtn, false);
             setAuthElementVisibility(els.userProfile, true);
@@ -2662,18 +2614,8 @@
             const avatar = resolveMainAuthAvatar(user);
             if (els.accountLink) els.accountLink.href = accountUrl;
             if (els.userAvatar) els.userAvatar.src = avatar;
-            if (els.dropdownAccountLink) els.dropdownAccountLink.href = accountUrl;
-            if (els.dropdownSalesLink) {
-                els.dropdownSalesLink.href = salesUrl;
-                els.dropdownSalesLink.classList.toggle("hidden", !hasOrders);
-            }
-            if (els.mobSalesLink) {
-                els.mobSalesLink.href = salesUrl;
-                els.mobSalesLink.classList.toggle("hidden", !hasOrders);
-            }
             if (els.mobAccountLink) els.mobAccountLink.href = accountUrl;
             if (els.mobUserAvatar) els.mobUserAvatar.src = avatar;
-            if (els.dropdownUsername) els.dropdownUsername.textContent = displayName;
             if (els.mobUsername) els.mobUsername.textContent = displayName;
             applyMobileHeaderAuthState(user, displayName, authConfig);
             return;
@@ -2683,12 +2625,6 @@
         setAuthElementVisibility(els.userProfile, false);
         setAuthElementVisibility(els.mobLoginBtn, true);
         setAuthElementVisibility(els.mobUserProfile, false);
-        if (els.dropdownSalesLink) {
-            els.dropdownSalesLink.classList.add("hidden");
-        }
-        if (els.mobSalesLink) {
-            els.mobSalesLink.classList.add("hidden");
-        }
         applyMobileHeaderAuthState(null, displayName, authConfig);
     }
 
@@ -2976,17 +2912,6 @@
             const mobileNavLink = event.target.closest("#mobile-menu-container a[href]");
             if (mobileNavLink) {
                 closeMobileMenuFallback();
-            }
-
-            const mobileAccountMenuTrigger = event.target.closest("#mob-header-auth-link[data-sidebar-toggle='1']");
-            if (
-                mobileAccountMenuTrigger
-                && window.innerWidth < 1280
-                && typeof window.toggleAccountSidebar === "function"
-            ) {
-                event.preventDefault();
-                window.toggleAccountSidebar();
-                return;
             }
 
             const trigger = event.target.closest("[data-ggx-action]");
