@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx - Brand Strategy</title>
+    <!-- 引入 Tailwind CSS 进行快速响应式布局 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Inter 字体 (现代无衬线) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* 核心视觉规范 */
+        :root {
+            --bg-color: #121212;
+            --accent-green: #5DD62C;
+            --text-main: #FFFFFF;
+            --text-muted: #888888;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden; /* 隐藏原生滚动条 */
+            user-select: none; /* 防止演示时误选文字 */
+        }
+
+        /* 工业网格背景 */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* 强调色文字与边框 */
+        .text-gasgx { color: var(--accent-green); }
+        .border-gasgx { border-color: var(--accent-green); }
+        .bg-gasgx { background-color: var(--accent-green); }
+
+        /* 幻灯片容器与滑动过渡动画 */
+        #slider {
+            display: flex;
+            width: 800vw; /* 更新为8屏总宽度 */
+            height: 100vh;
+            transition: transform 0.7s cubic-bezier(0.25, 1, 0.25, 1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .slide {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-sizing: border-box;
+            padding: 6vw;
+        }
+
+        .content-box {
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* 左右点击感应区 */
+        #click-zone-left {
+            position: fixed;
+            top: 0; left: 0; width: 30vw; height: 100vh;
+            z-index: 50; cursor: w-resize;
+        }
+        #click-zone-right {
+            position: fixed;
+            top: 0; right: 0; width: 70vw; height: 100vh;
+            z-index: 50; cursor: e-resize;
+        }
+
+        /* 底部进度条 */
+        #progress-bar {
+            position: fixed;
+            bottom: 0; left: 0; height: 4px;
+            background-color: var(--accent-green);
+            transition: width 0.5s ease;
+            z-index: 60;
+        }
+
+        /* 排版优化 */
+        h1 { font-weight: 900; letter-spacing: -0.02em; }
+        h2 { font-weight: 700; letter-spacing: -0.01em; }
+        .eng-sub { font-weight: 300; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+        
+        /* 微微的发光效果增加赛博感 */
+        .glow-text {
+            text-shadow: 0 0 30px rgba(93, 214, 44, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 工业网格背景 -->
+    <div class="bg-grid"></div>
+
+    <!-- 左右点击触发区 -->
+    <div id="click-zone-left" onclick="moveSlide(-1)"></div>
+    <div id="click-zone-right" onclick="moveSlide(1)"></div>
+
+    <!-- 底部进度条 -->
+    <div id="progress-bar" style="width: 12.5%;"></div>
+
+    <!-- 演示文稿容器 -->
+    <div id="slider">
+
+        <!-- 第1屏：Logo -->
+        <div class="slide">
+            <div class="content-box text-center">
+                <h1 class="text-9xl md:text-[12rem] text-white glow-text mb-6 tracking-tighter">Gas<span class="text-gasgx">Gx</span></h1>
+                <p class="text-2xl md:text-3xl text-gray-400 font-light tracking-widest uppercase mb-4">Gas-Power Solutions</p>
+                <div class="w-24 h-1 bg-gasgx mx-auto mt-8 mb-8"></div>
+                <p class="text-xl md:text-2xl text-gray-500 font-medium">全球领先的搁浅天然气算力变现引擎</p>
+            </div>
+        </div>
+
+        <!-- 第2屏：品牌密码 -->
+        <div class="slide">
+            <div class="content-box">
+                <p class="eng-sub mb-2 text-gasgx">01 / The Formula</p>
+                <h2 class="text-5xl md:text-7xl text-white mb-16">品牌密码：GasGx 的变现公式</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <div class="border-t border-gray-800 pt-8">
+                        <h3 class="text-7xl font-black text-white mb-4">Gas</h3>
+                        <p class="text-xl text-gasgx font-bold mb-4">Stranded Gas <span class="text-gray-400 font-normal">| 搁浅燃气</span></p>
+                        <p class="text-gray-400 leading-relaxed text-lg">深埋荒野、缺乏管道而无法运出的死资产。</p>
+                    </div>
+                    <div class="border-t border-gray-800 pt-8">
+                        <h3 class="text-7xl font-black text-white mb-4">G</h3>
+                        <p class="text-xl text-gasgx font-bold mb-4">Grid-less Generation <span class="text-gray-400 font-normal">| 离网算力</span></p>
+                        <p class="text-gray-400 leading-relaxed text-lg">无视电网与管道束缚，就地发电、就地计算的硬核引擎。</p>
+                    </div>
+                    <div class="border-t border-gasgx pt-8 glow-text">
+                        <h3 class="text-7xl font-black text-gasgx mb-4">X</h3>
+                        <p class="text-xl text-white font-bold mb-4">X-Treme Liquidity <span class="text-gray-400 font-normal">| 极致流动性释放</span></p>
+                        <p class="text-gray-400 leading-relaxed text-lg">跨越物理空间，将沉睡的天然气瞬间转化为全球流通的数字资产。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第3屏：品牌定位 -->
+        <div class="slide">
+            <div class="content-box">
+                <div class="flex flex-col md:flex-row gap-12 items-center">
+                    <div class="w-full md:w-1/3">
+                        <p class="eng-sub mb-2 text-gasgx">02 / Positioning</p>
+                        <h2 class="text-5xl md:text-7xl text-white mb-8">品牌定位</h2>
+                    </div>
+                    <div class="w-full md:w-2/3 border-l-4 border-gasgx pl-8 md:pl-16">
+                        <h3 class="text-3xl md:text-5xl font-bold text-white mb-4 leading-tight">全球领先的搁浅天然气<br><span class="text-gasgx">算力变现引擎</span></h3>
+                        <p class="text-xl text-gray-500 uppercase tracking-wider mb-12">Global Ultimate Stranded Gas Monetization Engine</p>
+                        
+                        <div class="space-y-8">
+                            <div>
+                                <h4 class="text-xl font-bold text-white mb-2">业务本质</h4>
+                                <p class="text-gray-400 text-lg">我们不是传统的发电机倒卖商，我们是 <strong class="text-gasgx">能源资产解套专家</strong>。</p>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-bold text-white mb-2">核心动作</h4>
+                                <p class="text-gray-400 text-lg">针对缺乏输气管道、传统管网无法触达的偏远气田，输出基于加拿大极寒实战打磨的“即插即用型标准化算力引擎”，实现 <strong class="text-gasgx">无管网、就地化</strong> 极速部署。</p>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-bold text-white mb-2">价值交付</h4>
+                                <p class="text-gray-400 text-lg">把不可移动的物理燃气（死资产），<strong class="text-gasgx">就地转化</strong> 为极高流动性的数字资产，为客户交付一台高 ROCE（资本回报率）的理财终端。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第4屏：品牌使命 -->
+        <div class="slide">
+            <div class="content-box">
+                <p class="eng-sub mb-2 text-gasgx text-center">03 / Mission</p>
+                <h2 class="text-4xl md:text-5xl text-white mb-12 text-center">品牌使命</h2>
+                
+                <div class="bg-[#1a1a1a] p-12 md:p-20 border border-gray-800 rounded-lg text-center shadow-2xl relative overflow-hidden">
+                    <!-- 装饰光效 -->
+                    <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-gasgx to-transparent opacity-50"></div>
+                    
+                    <h3 class="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">解锁搁浅燃气能源，<br>驱动能源<span class="text-gasgx">就地变现</span>。</h3>
+                    <p class="text-2xl text-gasgx font-light uppercase tracking-widest mb-12">Unstrand the Gas. Monetize Energy On-site.</p>
+                    
+                    <p class="text-gray-400 text-xl leading-relaxed max-w-4xl mx-auto text-left">
+                        彻底打破传统燃气行业极度依赖重资产输气管道的死局。用无线的数字网络替代昂贵的物理管道。让全世界那些被迫烧掉的工业伴生气与无法开采的搁浅燃气，通过 GasGx 引擎，瞬间爆发出<strong class="text-white">就地变现</strong>的印钞能力。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第5屏：品牌愿景 -->
+        <div class="slide">
+            <div class="content-box">
+                <p class="eng-sub mb-2 text-gasgx text-center">04 / Vision</p>
+                <h2 class="text-4xl md:text-5xl text-white mb-12 text-center">品牌愿景</h2>
+                
+                <div class="bg-[#1a1a1a] p-12 md:p-20 border border-gray-800 rounded-lg text-center shadow-2xl relative overflow-hidden">
+                    <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-gasgx to-transparent opacity-50"></div>
+                    
+                    <h3 class="text-3xl md:text-5xl font-bold text-white mb-12 leading-tight">成为彻底摆脱输气管网依赖，<br>将全球燃气直接转化为数字资产的<br><span class="text-gasgx glow-text">“超级变现引擎”</span>。</h3>
+                    
+                    <p class="text-gray-400 text-xl leading-relaxed max-w-4xl mx-auto text-left">
+                        未来的 GasGx，将在全球能源版图的无人区（北美、俄罗斯、中东等无管网地带）建立绝对统治力。通过 GasGx-Hero 1000kW 英雄单品与 AI 智能系统，我们要让全球任何一口没有管道出口的搁浅气井，都能在两周内实现<strong class="text-white">“落地即点火，点火即印钞”</strong>，把深埋荒野的燃气，就地洗成能在全球瞬间流通的数字财富。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第6屏：核心价值观 -->
+        <div class="slide">
+            <div class="content-box">
+                <p class="eng-sub mb-2 text-gasgx">05 / Core Values</p>
+                <h2 class="text-4xl md:text-5xl text-white mb-12">核心价值观</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Value 1 -->
+                    <div class="bg-[#151515] p-8 border-l-2 border-gray-700 hover:border-gasgx transition-colors duration-300">
+                        <h3 class="text-2xl font-bold text-white mb-2">成就非凡，守护未来</h3>
+                        <p class="text-sm text-gasgx mb-4 uppercase tracking-wider">Achieve the Extraordinary, Protect the Future</p>
+                        <p class="text-gray-400 mb-4 leading-relaxed"><strong class="text-white">变废为宝，践行全球 ESG 战略。</strong>把深埋荒原、无人问津的“死资产”洗成高流动性财富，是为“成就非凡”；通过消耗高污染的工业伴生气，为传统能源方提供绿色减排的解套方案，是为“守护未来”。</p>
+                        <p class="text-sm text-gray-500 italic border-t border-gray-800 pt-4">“不仅创造华尔街级别的收益，更为你解决最头疼的碳排放罚单。”</p>
+                    </div>
+                    <!-- Value 2 -->
+                    <div class="bg-[#151515] p-8 border-l-2 border-gray-700 hover:border-gasgx transition-colors duration-300">
+                        <h3 class="text-2xl font-bold text-white mb-2">破界生长，行动至上</h3>
+                        <p class="text-sm text-gasgx mb-4 uppercase tracking-wider">Break Boundaries, Action First</p>
+                        <p class="text-gray-400 mb-4 leading-relaxed"><strong class="text-white">无视基建束缚，实战定义标准。</strong>彻底打破传统输气管网的物理边界，实现离网脱网就地运转；拒绝纸上谈兵，所有系统全凭加拿大 100MW 荒野开荒的血泪经验喂养，以极速部署完成闭环。</p>
+                        <p class="text-sm text-gray-500 italic border-t border-gray-800 pt-4">“建不起管道？拉不通电网？没关系。只要有气，两周就地变现。”</p>
+                    </div>
+                    <!-- Value 3 -->
+                    <div class="bg-[#151515] p-8 border-l-2 border-gray-700 hover:border-gasgx transition-colors duration-300">
+                        <h3 class="text-2xl font-bold text-white mb-2">软件定义硬件，捍卫绝对收益</h3>
+                        <p class="text-sm text-gasgx mb-4 uppercase tracking-wider">Software Defines Hardware, Defend ROCE</p>
+                        <p class="text-gray-400 mb-4 leading-relaxed"><strong class="text-white">引擎是躯体，系统是灵魂。</strong>不卖枯燥的参数，只交付实时利润回本模型。所有的研发与交互，只为一个目标服务：通过算力最大化燃气的数字资产转化率，拉升客户极致的投资回报率。</p>
+                        <p class="text-sm text-gray-500 italic border-t border-gray-800 pt-4">“拿到手的不是发电机，而是24小时在线的重型金融理财机器。”</p>
+                    </div>
+                    <!-- Value 4 -->
+                    <div class="bg-[#151515] p-8 border-l-2 border-gray-700 hover:border-gasgx transition-colors duration-300">
+                        <h3 class="text-2xl font-bold text-white mb-2">边界绝对清晰，利益全局共享</h3>
+                        <p class="text-sm text-gasgx mb-4 uppercase tracking-wider">Clear Boundaries, Shared Success</p>
+                        <p class="text-gray-400 mb-4 leading-relaxed"><strong class="text-white">不谋小利，掌控重资产大局。</strong>保护大同基地的制造底座，让代工稳赚利润；但在下游高风险的海外矿场与数字资产变现上，坚持基金化运作，风险与利润严格隔离。</p>
+                        <p class="text-sm text-gray-500 italic border-t border-gray-800 pt-4">“前端工厂强悍托底，后端资本纵横捭阖。各司其职，互不越界。”</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第7屏：组织架构 -->
+        <div class="slide">
+            <div class="content-box">
+                <p class="eng-sub mb-2 text-gasgx">06 / Organization</p>
+                <h2 class="text-4xl md:text-5xl text-white mb-2">GasGx 联合舰队：核心高管职能与组织架构</h2>
+                <p class="text-sm md:text-base text-gray-500 uppercase tracking-wider mb-10">GasGx Core Executive Committee & Functional Architecture</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- 崔 -->
+                    <div class="bg-[#151515] p-6 border-t-2 border-gray-700 hover:border-gasgx transition-colors duration-300">
+                        <div class="flex items-baseline gap-3 mb-1">
+                            <h3 class="text-4xl font-black text-white">崔</h3>
+                            <span class="text-lg font-bold text-gray-200">全球首席战略架构师</span>
+                        </div>
+                        <p class="text-xs text-gasgx mb-4 uppercase tracking-wider font-semibold">CSA | Global Chief Strategic Architect</p>
+                        <p class="text-sm text-gray-400 leading-relaxed">负责 GasGx 顶层商业架构与“软硬分离”战略的设计与操盘。打通“气-电-算力”的完整商业闭环，主导全网精准营销，掌控品牌全球化出海的绝对方向。</p>
+                    </div>
+
+                    <!-- 豆 -->
+                    <div class="bg-[#151515] p-6 border-t-2 border-gray-700 hover:border-gasgx transition-colors duration-300">
+                        <div class="flex items-baseline gap-3 mb-1">
+                            <h3 class="text-4xl font-black text-white">豆</h3>
+                            <span class="text-lg font-bold text-gray-200">全球首席科学家兼产品战略官</span>
+                        </div>
+                        <p class="text-xs text-gasgx mb-4 uppercase tracking-wider font-semibold">CSPO | Chief Scientist & Product Strategy Officer</p>
+                        <p class="text-sm text-gray-400 leading-relaxed">全面主导基于“搁浅天然气（Stranded Gas）与伴生气”治理场景的核心产品战略。针对海外搁浅气源复杂成分进行科学匹配，攻克进排气增压、降温增效等热力学核心技术，确立 GasGx 英雄单品的物理性能壁垒与绝对稳定性。</p>
+                    </div>
+
+                    <!-- 赵 -->
+                    <div class="bg-[#151515] p-6 border-t-2 border-gray-700 hover:border-gasgx transition-colors duration-300">
+                        <div class="flex items-baseline gap-3 mb-1">
+                            <h3 class="text-4xl font-black text-white">赵</h3>
+                            <span class="text-lg font-bold text-gray-200">首席数字资产官</span>
+                        </div>
+                        <p class="text-xs text-gasgx mb-4 uppercase tracking-wider font-semibold">CDAO | Chief Digital Asset Officer</p>
+                        <p class="text-sm text-gray-400 leading-relaxed">负责数字资产重构与标准化矿机单元的底层设计。建立精准的数据测算模型，寻找天然气消耗与加密算力产出的最优盈亏平衡点，将物理电能高效转化为高流动性的数字资产，实现能源变现利润的最大化。</p>
+                    </div>
+
+                    <!-- 祁 -->
+                    <div class="bg-[#151515] p-6 border-t-2 border-gray-700 hover:border-gasgx transition-colors duration-300">
+                        <div class="flex items-baseline gap-3 mb-1">
+                            <h3 class="text-4xl font-black text-white">祁</h3>
+                            <span class="text-lg font-bold text-gray-200">首席制造与供应链官</span>
+                        </div>
+                        <p class="text-xs text-gasgx mb-4 uppercase tracking-wider font-semibold">CSCO | Chief Manufacturing & Supply Chain Officer</p>
+                        <p class="text-sm text-gray-400 leading-relaxed">依托欧特讯强大的底层电控技术（YSD 系统），为 GasGx 提供最坚实的硬件制造与品控保障。负责高 ROCE（资本回报率）产品优化，高功率 1000kW 英雄单品持续升级，以及代工制造、出厂调校、成本核算及全球供应链的全链路优化。</p>
+                    </div>
+
+                    <!-- 石 -->
+                    <div class="bg-[#151515] p-6 border-t-2 border-gray-700 hover:border-gasgx transition-colors duration-300">
+                        <div class="flex items-baseline gap-3 mb-1">
+                            <h3 class="text-4xl font-black text-white">石</h3>
+                            <span class="text-lg font-bold text-gray-200">首席数字技术官 (SaaS与AI)</span>
+                        </div>
+                        <p class="text-xs text-gasgx mb-4 uppercase tracking-wider font-semibold">CDTO | Chief Digital Technology Officer</p>
+                        <p class="text-sm text-gray-400 leading-relaxed">负责 GasGx 全套数字灵魂与 SaaS 系统的研发。主导 GasGx HMI 智控设计、智能诊断系统（GasGx-Ai）及移动端运维 App 的开发，为海外大客户提供极简的傻瓜式运维体验。</p>
+                    </div>
+
+                    <!-- 张 -->
+                    <div class="bg-[#151515] p-6 border-t-2 border-gray-700 hover:border-gasgx transition-colors duration-300">
+                        <div class="flex items-baseline gap-3 mb-1">
+                            <h3 class="text-4xl font-black text-white">张</h3>
+                            <span class="text-lg font-bold text-gray-200">首席营收官兼全球商务副总裁</span>
+                        </div>
+                        <p class="text-xs text-gasgx mb-4 uppercase tracking-wider font-semibold">CRO | Chief Revenue Officer</p>
+                        <p class="text-sm text-gray-400 leading-relaxed">负责天然气算力能源解决方案的海外市场拓展与大客户攻坚。精准对接北美、俄罗斯、中东等具备丰富搁浅天然气/伴生气资源的区域矿场、油气田主及能源基金，推动标准化算力底座的规模化发售与落地。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第8屏：结束 -->
+        <div class="slide">
+            <div class="content-box text-center">
+                <h1 class="text-5xl md:text-7xl lg:text-8xl text-white font-black mb-8 leading-tight">Unstrand the Gas. Reinvent Energy.<br><span class="text-gasgx glow-text">Monetize On-site.</span></h1>
+                <p class="text-2xl md:text-4xl text-gray-300 mb-16 tracking-widest">终结废气，重塑能源，就地变现。</p>
+                <div class="w-16 h-1 bg-gray-700 mx-auto mb-16"></div>
+                <p class="text-2xl font-bold text-white tracking-widest">GasGx Gas-Power Solutions (HK) Limited</p>
+                <p class="text-gray-500 mt-4">© 2026 GasGx. All Rights Reserved.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 核心交互逻辑 -->
+    <script>
+        const totalSlides = 8; // 更新为8屏
+        let currentSlide = 0;
+        const slider = document.getElementById('slider');
+        const progressBar = document.getElementById('progress-bar');
+
+        function updateSlide() {
+            // 滑动效果计算
+            slider.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            // 更新底部进度条
+            progressBar.style.width = `${((currentSlide + 1) / totalSlides) * 100}%`;
+        }
+
+        function moveSlide(direction) {
+            currentSlide += direction;
+            // 边界检查
+            if (currentSlide < 0) currentSlide = 0;
+            if (currentSlide >= totalSlides) currentSlide = totalSlides - 1;
+            updateSlide();
+        }
+
+        // 添加键盘支持 (左右方向键、空格键) 以备不时之需
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                moveSlide(1);
+            } else if (e.key === 'ArrowLeft') {
+                moveSlide(-1);
+            }
+        });
+    </script>
+</body>
+</html>

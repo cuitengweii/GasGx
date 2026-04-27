@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx 核心算法与能量转化推演</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'abyss-black': '#0A0A0A',
+                        'carbon-gray': '#1A1A1A',
+                        'aurora-green': '#5DD62C',
+                        'alert-red': '#FF3333',
+                    },
+                    fontFamily: {
+                        sans: ['"Microsoft YaHei"', '微软雅黑', 'sans-serif'],
+                        mono: ['"Microsoft YaHei"', '微软雅黑', 'monospace'],
+                    },
+                    animation: {
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'scan': 'scan 3s linear infinite',
+                        'bounce-slow': 'bounce 2s infinite',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%': { textShadow: '0 0 10px rgba(93, 214, 44, 0.2)' },
+                            '100%': { textShadow: '0 0 25px rgba(93, 214, 44, 0.8), 0 0 10px rgba(93, 214, 44, 0.5)' }
+                        },
+                        scan: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100%)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- KaTeX for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ],
+                throwOnError: false
+            });
+            
+            // Intersection Observer for Formula Animations
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('in-view');
+                    } else {
+                        // Remove class when out of view to re-trigger animation every time
+                        entry.target.classList.remove('in-view');
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            document.querySelectorAll('.math-block').forEach((el) => {
+                observer.observe(el);
+            });
+        });
+    </script>
+
+    <style>
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            background-color: #0A0A0A; 
+            color: #E5E7EB; 
+            height: 100%;
+            overflow: hidden; 
+            font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+        }
+        
+        .snap-container {
+            height: 100vh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+            -ms-overflow-style: none; 
+            scrollbar-width: none; 
+        }
+        .snap-container::-webkit-scrollbar { display: none; }
+
+        .snap-section {
+            height: 100vh;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .content-box {
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        /* Math display overrides */
+        .katex-display { 
+            background-color: transparent !important;
+            padding: 1.5rem 1rem !important; 
+            font-size: 1.5rem !important;
+            margin: 0 !important;
+        }
+
+        /* Interactive Formula Block Animation */
+        .math-block {
+            background-color: #1A1A1A;
+            border-radius: 0.75rem;
+            border: 1px solid #333;
+            opacity: 0;
+            transform: scale(0.9) translateY(30px);
+            transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .math-block.in-view {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            border-color: rgba(93, 214, 44, 0.5);
+            box-shadow: 0 0 40px rgba(93,214,44,0.15), inset 0 0 20px rgba(93,214,44,0.1);
+        }
+        
+        /* Phone Mockup Styling */
+        .phone-container {
+            width: 320px;
+            height: 650px;
+            border-radius: 40px;
+            background: #000;
+            border: 10px solid #1f2022;
+            box-shadow: 0 0 60px rgba(93, 214, 44, 0.2), inset 0 0 10px rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+            transform: scale(0.95);
+        }
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 110px;
+            height: 25px;
+            background: #1f2022;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            z-index: 20;
+        }
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #0A0A0A;
+            position: relative;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+        .phone-screen::-webkit-scrollbar { display: none; }
+        
+        .calc-value { transition: all 0.5s ease-out; }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #5DD62C;
+            opacity: 0.5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: "Microsoft YaHei", "微软雅黑", monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased">
+
+    <div class="fixed inset-0 pointer-events-none z-[-1] opacity-[0.15]" style="background-image: linear-gradient(#1A1A1A 1px, transparent 1px), linear-gradient(90deg, #1A1A1A 1px, transparent 1px); background-size: 50px 50px;"></div>
+
+    <main class="snap-container" id="mainScroll">
+        
+        <!-- ================= SCREEN 0: COVER ================= -->
+        <section class="snap-section">
+            <div class="text-center max-w-4xl">
+                <div class="text-aurora-green font-mono tracking-widest uppercase text-sm mb-6 flex items-center justify-center">
+                    <span class="w-2 h-2 bg-aurora-green rounded-full animate-pulse mr-3"></span>
+                    GasGx Core Algorithm
+                </div>
+                <h1 class="text-5xl md:text-7xl font-black text-white mb-6 tracking-tighter leading-tight animate-glow">
+                    核心算法与能量转化推演
+                </h1>
+                
+                <div class="flex justify-center items-center gap-4 text-gray-500 font-mono tracking-widest uppercase mt-12 text-lg md:text-xl font-bold">
+                    <span>[ 物理能量 ]</span>
+                    <span class="text-aurora-green">$\rightarrow$</span>
+                    <span>[ 数字资产 ]</span>
+                    <span class="text-aurora-green">$\rightarrow$</span>
+                    <span class="text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]">[ 美元结算 ]</span>
+                </div>
+            </div>
+            
+            <div class="scroll-indicator animate-bounce-slow">
+                SCROLL TO INITIALIZE
+                <svg class="w-6 h-6 mt-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+            </div>
+        </section>
+
+        <!-- ================= SCREEN 1: STAGE 1 ================= -->
+        <section class="snap-section">
+            <div class="content-box">
+                <div class="text-center mb-4">
+                    <h2 class="text-4xl md:text-5xl font-black text-white mb-2"><span class="text-aurora-green font-mono opacity-50">01.</span> 第一阶</h2>
+                    <h3 class="text-2xl text-gray-400 tracking-widest uppercase">物理能量转化 (废气 $\rightarrow$ 电力)</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div class="bg-abyss-black border border-gray-800 p-6 rounded-lg font-mono text-sm text-gray-400 space-y-4">
+                        <div class="border-b border-gray-800 pb-2"><strong class="text-white">INPUT PARAMETERS:</strong></div>
+                        <div><span class="text-aurora-green">$V_{gas}$</span> = 日均燃烧气量 ($m^3/\text{day}$)</div>
+                        <div><span class="text-aurora-green">$H_{gas}$</span> = 天然气热值常量 ($10\text{ kWh}/m^3$)</div>
+                        <div><span class="text-aurora-green">$\eta_{gen}$</span> = 发电机组综合转化效率 (<strong class="text-white">39%</strong>)</div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="text-gray-500 text-sm mb-2 uppercase tracking-widest">气转电持续功率模型</p>
+                        <div class="math-block">
+                            $$P_{kW} = \frac{V_{gas} \times H_{gas} \times \eta_{gen}}{24}$$
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-carbon-gray p-8 border-l-4 border-aurora-green rounded-r font-mono">
+                    <ul class="space-y-4 text-gray-300">
+                        <li><strong class="text-aurora-green mr-2">▶</strong> <span class="text-white">原始输入：</span> 离网搁浅天然气/伴生气</li>
+                        <li><strong class="text-aurora-green mr-2">▶</strong> <span class="text-white">系统动作：</span> 经由底层硬件 39% 极致热力转化</li>
+                        <li><strong class="text-aurora-green mr-2">▶</strong> <span class="text-white">输出结果：</span> 稳定、连续的工业级电功率极大值 ($P_{kW}$)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="scroll-indicator animate-bounce-slow">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+            </div>
+        </section>
+
+        <!-- ================= SCREEN 2: STAGE 2 ================= -->
+        <section class="snap-section">
+            <div class="content-box">
+                <div class="text-center mb-4">
+                    <h2 class="text-4xl md:text-5xl font-black text-white mb-2"><span class="text-aurora-green font-mono opacity-50">02.</span> 第二阶</h2>
+                    <h3 class="text-2xl text-gray-400 tracking-widest uppercase">算力降维映射 (电力 $\rightarrow$ 算力)</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div class="bg-abyss-black border border-gray-800 p-6 rounded-lg font-mono text-sm text-gray-400 space-y-4">
+                        <div class="border-b border-gray-800 pb-2"><strong class="text-white">HARDWARE PARAMETERS:</strong></div>
+                        <div><span class="text-aurora-green">$P_{kW}$</span> = 第一阶所得持续电功率</div>
+                        <div><span class="text-aurora-green">$E_{rig}$</span> = 单T算力功耗比 <br>(水冷标准界定为 $0.03\text{ kW/TH}$)</div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="text-gray-500 text-sm mb-2 uppercase tracking-widest">电转总算力输出模型</p>
+                        <div class="math-block">
+                            $$H_{total} = \frac{P_{kW}}{E_{rig}}$$
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-carbon-gray p-8 border-l-4 border-aurora-green rounded-r font-mono">
+                    <ul class="space-y-4 text-gray-300">
+                        <li><strong class="text-aurora-green mr-2">▶</strong> <span class="text-white">中间介质：</span> 无法并网消纳的持续电力</li>
+                        <li><strong class="text-aurora-green mr-2">▶</strong> <span class="text-white">系统动作：</span> 饱和式供电于标准化水冷算力单元</li>
+                        <li><strong class="text-aurora-green mr-2">▶</strong> <span class="text-white">输出结果：</span> 物理电能 100% 映射为全球加密网络算力资产 ($H_{total}$)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="scroll-indicator animate-bounce-slow">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+            </div>
+        </section>
+
+        <!-- ================= SCREEN 3: STAGE 3 ================= -->
+        <section class="snap-section">
+            <div class="content-box">
+                <div class="text-center mb-4">
+                    <h2 class="text-4xl md:text-5xl font-black text-white mb-2"><span class="text-aurora-green font-mono opacity-50">03.</span> 第三阶</h2>
+                    <h3 class="text-2xl text-gray-400 tracking-widest uppercase">金融资产变现 (算力 $\rightarrow$ 美元)</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-6">
+                    <div class="bg-abyss-black border border-gray-800 p-6 rounded-lg font-mono text-sm text-gray-400 flex flex-wrap gap-6 justify-center">
+                        <div><span class="text-aurora-green">$R_{TH}$</span> = 全网日均每T产出 (BTC)</div>
+                        <div><span class="text-aurora-green">$P_{BTC}$</span> = 预言机实时美元定价 ($USD)</div>
+                        <div><span class="text-aurora-green">$C_{gas}$</span> = 搁浅气源成本 (恒定 $\$0$)</div>
+                    </div>
+                    
+                    <div class="text-center space-y-4">
+                        <p class="text-gray-500 text-sm uppercase tracking-widest">日化毛收益与年化矩阵</p>
+                        <div class="math-block py-2">
+                            $$Rev_{daily} = (H_{total} \times R_{TH} \times P_{BTC}) - (V_{gas} \times C_{gas})$$
+                        </div>
+                        <div class="math-block py-2 scale-90">
+                            $$Rev_{annual} = Rev_{daily} \times 365$$
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-carbon-gray p-8 border-l-4 border-aurora-green rounded-r font-mono">
+                    <ul class="space-y-4 text-gray-300">
+                        <li><strong class="text-aurora-green mr-2">▶</strong> <span class="text-white">底层逻辑：</span> 零成本极值套利</li>
+                        <li><strong class="text-aurora-green mr-2">▶</strong> <span class="text-white">系统动作：</span> 算力高位抛售，挂载全球最高共识流动性</li>
+                        <li><strong class="text-aurora-green mr-2">▶</strong> <span class="text-white">输出结果：</span> 绝对的美元净利润 ($Gross Profit)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="scroll-indicator animate-bounce-slow">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+            </div>
+        </section>
+
+        <!-- ================= SCREEN 4: ROI ================= -->
+        <section class="snap-section">
+            <div class="content-box">
+                <div class="text-center mb-4">
+                    <h2 class="text-4xl md:text-5xl font-black text-white mb-2"><span class="text-aurora-green font-mono opacity-50">04.</span> 最终阶</h2>
+                    <h3 class="text-2xl text-gray-400 tracking-widest uppercase">极速回本周期测算 (ROI)</h3>
+                </div>
+                
+                <div class="text-center mb-8">
+                    <p class="text-gray-500 text-sm mb-4 uppercase tracking-widest">静态回本月数估算模型</p>
+                    <div class="math-block">
+                        $$Payback\text{ (Months)} = \frac{CAPEX}{(Rev_{annual} / 12)}$$
+                    </div>
+                </div>
+
+                <div class="bg-carbon-gray p-8 rounded-xl border border-aurora-green shadow-[0_0_30px_rgba(93,214,44,0.15)] relative overflow-hidden font-mono">
+                    <div class="absolute inset-0 bg-aurora-green opacity-5"></div>
+                    <ul class="space-y-4 text-gray-300 relative z-10 text-lg">
+                        <li class="flex items-start"><strong class="text-aurora-green mr-3">✖</strong> 传统能源基建：5 - 8 年漫长回收期</li>
+                        <li class="flex items-start"><strong class="text-aurora-green mr-3">✔</strong> GasGx 引擎：按固定单位千瓦 CAPEX 核算，实现月度极速静态回本</li>
+                        <li class="flex items-start mt-6 text-xl text-white font-bold border-t border-gray-800 pt-6">
+                            战略降维结论：输入废气 $\rightarrow$ 算法处理 $\rightarrow$ 提取美元
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="scroll-indicator animate-bounce-slow">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+            </div>
+        </section>
+
+        <!-- ================= SCREEN 5: SIMULATOR ================= -->
+        <section class="snap-section bg-black">
+            <div class="w-full flex flex-col md:flex-row items-center justify-center max-w-6xl mx-auto gap-12">
+                
+                <div class="md:w-1/2 text-left md:pr-8">
+                    <h3 class="text-4xl text-white font-black tracking-tighter uppercase mb-4">GasGx 移动端<br><span class="text-aurora-green">实时测算中台</span></h3>
+                    <p class="text-gray-500 mb-8 text-lg leading-relaxed">
+                        在移动设备中部署的核心推演系统。<br>点击右侧真实气量数据，一键触发算法引擎，极速推演<strong class="text-white">“物理至美元”</strong>全流程。
+                    </p>
+                    <div class="hidden md:block bg-carbon-gray p-4 rounded-lg border border-gray-800">
+                        <div class="font-mono text-xs text-gray-400 space-y-2">
+                            <div>> 系统启动中...</div>
+                            <div class="text-aurora-green">> 等待输入气源规模参数...</div>
+                            <div>> 全网算力难度：已同步 (0.00000108)</div>
+                            <div>> 预言机实时币价：<strong class="text-white">$75,000 USD</strong></div>
+                            <div>> 发电机组转化极值：<strong class="text-white">39%</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="md:w-1/2 flex justify-center">
+                    <!-- Phone Mockup -->
+                    <div class="phone-container shadow-2xl">
+                        <div class="phone-notch"></div>
+                        
+                        <div class="phone-screen p-5 pt-12 flex flex-col">
+                            <!-- App Header -->
+                            <div class="text-center mb-6">
+                                <h4 class="text-aurora-green font-mono font-bold text-lg tracking-widest">GASGX CORE</h4>
+                                <div class="text-[10px] text-gray-500 font-mono">实时模拟已启动</div>
+                            </div>
+
+                            <!-- Simulator Controls -->
+                            <div class="grid grid-cols-3 gap-2 mb-6">
+                                <button onclick="runSimulation(10000)" class="bg-carbon-gray border border-gray-700 hover:border-aurora-green text-xs font-mono text-white py-3 rounded transition-colors focus:bg-aurora-green focus:text-black">1万方/天</button>
+                                <button onclick="runSimulation(50000)" class="bg-carbon-gray border border-gray-700 hover:border-aurora-green text-xs font-mono text-white py-3 rounded transition-colors focus:bg-aurora-green focus:text-black">5万方/天</button>
+                                <button onclick="runSimulation(100000)" class="bg-carbon-gray border border-gray-700 hover:border-aurora-green text-xs font-mono text-white py-3 rounded transition-colors focus:bg-aurora-green focus:text-black">10万方/天</button>
+                            </div>
+
+                            <!-- Calculation View -->
+                            <div class="flex-grow space-y-4 text-left">
+                                <!-- Input -->
+                                <div class="bg-[#111] p-3 rounded border border-gray-800">
+                                    <div class="text-[10px] text-gray-500 font-bold">输入: V(gas) 日均气量</div>
+                                    <div class="text-2xl font-mono text-white calc-value" id="sim-vgas">0</div>
+                                    <div class="text-[10px] text-gray-600 mt-1">立方米/天 (m³/day)</div>
+                                </div>
+
+                                <!-- Process 1 -->
+                                <div class="bg-[#111] p-3 rounded border border-gray-800 relative overflow-hidden">
+                                    <div class="absolute w-full h-1 bg-aurora-green top-0 left-0 opacity-20 hidden" id="scan-1"></div>
+                                    <div class="text-[10px] text-gray-500 font-bold">第一阶: P(kW) 持续电功率</div>
+                                    <div class="text-2xl font-mono text-white calc-value" id="sim-pkw">0</div>
+                                    <div class="text-[10px] text-gray-600 mt-1">千瓦 (连续输出)</div>
+                                </div>
+
+                                <!-- Process 2 -->
+                                <div class="bg-[#111] p-3 rounded border border-gray-800 relative overflow-hidden">
+                                    <div class="absolute w-full h-1 bg-aurora-green top-0 left-0 opacity-20 hidden" id="scan-2"></div>
+                                    <div class="text-[10px] text-gray-500 font-bold">第二阶: H(total) 总算力</div>
+                                    <div class="text-2xl font-mono text-white calc-value" id="sim-htotal">0</div>
+                                    <div class="text-[10px] text-gray-600 mt-1">TH/s (水冷标准)</div>
+                                </div>
+
+                                <!-- Output 1 -->
+                                <div class="bg-aurora-green p-4 rounded border border-aurora-green shadow-[0_0_20px_rgba(93,214,44,0.3)] mt-2">
+                                    <div class="text-[11px] text-black font-bold mb-1">第三阶: 预估年化毛利润 (美元)</div>
+                                    <div class="text-3xl font-black font-mono text-black calc-value tracking-tighter" id="sim-usd">$0</div>
+                                </div>
+
+                                <!-- Output 2 -->
+                                <div class="bg-[#111] p-3 rounded border border-gray-800">
+                                    <div class="text-[10px] text-gray-500 font-bold">静态回本周期预估</div>
+                                    <div class="text-xl font-mono text-white calc-value"><span id="sim-roi">0.0</span> <span class="text-[10px] text-gray-500">个月</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="absolute top-8 right-8 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-aurora-green animate-pulse"></span>
+                <span class="text-xs text-gray-500 font-mono tracking-widest">SYSTEM ONLINE</span>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Updated Constants based on strictly core mechanics
+        const H_gas = 10;
+        const n_gen = 0.39;      // 升级为39%
+        const E_rig = 0.03;
+        const R_TH = 0.00000108; 
+        const P_BTC = 75000;     // 升级为75000 USD
+        const CAPEX_per_kW = 610;
+
+        function animateValue(obj, start, end, duration, formatFn = Math.floor) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                const current = progress === 1 ? end : start + (end - start) * easeProgress;
+                obj.innerHTML = formatFn(current).toLocaleString();
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function runSimulation(v_gas_input) {
+            try {
+                const actx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = actx.createOscillator();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, actx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, actx.currentTime + 0.05);
+                osc.connect(actx.destination); osc.start(); osc.stop(actx.currentTime + 0.05);
+            } catch(e) {}
+
+            // Core Math
+            const P_kW = (v_gas_input * H_gas * n_gen) / 24;
+            const H_total = P_kW / E_rig;
+            const Rev_daily = (H_total * R_TH * P_BTC);
+            const Rev_annual = Rev_daily * 365;
+            const Capex = P_kW * CAPEX_per_kW;
+            const Payback = Capex / (Rev_annual / 12);
+
+            const elVgas = document.getElementById('sim-vgas');
+            const elPkw = document.getElementById('sim-pkw');
+            const elHtotal = document.getElementById('sim-htotal');
+            const elUsd = document.getElementById('sim-usd');
+            const elRoi = document.getElementById('sim-roi');
+            const scan1 = document.getElementById('scan-1');
+            const scan2 = document.getElementById('scan-2');
+            
+            scan1.classList.remove('hidden'); scan1.classList.add('animate-scan');
+            scan2.classList.remove('hidden'); scan2.classList.add('animate-scan');
+
+            animateValue(elVgas, 0, v_gas_input, 600);
+            setTimeout(() => animateValue(elPkw, 0, P_kW, 800), 300);
+            setTimeout(() => animateValue(elHtotal, 0, H_total, 1000), 600);
+            setTimeout(() => {
+                animateValue(elUsd, 0, Rev_annual, 1200, (v) => "$" + Math.floor(v).toLocaleString());
+                scan1.classList.add('hidden');
+                scan2.classList.add('hidden');
+            }, 900);
+            setTimeout(() => animateValue(elRoi, 0, Payback, 800, (v) => v.toFixed(1)), 1200);
+        }
+
+        // Initialize simulation
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => runSimulation(10000), 1500);
+        });
+    </script>
+</body>
+</html>

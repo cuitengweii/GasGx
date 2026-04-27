@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx 顶层市场战略演示</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-main: #E0E0E0;
+            --text-muted: #888888;
+            --aurora-green: #5DD62C;
+            --aurora-glow: rgba(93, 214, 44, 0.3);
+            --danger-red: #FF3333;
+            --card-bg: #1A1A1A;
+            --border-color: #333333;
+        }
+
+        /* 响应式根节点：核心解决方案！根据屏幕宽高自动等比缩小全局 rem 尺寸 */
+        html { font-size: 16px; }
+        @media (max-width: 1440px) { html { font-size: 14px; } }
+        @media (max-width: 1280px), (max-height: 800px) { html { font-size: 12px; } }
+        @media (max-width: 1024px), (max-height: 650px) { html { font-size: 10.5px; } }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none; /* PPT模式防止误触选中文字 */
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* 翻页触控区 */
+        .click-zone {
+            position: fixed;
+            top: 0;
+            height: 100vh;
+            width: 50vw;
+            z-index: 100;
+            cursor: pointer;
+        }
+        .click-zone.left { left: 0; }
+        .click-zone.right { right: 0; }
+
+        /* 进度条 */
+        .progress-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background-color: var(--aurora-green);
+            transition: width 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 0 10px var(--aurora-glow);
+        }
+
+        /* 容器与幻灯片 */
+        .slider-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .slide {
+            min-width: 100vw;
+            height: 100vh;
+            /* 采用视口相关单位 (vh/vw) 替代死尺寸 (rem) 防止上下溢出 */
+            padding: 7vh 6vw; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* 排版样式 */
+        h1 {
+            font-size: 3.5rem;
+            color: #FFFFFF;
+            margin-bottom: 2vh;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            color: var(--aurora-green);
+            margin-bottom: 3vh;
+            font-weight: 600;
+            border-left: 6px solid var(--aurora-green);
+            padding-left: 1rem;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            color: #FFF;
+            margin-bottom: 1vh;
+            margin-top: 2vh;
+        }
+
+        p {
+            font-size: 1.4rem;
+            line-height: 1.5;
+            margin-bottom: 1.5vh;
+            color: var(--text-main);
+        }
+
+        ul {
+            list-style: none;
+            margin-bottom: 2vh;
+        }
+
+        li {
+            font-size: 1.4rem;
+            line-height: 1.5;
+            margin-bottom: 1.5vh;
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        li::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: var(--aurora-green);
+            font-weight: bold;
+        }
+
+        strong {
+            color: var(--aurora-green);
+        }
+
+        .highlight-text {
+            color: #FFF;
+            font-weight: bold;
+        }
+
+        /* 数据引用卡片 */
+        .data-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--aurora-green);
+            padding: 2vh 1.5vw;
+            margin: 2vh 0;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 10;
+        }
+
+        .data-card p {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #CCC;
+            line-height: 1.5;
+        }
+
+        .data-card strong {
+            color: var(--aurora-green);
+        }
+
+        /* 布局组件 */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4vw;
+            align-items: center;
+        }
+
+        /* SVG 容器及强化文字样式 */
+        .svg-container {
+            width: 100%;
+            max-height: 70vh; /* 严格限制SVG最高高度，保护排版 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .svg-container svg {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .svg-text {
+            text-shadow: 0px 4px 10px rgba(0,0,0,0.9); /* 强化文字边缘阴影，脱离背景 */
+        }
+
+        /* 徽标 */
+        .logo {
+            position: absolute;
+            top: 4vh;
+            left: 4vw;
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #FFF;
+            letter-spacing: 2px;
+            z-index: 200;
+        }
+        .logo span { color: var(--aurora-green); }
+
+        /* 提示文字 */
+        .nav-hint {
+            position: absolute;
+            bottom: 3vh;
+            right: 4vw;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            z-index: 200;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="logo">Gas<span>Gx</span></div>
+    <div class="nav-hint">点击屏幕左/右侧进行翻页</div>
+    
+    <!-- 交互触发区 -->
+    <div class="click-zone left" onclick="prevSlide()"></div>
+    <div class="click-zone right" onclick="nextSlide()"></div>
+
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="slider-container" id="slider">
+
+        <!-- Slide 1: 封面 -->
+        <div class="slide">
+            <div class="grid-2">
+                <div>
+                    <h1 style="font-size: 4rem;">顶层市场战略</h1>
+                    <p style="font-size: 2rem; color: var(--text-muted); margin-bottom: 4vh;">从“废气治理”到万亿级“搁浅天然气”金矿</p>
+                    <div class="data-card" style="border-left-color: var(--aurora-green);">
+                        <p style="font-size: 1.4rem;"><strong>汇报主旨：</strong></p>
+                        <p style="margin-top: 1.5vh;">在明确 GasGx “全球领先的天然气算力能源解决方案集成商”定位之前，必须先对战场进行降维拆解。我们要向市场证明：GasGx 不是在竞争红海，而是在定义一个庞大得超乎想象的蓝海——<strong style="font-size:1.6rem; color:#FFF;">搁浅天然气（Stranded Gas）</strong>。</p>
+                    </div>
+                </div>
+                <div class="svg-container">
+                    <svg viewBox="0 0 400 400" width="100%" height="100%">
+                        <circle cx="200" cy="200" r="150" fill="none" stroke="#333" stroke-width="2"/>
+                        <circle cx="200" cy="200" r="100" fill="none" stroke="var(--aurora-green)" stroke-width="4" stroke-dasharray="10 15"/>
+                        <circle cx="200" cy="200" r="50" fill="rgba(93, 214, 44, 0.1)"/>
+                        <text x="200" y="210" fill="#FFF" font-size="32" font-weight="bold" text-anchor="middle" class="svg-text">GasGx</text>
+                        <!-- 轨道动画点 -->
+                        <circle cx="200" cy="50" r="6" fill="#FFF">
+                            <animateTransform attributeName="transform" type="rotate" from="0 200 200" to="360 200 200" dur="10s" repeatCount="indefinite"/>
+                        </circle>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: 认知破局 -->
+        <div class="slide">
+            <h2>一、认知破局：为什么“伴生气”不足以承载野心？</h2>
+            <p>燃气发电往往聚焦于以下气源，但从<strong>全球规模、标准化扩张及资产变现</strong>角度来看，不足以支撑金融级降维打击战略。</p>
+            <div class="grid-2" style="align-items: start; margin-top: 2vh;">
+                <div>
+                    <h3>1. 伴生气 / 火炬气 (Associated / Flare Gas)</h3>
+                    <ul>
+                        <li><strong>市场现状：</strong> 偏远、量小，直接烧掉。</li>
+                        <li><strong>局限性：</strong> 典型的“政策与ESG驱动”。易被定义为“环保配套商”。</li>
+                    </ul>
+                    <div class="data-card">
+                        <p>📊 <strong>数据瓶颈：</strong> 全球每年燃烧约 <strong>140 BCM (约 5 TCF)</strong>。</p>
+                        <p style="font-size: 1rem; margin-top: 1vh; color: #888;">— 数据来源：世界银行 (World Bank)《全球气体减排追踪报告》</p>
+                    </div>
+                </div>
+                <div>
+                    <h3>2. 生物质气 / 沼气</h3>
+                    <ul>
+                        <li><strong>局限性：</strong> 分散、不稳定、热值低。难以支撑高稳定算力底座。</li>
+                    </ul>
+                    <h3 style="margin-top: 3vh;">3. 合成气 / 煤层气</h3>
+                    <ul>
+                        <li><strong>局限性：</strong> 需重资产前置设备或审批复杂，无法“即插即用”。</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: 真正的星辰大海 -->
+        <div class="slide">
+            <h2>二、真正的星辰大海：“搁浅天然气”宏大叙事</h2>
+            <p><strong>搁浅天然气 (Stranded Gas)</strong> 100% 包含了伴生气范畴，更涵盖了无法上网、经营不善、被物理空间死死锁住的巨量化石能源。</p>
+            <div class="grid-2" style="margin-top: 3vh;">
+                <div>
+                    <h3>四大核心阵地</h3>
+                    <ul style="margin-top: 2vh;">
+                        <li><strong>无管网覆盖闲置气井：</strong> 加拿大、德州等地，建管道成本远超气体价值。</li>
+                        <li><strong>低产/边缘气田：</strong> 传统巨头看不上，无经济动力开发。</li>
+                        <li><strong>地缘政治受限气：</strong> 制裁或经济崩溃导致无法出口。</li>
+                        <li><strong>传统的伴生气与火炬气。</strong></li>
+                    </ul>
+                </div>
+                <div class="data-card" style="border-left-color: var(--danger-red);">
+                    <p style="font-size: 1.6rem; color: #FFF; margin-bottom: 1.5vh;">⚠️ <strong>核心结论：</strong></p>
+                    <p style="line-height: 1.6;">伴生气治理只是撕开市场的<strong>“切入口”</strong>，绝不是<strong>“天花板”</strong>。要构建千亿级美元数字能源帝国，必须将视野从“环保痛点”跃迁至<strong>“能源重组”</strong>。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: 碾压级数据支撑 -->
+        <div class="slide">
+            <h2>碾压级的数据支撑 (Data First)</h2>
+            <div class="grid-2">
+                <div>
+                    <ul style="font-size: 1.6rem;">
+                        <li style="margin-bottom: 2.5vh;"><strong>储量极度惊人：</strong> 全球约有 <strong style="font-size: 2.2rem; color: #FFF;">3,000 TCF</strong> 的搁浅天然气资源。</li>
+                        <li style="margin-bottom: 2.5vh;"><strong>占比极其庞大：</strong> 占据了全球已探明总储量的 <strong style="font-size: 2.2rem; color: #FFF;">40%</strong>！</li>
+                        <li><strong>超级杠杆：</strong> 是伴生气年消耗量(5 TCF)的 <strong style="font-size: 2.2rem; color: #FFF;">600倍以上</strong>！</li>
+                    </ul>
+                    <div class="data-card" style="margin-top: 3vh;">
+                        <p>📊 <strong>数据权威背书：</strong></p>
+                        <p style="margin-top: 1vh; color: #FFF;">美国能源部 (DOE, Department of Energy) 深度评估报告</p>
+                    </div>
+                </div>
+                <div class="svg-container">
+                    <svg viewBox="0 0 400 400" width="100%" height="100%">
+                        <!-- 大圆代表 3000 TCF：更改为纯黑底色，加大加粗文字 -->
+                        <circle cx="200" cy="200" r="160" fill="#000" stroke="var(--aurora-green)" stroke-width="3"/>
+                        <text x="200" y="180" fill="#FFF" font-size="36" font-weight="bold" text-anchor="middle" class="svg-text">3,000 TCF</text>
+                        <text x="200" y="220" fill="var(--aurora-green)" font-size="20" font-weight="bold" text-anchor="middle" class="svg-text">全球搁浅气总盘 (40%)</text>
+                        
+                        <!-- 小圆代表 5 TCF -->
+                        <circle cx="200" cy="280" r="20" fill="var(--danger-red)"/>
+                        <text x="200" y="325" fill="#FFF" font-size="16" font-weight="bold" text-anchor="middle" class="svg-text">5 TCF 伴生气</text>
+                        
+                        <!-- 乘数箭头 -->
+                        <path d="M 100 280 Q 50 200 100 120" fill="none" stroke="#FFF" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#arrow)"/>
+                        <text x="60" y="205" fill="#FFF" font-size="22" font-weight="bold" class="svg-text">600x</text>
+
+                        <defs>
+                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#FFF"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: 商业模式 -->
+        <div class="slide">
+            <h2>三、终极战略归环：GasGx 十二字商业模式</h2>
+            <p style="font-size: 2rem; text-align: center; margin-bottom: 4vh; color: #FFF; font-weight: bold; letter-spacing: 4px;">
+                “终结废气，重塑能源，就地变现”<br>
+                <span style="font-size: 1.2rem; color: var(--aurora-green); letter-spacing: 1px;">(Stop Flaring. Bypass the Pipe. Monetize On-site.)</span>
+            </p>
+            
+            <div style="display: flex; justify-content: space-between; gap: 2vw;">
+                <div class="data-card" style="flex: 1; text-align: center; padding: 4vh 2vw;">
+                    <h3 style="color: var(--danger-red);">1. 终结废气</h3>
+                    <p style="color: #888; font-size:1rem; margin-bottom:1.5vh;">(Stop Flaring - 打痛点)</p>
+                    <p style="color: #FFF;">开到井口，消化最棘手的伴生气和废气，解决 ESG 罚款燃眉之急（敲门砖）。</p>
+                </div>
+                <div class="data-card" style="flex: 1; text-align: center; padding: 4vh 2vw;">
+                    <h3 style="color: var(--aurora-green);">2. 重塑能源</h3>
+                    <p style="color: #888; font-size:1rem; margin-bottom:1.5vh;">(Reshape Energy - 升维)</p>
+                    <p style="color: #FFF;">不建一米管道。通过燃气发电与算力矿机，将物理天然气重塑为高密度数字资产。</p>
+                </div>
+                <div class="data-card" style="flex: 1; text-align: center; padding: 4vh 2vw; background: rgba(93,214,44,0.05); border-color: var(--aurora-green);">
+                    <h3 style="color: #FFF;">3. 就地变现</h3>
+                    <p style="color: #888; font-size:1rem; margin-bottom:1.5vh;">(Monetize On-site - 闭环)</p>
+                    <p style="color: #FFF;">GasGx 算力底座一开机：<strong>拔网线是发电机，插网线是印钞机</strong>。原地暴利变现。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: 总结 -->
+        <div class="slide">
+            <h2>四、总结：坚守“搁浅天然气”的终极逻辑</h2>
+            <div class="grid-2">
+                <div>
+                    <ul style="font-size: 1.6rem; line-height: 1.8;">
+                        <li><strong>市场足够大：</strong> 占探明储量 40% (3000 TCF) 的绝对蓝海，无巨头垄断。</li>
+                        <li><strong>痛点足够深：</strong> 老外面临“有气卖不掉，烧气被罚款”的绝境。</li>
+                        <li><strong>降维打击极其锋利：</strong> 传统设备商卖废铁（拼造价），GasGx 卖理财（拼 ROCE）。</li>
+                    </ul>
+                    <div class="data-card" style="margin-top: 4vh; background: var(--aurora-green); border: none;">
+                        <p style="font-size: 1.6rem; color: #000; font-weight: bold; line-height: 1.6;">
+                            GasGx 的存在，就是要去唤醒全球那 40% 沉睡的搁浅天然气。我们不仅是废气的终结者，更是搁浅能源的终极变现引擎！
+                        </p>
+                    </div>
+                </div>
+                <div class="svg-container">
+                    <svg viewBox="0 0 300 300" width="100%" height="100%">
+                        <!-- 增加纯黑底色，去掉切割文字的干扰线 -->
+                        <polygon points="150,20 280,90 280,210 150,280 20,210 20,90" fill="#000" stroke="var(--aurora-green)" stroke-width="4"/>
+                        <polygon points="150,40 260,100 260,200 150,260 40,200 40,100" fill="rgba(93,214,44,0.1)" stroke="#333" stroke-width="1"/>
+                        <text x="150" y="145" fill="#FFF" font-size="32" font-weight="bold" text-anchor="middle" class="svg-text">GasGx</text>
+                        <text x="150" y="185" fill="var(--aurora-green)" font-size="16" font-weight="bold" text-anchor="middle" class="svg-text">SYSTEM ONLINE</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: 10% 市场份额推演 -->
+        <div class="slide">
+            <h2>五、终局推演：拿下 10% 的全球份额，是何种体量？</h2>
+            <p>如果我们通过 GasGx 的“标准化算力底座”与“金融变现”降维打击，仅吃下全球搁浅天然气大盘 <strong>10%</strong> 的份额：</p>
+            <div class="grid-2" style="margin-top: 2vh;">
+                <div>
+                    <div class="data-card" style="border-left-color: var(--aurora-green); background: rgba(93, 214, 44, 0.08); padding: 3vh 2vw;">
+                        <p style="font-size: 1.8rem; color: #FFF; margin-bottom: 1.5vh; font-weight: bold;">🎯 目标体量：300 TCF</p>
+                        <ul style="font-size: 1.4rem; line-height: 1.6; margin-top: 2vh; color: var(--text-main);">
+                            <li style="margin-bottom: 2vh;">
+                                <strong style="color: #FFF;">🌍 环保视角的降维：</strong><br>
+                                相当于一口气彻底解决全球 <strong style="color: var(--danger-red); font-size: 1.8rem;">60年</strong> 的伴生气燃烧排放总量！<br>
+                                <span style="font-size: 1.1rem; color: #BBB;">(逻辑：300 TCF ÷ 年燃烧量 5 TCF = 60年)</span>
+                            </li>
+                            <li style="margin-bottom: 2vh;">
+                                <strong style="color: #FFF;">⚡ 能源视角的降维：</strong><br>
+                                相当于我们直接掌控了全人类 <strong style="color: var(--aurora-green); font-size: 1.8rem;">2年以上</strong> 的天然气总消耗量。<br>
+                                <span style="font-size: 1.1rem; color: #BBB;">(全球全年总消耗量约为 140 TCF)</span>
+                            </li>
+                            <li style="margin-bottom: 0;">
+                                <strong style="color: #FFF;">💰 资产视角的降维：</strong><br>
+                                我们锚定、垄断了一个 <strong style="color: var(--aurora-green); font-size: 1.8rem; border-bottom: 2px solid var(--aurora-green);">万亿美元级</strong> 的数字加密储备池。<br>
+                                <span style="font-size: 1.1rem; color: #E0E0E0; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 6px;">(逻辑：1 TCF=10亿 MCF。按极度保守的井口底价 $3.5/MCF 估算，300 TCF 基础价值即突破 1.05万亿美元。经算力重塑，溢价将倍数级放大)</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="svg-container">
+                    <svg viewBox="0 0 400 400" width="100%" height="100%">
+                        <!-- 背景圆环内部加入纯深色衬底，文字加大加粗 -->
+                        <circle cx="200" cy="200" r="140" fill="#050505" stroke="#333" stroke-width="40"/>
+                        <text x="200" y="190" fill="#FFF" font-size="24" font-weight="bold" text-anchor="middle" class="svg-text">全球搁浅气</text>
+                        <text x="200" y="225" fill="var(--aurora-green)" font-size="30" font-weight="bold" text-anchor="middle" class="svg-text">3,000 TCF</text>
+                        
+                        <!-- 极光绿高亮圆弧代表 10% (300 TCF) -->
+                        <circle cx="200" cy="200" r="140" fill="none" stroke="var(--aurora-green)" stroke-width="40" 
+                                stroke-dasharray="88 792" transform="rotate(-90 200 200)">
+                            <animate attributeName="stroke-dasharray" from="0 880" to="88 792" dur="2s" fill="freeze" />
+                        </circle>
+                        
+                        <!-- 引出线和文字 -->
+                        <path d="M 230 70 L 280 40 L 380 40" fill="none" stroke="var(--aurora-green)" stroke-width="2"/>
+                        <circle cx="230" cy="70" r="4" fill="var(--aurora-green)"/>
+                        <text x="380" y="30" fill="#FFF" font-size="26" font-weight="bold" text-anchor="end" class="svg-text">10% 份额</text>
+                        <text x="380" y="60" fill="var(--aurora-green)" font-size="18" font-weight="bold" text-anchor="end" class="svg-text">300 TCF = 万亿资产池</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const slider = document.getElementById('slider');
+        const progressBar = document.getElementById('progressBar');
+
+        function updateSlider() {
+            slider.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            const progress = ((currentSlide + 1) / totalSlides) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlider();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlider();
+            }
+        }
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            }
+        });
+
+        // 初始化进度条
+        updateSlider();
+    </script>
+</body>
+</html>

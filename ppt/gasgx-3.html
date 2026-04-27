@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx x 欧特讯：获客战略升级</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+SC:wght@300;500;900&display=swap');
+
+        :root {
+            --gas-green: #5DD62C;
+            --gas-black: #0D0D0D;
+            --gas-dark: #121212;
+            --glass: rgba(20, 20, 20, 0.7);
+        }
+
+        body {
+            background-color: var(--gas-black);
+            color: white;
+            font-family: 'Noto Sans SC', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+
+        /* Background Grid */
+        .bg-grid {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(93, 214, 44, 0.05) 1px, transparent 1px),
+                linear-gradient(90px, rgba(93, 214, 44, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+        }
+
+        /* Glassmorphism Container */
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(93, 214, 44, 0.2);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+            max-width: 90vw;
+            width: 1200px;
+            height: 70vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: translateX(100px);
+            transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+            pointer-events: none;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+
+        .slide.prev {
+            transform: translateX(-100px);
+            opacity: 0;
+        }
+
+        .highlight { color: var(--gas-green); }
+        .text-glow { text-shadow: 0 0 10px rgba(93, 214, 44, 0.5); }
+        
+        .nav-zone {
+            position: fixed;
+            top: 0; height: 100%; width: 20%;
+            z-index: 100;
+        }
+        .nav-left { left: 0; }
+        .nav-right { right: 0; width: 80%; }
+
+        .progress-bar {
+            position: fixed;
+            bottom: 0; left: 0; height: 4px;
+            background: var(--gas-green);
+            transition: width 0.3s ease;
+            box-shadow: 0 0 15px var(--gas-green);
+            z-index: 200;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(93, 214, 44, 0.15);
+            border: 1px solid var(--gas-green);
+            color: var(--gas-green);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        ul li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        ul li::before {
+            content: "▶";
+            position: absolute;
+            left: 0;
+            color: var(--gas-green);
+            font-size: 0.8rem;
+            top: 0.2rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+    <div class="progress-bar" id="progress"></div>
+
+    <!-- Navigation Overlay -->
+    <div class="nav-zone nav-left" onclick="prevSlide()"></div>
+    <div class="nav-zone nav-right" onclick="nextSlide()"></div>
+
+    <!-- Cover / Intro Slide -->
+    <div class="slide active" id="slide-0">
+        <div class="glass-card text-center">
+            <h1 class="orbitron text-7xl font-bold mb-6 tracking-tighter text-glow">GasGx <span class="highlight">x</span> OuteXun</h1>
+            <p class="text-3xl font-light mb-8 opacity-80">获客战略升级：从“卖铁”到“能源金融流水线”</p>
+            <div class="mx-auto w-32 h-1 bg-green-500 mb-8"></div>
+            <div class="grid grid-cols-2 gap-8 text-left max-w-4xl mx-auto">
+                <div class="p-6 border-l-2 border-green-500 bg-white/5">
+                    <h3 class="text-xl font-bold highlight mb-2">欧特讯：重工业的肌肉</h3>
+                    <p class="text-sm opacity-70">70研究所背景、顶尖电控研发、热力学增效能力。</p>
+                </div>
+                <div class="p-6 border-l-2 border-green-500 bg-white/5">
+                    <h3 class="text-xl font-bold highlight mb-2">GasGx：数字化的灵魂</h3>
+                    <p class="text-sm opacity-70">金融变现逻辑、全域流量矩阵、SaaS 智控中枢。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 1: Strategy Shift -->
+    <div class="slide" id="slide-1">
+        <div class="glass-card">
+            <div class="tag orbitron">Strategy Transition</div>
+            <h2 class="text-5xl font-black mb-10 italic">1. 战略升维：从<span class="highlight">“卖产品”</span>到<span class="highlight">“卖系统”</span></h2>
+            <div class="flex gap-12 items-center">
+                <div class="flex-1 space-y-6">
+                    <div class="bg-white/5 p-6 rounded-xl border border-white/10">
+                        <h4 class="text-xl font-bold highlight mb-2">核心逻辑</h4>
+                        <p class="opacity-80">欧特讯原本是在红海里拼价格，GasGx 则是给硬件注入 <span class="orbitron">SaaS</span> 和金融模型。</p>
+                    </div>
+                    <div class="bg-white/5 p-6 rounded-xl border border-white/10">
+                        <h4 class="text-xl font-bold highlight mb-2">话术重点</h4>
+                        <p class="opacity-80">“您买的不是发电机，而是一套<span class="highlight">即插即用的就地变现系统</span>。”</p>
+                        <p class="text-sm mt-2 opacity-50">将复杂的“气、电、币”逻辑封装在极光绿的暗黑界面里，降维打击传统厂商。</p>
+                    </div>
+                </div>
+                <div class="w-1/3 flex flex-col gap-4 text-center">
+                    <div class="p-4 border border-red-500/50 text-red-500 opacity-50">传统外贸：卷配置/卷价格</div>
+                    <div class="text-3xl text-center">⬇️</div>
+                    <div class="p-8 border-2 border-green-500 bg-green-500/10 rounded-2xl shadow-[0_0_20px_rgba(93,214,44,0.3)]">
+                        <span class="orbitron font-bold">GasGx OS</span><br>高转化信任交付系统
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 2: Air Bombing -->
+    <div class="slide" id="slide-2">
+        <div class="glass-card">
+            <div class="tag orbitron">Digital Fleet</div>
+            <h2 class="text-5xl font-black mb-10 italic">2. 空军轰炸：数字化<span class="highlight">“远征军”</span></h2>
+            <div class="grid grid-cols-2 gap-10">
+                <div class="space-y-6">
+                    <div class="bg-white/5 p-6 rounded-xl border border-white/10">
+                        <h4 class="text-xl font-bold highlight mb-2">核心逻辑</h4>
+                        <p class="opacity-80">利用欧特讯的实业背书，通过 GasGx 的数字化手段在全球范围布下“认知陷阱”。</p>
+                    </div>
+                    <div class="bg-white/5 p-6 rounded-xl border border-white/10">
+                        <h4 class="text-xl font-bold highlight mb-2">话术重点</h4>
+                        <p class="opacity-80">“我们不完全依赖业务员跑展会，而是通过<span class="highlight">全时空矩阵</span>进行认知劫持。”</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-white/5 rounded border border-white/10 text-center">
+                        <span class="highlight orbitron">Overseas</span><br>LinkedIn / X / TG
+                    </div>
+                    <div class="p-4 bg-white/5 rounded border border-white/10 text-center">
+                        <span class="highlight orbitron">Domestic</span><br>视频号 / 抖音 / B站
+                    </div>
+                    <div class="col-span-2 p-6 bg-green-500/5 border border-green-500/30 rounded italic text-sm">
+                        诱饵：全英文《伴生气变现 ROI 洞察报告》、搁浅气高效处理方案。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 3: Core Weapon -->
+    <div class="slide" id="slide-3">
+        <div class="glass-card">
+            <div class="tag orbitron">Calculus Engine</div>
+            <h2 class="text-5xl font-black mb-10 italic">3. 核心兵器：<span class="highlight">ROI 自动化测算引擎</span></h2>
+            <div class="flex gap-10">
+                <div class="w-1/2 bg-black/40 rounded-3xl p-8 border border-green-500/30 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-20 orbitron text-xs">GasGx ROI v1.0</div>
+                    <div class="space-y-4">
+                        <div class="h-2 w-1/3 bg-green-500/30 rounded"></div>
+                        <div class="text-4xl orbitron highlight font-bold">$124,500.00</div>
+                        <div class="text-xs opacity-50">ANNUAL NET PROFIT FORECAST</div>
+                        <div class="grid grid-cols-2 gap-2 mt-4">
+                            <div class="h-10 bg-white/5 rounded"></div>
+                            <div class="h-10 bg-white/5 rounded"></div>
+                        </div>
+                    </div>
+                    <div class="mt-8 p-4 bg-green-500 text-black font-bold text-center rounded-lg">GET FULL REPORT NOW</div>
+                </div>
+                <div class="w-1/2 flex flex-col justify-center space-y-6">
+                    <div class="border-l-4 border-green-500 pl-6">
+                        <p class="text-2xl font-bold mb-2">放弃画册，只给账本</p>
+                        <p class="opacity-70">这是过滤低效客户的“原子弹”。所有广告流量的唯一终点。</p>
+                    </div>
+                    <div class="border-l-4 border-green-500 pl-6">
+                        <p class="text-2xl font-bold mb-2">金融紧迫感</p>
+                        <p class="opacity-70">输入气量，瞬间生成动态收益。它把“卖机器”变成了“卖投资理财方案”。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 4: Special Forces -->
+    <div class="slide" id="slide-4">
+        <div class="glass-card">
+            <div class="tag orbitron">Digital Twin Meeting</div>
+            <h2 class="text-5xl font-black mb-10 italic">4. 特种兵斩首：云端<span class="highlight">“数字孪生”</span>会议</h2>
+            <div class="grid grid-cols-2 gap-8">
+                <div class="space-y-8">
+                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+                        <h4 class="text-2xl font-bold highlight mb-4">确立“大脑”地位</h4>
+                        <p class="opacity-80">话术压制：以“高级数据分析师”姿态展示 <span class="highlight font-bold">GasGx OS</span> 监控后台。</p>
+                    </div>
+                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+                        <h4 class="text-2xl font-bold highlight mb-4">价值重定义</h4>
+                        <p class="opacity-80">“硬件在哪里造不重要，重要的是这套大脑如何榨干每一立方米伴生气。”</p>
+                    </div>
+                </div>
+                <div class="bg-green-500/10 p-8 rounded-3xl border-2 border-green-500/50 flex flex-col justify-center">
+                    <h5 class="orbitron text-center text-sm mb-4">TACTICAL DISCIPLINE</h5>
+                    <ul class="space-y-4">
+                        <li>严禁初次会议手机直播工厂</li>
+                        <li>全程共享屏幕展示软件 Demo</li>
+                        <li>将注意力从“硬件成本”引向“系统溢价”</li>
+                        <li>诚邀参观中国基地（大同）完成临门一脚</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 5: Army Occupation -->
+    <div class="slide" id="slide-5">
+        <div class="glass-card">
+            <div class="tag orbitron">Host Occupation</div>
+            <h2 class="text-5xl font-black mb-10 italic">5. 陆军占领：线下<span class="highlight">“主场夺舍”</span></h2>
+            <div class="grid grid-cols-3 gap-6">
+                <div class="p-6 bg-white/5 rounded-xl border border-white/10 flex flex-col">
+                    <div class="orbitron text-green-500 text-3xl mb-4">01</div>
+                    <h4 class="font-bold mb-4">洗脑区<br><span class="text-xs opacity-50">GasGx 独立办公区</span></h4>
+                    <p class="text-sm opacity-70 flex-grow">锚定第一印象：喝咖啡，看全球设备实时监控大屏，定调顶尖科技公司。</p>
+                </div>
+                <div class="p-6 bg-white/10 rounded-xl border-2 border-green-500 flex flex-col shadow-[0_0_20px_rgba(93,214,44,0.2)]">
+                    <div class="orbitron text-green-500 text-3xl mb-4">02</div>
+                    <h4 class="font-bold mb-4">肌肉区<br><span class="text-xs opacity-50">GasGx 专项测试区</span></h4>
+                    <p class="text-sm opacity-70 flex-grow">直奔欧特讯车间 C 位。展示喷涂极光绿、连着复杂仪器的机组。证明掌控核心。</p>
+                </div>
+                <div class="p-6 bg-white/5 rounded-xl border border-white/10 flex flex-col">
+                    <div class="orbitron text-green-500 text-3xl mb-4">03</div>
+                    <h4 class="font-bold mb-4">防火墙<br><span class="text-xs opacity-50">传统制造流水线</span></h4>
+                    <p class="text-sm opacity-70 flex-grow">远观电控车间：“这是我们认证的底层电气流水线，他们只负责物理组装。”</p>
+                </div>
+            </div>
+            <div class="mt-10 p-4 bg-red-500/20 border border-red-500 text-center font-bold text-red-400">
+                最终目的：让客户意识到，只有找 GasGx 才能买到这套软硬一体的神机，断绝绕过询价。
+            </div>
+        </div>
+    </div>
+
+    <!-- Final Summary -->
+    <div class="slide" id="slide-6">
+        <div class="glass-card text-center">
+            <div class="tag orbitron">Partnership Conclusion</div>
+            <h2 class="text-6xl font-black mb-10 italic">终结废气，<span class="highlight">就地变现</span></h2>
+            <div class="max-w-3xl mx-auto space-y-6 text-xl">
+                <p>欧特讯是我们的<span class="highlight font-bold">“超级供应链”</span></p>
+                <p>GasGx 是品牌、流量、系统与利润的<span class="highlight font-bold">“掌控者”</span></p>
+                <div class="h-px bg-white/20 my-8"></div>
+                <p class="opacity-80 italic">“这不是在卖机器，而是在全球搁浅气市场<br>构建一个‘流量-转化-交付’的闭环护城河。”</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const progress = document.getElementById('progress');
+
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active', 'prev');
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else if (index < currentSlide) {
+                    slide.classList.add('prev');
+                }
+            });
+            progress.style.width = ((currentSlide + 1) / slides.length) * 100 + '%';
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        // Keyboard Support
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+
+        updateSlide();
+    </script>
+</body>
+</html>
