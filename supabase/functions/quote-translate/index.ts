@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const SPARK_TIMEOUT_MS = 45000;
 const DEFAULT_DOMAIN = 'generalv3.5';
-const SUPPORTED_TARGETS = new Set(['en', 'ru', 'ja', 'ar', 'ms', 'id', 'es']);
+const SUPPORTED_TARGETS = new Set(['zh', 'en', 'ru', 'ja', 'ar', 'ms', 'id', 'es']);
 
 type TranslateEntry = {
     key: string;
@@ -118,6 +118,15 @@ function env(name: string, fallback = ''): string {
 }
 
 const TARGET_META: Record<string, TargetMeta> = {
+    zh: {
+        englishName: 'Simplified Chinese',
+        chineseName: '简体中文',
+        sample: [
+            { key: 'supplier', text: '供应商' },
+            { key: 'receiver_placeholder', text: '请输入客户邮箱' },
+            { key: 'system_total', text: '系统预估总价' },
+        ],
+    },
     en: {
         englishName: 'English',
         chineseName: '英语',
@@ -228,17 +237,24 @@ async function createSparkAuthUrl(url: string, apiKey: string, apiSecret: string
 
 function buildPrompt(target: string, entries: TranslateEntry[], strict = false): string {
     const meta = targetMeta(target);
+    const sourceDescription = target === 'zh' ? '多语言字段' : '中文字段';
+    const languageRule = target === 'zh'
+        ? `1. 最终 text 必须使用自然的简体中文；不能直接重复非中文原文；只有产品型号、编码、邮箱、URL、货币代码、单位、品牌型号等字面量允许保留。`
+        : `1. 最终 text 必须使用${meta.chineseName}，不能直接重复中文原文；只有产品型号、编码、邮箱、URL、货币代码、单位、品牌型号等字面量允许保留。`;
+    const strictRule = target === 'zh'
+        ? '7. 如果某条结果仍然是非中文原文，视为错误；请强制改写成简体中文。'
+        : `7. 如果某条结果仍然是中文，视为错误；请强制改写成${meta.chineseName}。`;
     return [
-        `你是燃气发电设备报价系统的专业翻译器。请把下面的中文字段翻译成${meta.chineseName}（${meta.englishName}）。`,
+        `你是燃气发电设备报价系统的专业翻译器。请把下面的${sourceDescription}翻译成${meta.chineseName}（${meta.englishName}）。`,
         '硬性规则：',
-        `1. 最终 text 必须使用${meta.chineseName}，不能直接重复中文原文；只有产品型号、编码、邮箱、URL、货币代码、单位、品牌型号等字面量允许保留。`,
+        languageRule,
         '2. 报价业务语气要自然、正式，适合客户报价单页面。',
         '3. 不得漏翻任何条目。',
         '4. key 必须原样保留。',
         '5. 只能返回 JSON，格式固定为：{"translations":[{"key":"...","text":"..."}]}',
         '6. 不要输出解释，不要输出 Markdown 代码块。',
         strict
-            ? `7. 如果某条结果仍然是中文，视为错误；请强制改写成${meta.chineseName}。`
+            ? strictRule
             : '7. 如果输入是界面文案，请优先使用常见软件界面表达。',
         '',
         '示例输入输出：',
@@ -258,8 +274,9 @@ function buildPrompt(target: string, entries: TranslateEntry[], strict = false):
 
 function buildPlainTextPrompt(target: string, entry: TranslateEntry): string {
     const meta = targetMeta(target);
+    const sourceDescription = target === 'zh' ? '下面这段内容' : '下面这段中文';
     return [
-        `请把下面这段中文翻译成${meta.chineseName}（${meta.englishName}）。`,
+        `请把${sourceDescription}翻译成${meta.chineseName}（${meta.englishName}）。`,
         '要求：',
         '1. 只输出译文，不要解释，不要加引号，不要加代码块。',
         '2. 保留型号、URL、邮箱、货币代码、品牌型号等字面量。',
