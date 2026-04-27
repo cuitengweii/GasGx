@@ -7352,6 +7352,32 @@ async function ensureCustomerRequirementFlow(user, customer) {
     };
 }
 
+async function createStandaloneRequirementLink(user) {
+    const owner = currentSalesOwner(user);
+    const { data, error } = await client.rpc('create_public_quote_requirement', {
+        payload: {
+            title: '客户自助需求单',
+            requirement_type: 'unclear',
+            answers: {
+                created_from: 'sales_direct_requirement_link',
+                owner_email: owner.email,
+                owner_name: owner.name,
+            },
+        },
+    });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row?.public_slug || !row?.public_token) {
+        throw new Error('需求单链接生成失败，请稍后重试。');
+    }
+    await fetchRequirementRows();
+    moduleState.requirementLoadedId = text(row.id);
+    return {
+        requirement: createRequirementDraft(row),
+        link: requirementPublicUrl(row.public_slug, row.public_token),
+    };
+}
+
 function customerWorkbenchModalMarkup() {
     return `
         <div class="ams-workbench-modal" id="ams-customer-workbench-modal" hidden>
@@ -9795,6 +9821,23 @@ function bindCustomerEditor(input) {
         void renderQuoteCustomersPage(input);
     });
 
+    document.getElementById('ams-quote-requirement-direct-link')?.addEventListener('click', async (event) => {
+        await input.withButtonBusy(event.currentTarget, '生成中...', async () => {
+            try {
+                const result = await createStandaloneRequirementLink(input.user);
+                try {
+                    await navigator.clipboard.writeText(result.link);
+                    input.showToast('需求单链接已生成并复制，请直接发给客户填写。');
+                } catch (_error) {
+                    input.showToast(`需求单链接已生成：${result.link}`);
+                }
+                window.open(result.link, '_blank', 'noopener');
+            } catch (error) {
+                input.showToast(error.message || '生成需求单链接失败。', true);
+            }
+        });
+    });
+
     document.getElementById('ams-quote-customer-back-list')?.addEventListener('click', () => {
         moduleState.customerListMode = 'active';
         moduleState.customerLoadedId = '';
@@ -9985,14 +10028,15 @@ function bindCustomerEditor(input) {
                     const flow = await ensureCustomerRequirementFlow(input.user, saved);
                     if (flow?.deal?.id) moduleState.dealLoadedId = flow.deal.id;
                     if (flow?.requirement?.id) moduleState.requirementLoadedId = flow.requirement.id;
-                    input.showToast('客户档案已保存，已自动生成客户需求链接。');
-                    if (flow?.deal?.id) {
-                        window.location.assign(adminPageUrl('quote-customer-flow', {
-                            customer: saved.id,
-                            deal: flow.deal.id,
-                            stage: 'requirement_capture',
-                        }));
-                        return;
+                    if (flow?.link) {
+                        try {
+                            await navigator.clipboard.writeText(flow.link);
+                            input.showToast('需求单链接已生成并复制，请发送给客户填写。');
+                        } catch (_error) {
+                            input.showToast('需求单链接已生成，请从页面复制后发送给客户。');
+                        }
+                    } else {
+                        input.showToast('客户档案已保存，已生成需求单。');
                     }
                 } else {
                     input.showToast('客户档案已保存。');
@@ -11196,7 +11240,7 @@ export async function renderQuoteCustomersPage(input) {
                     </div>
                     <div class="ams-row-actions">
                         ${salesConsole && moduleState.customerCreateMode ? '<button class="ams-btn ams-btn-muted" type="button" id="ams-quote-customer-back-list"><i class="fa-solid fa-arrow-left"></i><span>返回列表</span></button>' : ''}
-                        <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-save">${salesConsole ? '保存并生成客户需求链接' : '保存客户档案'}</button>
+                        <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-save">${salesConsole ? '生成需求单链接' : '保存客户档案'}</button>
                     </div>
                 </div>
                 ${activeCustomerId ? `
@@ -11208,6 +11252,21 @@ export async function renderQuoteCustomersPage(input) {
                         <div class="ams-summary-chip"><strong>创建时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.created_at))}</span></div>
                         <div class="ams-summary-chip"><strong>更新时间</strong><span>${esc(fmtDate(moduleState.customerEditor?.updated_at))}</span></div>
                     </div>
+                    ${salesConsole ? `
+                        <div class="ams-quote-block">
+                            <div class="ams-section-head">
+                                <div>
+                                    <h3>客户填写需求链接</h3>
+                                    <p>销售先生成需求单链接并发给客户；客户必须使用绑定邮箱登录 GasGx 后才能填写提交，提交内容会反向更新客户信息。</p>
+                                </div>
+                                <div class="ams-row-actions">
+                                    <button class="ams-btn ams-btn-muted" type="button" id="ams-customer-copy-requirement-link" ${requirementLink ? '' : 'disabled'}><i class="fa-solid fa-link"></i><span>复制链接</span></button>
+                                    <a class="ams-btn ams-btn-primary" href="${esc(requirementLink || '#')}" target="_blank" rel="noopener" ${requirementLink ? '' : 'aria-disabled="true"'}><i class="fa-solid fa-arrow-up-right-from-square"></i><span>打开填写页</span></a>
+                                </div>
+                            </div>
+                            <input class="ams-input" value="${esc(requirementLink)}" readonly placeholder="点击生成需求单链接后出现">
+                        </div>
+                    ` : ''}
                 ` : ''}
                 <div class="ams-site-field-grid ams-site-field-grid-wide">
 <div class="ams-field"><label>客户名称</label><input class="ams-input" data-customer-field="company_name" value="${esc(moduleState.customerEditor?.company_name)}" placeholder="Demo Customer"></div>
@@ -11228,9 +11287,10 @@ export async function renderQuoteCustomersPage(input) {
             <section class="ams-sales-customer-toolbar">
                 <div class="ams-sales-customer-toolbar-title">
                     <span>Customer Archive</span>
-                    <strong>客户建档起点</strong>
+                    <strong>需求单收集起点</strong>
                 </div>
                 <div class="ams-row-actions">
+                    <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-requirement-direct-link"><i class="fa-solid fa-file-signature"></i><span>直接生成需求单</span></button>
                     <button class="ams-btn ams-btn-primary" type="button" id="ams-quote-customer-new"><i class="fa-solid fa-address-book"></i><span>新建客户档案</span></button>
                     <button class="ams-btn ${listMode === 'archived' ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-archive-entry">${listMode === 'archived' ? '返回主列表' : `归档列表（${archivedCustomerCount()}）`}</button>
                     <button class="ams-btn ${listMode === 'deleted' ? 'ams-btn-primary' : 'ams-btn-muted'}" type="button" id="ams-quote-customer-delete-entry">${listMode === 'deleted' ? '返回主列表' : `作废列表（${deletedCustomerCount()}）`}</button>

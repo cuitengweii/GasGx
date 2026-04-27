@@ -1568,59 +1568,124 @@
     }
 
         .requirement-shell {
-            max-width: 1120px;
+            max-width: 1180px;
             margin: 0 auto;
-            padding: 88px 16px 32px;
+            padding: 104px 20px 48px;
         }
 
         .requirement-page {
             position: relative;
+            isolation: isolate;
+        }
+
+        .requirement-page::before {
+            content: "";
+            position: absolute;
+            inset: -40px -24px auto;
+            height: 360px;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                linear-gradient(135deg, rgba(93, 214, 44, 0.12), transparent 34%),
+                linear-gradient(180deg, rgba(12, 24, 36, 0.88), rgba(5, 9, 14, 0));
+            border-radius: 0 0 28px 28px;
         }
 
         .requirement-toolbar {
+            position: relative;
+            z-index: 120;
             display: flex;
             justify-content: flex-end;
-            margin-bottom: 14px;
+            margin-bottom: 18px;
         }
 
-        .requirement-lang-switch {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px;
-            border-radius: 999px;
-            border: 1px solid rgba(93, 214, 44, 0.14);
-            background: rgba(10, 18, 28, 0.8);
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+        .requirement-lang-dropdown {
+            position: relative;
+            z-index: 130;
         }
 
-        .requirement-lang-chip {
+        .requirement-lang-trigger {
+            min-width: 112px;
+            height: 38px;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            min-width: 52px;
-            min-height: 32px;
-            padding: 0 12px;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 0 13px;
             border-radius: 999px;
-            color: var(--text-body);
+            border: 1px solid rgba(93, 214, 44, 0.22);
+            background: rgba(8, 14, 20, 0.82);
+            color: #f8fafc;
+            font-size: 0.82rem;
+            font-weight: 700;
+            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+        }
+
+        .requirement-lang-trigger:hover,
+        .requirement-lang-trigger:focus-visible {
+            border-color: rgba(93, 214, 44, 0.48);
+            background: rgba(14, 23, 31, 0.96);
+            outline: none;
+        }
+
+        .requirement-lang-trigger .fa-chevron-down {
+            color: var(--gas-green-light);
+            font-size: 0.72rem;
+            transition: transform 0.18s ease;
+        }
+
+        .requirement-lang-dropdown.is-open .requirement-lang-trigger .fa-chevron-down {
+            transform: rotate(180deg);
+        }
+
+        .requirement-lang-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 156px;
+            padding: 8px;
+            border-radius: 14px;
+            border: 1px solid rgba(93, 214, 44, 0.18);
+            background: #080d12;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+            opacity: 0;
+            transform: translateY(-4px);
+            pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+
+        .requirement-lang-dropdown.is-open .requirement-lang-menu,
+        .requirement-lang-dropdown:focus-within .requirement-lang-menu {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .requirement-lang-option {
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 0 10px;
+            border-radius: 10px;
+            color: rgba(226, 232, 240, 0.9);
             text-decoration: none;
             font-size: 0.84rem;
             font-weight: 700;
-            letter-spacing: 0.04em;
-            transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-            border: 1px solid transparent;
         }
 
-        .requirement-lang-chip:hover {
+        .requirement-lang-option:hover,
+        .requirement-lang-option:focus-visible {
             color: #ffffff;
-            border-color: rgba(93, 214, 44, 0.22);
-            background: rgba(93, 214, 44, 0.08);
+            background: rgba(93, 214, 44, 0.1);
+            outline: none;
         }
 
-        .requirement-lang-chip.is-active {
-            color: #08110c;
-            background: var(--gas-green-primary);
-            border-color: rgba(93, 214, 44, 0.34);
+        .requirement-lang-option.is-active {
+            color: var(--gas-green-light);
+            background: rgba(93, 214, 44, 0.12);
         }
 
         .requirement-watermark {
@@ -1697,30 +1762,35 @@
 
         .requirement-hero {
             display: grid;
-            grid-template-columns: minmax(0, 1.45fr) minmax(280px, 360px);
-            gap: 18px;
-            margin-bottom: 18px;
+            grid-template-columns: minmax(0, 1.55fr) minmax(280px, 360px);
+            gap: 16px;
+            margin-bottom: 16px;
         }
 
         .requirement-hero__copy,
         .requirement-card {
-            border: 1px solid rgba(93, 214, 44, 0.14);
-            border-radius: 20px;
-            background: rgba(22, 27, 34, 0.92);
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+            border: 1px solid rgba(93, 214, 44, 0.12);
+            border-radius: 12px;
+            background: rgba(12, 18, 24, 0.9);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
             transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease, background 0.35s ease;
             will-change: transform, box-shadow;
             animation: requirementCardIn 0.55s ease both;
         }
 
         .requirement-hero__copy {
-            padding: 28px;
+            min-height: 250px;
+            padding: 34px 36px;
+            background:
+                linear-gradient(135deg, rgba(93, 214, 44, 0.13), rgba(93, 214, 44, 0.02) 34%),
+                linear-gradient(180deg, rgba(17, 26, 34, 0.96), rgba(9, 14, 20, 0.94));
         }
 
         .requirement-hero__copy h1 {
-            margin: 10px 0 14px;
-            font-size: clamp(2rem, 3.5vw, 3.4rem);
-            line-height: 1.04;
+            margin: 12px 0 16px;
+            max-width: 780px;
+            font-size: clamp(2.25rem, 4vw, 4rem);
+            line-height: 1.02;
         }
 
         .requirement-hero__copy p {
@@ -1735,7 +1805,7 @@
             color: var(--gas-green-light);
             font-size: 0.72rem;
             font-weight: 700;
-            letter-spacing: 0.32em;
+            letter-spacing: 0.18em;
             text-transform: uppercase;
         }
 
@@ -1744,6 +1814,9 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
+            border: 1px solid rgba(93, 214, 44, 0.12);
+            border-radius: 12px;
+            background: rgba(10, 16, 22, 0.88);
             transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease, background 0.35s ease;
             will-change: transform, box-shadow;
             animation: requirementCardIn 0.55s ease both;
@@ -1812,17 +1885,17 @@
         }
 
         .requirement-card {
-            padding: 22px;
-            margin-bottom: 18px;
+            padding: 24px;
+            margin-bottom: 16px;
         }
 
         .requirement-card:hover,
         .requirement-hero__copy:hover,
         .requirement-hero__meta:hover {
-            transform: translateY(-4px);
-            border-color: rgba(93, 214, 44, 0.28);
-            box-shadow: 0 20px 46px rgba(0, 0, 0, 0.4);
-            background: rgba(24, 32, 40, 0.96);
+            transform: translateY(-2px);
+            border-color: rgba(93, 214, 44, 0.24);
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+            background: rgba(14, 21, 28, 0.96);
         }
 
         @keyframes requirementCardIn {
@@ -2079,6 +2152,35 @@
             color: #fca5a5;
         }
 
+        .requirement-auth-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .requirement-auth-card strong {
+            display: block;
+            color: #f8fafc;
+            font-size: 1rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .requirement-auth-card p {
+            color: rgba(226, 232, 240, 0.76);
+            margin: 0;
+        }
+
+        .requirement-auth-card.is-ok {
+            border-color: rgba(57, 181, 74, 0.42);
+            background: rgba(57, 181, 74, 0.08);
+        }
+
+        .requirement-auth-card.is-blocked {
+            border-color: rgba(248, 113, 113, 0.42);
+            background: rgba(127, 29, 29, 0.18);
+        }
+
         .requirement-loading,
         .requirement-empty {
             min-height: 56vh;
@@ -2140,6 +2242,11 @@
             .requirement-submit-status {
                 text-align: left;
                 max-width: none;
+            }
+
+            .requirement-auth-card {
+                align-items: stretch;
+                flex-direction: column;
             }
 
             .requirement-hero__copy,

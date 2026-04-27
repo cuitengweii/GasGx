@@ -689,9 +689,12 @@ const state = {
     lastChangedField: '',
     autoSaveBound: false,
     validationErrors: {},
+    authUser: null,
+    authError: '',
 };
 
 let params = new URL(window.location.href).searchParams;
+let languageDropdownGlobalBound = false;
 const SUPPORTED_LOCALES = ['zh', 'en', 'ru'];
 function isViewOnlyAccess() {
     return text(params.get('mode')).toLowerCase() === 'readonly';
@@ -1193,8 +1196,9 @@ function updateAutoSaveIndicators() {
     const timeNode = document.getElementById('requirement-autosave-time');
     const submitNode = document.getElementById('requirement-submit-status');
     const locked = isReadOnlyMode(state.requirement);
+    const submittedLocked = isLocked(state.requirement?.status);
     const statusText = locked
-        ? localize('客户已提交，当前公开页为只读状态。')
+        ? localize(submittedLocked ? '客户已提交，当前公开页为只读状态。' : '当前为只读预览，不能填写或同步。')
         : text(state.autoSaveMessage, localize('正在等待填写...'));
     if (statusNode) {
         statusNode.textContent = statusText;
@@ -1324,12 +1328,15 @@ function bindAutoSaveLifecycle() {
 function getClient() {
     if (!window.supabase?.createClient) return null;
     if (!getClient.instance) {
-        getClient.instance = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-            auth: {
-                persistSession: false,
-                autoRefreshToken: false,
-            },
-        });
+        getClient.instance = window.GasGxMainAuthShared?.createClient
+            ? window.GasGxMainAuthShared.createClient(window.supabase)
+            : window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true,
+                },
+            });
     }
     return getClient.instance;
 }
@@ -1360,7 +1367,7 @@ function localizedCountryOptionsMarkup(selected = '') {
 }
 
 function requirementHeading(requirement = {}) {
-    return text(requirement.requester_company || requirement.requester_name || '', localize('售前项目需求收集'));
+    return text(requirement.requester_company || requirement.requester_name) || localize('售前项目需求收集');
 }
 
 function choiceChipMarkup(field, options = [], selectedValues = [], disabled = false, mode = 'multiple') {
@@ -1400,8 +1407,67 @@ function isLocked(status = '') {
     return ['submitted', 'reviewing', 'quoted', 'closed'].includes(text(status, 'draft'));
 }
 
+function loginUrlForCurrentPage() {
+    const config = window.GasGxMainAuthShared?.resolveConfig?.() || {};
+    const signInUrl = text(config.signInUrl, '/account/user.html');
+    const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    try {
+        window.sessionStorage.setItem(text(config.returnUrlStorageKey, 'gx_main_return_url'), returnPath);
+    } catch (_error) {}
+    const url = new URL(signInUrl, window.location.origin);
+    url.searchParams.set('return', returnPath);
+    return url.toString();
+}
+
+function authEmail() {
+    return text(state.authUser?.email || state.authUser?.user_metadata?.email).toLowerCase();
+}
+
+function requiredRequirementEmail(requirement = state.requirement) {
+    return text(requirement?.requester_email).toLowerCase();
+}
+
+function hasRequirementEditAccess(requirement = state.requirement) {
+    if (!requirement || isLocked(requirement?.status)) return false;
+    const currentEmail = authEmail();
+    if (!currentEmail) return false;
+    const requiredEmail = requiredRequirementEmail(requirement);
+    return !requiredEmail || currentEmail === requiredEmail;
+}
+
 function isReadOnlyMode(requirement = state.requirement) {
-    return !!state.viewOnly || isLocked(requirement?.status);
+    return !!state.viewOnly || isLocked(requirement?.status) || !hasRequirementEditAccess(requirement);
+}
+
+function requirementAuthNoticeMarkup(requirement = state.requirement) {
+    if (isLocked(requirement?.status)) return '';
+    const currentEmail = authEmail();
+    const requiredEmail = requiredRequirementEmail(requirement);
+    if (currentEmail && (!requiredEmail || currentEmail === requiredEmail)) {
+        return `
+            <section class="requirement-card requirement-auth-card is-ok">
+                <div>
+                    <strong>${esc(localize('已通过 GasGx 邮箱登录'))}</strong>
+                    <p>${esc(currentEmail)} · ${esc(localize('提交后系统会把填写内容同步回客户档案。'))}</p>
+                </div>
+            </section>
+        `;
+    }
+    const message = currentEmail && requiredEmail && currentEmail !== requiredEmail
+        ? `当前登录邮箱 ${currentEmail} 与本需求单绑定邮箱 ${requiredEmail} 不一致，请切换账号后填写。`
+        : '请先使用客户邮箱登录 GasGx，再填写并提交这份需求单。';
+    return `
+        <section class="requirement-card requirement-auth-card is-blocked">
+            <div>
+                <strong>${esc(localize('需要客户邮箱登录'))}</strong>
+                <p>${esc(localize(message))}</p>
+            </div>
+            <a class="btn-glow px-5 py-3 inline-flex items-center gap-2" href="${esc(loginUrlForCurrentPage())}">
+                <i class="fa-solid fa-right-to-bracket"></i>
+                <span>${esc(localize('登录 GasGx'))}</span>
+            </a>
+        </section>
+    `;
 }
 
 function fmtDate(value) {
@@ -1415,6 +1481,12 @@ function requirementPageUrl(locale = state.locale) {
     if (locale === 'zh') url.searchParams.delete('lang');
     else url.searchParams.set('lang', locale);
     return url.toString();
+}
+
+function localeLabel(locale = state.locale) {
+    if (locale === 'zh') return '中文';
+    if (locale === 'ru') return 'RU';
+    return 'EN';
 }
 
 function validateRequirementContactField(field, requirement = state.requirement) {
@@ -1712,7 +1784,8 @@ function renderApp() {
     const requirement = state.requirement;
     syncDerivedAnswersFromSelectedModel(requirement, { resetIfMissing: true });
     const answers = normalizeAnswers(requirement.answers);
-    const locked = isLocked(requirement.status);
+    const locked = isReadOnlyMode(requirement);
+    const submittedLocked = isLocked(requirement.status);
     const buttonDisabled = locked || state.submitting;
     const availableModels = minerModelOptionsFor(answers.miner_brands);
     const availableModelSet = new Set(availableModels.map((item) => item.value));
@@ -1725,15 +1798,23 @@ function renderApp() {
     root().innerHTML = `
         <div class="requirement-page ${locked ? 'is-locked' : ''}">
         <div class="requirement-toolbar">
-            <div class="requirement-lang-switch" aria-label="${esc(localize('语言'))}">
+            <div class="requirement-lang-dropdown" data-requirement-lang-dropdown>
+                <button class="requirement-lang-trigger" type="button" aria-haspopup="true" aria-expanded="false" data-requirement-lang-trigger>
+                    <i class="fa-solid fa-globe"></i>
+                    <span>${esc(localeLabel(state.locale))}</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                <div class="requirement-lang-menu" role="menu" aria-label="${esc(localize('语言'))}">
                 ${SUPPORTED_LOCALES.map((locale) => `
-                    <a class="requirement-lang-chip ${state.locale === locale ? 'is-active' : ''}" href="${esc(requirementPageUrl(locale))}">
-                        ${locale === 'zh' ? '中文' : locale.toUpperCase()}
+                    <a class="requirement-lang-option ${state.locale === locale ? 'is-active' : ''}" href="${esc(requirementPageUrl(locale))}" role="menuitem">
+                        <span>${esc(localeLabel(locale))}</span>
+                        ${state.locale === locale ? '<i class="fa-solid fa-check"></i>' : ''}
                     </a>
                 `).join('')}
+                </div>
             </div>
         </div>
-        ${locked ? `
+        ${submittedLocked ? `
             <div class="requirement-watermark" aria-hidden="true">
                 ${Array.from({ length: 81 }).map(() => `
                     <span>
@@ -1752,9 +1833,10 @@ function renderApp() {
             <div class="requirement-hero__meta">
                 <div class="requirement-status-chip tone-${esc(statusTone(requirement.status))}">${esc(requirementStatusLabel(requirement.status))}</div>
                 <div class="requirement-hero__meta-line"><strong>${esc(localize('客户提交时间'))}</strong><span>${esc(fmtDate(requirement.submitted_at))}</span></div>
-                <div class="requirement-hero__meta-line"><strong>${esc(localize('说明'))}</strong><span>${esc(localize(locked ? '这份需求已经提交，目前为只读状态。' : '提交后将自动锁定，避免后续报价依据反复变化。'))}</span></div>
+                <div class="requirement-hero__meta-line"><strong>${esc(localize('说明'))}</strong><span>${esc(localize(submittedLocked ? '这份需求已经提交，目前为只读状态。' : '提交前必须使用客户邮箱登录 GasGx。'))}</span></div>
             </div>
         </section>
+        ${requirementAuthNoticeMarkup(requirement)}
 
         <section class="requirement-card">
             <div class="requirement-section-head">
@@ -1823,9 +1905,9 @@ function renderApp() {
             <div class="requirement-submit-actions">
                 <button id="requirement-submit" type="button" class="btn-glow px-5 py-3 inline-flex items-center gap-2" ${buttonDisabled ? 'disabled' : ''}>
                     <i class="fa-solid ${locked ? 'fa-lock' : 'fa-paper-plane'}"></i>
-                    <span>${esc(locked ? '已提交' : (state.submitting ? '提交中...' : '提交需求单'))}</span>
+                    <span>${esc(submittedLocked ? '已提交' : (state.submitting ? '提交中...' : '提交需求单'))}</span>
                 </button>
-                <div id="requirement-submit-status" class="requirement-submit-status">${locked ? ('已提交 / ' + esc(fmtDate(requirement.submitted_at))) : esc(state.submitConfirmed ? '提交后公开需求页会自动锁定。' : '请先勾选最终确认，再提交需求单。')}</div>
+                <div id="requirement-submit-status" class="requirement-submit-status">${submittedLocked ? ('已提交 / ' + esc(fmtDate(requirement.submitted_at))) : esc(locked ? '当前需求单为只读状态，不能提交。' : (state.submitConfirmed ? '提交后公开需求页会自动锁定。' : '请先勾选最终确认，再提交需求单。'))}</div>
             </div>
         </section>
         </div>
@@ -1859,6 +1941,7 @@ function bindAnswerFieldNode(node, requirement = state.requirement) {
 }
 
 function bindEvents() {
+    bindLanguageDropdown();
     const requirement = state.requirement;
     if (!requirement || isLocked(requirement.status)) return;
 
@@ -1945,6 +2028,38 @@ function bindEvents() {
     document.getElementById('requirement-submit')?.addEventListener('click', () => {
         void submitCurrentRequirement();
     });
+}
+
+function bindLanguageDropdown() {
+    const dropdown = document.querySelector('[data-requirement-lang-dropdown]');
+    const trigger = document.querySelector('[data-requirement-lang-trigger]');
+    if (!dropdown || !trigger || dropdown.dataset.bound === 'true') {
+        return;
+    }
+    dropdown.dataset.bound = 'true';
+
+    const close = () => {
+        document.querySelectorAll('[data-requirement-lang-dropdown].is-open').forEach((node) => {
+            node.classList.remove('is-open');
+            node.querySelector('[data-requirement-lang-trigger]')?.setAttribute('aria-expanded', 'false');
+        });
+    };
+
+    trigger.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const nextOpen = !dropdown.classList.contains('is-open');
+        dropdown.classList.toggle('is-open', nextOpen);
+        trigger.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+    });
+
+    if (!languageDropdownGlobalBound) {
+        languageDropdownGlobalBound = true;
+        document.addEventListener('click', close);
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') close();
+        });
+    }
 }
 
 function projectBasicsMarkup(requirement, answers, locked) {
@@ -2135,6 +2250,11 @@ async function submitCurrentRequirement() {
     const supabase = getClient();
     if (!supabase || !state.requirement) return;
 
+    if (isReadOnlyMode(state.requirement)) {
+        setSubmitStatus('当前需求单为只读状态，不能提交。', true);
+        return;
+    }
+
     if (!validateRequirementSubmission(state.requirement)) {
         renderApp();
         const firstInvalidField = requiredFieldOrderForRequirement(state.requirement).find((field) => state.validationErrors[field]);
@@ -2227,7 +2347,17 @@ async function init() {
         }
         bindAutoSaveLifecycle();
         renderApp();
+        const supabase = getClient();
+        if (supabase?.auth?.getUser) {
+            const { data, error } = await supabase.auth.getUser();
+            state.authUser = data?.user || null;
+            state.authError = text(error?.message);
+        }
         await fetchRequirement();
+        if (state.requirement && authEmail() && !text(state.requirement.requester_email) && !isLocked(state.requirement.status)) {
+            state.requirement.requester_email = authEmail();
+            state.autoSavePending = true;
+        }
         state.loading = false;
         renderApp();
         updateAutoSaveIndicators();
