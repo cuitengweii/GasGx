@@ -1,10 +1,10 @@
 # Logo download assets
 
-Place the four downloadable logo files in this directory:
+Logo download assets are grouped by folder:
 
-- `1.png`
-- `2.png`
-- `3.png`
-- `4.png`
+- `不透明大字幕/`
+- `不透明小字幕/`
+- `透明大字幕/`
+- `透明小字幕/`
 
-The page `article_management/styles/gasgx-ui.html` links to these filenames.
+The page `article_management/styles/gasgx-ui.html` links to the PNG files inside these folders.
