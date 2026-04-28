@@ -8164,6 +8164,53 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.ams-vi-resource-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.ams-vi-resource {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 96px;
+    border: 1px solid #252525;
+    border-radius: 10px;
+    background: #121212;
+    padding: 12px;
+}
+
+.ams-vi-resource > div {
+    min-width: 0;
+    display: grid;
+    gap: 6px;
+}
+
+.ams-vi-resource strong {
+    color: #f2f2f2;
+    font-size: 13px;
+}
+
+.ams-vi-resource span {
+    color: #9a9a9a;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.ams-vi-resource code {
+    color: var(--ams-green);
+    font-size: 11px;
+    line-height: 1.35;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.ams-vi-resource .ams-btn {
+    flex: 0 0 auto;
+}
+
 .ams-site-visible-toggle {
     align-self: center;
 }
@@ -8297,8 +8344,14 @@ textarea {
     }
 
     .ams-site-field-grid,
-    .ams-site-field-grid-wide {
+    .ams-site-field-grid-wide,
+    .ams-vi-resource-grid {
         grid-template-columns: 1fr;
+    }
+
+    .ams-vi-resource {
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .ams-brand-default-link-row {

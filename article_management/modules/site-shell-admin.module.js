@@ -101,6 +101,39 @@ const ABOUT_CONTACT_LOCALIZED_FIELDS = [
     { path: 'pages.aboutContact.texts.ru.scan_hint', label: '扫码提示（俄）', direct: true },
 ];
 
+const GASGX_VI_RESOURCES = [
+    {
+        label: 'Logo 工作台',
+        url: '/article_management/logo/index.html',
+        desc: '切换主站 Logo 样式、动效开关并恢复原版。',
+    },
+    {
+        label: 'GasGx UI 规范',
+        url: '/article_management/styles/gasgx-ui.html',
+        desc: '查看设计令牌、组件样式和页面排版规范。',
+    },
+    {
+        label: 'Logo Prompt',
+        url: '/article_management/styles/gasgx-logo-prompt.html',
+        desc: '品牌 Logo 视觉生成指令库。',
+    },
+    {
+        label: 'Other Prompt 1',
+        url: '/article_management/styles/gasgx-other-prompt1.html',
+        desc: 'GasGx 视觉扩展提示词页面一。',
+    },
+    {
+        label: 'Other Prompt 2',
+        url: '/article_management/styles/gasgx-other-prompt2.html',
+        desc: 'GasGx 视觉扩展提示词页面二。',
+    },
+    {
+        label: 'GasGx UI 副本',
+        url: '/article_management/styles/gasgx-ui - 副本.html',
+        desc: 'GasGx UI 规范备用展示页。',
+    },
+];
+
 function esc(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -941,6 +974,19 @@ function renderFooterSection(key, title, copy, body) {
     `;
 }
 
+function renderGasGxViResource(resource) {
+    return `
+        <article class="ams-vi-resource">
+            <div>
+                <strong>${esc(resource.label)}</strong>
+                <span>${esc(resource.desc)}</span>
+                <code>${esc(resource.url)}</code>
+            </div>
+            <button class="ams-btn ams-btn-muted" type="button" data-site-action="open-static-resource" data-site-url="${esc(resource.url)}">打开</button>
+        </article>
+    `;
+}
+
 function renderGeneralPage() {
     const config = getDraftConfig();
     const site = config.site || {};
@@ -1031,11 +1077,12 @@ function renderGeneralPage() {
                             <div class="ams-site-field-grid ams-site-field-grid-wide">
                                 ${renderTextField('site.features.chatApiUrl', '聊天接口地址', features.chatApiUrl, 'https://<project-ref>.supabase.co/functions/v1/site-chat')}
                             </div>
-                            <div class="ams-site-inline-actions">
-                                <button class="ams-btn ams-btn-muted" type="button" data-site-action="open-logo-manager">打开 Logo 工作台</button>
-                                <button class="ams-btn ams-btn-muted" type="button" data-site-action="open-gasgx-ui-guide">打开 GasGx UI 规范</button>
+                        `)}
+                        ${renderFooterSection('site:gasgx-vi', 'GasGx-Vi', 'Logo、UI 规范和视觉提示词调用入口', `
+                            <div class="ams-vi-resource-grid">
+                                ${GASGX_VI_RESOURCES.map((resource) => renderGasGxViResource(resource)).join('')}
                             </div>
-                            <div class="ams-footnote">在独立 Logo 工作台中切换主站 Logo 样式、动效开关并恢复原版，改动会同步到头部和页脚。GasGx UI 规范展示页会在新标签页打开，方便随时对照设计令牌与组件样式。</div>
+                            <div class="ams-footnote">这里集中放置视觉识别、Logo、UI 规范和 Prompt 页面，点击“打开”会在新标签页调用对应后台资源。</div>
                         `)}
                         ${renderFooterSection('site:auth', '主站认证跳转', mainAuth.signInUrl || '/account/user.html', `
                             <div class="ams-site-field-grid ams-site-field-grid-wide">
@@ -1409,14 +1456,9 @@ async function handleAction(target, deps) {
         return;
     }
 
-    if (action === 'open-logo-manager') {
-        const targetUrl = `${window.location.origin}/article_management/logo/index.html`;
-        window.open(targetUrl, '_blank', 'noopener,noreferrer');
-        return;
-    }
-
-    if (action === 'open-gasgx-ui-guide') {
-        const targetUrl = `${window.location.origin}/article_management/styles/gasgx-ui.html`;
+    if (action === 'open-static-resource') {
+        const resourceUrl = target.dataset.siteUrl || '';
+        const targetUrl = new URL(resourceUrl, window.location.origin).href;
         window.open(targetUrl, '_blank', 'noopener,noreferrer');
         return;
     }
