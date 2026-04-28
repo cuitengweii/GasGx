@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx Logo Prompts Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-card: #1A1A1A;
+            --primary-green: #5DD62C;
+            --text-main: #FFFFFF;
+            --text-secondary: #888888;
+            --border-line: #333333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* 顶部品牌导航 */
+        .header {
+            border-bottom: 2px solid var(--border-line);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .brand-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-title span {
+            color: var(--primary-green);
+            text-shadow: 0 0 15px rgba(93, 214, 44, 0.4);
+        }
+
+        .subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* 分类区块 */
+        .category-section {
+            margin-bottom: 50px;
+        }
+
+        .category-header {
+            font-size: 1.5rem;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border-left: 4px solid var(--primary-green);
+            display: flex;
+            align-items: center;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        /* 卡片设计 */
+        .prompt-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-line);
+            border-radius: 6px;
+            padding: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .prompt-card:hover {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 20px rgba(93, 214, 44, 0.1);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            color: var(--primary-green);
+            margin-bottom: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title::before {
+            content: ">>";
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        .prompt-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: #BBBBBB;
+            background: #111111;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px dashed #444;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* 复制按钮 */
+        .copy-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: var(--primary-green);
+            color: var(--bg-dark);
+            border: none;
+            padding: 6px 15px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover {
+            background-color: #4CB824;
+        }
+
+        .copy-btn.copied {
+            background-color: #FFFFFF;
+            color: #000000;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="header">
+        <div class="brand-title">Gas<span>Gx</span> PROMPT CONSOLE</div>
+        <div class="subtitle">SYS.VERSION: v1.0 | ASSET: BRAND_WORDMARK</div>
+    </header>
+
+    <section class="category-section">
+        <h2 class="category-header">SET 01: 纯色背景 + 居中小字标 (1/4 宽比例)</h2>
+        <div class="grid-container">
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">深黑背景 + 荧光绿小字标</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a solid background color #0F0F0F and render the logo in a single solid color #5DD62C. Place the wordmark in the center of the canvas and scale it to occupy only about 1/4 of the canvas width, leaving ample empty space around it. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and strong visual presence, not thin or light. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">白色背景 + 深黑小字标</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a solid white background #FFFFFF and render the logo in a single solid color #0F0F0F. Place the wordmark in the center of the canvas and scale it to occupy only about 1/4 of the canvas width, with generous empty space around it. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and strong visual presence, not thin or light. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">荧光绿背景 + 深黑小字标</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a solid background color #5DD62C and render the logo in a single solid color #0F0F0F. Place the wordmark in the center of the canvas and scale it to occupy only about 1/4 of the canvas width, leaving a large margin around it. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and strong visual presence, not thin or light. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">深灰背景 + 白色小字标</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a solid dark gray background color #202020 and render the logo in a single solid color #FFFFFF. Place the wordmark in the center of the canvas and scale it to occupy only about 1/4 of the canvas width, leaving plenty of empty space around it. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and strong visual presence, not thin or light. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="category-section">
+        <h2 class="category-header">SET 02: 透明背景 + 居中小字标 (高留白占比)</h2>
+        <div class="grid-container">
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">透明背景 + 荧光绿小字标</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a transparent background and render the logo in a single solid color #5DD62C. Place the wordmark in the center of the canvas and scale it to occupy only about 1/4 of the canvas width, leaving ample empty space around it. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and strong visual presence, not thin or light. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">透明背景 + 深黑小字标</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a transparent background and render the logo in a single solid color #0F0F0F. Place the wordmark in the center of the canvas and scale it to occupy only 1/4 of the canvas width, with generous surrounding empty space. Typography should be bold, solid, geometric, clean, and technology-driven, with thick strokes and strong visual presence. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">透明背景 + 白色小字标</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a transparent background and render the logo in a single solid color #FFFFFF. Center the wordmark on the canvas and scale it to occupy roughly 1/4 of the canvas width, leaving a large margin around it. Typography should be bold, solid, geometric, clean, and technology-driven, with thicker strokes and strong visual presence. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">透明背景 + 深灰小字标</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a transparent background and render the logo in a single solid color #333333. Place the wordmark in the center and scale it to only 1/4 of the canvas width, leaving plenty of empty space around it. Typography should feel bold, solid, geometric, clean, and technology-driven, with thick strokes and strong visual presence. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="category-section">
+        <h2 class="category-header">SET 03: 透明背景 + 标准单色标 (常规排版)</h2>
+        <div class="grid-container">
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">透明背景 + 荧光绿单色版</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a transparent background and render the logo in a single solid color #5DD62C. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and stronger visual presence, not thin or light. Suitable for a Web3, blockchain, gas fee, or developer platform brand. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, transparent background, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">透明背景 + 深黑单色版</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a transparent background and render the logo in a single solid color #0F0F0F. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and stronger visual presence, not thin or light. Suitable for a Web3, blockchain, gas fee, or developer platform brand. Flat vector style, minimalist, clean vector look, wordmark only, monochrome logo, transparent background, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">透明背景 + 白色单色版</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a transparent background and render the logo in a single solid color #FFFFFF. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and stronger visual presence, not thin or light. Suitable for a Web3, blockchain, gas fee, or developer platform brand. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, transparent background, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">透明背景 + 深灰单色版</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a transparent background and render the logo in a single solid color #333333. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and stronger visual presence, not thin or light. Suitable for a Web3, blockchain, gas fee, or developer platform brand. Flat vector style, minimalist, wordmark only, monochrome logo, transparent background, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="category-section">
+        <h2 class="category-header">SET 04: 纯色背景 + 标准单色标 (常规排版)</h2>
+        <div class="grid-container">
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">深黑背景 + 荧光绿单色标</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a dark background color #0F0F0F, and render the logo in a single solid color #5DD62C. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and stronger visual presence, not thin or light. Suitable for a Web3, blockchain, gas fee, or developer platform brand. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">白色背景 + 深黑单色标</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a clean white background #FFFFFF, and render the logo in a single solid color #0F0F0F. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and stronger visual presence, not thin or light. Suitable for a Web3, blockchain, gas fee, or developer platform brand. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">荧光绿背景 + 深黑单色标</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a bright green background color #5DD62C, and render the logo in a single solid color #0F0F0F. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and stronger visual presence, not thin or light. Suitable for a Web3, blockchain, gas fee, or developer platform brand. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+            <div class="prompt-card">
+                <button class="copy-btn" onclick="copyPrompt(this)">COPY</button>
+                <div class="card-title">深灰背景 + 白色单色标</div>
+                <div class="prompt-text">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a dark gray background color #202020, and render the logo in a single solid color #FFFFFF. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and stronger visual presence, not thin or light. Suitable for a Web3, blockchain, gas fee, or developer platform brand. Flat vector style, minimalist, high contrast, wordmark only, monochrome logo, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+    function copyPrompt(button) {
+        // 获取按钮旁边的文本内容
+        const card = button.parentElement;
+        const textToCopy = card.querySelector('.prompt-text').innerText;
+        
+        // 执行复制
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            // 改变按钮状态以提供视觉反馈
+            const originalText = button.innerText;
+            button.innerText = "COPIED!";
+            button.classList.add("copied");
+            
+            // 2秒后恢复
+            setTimeout(() => {
+                button.innerText = originalText;
+                button.classList.remove("copied");
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            button.innerText = "ERROR";
+        });
+    }
+</script>
+
+</body>
+</html>

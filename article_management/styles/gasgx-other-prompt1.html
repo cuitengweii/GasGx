@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasGx Logo Prompts | 品牌视觉生成指令库</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #121212;
+            --bg-card: #1A1A1A;
+            --bg-code: #0F0F0F;
+            --primary: #5DD62C;
+            --text-main: #E0E0E0;
+            --text-dim: #888888;
+            --border-line: #333333;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 50px;
+            border-bottom: 1px solid var(--border-line);
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            color: #FFFFFF;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        h1 span {
+            color: var(--primary);
+        }
+
+        .intro-box {
+            background-color: rgba(93, 214, 44, 0.05);
+            border: 1px solid var(--primary);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            box-shadow: 0 0 15px rgba(93, 214, 44, 0.1);
+        }
+
+        h2.category-title {
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin-top: 50px;
+            margin-bottom: 20px;
+            border-bottom: 1px dashed var(--border-line);
+            padding-bottom: 10px;
+        }
+
+        .prompt-card {
+            background-color: var(--bg-card);
+            border-left: 4px solid var(--primary);
+            margin-bottom: 25px;
+            border-radius: 4px;
+            overflow: hidden;
+            transition: transform 0.2s ease;
+        }
+
+        .prompt-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .prompt-header {
+            background-color: rgba(255, 255, 255, 0.02);
+            padding: 12px 20px;
+            font-weight: 700;
+            color: #FFFFFF;
+            font-size: 1.1rem;
+            border-bottom: 1px solid var(--border-line);
+        }
+
+        .prompt-body {
+            padding: 20px;
+        }
+
+        .prompt-code {
+            font-family: 'Inter', monospace;
+            background-color: var(--bg-code);
+            color: #A0A0A0;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border: 1px solid #222;
+        }
+
+        .advice-section {
+            margin-top: 60px;
+            padding: 30px;
+            background: linear-gradient(145deg, #1A1A1A, #121212);
+            border-top: 3px solid var(--primary);
+            border-radius: 8px;
+        }
+
+        .advice-section h3 {
+            color: #FFFFFF;
+            font-size: 1.3rem;
+            margin-top: 0;
+        }
+        
+        ul.check-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        ul.check-list li::before {
+            content: "✓";
+            color: var(--primary);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary);
+            color: #000;
+            padding: 10px 20px;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 4px;
+            margin-top: 15px;
+            transition: background 0.3s;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #4CB525;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1><span>GasGx</span> Logo Prompts</h1>
+        <p style="color: var(--text-dim);">核心支持场景：官网视觉 / 设备机身 / 铭牌 / 物料印刷</p>
+    </header>
+
+    <div class="intro-box">
+        <strong>说明：</strong><br>
+        由于您现在主需求是 GasGx 英文字标 Logo，以下提示语都以 <strong>wordmark logo（纯字标）</strong> 为核心。<br>
+        如果未来要做社媒头像 / favicon / app icon，建议另做一套 “Gx” 子图形标，因为纯字标在超小尺寸里识别性会下降。
+    </div>
+
+    <h2 class="category-title">一、品牌主标 / 官网主视觉</h2>
+    
+    <div class="prompt-card">
+        <div class="prompt-header">1. 深色主背景品牌主标</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat modern wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a solid dark background color #0F0F0F and render the wordmark mainly in #5DD62C, with subtle supporting details in #333333 if needed. The typography should feel bold, solid, geometric, clean, and technology-driven, with thicker strokes and strong visual presence, not thin or light. The brand should feel reliable, industrial, international, and engineered, suitable for a natural gas generator set manufacturer serving overseas B2B markets. Flat vector style, minimalist, high contrast, wordmark only, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+        </div>
+    </div>
+
+    <div class="prompt-card">
+        <div class="prompt-header">2. 白色背景品牌主标</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat modern wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a solid white background #FFFFFF and render the wordmark in #0F0F0F, with subtle supporting details in #333333 if needed. The typography should feel bold, solid, geometric, clean, and technology-driven, with thick strokes and strong visual presence. The overall feeling should be industrial, trustworthy, modern, and globally oriented, suitable for a natural gas generator set manufacturer focused on overseas B2B customers. Flat vector style, minimalist, clean, high contrast, wordmark only, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid decorative styles.</div>
+        </div>
+    </div>
+
+    <div class="prompt-card">
+        <div class="prompt-header">3. 品牌强调色反白版</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a solid background color #5DD62C and render the wordmark in #0F0F0F. The typography should feel bold, solid, geometric, clean, and highly legible, with thicker strokes and strong visual presence. The brand personality should feel energetic, engineered, efficient, and globally professional, suitable for a natural gas generator manufacturer serving overseas industrial markets. Flat vector style, minimalist, high contrast, wordmark only, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup. Avoid thin fonts, avoid light weight typography, avoid decorative styles.</div>
+        </div>
+    </div>
+
+    <h2 class="category-title">二、网站页头 / 数字端小尺寸露出</h2>
+    
+    <div class="prompt-card">
+        <div class="prompt-header">4. 网站 Header 小尺寸版（居中留白）</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a solid dark background color #0F0F0F and render the wordmark in #5DD62C. Place the wordmark in the center of the canvas and scale it to occupy only about 1/4 of the canvas width, leaving ample empty space around it. The typography should feel bold, solid, geometric, clean, and technology-driven, with thick strokes and strong legibility, suitable for a website header or digital brand system. The overall brand feeling should be industrial, trustworthy, international, and engineered for the overseas generator market. Flat vector style, minimalist, wordmark only, no slogan, no extra subtitle, no 3D, no shadow, no mockup. Avoid thin fonts and decorative styles.</div>
+        </div>
+    </div>
+
+    <div class="prompt-card">
+        <div class="prompt-header">5. 浅色数字界面小尺寸版</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a solid white background #FFFFFF and render the wordmark in #0F0F0F. Center the wordmark and scale it to occupy roughly 1/4 of the canvas width, with generous white space around it. The typography should be bold, stable, geometric, and highly legible, with thicker strokes and a clean digital look. The brand should feel professional, industrial, export-oriented, and suitable for a natural gas generator manufacturer targeting overseas B2B clients. Flat vector style, minimalist, wordmark only, no slogan, no extra subtitle, no 3D, no shadow, no mockup. Avoid thin fonts, avoid decorative styles.</div>
+        </div>
+    </div>
+
+    <div class="prompt-card">
+        <div class="prompt-header">6. 深灰数字面板版</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat modern monochrome wordmark logo for "GasGx". Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a solid dark gray background #202020 and render the wordmark in #FFFFFF. Place the wordmark in the center and keep it relatively small, occupying about 1/4 of the canvas width, with strong surrounding negative space. The typography should feel bold, solid, clean, and technical, with thicker strokes and strong readability. The overall impression should be professional, industrial, and globally reliable, fitting a natural gas generator set manufacturer for international markets. Flat vector style, minimalist, high contrast, wordmark only, no slogan, no extra subtitle, no 3D, no shadow, no mockup.</div>
+        </div>
+    </div>
+
+    <h2 class="category-title">三、设备机身 / 产品外壳喷涂</h2>
+    
+    <div class="prompt-card">
+        <div class="prompt-header">7. 机组外壳深色喷涂版</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat industrial wordmark logo for "GasGx" intended for application on generator housing panels. Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a dark equipment-style background color #202020 and render the wordmark in a single solid color #FFFFFF for maximum visibility and durability. The typography should feel bold, solid, engineered, and highly legible from a distance, with thicker strokes and stable proportions, suitable for a natural gas generator set manufacturer serving overseas markets. The design should feel industrial, durable, trustworthy, and easy to reproduce on painted metal surfaces. Flat vector style, wordmark only, no slogan, no extra subtitle, no icon clutter, no gradients, no 3D, no shadow, no mockup.</div>
+        </div>
+    </div>
+
+    <div class="prompt-card">
+        <div class="prompt-header">8. 机组浅色外壳喷涂版</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat industrial wordmark logo for "GasGx" for use on light-colored generator enclosures. Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a light gray or white equipment-style background and render the wordmark in a single solid color #0F0F0F. The typography should be bold, stable, geometric, and easy to identify from mid to long distance, with thicker strokes and strong industrial presence. The overall brand tone should be engineered, dependable, and export-oriented, suitable for a natural gas generator manufacturer targeting international B2B clients. Flat vector style, wordmark only, no slogan, no subtitle, no gradients, no shadow, no 3D, no mockup.</div>
+        </div>
+    </div>
+
+    <div class="prompt-card">
+        <div class="prompt-header">9. 机组绿色点缀喷涂版</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat industrial wordmark logo for "GasGx" suitable for generator body branding. Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a dark equipment background color #0F0F0F and render the wordmark in #5DD62C for a bold industrial-tech contrast. The typography should be thick, highly legible, and robust, with a clean geometric structure that works well on large mechanical equipment. The brand should feel reliable, energy-focused, technical, and international, representing a natural gas generator set manufacturer for overseas markets. Flat vector style, wordmark only, no slogan, no subtitle, no 3D, no shadow, no mockup.</div>
+        </div>
+    </div>
+
+    <h2 class="category-title">四、金属铭牌 / 铭板 / 设备标签</h2>
+    
+    <div class="prompt-card">
+        <div class="prompt-header">10. 金属铭牌刻印版</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat industrial wordmark logo for "GasGx" intended for metal nameplates and equipment labels. Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a brushed metal or neutral silver-toned background concept and render the wordmark in a single dark color such as #0F0F0F. The typography should be bold, compact, geometric, and extremely legible at small sizes, with thick strokes and simple letterforms suitable for engraving, etching, or laser marking. The brand feeling should be engineered, reliable, industrial, and globally professional, suitable for a natural gas generator set manufacturer serving overseas B2B markets. Flat vector style, wordmark only, no slogan, no subtitle, no 3D, no shadow, no mockup.</div>
+        </div>
+    </div>
+
+    <div class="prompt-card">
+        <div class="prompt-header">11. 黑底铭牌高对比版</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat industrial wordmark logo for "GasGx" intended for high-contrast equipment nameplates. Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a dark plate-style background color #0F0F0F and render the wordmark in #FFFFFF. The typography should be thick, stable, and extremely readable, with clean geometry and minimal detail, suitable for stamping, printing, or laser marking on industrial labels. The overall feeling should be dependable, technical, and internationally oriented, matching a natural gas generator set manufacturer focused on overseas customers. Flat vector style, wordmark only, no slogan, no extra subtitle, no 3D, no shadow, no mockup.</div>
+        </div>
+    </div>
+
+    <h2 class="category-title">五、文档印刷 / 报价单 / 用户手册 / PDF</h2>
+    
+    <div class="prompt-card">
+        <div class="prompt-header">12. 文档页眉黑白版</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat monochrome wordmark logo for "GasGx" optimized for printed documents, manuals, quotations, and PDF headers. Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a clean white background #FFFFFF and render the wordmark in solid black #000000 or #0F0F0F. The typography should be bold, clean, compact, and highly legible, with thick strokes that reproduce well in printing and photocopying. The overall impression should be professional, industrial, and internationally credible, suitable for a natural gas generator set manufacturer serving overseas B2B markets. Flat vector style, minimalist, wordmark only, no slogan, no subtitle, no 3D, no shadow, no mockup.</div>
+        </div>
+    </div>
+
+    <div class="prompt-card">
+        <div class="prompt-header">13. 深色封面 / PDF 封面版</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat modern wordmark logo for "GasGx" optimized for brochure covers, technical catalogs, and PDF cover pages. Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a solid dark background color #0F0F0F and render the wordmark in #FFFFFF or #5DD62C. The typography should feel bold, stable, and premium, with thicker strokes and a clean engineered look. The brand tone should be industrial, trustworthy, and globally professional, suitable for a natural gas generator manufacturer focused on overseas B2B markets. Flat vector style, minimalist, wordmark only, no slogan, no extra subtitle, no icon clutter, no 3D, no shadow, no mockup.</div>
+        </div>
+    </div>
+
+    <h2 class="category-title">六、展会 / 背景墙 / 海外宣传物料</h2>
+    
+    <div class="prompt-card">
+        <div class="prompt-header">14. 展会背景墙版（大尺寸主标）</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat modern wordmark logo for "GasGx" intended for trade show backdrops, exhibition walls, and overseas marketing displays. Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a solid dark background #0F0F0F and render the wordmark in #5DD62C or #FFFFFF. The typography should be bold, impactful, geometric, and highly visible from a distance, with thick strokes and strong visual presence. The overall brand feeling should be industrial, engineered, globally credible, and suitable for a natural gas generator set manufacturer targeting overseas B2B customers. Flat vector style, minimalist, wordmark only, no slogan, no extra subtitle, no 3D, no shadow, no mockup.</div>
+        </div>
+    </div>
+
+    <div class="prompt-card">
+        <div class="prompt-header">15. 海外宣传页 / 海报版</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat modern wordmark logo for "GasGx" suitable for brochures, posters, sales sheets, and overseas marketing materials. Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a clean white or light background and render the wordmark in #0F0F0F, with optional accent use of #5DD62C. The typography should be bold, modern, clean, and easy to recognize, with thick strokes and a strong international industrial identity. The brand tone should feel trustworthy, technical, export-oriented, and professional, suitable for a natural gas generator manufacturer. Flat vector style, wordmark only, no slogan, no extra subtitle, no 3D, no shadow, no mockup.</div>
+        </div>
+    </div>
+
+    <h2 class="category-title">七、包装箱 / 运输箱 / 出口唛头场景</h2>
+    
+    <div class="prompt-card">
+        <div class="prompt-header">16. 包装箱印刷版</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat industrial wordmark logo for "GasGx" intended for packaging boxes, shipping cartons, and export transport materials. Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a kraft carton or neutral light packaging background and render the wordmark in a single solid dark color such as #0F0F0F. The typography should be bold, simple, highly legible, and easy to reproduce in screen printing or stencil printing, with thick strokes and minimal detail. The overall brand feeling should be durable, industrial, and internationally reliable, suitable for a natural gas generator set manufacturer serving overseas B2B markets. Flat vector style, wordmark only, no slogan, no subtitle, no gradients, no 3D, no shadow, no mockup.</div>
+        </div>
+    </div>
+
+    <div class="prompt-card">
+        <div class="prompt-header">17. 运输箱唛头高识别版</div>
+        <div class="prompt-body">
+            <div class="prompt-code">Design a flat industrial monochrome wordmark logo for "GasGx" optimized for shipping crates and export logistics markings. Use Inter Bold or Inter ExtraBold, or a very close Modern Sans typeface. The logo must contain only the English word "GasGx" with the exact capitalization. Use a neutral crate-style background and render the logo in a single solid color #000000 or #0F0F0F. The typography should be thick, durable-looking, geometric, and instantly readable, suitable for stencil application and long-distance visual recognition. The brand should feel dependable, technical, and internationally export-ready, representing a natural gas generator manufacturer serving overseas B2B markets. Flat vector style, wordmark only, no slogan, no subtitle, no 3D, no shadow, no mockup.</div>
+        </div>
+    </div>
+
+    <div class="advice-section">
+        <h3>💡 实际推进建议</h3>
+        <p style="color: var(--text-dim); margin-bottom: 20px;">如果您现在要真正推进品牌落地，最优先建议先做这 6 套成品：</p>
+        <ul class="check-list">
+            <li>官网主标深色版</li>
+            <li>官网主标浅色版</li>
+            <li>透明背景绿色单色版</li>
+            <li>机身喷涂白色版</li>
+            <li>文档黑白打印版</li>
+            <li>展会背景墙高识别版</li>
+        </ul>
+        <p style="color: var(--text-dim); margin-top: 20px; font-size: 0.9em;">这样基本就能覆盖您现在大部分海外业务使用。</p>
+        
+
+    </div>
+</div>
+
+</body>
+</html>
