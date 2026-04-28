@@ -1247,36 +1247,63 @@
     function pipelineTabsMarkup(detail = {}) {
         const currentStageKey = resolveDealCurrentStage(detail);
         const selectedStageKey = resolveDisplayStage(detail);
-        return `
-            <div class="sales-stage-tabs-shell bg-[#0a0a0a] border-b border-gray-800 px-3 transition-all ${state.showFullMap ? 'is-expanded' : 'hide-scrollbar'}">
-                <div class="sales-stage-tabs-row flex gap-2 ${state.showFullMap ? 'flex-wrap' : 'items-center'}">
-                    <div class="flex items-center gap-2 flex-shrink-0 mr-1 ${state.showFullMap ? 'w-full mb-2 justify-between border-b border-gray-800/50 pb-2' : ''}">
-                        <span class="text-[10px] text-gray-500 whitespace-nowrap uppercase font-semibold">${esc(localeText(`全流程 (${STAGES.length}步)`, `Full Flow (${STAGES.length})`))}</span>
-                        <button type="button" class="text-[#39b54a] text-[10px] bg-[#39b54a]/10 hover:bg-[#39b54a]/20 px-2 py-1 rounded flex items-center gap-1 transition-colors" data-sales-map-toggle>${esc(state.showFullMap ? localeText('收起导航', 'Collapse') : localeText('展开全景', 'Expand'))}</button>
-                    </div>
-                    ${STAGES.map((stage, index) => {
-                        const status = stageStatusForKey(stage.key, currentStageKey, parseStageRecords(detail));
-                        const selected = stage.key === selectedStageKey;
-                        let styleClass = '';
-                        let icon = `<span class="text-[10px] font-mono">${index + 1}.</span>`;
-                        if (status === 'completed') {
-                            styleClass = selected ? 'bg-[#39b54a]/20 text-[#39b54a] border-[#39b54a]/50' : 'bg-gray-800/50 text-gray-400 border-gray-800';
-                            icon = `<i class="fa-solid fa-circle-check ${selected ? 'text-[#39b54a]' : 'text-gray-500'} text-[12px]"></i>`;
-                        } else if (status === 'active') {
-                            styleClass = selected ? 'bg-[#39b54a] text-black border-[#39b54a]' : 'bg-[#39b54a]/10 text-[#39b54a] border-[#39b54a]/30';
-                            icon = `<i class="fa-solid fa-clock ${selected ? 'text-black' : 'text-[#39b54a]'} text-[12px]"></i>`;
-                        } else {
-                            styleClass = 'bg-transparent text-gray-600 border-transparent opacity-50 cursor-not-allowed';
-                        }
-                        return `
-                            <button type="button" data-sales-stage-node="${esc(stage.key)}" data-stage-status="${esc(status)}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap transition-all ${state.showFullMap ? 'mb-1' : 'flex-shrink-0'} ${styleClass}">
-                                ${icon}
-                                <span>${esc(stageLabel(stage.key))}</span>
-                            </button>
-                        `;
-                    }).join('')}
+        const stageRows = STAGES.map((stage, index) => {
+            const status = stageStatusForKey(stage.key, currentStageKey, parseStageRecords(detail));
+            const selected = stage.key === selectedStageKey;
+            let icon = `<span data-sales-stage-wheel-icon class="flex h-6 w-6 items-center justify-center rounded-full border border-white/10 text-[10px] font-mono text-gray-500">${index + 1}</span>`;
+            if (status === 'completed') {
+                icon = `<span data-sales-stage-wheel-icon class="flex h-6 w-6 items-center justify-center rounded-full bg-[#39b54a]/15 text-[#39b54a]"><i class="fa-solid fa-circle-check text-[11px]"></i></span>`;
+            } else if (status === 'active') {
+                icon = `<span data-sales-stage-wheel-icon class="flex h-6 w-6 items-center justify-center rounded-full bg-[#39b54a]/20 text-[#39b54a]"><i class="fa-solid fa-clock text-[11px]"></i></span>`;
+            }
+            return `
+                <div data-sales-stage-wheel-item data-sales-stage-index="${index}" data-sales-stage-selected="${selected ? 'true' : 'false'}" class="flex h-20 w-full snap-center items-center justify-center will-change-transform">
+                    <button type="button" data-sales-stage-node="${esc(stage.key)}" data-stage-status="${esc(status)}" class="flex h-[72px] w-[85%] items-center gap-3 rounded-2xl border px-4 text-left text-xs transition-colors duration-200">
+                        ${icon}
+                        <span class="flex min-w-0 flex-1 flex-col">
+                            <strong class="truncate font-semibold" data-sales-stage-wheel-title>${esc(stageLabel(stage.key))}</strong>
+                            <em class="mt-0.5 text-[10px] font-normal uppercase not-italic tracking-wide" data-sales-stage-wheel-status>${esc(statusLabel(status))}</em>
+                        </span>
+                    </button>
                 </div>
+            `;
+        }).join('');
+        const selectedStatus = stageStatusForKey(selectedStageKey, currentStageKey, parseStageRecords(detail));
+        const selectedIndex = Math.max(0, STAGE_INDEX[selectedStageKey] ?? 0) + 1;
+        return `
+            <div class="sales-stage-tabs-shell bg-[#0a0a0a] border-b border-gray-800 px-3 py-2 transition-all">
+                <button type="button" class="flex w-full items-center gap-3 rounded-2xl border border-[#39b54a]/30 bg-[#39b54a]/10 px-3 py-2 text-left text-[#39b54a]" data-sales-map-toggle>
+                    <span class="flex h-7 w-7 items-center justify-center rounded-full bg-[#39b54a]/20 text-[10px] font-mono">${esc(String(selectedIndex))}</span>
+                    <span class="min-w-0 flex-1">
+                        <strong class="block truncate text-xs font-semibold">${esc(stageLabel(selectedStageKey))}</strong>
+                        <em class="mt-0.5 block text-[10px] not-italic opacity-70">${esc(statusLabel(selectedStatus))}</em>
+                    </span>
+                    <i class="fa-solid ${state.showFullMap ? 'fa-chevron-up' : 'fa-chevron-down'} text-[11px] opacity-80"></i>
+                </button>
             </div>
+            ${state.showFullMap ? `
+                <div class="fixed inset-0 z-[90] flex items-center bg-black/55 px-5 py-10 backdrop-blur-md" data-sales-stage-modal-backdrop>
+                    <div class="mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-3xl border border-[#39b54a]/25 bg-[#0b120d]/82 shadow-[0_18px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+                        <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                            <div class="min-w-0">
+                                <strong class="block text-sm font-semibold text-white">${esc(localeText('选择流程节点', 'Select Stage'))}</strong>
+                                <span class="mt-0.5 block text-[11px] text-gray-500">${esc(localeText('滑动到中间查看节点，点击确认切换', 'Scroll to review stages, tap to switch'))}</span>
+                            </div>
+                            <button type="button" class="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-gray-400 transition hover:border-[#39b54a]/40 hover:text-[#39b54a]" data-sales-map-close aria-label="${esc(localeText('关闭', 'Close'))}">
+                                <i class="fa-solid fa-xmark text-[13px]"></i>
+                            </button>
+                        </div>
+                        <div class="relative h-[400px] overflow-hidden">
+                            <div class="pointer-events-none absolute left-0 right-0 top-1/2 z-0 h-20 -translate-y-1/2 bg-gradient-to-r from-transparent via-[#39b54a]/5 to-transparent"></div>
+                            <div class="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-gradient-to-b from-[#0b120d] via-[#0b120d]/90 to-transparent"></div>
+                            <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-gradient-to-t from-[#0b120d] via-[#0b120d]/90 to-transparent"></div>
+                            <div class="h-full snap-y snap-mandatory overflow-y-auto px-3 py-40 hide-scrollbar" data-sales-stage-wheel>
+                            ${stageRows}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
         `;
     }
 
@@ -1358,7 +1385,7 @@
                     </div>
                     <span class="text-[10px] text-gray-500 whitespace-nowrap">${esc(localeText(`${selectedMessages.length} 条互动`, `${selectedMessages.length} interactions`))}</span>
                 </div>
-                <div id="sales-comment-scroll" class="sales-comment-scroll-region p-4 pb-28 sm:pb-24 overflow-y-auto custom-scrollbar">
+                <div id="sales-comment-scroll" class="sales-comment-scroll-region p-4 pb-24 overflow-y-auto custom-scrollbar">
                     <div class="flex flex-col gap-1">
                         ${threads.length
                             ? threads.map((thread) => renderReferenceCommentThread(thread)).join('')
@@ -1367,28 +1394,26 @@
                     <div class="sales-comment-scroll-indicator" aria-hidden="true">
                         <span id="sales-comment-scroll-thumb" class="sales-comment-scroll-thumb"></span>
                     </div>
-                </div>
-            </section>
-            <div class="fixed bottom-0 left-0 right-0 bg-[#0f0f0f]/95 backdrop-blur-md border-t border-gray-800 p-3 pb-[calc(env(safe-area-inset-bottom)+12px)] z-40 shadow-[0_-15px_30px_rgba(0,0,0,0.6)]">
-                <div class="max-w-xl mx-auto">
-                    <div class="bg-gray-900 border border-gray-700 rounded-2xl flex flex-col focus-within:border-[#39b54a] transition-colors overflow-hidden">
-                        ${replyTarget
-                            ? `
-                                <div class="flex items-center justify-between bg-gray-800/60 px-3 py-1.5 border-b border-gray-800 gap-2">
-                                    <span class="text-[11px] text-gray-400 flex items-center gap-1 min-w-0">${esc(tr('commentsReplying'))} <span class="text-[#39b54a] font-medium truncate">@${esc(displayActorName(replyTarget.actor_label))}</span></span>
-                                    <button type="button" class="text-gray-500 hover:text-gray-300 p-0.5 transition-colors" data-sales-comment-reply-cancel="true"><i class="fa-solid fa-xmark text-[12px]"></i></button>
-                                </div>
-                            `
-                            : ''}
-                        <div class="flex gap-2 items-end px-2 py-2">
-                            <textarea id="sales-comment-input" placeholder="${esc(replyTarget ? localeText('输入回复内容...', 'Write a reply...') : localeText(`在「${stageLabel(selectedStage)}」节点留言...`, `Leave a comment in ${stageLabel(selectedStage)}...`))}" class="flex-1 bg-transparent border-none px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-0 resize-none min-h-[32px] max-h-[100px] hide-scrollbar" rows="1"></textarea>
-                            <button type="button" id="sales-comment-submit" ${!text(state.selectedDealId) ? 'disabled' : ''} class="rounded-full p-2 flex items-center justify-center transition-all flex-shrink-0 bg-[#39b54a] text-black hover:bg-[#2e9c3a] disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed">
-                                <i class="fa-solid fa-paper-plane text-[14px]"></i>
-                            </button>
+                    <div class="absolute bottom-0 left-0 right-0 z-20 border-t border-gray-800 bg-[#121212]/95 p-3 pb-[calc(env(safe-area-inset-bottom)+12px)] backdrop-blur">
+                        <div class="bg-gray-900 border border-gray-700 rounded-2xl flex flex-col focus-within:border-[#39b54a] transition-colors overflow-hidden">
+                            ${replyTarget
+                                ? `
+                                    <div class="flex items-center justify-between bg-gray-800/60 px-3 py-1.5 border-b border-gray-800 gap-2">
+                                        <span class="text-[11px] text-gray-400 flex items-center gap-1 min-w-0">${esc(tr('commentsReplying'))} <span class="text-[#39b54a] font-medium truncate">@${esc(displayActorName(replyTarget.actor_label))}</span></span>
+                                        <button type="button" class="text-gray-500 hover:text-gray-300 p-0.5 transition-colors" data-sales-comment-reply-cancel="true"><i class="fa-solid fa-xmark text-[12px]"></i></button>
+                                    </div>
+                                `
+                                : ''}
+                            <div class="flex gap-2 items-end px-2 py-2">
+                                <textarea id="sales-comment-input" placeholder="${esc(replyTarget ? localeText('输入回复内容...', 'Write a reply...') : localeText('输入消息内容...', 'Enter message content...'))}" class="flex-1 bg-transparent border-none px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-0 resize-none min-h-[32px] max-h-[100px] hide-scrollbar" rows="1"></textarea>
+                                <button type="button" id="sales-comment-submit" ${!text(state.selectedDealId) ? 'disabled' : ''} class="rounded-full p-2 flex items-center justify-center transition-all flex-shrink-0 bg-[#39b54a] text-black hover:bg-[#2e9c3a] disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed">
+                                    <i class="fa-solid fa-paper-plane text-[14px]"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
         `;
     }
 
@@ -1417,8 +1442,8 @@
             updated_at: text(detail.updated_at || overviewRow?.updated_at),
         });
         root.innerHTML = `
-            <div class="bg-[#050505] text-gray-200 font-sans flex flex-col relative min-h-0" style="height:calc(100dvh - 5rem);max-height:calc(100dvh - 5rem);overflow:hidden;">
-                <main class="sales-pipeline-main-shell flex-1 w-full max-w-xl mx-auto p-4 flex flex-col gap-4 relative pb-28 min-h-0 overflow-hidden" style="height:100%;max-height:100%;overflow:hidden;">
+            <div class="bg-[#050505] text-gray-200 font-sans flex flex-col relative min-h-0" style="height:calc(100dvh - var(--sales-portal-shell-offset, 5rem));max-height:calc(100dvh - var(--sales-portal-shell-offset, 5rem));overflow:hidden;">
+                <main class="sales-pipeline-main-shell flex-1 w-full max-w-xl mx-auto p-4 flex flex-col gap-4 relative min-h-0 overflow-hidden" style="height:100%;max-height:100%;overflow:hidden;">
                     <section class="mb-1 flex-shrink-0">
                         <div class="hidden sm:block text-[#39b54a] text-xs font-semibold mb-1 tracking-wide">${esc(pipelineLabel())}</div>
                         <h1 class="text-lg sm:text-2xl font-bold text-white mb-1">${esc(localeText('客户交易流程', 'Customer Deal Flow'))}</h1>
@@ -1629,6 +1654,73 @@
             state.showFullMap = !state.showFullMap;
             render();
         });
+        document.querySelector('[data-sales-map-close]')?.addEventListener('click', () => {
+            state.showFullMap = false;
+            render();
+        });
+        document.querySelector('[data-sales-stage-modal-backdrop]')?.addEventListener('click', (event) => {
+            if (event.target !== event.currentTarget) return;
+            state.showFullMap = false;
+            render();
+        });
+        const stageWheel = document.querySelector('[data-sales-stage-wheel]');
+        const selectedStageNode = stageWheel?.querySelector('[data-sales-stage-selected="true"]');
+        const syncStageWheelFocus = () => {
+            if (!stageWheel) return;
+            const wheelRect = stageWheel.getBoundingClientRect();
+            const wheelCenter = wheelRect.top + wheelRect.height / 2;
+            const itemHeight = 80;
+            const items = Array.from(stageWheel.querySelectorAll('[data-sales-stage-wheel-item]'));
+            items.forEach((item) => {
+                const rect = item.getBoundingClientRect();
+                const itemCenter = rect.top + rect.height / 2;
+                const offset = (itemCenter - wheelCenter) / itemHeight;
+                const absOffset = Math.abs(offset);
+                const scale = Math.max(1 - absOffset * 0.15, 0.6);
+                const opacity = Math.max(1 - absOffset * 0.45, 0.1);
+                const rotateX = offset * -30;
+                const zIndex = Math.max(1, 100 - Math.round(absOffset * 10));
+                const isFocused = absOffset < 0.5;
+                const card = item.querySelector('[data-sales-stage-node]');
+                const title = item.querySelector('[data-sales-stage-wheel-title]');
+                const status = item.querySelector('[data-sales-stage-wheel-status]');
+                const icon = item.querySelector('[data-sales-stage-wheel-icon]');
+
+                item.style.transform = `perspective(600px) rotateX(${rotateX}deg) scale(${scale})`;
+                item.style.opacity = String(opacity);
+                item.style.zIndex = String(zIndex);
+                item.style.transformOrigin = 'center center';
+                item.style.filter = isFocused ? 'none' : 'saturate(0.72)';
+
+                if (card) {
+                    card.style.background = isFocused ? 'rgba(26, 31, 27, 0.96)' : 'rgba(24, 24, 27, 0.42)';
+                    card.style.borderColor = isFocused ? 'rgba(57, 181, 74, 0.9)' : 'transparent';
+                    card.style.boxShadow = isFocused ? '0 0 20px rgba(57, 181, 74, 0.18)' : 'none';
+                }
+                if (title) title.style.color = isFocused ? '#ffffff' : 'rgba(212, 212, 216, 0.65)';
+                if (status) status.style.color = isFocused ? '#39b54a' : 'rgba(113, 113, 122, 0.75)';
+                if (icon) {
+                    icon.style.borderColor = isFocused ? 'rgba(57, 181, 74, 0.9)' : 'rgba(63, 63, 70, 0.85)';
+                    icon.style.color = isFocused ? '#39b54a' : 'rgba(113, 113, 122, 0.85)';
+                    icon.style.background = isFocused ? 'rgba(57, 181, 74, 0.15)' : 'rgba(17, 17, 17, 0.9)';
+                }
+            });
+        };
+        if (stageWheel && selectedStageNode) {
+            requestAnimationFrame(() => {
+                const selectedIndex = Number(selectedStageNode.dataset.salesStageIndex || 0);
+                stageWheel.scrollTop = selectedIndex * 80;
+                requestAnimationFrame(syncStageWheelFocus);
+            });
+        }
+        let stageWheelFrame = 0;
+        stageWheel?.addEventListener('scroll', () => {
+            if (stageWheelFrame) return;
+            stageWheelFrame = requestAnimationFrame(() => {
+                stageWheelFrame = 0;
+                syncStageWheelFocus();
+            });
+        }, { passive: true });
 
         document.querySelectorAll('[data-sales-focus-composer]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -1647,6 +1739,7 @@
                 }
                 state.selectedStage = stageKey;
                 state.commentReplyToId = '';
+                state.showFullMap = false;
                 syncUrl();
                 render();
             });
