@@ -358,3 +358,29 @@ Reason:
   - chunk metadata
   - admin QA maintenance
 - The public-site function directory should therefore be maintained as explicit, reviewable knowledge rather than only through prompt engineering.
+
+## 2026-04-29 Supabase operator CLI decisions
+
+### Decision 39: Supabase operator tasks use one repo-local PowerShell entrypoint
+
+- Supabase operational commands for this repo should go through:
+  - `D:\code\GasGx\scripts\supabase_ops.ps1`
+- The supported operator commands are:
+  - `check`
+  - `auth-email`
+  - `deploy-function <site-chat|auth-telegram|quote-translate>`
+- Direct ad-hoc Supabase CLI or Management API commands should be avoided for routine work when the entrypoint already covers the task.
+
+### Decision 40: Supabase Management credentials live in Windows User environment variables
+
+- `SUPABASE_ACCESS_TOKEN` must be stored as a Windows User environment variable, not in repo files, docs, screenshots, or public-readable config.
+- `SUPABASE_PROJECT_REF` may also be stored as a Windows User environment variable; the repo default remains `mkpcliytqudclkwtewru`.
+- Operator scripts may print only token presence (`present` / `missing`) and must not print the token value.
+
+### Decision 41: Supabase access token is not the table data-access contract
+
+- `SUPABASE_ACCESS_TOKEN` is reserved for Supabase Management API / CLI operations such as Auth template sync and function deploy.
+- Other applications that read Supabase tables must use the appropriate data-access credentials:
+  - publishable/anon key plus RLS for public/client access
+  - service-role/secret key only for trusted server-side code
+- The Management API access token must not be passed to external applications for table reads.

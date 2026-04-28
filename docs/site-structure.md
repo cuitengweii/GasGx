@@ -131,11 +131,15 @@ news/
   - `tools/quote-system/` for internal quote-system workbench and preview entry
   - `minerpower/` and `vman/` remain public brand quote entry paths
 
-- `scripts/generate_sitemap.py` is the current sitemap generator.
-- `scripts/update_supabase_auth_email_templates.mjs` is the current operator script for pushing local Auth mail templates to Supabase project config.
+- `scripts/generate_sitemap.py` is the current sitemap generator:
   - It enumerates public `index.html` routes.
   - It excludes `.git`, `.github`, `.vscode`, `node_modules`, `news/test`, and `private-use`.
   - It resolves `lastmod` from `git log` first and falls back to file mtime.
+- `scripts/update_supabase_auth_email_templates.mjs` is the lower-level operator script for pushing local Auth mail templates to Supabase project config.
+- `scripts/supabase_ops.ps1` is the current unified Supabase operator entrypoint:
+  - `check` verifies repo-local CLI, project ref, and token presence without printing secrets.
+  - `auth-email` wraps `scripts/update_supabase_auth_email_templates.mjs`.
+  - `deploy-function <site-chat|auth-telegram|quote-translate>` wraps repo-local Supabase CLI function deployment.
 
 - Current sitemap output now includes:
   - `/news/account/`

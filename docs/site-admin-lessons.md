@@ -311,3 +311,28 @@ How to prevent recurrence:
   2. active-panel rendering
   3. state normalization/guard helpers
   4. regression tests that click the new state
+
+## Lesson 16: Supabase Management tokens and table-access keys solve different problems
+
+Error symptom:
+
+- Auth email template sync failed with `Missing SUPABASE_ACCESS_TOKEN`.
+- The follow-up question conflated the Management API token with credentials other applications might use to read Supabase tables.
+
+Root cause:
+
+- `SUPABASE_ACCESS_TOKEN` is a Supabase account/project management credential, while application table reads should use publishable/anon keys with RLS or service-role/secret keys on trusted servers.
+- Treating those as interchangeable would either fail operational tasks or overexpose powerful management credentials.
+
+How to detect earlier:
+
+- Before adding a Supabase integration, ask whether the caller needs:
+  - project management / deploy / Auth template config
+  - client-side table reads under RLS
+  - trusted server-side table reads/writes
+
+How to prevent recurrence:
+
+- Route project operations through `scripts\supabase_ops.ps1`.
+- Store `SUPABASE_ACCESS_TOKEN` only in Windows User environment variables.
+- Never give Management API tokens to browser apps, external clients, or table-reading integrations.

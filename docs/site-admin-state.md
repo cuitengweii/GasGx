@@ -223,6 +223,42 @@
 - The dedicated brand default-link panel is forced visible even under older shared panel CSS rules that previously hid non-instance editor blocks.
 - Product-template and brand editor panes are no longer hidden by quote-instance-only layout CSS classes.
 
+## 2026-04-29 Supabase operator CLI archive update
+
+### Latest milestone
+
+- Added a single PowerShell operator entrypoint for Supabase work:
+  - `D:\code\GasGx\scripts\supabase_ops.ps1`
+- The entrypoint supports:
+  - `check`
+  - `auth-email`
+  - `deploy-function site-chat`
+  - `deploy-function auth-telegram`
+  - `deploy-function quote-translate`
+- The script reads `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_REF` from Windows User environment variables and never prints token values.
+- `SUPABASE_PROJECT_REF` defaults to `mkpcliytqudclkwtewru` when not explicitly set.
+- The local Windows User environment now has `SUPABASE_ACCESS_TOKEN` present and `SUPABASE_PROJECT_REF=mkpcliytqudclkwtewru`; `scripts\supabase_ops.ps1 check` verifies both.
+
+### Effective behaviors
+
+- Operators can now run Supabase Auth email sync through:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File "D:\code\GasGx\scripts\supabase_ops.ps1" auth-email`
+- Operators can deploy supported Edge Functions through:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File "D:\code\GasGx\scripts\supabase_ops.ps1" deploy-function site-chat`
+- `check` reports only `present` / `missing` for `SUPABASE_ACCESS_TOKEN`, so token values are not exposed in terminal output.
+- The script intentionally avoids local Docker-dependent Supabase workflows such as `supabase start`, `status`, or `db reset`; this machine currently does not have Docker running.
+
+### Solved in this thread
+
+- Removed the repeated manual step of finding and exporting `SUPABASE_ACCESS_TOKEN` before Auth template sync.
+- Clarified that `SUPABASE_ACCESS_TOKEN` is for Supabase Management API / CLI operations, not for application table reads.
+- Clarified that other applications reading Supabase tables should use publishable/anon keys with RLS for client access or service-role/secret keys only on trusted servers.
+
+### Unfinished
+
+- The new Supabase operator script is not yet committed at the start of this archive block.
+- A real `auth-email` online sync should be run after this archive if the latest Auth email template change needs to be pushed to Supabase production.
+
 ### Solved in this thread
 
 - Added a public template library that surfaces `vman` and `minerpower` as reusable starter templates for new brands.
