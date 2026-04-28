@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Gas Power Bidding and Channel VI Case</title>
+  <desc id="desc">Tender cover, authorization certificate, cooperation plaque and project proposal deck.</desc>
+  <rect width="960" height="540" fill="#101010"/>
+  <text x="56" y="70" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800">BIDDING &amp; CHANNEL VI</text>
+  <text x="56" y="106" fill="#A0A0A0" font-family="Inter, Arial, sans-serif" font-size="16">Tender cover / certificate / channel authorization / proposal deck</text>
+  <rect x="104" y="154" width="190" height="274" rx="8" fill="#F4F6F0"/>
+  <rect x="104" y="154" width="190" height="62" rx="8" fill="#5DD62C"/>
+  <text x="130" y="194" fill="#0F0F0F" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="900">TENDER</text>
+  <rect x="132" y="254" width="112" height="10" fill="#111"/>
+  <rect x="132" y="294" width="136" height="8" fill="#777"/>
+  <rect x="382" y="172" width="210" height="166" rx="8" fill="#202020" stroke="#5DD62C"/>
+  <circle cx="486" cy="236" r="38" fill="#5DD62C"/>
+  <text x="420" y="302" fill="#E8E8E8" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">AUTHORIZED</text>
+  <rect x="680" y="200" width="176" height="132" rx="8" fill="#3B3324" stroke="#D9B56A"/>
+  <text x="718" y="254" fill="#D9B56A" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="900">PARTNER</text>
+  <text x="710" y="288" fill="#E8E8E8" font-family="Inter, Arial, sans-serif" font-size="14">STRATEGIC</text>
+</svg>

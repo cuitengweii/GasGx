@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Fleet Vehicle VI Case</title>
+  <desc id="desc">Engineering vehicle and transport truck livery visual identity mockup.</desc>
+  <rect width="960" height="540" fill="#111"/>
+  <rect y="376" width="960" height="164" fill="#1A1A1A"/>
+  <path d="M0 410 H960" stroke="#333" stroke-width="3" stroke-dasharray="28 18"/>
+  <text x="56" y="72" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700">FLEET VEHICLE</text>
+  <text x="56" y="108" fill="#A0A0A0" font-family="Inter, Arial, sans-serif" font-size="16">Engineering car / transport truck livery / mobile brand exposure</text>
+  <path d="M136 286 H600 L682 356 H106 Q94 356 98 340 L118 306 Q124 286 136 286 Z" fill="#E8E8E8"/>
+  <path d="M418 286 H584 L640 340 H418 Z" fill="#202020"/>
+  <path d="M150 310 H398 V356 H126 Z" fill="#5DD62C"/>
+  <text x="188" y="342" fill="#0F0F0F" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="900">GASGX</text>
+  <circle cx="214" cy="366" r="38" fill="#0F0F0F" stroke="#5DD62C" stroke-width="8"/>
+  <circle cx="574" cy="366" r="38" fill="#0F0F0F" stroke="#5DD62C" stroke-width="8"/>
+  <rect x="704" y="244" width="132" height="112" rx="6" fill="#262626" stroke="#444"/>
+  <rect x="724" y="266" width="92" height="14" fill="#5DD62C"/>
+  <rect x="724" y="302" width="66" height="8" fill="#A0A0A0"/>
+  <rect x="724" y="328" width="78" height="8" fill="#666"/>
+</svg>

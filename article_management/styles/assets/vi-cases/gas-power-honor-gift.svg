@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Gas Power Honor and Gift VI Case</title>
+  <desc id="desc">Honor certificate, patent plaque, qualification plaque, industrial gift box and memorial object.</desc>
+  <rect width="960" height="540" fill="#101010"/>
+  <text x="56" y="70" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800">HONOR &amp; GIFT VI</text>
+  <text x="56" y="106" fill="#A0A0A0" font-family="Inter, Arial, sans-serif" font-size="16">Certificate / patent plaque / qualification / industrial gift / memorial</text>
+  <rect x="96" y="158" width="198" height="270" rx="8" fill="#F4F6F0"/>
+  <rect x="126" y="194" width="136" height="12" fill="#0F0F0F"/>
+  <circle cx="196" cy="284" r="42" fill="#D9B56A"/>
+  <rect x="136" y="358" width="118" height="8" fill="#777"/>
+  <rect x="380" y="180" width="220" height="168" rx="10" fill="#3B3324" stroke="#D9B56A"/>
+  <text x="426" y="252" fill="#D9B56A" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="900">PATENT</text>
+  <text x="420" y="292" fill="#E8E8E8" font-family="Inter, Arial, sans-serif" font-size="16">CERTIFIED</text>
+  <rect x="682" y="238" width="170" height="150" rx="12" fill="#202020" stroke="#5DD62C"/>
+  <rect x="682" y="238" width="170" height="46" rx="12" fill="#5DD62C"/>
+  <text x="724" y="334" fill="#E8E8E8" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">GIFT BOX</text>
+  <path d="M766 238 V388" stroke="#0F0F0F" stroke-width="8"/>
+</svg>

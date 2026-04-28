@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Office Administration VI Case</title>
+  <desc id="desc">Industrial brand stationery, badge and presentation template mockup.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101512"/>
+      <stop offset="1" stop-color="#202020"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="960" height="540" fill="url(#bg)"/>
+  <path d="M0 450 L960 210" stroke="#333333" stroke-width="2"/>
+  <path d="M0 485 L960 245" stroke="#333333" stroke-width="1"/>
+  <circle cx="806" cy="86" r="46" fill="#5DD62C" opacity=".18" filter="url(#glow)"/>
+  <text x="56" y="72" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700">OFFICE ADMIN</text>
+  <text x="56" y="108" fill="#A0A0A0" font-family="Inter, Arial, sans-serif" font-size="16">Business card / badge / document system</text>
+  <rect x="72" y="162" width="300" height="176" rx="10" fill="#F5F5F5"/>
+  <rect x="72" y="162" width="300" height="44" rx="10" fill="#5DD62C"/>
+  <rect x="98" y="232" width="96" height="10" fill="#0F0F0F"/>
+  <rect x="98" y="258" width="206" height="8" fill="#666666"/>
+  <rect x="98" y="282" width="170" height="8" fill="#999999"/>
+  <rect x="424" y="142" width="150" height="236" rx="16" fill="#141414" stroke="#5DD62C" stroke-width="2"/>
+  <circle cx="499" cy="212" r="38" fill="#5DD62C"/>
+  <rect x="462" y="282" width="74" height="9" fill="#E8E8E8"/>
+  <rect x="454" y="304" width="90" height="7" fill="#888888"/>
+  <rect x="636" y="166" width="220" height="144" rx="8" fill="#262626" stroke="#333333"/>
+  <rect x="662" y="194" width="104" height="14" fill="#5DD62C"/>
+  <rect x="662" y="230" width="152" height="8" fill="#A0A0A0"/>
+  <rect x="662" y="254" width="126" height="8" fill="#666666"/>
+  <rect x="662" y="278" width="174" height="8" fill="#666666"/>
+  <text x="56" y="474" fill="#E8E8E8" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700">Name Card / ID Badge / PPT / Contract Template</text>
+</svg>

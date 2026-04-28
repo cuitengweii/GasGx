@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Gas Power Project Site VI Case</title>
+  <desc id="desc">Project fencing, temporary office entrance, site flag and construction bulletin.</desc>
+  <rect width="960" height="540" fill="#0F0F0F"/>
+  <rect y="374" width="960" height="166" fill="#1A1A1A"/>
+  <text x="56" y="70" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800">PROJECT SITE VI</text>
+  <text x="56" y="106" fill="#A0A0A0" font-family="Inter, Arial, sans-serif" font-size="16">Fence / site gate / flags / bulletin / completion plate</text>
+  <rect x="84" y="250" width="792" height="96" fill="#202020" stroke="#333"/>
+  <path d="M84 346 H876" stroke="#5DD62C" stroke-width="8"/>
+  <text x="124" y="310" fill="#E8E8E8" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="900">GasGx DISTRIBUTED ENERGY PROJECT</text>
+  <rect x="154" y="152" width="196" height="98" fill="#262626" stroke="#5DD62C"/>
+  <text x="188" y="206" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="800">PROJECT HQ</text>
+  <line x1="516" y1="166" x2="516" y2="374" stroke="#888" stroke-width="5"/>
+  <path d="M516 166 L668 204 L516 242 Z" fill="#5DD62C"/>
+  <rect x="678" y="144" width="168" height="146" rx="8" fill="#F4F6F0"/>
+  <rect x="704" y="178" width="118" height="12" fill="#111"/>
+  <rect x="704" y="220" width="90" height="8" fill="#666"/>
+  <rect x="704" y="248" width="104" height="8" fill="#999"/>
+</svg>

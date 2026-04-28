@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Gas Power Product Shipping VI Case</title>
+  <desc id="desc">Generator crate, certificate, warranty card and accessory package identity.</desc>
+  <rect width="960" height="540" fill="#111"/>
+  <text x="56" y="70" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800">DELIVERY PACKAGE VI</text>
+  <text x="56" y="106" fill="#A0A0A0" font-family="Inter, Arial, sans-serif" font-size="16">Wooden crate / lifting warning / certificate / manual / accessory pack</text>
+  <rect x="86" y="192" width="390" height="230" fill="#6B523B" stroke="#9A7958" stroke-width="4"/>
+  <path d="M86 248 H476 M86 310 H476 M162 192 V422 M300 192 V422 M416 192 V422" stroke="#9A7958" stroke-width="4"/>
+  <rect x="124" y="220" width="164" height="54" fill="#5DD62C"/>
+  <text x="148" y="255" fill="#0F0F0F" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="900">GasGx</text>
+  <rect x="322" y="342" width="112" height="42" fill="#F5B041"/>
+  <text x="344" y="370" fill="#0F0F0F" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="900">LIFT</text>
+  <rect x="554" y="154" width="154" height="214" rx="8" fill="#F4F6F0"/>
+  <rect x="574" y="182" width="96" height="14" fill="#0F0F0F"/>
+  <rect x="574" y="226" width="110" height="8" fill="#666"/>
+  <rect x="574" y="254" width="86" height="8" fill="#999"/>
+  <circle cx="630" cy="318" r="32" fill="#5DD62C"/>
+  <rect x="740" y="214" width="130" height="154" rx="10" fill="#202020" stroke="#5DD62C"/>
+  <text x="764" y="260" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">PARTS</text>
+  <rect x="764" y="292" width="82" height="10" fill="#E8E8E8"/>
+  <rect x="764" y="320" width="64" height="8" fill="#666"/>
+</svg>

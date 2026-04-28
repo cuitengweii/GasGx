@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Factory Wayfinding VI Case</title>
+  <desc id="desc">Factory entrance, directional sign and safety signage mockup.</desc>
+  <rect width="960" height="540" fill="#0F0F0F"/>
+  <rect x="0" y="352" width="960" height="188" fill="#181818"/>
+  <path d="M90 352 L224 220 H736 L870 352 Z" fill="#202020" stroke="#333333" stroke-width="3"/>
+  <rect x="236" y="166" width="488" height="74" rx="8" fill="#202020" stroke="#5DD62C" stroke-width="3"/>
+  <text x="288" y="214" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800">GASGX ENERGY PLANT</text>
+  <rect x="126" y="294" width="190" height="116" rx="8" fill="#262626" stroke="#5DD62C" stroke-width="2"/>
+  <path d="M164 350 H260 M236 326 L260 350 L236 374" stroke="#5DD62C" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="146" y="390" fill="#E8E8E8" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700">WORKSHOP A</text>
+  <rect x="386" y="286" width="188" height="132" rx="8" fill="#F5B041"/>
+  <path d="M480 314 L532 394 H428 Z" fill="#0F0F0F"/>
+  <text x="444" y="376" fill="#F5B041" font-family="Inter, Arial, sans-serif" font-size="40" font-weight="900">!</text>
+  <text x="426" y="402" fill="#0F0F0F" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="800">SAFETY AREA</text>
+  <rect x="640" y="294" width="184" height="116" rx="8" fill="#262626" stroke="#333333" stroke-width="2"/>
+  <rect x="664" y="326" width="136" height="12" fill="#5DD62C"/>
+  <rect x="664" y="358" width="96" height="8" fill="#A0A0A0"/>
+  <rect x="664" y="382" width="116" height="8" fill="#666666"/>
+  <text x="56" y="74" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700">FACTORY WAYFINDING</text>
+  <text x="56" y="110" fill="#A0A0A0" font-family="Inter, Arial, sans-serif" font-size="16">Entrance sign / department plate / safety warning / pipe labels</text>
+</svg>

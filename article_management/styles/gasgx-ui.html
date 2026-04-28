@@ -173,6 +173,47 @@
       animation: breathing 2s infinite ease-in-out;
       border: 1px solid var(--accent-aurora);
     }
+
+    .logo-demo-card {
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-radius: 0.5rem;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .logo-wordmark {
+      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 700;
+      letter-spacing: 0;
+      line-height: 1;
+    }
+
+    .logo-subtitle {
+      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .app-logo-tile {
+      width: 88px;
+      height: 88px;
+      border-radius: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: 0;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.32);
+      flex-shrink: 0;
+    }
   </style>
 </head>
 <body class="min-h-screen p-6 md:p-12 selection:bg-aurora selection:text-main">
@@ -187,6 +228,82 @@
       </div>
       <p class="text-secondary text-sm">赛博工业 (Cyber-Industrial) / 科技风 (Tech-Driven) • 核心视觉规范可视化</p>
     </header>
+
+    <!-- Section 0: Logo Background Variants -->
+    <section>
+      <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+        <i data-lucide="badge" class="w-5 h-5 text-aurora"></i> Logo 背景配色示例
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <article class="logo-demo-card bg-[#0F0F0F] border border-borderLine p-6">
+          <div>
+            <p class="logo-subtitle text-[#5DD62C] mb-3">Dark Core</p>
+            <div class="logo-wordmark text-[#5DD62C]">GasGx</div>
+          </div>
+          <p class="text-xs text-secondary">黑底 + 极光绿主标，用于深色官网、控制台与设备屏。</p>
+        </article>
+        <article class="logo-demo-card bg-[#202020] border border-[#3A3A3A] p-6">
+          <div>
+            <p class="logo-subtitle text-[#A0A0A0] mb-3">Industrial Gray</p>
+            <div class="logo-wordmark text-[#E8E8E8]">GasGx</div>
+          </div>
+          <p class="text-xs text-secondary">深灰底 + 亮白标，用于厂区导视、铭牌与低光环境。</p>
+        </article>
+        <article class="logo-demo-card bg-[#5DD62C] text-[#0F0F0F] p-6 shadow-[0_0_18px_rgba(93,214,44,0.25)]">
+          <div>
+            <p class="logo-subtitle text-[#0F0F0F] mb-3">Aurora Primary</p>
+            <div class="logo-wordmark text-[#0F0F0F]">GasGx</div>
+          </div>
+          <p class="text-xs text-[#18310F]">绿底 + 深黑反白规则，用于按钮、贴纸和高识别物料。</p>
+        </article>
+        <article class="logo-demo-card bg-[#F4F6F0] text-[#0F0F0F] p-6">
+          <div>
+            <p class="logo-subtitle text-[#4A5A43] mb-3">Light Utility</p>
+            <div class="logo-wordmark text-[#0F0F0F]">GasGx</div>
+          </div>
+          <p class="text-xs text-[#5B6256]">浅底 + 深黑主标，用于合同、PPT、名片与纸质文件。</p>
+        </article>
+      </div>
+      <div class="mt-6 bg-card border border-borderLine rounded-lg p-6">
+        <div class="flex items-center justify-between gap-4 mb-5">
+          <div>
+            <h3 class="text-sm text-primary font-semibold">App 正方形 Logo 应用</h3>
+            <p class="text-xs text-secondary mt-1">用于移动端 App、浏览器插件、后台入口、桌面快捷方式等图标场景。</p>
+          </div>
+          <span class="text-xs text-secondary font-mono hidden md:inline">1:1 / rounded square</span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
+          <div class="flex items-center gap-4">
+            <div class="app-logo-tile bg-[#0F0F0F] text-[#5DD62C] border border-[#333333]">GasGx</div>
+            <div>
+              <p class="text-sm text-primary font-semibold">Core App</p>
+              <p class="text-xs text-secondary mt-1">深色系统入口</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="app-logo-tile bg-[#5DD62C] text-[#0F0F0F]">GasGx</div>
+            <div>
+              <p class="text-sm text-primary font-semibold">Energy App</p>
+              <p class="text-xs text-secondary mt-1">高识别主应用</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="app-logo-tile bg-[#F4F6F0] text-[#0F0F0F] border border-[#D7DECF]">GasGx</div>
+            <div>
+              <p class="text-sm text-primary font-semibold">Office App</p>
+              <p class="text-xs text-secondary mt-1">浅色办公入口</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="app-logo-tile bg-[#202020] text-[#E8E8E8] border border-[#5DD62C]">GasGx</div>
+            <div>
+              <p class="text-sm text-primary font-semibold">Ops App</p>
+              <p class="text-xs text-secondary mt-1">运维监控入口</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Section 1: Colors -->
     <section>
@@ -341,14 +458,145 @@
         </div>
       </section>
 
+      <section>
+        <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+          <i data-lucide="image" class="w-5 h-5 text-aurora"></i> VI 应用案例图
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <article class="bg-card border border-borderLine rounded-lg overflow-hidden">
+            <img src="./assets/vi-cases/office-admin.svg" alt="办公行政类 VI 案例图" class="w-full aspect-video object-cover bg-main">
+            <div class="p-4">
+              <h3 class="text-sm text-primary font-semibold">办公行政类</h3>
+              <p class="text-xs text-secondary mt-2">名片、工牌、合同模板、PPT 模板等基础办公物料。</p>
+            </div>
+          </article>
+          <article class="bg-card border border-borderLine rounded-lg overflow-hidden">
+            <img src="./assets/vi-cases/factory-wayfinding.svg" alt="厂区空间导视 VI 案例图" class="w-full aspect-video object-cover bg-main">
+            <div class="p-4">
+              <h3 class="text-sm text-primary font-semibold">厂区空间导视</h3>
+              <p class="text-xs text-secondary mt-2">门头、导视牌、安全警示牌、设备区域标识。</p>
+            </div>
+          </article>
+          <article class="bg-card border border-borderLine rounded-lg overflow-hidden">
+            <img src="./assets/vi-cases/industrial-equipment.svg" alt="工业设备专属 VI 案例图" class="w-full aspect-video object-cover bg-main">
+            <div class="p-4">
+              <h3 class="text-sm text-primary font-semibold">工业设备专属</h3>
+              <p class="text-xs text-secondary mt-2">设备贴标、铭牌、机柜标识、能源机组视觉贴纸。</p>
+            </div>
+          </article>
+          <article class="bg-card border border-borderLine rounded-lg overflow-hidden">
+            <img src="./assets/vi-cases/promo-materials.svg" alt="宣传物料 VI 案例图" class="w-full aspect-video object-cover bg-main">
+            <div class="p-4">
+              <h3 class="text-sm text-primary font-semibold">宣传物料类</h3>
+              <p class="text-xs text-secondary mt-2">海报、画册、易拉宝、展架、手提袋、广告牌。</p>
+            </div>
+          </article>
+          <article class="bg-card border border-borderLine rounded-lg overflow-hidden">
+            <img src="./assets/vi-cases/workwear.svg" alt="服饰工装 VI 案例图" class="w-full aspect-video object-cover bg-main">
+            <div class="p-4">
+              <h3 class="text-sm text-primary font-semibold">服饰工装类</h3>
+              <p class="text-xs text-secondary mt-2">工作服、工装马甲、帽子、胸牌、劳保服印花。</p>
+            </div>
+          </article>
+          <article class="bg-card border border-borderLine rounded-lg overflow-hidden">
+            <img src="./assets/vi-cases/online-media.svg" alt="线上新媒体 VI 案例图" class="w-full aspect-video object-cover bg-main">
+            <div class="p-4">
+              <h3 class="text-sm text-primary font-semibold">线上新媒体类</h3>
+              <p class="text-xs text-secondary mt-2">官网视觉、公众号封面、短视频封面、社交配图。</p>
+            </div>
+          </article>
+          <article class="bg-card border border-borderLine rounded-lg overflow-hidden md:col-span-2 lg:col-span-1">
+            <img src="./assets/vi-cases/fleet-vehicle.svg" alt="交通物料 VI 案例图" class="w-full aspect-video object-cover bg-main">
+            <div class="p-4">
+              <h3 class="text-sm text-primary font-semibold">交通物料类</h3>
+              <p class="text-xs text-secondary mt-2">工程车、运输车辆车身涂装与移动广告露出。</p>
+            </div>
+          </article>
+        </div>
+        <div class="mt-8 bg-card border border-borderLine rounded-lg p-6">
+          <div class="flex items-start justify-between gap-4 mb-5">
+            <div>
+              <h3 class="text-base text-primary font-semibold">燃气发电行业专属应用 VI（9 大板块）</h3>
+              <p class="text-xs text-secondary mt-2">覆盖制造、出厂、工地、运维、安全、投标、展会、场站和商务馈赠等高频落地场景。</p>
+            </div>
+            <span class="text-xs text-aurora font-mono hidden md:inline">Gas Power VI</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <article class="bg-main border border-borderLine rounded-md overflow-hidden">
+              <img src="./assets/vi-cases/gas-power-5s.svg" alt="生产制造与车间 5S 专属 VI 案例图" class="w-full aspect-video object-cover bg-main">
+              <div class="p-4">
+              <h4 class="text-sm text-aurora font-semibold">01 生产制造 & 车间 5S</h4>
+              <p class="text-xs text-secondary mt-2 leading-relaxed">车间定置标线、区域划分、货架库位标签、物料卡、质检状态牌、生产看板、工具柜贴标。</p>
+              </div>
+            </article>
+            <article class="bg-main border border-borderLine rounded-md overflow-hidden">
+              <img src="./assets/vi-cases/gas-power-shipping.svg" alt="产品出厂与配套资料 VI 案例图" class="w-full aspect-video object-cover bg-main">
+              <div class="p-4">
+              <h4 class="text-sm text-aurora font-semibold">02 产品出厂 & 配套资料</h4>
+              <p class="text-xs text-secondary mt-2 leading-relaxed">木箱外箱标识、吊装/防潮/防爆警示贴、合格证、保修卡、编码标签、说明书和附件包包装。</p>
+              </div>
+            </article>
+            <article class="bg-main border border-borderLine rounded-md overflow-hidden">
+              <img src="./assets/vi-cases/gas-power-site.svg" alt="工程现场与项目工地 VI 案例图" class="w-full aspect-video object-cover bg-main">
+              <div class="p-4">
+              <h4 class="text-sm text-aurora font-semibold">03 工程现场 & 项目工地</h4>
+              <p class="text-xs text-secondary mt-2 leading-relaxed">工地围挡、项目部门头、现场旗帜、施工公示栏、竣工铭牌、防护标识和机房形象墙。</p>
+              </div>
+            </article>
+            <article class="bg-main border border-borderLine rounded-md overflow-hidden">
+              <img src="./assets/vi-cases/gas-power-service.svg" alt="售后运维与维保服务 VI 案例图" class="w-full aspect-video object-cover bg-main">
+              <div class="p-4">
+              <h4 class="text-sm text-aurora font-semibold">04 售后运维 & 维保服务</h4>
+              <p class="text-xs text-secondary mt-2 leading-relaxed">巡检记录表、维保工单、备件包装、配件标签、工具箱贴、服务网点标牌和 24 小时公示牌。</p>
+              </div>
+            </article>
+            <article class="bg-main border border-borderLine rounded-md overflow-hidden">
+              <img src="./assets/vi-cases/gas-power-safety.svg" alt="燃气行业安全特种 VI 案例图" class="w-full aspect-video object-cover bg-main">
+              <div class="p-4">
+              <h4 class="text-sm text-aurora font-semibold">05 燃气行业安全特种 VI</h4>
+              <p class="text-xs text-secondary mt-2 leading-relaxed">防爆、禁火、可燃气体警示，压力容器、管线、阀门、消防、急救、通风和高压用电提示。</p>
+              </div>
+            </article>
+            <article class="bg-main border border-borderLine rounded-md overflow-hidden">
+              <img src="./assets/vi-cases/gas-power-bid-channel.svg" alt="商务招投标与渠道合作 VI 案例图" class="w-full aspect-video object-cover bg-main">
+              <div class="p-4">
+              <h4 class="text-sm text-aurora font-semibold">06 商务招投标 & 渠道合作</h4>
+              <p class="text-xs text-secondary mt-2 leading-relaxed">投标书封面、商务文件、资质资料、代理商授权证书、渠道授权牌和能源项目汇报模板。</p>
+              </div>
+            </article>
+            <article class="bg-main border border-borderLine rounded-md overflow-hidden">
+              <img src="./assets/vi-cases/gas-power-expo.svg" alt="行业展会与展厅 VI 案例图" class="w-full aspect-video object-cover bg-main">
+              <div class="p-4">
+              <h4 class="text-sm text-aurora font-semibold">07 行业展会 & 展厅</h4>
+              <p class="text-xs text-secondary mt-2 leading-relaxed">能源展特装展台、产品展厅、样品展示台、样机介绍牌、洽谈桌、背景板和产品立牌。</p>
+              </div>
+            </article>
+            <article class="bg-main border border-borderLine rounded-md overflow-hidden">
+              <img src="./assets/vi-cases/gas-power-control-room.svg" alt="中控机房与能源场站 VI 案例图" class="w-full aspect-video object-cover bg-main">
+              <div class="p-4">
+              <h4 class="text-sm text-aurora font-semibold">08 中控机房 & 能源场站</h4>
+              <p class="text-xs text-secondary mt-2 leading-relaxed">中控室背景墙、操作工位标识、控制台贴标、采集柜、控制柜、配电柜和场站分区标识。</p>
+              </div>
+            </article>
+            <article class="bg-main border border-borderLine rounded-md overflow-hidden">
+              <img src="./assets/vi-cases/gas-power-honor-gift.svg" alt="荣誉资质与商务馈赠 VI 案例图" class="w-full aspect-video object-cover bg-main">
+              <div class="p-4">
+              <h4 class="text-sm text-aurora font-semibold">09 荣誉资质 & 商务馈赠</h4>
+              <p class="text-xs text-secondary mt-2 leading-relaxed">荣誉证书、专利牌匾、资质牌匾、工业风商务礼品、客户答谢礼盒和工程纪念摆件。</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <!-- 新增：VI 规范 Markdown 源码 (供一键复制) -->
       <section class="mt-12">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-semibold flex items-center gap-2">
-            <i data-lucide="clipboard-copy" class="w-5 h-5 text-aurora"></i> VI 规范 Markdown 源码 (供 AI 喂料使用)
+            <i data-lucide="clipboard-copy" class="w-5 h-5 text-aurora"></i> Markdown UI源码
           </h2>
           <button onclick="copyMarkdown()" class="btn-primary text-sm px-4 py-2 hover:scale-105 transition-transform" id="copy-btn">
-            <i data-lucide="copy" class="w-4 h-4"></i> 一键复制给 AI
+            <i data-lucide="copy" class="w-4 h-4"></i> 一键复制
           </button>
         </div>
         
@@ -521,7 +769,161 @@ body {
 &#96;&#96;&#96;
 ### 6.5 分段控制器与提示图标 (Segmented Controls & Info Icons)
  * **分段容器**: `background-color: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-line); border-radius: 6px;`
- * **提示图标 (i/?)**: 严禁隐形。默认 `color: var(--text-secondary) !important;`，悬停 `color: var(--accent-aurora) !important;`。</pre>
+ * **提示图标 (i/?)**: 严禁隐形。默认 `color: var(--text-secondary) !important;`，悬停 `color: var(--accent-aurora) !important;`。
+
+# 企业VI视觉识别系统 完整清单
+VI分为**基础核心系统**（品牌底层规范）+**应用落地系统**（实际使用物料），结合**工业/能源、厂区设备**行业，标注对应刚需项。
+
+## 一、基础VI系统（核心必做）
+所有视觉设计的统一标准，不可随意改动。
+
+1. 品牌LOGO：图形标、文字标、组合标
+2. 标准字体：中文/英文/数字专属字体（标题、正文）
+3. 标准色彩：主色、辅助色、渐变、色值（RGB/CMYK/潘通）、禁用色
+4. Logo组合规范：横版、竖版、极简版、留白安全区、最小使用尺寸
+5. 辅助图形：品牌纹理、几何纹样、装饰元素
+6. 禁用规范：禁止变形、变色、拉伸、错误组合等
+7. 品牌IP/吉祥物（可选）
+
+## 二、应用VI系统（落地使用）
+
+### 1. 办公行政类（通用刚需）
+名片、工牌、信纸、信封、档案袋、文件夹、笔记本、合同模板、PPT模板、公章视觉规范。
+
+### 2. 厂区空间导视（行业重点）
+企业形象墙、门头招牌、前台背景墙、部门门牌、厂区导视牌、楼道标识、安全警示牌、设备区域标识、机房/车间文化墙、管线标签、功能分区牌。
+
+### 3. 工业设备专属（贴合燃气发电/机房业务）
+设备机身LOGO贴标、铭牌设计、设备涂装色标、户外机柜标识、机房标牌、能源机组专属视觉贴纸。
+
+### 4. 宣传物料类
+海报、画册、宣传单页、易拉宝、展架、手提袋、礼盒、横幅、户外灯箱、广告牌。
+
+### 5. 服饰工装类
+企业工作服、工装马甲、帽子、胸牌、劳保服视觉印花规范。
+
+### 6. 线上新媒体类
+官网视觉、公众号头像/封面、短视频封面、社交平台配图规范、企业表情包。
+
+### 7. 交通物料类
+工程车、运输车辆车身涂装、车体广告。
+
+## 三、燃气发电行业专属应用 VI（新增 9 大板块）
+
+### 1. 生产制造 & 车间 5S 专属 VI
+- 车间定置标线、区域划分视觉规范
+- 原料 / 半成品 / 成品货架标识、库位标签、物料卡
+- 质检标识：待检 / 合格 / 不合格 / 返工专用标签、质检标识牌
+- 生产看板、产能公示牌、车间管理制度牌统一版式
+- 工装夹具、量具、工具柜专属标识贴
+
+### 2. 产品出厂 & 配套资料 VI（机组必用）
+- 整机木箱 / 打包外箱专属标识、吊装 / 防潮 / 防爆定制警示贴
+- 设备出厂合格证、产品保修卡、整机编码标签
+- 随机文件：说明书、维修手册、零件目录、安装指南统一版式装帧
+- 机组附件包、零配件收纳包装、密封贴
+
+### 3. 工程现场 & 项目工地 VI（电站 / 分布式能源项目）
+- 工地围挡、项目部门头、临建办公区整体视觉
+- 项目现场旗帜、道旗、施工公示栏、工程竣工铭牌
+- 机组安装现场防护标识、设备临时防尘罩印花
+- 合作项目现场形象展示牌、机房落地形象墙
+
+### 4. 售后运维 & 维保服务 VI
+- 巡检记录表、维保工单、上门服务单据统一模板
+- 备品备件包装盒、配件标签、易损件专属包装
+- 维修工具箱贴、运维服务配套标识
+- 全国服务网点标牌、售后 24 小时服务公示牌
+
+### 5. 燃气行业安全特种 VI（核心刚需）
+- 燃气车间防爆、禁火、可燃气体警示定制化视觉标识（区别通用国标，贴合企业 VI）
+- 压力容器、管道管线标识、阀门标签、燃气机房专属标识
+- 消防器材、应急物资、洗眼器、急救区域统一视觉标贴
+- 机房降噪、通风、高压用电安全定制提示牌
+
+### 6. 商务招投标 & 渠道合作 VI
+- 投标书封面、商务文件、资质资料统一排版规范
+- 代理商授权证书、渠道授权牌、战略合作牌匾
+- 大客户定制方案封面、能源项目立项汇报模板
+
+### 7. 行业展会 & 展厅 VI
+- 动力展 / 能源展 / 发电设备展特装展台标准视觉规范
+- 企业产品展厅、样品展示台、样机介绍牌
+- 展会洽谈桌、背景板、资料架、产品立牌标准化
+
+### 8. 中控机房 & 能源场站 VI
+- 电站中控室背景墙、操作工位标识、控制台贴标
+- 数据采集柜、控制柜、配电柜一体化视觉标识
+- 热电联产 / 分布式能源场站文化、功能分区标识
+
+### 9. 荣誉资质 & 商务馈赠 VI
+- 企业荣誉证书、专利牌匾、高新 / 行业资质牌匾统一设计
+- 工业风商务礼品、客户答谢礼盒、工程合作纪念摆件
+
+---
+
+## 补充选型建议
+
+1. **简易版VI**：只做基础系统+名片、工牌、门头，适合低成本快速落地。
+2. **全套完整版VI**：基础+全品类应用，适合品牌化厂区、对外大客户合作、标准化管理。
+3. 能源工业场景优先落地：**基础色logo规范+厂区导视+设备标识+工装**。</pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-12">
+        <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+          <i data-lucide="download" class="w-5 h-5 text-aurora"></i> Logo 下载区
+        </h2>
+        <div class="bg-card border border-borderLine rounded-lg p-6">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+            <div>
+              <h3 class="text-sm text-primary font-semibold">固定目录：assets/logo-downloads/</h3>
+              <p class="text-xs text-secondary mt-1">放入以下 4 个文件后，团队可直接点击下载使用。</p>
+            </div>
+            <span class="text-xs text-secondary font-mono">D:\code\GasGx\article_management\styles\assets\logo-downloads\</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <a href="./assets/logo-downloads/1.png" download class="bg-main border border-borderLine rounded-md p-4 hover:border-aurora transition-colors block">
+              <div class="aspect-square rounded bg-[#0F0F0F] border border-[#333333] flex items-center justify-center mb-4">
+                <img src="./assets/logo-downloads/1.png" alt="深黑背景 Logo 预览" class="w-full h-full object-contain rounded">
+              </div>
+              <h4 class="text-sm text-primary font-semibold">深黑背景 Logo</h4>
+              <p class="text-xs text-secondary mt-2 font-mono">1.png</p>
+              <span class="btn-primary mt-4 w-full justify-center text-sm">
+                <i data-lucide="download" class="w-4 h-4"></i> 下载
+              </span>
+            </a>
+            <a href="./assets/logo-downloads/2.png" download class="bg-main border border-borderLine rounded-md p-4 hover:border-aurora transition-colors block">
+              <div class="aspect-square rounded bg-[#202020] border border-[#3A3A3A] flex items-center justify-center mb-4">
+                <img src="./assets/logo-downloads/2.png" alt="深灰背景 Logo 预览" class="w-full h-full object-contain rounded">
+              </div>
+              <h4 class="text-sm text-primary font-semibold">深灰背景 Logo</h4>
+              <p class="text-xs text-secondary mt-2 font-mono">2.png</p>
+              <span class="btn-primary mt-4 w-full justify-center text-sm">
+                <i data-lucide="download" class="w-4 h-4"></i> 下载
+              </span>
+            </a>
+            <a href="./assets/logo-downloads/3.png" download class="bg-main border border-borderLine rounded-md p-4 hover:border-aurora transition-colors block">
+              <div class="aspect-square rounded bg-[#5DD62C] flex items-center justify-center mb-4">
+                <img src="./assets/logo-downloads/3.png" alt="极光绿背景 Logo 预览" class="w-full h-full object-contain rounded">
+              </div>
+              <h4 class="text-sm text-primary font-semibold">极光绿背景 Logo</h4>
+              <p class="text-xs text-secondary mt-2 font-mono">3.png</p>
+              <span class="btn-primary mt-4 w-full justify-center text-sm">
+                <i data-lucide="download" class="w-4 h-4"></i> 下载
+              </span>
+            </a>
+            <a href="./assets/logo-downloads/4.png" download class="bg-main border border-borderLine rounded-md p-4 hover:border-aurora transition-colors block">
+              <div class="aspect-square rounded bg-[#F4F6F0] border border-[#D7DECF] flex items-center justify-center mb-4">
+                <img src="./assets/logo-downloads/4.png" alt="浅色背景 Logo 预览" class="w-full h-full object-contain rounded">
+              </div>
+              <h4 class="text-sm text-primary font-semibold">浅色背景 Logo</h4>
+              <p class="text-xs text-secondary mt-2 font-mono">4.png</p>
+              <span class="btn-primary mt-4 w-full justify-center text-sm">
+                <i data-lucide="download" class="w-4 h-4"></i> 下载
+              </span>
+            </a>
           </div>
         </div>
       </section>
@@ -530,7 +932,7 @@ body {
     <!-- 成功复制的 Toast 提示 -->
     <div id="toast" class="fixed bottom-6 right-6 bg-success text-white px-5 py-3 rounded-md shadow-[0_4px_16px_rgba(0,0,0,0.5)] transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none flex items-center gap-2 z-50">
       <i data-lucide="check-circle" class="w-5 h-5"></i>
-      <span class="text-sm font-medium">规范源码已复制！可直接粘贴给 AI。</span>
+      <span class="text-sm font-medium">GasGx UI规范源码已复制</span>
     </div>
 
     <script>

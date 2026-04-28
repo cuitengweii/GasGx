@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Gas Power Expo and Showroom VI Case</title>
+  <desc id="desc">Energy expo booth, showroom display, product standee and negotiation desk.</desc>
+  <rect width="960" height="540" fill="#111"/>
+  <rect y="374" width="960" height="166" fill="#181818"/>
+  <text x="56" y="70" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800">EXPO &amp; SHOWROOM VI</text>
+  <text x="56" y="106" fill="#A0A0A0" font-family="Inter, Arial, sans-serif" font-size="16">Booth / showroom / product standee / material rack</text>
+  <path d="M146 354 V164 H774 V354" fill="#202020" stroke="#333" stroke-width="4"/>
+  <rect x="220" y="190" width="480" height="70" fill="#5DD62C"/>
+  <text x="324" y="236" fill="#0F0F0F" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="900">GasGx ENERGY</text>
+  <rect x="228" y="292" width="140" height="62" fill="#262626" stroke="#5DD62C"/>
+  <rect x="420" y="286" width="150" height="68" rx="34" fill="#202020" stroke="#E8E8E8"/>
+  <rect x="640" y="276" width="90" height="146" rx="8" fill="#F4F6F0"/>
+  <rect x="660" y="302" width="50" height="12" fill="#0F0F0F"/>
+  <rect x="660" y="338" width="48" height="8" fill="#777"/>
+</svg>

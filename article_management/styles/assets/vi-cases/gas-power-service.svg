@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Gas Power Service VI Case</title>
+  <desc id="desc">Maintenance form, spare parts box, service toolbox and support sign.</desc>
+  <rect width="960" height="540" fill="#101010"/>
+  <text x="56" y="70" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800">AFTER-SALES SERVICE VI</text>
+  <text x="56" y="106" fill="#A0A0A0" font-family="Inter, Arial, sans-serif" font-size="16">Inspection sheet / work order / parts package / service network sign</text>
+  <rect x="92" y="156" width="210" height="272" rx="8" fill="#F4F6F0"/>
+  <rect x="118" y="190" width="124" height="14" fill="#0F0F0F"/>
+  <rect x="118" y="238" width="150" height="8" fill="#666"/>
+  <rect x="118" y="274" width="150" height="8" fill="#999"/>
+  <rect x="118" y="310" width="150" height="8" fill="#999"/>
+  <rect x="118" y="354" width="64" height="34" fill="#5DD62C"/>
+  <rect x="386" y="226" width="210" height="150" rx="10" fill="#202020" stroke="#5DD62C"/>
+  <rect x="420" y="258" width="142" height="34" fill="#5DD62C"/>
+  <text x="446" y="281" fill="#0F0F0F" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="900">SPARES</text>
+  <rect x="656" y="198" width="220" height="132" rx="14" fill="#262626" stroke="#444"/>
+  <rect x="694" y="168" width="144" height="46" rx="10" fill="#202020" stroke="#5DD62C"/>
+  <text x="706" y="274" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="900">24H</text>
+  <text x="760" y="274" fill="#E8E8E8" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">SERVICE</text>
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Online Media VI Case</title>
+  <desc id="desc">Website, social avatar, short video cover and post template mockup.</desc>
+  <rect width="960" height="540" fill="#101010"/>
+  <text x="56" y="72" fill="#5DD62C" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700">ONLINE MEDIA</text>
+  <text x="56" y="108" fill="#A0A0A0" font-family="Inter, Arial, sans-serif" font-size="16">Website / social cover / short video thumbnail / post template</text>
+  <rect x="92" y="152" width="470" height="286" rx="14" fill="#202020" stroke="#333"/>
+  <rect x="92" y="152" width="470" height="46" rx="14" fill="#171717"/>
+  <circle cx="126" cy="176" r="6" fill="#E74C3C"/>
+  <circle cx="148" cy="176" r="6" fill="#F5B041"/>
+  <circle cx="170" cy="176" r="6" fill="#5DD62C"/>
+  <rect x="126" y="236" width="156" height="18" fill="#5DD62C"/>
+  <rect x="126" y="278" width="244" height="10" fill="#A0A0A0"/>
+  <rect x="126" y="306" width="192" height="8" fill="#666"/>
+  <rect x="386" y="236" width="122" height="122" rx="12" fill="#5DD62C"/>
+  <path d="M426 276 L486 297 L426 318 Z" fill="#0F0F0F"/>
+  <rect x="626" y="152" width="230" height="286" rx="18" fill="#202020" stroke="#333"/>
+  <circle cx="741" cy="226" r="48" fill="#5DD62C"/>
+  <text x="702" y="241" fill="#0F0F0F" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="900">GX</text>
+  <rect x="668" y="306" width="146" height="14" fill="#E8E8E8"/>
+  <rect x="688" y="342" width="106" height="8" fill="#777"/>
+  <rect x="688" y="370" width="106" height="8" fill="#777"/>
+</svg>
