@@ -691,6 +691,8 @@ const state = {
     validationErrors: {},
     authUser: null,
     authError: '',
+    shareOpen: false,
+    shareStatus: '',
 };
 
 let params = new URL(window.location.href).searchParams;
@@ -723,7 +725,15 @@ const LABEL_MAP = Object.freeze({
     '说明': { en: 'Note', ru: 'Примечание' },
     '这份需求已经提交，目前为只读状态。': { en: 'This request has been submitted and is now read-only.', ru: 'Этот запрос отправлен и теперь доступен только для чтения.' },
     '提交后将自动锁定，避免后续报价依据反复变化。': { en: 'After submission it will be locked to avoid changes to the pricing baseline.', ru: 'После отправки он будет заблокирован, чтобы избежать изменений базы для расчета.' },
-    '售前项目需求收集': { en: 'Pre-Sales Project Intake', ru: 'Сбор проектных данных для pre-sales' },
+    'GasGx售前需求收集表': { en: 'GasGx Pre-Sales Requirement Form', ru: 'Форма сбора pre-sales требований GasGx' },
+    '分享': { en: 'Share', ru: 'Поделиться' },
+    '复制分享文案': { en: 'Copy share text', ru: 'Скопировать текст' },
+    '已复制 GasGx 需求收集文案。': { en: 'GasGx requirement intake text copied.', ru: 'Текст формы требований GasGx скопирован.' },
+    '复制失败，已选中文案，请手动复制。': { en: 'Copy failed. The text is selected for manual copy.', ru: 'Не удалось скопировать. Текст выделен для ручного копирования.' },
+    '这是 GasGx 面向客户的售前需求收集页。请在链接中填写项目规模、气源条件、部署范围和联系方式。提交后，这份需求会作为后续报价、跟进和内部协作的统一基线。': {
+        en: 'This is GasGx customer-facing pre-sales requirement intake. Please fill in the project scale, gas conditions, deployment scope and contact details through the link. After submission, this requirement becomes the shared baseline for pricing, follow-up and internal collaboration.',
+        ru: 'Это клиентская форма GasGx для сбора pre-sales требований. Укажите по ссылке масштаб проекта, параметры газа, рамки развертывания и контакты. После отправки эти требования станут единой базой для расчета, сопровождения и внутренней работы.',
+    },
     '联系人信息': { en: 'Contact Details', ru: 'Контактные данные' },
     '这里只保留最必要的联系方式，方便我们确认后续报价和交付细节。': {
         en: 'Only essential contact details are collected to confirm pricing and delivery.',
@@ -861,11 +871,24 @@ const LABEL_MAP = Object.freeze({
         en: 'I confirm the information is accurate and understand it affects the final price.',
         ru: 'Я подтверждаю, что данные верны и они влияют на итоговую цену.',
     },
+    '自动保存': { en: 'Autosave', ru: 'Автосохранение' },
+    '最近同步：': { en: 'Last sync: ', ru: 'Последняя синхронизация: ' },
+    '正在等待填写...': { en: 'Waiting for input...', ru: 'Ожидание заполнения...' },
+    '已在本地暂存，正在同步后台...': { en: 'Saved locally. Syncing to the backend...', ru: 'Сохранено локально. Идет синхронизация с сервером...' },
+    '正在同步填写进度...': { en: 'Syncing progress...', ru: 'Синхронизация прогресса...' },
+    '已自动保存，后台可实时查看最新填写进度。': { en: 'Autosaved. The backend can view the latest progress in real time.', ru: 'Автосохранено. Сервер видит актуальный прогресс в реальном времени.' },
+    '本地已保存，等待重新同步到后台。': { en: 'Saved locally. Waiting to resync to the backend.', ru: 'Сохранено локально. Ожидание повторной синхронизации с сервером.' },
+    '当前为公开售前收资入口，填写后会自动创建专属需求单。': { en: 'This is the public pre-sales intake entry. A dedicated request will be created after completion.', ru: 'Это публичная форма pre-sales сбора данных. После заполнения будет создан отдельный запрос.' },
+    '检测到未同步草稿，正在恢复并同步...': { en: 'Unsynced draft detected. Restoring and syncing...', ru: 'Обнаружен несинхронизированный черновик. Восстановление и синхронизация...' },
+    '已与后台同步。': { en: 'Synced with the backend.', ru: 'Синхронизировано с сервером.' },
     '已提交': { en: 'Submitted', ru: 'Отправлено' },
     '提交中...': { en: 'Submitting...', ru: 'Отправка...' },
     '提交需求单': { en: 'Submit Request', ru: 'Отправить запрос' },
     '提交后公开需求页会自动锁定。': { en: 'The public request page will lock after submission.', ru: 'Публичная страница будет заблокирована после отправки.' },
     '请先勾选最终确认，再提交需求单。': { en: 'Please confirm before submitting.', ru: 'Пожалуйста, подтвердите перед отправкой.' },
+    '当前需求单为只读状态，不能提交。': { en: 'This request is read-only and cannot be submitted.', ru: 'Этот запрос доступен только для чтения и не может быть отправлен.' },
+    '客户已提交，当前公开页为只读状态。': { en: 'The customer has submitted this request. The public page is now read-only.', ru: 'Клиент отправил запрос. Публичная страница теперь доступна только для чтения.' },
+    '当前为只读预览，不能填写或同步。': { en: 'This is a read-only preview and cannot be edited or synced.', ru: 'Это предварительный просмотр только для чтения; редактирование и синхронизация недоступны.' },
     '正在读取需求单...': { en: 'Loading requirement...', ru: 'Загрузка запроса...' },
     '请稍候，系统正在校验公开需求链接并加载当前问卷。': { en: 'Please wait while we validate the link and load the form.', ru: 'Пожалуйста, подождите, идет проверка ссылки и загрузка формы.' },
     '公开需求链接不可用': { en: 'Public requirement link unavailable', ru: 'Публичная ссылка недоступна' },
@@ -1367,7 +1390,7 @@ function localizedCountryOptionsMarkup(selected = '') {
 }
 
 function requirementHeading(requirement = {}) {
-    return text(requirement.requester_company || requirement.requester_name) || localize('售前项目需求收集');
+    return localize('GasGx售前需求收集表');
 }
 
 function choiceChipMarkup(field, options = [], selectedValues = [], disabled = false, mode = 'multiple') {
@@ -1429,6 +1452,8 @@ function requiredRequirementEmail(requirement = state.requirement) {
 
 function hasRequirementEditAccess(requirement = state.requirement) {
     if (!requirement || isLocked(requirement?.status)) return false;
+    const link = currentRequirementLink();
+    if (link.req && link.token) return true;
     const currentEmail = authEmail();
     if (!currentEmail) return false;
     const requiredEmail = requiredRequirementEmail(requirement);
@@ -1441,6 +1466,17 @@ function isReadOnlyMode(requirement = state.requirement) {
 
 function requirementAuthNoticeMarkup(requirement = state.requirement) {
     if (isLocked(requirement?.status)) return '';
+    const link = currentRequirementLink();
+    if (link.req && link.token) {
+        return `
+            <section class="requirement-card requirement-auth-card is-ok">
+                <div>
+                    <strong>${esc(localize('公开需求单'))}</strong>
+                    <p>${esc(localize('任何拿到此专属链接的人都可以填写并提交；提交后页面会自动锁定为只读。'))}</p>
+                </div>
+            </section>
+        `;
+    }
     const currentEmail = authEmail();
     const requiredEmail = requiredRequirementEmail(requirement);
     if (currentEmail && (!requiredEmail || currentEmail === requiredEmail)) {
@@ -1481,6 +1517,31 @@ function requirementPageUrl(locale = state.locale) {
     if (locale === 'zh') url.searchParams.delete('lang');
     else url.searchParams.set('lang', locale);
     return url.toString();
+}
+
+function requirementShareUrl() {
+    const url = new URL(window.location.href);
+    url.hash = '';
+    return url.toString();
+}
+
+function requirementShareText() {
+    return [
+        localize('GasGx售前需求收集表'),
+        '',
+        localize('这是 GasGx 面向客户的售前需求收集页。请在链接中填写项目规模、气源条件、部署范围和联系方式。提交后，这份需求会作为后续报价、跟进和内部协作的统一基线。'),
+        '',
+        'GasGx - Natural gas power and mining infrastructure.',
+        requirementShareUrl(),
+    ].join('\n');
+}
+
+function selectRequirementShareText() {
+    const input = document.getElementById('requirement-share-url');
+    if (!input) return;
+    input.focus();
+    input.select?.();
+    input.setSelectionRange?.(0, input.value.length);
 }
 
 function localeLabel(locale = state.locale) {
@@ -1798,19 +1859,25 @@ function renderApp() {
     root().innerHTML = `
         <div class="requirement-page ${locked ? 'is-locked' : ''}">
         <div class="requirement-toolbar">
-            <div class="requirement-lang-dropdown" data-requirement-lang-dropdown>
-                <button class="requirement-lang-trigger" type="button" aria-haspopup="true" aria-expanded="false" data-requirement-lang-trigger>
-                    <i class="fa-solid fa-globe"></i>
-                    <span>${esc(localeLabel(state.locale))}</span>
-                    <i class="fa-solid fa-chevron-down"></i>
+            <div class="requirement-toolbar-actions">
+                <button id="requirement-share-open" class="requirement-share-trigger" type="button">
+                    <i class="fa-solid fa-share-nodes"></i>
+                    <span>${esc(localize('分享'))}</span>
                 </button>
-                <div class="requirement-lang-menu" role="menu" aria-label="${esc(localize('语言'))}">
-                ${SUPPORTED_LOCALES.map((locale) => `
-                    <a class="requirement-lang-option ${state.locale === locale ? 'is-active' : ''}" href="${esc(requirementPageUrl(locale))}" role="menuitem">
-                        <span>${esc(localeLabel(locale))}</span>
-                        ${state.locale === locale ? '<i class="fa-solid fa-check"></i>' : ''}
-                    </a>
-                `).join('')}
+                <div class="requirement-lang-dropdown" data-requirement-lang-dropdown>
+                    <button class="requirement-lang-trigger" type="button" aria-haspopup="true" aria-expanded="false" data-requirement-lang-trigger>
+                        <i class="fa-solid fa-globe"></i>
+                        <span>${esc(localeLabel(state.locale))}</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    <div class="requirement-lang-menu" role="listbox" aria-label="${esc(localize('语言'))}">
+                    ${SUPPORTED_LOCALES.map((locale) => `
+                        <a class="requirement-lang-option ${state.locale === locale ? 'is-active' : ''}" href="${esc(requirementPageUrl(locale))}" role="option" aria-selected="${state.locale === locale ? 'true' : 'false'}">
+                            <span>${esc(localeLabel(locale))}</span>
+                            ${state.locale === locale ? '<i class="fa-solid fa-check"></i>' : ''}
+                        </a>
+                    `).join('')}
+                    </div>
                 </div>
             </div>
         </div>
@@ -1830,13 +1897,7 @@ function renderApp() {
                 <h1>${esc(requirementHeading(requirement))}</h1>
                 <p>${esc(localize('请根据当前这一轮采购或部署计划填写下面的选择题。提交后，这份需求会作为后续报价、跟进和内部协作的统一基线。'))}</p>
             </div>
-            <div class="requirement-hero__meta">
-                <div class="requirement-status-chip tone-${esc(statusTone(requirement.status))}">${esc(requirementStatusLabel(requirement.status))}</div>
-                <div class="requirement-hero__meta-line"><strong>${esc(localize('客户提交时间'))}</strong><span>${esc(fmtDate(requirement.submitted_at))}</span></div>
-                <div class="requirement-hero__meta-line"><strong>${esc(localize('说明'))}</strong><span>${esc(localize(submittedLocked ? '这份需求已经提交，目前为只读状态。' : '提交前必须使用客户邮箱登录 GasGx。'))}</span></div>
-            </div>
         </section>
-        ${requirementAuthNoticeMarkup(requirement)}
 
         <section class="requirement-card">
             <div class="requirement-section-head">
@@ -1897,19 +1958,43 @@ function renderApp() {
                     </label>
                 `}
                 <div class="requirement-submit-autosave">
-                    <strong>自动保存</strong>
-                    <span id="requirement-autosave-status">${esc(locked ? '客户已提交，当前公开页为只读状态。' : text(state.autoSaveMessage, '正在等待填写...'))}</span>
-                    <em>最近同步：<span id="requirement-autosave-time">${esc(fmtDate(state.lastAutoSavedAt || requirement.updated_at))}</span></em>
+                    <strong>${esc(localize('自动保存'))}</strong>
+                    <span id="requirement-autosave-status">${esc(locked ? localize('客户已提交，当前公开页为只读状态。') : text(state.autoSaveMessage, localize('正在等待填写...')))}</span>
+                    <em>${esc(localize('最近同步：'))}<span id="requirement-autosave-time">${esc(fmtDate(state.lastAutoSavedAt || requirement.updated_at))}</span></em>
                 </div>
             </div>
             <div class="requirement-submit-actions">
                 <button id="requirement-submit" type="button" class="btn-glow px-5 py-3 inline-flex items-center gap-2" ${buttonDisabled ? 'disabled' : ''}>
                     <i class="fa-solid ${locked ? 'fa-lock' : 'fa-paper-plane'}"></i>
-                    <span>${esc(submittedLocked ? '已提交' : (state.submitting ? '提交中...' : '提交需求单'))}</span>
+                    <span>${esc(localize(submittedLocked ? '已提交' : (state.submitting ? '提交中...' : '提交需求单')))}</span>
                 </button>
-                <div id="requirement-submit-status" class="requirement-submit-status">${submittedLocked ? ('已提交 / ' + esc(fmtDate(requirement.submitted_at))) : esc(locked ? '当前需求单为只读状态，不能提交。' : (state.submitConfirmed ? '提交后公开需求页会自动锁定。' : '请先勾选最终确认，再提交需求单。'))}</div>
+                <div id="requirement-submit-status" class="requirement-submit-status">${submittedLocked ? (esc(localize('已提交')) + ' / ' + esc(fmtDate(requirement.submitted_at))) : esc(localize(locked ? '当前需求单为只读状态，不能提交。' : (state.submitConfirmed ? '提交后公开需求页会自动锁定。' : '请先勾选最终确认，再提交需求单。')))}</div>
             </div>
         </section>
+        ${state.shareOpen ? `
+            <div class="requirement-share-modal" role="dialog" aria-modal="true" aria-labelledby="requirement-share-title">
+                <div class="requirement-share-panel">
+                    <button id="requirement-share-close" class="requirement-share-close" type="button" aria-label="${esc(localize('关闭'))}">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <div class="requirement-share-kicker">GASGX REQUIREMENT LINK</div>
+                    <h2 id="requirement-share-title">${esc(localize('GasGx 需求收集链接'))}</h2>
+                    <p>${esc(localize('这是 GasGx 面向客户的售前需求收集页。链接持有人可以填写项目规模、气源、部署范围和联系方式，提交后页面会锁定为报价协作基线。'))}</p>
+                    <div class="requirement-share-link">
+                        <textarea id="requirement-share-url" class="share-input requirement-share-text" readonly>${esc(requirementShareText())}</textarea>
+                        <button id="requirement-share-copy" class="btn-glow px-4 py-3 inline-flex items-center gap-2" type="button">
+                            <i class="fa-solid fa-copy"></i>
+                            <span>${esc(localize('复制分享文案'))}</span>
+                        </button>
+                    </div>
+                    <div class="requirement-share-brand">
+                        <strong>GasGx</strong>
+                        <span>${esc(localize('Natural gas power and mining infrastructure.'))}</span>
+                    </div>
+                    <div id="requirement-share-status" class="requirement-share-status">${esc(state.shareStatus)}</div>
+                </div>
+            </div>
+        ` : ''}
         </div>
     `;
 
@@ -1942,6 +2027,7 @@ function bindAnswerFieldNode(node, requirement = state.requirement) {
 
 function bindEvents() {
     bindLanguageDropdown();
+    bindRequirementShare();
     const requirement = state.requirement;
     if (!requirement || isLocked(requirement.status)) return;
 
@@ -2027,6 +2113,50 @@ function bindEvents() {
 
     document.getElementById('requirement-submit')?.addEventListener('click', () => {
         void submitCurrentRequirement();
+    });
+}
+
+function bindRequirementShare() {
+    document.getElementById('requirement-share-open')?.addEventListener('click', () => {
+        state.shareOpen = true;
+        state.shareStatus = '';
+        renderApp();
+    });
+
+    document.getElementById('requirement-share-close')?.addEventListener('click', () => {
+        state.shareOpen = false;
+        state.shareStatus = '';
+        renderApp();
+    });
+
+    document.querySelector('.requirement-share-modal')?.addEventListener('click', (event) => {
+        if (event.target === event.currentTarget) {
+            state.shareOpen = false;
+            state.shareStatus = '';
+            renderApp();
+        }
+    });
+
+    document.getElementById('requirement-share-copy')?.addEventListener('click', async () => {
+        const shareText = requirementShareText();
+        let copyFailed = false;
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(shareText);
+            } else {
+                selectRequirementShareText();
+                const copied = document.execCommand('copy');
+                if (!copied) throw new Error('copy_failed');
+            }
+            state.shareStatus = localize('已复制 GasGx 需求收集文案。');
+        } catch (_error) {
+            copyFailed = true;
+            state.shareStatus = localize('复制失败，已选中文案，请手动复制。');
+        }
+        renderApp();
+        if (copyFailed) {
+            window.requestAnimationFrame(selectRequirementShareText);
+        }
     });
 }
 

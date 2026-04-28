@@ -298,3 +298,47 @@ Boundary note:
 
 - Shared shell only owns the public widget request/response plumbing.
 - Knowledge curation, policy rules, logging, and retrieval ranking belong to `supabase/functions/site-chat/index.ts` and the Supabase knowledge tables/migrations.
+
+## 13. 2026-04-27 quote public requirement page
+
+- `/quote/requirement.html` now mounts the shared GasGx shell slots:
+  - `#ggx-site-header-slot`
+  - `#ggx-site-footer-slot`
+  - `#ggx-back-to-top-slot`
+  - `#ggx-chatbot-slot`
+- The page loads `/shared/ui/site-shell.shared.css` and `/shared/ui/site-shell.shared.js` before the quote requirement module.
+- Public requirement links with `req` + `token` are intended to be customer-facing forms, so they inherit the main-site header/footer while keeping quote form behavior inside `shared/quote-system/quote-requirement.module.js`.
+
+Boundary note:
+
+- This shell update does not change product pages, sales admin navigation, or quote editor rendering.
+
+## 14. 2026-04-27 quote requirement content UI
+
+- Public requirement content keeps the GasGx dark operational style:
+  - restrained dark panels
+  - green status accents
+  - compact form sections
+  - main-site header/footer framing
+- The in-page language switcher is a single globe dropdown button, not a row of language chips.
+- The dropdown belongs to the requirement page content only; the shared shell language control remains owned by `shared/ui/site-shell.shared.js`.
+
+Boundary note:
+
+- This UI update does not change requirement fields, autosave rules, public token access, or submit RPC behavior.
+
+## 15. 2026-04-27 GasGx UI v6.1 requirement page alignment
+
+- `/quote/requirement.html` content styles now follow the GasGx UI v6.1 cyber-industrial rules for this page scope:
+  - theme tokens use `--bg-main`, `--bg-card`, `--text-primary`, `--text-secondary`, `--text-on-primary`, `--border-line`, and `--accent-aurora`
+  - primary green buttons force dark text and dark icons through `--text-on-primary`
+  - form inputs use dark recessed backgrounds with inner shadow
+  - the page language trigger is ghost-style by default and uses aurora hover feedback
+  - dropdown options use transparent default state and aurora hover / selected state instead of default blue
+  - checkbox and choice controls keep fixed dimensions inside flex/grid layouts
+
+Boundary note:
+
+- This update is scoped to quote requirement page content and shared quote-system styles. It does not refactor the global shared header implementation or change the requirement form data contract.
+- UI v6.1 tokens must stay scoped to `.requirement-page`; do not place page-specific `--bg-main` / `body` overrides on global `:root` if the shared header/footer is mounted on the same page.
+- The public requirement page can expose a page-level share action near the language switcher. The share dialog should frame the URL as a GasGx requirement collection link and keep brand context inside the modal, without changing the public token or form submit contract.

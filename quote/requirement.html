@@ -9,12 +9,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../shared/ui/site-shell.shared.css?v=20260427req01">
     <script src="../shared/ui/site-shell.config.js?v=20260321auth02"></script>
     <script src="../shared/ui/main-auth.shared.js?v=20260322authshared01"></script>
     <script src="./public-asset-version.js"></script>
     <script>window.AMSLoadQuotePublicStyles('../shared/quote-system/quote-system.css');</script>
 </head>
-<body class="antialiased pb-12 access-resolved">
+<body class="antialiased access-resolved">
+    <div id="ggx-site-header-slot"></div>
+
     <main id="requirement-app" class="requirement-shell">
         <section class="requirement-card requirement-loading">
             <div class="requirement-loading__spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
@@ -23,6 +26,11 @@
         </section>
     </main>
 
+    <div id="ggx-site-footer-slot"></div>
+    <div id="ggx-back-to-top-slot"></div>
+    <div id="ggx-chatbot-slot"></div>
+
+    <script src="../shared/ui/site-shell.shared.js?v=20260427req01"></script>
     <script>
         window.AMSLoadQuotePublicModule('../shared/quote-system/quote-requirement.module.js');
     </script>
