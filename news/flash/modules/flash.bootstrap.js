@@ -1,4 +1,4 @@
-import { mountFlashMain, createFlashApp } from './main.module.js?v=20260322logout01';
+import { mountFlashMain, createFlashApp } from './main.module.js?v=20260511flashfix01';
 import { mountSharedHeader, mountSharedFooter } from '../../shared/modules/layout.shared.js?v=20260413authmenu03';
 
 const STARTUP_TIMEOUT_MS = 8000;

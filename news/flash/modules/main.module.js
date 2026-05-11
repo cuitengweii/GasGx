@@ -416,33 +416,77 @@ export function createFlashApp() {
         async fetchAndMerge(isAuto = false) {
             const wrapper = document.getElementById('gxf-flash-items-wrapper');
             if (isAuto) this.state.lastAutoFetchAt = Date.now();
+            let normalized = [];
+            let source = 'api';
+
             try {
-                const normalized = await this.fetchFlashApiItems('en');
+                normalized = await this.fetchFlashApiItems('en');
+            } catch (error) {
+                console.error('Flash API fetch failed:', error);
+            }
 
-                if (normalized.length === 0) {
-                    if (this.state.allNews.length === 0 && wrapper) {
-                        wrapper.innerHTML = '<div class="text-center py-20 text-gray-500">No flash news available.</div>';
-                    }
-                    return;
-                }
-
-                const existingIds = new Set(this.state.allNews.map((item) => String(item.id)));
-                const freshCount = normalized.filter((item) => !existingIds.has(String(item.id))).length;
-
-                this.state.allNews = normalized;
-                this.saveToCache();
-                this.renderList();
-
-                if (!isAuto) {
-                    if (freshCount > 0) this.showToast(`Synced ${freshCount} new stories.`);
-                    else this.showToast('Flash feed is up to date.');
-                }
-            } catch (e) {
-                console.error('Fetch Error:', e);
-                if (this.state.allNews.length === 0 && wrapper) {
-                    wrapper.innerHTML = '<div class="text-center py-20 text-red-500">Connection Failed. <button onclick="window.GGXFlashApp && window.GGXFlashApp.forceRefresh()" class="underline">Retry</button></div>';
+            if (normalized.length === 0) {
+                try {
+                    normalized = await this.fetchSupabaseFallbackItems();
+                    source = 'supabase';
+                } catch (error) {
+                    console.error('Flash fallback fetch failed:', error);
                 }
             }
+
+            if (normalized.length === 0) {
+                if (this.state.allNews.length === 0 && wrapper) {
+                    wrapper.innerHTML =
+                        '<div class="text-center py-20 text-red-500">Connection Failed. <button onclick="window.GGXFlashApp && window.GGXFlashApp.forceRefresh()" class="underline">Retry</button></div>';
+                }
+                return;
+            }
+
+            const existingIds = new Set(this.state.allNews.map((item) => String(item.id)));
+            const freshCount = normalized.filter((item) => !existingIds.has(String(item.id))).length;
+
+            this.state.allNews = normalized;
+            this.saveToCache();
+            this.renderList();
+
+            if (!isAuto) {
+                if (source === 'supabase') this.showToast('External flash source unavailable. Showing latest published news.');
+                else if (freshCount > 0) this.showToast(`Synced ${freshCount} new stories.`);
+                else this.showToast('Flash feed is up to date.');
+            }
+        },
+
+        async fetchSupabaseFallbackItems() {
+            let query = _supabase
+                .from('articles')
+                .select('id, api_id, main_title, subheading, time, link, status, deleted_at')
+                .is('deleted_at', null)
+                .order('time', { ascending: false })
+                .limit(FLASH_FETCH_LIMIT);
+            query = query.or('status.eq.published,status.is.null');
+
+            const { data, error } = await query;
+            if (error) throw error;
+
+            const rows = Array.isArray(data) ? data : [];
+            return rows
+                .map((row) => {
+                    const articleId = row?.api_id || row?.id || '';
+                    const title = String(row?.main_title || '').trim();
+                    const content = this.cleanContent(String(row?.subheading || ''));
+                    const rawLink = String(row?.link || '').trim();
+                    const link = rawLink || (articleId ? `https://www.gasgx.com/news/article/${articleId}` : '#');
+                    const id = articleId || rawLink || `${title}-${Date.now()}`;
+                    const time = row?.time ? new Date(row.time) : new Date();
+                    return {
+                        id: String(id),
+                        title: title || 'Untitled',
+                        content: content || '',
+                        link,
+                        time: Number.isNaN(time.getTime()) ? new Date() : time,
+                    };
+                })
+                .filter((item) => item.id && item.title);
         },
 
         getFlashApiUrl(lang = 'en') {
@@ -523,23 +567,35 @@ export function createFlashApp() {
                 }
             }
 
-            if (!data || !data.data || !Array.isArray(data.data.data)) return [];
+            const records = Array.isArray(data?.data?.data)
+                ? data.data.data
+                : Array.isArray(data?.data)
+                  ? data.data
+                  : Array.isArray(data?.list)
+                    ? data.list
+                    : [];
+            if (!records.length) return [];
 
-            return data.data.data
+            return records
                 .slice(0, FLASH_FETCH_LIMIT)
                 .map((item) => {
-                    const createTime = Number.parseInt(item.create_time, 10);
-                    const title = String(item.title || '').trim();
-                    const content = this.cleanContent(String(item.content || ''));
-                    const link = String(item.link || '').trim();
-                    const id = item.id || link || `${title}-${createTime || Date.now()}`;
-                    const time = Number.isFinite(createTime) ? new Date(createTime * 1000) : new Date();
+                    const createTime = Number.parseInt(item.create_time || item.time || item.created_at, 10);
+                    const title = String(item.title || item.main_title || '').trim();
+                    const content = this.cleanContent(String(item.content || item.subheading || ''));
+                    const link = String(item.link || item.url || item.source_url || '').trim();
+                    const id = item.id || item.api_id || link || `${title}-${createTime || Date.now()}`;
+                    const time =
+                        Number.isFinite(createTime) && createTime > 100000000
+                            ? new Date(createTime * 1000)
+                            : item.created_at || item.time
+                              ? new Date(item.created_at || item.time)
+                              : new Date();
                     return {
                         id: String(id),
                         title: title || 'Untitled',
                         content: content || '',
                         link: link || '#',
-                        time,
+                        time: Number.isNaN(time.getTime()) ? new Date() : time,
                     };
                 })
                 .filter((item) => item.id && item.title);
