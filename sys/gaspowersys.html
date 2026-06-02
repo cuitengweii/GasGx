@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GasGx-UI-v6.1 Industrial SCADA (i18n Titanium Edition)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        /* =========================================
+           1. 户外极致深色模式 (Outdoor Dark Mode) 
+           ========================================= */
+        :root {
+            --bg-main: #000000;
+            --bg-card: rgba(32, 32, 32, 0.85);
+            --bg-header-footer: #0A0A0A; 
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --text-unit: #666666; 
+            --text-on-primary: #000000;
+            --border-line: #444444;
+            
+            --accent-aurora: #5DD62C;
+            --accent-aurora-glow: rgba(93, 214, 44, 0.5);
+            --accent-aurora-ghost: rgba(93, 214, 44, 0.2);
+            
+            --status-success: #34C759;
+            --status-warning: #FF9F0A;
+            --status-danger: #FF0000; 
+            --status-danger-glow: rgba(255, 0, 0, 0.5); 
+            --status-info: #32ADE6;
+            
+            --shadow-deep: 0 8px 24px rgba(0, 0, 0, 0.9);
+            --shadow-inner: inset 0 2px 6px rgba(0, 0, 0, 0.8);
+            --glass-border: 2px solid rgba(93, 214, 44, 0.25);
+            --chart-grid: rgba(255,255,255,0.06);
+            --row-hover: rgba(255, 255, 255, 0.08);
+            --chart-fill: linear-gradient(180deg, rgba(93, 214, 44, 1), rgba(93, 214, 44, 0.2));
+        }
+
+        /* =========================================
+           2. 钛合金工业亮色模式 (Titanium Premium Light Mode)
+           ========================================= */
+        :root[data-theme="light"] {
+            --bg-main: #B5BCC4; /* 枪灰/钛银金属底色，告别纯白 */
+            --bg-card: rgba(232, 236, 239, 0.92); /* 磨砂金属卡片 */
+            --bg-header-footer: #A3ABB3; /* 更深一阶的金属框架 */
+            --text-primary: #121518; /* 极深灰，对比度极高但不刺眼 */
+            --text-secondary: #48535D; 
+            --text-unit: #62717E;
+            --text-on-primary: #000000;
+            --border-line: #83919D; /* 明显的结构分割线 */
+            
+            --accent-aurora: #0AA852;
+            --accent-aurora-glow: rgba(10, 168, 82, 0.3);
+            --accent-aurora-ghost: rgba(10, 168, 82, 0.15);
+            
+            --status-success: #158032;
+            --status-warning: #D67B00;
+            --status-danger: #FF0000; 
+            --status-danger-glow: rgba(255, 0, 0, 0.3); 
+            --status-info: #005FAD;
+            
+            --shadow-deep: 0 6px 20px rgba(0, 0, 0, 0.15);
+            --shadow-inner: inset 0 2px 6px rgba(0, 0, 0, 0.12);
+            --glass-border: 2px solid #FFFFFF;
+            --chart-grid: rgba(0, 0, 0, 0.08);
+            --row-hover: rgba(0, 0, 0, 0.04);
+            --chart-fill: linear-gradient(180deg, rgba(10, 168, 82, 0.8), rgba(10, 168, 82, 0.1));
+        }
+
+        /* =========================================
+           3. 核心单屏锁定架构
+           ========================================= */
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-main); color: var(--text-primary);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-weight: 600; -webkit-font-smoothing: antialiased;
+            display: flex; flex-direction: column;
+            height: 100vh; width: 100vw;
+            overflow: hidden; box-sizing: border-box;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        .data-numbers {
+            font-family: 'JetBrains Mono', 'Consolas', monospace; font-weight: 800;
+            color: var(--accent-aurora); transition: color 0.4s ease; letter-spacing: 0.5px;
+        }
+        
+        .unit {
+            font-size: 0.75em; color: var(--text-unit); margin-left: 2px;
+            font-family: 'Inter', sans-serif; font-weight: 600; letter-spacing: 0;
+        }
+
+        .card {
+            background-color: var(--bg-card); backdrop-filter: blur(16px);
+            border: var(--glass-border); border-radius: 8px;
+            box-shadow: var(--shadow-deep); padding: 1.5vh 1vw;
+            display: flex; flex-direction: column;
+        }
+
+        /* =========================================
+           4. 首尾栏与顶导工具
+           ========================================= */
+        .header-container {
+            flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center;
+            padding: 1.5vh 2vw; background-color: var(--bg-header-footer);
+            border-bottom: 4px solid var(--accent-aurora);
+            z-index: 10;
+        }
+        .header-left, .header-right, .header-data {
+            display: flex;
+            align-items: center;
+            gap: 1vw;
+            min-width: 0;
+        }
+        
+        .alarm-banner {
+            background-color: rgba(255, 0, 0, 0.15); border: 2px solid var(--status-danger);
+            padding: 0.8vh 1.2vw; border-radius: 4px; display: flex; align-items: center; gap: 0.8vw;
+        }
+        .alarm-banner span.label { color: var(--status-danger); font-weight: 900; text-transform: uppercase; font-size: clamp(16px, 1.8vh, 20px); letter-spacing: 1px; }
+        .alarm-banner .blank-area {
+            width: clamp(82px, 10vw, 140px);
+            min-width: 72px;
+            flex: 1 1 auto;
+            height: 1.5vh;
+            background-color: var(--status-danger);
+            opacity: 0.3;
+            border-radius: 2px;
+        }
+
+        .val-box {
+            background: var(--bg-main); border: 2px solid var(--border-line); box-shadow: var(--shadow-inner);
+            color: var(--accent-aurora); border-radius: 4px; padding: 0.5vh 1vw; font-size: clamp(18px, 1.8vh, 22px); 
+        }
+        .header-data-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 0.2vh;
+            font-size: clamp(14px, 1.6vh, 18px);
+            font-weight: 800;
+            min-width: 0;
+            line-height: 1.05;
+        }
+
+        .main-content {
+            flex: 1; display: flex; flex-direction: column; gap: 1.5vh; padding: 1.5vh 1.5vw;
+            min-height: 0; overflow: hidden; 
+        }
+
+        /* ---------------- 工具开关组 ---------------- */
+        .tool-group { display: flex; align-items: center; gap: 0.5vw; background: var(--bg-main); border: 2px solid var(--border-line); border-radius: 20px; padding: 0.2vh 0.2vw;}
+        .icon-btn { 
+            background: transparent; border: none; color: var(--text-primary); cursor: pointer; 
+            font-size: clamp(16px, 1.8vh, 22px); padding: 0.4vh 0.8vw; border-radius: 16px; transition: all 0.2s;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.1); }
+        .lang-toggle { display: flex; align-items: center; }
+        .lang-btn {
+            background: transparent; border: none; color: var(--text-secondary); font-weight: 900; cursor: pointer;
+            padding: 0.4vh 0.8vw; border-radius: 16px; font-size: clamp(12px, 1.3vh, 16px); transition: all 0.2s;
+        }
+        .lang-btn.active { background: var(--text-primary); color: var(--bg-main); }
+
+        /* =========================================
+           5. 顶部区域：图表+按钮 (36%)
+           ========================================= */
+        .top-section { flex: 0 1 36%; display: flex; gap: 1vw; min-height: 0; }
+        .cylinder-chart-card { flex: 1; min-width: 0; padding-bottom: 1vh; }
+        
+        .chart-grid-layout {
+            display: grid; grid-template-columns: 4.5vw repeat(17, 1fr); grid-template-rows: 1fr auto auto auto;
+            gap: 0.8vh 2px; flex: 1; min-height: 0;
+        }
+        
+        .chart-grid-layout::before {
+            content: ''; grid-column: 2 / -1; grid-row: 1; margin-bottom: 0.5vh; border-bottom: 2px solid var(--border-line); pointer-events: none;
+            background-image: linear-gradient(var(--chart-grid) 2px, transparent 2px); background-size: 100% 2.5vh;
+        }
+
+        .axis-y {
+            grid-column: 1; grid-row: 1; display: flex; flex-direction: column; justify-content: space-between;
+            font-size: clamp(11px, 1.2vh, 14px); color: var(--text-secondary); font-weight: 800;
+            padding-right: 0.8vw; border-right: 2px solid var(--border-line); padding-bottom: 1vh;
+        }
+
+        .bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; z-index: 1; padding-bottom: 0.5vh;}
+        .bar-bg { width: 70%; max-width: 20px; height: 100%; background-color: var(--bg-main); border: 2px solid var(--border-line); border-radius: 2px; display: flex; align-items: flex-end;}
+        .bar-fill { width: 100%; background: var(--chart-fill); }
+
+        .row-label { grid-column: 1; font-size: clamp(11px, 1.2vh, 14px); color: var(--text-secondary); font-weight: 900; text-align: right; padding-right: 0.8vw; align-self: center;}
+        .col-header { font-size: clamp(11px, 1.2vh, 14px); color: var(--text-primary); font-weight: 900; text-align: center;}
+        .col-input { width: 100%; text-align: center; padding: 0.4vh 0; font-size: clamp(10px, 1.1vh, 13px); font-weight: 800; background: var(--bg-main); border: 1px solid var(--border-line); color: var(--accent-aurora); border-radius: 2px;}
+
+        /* 主控按钮区 */
+        .main-controls-card { flex: 0 0 20vw; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1.5vh 1vw; padding: 2vh 1.5vw; }
+        .btn-cyber {
+            border-radius: 6px; font-size: clamp(18px, 2vh, 28px); font-weight: 900; letter-spacing: 2px;
+            cursor: pointer; transition: all 0.2s; border: none; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.5vh;
+        }
+        .btn-cyber svg { width: 1.5em; height: 1.5em; margin-bottom: -4px;}
+        .btn-cyber:active { transform: scale(0.95); }
+        .btn-start, .btn-close { background-color: var(--accent-aurora); color: var(--text-on-primary); box-shadow: 0 4px 16px var(--accent-aurora-glow); }
+        .btn-stop, .btn-open { background-color: var(--status-danger); color: #FFF; box-shadow: 0 4px 16px var(--status-danger-glow); }
+
+        /* =========================================
+           6. 底层区域：数据阵列 (64%)
+           ========================================= */
+        .bottom-section { flex: 1; display: flex; gap: 1vw; min-height: 0; }
+        .data-grid-card { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5vw; min-height: 0; }
+        .data-col { display: flex; flex-direction: column; justify-content: space-around; min-height: 0; }
+        
+        .data-col-title {
+            color: var(--status-info); font-size: clamp(14px, 1.6vh, 20px); font-weight: 900; text-transform: uppercase;
+            border-bottom: 3px solid var(--status-info); padding-bottom: 0.6vh; margin-bottom: 0.5vh; letter-spacing: 1px;
+        }
+
+        .data-row { display: flex; justify-content: space-between; align-items: center; font-size: clamp(11px, 1.3vh, 15px); padding: 0.6vh 0.5vw; border-radius: 4px; }
+        .data-row:hover { background-color: var(--row-hover); }
+        .data-label { color: var(--text-secondary); white-space: nowrap; font-weight: 600;}
+        .data-val-container { text-align: right; white-space: nowrap; }
+        .data-row .data-numbers { color: var(--text-primary); font-size: clamp(13px, 1.5vh, 17px);}
+
+        .status-tag { background: rgba(50, 173, 230, 0.15); border: 1px solid var(--status-info); color: var(--status-info); font-weight: 800; padding: 2px 8px; border-radius: 4px; }
+        .status-tag.danger { background: rgba(255, 0, 0, 0.15); border: 1px solid var(--status-danger); color: var(--status-danger); }
+
+        /* 微调面板 */
+        .adjustment-card { flex: 0 0 20vw; display: flex; flex-direction: column; justify-content: space-between; gap: 1vh; }
+        .adj-group { display: flex; flex-direction: column; flex: 1; justify-content: center; gap: 1.2vh; }
+        .adj-header { display: flex; justify-content: space-between; align-items: center; font-size: clamp(13px, 1.5vh, 16px); color: var(--text-secondary); font-weight: 800;}
+        .adj-actions { display: flex; gap: 0.5vw; height: 4.5vh;}
+        
+        .btn-small { flex: 1; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: clamp(13px, 1.4vh, 16px); border: none; display: flex; justify-content: center; align-items: center; }
+        .btn-small.auto { background-color: var(--accent-aurora-ghost); color: var(--accent-aurora); border: 2px solid var(--accent-aurora); }
+        .btn-small.blue-tint { background-color: rgba(50, 173, 230, 0.1); color: var(--status-info); border: 2px solid rgba(50, 173, 230, 0.4); }
+
+        /* =========================================
+           7. 底部状态栏
+           ========================================= */
+        .footer-container {
+            flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center;
+            padding: 1.5vh 2vw; background-color: var(--bg-header-footer); border-top: 4px solid var(--border-line);
+            font-size: clamp(13px, 1.5vh, 18px); font-weight: 800;
+        }
+        .footer-left { display: flex; gap: 2vw; color: var(--text-secondary); align-items: center;}
+        .footer-left .brand { color: var(--status-warning); font-weight: 900; letter-spacing: 1px; font-size: 1.1em;}
+        .footer-left .footer-metric {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: flex-end;
+            text-align: right;
+            line-height: 1;
+        }
+        .footer-right { display: flex; gap: 0.8vw; }
+        .btn-footer { 
+            background: rgba(255,255,255,0.05); border: 2px solid var(--border-line); color: var(--text-primary);
+            padding: 1vh 1.5vw; border-radius: 4px; cursor: pointer; font-weight: 900; font-size: clamp(13px, 1.4vh, 16px); transition: all 0.2s;
+        }
+        .btn-footer:hover { background: var(--border-line); }
+        .icon-text { margin-right: 6px; }
+
+        /* 让截图圈中的数值位视觉留空，但保留单位与布局宽度 */
+        .header-data .val-box.data-numbers,
+        .cylinder-chart-card .col-input.data-numbers,
+        .data-grid-card .data-row .data-val-container .data-numbers,
+        .adjustment-card .adj-header .val-box.data-numbers,
+        .footer-left .data-numbers {
+            color: transparent !important;
+            text-shadow: none !important;
+        }
+
+        .header-data .val-box.data-numbers .unit,
+        .data-grid-card .data-row .data-val-container .data-numbers .unit,
+        .adjustment-card .adj-header .val-box.data-numbers .unit,
+        .footer-left .data-numbers .unit {
+            color: var(--text-unit) !important;
+        }
+
+        .footer-state-value {
+            visibility: hidden !important;
+        }
+
+        /* Tighten the top status bar around 1024px wide. */
+        @media (max-width: 1100px) {
+            .header-container { padding: 1.1vh 1.2vw; }
+            .header-left, .header-right, .header-data { gap: 0.65vw; }
+            .alarm-banner { padding: 0.65vh 0.9vw; gap: 0.6vw; }
+            .alarm-banner span.label { font-size: clamp(14px, 1.5vh, 18px); }
+            .alarm-banner .blank-area { width: clamp(70px, 8.5vw, 112px); }
+            .val-box { padding: 0.35vh 0.75vw; font-size: clamp(15px, 1.6vh, 20px); }
+            .header-data-item { gap: 0.15vh; }
+            .tool-group { gap: 0.35vw; }
+            .icon-btn { padding: 0.35vh 0.65vw; font-size: clamp(15px, 1.6vh, 20px); }
+            .lang-btn { padding: 0.35vh 0.7vw; font-size: clamp(11px, 1.15vh, 14px); }
+            .header-right > span { font-size: 1.05em; }
+            .header-right > div:last-child { padding-left: 0.8vw; }
+            .header-right > div:last-child .data-numbers:first-child { font-size: clamp(18px, 2vh, 24px); }
+            .header-right > div:last-child .data-numbers:last-child { font-size: clamp(11px, 1.1vh, 13px); }
+            .btn-footer { padding: 0.8vh 1.1vw; font-size: clamp(12px, 1.2vh, 15px); }
+            .icon-text { margin-right: 4px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header-container">
+        <div class="header-left">
+            <div class="alarm-banner">
+                <span class="label" data-i18n="alarm_title">ALARM</span>
+            </div>
+            <button class="btn-footer" style="color: var(--status-danger); border-color: rgba(255, 0, 0, 0.4);" data-i18n="alarm_reset">[ 🔔 ALARM RESET ]</button>
+        </div>
+        <div class="header-data">
+            <div class="header-data-item"><span data-i18n="af_ratio">A/F RATIO</span> <span class="val-box data-numbers">0.00</span></div>
+            <div class="header-data-item"><span data-i18n="gas">GAS</span> <span class="val-box data-numbers">0<span class="unit">%</span></span></div>
+            <div class="header-data-item"><span data-i18n="speed">SPEED</span> <span class="val-box data-numbers">0<span class="unit">%</span></span></div>
+        </div>
+        <div class="header-right">
+            <div class="tool-group">
+                <button class="icon-btn" onclick="toggleTheme()" id="themeBtn" title="Toggle Theme">🌓</button>
+                <div class="lang-toggle">
+                    <button class="lang-btn active" id="btnEN" onclick="setLang('en')">EN</button>
+                    <button class="lang-btn" id="btnCN" onclick="setLang('cn')">CN</button>
+                </div>
+            </div>
+            
+            <span style="color: var(--accent-aurora); font-weight: 900; letter-spacing: 1px; font-size: 1.2em;" data-i18n="online">🔊 ONLINE</span>
+            <div style="text-align: right; line-height: 1.1; border-left: 2px solid var(--border-line); padding-left: 1vw;">
+                <div class="data-numbers" style="font-size: clamp(20px, 2.2vh, 28px); color: var(--text-primary);">17:19:42</div>
+                <div class="data-numbers" style="font-size: clamp(12px, 1.3vh, 15px); color: var(--text-secondary);">26/05/26</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <section class="top-section">
+            <div class="card cylinder-chart-card">
+                <div class="chart-grid-layout">
+                    <div class="axis-y">
+                        <span>800</span><span>600</span><span>400</span><span>200</span><span>0<span class="unit">°C</span></span>
+                    </div>
+                    
+                    <script>
+                        // Row 1: 柱状图
+                        for(let i=1; i<=17; i++) {
+                            let height = Math.floor(Math.random() * 40) + 10;
+                            document.write(`<div class="bar-col" style="grid-column: ${i+1}; grid-row: 1;">
+                                <div class="bar-bg"><div class="bar-fill" style="height:${height}%"></div></div>
+                            </div>`);
+                        }
+                        
+                        // Row 2: 缸号 (CYL NO.)
+                        document.write(`<div class="row-label" style="grid-row: 2;" data-i18n="cyl_no">CYL NO.</div>`);
+                        for(let i=1; i<=17; i++) {
+                            let label = i === 17 ? 'AVG' : i;
+                            let isAvg = i === 17 ? 'color:var(--accent-aurora)' : '';
+                            let extraAttr = i === 17 ? 'data-i18n="avg"' : '';
+                            document.write(`<div class="col-header data-numbers" style="grid-column: ${i+1}; grid-row: 2; ${isAvg}" ${extraAttr}>${label}</div>`);
+                        }
+                        
+                        // Row 3: 缸温 (CYL TEMP)
+                        document.write(`<div class="row-label" style="grid-row: 3;" data-i18n="cyl_temp">CYL TEMP</div>`);
+                        for(let i=1; i<=17; i++) {
+                            document.write(`<div style="grid-column: ${i+1}; grid-row: 3; padding: 0 0.2vw;">
+                                <div class="col-input data-numbers">0</div>
+                            </div>`);
+                        }
+                        
+                        // Row 4: 排温 (EXH TEMP)
+                        document.write(`<div class="row-label" style="grid-row: 4;" data-i18n="exh_temp">EXH TEMP</div>`);
+                        for(let i=1; i<=17; i++) {
+                            document.write(`<div style="grid-column: ${i+1}; grid-row: 4; padding: 0 0.2vw;">
+                                <div class="col-input data-numbers">0</div>
+                            </div>`);
+                        }
+                    </script>
+                </div>
+            </div>
+            
+            <div class="card main-controls-card">
+                <button class="btn-cyber btn-start">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    <span data-i18n="start">START</span>
+                </button>
+                <button class="btn-cyber btn-stop">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+                    <span data-i18n="stop">STOP</span>
+                </button>
+                <button class="btn-cyber btn-close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    <span data-i18n="close">CLOSE</span>
+                </button>
+                <button class="btn-cyber btn-open">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64A9 9 0 0 1 22 13.5"></path><path d="M5.64 6.64A9 9 0 0 0 2 13.5"></path><line x1="12" y1="2" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="22"></line></svg>
+                    <span data-i18n="open">OPEN</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="bottom-section">
+            <div class="card data-grid-card">
+                <div class="data-col">
+                    <div class="data-col-title">OT3120A</div>
+                    <div class="data-row"><span class="data-label" data-i18n="curr_speed">CURR SPEED</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">rpm</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="tgt_speed">TGT SPEED</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">rpm</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="curr_pos">CURR POS</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">%</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="tgt_pos">TGT POS</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">%</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="status">STATUS</span></div>
+                    <div class="data-row"><span class="data-label" data-i18n="sync_volt">SYNC VOLT</span><div class="data-val-container"><span class="data-numbers">0.00</span><span class="unit">V</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="trim_volt">TRIM VOLT</span><div class="data-val-container"><span class="data-numbers">0.00</span><span class="unit">V</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="idle_sw">IDLE SW</span><div class="data-val-container"><span class="data-numbers">0</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="ss_sw">S/S SW</span><div class="data-val-container"><span class="data-numbers">0</span></div></div>
+                </div>
+                <div class="data-col">
+                    <div class="data-col-title">LC601</div>
+                    <div class="data-row"><span class="data-label" data-i18n="curr_speed">CURR SPEED</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">rpm</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="af_ratio">A/F RATIO</span><div class="data-val-container"><span class="data-numbers">0.00</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="curr_pos">CURR POS</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">%</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="tgt_pos">TGT POS</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">%</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="status">STATUS</span></div>
+                    <div class="data-row"><span class="data-label" data-i18n="gen_curr">GEN CURR</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">A</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="ref_curr">REF CURR</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">A</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="map_press">MAP PRESS</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">kPa</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="map_temp">MAP TEMP</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">°C</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="idle_sw">IDLE SW</span><div class="data-val-container"><span class="data-numbers">0</span></div></div>
+                </div>
+                <div class="data-col">
+                    <div class="data-col-title">IG4 200</div>
+                    <div class="data-row"><span class="data-label" data-i18n="curr_speed">CURR SPEED</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">rpm</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="freq">FREQUENCY</span><div class="data-val-container"><span class="data-numbers">0.0</span><span class="unit">Hz</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="pwr_factor">PWR FACTOR</span><div class="data-val-container"><span class="data-numbers">0.00</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="uv_volt">UV VOLT</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">V</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="vw_volt">VW VOLT</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">V</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="wu_volt">WU VOLT</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">V</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="u_curr">U CURR</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">A</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="v_curr">V CURR</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">A</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="w_curr">W CURR</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">A</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="water_temp">WATER TEMP</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">°C</span></div></div>
+                </div>
+                <div class="data-col">
+                    <div class="data-col-title" data-i18n="engine">ENGINE</div>
+                    <div class="data-row"><span class="data-label" data-i18n="eng_w_temp">ENG W. TEMP</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">°C</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="ic_w_temp">IC W. TEMP</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">°C</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="oil_press">OIL PRESS</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">kPa</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="oil_temp">OIL TEMP</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">°C</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="gas_press">GAS PRESS</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">kPa</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="gas_temp">GAS TEMP</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">°C</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="map_temp">MAP TEMP</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">°C</span></div></div>
+                    <div class="data-row"><span class="data-label" style="opacity:0;">-</span></div>
+                    <div class="data-row"><span class="data-label" style="opacity:0;">-</span></div>
+                </div>
+                <div class="data-col">
+                    <div class="data-col-title" data-i18n="generator">GENERATOR</div>
+                    <div class="data-row"><span class="data-label" data-i18n="u_wind_temp">U WIND TEMP</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">°C</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="v_wind_temp">V WIND TEMP</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">°C</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="w_wind_temp">W WIND TEMP</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">°C</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="f_brg_temp">F BRG TEMP</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">°C</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="r_brg_temp">R BRG TEMP</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">°C</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="run_hours">RUN HOURS</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">h</span></div></div>
+                    <div class="data-row"><span class="data-label" data-i18n="gen_energy">GEN ENERGY</span><div class="data-val-container"><span class="data-numbers">0</span><span class="unit">kWh</span></div></div>
+                    <div class="data-row"><span class="data-label" style="opacity:0;">-</span></div>
+                    <div class="data-row"><span class="data-label" style="opacity:0;">-</span></div>
+                </div>
+            </div>
+
+            <div class="card adjustment-card">
+                <div class="adj-group">
+                    <div class="adj-header">
+                        <span data-i18n="gas_vlv_ctrl">GAS VLV CTRL</span><span class="val-box data-numbers" style="padding:0.2vh 1vw;">0<span class="unit">%</span></span>
+                    </div>
+                    <div class="adj-actions">
+                        <button class="btn-small auto" data-i18n="auto">AUTO</button>
+                        <button class="btn-small blue-tint" data-i18n="toggle">TOGGLE</button>
+                        <button class="btn-small blue-tint">+3</button>
+                        <button class="btn-small blue-tint">-3</button>
+                    </div>
+                </div>
+                <div class="adj-group">
+                    <div class="adj-header">
+                        <span data-i18n="spd_vlv_ctrl">SPD VLV CTRL</span><span class="val-box data-numbers" style="padding:0.2vh 1vw;">0<span class="unit">%</span></span>
+                    </div>
+                    <div class="adj-actions">
+                        <button class="btn-small auto" data-i18n="auto">AUTO</button>
+                        <button class="btn-small blue-tint" data-i18n="toggle">TOGGLE</button>
+                        <button class="btn-small blue-tint">+5</button>
+                        <button class="btn-small blue-tint">-5</button>
+                    </div>
+                </div>
+                <div class="adj-group">
+                    <div class="adj-header">
+                        <span data-i18n="pwr_setpoint">PWR SETPOINT</span>
+                        <div><span class="val-box data-numbers" style="padding:0.4vh 1vw;">0</span> <span class="unit" style="font-size:1em;">kW</span></div>
+                    </div>
+                    <div class="adj-actions">
+                        <button class="btn-small blue-tint">+20</button>
+                        <button class="btn-small blue-tint">-20</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer-container">
+        <div class="footer-left">
+            <span class="brand" data-i18n="brand">GAS POWER SYS</span>
+            <span class="footer-metric" style="border-left:2px solid var(--border-line); padding-left:1vw;">
+                <span data-i18n="power">POWER</span> <span class="data-numbers" style="color:var(--text-primary); font-size:1.1em;">0<span class="unit">kW</span></span>
+            </span>
+            <span class="footer-metric"><span data-i18n="speed">SPEED</span> <span class="data-numbers" style="color:var(--text-primary); font-size:1.1em;">0<span class="unit">rpm</span></span></span>
+            <span><span data-i18n="unit">UNIT</span>: <span class="footer-state-value status-tag" style="font-size: 0.9em;">INIT</span></span>
+            <span><span data-i18n="mode">MODE</span>: <span class="footer-state-value" style="color:var(--text-primary);">OFF</span></span>
+            <span><span data-i18n="breaker">BREAKER</span>: <span class="footer-state-value" style="color:var(--text-primary);" data-i18n="open_state">OPEN</span></span>
+        </div>
+        <div class="footer-right">
+            <button class="btn-footer"><span class="icon-text">📜</span><span data-i18n="history">HISTORY</span></button>
+            <button class="btn-footer"><span class="icon-text">⚠️</span><span data-i18n="alarms">ALARMS</span></button>
+            <button class="btn-footer"><span class="icon-text">⚙️</span><span data-i18n="menu">MENU</span></button>
+            <button class="btn-footer" style="background:var(--accent-aurora); color:var(--text-on-primary); border-color:var(--accent-aurora);"><span class="icon-text">🏠</span><span data-i18n="home">HOME</span></button>
+        </div>
+    </footer>
+
+    <script>
+        // --- Theme Toggle Logic ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            if (html.getAttribute('data-theme') === 'light') {
+                html.removeAttribute('data-theme');
+            } else {
+                html.setAttribute('data-theme', 'light');
+            }
+        }
+
+        // --- i18n Translation Dictionary ---
+        const translations = {
+            en: {
+                alarm_title: "ALARM",
+                alarm_reset: "[ 🔔 ALARM RESET ]",
+                af_ratio: "A/F RATIO",
+                gas: "GAS",
+                speed: "SPEED",
+                online: "🔊 ONLINE",
+                cyl_no: "CYL NO.",
+                cyl_temp: "CYL TEMP",
+                exh_temp: "EXH TEMP",
+                avg: "AVG",
+                start: "START",
+                stop: "STOP",
+                close: "CLOSE",
+                open: "OPEN",
+                curr_speed: "CURR SPEED",
+                tgt_speed: "TGT SPEED",
+                curr_pos: "CURR POS",
+                tgt_pos: "TGT POS",
+                status: "STATUS",
+                stopped: "STOPPED",
+                sync_volt: "SYNC VOLT",
+                trim_volt: "TRIM VOLT",
+                idle_sw: "IDLE SW",
+                ss_sw: "S/S SW",
+                gen_curr: "GEN CURR",
+                ref_curr: "REF CURR",
+                map_press: "MAP PRESS",
+                map_temp: "MAP TEMP",
+                freq: "FREQUENCY",
+                pwr_factor: "PWR FACTOR",
+                uv_volt: "UV VOLT",
+                vw_volt: "VW VOLT",
+                wu_volt: "WU VOLT",
+                u_curr: "U CURR",
+                v_curr: "V CURR",
+                w_curr: "W CURR",
+                water_temp: "WATER TEMP",
+                engine: "ENGINE",
+                eng_w_temp: "ENG W. TEMP",
+                ic_w_temp: "IC W. TEMP",
+                oil_press: "OIL PRESS",
+                oil_temp: "OIL TEMP",
+                gas_press: "GAS PRESS",
+                gas_temp: "GAS TEMP",
+                generator: "GENERATOR",
+                u_wind_temp: "U WIND TEMP",
+                v_wind_temp: "V WIND TEMP",
+                w_wind_temp: "W WIND TEMP",
+                f_brg_temp: "F BRG TEMP",
+                r_brg_temp: "R BRG TEMP",
+                run_hours: "RUN HOURS",
+                gen_energy: "GEN ENERGY",
+                gas_vlv_ctrl: "GAS VLV CTRL",
+                spd_vlv_ctrl: "SPD VLV CTRL",
+                pwr_setpoint: "PWR SETPOINT",
+                auto: "AUTO",
+                toggle: "TOGGLE",
+                brand: "GAS POWER SYS",
+                power: "POWER",
+                unit: "UNIT",
+                mode: "MODE",
+                breaker: "BREAKER",
+                open_state: "OPEN",
+                history: "HISTORY",
+                alarms: "ALARMS",
+                menu: "MENU",
+                home: "HOME"
+            },
+            cn: {
+                alarm_title: "报警信息 ALARM",
+                alarm_reset: "[ 🔔 报警复位 ]",
+                af_ratio: "空燃比",
+                gas: "燃气",
+                speed: "调速",
+                online: "🔊 ONLINE",
+                cyl_no: "缸号",
+                cyl_temp: "缸温",
+                exh_temp: "排温",
+                avg: "平均",
+                start: "起动",
+                stop: "停机",
+                close: "合闸",
+                open: "分闸",
+                curr_speed: "当前转速",
+                tgt_speed: "目标转速",
+                curr_pos: "当前位置",
+                tgt_pos: "目标位置",
+                status: "工作状态",
+                stopped: "停机",
+                sync_volt: "同步电压",
+                trim_volt: "微调电压",
+                idle_sw: "怠速开关",
+                ss_sw: "启停开关",
+                gen_curr: "发电电流",
+                ref_curr: "基准电流",
+                map_press: "歧管压力",
+                map_temp: "歧管温度",
+                freq: "频率",
+                pwr_factor: "功率因数",
+                uv_volt: "UV电压",
+                vw_volt: "VW电压",
+                wu_volt: "WU电压",
+                u_curr: "U电流",
+                v_curr: "V电流",
+                w_curr: "W电流",
+                water_temp: "水温",
+                engine: "发动机 (ENGINE)",
+                eng_w_temp: "发动机水温",
+                ic_w_temp: "中冷水温",
+                oil_press: "机油压力",
+                oil_temp: "机油温度",
+                gas_press: "燃气压力",
+                gas_temp: "燃气温度",
+                generator: "发电机 (GENERATOR)",
+                u_wind_temp: "U绕组温度",
+                v_wind_temp: "V绕组温度",
+                w_wind_temp: "W绕组温度",
+                f_brg_temp: "前轴承温度",
+                r_brg_temp: "后轴承温度",
+                run_hours: "运行小时",
+                gen_energy: "发电量",
+                gas_vlv_ctrl: "燃气阀控制",
+                spd_vlv_ctrl: "调速阀控制",
+                pwr_setpoint: "功率输出设定",
+                auto: "自动",
+                toggle: "切换",
+                brand: "燃气发电系统",
+                power: "功率",
+                unit: "机组",
+                mode: "模式",
+                breaker: "断路器",
+                open_state: "分闸",
+                history: "历史记录",
+                alarms: "报警信息",
+                menu: "系统菜单",
+                home: "主面板"
+            }
+        };
+
+        // --- i18n Switch Logic ---
+        function setLang(lang) {
+            // Update UI Button states
+            document.getElementById('btnEN').classList.toggle('active', lang === 'en');
+            document.getElementById('btnCN').classList.toggle('active', lang === 'cn');
+            
+            // Translate all elements with data-i18n attribute
+            const elements = document.querySelectorAll('[data-i18n]');
+            elements.forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    el.textContent = translations[lang][key];
+                }
+            });
+        }
+
+        // Initialize default language (EN)
+        document.addEventListener('DOMContentLoaded', () => {
+            setLang('en');
+        });
+    </script>
+</body>
+</html>
