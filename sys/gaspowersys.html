@@ -121,7 +121,7 @@
         }
         .alarm-banner span.label { color: var(--status-danger); font-weight: 900; text-transform: uppercase; font-size: clamp(16px, 1.8vh, 20px); letter-spacing: 1px; }
         .alarm-banner .blank-area {
-            width: clamp(82px, 10vw, 140px);
+            width: clamp(8ch, 8vw, 10ch);
             min-width: 72px;
             flex: 1 1 auto;
             height: 1.5vh;
@@ -169,31 +169,133 @@
            5. 顶部区域：图表+按钮 (36%)
            ========================================= */
         .top-section { flex: 0 1 36%; display: flex; gap: 1vw; min-height: 0; }
-        .cylinder-chart-card { flex: 1; min-width: 0; padding-bottom: 1vh; }
-        
-        .chart-grid-layout {
-            display: grid; grid-template-columns: 4.5vw repeat(17, 1fr); grid-template-rows: 1fr auto auto auto;
-            gap: 0.8vh 2px; flex: 1; min-height: 0;
+        .cylinder-chart-card {
+            flex: 1;
+            min-width: 0;
+            padding-bottom: 1vh;
+            gap: 0.8vh;
         }
-        
-        .chart-grid-layout::before {
-            content: ''; grid-column: 2 / -1; grid-row: 1; margin-bottom: 0.5vh; border-bottom: 2px solid var(--border-line); pointer-events: none;
-            background-image: linear-gradient(var(--chart-grid) 2px, transparent 2px); background-size: 100% 2.5vh;
+        .chart-stack {
+            flex: 0 0 55%;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8vh;
         }
-
-        .axis-y {
-            grid-column: 1; grid-row: 1; display: flex; flex-direction: column; justify-content: space-between;
-            font-size: clamp(11px, 1.2vh, 14px); color: var(--text-secondary); font-weight: 800;
-            padding-right: 0.8vw; border-right: 2px solid var(--border-line); padding-bottom: 1vh;
+        .chart-panel {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35vh;
         }
-
-        .bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; z-index: 1; padding-bottom: 0.5vh;}
-        .bar-bg { width: 70%; max-width: 20px; height: 100%; background-color: var(--bg-main); border: 2px solid var(--border-line); border-radius: 2px; display: flex; align-items: flex-end;}
-        .bar-fill { width: 100%; background: var(--chart-fill); }
-
-        .row-label { grid-column: 1; font-size: clamp(11px, 1.2vh, 14px); color: var(--text-secondary); font-weight: 900; text-align: right; padding-right: 0.8vw; align-self: center;}
-        .col-header { font-size: clamp(11px, 1.2vh, 14px); color: var(--text-primary); font-weight: 900; text-align: center;}
-        .col-input { width: 100%; text-align: center; padding: 0.4vh 0; font-size: clamp(10px, 1.1vh, 13px); font-weight: 800; background: var(--bg-main); border: 1px solid var(--border-line); color: var(--accent-aurora); border-radius: 2px;}
+        .chart-panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--status-info);
+            font-size: clamp(12px, 1.35vh, 16px);
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+        .chart-panel-scale {
+            color: var(--text-secondary);
+            font-size: clamp(10px, 1.1vh, 13px);
+            font-weight: 800;
+            white-space: nowrap;
+        }
+        .chart-track {
+            display: grid;
+            grid-template-columns: 4.5vw repeat(17, 1fr);
+            gap: 0.45vh 2px;
+            flex: 1;
+            min-height: 0;
+        }
+        .chart-track::before {
+            content: '';
+            grid-column: 2 / -1;
+            grid-row: 1;
+            margin-bottom: 0.5vh;
+            border-bottom: 2px solid var(--border-line);
+            pointer-events: none;
+            background-image: linear-gradient(var(--chart-grid) 2px, transparent 2px);
+            background-size: 100% 2.5vh;
+        }
+        .chart-track .axis-y {
+            grid-column: 1;
+            grid-row: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-size: clamp(11px, 1.2vh, 14px);
+            color: var(--text-secondary);
+            font-weight: 800;
+            padding-right: 0.8vw;
+            border-right: 2px solid var(--border-line);
+            padding-bottom: 1vh;
+        }
+        .chart-track .bar-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            z-index: 1;
+            padding-bottom: 0.5vh;
+        }
+        .bar-bg {
+            width: 70%;
+            max-width: 20px;
+            height: 100%;
+            background-color: var(--bg-main);
+            border: 2px solid var(--border-line);
+            border-radius: 2px;
+            display: flex;
+            align-items: flex-end;
+        }
+        .bar-fill {
+            width: 100%;
+            background: var(--chart-fill);
+        }
+        .bar-fill.cyl {
+            background: linear-gradient(180deg, rgba(93, 214, 44, 1), rgba(93, 214, 44, 0.2));
+        }
+        .bar-fill.exh {
+            background: linear-gradient(180deg, rgba(255, 159, 10, 1), rgba(255, 159, 10, 0.2));
+        }
+        .chart-meta-grid {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 4.5vw repeat(17, 1fr);
+            grid-template-rows: auto auto auto;
+            gap: 0.45vh 2px;
+        }
+        .chart-meta-grid .row-label {
+            grid-column: 1;
+            font-size: clamp(11px, 1.2vh, 14px);
+            color: var(--text-secondary);
+            font-weight: 900;
+            text-align: right;
+            padding-right: 0.8vw;
+            align-self: center;
+        }
+        .chart-meta-grid .col-header {
+            font-size: clamp(11px, 1.2vh, 14px);
+            color: var(--text-primary);
+            font-weight: 900;
+            text-align: center;
+        }
+        .chart-meta-grid .col-input {
+            width: 100%;
+            text-align: center;
+            padding: 0.4vh 0;
+            font-size: clamp(10px, 1.1vh, 13px);
+            font-weight: 800;
+            background: var(--bg-main);
+            border: 1px solid var(--border-line);
+            color: var(--accent-aurora);
+            border-radius: 2px;
+        }
 
         /* 主控按钮区 */
         .main-controls-card { flex: 0 0 20vw; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1.5vh 1vw; padding: 2vh 1.5vw; }
@@ -290,7 +392,7 @@
             .header-left, .header-right, .header-data { gap: 0.65vw; }
             .alarm-banner { padding: 0.65vh 0.9vw; gap: 0.6vw; }
             .alarm-banner span.label { font-size: clamp(14px, 1.5vh, 18px); }
-            .alarm-banner .blank-area { width: clamp(70px, 8.5vw, 112px); }
+            .alarm-banner .blank-area { width: clamp(8ch, 8.5vw, 10ch); }
             .val-box { padding: 0.35vh 0.75vw; font-size: clamp(15px, 1.6vh, 20px); }
             .header-data-item { gap: 0.15vh; }
             .tool-group { gap: 0.35vw; }
@@ -311,6 +413,7 @@
         <div class="header-left">
             <div class="alarm-banner">
                 <span class="label" data-i18n="alarm_title">ALARM</span>
+                <span class="blank-area" aria-hidden="true"></span>
             </div>
             <button class="btn-footer" style="color: var(--status-danger); border-color: rgba(255, 0, 0, 0.4);" data-i18n="alarm_reset">[ 🔔 ALARM RESET ]</button>
         </div>
@@ -339,48 +442,73 @@
     <main class="main-content">
         <section class="top-section">
             <div class="card cylinder-chart-card">
-                <div class="chart-grid-layout">
-                    <div class="axis-y">
-                        <span>800</span><span>600</span><span>400</span><span>200</span><span>0<span class="unit">°C</span></span>
-                    </div>
-                    
+                <div class="chart-stack">
                     <script>
-                        // Row 1: 柱状图
-                        for(let i=1; i<=17; i++) {
-                            let height = Math.floor(Math.random() * 40) + 10;
-                            document.write(`<div class="bar-col" style="grid-column: ${i+1}; grid-row: 1;">
-                                <div class="bar-bg"><div class="bar-fill" style="height:${height}%"></div></div>
-                            </div>`);
+                        const cylTempBars = [18, 26, 22, 10, 14, 11, 13, 9, 11, 23, 17, 12, 15, 31, 28, 18, 34];
+                        const exhTempBars = [24, 32, 28, 13, 18, 15, 17, 12, 14, 27, 21, 16, 18, 36, 33, 23, 38];
+                        function renderTempBars(values, fillClass) {
+                            values.forEach((height, index) => {
+                                document.write(`<div class="bar-col" style="grid-column: ${index + 2}; grid-row: 1;">
+                                    <div class="bar-bg"><div class="bar-fill ${fillClass}" style="height:${height}%"></div></div>
+                                </div>`);
+                            });
                         }
-                        
-                        // Row 2: 缸号 (CYL NO.)
-                        document.write(`<div class="row-label" style="grid-row: 2;" data-i18n="cyl_no">CYL NO.</div>`);
-                        for(let i=1; i<=17; i++) {
+                    </script>
+                    <div class="chart-panel">
+                        <div class="chart-panel-head">
+                            <span data-i18n="cyl_temp">CYL TEMP</span>
+                            <span class="chart-panel-scale">0-800<span class="unit">°C</span></span>
+                        </div>
+                        <div class="chart-track">
+                            <div class="axis-y">
+                                <span>800</span><span>600</span><span>400</span><span>200</span><span>0<span class="unit">°C</span></span>
+                            </div>
+                            <script>renderTempBars(cylTempBars, 'cyl');</script>
+                        </div>
+                    </div>
+                    <div class="chart-panel">
+                        <div class="chart-panel-head">
+                            <span data-i18n="exh_temp">EXH TEMP</span>
+                            <span class="chart-panel-scale">0-800<span class="unit">°C</span></span>
+                        </div>
+                        <div class="chart-track">
+                            <div class="axis-y">
+                                <span>800</span><span>600</span><span>400</span><span>200</span><span>0<span class="unit">°C</span></span>
+                            </div>
+                            <script>renderTempBars(exhTempBars, 'exh');</script>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-meta-grid">
+                    <div class="row-label" style="grid-row: 1;" data-i18n="cyl_no">CYL NO.</div>
+                    <script>
+                        for (let i = 1; i <= 17; i++) {
                             let label = i === 17 ? 'AVG' : i;
                             let isAvg = i === 17 ? 'color:var(--accent-aurora)' : '';
                             let extraAttr = i === 17 ? 'data-i18n="avg"' : '';
-                            document.write(`<div class="col-header data-numbers" style="grid-column: ${i+1}; grid-row: 2; ${isAvg}" ${extraAttr}>${label}</div>`);
+                            document.write(`<div class="col-header data-numbers" style="grid-column: ${i + 1}; grid-row: 1; ${isAvg}" ${extraAttr}>${label}</div>`);
                         }
-                        
-                        // Row 3: 缸温 (CYL TEMP)
-                        document.write(`<div class="row-label" style="grid-row: 3;" data-i18n="cyl_temp">CYL TEMP</div>`);
-                        for(let i=1; i<=17; i++) {
-                            document.write(`<div style="grid-column: ${i+1}; grid-row: 3; padding: 0 0.2vw;">
+                    </script>
+
+                    <div class="row-label" style="grid-row: 2;" data-i18n="cyl_temp">CYL TEMP</div>
+                    <script>
+                        for (let i = 1; i <= 17; i++) {
+                            document.write(`<div style="grid-column: ${i + 1}; grid-row: 2; padding: 0 0.2vw;">
                                 <div class="col-input data-numbers">0</div>
                             </div>`);
                         }
-                        
-                        // Row 4: 排温 (EXH TEMP)
-                        document.write(`<div class="row-label" style="grid-row: 4;" data-i18n="exh_temp">EXH TEMP</div>`);
-                        for(let i=1; i<=17; i++) {
-                            document.write(`<div style="grid-column: ${i+1}; grid-row: 4; padding: 0 0.2vw;">
+                    </script>
+
+                    <div class="row-label" style="grid-row: 3;" data-i18n="exh_temp">EXH TEMP</div>
+                    <script>
+                        for (let i = 1; i <= 17; i++) {
+                            document.write(`<div style="grid-column: ${i + 1}; grid-row: 3; padding: 0 0.2vw;">
                                 <div class="col-input data-numbers">0</div>
                             </div>`);
                         }
                     </script>
                 </div>
             </div>
-            
             <div class="card main-controls-card">
                 <button class="btn-cyber btn-start">
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
