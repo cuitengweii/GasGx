@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+  <html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>GasGx - Alarm Page</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg-main:#000;
+      --bg-card:rgba(32,32,32,.88);
+      --bg-header-footer:#0a0a0a;
+      --text-primary:#fff;
+      --text-secondary:#a0a0a0;
+      --text-unit:#666;
+      --text-on-primary:#000;
+      --border-line:#444;
+      --accent-aurora:#5dd62c;
+      --accent-aurora-glow:rgba(93,214,44,.5);
+      --accent-aurora-ghost:rgba(93,214,44,.2);
+      --status-success:#34c759;
+      --status-warning:#ff9f0a;
+      --status-danger:#ff0000;
+      --status-danger-glow:rgba(255,0,0,.5);
+      --status-info:#32ade6;
+      --shadow-deep:0 8px 24px rgba(0,0,0,.9);
+      --shadow-inner:inset 0 2px 6px rgba(0,0,0,.8);
+      --glass-border:2px solid rgba(93,214,44,.25);
+      --chart-grid:rgba(255,255,255,.06);
+      --chart-fill:linear-gradient(180deg, rgba(93,214,44,1), rgba(93,214,44,.2));
+    }
+    body{
+      margin:0;
+      width:100vw;
+      height:100vh;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      background:var(--bg-main);
+      color:var(--text-primary);
+      font-family:'Inter',system-ui,-apple-system,sans-serif;
+      font-weight:600;
+      -webkit-font-smoothing:antialiased;
+    }
+    .data-numbers{font-family:'JetBrains Mono','Consolas',monospace;font-weight:800;color:var(--accent-aurora);letter-spacing:.5px}
+    .unit{font-size:.75em;color:var(--text-unit);margin-left:2px;font-family:'Inter',sans-serif;font-weight:600}
+    .btn-footer{background:rgba(255,255,255,.05);border:2px solid var(--border-line);color:var(--text-primary);padding:1vh 1.5vw;border-radius:4px;cursor:pointer;font-weight:900;font-size:clamp(13px,1.4vh,16px)}
+    .active-tab{background:var(--accent-aurora);color:#fff !important;border-color:var(--accent-aurora) !important;box-shadow:0 0 0 1px rgba(255,255,255,.15) inset}
+    .icon-text{margin-right:6px}
+    .header-container{
+      flex:0 0 auto;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:1.5vh 2vw;
+      background:var(--bg-header-footer);
+      border-bottom:4px solid var(--accent-aurora);
+      z-index:10;
+    }
+    .header-left,.header-right,.header-data{display:flex;align-items:center;gap:1vw;min-width:0}
+    .alarm-banner{background:rgba(255,0,0,.15);border:2px solid var(--status-danger);padding:.8vh 1.2vw;border-radius:4px;display:flex;align-items:center;gap:.8vw}
+    .alarm-banner .label{color:var(--status-danger);font-weight:900;text-transform:uppercase;font-size:clamp(16px,1.8vh,20px);letter-spacing:1px}
+    .alarm-banner .blank-area{width:clamp(82px,10vw,140px);min-width:72px;height:1.5vh;background:var(--status-danger);opacity:.3;border-radius:2px}
+    .tool-group{display:flex;align-items:center;gap:.5vw;background:var(--bg-main);border:2px solid var(--border-line);border-radius:20px;padding:.2vh .2vw}
+    .icon-btn,.lang-btn{background:transparent;border:none;cursor:pointer}
+    .icon-btn{color:var(--text-primary);font-size:clamp(16px,1.8vh,22px);padding:.4vh .8vw;border-radius:16px;min-width:34px}
+    .lang-btn{color:var(--text-secondary);font-weight:900;padding:.4vh .8vw;border-radius:16px;font-size:clamp(12px,1.3vh,16px);min-width:34px}
+    .lang-btn.active{background:var(--text-primary);color:var(--bg-main)}
+    .val-box{background:var(--bg-main);border:2px solid var(--border-line);box-shadow:var(--shadow-inner);color:var(--accent-aurora);border-radius:4px;padding:.5vh 1vw;font-size:clamp(18px,1.8vh,22px)}
+    .header-data-item{display:flex;flex-direction:column;align-items:flex-start;gap:.2vh;font-size:clamp(14px,1.6vh,18px);font-weight:800;line-height:1.05}
+    .main-content{flex:1;display:flex;flex-direction:column;gap:1.5vh;padding:1.5vh 1.5vw;min-height:0;overflow:hidden}
+    .page-body{display:flex;flex-direction:column;gap:1.5vh;flex:1;min-height:0}
+    .alarm-board{
+      flex:1;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      gap:1vh;
+      padding:1.2vh 0 0;
+    }
+    .alarm-toolbar{
+      display:flex;
+      justify-content:flex-end;
+      align-items:center;
+      gap:.8vw;
+      padding:0 .15vw;
+    }
+    .alarm-chip{
+      min-width:96px;
+      padding:.45vh .9vw;
+      border-radius:4px;
+      border:1px solid var(--border-line);
+      background:rgba(255,255,255,.05);
+      color:var(--status-danger);
+      font-weight:900;
+      box-shadow:var(--shadow-inner);
+      text-align:center;
+      line-height:1;
+    }
+    .alarm-chip.active{
+      background:rgba(255,0,0,.18);
+      border-color:var(--status-danger);
+    }
+    .alarm-panels{
+      flex:1;
+      min-height:0;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:1vw;
+    }
+    .alarm-panel{
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+      gap:.45vh;
+    }
+    .alarm-panel-title{
+      color:var(--status-info);
+      font-size:clamp(14px,1.6vh,20px);
+      font-weight:900;
+      text-align:center;
+      border-bottom:3px solid var(--status-info);
+      padding-bottom:.6vh;
+      letter-spacing:1px;
+    }
+    .alarm-panel-sub{
+      color:var(--status-danger);
+      font-size:clamp(12px,1.2vh,15px);
+      font-weight:900;
+      text-align:center;
+      margin-top:-.15vh;
+    }
+    .alarm-table{
+      position:relative;
+      flex:1;
+      min-height:0;
+      background:var(--bg-card);
+      border:var(--glass-border);
+      border-radius:8px;
+      box-shadow:var(--shadow-deep);
+      overflow:hidden;
+    }
+    .alarm-table .thead{
+      height:26px;
+      display:grid;
+      grid-template-columns:22% 20% 1fr;
+      align-items:center;
+      border-bottom:1px solid var(--border-line);
+      color:var(--status-danger);
+      font-size:16px;
+      padding:0 6px;
+      background:rgba(255,255,255,.02);
+    }
+    .alarm-table .tbody{
+      height:calc(100% - 26px);
+      padding-right:18px;
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+    }
+    .alarm-row{
+      display:grid;
+      grid-template-columns:22% 20% 1fr;
+      align-items:center;
+      height:22px;
+      border-bottom:1px solid var(--chart-grid);
+      font-size:15px;
+      color:var(--status-danger);
+      padding:0 6px;
+      font-family:'JetBrains Mono','Consolas',monospace;
+    }
+    .alarm-row.blank{color:transparent}
+    .scrollbar{
+      position:absolute;
+      top:0;
+      right:0;
+      width:18px;
+      height:100%;
+      border-left:1px solid var(--border-line);
+      background:#1c1c1c;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+    .scroll-btn{
+      height:18px;
+      border-bottom:1px solid #999;
+      background:linear-gradient(#efefef,#cfcfcf);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#000;
+      font-size:12px;
+    }
+    .scroll-btn.bottom{border-top:1px solid #999;border-bottom:none}
+    .footer-container{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;padding:1.5vh 2vw;background:var(--bg-header-footer);border-top:4px solid var(--border-line);font-size:clamp(13px,1.5vh,18px);font-weight:800}
+    .footer-left{display:flex;gap:2vw;color:var(--text-secondary);align-items:center}
+    .footer-left .brand{color:var(--status-warning);font-weight:900;letter-spacing:1px;font-size:1.1em}
+    .footer-left .footer-metric{display:inline-flex;flex-direction:column;align-items:flex-end;text-align:right;line-height:1}
+    .footer-right{display:flex;gap:.8vw}
+  </style>
+</head>
+<body>
+  <header class="header-container">
+    <div class="header-left">
+      <div class="alarm-banner">
+        <span class="label">ALARM</span>
+        <span class="blank-area" aria-hidden="true"></span>
+      </div>
+      <button class="btn-footer" style="color:var(--status-danger);border-color:rgba(255,0,0,.4)" data-i18n="alarm_reset">[ 🔔 ALARM RESET ]</button>
+    </div>
+    <div class="header-data">
+      <div class="header-data-item"><span data-i18n="af_ratio">A/F RATIO</span><span class="val-box" style="min-width:64px;text-align:center">&nbsp;</span></div>
+      <div class="header-data-item"><span data-i18n="gas">GAS</span><span class="val-box" style="min-width:52px;text-align:center">&nbsp;<span class="unit">%</span></span></div>
+      <div class="header-data-item"><span data-i18n="speed">SPEED</span><span class="val-box" style="min-width:52px;text-align:center">&nbsp;<span class="unit">%</span></span></div>
+    </div>
+    <div class="header-right">
+      <div class="tool-group">
+        <button class="icon-btn" type="button">🌓</button>
+        <div class="lang-toggle">
+          <button id="langEN" class="lang-btn active" type="button">EN</button>
+          <button id="langCN" class="lang-btn" type="button">CN</button>
+        </div>
+      </div>
+      <span style="font-size:2em;line-height:1">🔊</span>
+      <span data-i18n="online" style="color:var(--accent-aurora);font-weight:900;letter-spacing:1px;font-size:1.2em">ONLINE</span>
+      <div style="text-align:right;line-height:1.1;border-left:2px solid var(--border-line);padding-left:1vw">
+        <div class="data-numbers" style="font-size:clamp(20px,2.2vh,28px);color:var(--text-primary)">17:19:42</div>
+        <div class="data-numbers" style="font-size:clamp(12px,1.3vh,15px);color:var(--text-secondary)">26/05/26</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="page-body">
+      <section class="alarm-board">
+        <div class="alarm-toolbar">
+          <div class="alarm-chip active" data-i18n="alarm_title">ALARM</div>
+          <div class="alarm-chip" data-i18n="alarm_type">ECS ALARM</div>
+        </div>
+        <div class="alarm-panels">
+          <article class="alarm-panel">
+            <div class="alarm-panel-title" data-i18n="current_alarm">当前报警</div>
+            <div class="alarm-panel-sub" data-i18n="alarm_type">ECS通讯报警</div>
+            <div class="alarm-table">
+              <div class="thead"><div>26/06/03</div><div>08:43:14</div><div data-i18n="alarm_type">ECS ALARM</div></div>
+              <div class="tbody">
+                <div class="alarm-row"><div>26/06/03</div><div>08:43:14</div><div data-i18n="alarm_type">ECS ALARM</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+              </div>
+              <div class="scrollbar"><div class="scroll-btn">▲</div><div class="scroll-btn bottom">▼</div></div>
+            </div>
+          </article>
+
+          <article class="alarm-panel">
+            <div class="alarm-panel-title" data-i18n="history_alarm">历史报警</div>
+            <div class="alarm-panel-sub" data-i18n="alarm_type">ECS通讯报警</div>
+            <div class="alarm-table">
+              <div class="thead"><div>26/06/03</div><div>08:43:14</div><div data-i18n="alarm_type">ECS ALARM</div></div>
+              <div class="tbody">
+                <div class="alarm-row"><div>26/06/03</div><div>08:43:14</div><div data-i18n="alarm_type">ECS ALARM</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+                <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
+              </div>
+              <div class="scrollbar"><div class="scroll-btn">▲</div><div class="scroll-btn bottom">▼</div></div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer-container">
+    <div class="footer-left">
+      <span class="brand">GAS POWER<br>SYS</span>
+      <span class="footer-metric" style="border-left:2px solid var(--border-line);padding-left:1vw;"><span data-i18n="power">POWER</span> <span class="data-numbers" style="color:var(--text-primary);font-size:1.1em;">0<span class="unit">kW</span></span></span>
+      <span class="footer-metric"><span data-i18n="speed">SPEED</span> <span class="data-numbers" style="color:var(--text-primary);font-size:1.1em;">0<span class="unit">rpm</span></span></span>
+      <span><span data-i18n="unit">UNIT:</span> <span class="status-tag" style="font-size:.9em" data-i18n="init">INIT</span></span>
+      <span><span data-i18n="mode">MODE:</span> <span style="color:var(--text-primary)" data-i18n="off">OFF</span></span>
+      <span><span data-i18n="breaker">BREAKER:</span> <span style="color:var(--text-primary)" data-i18n="open_state">OPEN</span></span>
+    </div>
+    <div class="footer-right">
+      <button class="btn-footer"><span class="icon-text">📄</span><span class="btn-label" data-i18n="history">HISTORY</span></button>
+      <button class="btn-footer active-tab"><span class="icon-text">⚠️</span><span class="btn-label" data-i18n="alarms">ALARMS</span></button>
+      <button class="btn-footer"><span class="icon-text">⚙️</span><span class="btn-label" data-i18n="menu">MENU</span></button>
+      <button class="btn-footer"><span class="icon-text">🏠</span><span class="btn-label" data-i18n="home">HOME</span></button>
+    </div>
+  </footer>
+
+  <script>
+    const langMap = {
+      en: {
+        alarm_title: 'ALARM',
+        alarm_reset: '[ 🔔 ALARM RESET ]',
+        online: 'ONLINE',
+        af_ratio: 'A/F RATIO',
+        gas: 'GAS',
+        speed: 'SPEED',
+        current_alarm: 'CURRENT ALARM',
+        history_alarm: 'HISTORY ALARM',
+        alarm_type: 'ECS ALARM',
+        power: 'POWER',
+        unit: 'UNIT:',
+        init: 'INIT',
+        mode: 'MODE:',
+        off: 'OFF',
+        breaker: 'BREAKER:',
+        open_state: 'OPEN',
+        history: 'HISTORY',
+        alarms: 'ALARMS',
+        menu: 'MENU',
+        home: 'HOME'
+      },
+      cn: {
+        alarm_title: '报警信息',
+        alarm_reset: '[ 🔔 报警复位 ]',
+        online: '在线',
+        af_ratio: '空燃比',
+        gas: '燃气',
+        speed: '调速',
+        current_alarm: '当前报警',
+        history_alarm: '历史报警',
+        alarm_type: 'ECS通讯报警',
+        power: '功率',
+        unit: '单元:',
+        init: '初始化',
+        mode: '模式:',
+        off: '关闭',
+        breaker: '断路器:',
+        open_state: '分闸',
+        history: '历史记录',
+        alarms: '报警信息',
+        menu: '菜单',
+        home: '主面板'
+      }
+    };
+
+    function setLang(lang) {
+      document.documentElement.lang = lang === 'cn' ? 'zh-CN' : 'en';
+      document.querySelectorAll('[data-i18n]').forEach((el) => {
+        const key = el.getAttribute('data-i18n');
+        const value = langMap[lang] && langMap[lang][key];
+        if (value != null) el.textContent = value;
+      });
+      const enBtn = document.getElementById('langEN');
+      const cnBtn = document.getElementById('langCN');
+      if (enBtn && cnBtn) {
+        enBtn.classList.toggle('active', lang === 'en');
+        cnBtn.classList.toggle('active', lang === 'cn');
+      }
+      localStorage.setItem('alarmPageLang', lang);
+    }
+
+    document.getElementById('langEN').addEventListener('click', () => setLang('en'));
+    document.getElementById('langCN').addEventListener('click', () => setLang('cn'));
+    setLang(localStorage.getItem('alarmPageLang') || 'en');
+  </script>
+</body>
+</html>
