@@ -247,23 +247,23 @@
             display: flex;
             justify-content: center;
             align-items: flex-end;
-            padding-bottom: 0.5vh;
+            padding-bottom: 0.35vh;
             min-width: 0;
         }
         .bar-pair {
             display: flex;
             align-items: flex-end;
-            gap: 0.15vw;
+            gap: 0.08vw;
         }
         .bar-item {
             display: flex;
             align-items: flex-end;
         }
         .bar-bg {
-            width: clamp(5px, 0.55vw, 8px);
+            width: clamp(4px, 0.38vw, 6px);
             height: 100%;
             background-color: var(--bg-main);
-            border: 2px solid var(--border-line);
+            border: 1px solid var(--border-line);
             border-radius: 1px;
             display: flex;
             align-items: flex-end;
@@ -460,8 +460,8 @@
             <div class="card cylinder-chart-card">
                 <div class="chart-stack">
                     <script>
-                        const cylTempBars = [18, 26, 22, 10, 14, 11, 13, 9, 11, 23, 17, 12, 15, 31, 28, 18, 34];
-                        const exhTempBars = [24, 32, 28, 13, 18, 15, 17, 12, 14, 27, 21, 16, 18, 36, 33, 23, 38];
+                        const cylTempBars = [11, 12, 14, 16, 18, 21, 24, 27, 31, 33, 35, 31, 26, 21, 17, 14, 12];
+                        const exhTempBars = [16, 18, 20, 23, 26, 29, 32, 35, 39, 41, 43, 39, 34, 28, 23, 19, 17];
                         function renderTempPairs(cylValues, exhValues) {
                             cylValues.forEach((cylHeight, index) => {
                                 const exhHeight = exhValues[index];
