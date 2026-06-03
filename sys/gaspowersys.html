@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -247,6 +247,8 @@
             display: flex;
             justify-content: center;
             align-items: flex-end;
+            align-self: end;
+            height: clamp(92px, 13vh, 130px);
             padding-bottom: 0.5vh;
             min-width: 0;
         }
@@ -254,10 +256,12 @@
             display: flex;
             align-items: flex-end;
             gap: 0.15vw;
+            height: 100%;
         }
         .bar-item {
             display: flex;
             align-items: flex-end;
+            height: 100%;
         }
         .bar-bg {
             width: clamp(5px, 0.55vw, 8px);
@@ -271,6 +275,7 @@
         .bar-fill {
             width: 100%;
             background: var(--chart-fill);
+            min-height: 4px;
         }
         .bar-fill.cyl {
             background: linear-gradient(180deg, rgba(93, 214, 44, 1), rgba(93, 214, 44, 0.2));
@@ -285,6 +290,7 @@
             grid-template-columns: 4.5vw repeat(17, 1fr);
             grid-template-rows: auto auto auto;
             gap: 0.45vh 2px;
+            margin-top: 1.4vh;
         }
         .chart-meta-grid .row-label {
             grid-column: 1;
@@ -390,6 +396,14 @@
             color: transparent !important;
             text-shadow: none !important;
         }
+        .cylinder-chart-card .col-input.data-numbers.sample-visible.cyl-sample {
+            color: var(--accent-aurora) !important;
+            text-shadow: none !important;
+        }
+        .cylinder-chart-card .col-input.data-numbers.sample-visible.exh-sample {
+            color: var(--status-warning) !important;
+            text-shadow: none !important;
+        }
 
         .header-data .val-box.data-numbers .unit,
         .data-grid-card .data-row .data-val-container .data-numbers .unit,
@@ -462,6 +476,7 @@
                     <script>
                         const cylTempBars = [338, 352, 366, 381, 345, 329, 354, 392, 418, 406, 394, 412, 436, 401, 372, 346, 333];
                         const exhTempBars = [418, 436, 451, 468, 432, 416, 442, 486, 508, 496, 482, 504, 528, 491, 462, 438, 424];
+                        const sampleVisibleIndices = new Set([0, 4, 8, 12, 16]);
                         const tempToHeight = value => Math.max(4, Math.round((value / 800) * 100));
                         function renderTempPairs(cylValues, exhValues) {
                             cylValues.forEach((cylHeight, index) => {
@@ -502,8 +517,9 @@
                     <div class="row-label" style="grid-row: 2;" data-i18n="cyl_temp">CYL TEMP</div>
                     <script>
                         for (let i = 1; i <= 17; i++) {
+                            const isVisible = sampleVisibleIndices.has(i - 1);
                             document.write(`<div style="grid-column: ${i + 1}; grid-row: 2; padding: 0 0.2vw;">
-                                <div class="col-input data-numbers">${cylTempBars[i - 1]}</div>
+                                <div class="col-input data-numbers${isVisible ? ' sample-visible cyl-sample' : ''}">${cylTempBars[i - 1]}</div>
                             </div>`);
                         }
                     </script>
@@ -511,8 +527,9 @@
                     <div class="row-label" style="grid-row: 3;" data-i18n="exh_temp">EXH TEMP</div>
                     <script>
                         for (let i = 1; i <= 17; i++) {
+                            const isVisible = sampleVisibleIndices.has(i - 1);
                             document.write(`<div style="grid-column: ${i + 1}; grid-row: 3; padding: 0 0.2vw;">
-                                <div class="col-input data-numbers">${exhTempBars[i - 1]}</div>
+                                <div class="col-input data-numbers${isVisible ? ' sample-visible exh-sample' : ''}">${exhTempBars[i - 1]}</div>
                             </div>`);
                         }
                     </script>
@@ -829,8 +846,9 @@
             });
         }
 
-        // Initialize default language (EN)
+        // Initialize default theme (dark) and language (EN)
         document.addEventListener('DOMContentLoaded', () => {
+            document.documentElement.removeAttribute('data-theme');
             setLang('en');
         });
     </script>
