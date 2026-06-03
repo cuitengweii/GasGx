@@ -247,23 +247,23 @@
             display: flex;
             justify-content: center;
             align-items: flex-end;
-            padding-bottom: 0.35vh;
+            padding-bottom: 0.5vh;
             min-width: 0;
         }
         .bar-pair {
             display: flex;
             align-items: flex-end;
-            gap: 0.08vw;
+            gap: 0.15vw;
         }
         .bar-item {
             display: flex;
             align-items: flex-end;
         }
         .bar-bg {
-            width: clamp(4px, 0.38vw, 6px);
+            width: clamp(5px, 0.55vw, 8px);
             height: 100%;
             background-color: var(--bg-main);
-            border: 1px solid var(--border-line);
+            border: 2px solid var(--border-line);
             border-radius: 1px;
             display: flex;
             align-items: flex-end;
@@ -460,15 +460,16 @@
             <div class="card cylinder-chart-card">
                 <div class="chart-stack">
                     <script>
-                        const cylTempBars = [11, 12, 14, 16, 18, 21, 24, 27, 31, 33, 35, 31, 26, 21, 17, 14, 12];
-                        const exhTempBars = [16, 18, 20, 23, 26, 29, 32, 35, 39, 41, 43, 39, 34, 28, 23, 19, 17];
+                        const cylTempBars = [338, 352, 366, 381, 345, 329, 354, 392, 418, 406, 394, 412, 436, 401, 372, 346, 333];
+                        const exhTempBars = [418, 436, 451, 468, 432, 416, 442, 486, 508, 496, 482, 504, 528, 491, 462, 438, 424];
+                        const tempToHeight = value => Math.max(4, Math.round((value / 800) * 100));
                         function renderTempPairs(cylValues, exhValues) {
                             cylValues.forEach((cylHeight, index) => {
                                 const exhHeight = exhValues[index];
                                 document.write(`<div class="bar-group" style="grid-column: ${index + 2}; grid-row: 1;">
                                     <div class="bar-pair">
-                                        <div class="bar-item"><div class="bar-bg"><div class="bar-fill cyl" style="height:${cylHeight}%"></div></div></div>
-                                        <div class="bar-item"><div class="bar-bg"><div class="bar-fill exh" style="height:${exhHeight}%"></div></div></div>
+                                        <div class="bar-item"><div class="bar-bg"><div class="bar-fill cyl" style="height:${tempToHeight(cylHeight)}%"></div></div></div>
+                                        <div class="bar-item"><div class="bar-bg"><div class="bar-fill exh" style="height:${tempToHeight(exhHeight)}%"></div></div></div>
                                     </div>
                                 </div>`);
                             });
@@ -502,7 +503,7 @@
                     <script>
                         for (let i = 1; i <= 17; i++) {
                             document.write(`<div style="grid-column: ${i + 1}; grid-row: 2; padding: 0 0.2vw;">
-                                <div class="col-input data-numbers">0</div>
+                                <div class="col-input data-numbers">${cylTempBars[i - 1]}</div>
                             </div>`);
                         }
                     </script>
@@ -511,7 +512,7 @@
                     <script>
                         for (let i = 1; i <= 17; i++) {
                             document.write(`<div style="grid-column: ${i + 1}; grid-row: 3; padding: 0 0.2vw;">
-                                <div class="col-input data-numbers">0</div>
+                                <div class="col-input data-numbers">${exhTempBars[i - 1]}</div>
                             </div>`);
                         }
                     </script>
