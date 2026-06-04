@@ -44,8 +44,8 @@
     }
     .data-numbers{font-family:'JetBrains Mono','Consolas',monospace;font-weight:800;color:var(--accent-aurora);letter-spacing:.5px}
     .unit{font-size:.75em;color:var(--text-unit);margin-left:2px;font-family:'Inter',sans-serif;font-weight:600}
-    .btn-footer{background:rgba(255,255,255,.05);border:2px solid var(--border-line);color:var(--text-primary);padding:1vh 1.5vw;border-radius:4px;cursor:pointer;font-weight:900;font-size:clamp(13px,1.4vh,16px)}
-    .active-tab{background:var(--accent-aurora);color:#fff !important;border-color:var(--accent-aurora) !important;box-shadow:0 0 0 1px rgba(255,255,255,.15) inset}
+    .btn-footer{background:rgba(255,255,255,.05);border:2px solid var(--border-line);color:var(--text-primary);padding:1vh 1.5vw;border-radius:4px;cursor:pointer;font-weight:900;font-size:clamp(13px,1.4vh,16px);transition:all 0.2s}
+    .btn-footer:hover{background:var(--border-line)}
     .icon-text{margin-right:6px}
     .header-container {
       flex: 0 0 auto;
@@ -293,7 +293,7 @@
         <span class="label" data-i18n="alarm_title">ALARM</span>
         <span class="blank-area" aria-hidden="true"></span>
       </div>
-      <button class="btn-footer" style="color: var(--status-danger); border-color: rgba(255, 0, 0, 0.4);" data-i18n="alarm_reset">[ 馃敂 ALARM RESET ]</button>
+      <button class="btn-footer" style="color: var(--status-danger); border-color: rgba(255, 0, 0, 0.4);" data-i18n="alarm_reset">[ 🔔 ALARM RESET ]</button>
     </div>
     <div class="header-data">
       <div class="header-data-item"><span data-i18n="af_ratio">A/F RATIO</span> <span class="val-box data-numbers">0.00</span></div>
@@ -302,13 +302,13 @@
     </div>
     <div class="header-right">
       <div class="tool-group">
-        <button class="icon-btn" onclick="toggleTheme()" id="themeBtn" title="Toggle Theme">&#9789;</button>
+        <button class="icon-btn" onclick="toggleTheme()" id="themeBtn" title="Toggle Theme">🌓</button>
         <div class="lang-toggle">
           <button class="lang-btn active" id="btnEN" onclick="setLang('en')">EN</button>
           <button class="lang-btn" id="btnCN" onclick="setLang('cn')">CN</button>
         </div>
       </div>
-      <span data-i18n="online" style="color: var(--accent-aurora); font-weight: 900; letter-spacing: 1px; font-size: 1.2em;">&#128266; ONLINE</span>
+      <span data-i18n="online" style="color: var(--accent-aurora); font-weight: 900; letter-spacing: 1px; font-size: 1.2em;">🔊 ONLINE</span>
       <div style="text-align: right; line-height: 1.1; border-left: 2px solid var(--border-line); padding-left: 1vw;">
         <div class="data-numbers" style="font-size: clamp(20px, 2.2vh, 28px); color: var(--text-primary);">17:19:42</div>
         <div class="data-numbers" style="font-size: clamp(12px, 1.3vh, 15px); color: var(--text-secondary);">26/05/26</div>
@@ -325,8 +325,8 @@
         </div>
         <div class="alarm-panels">
           <article class="alarm-panel">
-            <div class="alarm-panel-title" data-i18n="current_alarm">褰撳墠鎶ヨ</div>
-            <div class="alarm-panel-sub" data-i18n="alarm_type">ECS閫氳鎶ヨ</div>
+            <div class="alarm-panel-title" data-i18n="current_alarm">CURRENT ALARM</div>
+            <div class="alarm-panel-sub" data-i18n="alarm_type">ECS ALARM</div>
             <div class="alarm-table">
               <div class="thead"><div>26/06/03</div><div>08:43:14</div><div data-i18n="alarm_type">ECS ALARM</div></div>
               <div class="tbody">
@@ -357,8 +357,8 @@
           </article>
 
           <article class="alarm-panel">
-            <div class="alarm-panel-title" data-i18n="history_alarm">鍘嗗彶鎶ヨ</div>
-            <div class="alarm-panel-sub" data-i18n="alarm_type">ECS閫氳鎶ヨ</div>
+            <div class="alarm-panel-title" data-i18n="history_alarm">HISTORY ALARM</div>
+            <div class="alarm-panel-sub" data-i18n="alarm_type">ECS ALARM</div>
             <div class="alarm-table">
               <div class="thead"><div>26/06/03</div><div>08:43:14</div><div data-i18n="alarm_type">ECS ALARM</div></div>
               <div class="tbody">
@@ -405,7 +405,7 @@
       <button class="btn-footer"><span class="icon-text">📜</span><span data-i18n="history">HISTORY</span></button>
       <button class="btn-footer"><span class="icon-text">⚠️</span><span data-i18n="alarms">ALARMS</span></button>
       <button class="btn-footer"><span class="icon-text">⚙️</span><span data-i18n="menu">MENU</span></button>
-      <button class="btn-footer active-tab"><span class="icon-text">🏠</span><span data-i18n="home">HOME</span></button>
+      <button class="btn-footer" style="background:var(--accent-aurora); color:var(--text-on-primary); border-color:var(--accent-aurora);"><span class="icon-text">🏠</span><span data-i18n="home">HOME</span></button>
     </div>
   </footer>
 
@@ -423,7 +423,7 @@
       en: {
         alarm_title: 'ALARM',
         alarm_reset: '[ 🔔 ALARM RESET ]',
-        online: '🔊 ONLINE',
+        online: '\uD83D\uDD0A ONLINE',
         af_ratio: 'A/F RATIO',
         gas: 'GAS',
         speed: 'SPEED',
@@ -445,7 +445,7 @@
       cn: {
         alarm_title: '报警信息',
         alarm_reset: '[ 🔔 报警复位 ]',
-        online: '🔊 在线',
+        online: '\uD83D\uDD0A 在线',
         af_ratio: '空燃比',
         gas: '燃气',
         speed: '调速',
