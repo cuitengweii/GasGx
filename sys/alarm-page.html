@@ -302,13 +302,13 @@
     </div>
     <div class="header-right">
       <div class="tool-group">
-        <button class="icon-btn" onclick="toggleTheme()" id="themeBtn" title="Toggle Theme">馃寭</button>
+        <button class="icon-btn" onclick="toggleTheme()" id="themeBtn" title="Toggle Theme">&#9789;</button>
         <div class="lang-toggle">
           <button class="lang-btn active" id="btnEN" onclick="setLang('en')">EN</button>
           <button class="lang-btn" id="btnCN" onclick="setLang('cn')">CN</button>
         </div>
       </div>
-      <span data-i18n="online" style="color: var(--accent-aurora); font-weight: 900; letter-spacing: 1px; font-size: 1.2em;">馃攰 ONLINE</span>
+      <span data-i18n="online" style="color: var(--accent-aurora); font-weight: 900; letter-spacing: 1px; font-size: 1.2em;">&#128266; ONLINE</span>
       <div style="text-align: right; line-height: 1.1; border-left: 2px solid var(--border-line); padding-left: 1vw;">
         <div class="data-numbers" style="font-size: clamp(20px, 2.2vh, 28px); color: var(--text-primary);">17:19:42</div>
         <div class="data-numbers" style="font-size: clamp(12px, 1.3vh, 15px); color: var(--text-secondary);">26/05/26</div>
@@ -352,7 +352,7 @@
                 <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
                 <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
               </div>
-              <div class="scrollbar"><div class="scroll-btn">鈻?/div><div class="scroll-btn bottom">鈻?/div></div>
+              <div class="scrollbar"><div class="scroll-btn">▲</div><div class="scroll-btn bottom">▼</div></div>
             </div>
           </article>
 
@@ -384,7 +384,7 @@
                 <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
                 <div class="alarm-row blank"><div>&nbsp;</div><div>&nbsp;</div><div>&nbsp;</div></div>
               </div>
-              <div class="scrollbar"><div class="scroll-btn">鈻?/div><div class="scroll-btn bottom">鈻?/div></div>
+              <div class="scrollbar"><div class="scroll-btn">▲</div><div class="scroll-btn bottom">▼</div></div>
             </div>
           </article>
         </div>
@@ -422,8 +422,8 @@
     const langMap = {
       en: {
         alarm_title: 'ALARM',
-        alarm_reset: '[ 馃敂 ALARM RESET ]',
-        online: '馃攰 ONLINE',
+        alarm_reset: '[ 🔔 ALARM RESET ]',
+        online: '🔊 ONLINE',
         af_ratio: 'A/F RATIO',
         gas: 'GAS',
         speed: 'SPEED',
@@ -443,26 +443,26 @@
         home: 'HOME'
       },
       cn: {
-        alarm_title: '鎶ヨ淇℃伅',
-        alarm_reset: '[ 馃敂 鎶ヨ澶嶄綅 ]',
-        online: '馃攰 鍦ㄧ嚎',
-        af_ratio: '绌虹噧姣?,
-        gas: '鐕冩皵',
-        speed: '璋冮€?,
-        current_alarm: '褰撳墠鎶ヨ',
-        history_alarm: '鍘嗗彶鎶ヨ',
-        alarm_type: 'ECS閫氳鎶ヨ',
-        power: '鍔熺巼',
-        unit: '鍗曞厓:',
-        init: '鍒濆鍖?,
-        mode: '妯″紡:',
-        off: '鍏抽棴',
-        breaker: '鏂矾鍣?',
-        open_state: '鍒嗛椄',
-        history: '鍘嗗彶璁板綍',
-        alarms: '鎶ヨ淇℃伅',
-        menu: '绯荤粺鑿滃崟',
-        home: '涓婚潰鏉?
+        alarm_title: '报警信息',
+        alarm_reset: '[ 🔔 报警复位 ]',
+        online: '🔊 在线',
+        af_ratio: '空燃比',
+        gas: '燃气',
+        speed: '调速',
+        current_alarm: '当前报警',
+        history_alarm: '历史报警',
+        alarm_type: 'ECS通讯报警',
+        power: '功率',
+        unit: '单位:',
+        init: '初始化',
+        mode: '模式:',
+        off: '关闭',
+        breaker: '断路器:',
+        open_state: '分闸',
+        history: '历史记录',
+        alarms: '报警信息',
+        menu: '系统菜单',
+        home: '主面板'
       }
     };
 
