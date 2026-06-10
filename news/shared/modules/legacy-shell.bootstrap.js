@@ -374,7 +374,7 @@ function mountLegacyShell() {
     hideLegacyHeaderFooter();
 
     const headerSlot = ensureSlot('gsh-header-slot', 'start');
-    const footerSlot = ensureSlot('gsh-footer-slot', 'end');
+    const footerSlot = ensureSlot('ggx-footer-slot', 'end');
 
     mountSharedHeader(headerSlot, { page, idPrefix, appGlobal });
     mountSharedFooter(footerSlot, { variant: footerVariant });
