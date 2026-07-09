@@ -1927,6 +1927,7 @@
 
     function syncLanguageUI(langCandidate) {
         const lang = normalizeLang(langCandidate || getCurrentLang());
+        syncLanguageSwitcherVisibility();
 
         document.querySelectorAll("#ggx-site-header-slot .ggx-lang-option").forEach((button) => {
             const active = button.dataset.ggxLang === lang;

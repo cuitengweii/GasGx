@@ -153,30 +153,6 @@
                 });
             });
         }
-        config.site = config.site || {};
-        config.site.features = Object.assign({}, config.site.features || {}, {
-            languageSwitcherEnabled: true,
-            languageOptions: Object.assign({}, config.site.features && config.site.features.languageOptions || {}, {
-                en: true,
-                zh: true
-            })
-        });
-
-        [
-            "ggx-lang-picker-wrap",
-            "ggx-mobile-lang-switch-wrap",
-            "ggx-btn-lang-en",
-            "ggx-btn-lang-zh",
-            "ggx-mob-lang-en",
-            "ggx-mob-lang-zh"
-        ].forEach(function (id) {
-            var node = document.getElementById(id);
-            if (node) node.style.display = "";
-        });
-
-        var mobileSep = document.querySelector("#ggx-mobile-lang-switch-wrap .ggx-lang-sep");
-        if (mobileSep) mobileSep.style.display = "";
-
         if (window.GasGxSharedUI && typeof window.GasGxSharedUI.syncLanguageUI === "function") {
             window.GasGxSharedUI.syncLanguageUI(window.app.lang);
         }

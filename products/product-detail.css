@@ -9,12 +9,6 @@ body {
     font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-@media (min-width: 640px) {
-    #ggx-site-header-slot #ggx-lang-picker-wrap.hidden {
-        display: flex !important;
-    }
-}
-
 .product-page {
     min-height: 100vh;
     background:
@@ -203,16 +197,36 @@ body {
 }
 
 .gallery-shell {
+    position: relative;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top-color: transparent;
     border-radius: 8px;
     background:
         linear-gradient(135deg, rgba(93, 214, 44, 0.08), transparent 36%),
         #151515;
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+    box-shadow:
+        0 -26px 58px rgba(6, 8, 7, 0.7),
+        0 24px 70px rgba(0, 0, 0, 0.24);
+}
+
+.gallery-shell.showcase-carousel {
+    margin-top: -34px;
+}
+
+.gallery-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 110px;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(9, 10, 9, 0.78), rgba(9, 10, 9, 0));
+    z-index: 0;
 }
 
 .gallery-layout {
+    position: relative;
+    z-index: 1;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 280px;
     gap: 0;
@@ -236,6 +250,18 @@ body {
     border: 1px solid rgba(93, 214, 44, 0.12);
     border-radius: 8px;
     pointer-events: none;
+}
+
+.gallery-stage::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 150px;
+    pointer-events: none;
+    background:
+        linear-gradient(180deg, rgba(9, 10, 9, 0.76), rgba(9, 10, 9, 0.14) 58%, transparent 100%),
+        radial-gradient(ellipse at 28% 0%, rgba(93, 214, 44, 0.12), transparent 28rem);
+    z-index: 2;
 }
 
 .gallery-stage .product-slide {
@@ -512,6 +538,151 @@ body {
     padding: 112px 0 64px;
 }
 
+.product-coming-soon {
+    width: 100%;
+    min-height: 100vh;
+    padding: 64px 0 0;
+}
+
+.coming-soon-stage {
+    position: relative;
+    min-height: calc(100vh - 64px);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    padding: 72px 16px 88px;
+    background:
+        radial-gradient(ellipse at 18% 30%, rgba(93, 214, 44, 0.2), transparent 34rem),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 42%, rgba(5, 7, 6, 0.92) 100%);
+}
+
+.coming-soon-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.75), transparent 82%);
+}
+
+.coming-soon-visual {
+    position: absolute;
+    inset: 12% max(18px, 7vw) 10%;
+    overflow: hidden;
+    border: 1px solid rgba(93, 214, 44, 0.18);
+    border-radius: 8px;
+    background: #070907;
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+        0 34px 90px rgba(0, 0, 0, 0.52);
+}
+
+.coming-soon-visual img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.28;
+    filter: saturate(0.72) contrast(1.12) blur(1px);
+    transform: scale(1.04);
+}
+
+.coming-soon-visual::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 50% 46%, transparent 0%, rgba(6, 8, 7, 0.24) 52%, rgba(6, 8, 7, 0.76) 100%),
+        linear-gradient(90deg, rgba(7, 9, 8, 0.72), transparent 30%, transparent 70%, rgba(7, 9, 8, 0.74));
+}
+
+.curtain-panel,
+.curtain-valance {
+    position: absolute;
+    pointer-events: none;
+    background:
+        linear-gradient(90deg, rgba(4, 10, 6, 0.94), rgba(18, 54, 22, 0.78), rgba(5, 12, 7, 0.94)),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 32px);
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.64);
+}
+
+.curtain-panel {
+    top: 0;
+    bottom: 0;
+    width: 52%;
+}
+
+.curtain-panel-left {
+    left: 0;
+    clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
+}
+
+.curtain-panel-right {
+    right: 0;
+    clip-path: polygon(12% 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.curtain-valance {
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 88px;
+    border-bottom: 1px solid rgba(93, 214, 44, 0.22);
+}
+
+.coming-soon-modal {
+    position: relative;
+    z-index: 1;
+    width: min(620px, 100%);
+    padding: clamp(28px, 5vw, 52px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(93, 214, 44, 0.14), transparent 48%),
+        rgba(12, 15, 13, 0.72);
+    box-shadow:
+        0 0 0 1px rgba(93, 214, 44, 0.08),
+        0 34px 120px rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.coming-soon-modal h1 {
+    margin: 24px 0 10px;
+    color: #fff;
+    font-size: clamp(2.8rem, 7vw, 5rem);
+    font-weight: 900;
+    line-height: 0.98;
+    letter-spacing: 0;
+}
+
+.coming-soon-status {
+    margin: 0;
+    color: #5dd62c;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 900;
+    line-height: 1.1;
+}
+
+.coming-soon-copy {
+    max-width: 520px;
+    margin: 18px 0 0;
+    color: #cbd5e1;
+    font-size: 1.05rem;
+    line-height: 1.75;
+}
+
+.coming-soon-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 30px;
+}
+
 .product-card-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -579,11 +750,12 @@ body {
 .showcase-hero {
     position: relative;
     overflow: hidden;
-    padding: 104px 0 86px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 104px 0 118px;
+    border-bottom: 0;
     background:
+        radial-gradient(ellipse at 20% 68%, rgba(93, 214, 44, 0.2), transparent 34rem),
         linear-gradient(90deg, rgba(93, 214, 44, 0.09), transparent 38%),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 46%);
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 46%, rgba(6, 8, 7, 0.82) 100%);
 }
 
 .showcase-hero::before {
@@ -596,6 +768,20 @@ body {
         linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
     background-size: 42px 42px;
     mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent 76%);
+}
+
+.showcase-hero::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 220px;
+    pointer-events: none;
+    background:
+        linear-gradient(180deg, transparent 0%, rgba(8, 10, 9, 0.42) 48%, #090a09 100%),
+        radial-gradient(ellipse at 32% 100%, rgba(93, 214, 44, 0.14), transparent 34rem);
+    z-index: 0;
 }
 
 .showcase-hero-grid {
@@ -1147,6 +1333,33 @@ body {
     .products-overview {
         width: min(100% - 24px, 680px);
         padding-top: 96px;
+    }
+
+    .product-coming-soon {
+        width: 100%;
+        padding-top: 64px;
+    }
+
+    .coming-soon-stage {
+        min-height: calc(100vh - 64px);
+        padding: 44px 12px 56px;
+    }
+
+    .coming-soon-visual {
+        inset: 9% 12px 8%;
+    }
+
+    .curtain-panel {
+        width: 58%;
+    }
+
+    .coming-soon-modal {
+        padding: 28px 22px;
+    }
+
+    .coming-soon-actions {
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .product-hero,
