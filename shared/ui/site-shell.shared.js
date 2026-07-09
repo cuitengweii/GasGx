@@ -2241,6 +2241,18 @@
         return `<a href="${escapeHtml(href)}" target="${target}" rel="${rel}" class="${commonClass}" aria-label="${ariaLabel}"${titleAttr}>${iconHtml}</a>`;
     }
 
+    function buildFooterSocialLinks(footerConfig) {
+        if (!footerConfig || footerConfig.socialEnabled === false) return "";
+
+        const socialHtml = (Array.isArray(footerConfig.socialLinks) ? footerConfig.socialLinks : [])
+            .map(buildFooterSocialEntry)
+            .filter(Boolean)
+            .join("");
+
+        if (!socialHtml) return "";
+        return `<div class="ggx-connect-inline justify-center"><div class="ggx-connect-grid flex-wrap justify-center gap-2" aria-label="Social links">${socialHtml}</div></div>`;
+    }
+
     function buildFooterPartnerEntry(item) {
         if (!item || item.enabled === false || item.visible === false || item.hidden === true) return "";
 
@@ -2268,6 +2280,7 @@
             return "";
         }
         const contactHtml = buildFooterContact(footerConfig.contact);
+        const socialHtml = buildFooterSocialLinks(footerConfig);
         const privacyHtml = buildFooterPrivacyLink(footerConfig.privacyPolicy);
         const partnerHtml = footerConfig.partners.map(buildFooterPartnerEntry).join("");
         const partnerContainer = partnerHtml
@@ -2295,6 +2308,7 @@
                         ${buildBrandAnchorHtml(brandConfig, "ggx-footer-logo", brandConfig.name || "GasGx", `aria-label="${escapeHtml((brandConfig.name || "GasGx") + " Home")}"`)}
                         <p class="ggx-footer-meta-tag text-sm text-gray-400">${escapeHtml(brandConfig.footerMeta || "Energy-compute infrastructure for mining operators.")}</p>
                     </div>
+                    ${socialHtml}
                     ${partnerContainer}
                 </div>
                 <div class="ggx-footer-legal-row">
