@@ -312,47 +312,10 @@
                 {
                     title: "机型库",
                     path: "/products",
-                    type: "mega",
-                    sections: [
-                        {
-                            header: "按功率分类",
-                            items: [
-                                { title: "小于 500 kW", path: "/products/power-range/0-500kw" },
-                                { title: "500 – 1,000 kW", path: "/products/power-range/500-1000kw" },
-                                { title: "1 MW 以上", path: "/products/power-range/1mw-plus" }
-                            ]
-                        },
-                        {
-                            header: "按冷却方式",
-                            items: [
-                                { title: "风冷", path: "/products/cooling/air" },
-                                { title: "液冷", path: "/products/cooling/liquid" }
-                            ]
-                        },
-                        {
-                            header: "按气源类型",
-                            items: [
-                                { title: "天然气", path: "/products/gas/natural" },
-                                { title: "伴生气", path: "/products/gas/associated" },
-                                { title: "低甲烷值气", path: "/products/gas/low-methane" }
-                            ]
-                        },
-                        {
-                            header: "按部署形式",
-                            items: [
-                                { title: "集装箱机组", path: "/products/deployment/container" },
-                                { title: "一体化机组 AIS", path: "/products/deployment/ais" },
-                                { title: "滑撬式机组", path: "/products/deployment/skid" }
-                            ]
-                        },
-                        {
-                            header: "按品牌",
-                            items: [
-                                { title: "全部品牌", path: "/products/brands" },
-                                { title: "中国生产", path: "/products/brands/china" },
-                                { title: "海外生产", path: "/products/brands/overseas" }
-                            ]
-                        }
+                    type: "menu",
+                    children: [
+                        { title: "300kW", path: "/products/300kw/" },
+                        { title: "1000kW", path: "/products/1000kw/" }
                     ]
                 },
                 {

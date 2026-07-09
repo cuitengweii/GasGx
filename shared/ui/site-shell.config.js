@@ -132,14 +132,14 @@
                                                 "zh": "300kW",
                                                 "en": "300kW"
                                         },
-                                        "path": "/products/300kw"
+                                        "path": "/products/300kw/"
                                 },
                                 {
                                         "title": {
                                                 "zh": "1000kW",
                                                 "en": "1000kW"
                                         },
-                                        "path": "/products/1000kw"
+                                        "path": "/products/1000kw/"
                                 }
                         ]
                 },

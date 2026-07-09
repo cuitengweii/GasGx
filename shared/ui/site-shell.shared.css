@@ -176,6 +176,19 @@
     width: 100%;
 }
 
+#ggx-site-header-slot #auth-login-btn,
+#ggx-site-header-slot #mob-header-auth-link,
+#ggx-site-header-slot #mob-auth-login-btn {
+    background-color: #5dd62c !important;
+    color: #000 !important;
+}
+
+#ggx-site-header-slot #auth-login-btn:hover,
+#ggx-site-header-slot #mob-header-auth-link:hover,
+#ggx-site-header-slot #mob-auth-login-btn:hover {
+    background-color: #fff !important;
+}
+
 #ggx-site-header-slot #mobile-menu-container {
     transition: transform 0.3s ease-in-out;
     transform: translateX(100%);

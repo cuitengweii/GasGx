@@ -11,8 +11,8 @@
                 type: "menu",
                 sections: undefined,
                 children: [
-                    { title: { en: "300kW", zh: "300kW" }, path: "/products/300kw" },
-                    { title: { en: "1000kW", zh: "1000kW" }, path: "/products/1000kw" }
+                    { title: { en: "300kW", zh: "300kW" }, path: "/products/300kw/" },
+                    { title: { en: "1000kW", zh: "1000kW" }, path: "/products/1000kw/" }
                 ]
             });
         });

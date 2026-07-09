@@ -408,8 +408,8 @@
                 path: "/products",
                 type: "menu",
                 children: [
-                    { title: { en: "300kW", zh: "300kW" }, path: "/products/300kw" },
-                    { title: { en: "1000kW", zh: "1000kW" }, path: "/products/1000kw" }
+                    { title: { en: "300kW", zh: "300kW" }, path: "/products/300kw/" },
+                    { title: { en: "1000kW", zh: "1000kW" }, path: "/products/1000kw/" }
                 ]
             },
             { title: { en: "Use Cases", zh: "\u5e94\u7528\u573a\u666f" }, path: "/use-cases", type: "mega" },
@@ -586,33 +586,27 @@
         return path === "/use-cases" || path === "/use-cases/index.html";
     }
 
-    const PRODUCT_NAV_TITLES = {
-        "/products/300kw": { zh: "300kW", en: "300kW" },
-        "/products/1000kw": { zh: "1000kW", en: "1000kW" },
-        "/products/power-range/0-500kw": { zh: "300kW", en: "300kW" },
-        "/products/power-range/500-1000kw": { zh: "1000kW", en: "1000kW" },
-        "/products/power-range/1mw-plus": { zh: "2000kW", en: "2000kW" }
-    };
+    function isProductsNavigationItem(item) {
+        const path = normalizeSiteShellNavPath(item && item.path);
+        return path === "/products" || path === "/products/index.html";
+    }
+
+    const PRODUCT_NAV_CHILDREN = [
+        { title: { zh: "300kW", en: "300kW" }, path: "/products/300kw/" },
+        { title: { zh: "1000kW", en: "1000kW" }, path: "/products/1000kw/" }
+    ];
 
     function normalizeProductNavigationLabels(navigation) {
         const working = Array.isArray(navigation) ? cloneSiteShellValue(navigation) : [];
-        working.forEach((item) => {
-            if (!item) return;
-            if (Array.isArray(item.children)) {
-                item.children.forEach((child) => {
-                    const title = PRODUCT_NAV_TITLES[normalizeSiteShellNavPath(child && child.path)];
-                    if (title) child.title = Object.assign({}, child.title || {}, title);
-                });
-            }
-            if (Array.isArray(item.sections)) {
-                item.sections.forEach((section) => {
-                    if (!section || !Array.isArray(section.items)) return;
-                    section.items.forEach((sectionItem) => {
-                        const title = PRODUCT_NAV_TITLES[normalizeSiteShellNavPath(sectionItem && sectionItem.path)];
-                    if (title) sectionItem.title = Object.assign({}, sectionItem.title || {}, title);
-                    });
-                });
-            }
+        working.forEach((item, index) => {
+            if (!item || !isProductsNavigationItem(item)) return;
+            const normalized = Object.assign({}, item, {
+                type: "menu",
+                children: cloneSiteShellValue(PRODUCT_NAV_CHILDREN)
+            });
+            delete normalized.sections;
+            delete normalized.gridCols;
+            working[index] = normalized;
         });
         return working;
     }
@@ -886,8 +880,8 @@
             if (config.__ggxPublishedSiteShellConfig) {
                 return mergeSiteShellConfig(getSiteShellBaseConfig(), config);
             }
-            const pageLocalConfig = mergeSiteShellConfig(DEFAULT_SITE_SHELL_CONFIG, config);
-            return mergeSiteShellConfig(pageLocalConfig, CURRENT_SITE_SHELL_FALLBACK_CONFIG);
+            const baseWithFallback = mergeSiteShellConfig(DEFAULT_SITE_SHELL_CONFIG, CURRENT_SITE_SHELL_FALLBACK_CONFIG);
+            return mergeSiteShellConfig(baseWithFallback, config);
         }
         return getSiteShellBaseConfig();
     }
@@ -2722,6 +2716,10 @@
         node.classList.toggle("flex", visible);
     }
 
+    function getPrimaryMobileAuthButtonClassName() {
+        return "xl:hidden flex items-center gap-2 text-[10px] font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-3 py-1.5 shadow-glow max-w-[132px]";
+    }
+
     function resolveMainAuthDisplayName(user, profileName) {
         if (!user) return "Sign In";
         if (profileName && String(profileName).trim()) return String(profileName).trim();
@@ -2805,7 +2803,7 @@
             els.mobHeaderAuthLink.href = authConfig.signInUrl || MAIN_AUTH_DEFAULTS.signInUrl;
             els.mobHeaderAuthLink.removeAttribute("data-ggx-action");
             els.mobHeaderAuthLink.removeAttribute("data-sidebar-toggle");
-            els.mobHeaderAuthLink.className = "xl:hidden flex items-center gap-2 text-[10px] font-bold text-black bg-gas-green hover:bg-white transition-all rounded-full px-3 py-1.5 shadow-glow max-w-[132px]";
+            els.mobHeaderAuthLink.className = getPrimaryMobileAuthButtonClassName();
             els.mobHeaderAuthLink.setAttribute("aria-label", text.authLogin || "Login");
         }
         if (els.mobHeaderAuthIcon) {
