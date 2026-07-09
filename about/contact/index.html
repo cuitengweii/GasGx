@@ -50,6 +50,7 @@
 
         /* 卡片效果 */
         .gas-card { background-color: rgba(32, 32, 32, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .contact-transparent-card { background-color: transparent; backdrop-filter: none; }
         .gas-card-hover { transition: all 0.3s ease; }
         .gas-card-hover:hover { transform: translateY(-5px); border-color: #5DD62C; box-shadow: 0 10px 30px rgba(93, 214, 44, 0.1); }
 
@@ -93,7 +94,7 @@
             </div>
 
             <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                <div id="contact-email-card" class="gas-card gas-card-hover rounded-xl p-8 flex flex-col items-center text-center group cursor-pointer" onclick="window.app.openMail()">
+                <div id="contact-email-card" class="gas-card contact-transparent-card gas-card-hover rounded-xl p-8 flex flex-col items-center text-center group cursor-pointer" onclick="window.app.openMail()">
                     <div class="w-16 h-16 bg-gas-green/10 rounded-full flex items-center justify-center mb-6 text-gas-green border border-gas-green/20 group-hover:bg-gas-green group-hover:text-black transition-colors">
                         <i class="fa-solid fa-envelope text-2xl"></i>
                     </div>
@@ -102,7 +103,7 @@
                     <span class="text-xs text-gas-subtext" data-i18n="email_desc">Click to send mail directly</span>
                 </div>
 
-                <div class="gas-card rounded-xl p-8">
+                <div class="gas-card contact-transparent-card rounded-xl p-8">
                     <h3 class="text-xl font-bold text-white mb-6 text-center" data-i18n="social_title">Social Networks</h3>
                     <div id="contact-social-grid" class="grid grid-cols-2 gap-4"></div>
                     <p class="text-xs text-center text-gas-subtext mt-6" data-i18n="social_hint">Click icon to scan QR code</p>

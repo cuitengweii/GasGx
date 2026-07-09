@@ -124,9 +124,9 @@
                     <label data-i18n="filter_power">1. Power Output</label>
                     <select id="sel-power" onchange="onFilterChange('power')">
                         <option value="all">All Power</option>
-                        <option value="小于500 kW">&lt; 500 kW</option>
-                        <option value="500-1000 kW">500 – 1000 kW</option>
-                        <option value="1 MW以上">&gt; 1 MW</option>
+                        <option value="小于500 kW">300kW</option>
+                        <option value="500-1000 kW">1000kW</option>
+                        <option value="1 MW以上">2000kW</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -225,9 +225,9 @@
                 'label_cylinders': '缸数/排列',
                 'label_scenario': '适用场景',
                 'val_all': '全部',
-                'val_less_500': '小于 500 kW',
-                'val_500_1000': '500 – 1000 kW',
-                'val_1mw_plus': '1 MW 以上',
+                'val_less_500': '300kW',
+                'val_500_1000': '1000kW',
+                'val_1mw_plus': '2000kW',
                 'val_air_cool': '风冷',
                 'val_liquid_cool': '液冷',
                 'val_nat_gas': '天然气',
@@ -300,9 +300,9 @@
                 'label_cylinders': 'Cylinders',
                 'label_scenario': 'Application',
                 'val_all': 'All',
-                'val_less_500': '< 500 kW',
-                'val_500_1000': '500 – 1000 kW',
-                'val_1mw_plus': '> 1 MW',
+                'val_less_500': '300kW',
+                'val_500_1000': '1000kW',
+                'val_1mw_plus': '2000kW',
                 'val_air_cool': 'Air Cooling',
                 'val_liquid_cool': 'Liquid Cooling',
                 'val_nat_gas': 'Natural Gas',
@@ -375,9 +375,9 @@
                 'label_cylinders': 'Цилиндры',
                 'label_scenario': 'Применение',
                 'val_all': 'Все',
-                'val_less_500': '< 500 кВт',
-                'val_500_1000': '500 – 1000 кВт',
-                'val_1mw_plus': '> 1 МВт',
+                'val_less_500': '300kW',
+                'val_500_1000': '1000kW',
+                'val_1mw_plus': '2000kW',
                 'val_air_cool': 'Воздушное',
                 'val_liquid_cool': 'Жидкостное',
                 'val_nat_gas': 'Природный газ',
@@ -503,9 +503,9 @@
             // --- 模糊匹配 ---
             
             // 1. 功率
-            if (v.includes('小于') || v === '< 500 kW') return 'val_less_500';
+            if (v.includes('小于') || v === '< 500 kW' || v === '300kW') return 'val_less_500';
             if (v.includes('500-1000')) return 'val_500_1000';
-            if (v.includes('1 MW') || v.includes('> 1 MW')) return 'val_1mw_plus';
+            if (v.includes('1 MW') || v.includes('2000kW')) return 'val_1mw_plus';
             
             // 2. 气源
             if (v === '天然气' || vl === 'natural gas') return 'val_nat_gas';

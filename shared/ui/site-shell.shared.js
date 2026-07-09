@@ -58,6 +58,7 @@
     const COOKIE_PREFS_MODAL_ID = "ggx-cookie-prefs-modal";
     const COOKIE_CONSENT_DELAY_MS = 60 * 1000;
     const COOKIE_CONSENT_USAGE_STORAGE_KEY = "ggx_cookie_consent_usage_ms_v1";
+    const CONTACT_PROMO_MODAL_ID = "ggx-contact-promo-modal";
     let cookieConsentDelayTimer = null;
     let cookieConsentUsageTrackingBound = false;
     let cookieConsentSessionStartTs = 0;
@@ -402,7 +403,15 @@
             { title: { en: "Digitalization", zh: "\u6570\u5b57\u5316" }, path: "/digitalization", type: "menu" },
             { title: { en: "Tools", zh: "\u5de5\u5177\u7bb1" }, path: "/tools", type: "mega" },
             { title: { en: "Rankings", zh: "\u6392\u884c\u699c" }, path: "/rankings", type: "mega" },
-            { title: { en: "Products", zh: "\u673a\u578b\u5e93" }, path: "/products", type: "mega" },
+            {
+                title: { en: "Products", zh: "\u673a\u578b\u5e93" },
+                path: "/products",
+                type: "menu",
+                children: [
+                    { title: { en: "300kW", zh: "300kW" }, path: "/products/300kw" },
+                    { title: { en: "1000kW", zh: "1000kW" }, path: "/products/1000kw" }
+                ]
+            },
             { title: { en: "Use Cases", zh: "\u5e94\u7528\u573a\u666f" }, path: "/use-cases", type: "mega" },
             { title: { en: "Resources", zh: "\u8d44\u6599\u4e2d\u5fc3" }, path: "/resources", type: "mega" },
             { title: { en: "Support", zh: "\u670d\u52a1\u652f\u6301" }, path: "/support", type: "menu" },
@@ -575,6 +584,37 @@
     function isUseCasesNavigationItem(item) {
         const path = normalizeSiteShellNavPath(item && item.path);
         return path === "/use-cases" || path === "/use-cases/index.html";
+    }
+
+    const PRODUCT_NAV_TITLES = {
+        "/products/300kw": { zh: "300kW", en: "300kW" },
+        "/products/1000kw": { zh: "1000kW", en: "1000kW" },
+        "/products/power-range/0-500kw": { zh: "300kW", en: "300kW" },
+        "/products/power-range/500-1000kw": { zh: "1000kW", en: "1000kW" },
+        "/products/power-range/1mw-plus": { zh: "2000kW", en: "2000kW" }
+    };
+
+    function normalizeProductNavigationLabels(navigation) {
+        const working = Array.isArray(navigation) ? cloneSiteShellValue(navigation) : [];
+        working.forEach((item) => {
+            if (!item) return;
+            if (Array.isArray(item.children)) {
+                item.children.forEach((child) => {
+                    const title = PRODUCT_NAV_TITLES[normalizeSiteShellNavPath(child && child.path)];
+                    if (title) child.title = Object.assign({}, child.title || {}, title);
+                });
+            }
+            if (Array.isArray(item.sections)) {
+                item.sections.forEach((section) => {
+                    if (!section || !Array.isArray(section.items)) return;
+                    section.items.forEach((sectionItem) => {
+                        const title = PRODUCT_NAV_TITLES[normalizeSiteShellNavPath(sectionItem && sectionItem.path)];
+                    if (title) sectionItem.title = Object.assign({}, sectionItem.title || {}, title);
+                    });
+                });
+            }
+        });
+        return working;
     }
 
     function normalizeUseCasesSeedGroupKey(value) {
@@ -820,7 +860,7 @@
             Array.isArray(base.navigation) ? base.navigation : []
         );
         return Object.assign({}, base, source, {
-            navigation: navigation,
+            navigation: normalizeProductNavigationLabels(navigation),
             sharedText: mergeLocalizedBlock(base.sharedText, source.sharedText),
             pages: mergePagesConfig(base.pages, source.pages),
             site: mergeSiteConfig(base.site, source.site),
@@ -1101,6 +1141,187 @@
             initChatbot();
         } else {
             mountSlot("ggx-chatbot-slot", "");
+        }
+    }
+
+    function isContactPromoPage() {
+        if (typeof window === "undefined" || !window.location) return false;
+        const path = normalizePath(window.location.pathname || "/");
+        return path === "/" || path === "/index.html" || path === "/products" || path === "/products/" || path.indexOf("/products/") === 0;
+    }
+
+    function getContactPromoText(lang) {
+        const isZh = String(lang || "").toLowerCase().indexOf("zh") === 0;
+        return isZh
+            ? {
+                badge: "24/7 全天候支持",
+                title: "联系我们",
+                description: "无论是项目咨询、白皮书索取还是技术合作，GasGx 团队随时为您提供支持。",
+                emailTitle: "邮件咨询",
+                emailHint: "点击直接发送邮件",
+                socialTitle: "社交网络",
+                socialHint: "扫码添加/关注",
+                close: "关闭联系信息",
+                mailLabel: "发送邮件"
+            }
+            : {
+                badge: "24/7 Support",
+                title: "Contact Us",
+                description: "For project inquiries, whitepaper requests or technical cooperation, the GasGx team is ready to support you.",
+                emailTitle: "Email Us",
+                emailHint: "Click to send mail directly",
+                socialTitle: "Social Networks",
+                socialHint: "Scan QR code to connect",
+                close: "Close contact information",
+                mailLabel: "Send email"
+            };
+    }
+
+    function getContactPromoSocialLabel(item) {
+        const id = String(item && (item.id || item.qrType) || "").trim().toLowerCase();
+        const labels = {
+            wechat: "WeChat",
+            telegram: "Telegram",
+            twitter: "Twitter",
+            x: "Twitter",
+            whatsapp: "WhatsApp"
+        };
+        return labels[id] || (item && item.label) || id || "Social";
+    }
+
+    function getContactPromoQrSrc(item) {
+        const id = String(item && (item.qrType || item.id) || "").trim().toLowerCase();
+        const qrMap = {
+            wechat: "/about/contact/assets/qr_wechat.png",
+            telegram: "/about/contact/assets/qr_telegram.png",
+            twitter: "/about/contact/assets/qr_twitter.png",
+            x: "/about/contact/assets/qr_twitter.png",
+            whatsapp: "/about/contact/assets/qr_whatsapp.png"
+        };
+        return qrMap[id] || "";
+    }
+
+    function getContactPromoSocials() {
+        const config = getSiteShellConfig();
+        const contactConfig = config && config.pages && config.pages.aboutContact ? config.pages.aboutContact : {};
+        const sourceLinks = Array.isArray(contactConfig.socialLinks) ? contactConfig.socialLinks : [];
+        return sourceLinks
+            .filter((item) => item && item.enabled !== false)
+            .filter((item) => ["wechat", "telegram", "twitter", "x", "whatsapp"].indexOf(String(item.id || item.qrType || "").toLowerCase()) >= 0)
+            .slice(0, 4);
+    }
+
+    function closeContactPromoModal() {
+        const modal = document.getElementById(CONTACT_PROMO_MODAL_ID);
+        if (!modal) return;
+        modal.setAttribute("data-ggx-open", "0");
+        window.setTimeout(function () {
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+            if (!document.querySelector(".ggx-contact-promo-modal[data-ggx-open='1']")) {
+                document.documentElement.classList.remove("ggx-contact-promo-lock");
+            }
+        }, 180);
+    }
+
+    function bindContactPromoModal(modal) {
+        if (!modal || modal.dataset.ggxBound === "1") return;
+        modal.dataset.ggxBound = "1";
+        modal.addEventListener("click", function (event) {
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+            const actionNode = target.closest("[data-ggx-contact-promo-action]");
+            if (!actionNode) {
+                if (target === modal || target.classList.contains("ggx-contact-promo-backdrop")) {
+                    closeContactPromoModal();
+                }
+                return;
+            }
+            const action = actionNode.getAttribute("data-ggx-contact-promo-action");
+            if (action === "close") {
+                closeContactPromoModal();
+                return;
+            }
+            if (action === "email") {
+                const email = actionNode.getAttribute("data-ggx-email") || "contact@gasgx.com";
+                window.location.href = `mailto:${email}`;
+            }
+        });
+    }
+
+    function showContactPromoModal() {
+        if (!isContactPromoPage() || typeof document === "undefined") return;
+        if (document.getElementById(CONTACT_PROMO_MODAL_ID)) return;
+
+        const config = getSiteShellConfig();
+        const contactConfig = config && config.pages && config.pages.aboutContact ? config.pages.aboutContact : {};
+        const email = typeof contactConfig.contactEmail === "string" && contactConfig.contactEmail.trim()
+            ? contactConfig.contactEmail.trim()
+            : "contact@gasgx.com";
+        const text = getContactPromoText(getCurrentLang());
+        const socials = getContactPromoSocials();
+        const socialCards = socials.map((item) => {
+            const id = String(item.id || item.qrType || "").trim().toLowerCase();
+            const iconClass = typeof item.iconClass === "string" && item.iconClass.trim() ? item.iconClass.trim() : "fa-solid fa-link";
+            const label = getContactPromoSocialLabel(item);
+            const qrSrc = getContactPromoQrSrc(item);
+            const visual = qrSrc
+                ? `<img src="${escapeHtml(qrSrc)}" alt="${escapeHtml(label)} QR code" loading="lazy">`
+                : `<span class="ggx-contact-promo-qr-fallback"><i class="${escapeHtml(iconClass)}" aria-hidden="true"></i><small>QR</small></span>`;
+            return `
+                <div class="ggx-contact-promo-social ggx-contact-promo-social-${escapeHtml(id || "item")}">
+                    ${visual}
+                    <span>${escapeHtml(label)}</span>
+                </div>`;
+        }).join("");
+
+        const modal = document.createElement("div");
+        modal.id = CONTACT_PROMO_MODAL_ID;
+        modal.className = "ggx-contact-promo-modal";
+        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-modal", "true");
+        modal.setAttribute("aria-labelledby", "ggx-contact-promo-title");
+        modal.setAttribute("data-ggx-open", "0");
+        modal.innerHTML = `
+            <div class="ggx-contact-promo-backdrop"></div>
+            <section class="ggx-contact-promo-panel" tabindex="-1">
+                <button type="button" class="ggx-contact-promo-close" data-ggx-contact-promo-action="close" aria-label="${escapeHtml(text.close)}">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+                <div class="ggx-contact-promo-heading">
+                    <div class="ggx-contact-promo-badge"><span></span>${escapeHtml(text.badge)}</div>
+                    <h2 id="ggx-contact-promo-title">${escapeHtml(text.title)}</h2>
+                    <p>${escapeHtml(text.description)}</p>
+                </div>
+                <div class="ggx-contact-promo-grid">
+                    <button type="button" class="ggx-contact-promo-email" data-ggx-contact-promo-action="email" data-ggx-email="${escapeHtml(email)}">
+                        <span class="ggx-contact-promo-email-icon"><i class="fa-solid fa-envelope" aria-hidden="true"></i></span>
+                        <span class="ggx-contact-promo-card-title">${escapeHtml(text.emailTitle)}</span>
+                        <strong>${escapeHtml(email)}</strong>
+                        <small>${escapeHtml(text.emailHint)}</small>
+                    </button>
+                    <div class="ggx-contact-promo-social-panel">
+                        <h3>${escapeHtml(text.socialTitle)}</h3>
+                        <div class="ggx-contact-promo-social-grid">${socialCards}</div>
+                        <p>${escapeHtml(text.socialHint)}</p>
+                    </div>
+                </div>
+            </section>`;
+
+        document.body.appendChild(modal);
+        bindContactPromoModal(modal);
+        document.documentElement.classList.add("ggx-contact-promo-lock");
+        window.requestAnimationFrame(function () {
+            modal.setAttribute("data-ggx-open", "1");
+            const panel = modal.querySelector(".ggx-contact-promo-panel");
+            if (panel && typeof panel.focus === "function") panel.focus({ preventScroll: true });
+        });
+    }
+
+    function handleContactPromoKeydown(event) {
+        if (event.key === "Escape" && document.getElementById(CONTACT_PROMO_MODAL_ID)) {
+            closeContactPromoModal();
         }
     }
 
@@ -3681,6 +3902,7 @@
         syncSiteBrandUI();
         syncRuntimeFeatureSlots();
         syncLanguageSwitcherVisibility();
+        showContactPromoModal();
 
         ensureMainAuthBridge();
         bindActionDelegation();
@@ -3704,6 +3926,7 @@
             syncLanguageUI(getCurrentLang());
             syncPublishedSiteShellConfig();
             mountCookieConsentBanner();
+            showContactPromoModal();
         }, 0);
     }
 
@@ -3803,6 +4026,8 @@
         resolveAvatarUriByKey: resolveAvatarUriByKey,
         avatarPresetKeys: Object.keys(MAIN_AUTH_AVATAR_PRESETS)
     };
+
+    document.addEventListener("keydown", handleContactPromoKeydown);
 
     function shouldAutoMountShell() {
         return !!document.getElementById("ggx-site-header-slot");

@@ -125,145 +125,21 @@
                                 "en": "Products"
                         },
                         "path": "/products",
-                        "type": "mega",
-                        "sections": [
+                        "type": "menu",
+                        "children": [
                                 {
-                                        "header": {
-                                                "zh": "按功率分类",
-                                                "en": "By Power"
+                                        "title": {
+                                                "zh": "300kW",
+                                                "en": "300kW"
                                         },
-                                        "items": [
-                                                {
-                                                        "title": {
-                                                                "zh": "小于 500 kW",
-                                                                "en": "< 500 kW"
-                                                        },
-                                                        "path": "/products/power-range/0-500kw"
-                                                },
-                                                {
-                                                        "title": {
-                                                                "zh": "500 – 1,000 kW",
-                                                                "en": "500 – 1,000 kW"
-                                                        },
-                                                        "path": "/products/power-range/500-1000kw"
-                                                },
-                                                {
-                                                        "title": {
-                                                                "zh": "1 MW 以上",
-                                                                "en": "1 MW+"
-                                                        },
-                                                        "path": "/products/power-range/1mw-plus"
-                                                }
-                                        ]
+                                        "path": "/products/300kw"
                                 },
                                 {
-                                        "header": {
-                                                "zh": "按冷却方式",
-                                                "en": "By Cooling"
+                                        "title": {
+                                                "zh": "1000kW",
+                                                "en": "1000kW"
                                         },
-                                        "items": [
-                                                {
-                                                        "title": {
-                                                                "zh": "风冷",
-                                                                "en": "Air Cooled"
-                                                        },
-                                                        "path": "/products/cooling/air"
-                                                },
-                                                {
-                                                        "title": {
-                                                                "zh": "液冷",
-                                                                "en": "Liquid Cooled"
-                                                        },
-                                                        "path": "/products/cooling/liquid"
-                                                }
-                                        ]
-                                },
-                                {
-                                        "header": {
-                                                "zh": "按气源类型",
-                                                "en": "By Gas Type"
-                                        },
-                                        "items": [
-                                                {
-                                                        "title": {
-                                                                "zh": "天然气",
-                                                                "en": "Natural Gas"
-                                                        },
-                                                        "path": "/products/gas/natural"
-                                                },
-                                                {
-                                                        "title": {
-                                                                "zh": "伴生气",
-                                                                "en": "Flare Gas"
-                                                        },
-                                                        "path": "/products/gas/associated"
-                                                },
-                                                {
-                                                        "title": {
-                                                                "zh": "低甲烷值气",
-                                                                "en": "Low Methane Gas"
-                                                        },
-                                                        "path": "/products/gas/low-methane"
-                                                }
-                                        ]
-                                },
-                                {
-                                        "header": {
-                                                "zh": "按部署形式",
-                                                "en": "By Deployment"
-                                        },
-                                        "items": [
-                                                {
-                                                        "title": {
-                                                                "zh": "集装箱机组",
-                                                                "en": "Containerized"
-                                                        },
-                                                        "path": "/products/deployment/container"
-                                                },
-                                                {
-                                                        "title": {
-                                                                "zh": "一体化机组 AIS",
-                                                                "en": "Integrated (AIS)"
-                                                        },
-                                                        "path": "/products/deployment/ais"
-                                                },
-                                                {
-                                                        "title": {
-                                                                "zh": "滑撬式机组",
-                                                                "en": "Skid Mounted"
-                                                        },
-                                                        "path": "/products/deployment/skid"
-                                                }
-                                        ]
-                                },
-                                {
-                                        "header": {
-                                                "zh": "按品牌",
-                                                "en": "By Brand"
-                                        },
-                                        "items": [
-                                                {
-                                                        "title": {
-                                                                "zh": "全部品牌",
-                                                                "en": "All Brands"
-                                                        },
-                                                        "path": "/products/brands"
-                                                },
-                                                {
-                                                        "title": {
-                                                                "zh": "中国生产",
-                                                                "en": "Made in China"
-                                                        },
-                                                        "path": "/products/brands/china"
-                                                },
-                                                {
-                                                        "title": {
-                                                                "zh": "海外生产",
-                                                                "en": "Overseas Brands"
-                                                        },
-                                                        "path": "/products/brands/overseas"
-                                                }
-                                        ]
+                                        "path": "/products/1000kw"
                                 }
                         ]
                 },
