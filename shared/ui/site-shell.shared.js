@@ -1207,8 +1207,8 @@
         const sourceLinks = Array.isArray(contactConfig.socialLinks) ? contactConfig.socialLinks : [];
         return sourceLinks
             .filter((item) => item && item.enabled !== false)
-            .filter((item) => ["wechat", "telegram", "twitter", "x", "whatsapp"].indexOf(String(item.id || item.qrType || "").toLowerCase()) >= 0)
-            .slice(0, 4);
+            .filter((item) => String(item.id || item.qrType || "").toLowerCase() === "wechat")
+            .slice(0, 1);
     }
 
     function closeContactPromoModal() {
