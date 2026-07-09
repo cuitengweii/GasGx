@@ -130,16 +130,6 @@
         });
     }
 
-    function setupManualNotices() {
-        document.querySelectorAll("[data-manual-notice]").forEach(function (button) {
-            button.addEventListener("click", function (event) {
-                event.preventDefault();
-                var lang = normalizeLang(window.app && window.app.lang);
-                window.alert(lang === "zh" ? "联系管理员获取" : "Contact administrator to obtain it");
-            });
-        });
-    }
-
     function refreshProductIcons() {
         if (window.lucide && typeof window.lucide.createIcons === "function") {
             window.lucide.createIcons();
@@ -204,7 +194,6 @@
     window.app.init = function () {
         setupCarousels();
         setupProductTabs();
-        setupManualNotices();
         refreshProductIcons();
         enableProductShellOverrides();
         applyLanguage(window.app.lang);
