@@ -37,7 +37,6 @@ const TABLE_INSTANCE_ITEMS = 'quote_instance_items';
 const TABLE_CUSTOMERS = 'quote_customers';
 const TRANSLATE_FUNCTION_NAME = 'quote-translate';
 const AUTO_TRANSLATE_TARGETS = ['en', 'ru'];
-const AUTO_SAVE_DELAY_MS = 1800;
 
 const dict = {
     zh: {
@@ -208,8 +207,6 @@ const state = {
     clockTimer: 0,
     galleryIndex: 0,
     translationDirty: new Set(),
-    autoSaveTimer: 0,
-    autoSavePending: false,
     saveInFlight: false,
     hasUnsavedChanges: false,
     changeVersion: 0,
@@ -274,12 +271,6 @@ function updateSaveButtons(label = '保存', disabled = false) {
     });
 }
 
-function cancelAutoSave() {
-    if (!state.autoSaveTimer) return;
-    window.clearTimeout(state.autoSaveTimer);
-    state.autoSaveTimer = 0;
-}
-
 function publishedInstanceActionMode() {
     if (state.kind !== 'instance') return 'publish';
     if (state.instance?.status !== 'published') return 'publish';
@@ -339,33 +330,19 @@ function pipelineReturnUrl() {
     return new URL(adminConsolePath(entryKind), window.location.origin).toString();
 }
 
-function scheduleAutoSave(delayMs = AUTO_SAVE_DELAY_MS) {
-    cancelAutoSave();
-    if (!state.hasUnsavedChanges) return;
-    if (state.saveInFlight) {
-        state.autoSavePending = true;
-        return;
-    }
-    state.autoSaveTimer = window.setTimeout(() => {
-        state.autoSaveTimer = 0;
-        void handleSave({ source: 'auto' });
-    }, delayMs);
-}
-
 function markEditorDirty(options = {}) {
     state.hasUnsavedChanges = true;
     state.changeVersion += 1;
     if (options.showStatus !== false && !state.saveInFlight) {
         renderStatus(
             localeCopy({
-                zh: '已修改，稍后自动保存...',
-                en: 'Changed. Auto-saving shortly...',
-                ru: 'Изменено. Автосохранение скоро выполнится...',
+                zh: '已修改，请点击保存。',
+                en: 'Changed. Click Save to keep your changes.',
+                ru: 'Есть изменения. Нажмите «Сохранить».',
             }),
             'warning',
         );
     }
-    scheduleAutoSave(options.delayMs);
 }
 
 function hasMeaningfulTranslation(localized, lang) {
@@ -1814,15 +1791,10 @@ async function runAutoTranslation(force = false) {
     }
 }
 
-async function handleSave(options = {}) {
-    const source = options.source === 'auto' ? 'auto' : 'manual';
-    let saveSucceeded = false;
-    cancelAutoSave();
+async function handleSave() {
     if (state.saveInFlight) {
-        if (source === 'auto') state.autoSavePending = true;
         return;
     }
-    if (source === 'auto' && !state.hasUnsavedChanges) return;
     flushPendingEditorChanges();
     const saveVersion = state.hasUnsavedChanges ? state.changeVersion : state.changeVersion + 1;
     if (!state.hasUnsavedChanges) {
@@ -1830,9 +1802,8 @@ async function handleSave(options = {}) {
         state.changeVersion = saveVersion;
     }
     state.saveInFlight = true;
-    state.autoSavePending = false;
-    updateSaveButtons(source === 'auto' ? '自动保存中...' : '保存中...', true);
-    renderStatus(source === 'auto' ? '自动保存中...' : '保存中...');
+    updateSaveButtons('保存中...', true);
+    renderStatus('保存中...');
     try {
         const auth = await client.auth.getUser();
         state.user = auth?.data?.user || null;
@@ -1846,31 +1817,17 @@ async function handleSave(options = {}) {
         state.snapshot = buildSnapshot();
         renderAll();
         clearTranslationDirty();
-        saveSucceeded = true;
         if (state.changeVersion === saveVersion) {
             state.hasUnsavedChanges = false;
         }
         updateSaveButtons(state.kind === 'product' ? '保存模板' : '保存草稿', false);
-        renderStatus(
-            source === 'auto'
-                ? localeCopy({
-                      zh: '已自动保存。',
-                      en: 'Auto-saved.',
-                      ru: 'Автосохранение выполнено.',
-                  })
-                : t('saveSuccess'),
-            'success',
-        );
+        renderStatus(t('saveSuccess'), 'success');
     } catch (error) {
         updateSaveButtons(state.kind === 'product' ? '保存模板' : '保存草稿', false);
         renderStatus(`${t('saveFailed')} ${error.message || ''}`, 'error');
     } finally {
         state.saveInFlight = false;
         renderEditorActions();
-        if (saveSucceeded && state.hasUnsavedChanges && (state.autoSavePending || source === 'auto')) {
-            state.autoSavePending = false;
-            scheduleAutoSave(300);
-        }
     }
 }
 
@@ -1963,7 +1920,7 @@ function bindGlobal() {
     };
 
     byId('btn-save-editor').onclick = () => {
-        void handleSave({ source: 'manual' });
+        void handleSave();
     };
 
     byId('btn-preview-instance')?.addEventListener('click', async () => {
@@ -1972,7 +1929,7 @@ function bindGlobal() {
             renderStatus('\u8bf7\u5148\u4fdd\u5b58\u8349\u7a3f\uff0c\u518d\u9884\u89c8\u5ba2\u6237\u9875\u3002', 'warning');
             return;
         }
-        await handleSave({ source: 'manual' });
+        await handleSave();
         if (!state.instance?.id) return;
         window.open(previewQuoteUrl(state.instance.id), '_blank', 'noopener');
     });
@@ -1994,7 +1951,6 @@ function bindGlobal() {
             }
             return;
         }
-        cancelAutoSave();
         if (state.saveInFlight) return;
         flushPendingEditorChanges();
         state.saveInFlight = true;
@@ -2042,10 +1998,6 @@ function bindGlobal() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     window.addEventListener('scroll', updateBackToTop, { passive: true });
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden || !state.hasUnsavedChanges || state.saveInFlight) return;
-        void handleSave({ source: 'auto' });
-    });
     window.addEventListener('beforeunload', (event) => {
         if (!state.hasUnsavedChanges && !state.saveInFlight) return;
         event.preventDefault();
