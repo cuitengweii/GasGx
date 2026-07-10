@@ -864,7 +864,7 @@ body {
 .product-share-modal {
     position: fixed;
     inset: 0;
-    z-index: 120;
+    z-index: 260;
     display: grid;
     place-items: center;
     padding: 24px;
@@ -892,7 +892,7 @@ body {
 
 .product-share-panel {
     position: relative;
-    width: min(940px, 100%);
+    width: min(1120px, 100%);
     max-height: min(820px, calc(100vh - 40px));
     overflow: auto;
     border: 1px solid rgba(93, 214, 44, 0.24);
@@ -955,7 +955,7 @@ body {
 
 .product-share-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 310px;
+    grid-template-columns: minmax(0, 1fr) 420px;
     gap: 22px;
     padding: 24px;
 }
@@ -1031,7 +1031,7 @@ body {
 
 .product-share-poster-frame {
     overflow: hidden;
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 16 / 9;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     background:
@@ -1495,7 +1495,7 @@ body {
     }
 
     .product-share-poster {
-        grid-template-columns: minmax(0, 260px);
+        grid-template-columns: minmax(0, 520px);
         justify-content: center;
     }
 

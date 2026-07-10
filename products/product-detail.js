@@ -606,28 +606,32 @@
             setStatus(t("Generating poster...", "正在生成海报..."));
 
             var canvas = document.createElement("canvas");
-            canvas.width = 1080;
-            canvas.height = 1440;
+            canvas.width = 1920;
+            canvas.height = 1080;
             var ctx = canvas.getContext("2d");
             var imagePromise = loadImage("/products/img/300kw/0.png").catch(function () { return null; });
 
             return imagePromise.then(function (productImage) {
-                var gradient = ctx.createLinearGradient(0, 0, 1080, 1440);
-                gradient.addColorStop(0, "#182315");
-                gradient.addColorStop(0.42, "#111111");
+                var gradient = ctx.createLinearGradient(0, 0, 1920, 1080);
+                gradient.addColorStop(0, "#172414");
+                gradient.addColorStop(0.5, "#10202c");
                 gradient.addColorStop(1, "#050505");
                 ctx.fillStyle = gradient;
-                ctx.fillRect(0, 0, 1080, 1440);
+                ctx.fillRect(0, 0, 1920, 1080);
 
                 ctx.fillStyle = "rgba(93, 214, 44, 0.16)";
                 ctx.beginPath();
-                ctx.arc(870, 180, 360, 0, Math.PI * 2);
+                ctx.arc(1590, 145, 420, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "rgba(13, 148, 136, 0.18)";
+                ctx.beginPath();
+                ctx.arc(260, 980, 520, 0, Math.PI * 2);
                 ctx.fill();
 
                 if (productImage) {
                     var sourceRatio = productImage.width / productImage.height;
-                    var targetW = 960;
-                    var targetH = 540;
+                    var targetW = 820;
+                    var targetH = 462;
                     var sourceW = productImage.width;
                     var sourceH = sourceW / (targetW / targetH);
                     if (sourceH > productImage.height) {
@@ -637,25 +641,25 @@
                     var sourceX = (productImage.width - sourceW) / 2;
                     var sourceY = Math.max(0, (productImage.height - sourceH) / 2);
                     if (sourceRatio > 0) {
-                        ctx.drawImage(productImage, sourceX, sourceY, sourceW, sourceH, 60, 82, targetW, targetH);
+                        ctx.drawImage(productImage, sourceX, sourceY, sourceW, sourceH, 78, 86, targetW, targetH);
                     }
                 }
 
                 ctx.strokeStyle = "rgba(93, 214, 44, 0.45)";
-                ctx.lineWidth = 2;
-                ctx.strokeRect(60, 82, 960, 540);
+                ctx.lineWidth = 3;
+                ctx.strokeRect(78, 86, 820, 462);
 
                 ctx.fillStyle = "#5dd62c";
-                ctx.font = "800 28px Inter, Arial, sans-serif";
-                ctx.fillText("GasGx Product Brief", 72, 710);
+                ctx.font = "900 28px Inter, Arial, sans-serif";
+                ctx.fillText("GasGx Product Brief", 980, 130);
 
                 ctx.fillStyle = "#ffffff";
-                ctx.font = "900 86px Inter, Arial, sans-serif";
-                ctx.fillText("GasGx G300", 72, 810);
+                ctx.font = "900 92px Inter, Arial, sans-serif";
+                ctx.fillText("GasGx G300", 980, 222);
 
                 ctx.fillStyle = "#cbd5e1";
-                ctx.font = "400 34px Inter, Arial, sans-serif";
-                drawWrappedText(ctx, t("300kW gas generator set for distributed energy and gas-to-computing deployments.", "面向分布式能源与燃气算力部署的 300kW 燃气发电机组。"), 76, 878, 800, 48);
+                ctx.font = "500 34px Inter, Arial, sans-serif";
+                drawWrappedText(ctx, t("300kW gas generator set for distributed energy and gas-to-computing deployments.", "面向分布式能源与燃气算力部署的 300kW 燃气发电机组。"), 982, 292, 760, 48);
 
                 var metrics = [
                     ["300kW", t("Continuous power", "持续功率")],
@@ -666,28 +670,46 @@
                 metrics.forEach(function (metric, index) {
                     var col = index % 2;
                     var row = Math.floor(index / 2);
-                    var x = 76 + col * 360;
-                    var y = 1010 + row * 118;
+                    var x = 78 + col * 410;
+                    var y = 640 + row * 132;
                     ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
-                    ctx.fillRect(x, y, 314, 88);
+                    ctx.fillRect(x, y, 360, 98);
                     ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
-                    ctx.strokeRect(x, y, 314, 88);
+                    ctx.strokeRect(x, y, 360, 98);
                     ctx.fillStyle = "#ffffff";
-                    ctx.font = "900 34px Inter, Arial, sans-serif";
-                    ctx.fillText(metric[0], x + 22, y + 38);
+                    ctx.font = "900 38px Inter, Arial, sans-serif";
+                    ctx.fillText(metric[0], x + 24, y + 43);
                     ctx.fillStyle = "#94a3b8";
-                    ctx.font = "600 20px Inter, Arial, sans-serif";
-                    ctx.fillText(metric[1], x + 22, y + 67);
+                    ctx.font = "700 22px Inter, Arial, sans-serif";
+                    ctx.fillText(metric[1], x + 24, y + 74);
                 });
 
-                var qrSize = drawQrCode(ctx, createQrMatrix(getShareUrl()), 768, 1040, 220);
+                ctx.fillStyle = "rgba(255, 255, 255, 0.94)";
+                ctx.fillRect(790, 414, 340, 340);
+                ctx.strokeStyle = "rgba(93, 214, 44, 0.65)";
+                ctx.lineWidth = 4;
+                ctx.strokeRect(790, 414, 340, 340);
+                var qrSize = drawQrCode(ctx, createQrMatrix(getShareUrl()), 850, 454, 220);
+                ctx.fillStyle = "#0f172a";
+                ctx.font = "900 26px Inter, Arial, sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(t("Scan for details", "扫码查看详情"), 960, 454 + qrSize + 42);
+                ctx.textAlign = "left";
+
+                ctx.fillStyle = "rgba(255, 255, 255, 0.07)";
+                ctx.fillRect(1260, 480, 520, 168);
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+                ctx.strokeRect(1260, 480, 520, 168);
                 ctx.fillStyle = "#ffffff";
-                ctx.font = "800 22px Inter, Arial, sans-serif";
-                ctx.fillText(t("Scan for details", "扫码查看详情"), 768, 1040 + qrSize + 38);
+                ctx.font = "900 36px Inter, Arial, sans-serif";
+                ctx.fillText(t("Compact gas power solution", "紧凑型燃气电力方案"), 1290, 540);
+                ctx.fillStyle = "#cbd5e1";
+                ctx.font = "600 25px Inter, Arial, sans-serif";
+                drawWrappedText(ctx, t("Built for project-site prime power, distributed energy and gas-to-computing deployments.", "适用于项目现场主用电源、分布式能源与燃气算力部署。"), 1290, 594, 450, 36);
 
                 ctx.fillStyle = "#8cf06d";
-                ctx.font = "800 24px Inter, Arial, sans-serif";
-                ctx.fillText("www.gasgx.com/products/300kw/", 76, 1346);
+                ctx.font = "900 24px Inter, Arial, sans-serif";
+                ctx.fillText("www.gasgx.com/products/300kw/", 78, 1012);
 
                 posterDataUrl = canvas.toDataURL("image/png");
                 posterLang = lang;
