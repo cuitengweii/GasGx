@@ -1,0 +1,220 @@
+<template id="beat-4-cta-template">
+  <div
+    id="root-beat-4-cta"
+    data-composition-id="beat-4-cta"
+    data-start="0"
+    data-duration="5"
+    data-width="1920"
+    data-height="1080"
+  >
+    <div class="scene">
+      <div class="bg-product"><img src="capture/assets/gasgx-g300-generator-set-exterior.png" /></div>
+      <div class="diagram"><img src="capture/assets/gasgx-g300-image-5.png" /></div>
+      <div class="quote">
+        <div class="label">STANDARD OPEN-FRAME GENERATOR SET QUOTE</div>
+        <div class="price"><b id="price">36800</b><em>$</em></div>
+        <div class="sub">Base configuration price</div>
+      </div>
+      <div class="scope standard">
+        <span>Standard factory configuration</span>
+        <strong>Engine, alternator, radiator, controller, gas intake train</strong>
+      </div>
+      <div class="scope optional">
+        <span>Optional modules</span>
+        <strong>Container, acoustic panel, gas leakage alarm, engineering customization</strong>
+      </div>
+      <div class="final">
+        <div class="brand">GasGx G300</div>
+        <button>Request custom quote</button>
+      </div>
+    </div>
+    <style>
+      @font-face {
+        font-family: "InterCaptured";
+        src: url("capture/assets/fonts/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf") format("truetype");
+      }
+
+      #root-beat-4-cta {
+        overflow: hidden;
+        width: 1920px;
+        height: 1080px;
+        background: #090909;
+        color: #ffffff;
+        font-family: "InterCaptured", Inter, Arial, sans-serif;
+      }
+
+      .scene {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #090909;
+      }
+
+      .bg-product,
+      .diagram {
+        position: absolute;
+        overflow: hidden;
+        border-radius: 8px;
+      }
+
+      .bg-product {
+        left: 84px;
+        right: 84px;
+        top: 72px;
+        height: 480px;
+        opacity: 0.55;
+        border: 1px solid rgba(93, 214, 44, 0.26);
+      }
+
+      .bg-product img,
+      .diagram img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .diagram {
+        right: 80px;
+        bottom: 72px;
+        width: 760px;
+        height: 320px;
+        opacity: 0.36;
+        border: 1px solid rgba(93, 214, 44, 0.22);
+      }
+
+      .quote {
+        position: absolute;
+        left: 150px;
+        top: 304px;
+        width: 690px;
+        padding: 42px 48px;
+        border: 1px solid rgba(93, 214, 44, 0.44);
+        border-radius: 8px;
+        background:
+          radial-gradient(circle at 82% 18%, rgba(93, 214, 44, 0.2), transparent 150px),
+          #141414;
+        box-shadow: 0 28px 80px rgba(0, 0, 0, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .label {
+        color: #94a3b8;
+        font-size: 18px;
+        font-weight: 900;
+      }
+
+      .price {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin-top: 16px;
+        color: #ffffff;
+        font-size: 116px;
+        font-weight: 900;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .price em {
+        color: #5dd62c;
+        font-size: 48px;
+        font-style: normal;
+      }
+
+      .sub {
+        color: #5dd62c;
+        font-size: 24px;
+        font-weight: 800;
+      }
+
+      .scope {
+        position: absolute;
+        width: 470px;
+        min-height: 138px;
+        padding: 26px 28px;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 8px;
+        background: #141414;
+      }
+
+      .scope span {
+        display: block;
+        color: #5dd62c;
+        font-size: 18px;
+        font-weight: 900;
+        margin-bottom: 13px;
+      }
+
+      .scope strong {
+        color: #cbd5e1;
+        font-size: 25px;
+        font-weight: 400;
+        line-height: 1.35;
+      }
+
+      .standard {
+        left: 150px;
+        bottom: 116px;
+      }
+
+      .optional {
+        left: 704px;
+        bottom: 116px;
+      }
+
+      .final {
+        position: absolute;
+        right: 138px;
+        top: 324px;
+        width: 500px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 32px;
+      }
+
+      .brand {
+        color: #f8f8f8;
+        font-size: 68px;
+        font-weight: 900;
+      }
+
+      button {
+        height: 72px;
+        padding: 0 34px;
+        border: 1px solid #5dd62c;
+        border-radius: 8px;
+        background: #5dd62c;
+        color: #071007;
+        font-size: 24px;
+        font-weight: 900;
+        box-shadow: 0 0 28px rgba(93, 214, 44, 0.26);
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      var price = document.getElementById("price");
+      var proxy = { value: 0 };
+      tl.fromTo(".bg-product", { y: -70, opacity: 0 }, { y: 0, opacity: 0.55, duration: 0.65, ease: "power3.out" }, 0.12);
+      tl.to(".bg-product img", { scale: 1.035, duration: 5, ease: "none" }, 0);
+      tl.fromTo(".diagram", { x: 80, opacity: 0 }, { x: 0, opacity: 0.36, duration: 0.58, ease: "circ.out" }, 0.74);
+      tl.to(".diagram img", { scale: 1.025, duration: 5, ease: "none" }, 0);
+      tl.fromTo(".quote", { y: 78, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "expo.out" }, 0.55);
+      tl.to(proxy, {
+        value: 36800,
+        duration: 1.0,
+        ease: "power2.out",
+        onUpdate: function () {
+          price.textContent = Math.round(proxy.value);
+        },
+      }, 0.9);
+      tl.fromTo(".scope", { y: 62, opacity: 0 }, { y: 0, opacity: 1, duration: 0.52, stagger: 0.16, ease: "power2.out" }, 1.55);
+      tl.fromTo(".final", { x: 80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.62, ease: "power4.out" }, 2.05);
+      tl.to("button", { boxShadow: "0 0 58px rgba(93, 214, 44, 0.42)", duration: 0.78, yoyo: true, repeat: 3, ease: "sine.inOut" }, 2.55);
+      tl.to(".scene", { opacity: 0, duration: 0.5, ease: "power2.in" }, 4.5);
+      tl.set(".scene", { opacity: 0, visibility: "hidden" }, 5);
+      window.__timelines["beat-4-cta"] = tl;
+    </script>
+  </div>
+</template>

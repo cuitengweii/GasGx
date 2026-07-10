@@ -1,0 +1,39 @@
+<template id="homepage-system-template">
+  <div data-hf-id="hf-2cqm" id="root-homepage-system" data-composition-id="homepage-system" data-start="0" data-duration="5.5" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-6ui2" class="b3-scene">
+      <img data-hf-id="hf-en30" class="b3-screen" src="capture/screenshots/scroll-100.png">
+      <div data-hf-id="hf-zjcm" class="b3-veil"></div>
+      <div data-hf-id="hf-h3p0" class="b3-panel"><div data-hf-id="hf-3uj0" class="b3-label">ONE OPERATING SYSTEM</div><h2 data-hf-id="hf-9b2a">From gas data<br data-hf-id="hf-x5px"><span data-hf-id="hf-enz7">to decisions.</span></h2><div data-hf-id="hf-0fwh" class="b3-rows"><div data-hf-id="hf-yeow"><i data-hf-id="hf-wt6k"></i><strong data-hf-id="hf-xufo">Economic tools</strong><span data-hf-id="hf-380q">LCOE / ROI / revenue</span></div><div data-hf-id="hf-y7yw"><i data-hf-id="hf-zeb8"></i><strong data-hf-id="hf-zusa">Engineering tools</strong><span data-hf-id="hf-nr8g">Fit / emissions / energy</span></div><div data-hf-id="hf-x11t"><i data-hf-id="hf-y7e5"></i><strong data-hf-id="hf-6ref">Selection tools</strong><span data-hf-id="hf-pnj8">Site / engine / operations</span></div><div data-hf-id="hf-xfcu"><i data-hf-id="hf-ylp6"></i><strong data-hf-id="hf-fm71">Rankings</strong><span data-hf-id="hf-bqk7">Performance / economics / reliability</span></div></div></div>
+      <div data-hf-id="hf-zuxn" class="b3-index">03 <span data-hf-id="hf-pi7z">/ SYSTEM</span></div>
+    </div>
+    <style>
+      @font-face { font-family: "InterCaptured"; src: url("capture/assets/fonts/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf") format("truetype"); }
+      @font-face { font-family: "JetBrainsCaptured"; src: url("capture/assets/fonts/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8L6tjPQ.ttf") format("truetype"); }
+      #root-homepage-system { overflow: hidden; width: 1920px; height: 1080px; background: #050505; color: #ffffff; font-family: "InterCaptured", Inter, Arial, sans-serif; }
+      .b3-scene { position: relative; width: 100%; height: 100%; overflow: hidden; background: #050505; }
+      .b3-screen { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; transform-origin: 58% 50%; }
+      .b3-veil { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,5,5,0.2), rgba(5,5,5,0.85) 54%, rgba(5,5,5,0.94)); }
+      .b3-panel { position: absolute; left: 210px; top: 120px; width: 790px; padding: 42px 52px; border: 1px solid rgba(93,214,44,0.46); border-radius: 8px; background: rgba(5,5,5,0.87); box-shadow: 0 28px 90px rgba(0,0,0,0.56), inset 0 1px 0 rgba(255,255,255,0.08); }
+      .b3-label { color: #5dd62c; font-family: "JetBrainsCaptured", monospace; font-size: 17px; font-weight: 700; letter-spacing: 0.08em; }
+      h2 { margin: 18px 0 32px; color: #ffffff; font-size: 68px; font-weight: 900; line-height: 1.02; }
+      h2 span { color: #5dd62c; }
+      .b3-rows { display: grid; gap: 0; }
+      .b3-rows > div { display: grid; grid-template-columns: 18px 250px 1fr; gap: 14px; align-items: center; min-height: 70px; border-top: 1px solid rgba(255,255,255,0.12); color: #cbd5e1; }
+      .b3-rows i { width: 10px; height: 10px; border-radius: 50%; background: #5dd62c; box-shadow: 0 0 16px rgba(93,214,44,0.72); }
+      .b3-rows strong { color: #ffffff; font-size: 23px; }
+      .b3-rows span { color: #94a3b8; font-family: "JetBrainsCaptured", monospace; font-size: 15px; }
+      .b3-index { position: absolute; right: 106px; top: 140px; color: #5dd62c; font-family: "JetBrainsCaptured", monospace; font-size: 32px; font-weight: 700; }
+      .b3-index span { color: #94a3b8; font-size: 15px; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      tl.fromTo(".b3-screen", { scale: 1.08, x: 26 }, { scale: 1.14, x: -26, duration: 5.5, ease: "none" }, 0);
+      tl.fromTo(".b3-panel", { x: -80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.72, ease: "expo.out" }, 0.2);
+      tl.fromTo(".b3-index", { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, 0.46);
+      tl.fromTo(".b3-rows > div", { x: -24, opacity: 0 }, { x: 0, opacity: 1, duration: 0.38, stagger: 0.15, ease: "power2.out" }, 0.82);
+      window.__timelines["homepage-system"] = tl;
+    </script>
+  </div>
+</template>

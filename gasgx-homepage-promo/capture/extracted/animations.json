@@ -1,0 +1,460 @@
+{
+  "summary": {
+    "webAnimations": 42,
+    "cssDeclarations": 361,
+    "scrollTargets": 0,
+    "cdpAnimations": 55,
+    "canvases": 1
+  },
+  "namedAnimations": [
+    "gas-spin",
+    "spinReverse",
+    "pulseFlash",
+    "floatPulse",
+    "ggx-onboarding-highlight-pulse",
+    "ggx-onboarding-gesture-tap"
+  ],
+  "scrollTriggeredElements": 0,
+  "representativeAnimations": [
+    {
+      "type": "CSSAnimation",
+      "playState": "running",
+      "animationName": "spinReverse",
+      "targetSelector": "circle",
+      "targetRect": {
+        "x": 1063.03076171875,
+        "y": 534.830810546875,
+        "width": 38.5037841796875,
+        "height": 38.5037841796875,
+        "top": 534.830810546875,
+        "right": 1101.5345458984375,
+        "bottom": 573.3345947265625,
+        "left": 1063.03076171875
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "linear",
+          "composite": "auto",
+          "transform": "rotate(360deg)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "linear",
+          "composite": "auto",
+          "transform": "rotate(0deg)",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 12000,
+        "delay": 0,
+        "iterations": null,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "running",
+      "animationName": "pulseFlash",
+      "targetSelector": "path",
+      "targetRect": {
+        "x": 1077.482666015625,
+        "y": 544.4827270507812,
+        "width": 6.39990234375,
+        "height": 15.20001220703125,
+        "top": 544.4827270507812,
+        "right": 1083.882568359375,
+        "bottom": 559.6827392578125,
+        "left": 1077.482666015625
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(93, 214, 44) 0px 0px 2px)",
+          "opacity": "0.8",
+          "computedOffset": 0
+        },
+        {
+          "offset": 0.5,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(255, 255, 255) 0px 0px 8px)",
+          "opacity": "1",
+          "computedOffset": 0.5
+        },
+        {
+          "offset": 1,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(93, 214, 44) 0px 0px 2px)",
+          "opacity": "0.8",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 3000,
+        "delay": 0,
+        "iterations": null,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "running",
+      "animationName": "spinReverse",
+      "targetSelector": "circle",
+      "targetRect": {
+        "x": 1106.8994140625,
+        "y": 367.9284973144531,
+        "width": 38.50390625,
+        "height": 38.5037841796875,
+        "top": 367.9284973144531,
+        "right": 1145.4033203125,
+        "bottom": 406.4322814941406,
+        "left": 1106.8994140625
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "linear",
+          "composite": "auto",
+          "transform": "rotate(360deg)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "linear",
+          "composite": "auto",
+          "transform": "rotate(0deg)",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 12000,
+        "delay": 0,
+        "iterations": null,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "running",
+      "animationName": "pulseFlash",
+      "targetSelector": "path",
+      "targetRect": {
+        "x": 1121.351318359375,
+        "y": 377.58038330078125,
+        "width": 6.4000244140625,
+        "height": 15.20001220703125,
+        "top": 377.58038330078125,
+        "right": 1127.7513427734375,
+        "bottom": 392.7803955078125,
+        "left": 1121.351318359375
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(93, 214, 44) 0px 0px 2px)",
+          "opacity": "0.8",
+          "computedOffset": 0
+        },
+        {
+          "offset": 0.5,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(255, 255, 255) 0px 0px 8px)",
+          "opacity": "1",
+          "computedOffset": 0.5
+        },
+        {
+          "offset": 1,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(93, 214, 44) 0px 0px 2px)",
+          "opacity": "0.8",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 3000,
+        "delay": 0,
+        "iterations": null,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "running",
+      "animationName": "spinReverse",
+      "targetSelector": "circle",
+      "targetRect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "linear",
+          "composite": "auto",
+          "transform": "rotate(360deg)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "linear",
+          "composite": "auto",
+          "transform": "rotate(0deg)",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 12000,
+        "delay": 0,
+        "iterations": null,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "running",
+      "animationName": "pulseFlash",
+      "targetSelector": "path",
+      "targetRect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(93, 214, 44) 0px 0px 2px)",
+          "opacity": "0.8",
+          "computedOffset": 0
+        },
+        {
+          "offset": 0.5,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(255, 255, 255) 0px 0px 8px)",
+          "opacity": "1",
+          "computedOffset": 0.5
+        },
+        {
+          "offset": 1,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(93, 214, 44) 0px 0px 2px)",
+          "opacity": "0.8",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 3000,
+        "delay": 0,
+        "iterations": null,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "running",
+      "animationName": "spinReverse",
+      "targetSelector": "circle",
+      "targetRect": {
+        "x": 1071.3570556640625,
+        "y": 759.451171875,
+        "width": 38.5037841796875,
+        "height": 38.5037841796875,
+        "top": 759.451171875,
+        "right": 1109.86083984375,
+        "bottom": 797.9549560546875,
+        "left": 1071.3570556640625
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "linear",
+          "composite": "auto",
+          "transform": "rotate(360deg)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "linear",
+          "composite": "auto",
+          "transform": "rotate(0deg)",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 12000,
+        "delay": 0,
+        "iterations": null,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "running",
+      "animationName": "pulseFlash",
+      "targetSelector": "path",
+      "targetRect": {
+        "x": 1085.8089599609375,
+        "y": 769.1030883789062,
+        "width": 6.4000244140625,
+        "height": 15.199951171875,
+        "top": 769.1030883789062,
+        "right": 1092.208984375,
+        "bottom": 784.3030395507812,
+        "left": 1085.8089599609375
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(93, 214, 44) 0px 0px 2px)",
+          "opacity": "0.8",
+          "computedOffset": 0
+        },
+        {
+          "offset": 0.5,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(255, 255, 255) 0px 0px 8px)",
+          "opacity": "1",
+          "computedOffset": 0.5
+        },
+        {
+          "offset": 1,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(93, 214, 44) 0px 0px 2px)",
+          "opacity": "0.8",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 3000,
+        "delay": 0,
+        "iterations": null,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "running",
+      "animationName": "spinReverse",
+      "targetSelector": "circle",
+      "targetRect": {
+        "x": 1306.3148193359375,
+        "y": 83.39163208007812,
+        "width": 38.503662109375,
+        "height": 38.5037841796875,
+        "top": 83.39163208007812,
+        "right": 1344.8184814453125,
+        "bottom": 121.89541625976562,
+        "left": 1306.3148193359375
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "linear",
+          "composite": "auto",
+          "transform": "rotate(360deg)",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "linear",
+          "composite": "auto",
+          "transform": "rotate(0deg)",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 12000,
+        "delay": 0,
+        "iterations": null,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    },
+    {
+      "type": "CSSAnimation",
+      "playState": "running",
+      "animationName": "pulseFlash",
+      "targetSelector": "path",
+      "targetRect": {
+        "x": 1320.7666015625,
+        "y": 93.04352569580078,
+        "width": 6.4000244140625,
+        "height": 15.199996948242188,
+        "top": 93.04352569580078,
+        "right": 1327.1666259765625,
+        "bottom": 108.24352264404297,
+        "left": 1320.7666015625
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(93, 214, 44) 0px 0px 2px)",
+          "opacity": "0.8",
+          "computedOffset": 0
+        },
+        {
+          "offset": 0.5,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(255, 255, 255) 0px 0px 8px)",
+          "opacity": "1",
+          "computedOffset": 0.5
+        },
+        {
+          "offset": 1,
+          "easing": "ease",
+          "composite": "auto",
+          "filter": "drop-shadow(rgb(93, 214, 44) 0px 0px 2px)",
+          "opacity": "0.8",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 3000,
+        "delay": 0,
+        "iterations": null,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    }
+  ]
+}

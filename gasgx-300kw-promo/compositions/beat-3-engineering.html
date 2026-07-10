@@ -1,0 +1,253 @@
+<template id="beat-3-engineering-template">
+  <div
+    id="root-beat-3-engineering"
+    data-composition-id="beat-3-engineering"
+    data-start="0"
+    data-duration="5.9"
+    data-width="1920"
+    data-height="1080"
+  >
+    <div class="scene">
+      <div class="blueprints">
+        <img class="bp bp1" src="capture/assets/gasgx-g300-image-1.png" />
+        <img class="bp bp2" src="capture/assets/gasgx-g300-image-2.png" />
+        <img class="bp bp3" src="capture/assets/gasgx-g300-image-4.png" />
+        <img class="bp bp4" src="capture/assets/gasgx-g300-image-6.png" />
+      </div>
+      <div class="panel">
+        <div class="eyebrow">COMPLETE DELIVERY SCOPE</div>
+        <h2>Essentials configured together.</h2>
+        <div class="checklist">
+          <div class="item"><span></span>Leroy-Somer alternator</div>
+          <div class="item"><span></span>ComAp controller</div>
+          <div class="item"><span></span>Factory delivery scope</div>
+          <div class="item"><span></span>Oilfield, industrial, gas-to-computing</div>
+        </div>
+      </div>
+      <div class="warranty">
+        <span>WARRANTY TIME</span>
+        <strong><b id="hours">8000</b><em>h</em></strong>
+      </div>
+      <svg class="connectors" viewBox="0 0 1920 1080" aria-hidden="true">
+        <path class="line l1" d="M280 302 C520 250 690 310 820 446" />
+        <path class="line l2" d="M1560 284 C1370 320 1200 410 1100 560" />
+        <path class="line l3" d="M376 800 C640 740 860 760 1090 690" />
+      </svg>
+      <div class="chips">
+        <div>Oilfield</div>
+        <div>Industrial</div>
+        <div>Gas-to-computing</div>
+      </div>
+    </div>
+    <style>
+      @font-face {
+        font-family: "InterCaptured";
+        src: url("capture/assets/fonts/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf") format("truetype");
+      }
+
+      #root-beat-3-engineering {
+        overflow: hidden;
+        width: 1920px;
+        height: 1080px;
+        background: #080c0a;
+        color: #ffffff;
+        font-family: "InterCaptured", Inter, Arial, sans-serif;
+      }
+
+      .scene {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 48% 45%, rgba(93, 214, 44, 0.14), transparent 320px),
+          #080c0a;
+      }
+
+      .blueprints {
+        position: absolute;
+        inset: 0;
+      }
+
+      .bp {
+        position: absolute;
+        width: 650px;
+        border: 1px solid rgba(93, 214, 44, 0.3);
+        border-radius: 8px;
+        opacity: 0.68;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+      }
+
+      .bp1 {
+        left: 70px;
+        top: 86px;
+      }
+
+      .bp2 {
+        right: 76px;
+        top: 108px;
+      }
+
+      .bp3 {
+        left: 126px;
+        bottom: 82px;
+      }
+
+      .bp4 {
+        right: 136px;
+        bottom: 84px;
+      }
+
+      .panel {
+        position: absolute;
+        left: 610px;
+        top: 258px;
+        width: 700px;
+        min-height: 450px;
+        padding: 46px 52px;
+        border: 1px solid rgba(93, 214, 44, 0.4);
+        border-radius: 8px;
+        background: rgba(20, 20, 20, 0.92);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 28px 80px rgba(0, 0, 0, 0.58);
+      }
+
+      .eyebrow {
+        color: #5dd62c;
+        font-size: 18px;
+        font-weight: 900;
+      }
+
+      h2 {
+        margin: 18px 0 34px;
+        color: #ffffff;
+        font-size: 62px;
+        font-weight: 900;
+        line-height: 1.08;
+      }
+
+      .checklist {
+        display: grid;
+        gap: 18px;
+      }
+
+      .item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        color: #cbd5e1;
+        font-size: 27px;
+        line-height: 1.25;
+      }
+
+      .item span {
+        width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        background: #5dd62c;
+        box-shadow: 0 0 20px rgba(93, 214, 44, 0.8);
+      }
+
+      .warranty {
+        position: absolute;
+        right: 118px;
+        top: 436px;
+        width: 330px;
+        padding: 28px;
+        border: 1px solid rgba(93, 214, 44, 0.4);
+        border-radius: 8px;
+        background: #141414;
+      }
+
+      .warranty span {
+        color: #94a3b8;
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .warranty strong {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-top: 12px;
+        color: #ffffff;
+        font-size: 70px;
+        font-weight: 900;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .warranty em {
+        color: #5dd62c;
+        font-size: 30px;
+        font-style: normal;
+      }
+
+      .connectors {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      .line {
+        fill: none;
+        stroke: #5dd62c;
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-dasharray: 700;
+        stroke-dashoffset: 700;
+        opacity: 0.7;
+        filter: drop-shadow(0 0 10px rgba(93, 214, 44, 0.8));
+      }
+
+      .chips {
+        position: absolute;
+        left: 610px;
+        bottom: 88px;
+        display: flex;
+        gap: 16px;
+      }
+
+      .chips div {
+        padding: 14px 20px;
+        border: 1px solid rgba(93, 214, 44, 0.34);
+        border-radius: 999px;
+        background: rgba(93, 214, 44, 0.08);
+        color: #f8f8f8;
+        font-size: 22px;
+        font-weight: 800;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      var proxy = { value: 0 };
+      var hours = document.getElementById("hours");
+
+      tl.fromTo(".bp1", { x: -140, y: -40, opacity: 0 }, { x: 0, y: 0, opacity: 0.68, duration: 0.65, ease: "power3.out" }, 0.15);
+      tl.fromTo(".bp2", { x: 140, y: -30, opacity: 0 }, { x: 0, y: 0, opacity: 0.64, duration: 0.65, ease: "expo.out" }, 0.34);
+      tl.fromTo(".bp3", { x: -120, y: 60, opacity: 0 }, { x: 0, y: 0, opacity: 0.62, duration: 0.65, ease: "circ.out" }, 0.54);
+      tl.fromTo(".bp4", { x: 130, y: 70, opacity: 0 }, { x: 0, y: 0, opacity: 0.58, duration: 0.65, ease: "back.out(1.2)" }, 0.74);
+      tl.to(".bp1", { x: 22, y: 8, duration: 4.5, ease: "none" }, 1.4);
+      tl.to(".bp2", { x: -24, y: 10, duration: 4.5, ease: "none" }, 1.4);
+      tl.to(".bp3", { x: 18, y: -12, duration: 4.5, ease: "none" }, 1.4);
+      tl.to(".bp4", { x: -16, y: -8, duration: 4.5, ease: "none" }, 1.4);
+      tl.fromTo(".panel", { scale: 0.94, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: "power4.out" }, 0.85);
+      tl.fromTo(".item", { x: 46, opacity: 0 }, { x: 0, opacity: 1, duration: 0.38, stagger: 0.18, ease: "power2.out" }, 1.45);
+      tl.fromTo(".warranty", { y: 72, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "back.out(1.35)" }, 2.05);
+      tl.to(proxy, {
+        value: 8000,
+        duration: 1.1,
+        ease: "power2.out",
+        onUpdate: function () {
+          hours.textContent = Math.round(proxy.value);
+        },
+      }, 2.18);
+      tl.to(".line", { strokeDashoffset: 0, duration: 0.9, stagger: 0.16, ease: "power2.out" }, 1.85);
+      tl.fromTo(".chips div", { y: 34, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, stagger: 0.11, ease: "power3.out" }, 3.2);
+      tl.to(".warranty", { boxShadow: "0 0 46px rgba(93, 214, 44, 0.22)", duration: 0.9, yoyo: true, repeat: 2, ease: "sine.inOut" }, 2.7);
+      window.__timelines["beat-3-engineering"] = tl;
+    </script>
+  </div>
+</template>

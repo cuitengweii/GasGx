@@ -362,9 +362,9 @@
         },
         footer: {
             contact: {
-                mode: "qr",
-                label: "www_gasgx_com",
-                iconClass: "fa-brands fa-weixin",
+                mode: "contact-promo",
+                label: "GasGx",
+                iconClass: "fa-solid fa-address-card",
                 qrType: "wechat"
             },
             privacyPolicy: {
@@ -1244,8 +1244,9 @@
         });
     }
 
-    function showContactPromoModal() {
-        if (!isContactPromoPage() || typeof document === "undefined") return;
+    function showContactPromoModal(options) {
+        const forceOpen = !!(options && options.force);
+        if ((!forceOpen && !isContactPromoPage()) || typeof document === "undefined") return;
         if (document.getElementById(CONTACT_PROMO_MODAL_ID)) return;
 
         const config = getSiteShellConfig();
@@ -2154,9 +2155,20 @@
     }
 
     function buildFooterContact(contactConfig) {
-        const label = escapeHtml(getLabelValue(contactConfig.label, getCurrentLang()) || "www_gasgx_com");
-        const iconClass = escapeHtml(contactConfig.iconClass || "fa-brands fa-weixin");
+        const rawLabel = getLabelValue(contactConfig.label, getCurrentLang()) || "";
+        const normalizedLabel = String(rawLabel).trim().toLowerCase();
+        const displayLabel = !normalizedLabel || normalizedLabel === "contact us" || normalizedLabel === "www_gasgx_com"
+            ? "GasGx"
+            : String(rawLabel).trim();
+        const label = escapeHtml(displayLabel);
+        const iconClass = escapeHtml(contactConfig.mode === "link" && contactConfig.href
+            ? (contactConfig.iconClass || "fa-solid fa-address-card")
+            : "fa-solid fa-address-card");
         const commonClass = "text-sm text-gray-400 hover:text-gas-green flex items-center gap-2 transition-colors focus:outline-none";
+
+        if (contactConfig.mode === "contact-promo" || contactConfig.mode === "qr" || !contactConfig.mode) {
+            return `<button type="button" data-ggx-action="open-contact-promo" class="${commonClass}" aria-label="Open contact information"><i class="${iconClass}"></i><span>${label}</span></button>`;
+        }
 
         if (contactConfig.mode === "link" && contactConfig.href) {
             const href = escapeHtml(contactConfig.href);
@@ -3202,6 +3214,12 @@
             if (action === "open-qr") {
                 event.preventDefault();
                 openQr(trigger.dataset.ggxQrType);
+                return;
+            }
+
+            if (action === "open-contact-promo") {
+                event.preventDefault();
+                showContactPromoModal({ force: true });
             }
         });
 

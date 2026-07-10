@@ -1,0 +1,257 @@
+{
+  "files": [
+    {
+      "file": "UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf",
+      "family": "Inter",
+      "rawFamily": "Inter",
+      "subfamily": "Bold",
+      "postscript": "Inter-Bold",
+      "weight": 700,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf",
+      "family": "Inter",
+      "rawFamily": "Inter SemiBold",
+      "subfamily": "Regular",
+      "postscript": "Inter-SemiBold",
+      "weight": 600,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf",
+      "family": "Inter",
+      "rawFamily": "Inter",
+      "subfamily": "Regular",
+      "postscript": "Inter-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf",
+      "family": "Inter",
+      "rawFamily": "Inter Light",
+      "subfamily": "Regular",
+      "postscript": "Inter-Light",
+      "weight": 300,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "fa-brands-400.ttf",
+      "family": "Font Awesome 6 Brands",
+      "rawFamily": "Font Awesome 6 Brands Regular",
+      "subfamily": "Regular",
+      "postscript": "FontAwesome6Brands-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "fa-brands-400.woff2",
+      "family": "Font Awesome 6 Brands",
+      "rawFamily": "Font Awesome 6 Brands Regular",
+      "subfamily": "Regular",
+      "postscript": "FontAwesome6Brands-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "fa-regular-400.ttf",
+      "family": "Font Awesome 6 Free",
+      "rawFamily": "Font Awesome 6 Free Regular",
+      "subfamily": "Regular",
+      "postscript": "FontAwesome6Free-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "fa-regular-400.woff2",
+      "family": "Font Awesome 6 Free",
+      "rawFamily": "Font Awesome 6 Free Regular",
+      "subfamily": "Regular",
+      "postscript": "FontAwesome6Free-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "fa-solid-900.ttf",
+      "family": "Font Awesome 6 Free Solid",
+      "rawFamily": "Font Awesome 6 Free Solid",
+      "subfamily": "Solid",
+      "postscript": "FontAwesome6Free-Solid",
+      "weight": 900,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "fa-solid-900.woff2",
+      "family": "Font Awesome 6 Free Solid",
+      "rawFamily": "Font Awesome 6 Free Solid",
+      "subfamily": "Solid",
+      "postscript": "FontAwesome6Free-Solid",
+      "weight": 900,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "fa-v4compatibility.ttf",
+      "family": "Font Awesome v4 Compatibility",
+      "rawFamily": "Font Awesome v4 Compatibility Regular",
+      "subfamily": "Regular",
+      "postscript": "FontAwesomev4Compatibility-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": true
+    },
+    {
+      "file": "fa-v4compatibility.woff2",
+      "family": "Font Awesome v4 Compatibility",
+      "rawFamily": "Font Awesome v4 Compatibility Regular",
+      "subfamily": "Regular",
+      "postscript": "FontAwesomev4Compatibility-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": true
+    },
+    {
+      "file": "tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8L6tjPQ.ttf",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Bold",
+      "postscript": "JetBrainsMono-Bold",
+      "weight": 700,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPQ.ttf",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    }
+  ],
+  "families": [
+    {
+      "family": "Font Awesome 6 Brands",
+      "weights": [
+        400
+      ],
+      "variable": false,
+      "fileCount": 2,
+      "files": [
+        "fa-brands-400.ttf",
+        "fa-brands-400.woff2"
+      ]
+    },
+    {
+      "family": "Font Awesome 6 Free",
+      "weights": [
+        400
+      ],
+      "variable": false,
+      "fileCount": 2,
+      "files": [
+        "fa-regular-400.ttf",
+        "fa-regular-400.woff2"
+      ]
+    },
+    {
+      "family": "Font Awesome 6 Free Solid",
+      "weights": [
+        900
+      ],
+      "variable": false,
+      "fileCount": 2,
+      "files": [
+        "fa-solid-900.ttf",
+        "fa-solid-900.woff2"
+      ]
+    },
+    {
+      "family": "Font Awesome v4 Compatibility",
+      "weights": [
+        400
+      ],
+      "variable": false,
+      "fileCount": 2,
+      "files": [
+        "fa-v4compatibility.ttf",
+        "fa-v4compatibility.woff2"
+      ]
+    },
+    {
+      "family": "Inter",
+      "weights": [
+        300,
+        400,
+        600,
+        700
+      ],
+      "variable": false,
+      "fileCount": 4,
+      "files": [
+        "UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf",
+        "UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf",
+        "UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf",
+        "UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf"
+      ]
+    },
+    {
+      "family": "JetBrains Mono",
+      "weights": [
+        400,
+        700
+      ],
+      "variable": false,
+      "fileCount": 2,
+      "files": [
+        "tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8L6tjPQ.ttf",
+        "tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPQ.ttf"
+      ]
+    }
+  ],
+  "unidentified": [],
+  "meta": {
+    "generatedAt": "2026-07-10T01:53:10.797Z",
+    "tool": "fontkit"
+  }
+}

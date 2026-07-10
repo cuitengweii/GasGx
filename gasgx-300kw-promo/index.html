@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GasGx G300 Product Promo</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #090909;
+      }
+
+      #root-gasgx-300kw-promo {
+        position: relative;
+        overflow: hidden;
+        width: 1920px;
+        height: 1080px;
+        background: #090909;
+      }
+
+      .caption {
+        position: absolute;
+        left: 50%;
+        bottom: 30px;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: min(78%, 1500px);
+        min-height: 78px;
+        padding: 16px 30px;
+        box-sizing: border-box;
+        transform: translateX(-50%);
+        border: 1px solid rgba(93, 214, 44, 0.62);
+        border-radius: 8px;
+        background: rgba(9, 9, 9, 0.88);
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.48), 0 0 26px rgba(93, 214, 44, 0.12);
+        color: #ffffff;
+        font-family: Inter, Arial, sans-serif;
+        font-size: 29px;
+        font-weight: 600;
+        line-height: 1.25;
+        text-align: center;
+      }
+
+      .caption::before {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 6px;
+        border-radius: 8px 0 0 8px;
+        background: #5dd62c;
+        content: "";
+      }
+
+      .caption span {
+        position: absolute;
+        left: 30px;
+        right: 30px;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  </head>
+  <body>
+    <div data-hf-id="hf-hmtw" id="root-gasgx-300kw-promo" data-composition-id="gasgx-300kw-promo" data-start="0" data-width="1920" data-height="1080" data-duration="20">
+      <div data-hf-id="hf-tjru" id="beat-1" data-composition-id="beat-1-hook" data-composition-src="compositions/beat-1-hook.html" data-start="0" data-duration="4.2" data-track-index="1"></div>
+      <div data-hf-id="hf-s9j0" id="beat-2" data-composition-id="beat-2-proof" data-composition-src="compositions/beat-2-proof.html" data-start="4.0" data-duration="5.5" data-track-index="2"></div>
+      <div data-hf-id="hf-f6zu" id="beat-3" data-composition-id="beat-3-engineering" data-composition-src="compositions/beat-3-engineering.html" data-start="9.3" data-duration="5.9" data-track-index="3"></div>
+      <div data-hf-id="hf-6g57" id="beat-4" data-composition-id="beat-4-cta" data-composition-src="compositions/beat-4-cta.html" data-start="15.0" data-duration="5.0" data-track-index="4"></div>
+
+      <div id="captions" class="caption">
+        <span id="caption-1">Meet the GasGx G300. Three hundred kilowatts of site-ready power from stranded gas.</span>
+        <span id="caption-2">Thirty-seven percent electrical efficiency, powered by a Cummins 15N engine.</span>
+        <span id="caption-3">Leroy-Somer alternator. ComAp control. Eight thousand hours of warranty time.</span>
+        <span id="caption-4">Built for oilfield, industrial, and gas-to-computing sites. Start at $36,800.</span>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      tl.set("#caption-1", { opacity: 0 }, 0);
+      tl.set("#caption-2", { opacity: 0 }, 0);
+      tl.set("#caption-3", { opacity: 0 }, 0);
+      tl.set("#caption-4", { opacity: 0 }, 0);
+      tl.to("#caption-1", { opacity: 1, duration: 0.18 }, 0.2);
+      tl.to("#caption-1", { opacity: 0, duration: 0.18 }, 3.82);
+      tl.to("#caption-2", { opacity: 1, duration: 0.18 }, 4.0);
+      tl.to("#caption-2", { opacity: 0, duration: 0.18 }, 9.12);
+      tl.to("#caption-3", { opacity: 1, duration: 0.18 }, 9.3);
+      tl.to("#caption-3", { opacity: 0, duration: 0.18 }, 14.82);
+      tl.to("#caption-4", { opacity: 1, duration: 0.18 }, 15.0);
+      tl.to("#caption-4", { opacity: 0, duration: 0.18 }, 19.4);
+      window.__timelines["gasgx-300kw-promo"] = tl;
+    </script>
+  </body>
+</html>

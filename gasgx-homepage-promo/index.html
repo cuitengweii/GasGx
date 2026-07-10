@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GasGx Homepage Brand Promo</title>
+    <style>
+      @font-face {
+        font-family: "InterCaptured";
+        src: url("capture/assets/fonts/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf") format("truetype");
+      }
+
+      @font-face {
+        font-family: "JetBrainsCaptured";
+        src: url("capture/assets/fonts/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8L6tjPQ.ttf") format("truetype");
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #050505;
+      }
+
+      #root-gasgx-homepage-promo {
+        position: relative;
+        overflow: hidden;
+        width: 1920px;
+        height: 1080px;
+        background: #050505;
+      }
+
+      .caption {
+        position: absolute;
+        left: 50%;
+        bottom: 30px;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: min(78%, 1500px);
+        min-height: 78px;
+        padding: 16px 30px;
+        box-sizing: border-box;
+        transform: translateX(-50%);
+        border: 1px solid rgba(93, 214, 44, 0.62);
+        border-radius: 8px;
+        background: rgba(5, 5, 5, 0.9);
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.48), 0 0 26px rgba(93, 214, 44, 0.12);
+        color: #ffffff;
+        font-family: "InterCaptured", Inter, Arial, sans-serif;
+        font-size: 29px;
+        font-weight: 600;
+        line-height: 1.25;
+        text-align: center;
+      }
+
+      .caption::before {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 6px;
+        border-radius: 8px 0 0 8px;
+        background: #5dd62c;
+        content: "";
+      }
+
+      .caption span {
+        position: absolute;
+        left: 30px;
+        right: 30px;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  </head>
+  <body>
+    <div data-hf-id="hf-ende" id="root-gasgx-homepage-promo" data-composition-id="gasgx-homepage-promo" data-start="0" data-width="1920" data-height="1080" data-duration="20">
+      <div data-hf-id="hf-hxvi" id="beat-1" data-composition-id="homepage-signal" data-composition-src="compositions/beat-1-signal.html" data-start="0" data-duration="4.4" data-track-index="1"></div>
+      <div data-hf-id="hf-m1ey" id="beat-2" data-composition-id="homepage-global" data-composition-src="compositions/beat-2-global.html" data-start="4.2" data-duration="5.2" data-track-index="2"></div>
+      <div data-hf-id="hf-v0hz" id="beat-3" data-composition-id="homepage-system" data-composition-src="compositions/beat-3-system.html" data-start="9.2" data-duration="5.5" data-track-index="3"></div>
+      <div data-hf-id="hf-gwy9" id="beat-4" data-composition-id="homepage-cta" data-composition-src="compositions/beat-4-cta.html" data-start="14.5" data-duration="5.5" data-track-index="4"></div>
+
+      <div data-hf-id="hf-p9th" id="captions" class="caption">
+        <span data-hf-id="hf-tzfx" id="caption-1">GasGx unstrands natural gas and turns on-site energy into digital opportunity.</span>
+        <span data-hf-id="hf-q9s4" id="caption-2">Explore 25-plus countries and compare gas energy and generator markets.</span>
+        <span data-hf-id="hf-qhyp" id="caption-3">Use economic, engineering, and selection tools in one system.</span>
+        <span data-hf-id="hf-wrtm" id="caption-4">From oilfields to data centers, GasGx makes stranded gas easier to monetize. Explore GasGx.</span>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      tl.set("#caption-1", { opacity: 0 }, 0);
+      tl.set("#caption-2", { opacity: 0 }, 0);
+      tl.set("#caption-3", { opacity: 0 }, 0);
+      tl.set("#caption-4", { opacity: 0 }, 0);
+      tl.to("#caption-1", { opacity: 1, duration: 0.18 }, 0.2);
+      tl.to("#caption-1", { opacity: 0, duration: 0.18 }, 4.02);
+      tl.to("#caption-2", { opacity: 1, duration: 0.18 }, 4.2);
+      tl.to("#caption-2", { opacity: 0, duration: 0.18 }, 9.02);
+      tl.to("#caption-3", { opacity: 1, duration: 0.18 }, 9.2);
+      tl.to("#caption-3", { opacity: 0, duration: 0.18 }, 14.32);
+      tl.to("#caption-4", { opacity: 1, duration: 0.18 }, 14.5);
+      tl.to("#caption-4", { opacity: 0, duration: 0.22 }, 19.66);
+      window.__timelines["gasgx-homepage-promo"] = tl;
+    </script>
+  </body>
+</html>

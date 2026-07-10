@@ -1,0 +1,520 @@
+[span] Gas
+[span] The World's leading engine for monetizing stranded natural gas computing power
+[a] Gas Energy
+[a] Generators
+[a] Insights
+[span] Digitalization
+[a] GasGx O&M Platform
+[a] GasGx ECM
+[a] GasGx IMS
+[a] GasGx Sales System
+[h3] Economic Tools
+[a] LCOE Calculator
+[a] ROI Estimator
+[a] Gas Mining Revenue
+[a] Monte Carlo Sim
+[a] Gas Cost Analysis
+[a] ROCE Calculator
+[h3] Engineering Tools
+[a] Gas Fit Tool
+[a] Emission Estimator
+[a] Gas Analyzer
+[a] Energy Conversion
+[a] Heat Value Table
+[h3] Selection Tools
+[a] Site Fit Wizard
+[a] Location Analysis
+[a] Engine Selection & Econ
+[a] Oil Consumption
+[a] Vehicle vs Ind. (10MW)
+[a] 3-Year Ops Data
+[h3] Miners Zone
+[a] Mining Revenue Calc
+[a] Miner Profitability
+[a] Miner Buyer Guide
+[h3] Global Support
+[a] AECO Price Forecast
+[a] Global Logistics
+[a] Global Compliance
+[span] Rankings
+[h3] Performance
+[a] Top Performance
+[a] High Efficiency
+[a] Elec. Efficiency Rank
+[a] Thermal Efficiency Rank
+[a] Gas Consumption Rank
+[h3] Economics
+[a] Best ROI
+[a] Lowest LCOE
+[a] Depreciation Rank
+[a] ROI Rank
+[h3] Reliability
+[a] High Reliability
+[a] Longest MTBF
+[a] Maintenance Interval Rank
+[a] Spare Parts Rank
+[h3] Quality & Eco
+[a] Emission Rank
+[a] Noise Rank
+[h3] System Cap.
+[a] Generator Rank
+[a] Control System Rank
+[a] USA Market
+[a] Canada Market
+[a] Middle East Market
+[a] Russia Market
+[span] Products
+[span] Use Cases
+[h3] Use Cases
+[a] Oilfield / Associated Gas
+[a] Industrial & Park
+[a] Mining / Data Center
+[h3] Solutions
+[a] Industrial Power
+[a] Oil/Gas Field Power
+[a] Data Center / Mining
+[a] CHP Cogeneration
+[span] Resources
+[h3] Documents
+[a] Whitepapers
+[a] Industry Reports
+[h3] Case Studies
+[a] All Cases
+[a] By Region
+[a] By Scenario
+[h3] Tech Library
+[a] Datasheets
+[a] Certifications
+[h3] Media & Support
+[a] Videos & Tutorials
+[a] Service Network
+[a] Tech Support
+[a] After-sales
+[span] About Us
+[a] Company Profile
+[a] Contact Us
+[span] Login
+[span] Login
+[span] Login
+[span] Welcome,
+[span] User
+[a] Gas Energy
+[a] Generators
+[a] Insights
+[span] Digitalization
+[a] GasGx O&M Platform
+[a] GasGx ECM
+[a] GasGx IMS
+[a] GasGx Sales System
+[h4] Economic Tools
+[a] LCOE Calculator
+[a] ROI Estimator
+[a] Gas Mining Revenue
+[a] Monte Carlo Sim
+[a] Gas Cost Analysis
+[a] ROCE Calculator
+[h4] Engineering Tools
+[a] Gas Fit Tool
+[a] Emission Estimator
+[a] Gas Analyzer
+[a] Energy Conversion
+[a] Heat Value Table
+[h4] Selection Tools
+[a] Site Fit Wizard
+[a] Location Analysis
+[a] Engine Selection & Econ
+[a] Oil Consumption
+[a] Vehicle vs Ind. (10MW)
+[a] 3-Year Ops Data
+[h4] Miners Zone
+[a] Mining Revenue Calc
+[a] Miner Profitability
+[a] Miner Buyer Guide
+[h4] Global Support
+[a] AECO Price Forecast
+[a] Global Logistics
+[a] Global Compliance
+[span] Rankings
+[h4] Performance
+[a] Top Performance
+[a] High Efficiency
+[a] Elec. Efficiency Rank
+[a] Thermal Efficiency Rank
+[a] Gas Consumption Rank
+[h4] Economics
+[a] Best ROI
+[a] Lowest LCOE
+[a] Depreciation Rank
+[a] ROI Rank
+[h4] Reliability
+[a] High Reliability
+[a] Longest MTBF
+[a] Maintenance Interval Rank
+[a] Spare Parts Rank
+[h4] Quality & Eco
+[a] Emission Rank
+[a] Noise Rank
+[h4] System Cap.
+[a] Generator Rank
+[a] Control System Rank
+[a] USA Market
+[a] Canada Market
+[a] Middle East Market
+[a] Russia Market
+[span] Products
+[span] Use Cases
+[h4] Use Cases
+[a] Oilfield / Associated Gas
+[a] Industrial & Park
+[a] Mining / Data Center
+[h4] Solutions
+[a] Industrial Power
+[a] Oil/Gas Field Power
+[a] Data Center / Mining
+[a] CHP Cogeneration
+[span] Resources
+[h4] Documents
+[a] Whitepapers
+[a] Industry Reports
+[h4] Case Studies
+[a] All Cases
+[a] By Region
+[a] By Scenario
+[h4] Tech Library
+[a] Datasheets
+[a] Certifications
+[h4] Media & Support
+[a] Videos & Tutorials
+[a] Service Network
+[a] Tech Support
+[a] After-sales
+[span] About Us
+[a] Company Profile
+[a] Contact Us
+[div] Open-frame standalone generator set
+[h1] GasGx
+[span] G300
+[p] Powered by the CUMMINS-15N core engine, GasGx G300 delivers stable 300KW output and 37% electrical efficiency. It is a compact gas power solution for distributed energy, project-site prime power and gas-to-computing deployments.
+[span] Request custom quote
+[div] Standard open-frame generator set quote
+[div] 36800
+[div] Base configuration price
+[div] Continuous power
+[div] 300
+[div] Electrical efficiency
+[div] Warranty time
+[div] 8000
+[div] Alternator
+[div] Leroy-Somer alternator
+[div] Core engine
+[div] Cummins 15N engine
+[div] Control system
+[div] ComAp controller
+[div] Product gallery
+[h2] G300 image directory
+[span] Generator set exterior
+[span] G300 exterior image
+[span] Fig. 2-1 Top View of Unit
+[span] G300 drawing
+[span] Fig. 2-2 Left View of Unit
+[span] G300 drawing
+[span] Fig. 2-3 Right View of Unit
+[span] G300 drawing
+[span] Gas Control System Diagram
+[span] G300 system diagram
+[span] Gas Supply Train Diagram
+[span] G300 system diagram
+[span] Gas Engine Electronic Control Wiring Diagram
+[span] G300 wiring diagram
+[span] Spark Plug Fault Inspection Diagram
+[span] G300 maintenance diagram
+[h2] Technical specifications
+[p] Detailed generator set, engine and site-condition data from the G300 datasheet.
+[button] Generator set
+[button] Engine
+[button] Test conditions
+[h3] Generator set parameters
+[span] Model
+[strong] GasGx G300
+[span] Rated power
+[strong] 300KW/375KVA
+[span] Rated speed
+[strong] 1500r/min
+[span] Rated voltage
+[strong] 400V
+[span] Rated current
+[strong] 540A
+[span] Frequency
+[strong] 50Hz
+[span] Power factor
+[strong] 0.8 lagging
+[span] Electrical efficiency
+[strong] 37%
+[span] Noise
+[strong] ≤90dB(1m)
+[span] Start mode
+[strong] Electronic
+[span] Weight
+[strong] 2850kg
+[h3] Cummins engine parameters
+[span] Engine model
+[strong] CUMMINS-15N
+[span] Rated output
+[strong] 330KW/1500r
+[span] Rated speed
+[strong] 1500r/min
+[span] Cylinders
+[span] Type
+[strong] L-type, four-stroke, water-cooled
+[span] Intake
+[strong] Exhaust water-cooled turbocharged
+[span] Bore x stroke
+[strong] 135*169mm
+[span] Displacement
+[strong] 14.5L
+[span] Compression ratio
+[strong] 12:1
+[span] Exhaust temp before turbine
+[strong] 620±10℃
+[span] Gas valve interface
+[strong] DN40
+[span] Control system
+[strong] ECS digital electronic control
+[span] Oil consumption
+[strong] ≤0.3g/kw.h
+[h3] Test-condition parameters
+[span] Gas temperature
+[strong] 10~30℃
+[span] Gas humidity
+[strong] <60%
+[span] Pipeline pressure
+[strong] 1.5bar
+[span] Gas intake pressure
+[strong] 10kpa
+[span] Exhaust back pressure
+[strong] <5kpa
+[span] Altitude
+[strong] 900m
+[span] Atmospheric pressure
+[strong] 90.7kpa
+[span] Ambient temperature
+[strong] 20℃
+[span] Relative humidity
+[strong] ≤30%
+[span] All unit data is measured under the listed test environment. Actual operating performance may vary with site conditions, gas quality and climate.
+[h2] Complete delivery scope
+[p] Factory delivery is built around an industrial baseline configuration, with optional modules for acoustic, container and project-specific requirements.
+[span] Standard factory configuration
+[strong] Gas engine
+[p] Includes muffler and flexible pipe.
+[span] 1 unit
+[strong] Alternator
+[span] 1 unit
+[strong] Radiator
+[span] 1 unit
+[strong] Common base
+[span] 1 set
+[strong] Generator control cabinet
+[p] Includes control module, control system and connection harness.
+[span] 1 set
+[strong] Gas intake valve train
+[p] Includes regulator, solenoid valve, flame arrester and filter.
+[span] 1 set
+[strong] Battery
+[span] 1 set
+[strong] Tools
+[p] Spark plug and filter removal tools.
+[span] 1 set
+[strong] Documents
+[p] User manual and maintenance handbook.
+[span] 1 set
+[span] Optional modules
+[strong] Container
+[span] 1 unit
+[strong] Acoustic panel
+[span] 1 set
+[strong] Gas leakage alarm
+[p] Leak shutdown, gas shutoff and concentration detection.
+[span] 1 set
+[strong] Engineering customization
+[p] Custom container and system layout by project requirement.
+[span] 1 set
+[span] Need project customization?
+[p] GasGx can match gas quality, site ventilation, acoustic requirements and container layout into a deployable package.
+[span] Contact technical support
+[p] Making stranded natural gas power generation easier
+[h4] Contact Us
+[a] Gas Energy
+[a] Generators
+[a] Insights
+[a] Gas Energy
+[a] Generators
+[a] Insights
+[h4] Digitalization
+[a] GasGx O&M Platform
+[a] GasGx ECM
+[a] GasGx IMS
+[a] GasGx Sales System
+[span] Digitalization
+[a] GasGx O&M Platform
+[a] GasGx ECM
+[a] GasGx IMS
+[a] GasGx Sales System
+[span] Economic Tools:
+[a] LCOE Calculator
+[a] ROI Estimator
+[a] Gas Mining Revenue
+[a] Monte Carlo Sim
+[a] Gas Cost Analysis
+[a] ROCE Calculator
+[span] Engineering Tools:
+[a] Gas Fit Tool
+[a] Emission Estimator
+[a] Gas Analyzer
+[a] Energy Conversion
+[a] Heat Value Table
+[span] Selection Tools:
+[a] Site Fit Wizard
+[a] Location Analysis
+[a] Engine Selection & Econ
+[a] Oil Consumption
+[a] Vehicle vs Ind. (10MW)
+[a] 3-Year Ops Data
+[span] Miners Zone:
+[a] Mining Revenue Calc
+[a] Miner Profitability
+[a] Miner Buyer Guide
+[span] Global Support:
+[a] AECO Price Forecast
+[a] Global Logistics
+[a] Global Compliance
+[a] LCOE Calculator
+[a] ROI Estimator
+[a] Gas Mining Revenue
+[a] Monte Carlo Sim
+[a] Gas Cost Analysis
+[a] ROCE Calculator
+[a] Gas Fit Tool
+[a] Emission Estimator
+[a] Gas Analyzer
+[a] Energy Conversion
+[a] Heat Value Table
+[a] Site Fit Wizard
+[a] Location Analysis
+[a] Engine Selection & Econ
+[a] Oil Consumption
+[a] Vehicle vs Ind. (10MW)
+[a] 3-Year Ops Data
+[a] Mining Revenue Calc
+[a] Miner Profitability
+[a] Miner Buyer Guide
+[a] AECO Price Forecast
+[a] Global Logistics
+[a] Global Compliance
+[h4] Rankings
+[span] Performance:
+[a] Top Performance
+[a] High Efficiency
+[a] Elec. Efficiency Rank
+[a] Thermal Efficiency Rank
+[a] Gas Consumption Rank
+[span] Economics:
+[a] Best ROI
+[a] Lowest LCOE
+[a] Depreciation Rank
+[a] ROI Rank
+[span] Reliability:
+[a] High Reliability
+[a] Longest MTBF
+[a] Maintenance Interval Rank
+[a] Spare Parts Rank
+[span] Quality & Eco:
+[a] Emission Rank
+[a] Noise Rank
+[span] System Cap.:
+[a] Generator Rank
+[a] Control System Rank
+[span] Regions:
+[a] USA Market
+[a] Canada Market
+[a] Middle East Market
+[a] Russia Market
+[span] Rankings
+[a] Top Performance
+[a] High Efficiency
+[a] Elec. Efficiency Rank
+[a] Thermal Efficiency Rank
+[a] Gas Consumption Rank
+[a] Best ROI
+[a] Lowest LCOE
+[a] Depreciation Rank
+[a] ROI Rank
+[a] High Reliability
+[a] Longest MTBF
+[a] Maintenance Interval Rank
+[a] Spare Parts Rank
+[a] Emission Rank
+[a] Noise Rank
+[a] Generator Rank
+[a] Control System Rank
+[a] USA Market
+[a] Canada Market
+[a] Middle East Market
+[a] Russia Market
+[h4] Products
+[span] Products
+[h4] Use Cases
+[span] Use Cases:
+[a] Oilfield / Associated Gas
+[a] Industrial & Park
+[a] Mining / Data Center
+[span] Solutions:
+[a] Industrial Power
+[a] Oil/Gas Field Power
+[a] Data Center / Mining
+[a] CHP Cogeneration
+[span] Use Cases
+[a] Oilfield / Associated Gas
+[a] Industrial & Park
+[a] Mining / Data Center
+[a] Industrial Power
+[a] Oil/Gas Field Power
+[a] Data Center / Mining
+[a] CHP Cogeneration
+[h4] Resources
+[span] Documents:
+[a] Whitepapers
+[a] Industry Reports
+[span] Case Studies:
+[a] All Cases
+[a] By Region
+[a] By Scenario
+[span] Tech Library:
+[a] Datasheets
+[a] Certifications
+[span] Media & Support:
+[a] Videos & Tutorials
+[span] Resources
+[a] Whitepapers
+[a] Industry Reports
+[a] All Cases
+[a] By Region
+[a] By Scenario
+[a] Datasheets
+[a] Certifications
+[a] Videos & Tutorials
+[a] Service Network
+[a] Tech Support
+[a] After-sales
+[a] Service Network
+[a] Tech Support
+[a] After-sales
+[h4] About Us
+[a] Company Profile
+[a] Contact Us
+[span] About Us
+[a] Company Profile
+[a] Contact Us
+[p] The World's leading engine for monetizing stranded natural gas computing power
+[span] © 2026 GasGx. All rights reserved.
+[a] Privacy Policy

@@ -562,10 +562,11 @@ body {
     display: grid;
     place-items: center;
     overflow: hidden;
-    padding: 72px 16px 88px;
+    justify-content: start;
+    padding: 72px max(24px, 9vw) 88px;
     background:
-        radial-gradient(ellipse at 18% 30%, rgba(93, 214, 44, 0.2), transparent 34rem),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 42%, rgba(5, 7, 6, 0.92) 100%);
+        radial-gradient(ellipse at 12% 78%, rgba(18, 83, 181, 0.18), transparent 38rem),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 42%, rgba(4, 5, 6, 0.94) 100%);
 }
 
 .coming-soon-stage::before {
@@ -582,14 +583,9 @@ body {
 
 .coming-soon-visual {
     position: absolute;
-    inset: 12% max(18px, 7vw) 10%;
+    inset: 0;
     overflow: hidden;
-    border: 1px solid rgba(93, 214, 44, 0.18);
-    border-radius: 8px;
-    background: #070907;
-    box-shadow:
-        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
-        0 34px 90px rgba(0, 0, 0, 0.52);
+    background: #050506;
 }
 
 .coming-soon-visual img {
@@ -598,9 +594,10 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.28;
-    filter: saturate(0.72) contrast(1.12) blur(1px);
-    transform: scale(1.04);
+    object-position: center;
+    opacity: 0.9;
+    filter: saturate(0.82) contrast(1.12);
+    transform: scale(1.015);
 }
 
 .coming-soon-visual::after {
@@ -608,63 +605,36 @@ body {
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(ellipse at 50% 46%, transparent 0%, rgba(6, 8, 7, 0.24) 52%, rgba(6, 8, 7, 0.76) 100%),
-        linear-gradient(90deg, rgba(7, 9, 8, 0.72), transparent 30%, transparent 70%, rgba(7, 9, 8, 0.74));
+        linear-gradient(90deg, rgba(3, 4, 5, 0.88) 0%, rgba(3, 4, 5, 0.58) 28%, rgba(3, 4, 5, 0.08) 58%, rgba(3, 4, 5, 0.38) 100%),
+        linear-gradient(0deg, rgba(3, 4, 5, 0.82) 0%, transparent 36%, rgba(3, 4, 5, 0.12) 100%);
 }
 
-.curtain-panel,
-.curtain-valance {
-    position: absolute;
-    pointer-events: none;
-    background:
-        linear-gradient(90deg, rgba(4, 10, 6, 0.94), rgba(18, 54, 22, 0.78), rgba(5, 12, 7, 0.94)),
-        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 32px);
-    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.64);
+.unveiling-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #f3c86b;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
 }
 
-.curtain-panel {
-    top: 0;
-    bottom: 0;
-    width: 52%;
-}
-
-.curtain-panel-left {
-    left: 0;
-    clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
-}
-
-.curtain-panel-right {
-    right: 0;
-    clip-path: polygon(12% 0, 100% 0, 100% 100%, 0 100%);
-}
-
-.curtain-valance {
-    left: 0;
-    right: 0;
-    top: 0;
-    height: 88px;
-    border-bottom: 1px solid rgba(93, 214, 44, 0.22);
+.unveiling-eyebrow > span:first-child {
+    width: 36px;
+    height: 1px;
+    background: currentColor;
 }
 
 .coming-soon-modal {
     position: relative;
     z-index: 1;
-    width: min(620px, 100%);
-    padding: clamp(28px, 5vw, 52px);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 8px;
-    background:
-        linear-gradient(135deg, rgba(93, 214, 44, 0.14), transparent 48%),
-        rgba(12, 15, 13, 0.72);
-    box-shadow:
-        0 0 0 1px rgba(93, 214, 44, 0.08),
-        0 34px 120px rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    width: min(590px, 100%);
+    padding: clamp(18px, 2vw, 28px) 0;
+    text-shadow: 0 3px 24px rgba(0, 0, 0, 0.88);
 }
 
 .coming-soon-modal h1 {
-    margin: 24px 0 10px;
+    margin: 22px 0 12px;
     color: #fff;
     font-size: clamp(2.8rem, 7vw, 5rem);
     font-weight: 900;
@@ -674,16 +644,17 @@ body {
 
 .coming-soon-status {
     margin: 0;
-    color: #5dd62c;
-    font-size: clamp(1.8rem, 4vw, 3rem);
+    color: #f3c86b;
+    font-size: clamp(1.1rem, 2.3vw, 1.5rem);
     font-weight: 900;
-    line-height: 1.1;
+    line-height: 1.25;
+    letter-spacing: 0.1em;
 }
 
 .coming-soon-copy {
     max-width: 520px;
     margin: 18px 0 0;
-    color: #cbd5e1;
+    color: rgba(242, 245, 249, 0.88);
     font-size: 1.05rem;
     line-height: 1.75;
 }
@@ -692,7 +663,7 @@ body {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
-    margin-top: 30px;
+    margin-top: 28px;
 }
 
 .product-card-grid {
@@ -1560,15 +1531,15 @@ body {
 
     .coming-soon-stage {
         min-height: calc(100vh - 64px);
-        padding: 44px 12px 56px;
+        padding: 44px 28px 56px;
     }
 
     .coming-soon-visual {
-        inset: 9% 12px 8%;
+        inset: 0;
     }
 
-    .curtain-panel {
-        width: 58%;
+    .coming-soon-visual img {
+        object-position: 58% center;
     }
 
     .coming-soon-modal {
