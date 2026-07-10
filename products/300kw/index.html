@@ -5,13 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GasGx G300 - 300kW Gas Generator Set</title>
     <meta name="description" content="GasGx G300 300kW gas generator set product specifications, engine parameters, supply scope and deployment notes.">
+    <link rel="canonical" href="https://www.gasgx.com/products/300kw/">
+    <meta property="og:type" content="product">
+    <meta property="og:title" content="GasGx G300 - 300kW Gas Generator Set">
+    <meta property="og:description" content="300kW gas generator set with 37% electrical efficiency, 8000h warranty and standard open-frame quote from GasGx.">
+    <meta property="og:url" content="https://www.gasgx.com/products/300kw/">
+    <meta property="og:image" content="https://www.gasgx.com/products/img/300kw/0.png">
+    <meta property="og:image:width" content="1642">
+    <meta property="og:image:height" content="942">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="GasGx G300 - 300kW Gas Generator Set">
+    <meta name="twitter:description" content="300kW gas generator set with 37% electrical efficiency, 8000h warranty and standard open-frame quote from GasGx.">
+    <meta name="twitter:image" content="https://www.gasgx.com/products/img/300kw/0.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/shared/ui/site-shell.shared.css">
     <link rel="stylesheet" href="/shared/ui/loading.shared.css">
-    <link rel="stylesheet" href="/products/product-detail.css?v=20260709respect-lang-config01">
+    <link rel="stylesheet" href="/products/product-detail.css?v=20260710share-g30001">
 </head>
 <body class="product-page">
     <span data-page-title-en="GasGx G300 - 300kW Gas Generator Set" data-page-title-zh="GasGx G300 - 300kW 燃气发电机组" hidden></span>
@@ -26,6 +38,10 @@
                     <p class="showcase-copy" data-i18n-en="Powered by the CUMMINS-15N core engine, GasGx G300 delivers stable 300KW output and 37% electrical efficiency. It is a compact gas power solution for distributed energy, project-site prime power and gas-to-computing deployments." data-i18n-zh="搭载 CUMMINS-15N 核心引擎，GasGx G300 输出 300KW 稳定功率，电效率为 37%，是面向分布式能源、项目现场常用电源与燃气算力部署的紧凑型燃气发电解决方案。">Powered by the CUMMINS-15N core engine, GasGx G300 delivers stable 300KW output and 37% electrical efficiency.</p>
                     <div class="showcase-actions">
                         <a class="showcase-button primary" href="/about/contact/"><span data-i18n-en="Request custom quote" data-i18n-zh="获取定制报价">Request custom quote</span><i class="fa-solid fa-chevron-right"></i></a>
+                        <button class="showcase-button product-share-trigger" type="button" data-product-share-open>
+                            <i class="fa-solid fa-share-nodes"></i>
+                            <span data-i18n-en="Share with customer" data-i18n-zh="分享给客户">Share with customer</span>
+                        </button>
                     </div>
                 </div>
 
@@ -269,7 +285,37 @@
     <div id="ggx-site-footer-slot"></div>
     <div id="ggx-back-to-top-slot"></div>
     <div id="ggx-chatbot-slot"></div>
-    <script src="/products/product-detail.js?v=20260709respect-lang-config01"></script>
+    <div class="product-share-modal" id="g300-share-modal" hidden aria-hidden="true">
+        <button class="product-share-backdrop" type="button" data-product-share-close aria-label="Close share panel"></button>
+        <section class="product-share-panel" role="dialog" aria-modal="true" aria-labelledby="g300-share-title">
+            <div class="product-share-head">
+                <div>
+                    <div class="product-share-kicker" data-i18n-en="Customer share kit" data-i18n-zh="客户分享素材">Customer share kit</div>
+                    <h2 id="g300-share-title" data-i18n-en="Share GasGx G300" data-i18n-zh="分享 GasGx G300">Share GasGx G300</h2>
+                </div>
+                <button class="product-share-close" type="button" data-product-share-close aria-label="Close share panel"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="product-share-body">
+                <div class="product-share-copy">
+                    <label for="g300-share-copy" data-i18n-en="Message for WeChat or direct messages" data-i18n-zh="微信或私信转发文案">Message for WeChat or direct messages</label>
+                    <textarea id="g300-share-copy" readonly rows="7"></textarea>
+                    <div class="product-share-actions">
+                        <button class="product-share-action primary" type="button" data-product-share-copy-message><i class="fa-regular fa-copy"></i><span data-i18n-en="Copy message" data-i18n-zh="复制文案">Copy message</span></button>
+                        <button class="product-share-action" type="button" data-product-share-copy-url><i class="fa-solid fa-link"></i><span data-i18n-en="Copy link" data-i18n-zh="复制链接">Copy link</span></button>
+                        <button class="product-share-action" type="button" data-product-share-native hidden><i class="fa-solid fa-arrow-up-from-bracket"></i><span data-i18n-en="System share" data-i18n-zh="系统分享">System share</span></button>
+                    </div>
+                    <div class="product-share-status" data-product-share-status role="status" aria-live="polite"></div>
+                </div>
+                <div class="product-share-poster">
+                    <div class="product-share-poster-frame">
+                        <img id="g300-share-poster" alt="GasGx G300 share poster preview" loading="lazy">
+                    </div>
+                    <button class="product-share-download" type="button" data-product-share-download-poster><i class="fa-solid fa-download"></i><span data-i18n-en="Save poster" data-i18n-zh="保存海报">Save poster</span></button>
+                </div>
+            </div>
+        </section>
+    </div>
+    <script src="/products/product-detail.js?v=20260710share-g30001"></script>
     <script src="/shared/ui/site-shell.config.js"></script>
     <script src="/products/product-shell-config.js"></script>
     <script src="/shared/ui/site-shell.shared.js?v=20260709respect-lang-config01"></script>

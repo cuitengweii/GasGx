@@ -1247,11 +1247,9 @@ button[onclick*="captureAndShare"] {
 .ggx-contact-promo-backdrop {
     position: absolute;
     inset: 0;
-    background:
-        radial-gradient(circle at 52% 18%, rgba(93, 214, 44, 0.13), transparent 34rem),
-        rgba(0, 0, 0, 0.62);
-    backdrop-filter: blur(12px) saturate(1.05);
-    -webkit-backdrop-filter: blur(12px) saturate(1.05);
+    background: rgba(0, 0, 0, 0.58);
+    backdrop-filter: blur(22px) saturate(1.18);
+    -webkit-backdrop-filter: blur(22px) saturate(1.18);
 }
 
 .ggx-contact-promo-panel {
@@ -1259,14 +1257,15 @@ button[onclick*="captureAndShare"] {
     width: min(100%, 860px);
     max-height: calc(100vh - 2rem);
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 8px;
-    background:
-        linear-gradient(135deg, rgba(32, 32, 32, 0.78), rgba(13, 18, 14, 0.68)),
-        rgba(20, 20, 20, 0.68);
-    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(24px) saturate(1.18);
-    -webkit-backdrop-filter: blur(24px) saturate(1.18);
+    background: rgba(0, 0, 0, 0.58);
+    box-shadow:
+        0 34px 110px rgba(0, 0, 0, 0.52),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(34px) saturate(1.32);
+    -webkit-backdrop-filter: blur(34px) saturate(1.32);
     transform: translateY(12px) scale(0.98);
     transition: transform 0.18s ease;
     outline: none;
@@ -1287,10 +1286,12 @@ button[onclick*="captureAndShare"] {
     height: 2.4rem;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 999px;
-    background: rgba(0, 0, 0, 0.24);
+    background: rgba(0, 0, 0, 0.34);
     color: rgba(248, 248, 248, 0.78);
+    backdrop-filter: blur(16px) saturate(1.24);
+    -webkit-backdrop-filter: blur(16px) saturate(1.24);
     cursor: pointer;
     transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
@@ -1359,10 +1360,14 @@ button[onclick*="captureAndShare"] {
 .ggx-contact-promo-social-panel {
     min-width: 0;
     min-height: 305px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 8px;
-    background: rgba(24, 24, 24, 0.72);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    background: rgba(0, 0, 0, 0.34);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 18px 46px rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(22px) saturate(1.26);
+    -webkit-backdrop-filter: blur(22px) saturate(1.26);
 }
 
 .ggx-contact-promo-email {
@@ -1379,7 +1384,7 @@ button[onclick*="captureAndShare"] {
 
 .ggx-contact-promo-email:hover {
     border-color: rgba(93, 214, 44, 0.42);
-    background: rgba(29, 35, 26, 0.82);
+    background: rgba(0, 0, 0, 0.46);
     transform: translateY(-1px);
 }
 
@@ -1448,11 +1453,13 @@ button[onclick*="captureAndShare"] {
     align-items: center;
     justify-content: center;
     gap: 0.58rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.28);
     color: #94a3b8;
     cursor: default;
+    backdrop-filter: blur(16px) saturate(1.18);
+    -webkit-backdrop-filter: blur(16px) saturate(1.18);
 }
 
 .ggx-contact-promo-social img {
