@@ -206,6 +206,7 @@ const state = {
     baseTime: Date.now(),
     clockTimer: 0,
     galleryIndex: 0,
+    productPreviewInstanceId: '',
     translationDirty: new Set(),
     saveInFlight: false,
     hasUnsavedChanges: false,
@@ -904,6 +905,18 @@ function previewQuoteUrl(instanceId) {
     return new URL(`/quote/view.html?preview=${encodeURIComponent(instanceId)}`, window.location.origin).toString();
 }
 
+function openPreviewWindow() {
+    const previewWindow = window.open('about:blank', '_blank');
+    if (!previewWindow) {
+        renderStatus('浏览器拦截了预览窗口，请允许弹窗后重试。', 'warning');
+        return null;
+    }
+    previewWindow.opener = null;
+    previewWindow.document.title = 'GasGx Quote Preview';
+    previewWindow.document.body.innerHTML = '<p style="font-family:Arial,sans-serif;padding:24px;color:#111;">正在生成预览...</p>';
+    return previewWindow;
+}
+
 async function copyText(value) {
     if (!text(value)) return false;
     if (navigator.clipboard?.writeText) {
@@ -932,11 +945,17 @@ function renderEditorActions() {
     if (saveButton) saveButton.textContent = saveLabel;
     if (!instanceActions || !previewButton || !publishButton) return;
     const isInstance = state.kind === 'instance';
-    instanceActions.hidden = !isInstance;
+    instanceActions.hidden = false;
+    instanceActions.style.display = 'contents';
     publishButton.hidden = !isInstance;
-    if (!isInstance) return;
+    if (!isInstance) {
+        previewButton.disabled = state.saveInFlight;
+        previewButton.textContent = '预览产品页';
+        return;
+    }
     const hasId = Boolean(state.instance?.id);
     previewButton.disabled = !hasId;
+    previewButton.textContent = '预览客户页';
     const actionMode = publishedInstanceActionMode();
     publishButton.disabled = actionMode === 'copy'
         ? !Boolean(text(state.instance?.public_slug))
@@ -1731,6 +1750,65 @@ async function saveInstance(user) {
     return state.instance;
 }
 
+async function saveProductPreviewInstance(user) {
+    const token = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`).replace(/[^a-z0-9]/gi, '').slice(0, 10).toLowerCase();
+    const payload = {
+        brand_id: state.brand.id,
+        product_id: state.product.id,
+        public_slug: createPublicSlug(state.brand.slug, `${state.product.slug}-preview-${token}`),
+        status: 'draft',
+        last_active_status: 'draft',
+        customer_name: '模板预览',
+        receiver_name: localizedValue(state.product.public_title) || state.product.product_code || state.product.slug,
+        receiver_email: '',
+        default_lang: state.product.default_lang,
+        validity_hours: state.product.validity_hours,
+        draft_rates: normalizeRates(state.rates),
+        share_config: {
+            preview_source: 'product_template',
+            enabled_langs: configuredEditorLangs(),
+        },
+        brand_snapshot: extractBrandSnapshot(state.brand),
+        product_snapshot: extractProductSnapshot({
+            ...state.product,
+            media_gallery: state.media,
+            section_config: currentSectionConfig(),
+            ui_text: state.product.ui_text,
+        }),
+        section_config: currentSectionConfig(),
+        updated_by: user?.id || null,
+    };
+
+    let saved = null;
+    if (state.productPreviewInstanceId) {
+        const { public_slug: _publicSlug, ...updatePayload } = payload;
+        const { data, error } = await client
+            .from(TABLE_INSTANCES)
+            .update(updatePayload)
+            .eq('id', state.productPreviewInstanceId)
+            .select('*')
+            .maybeSingle();
+        if (!error && data?.id) saved = data;
+    }
+
+    if (!saved) {
+        const { data, error } = await client
+            .from(TABLE_INSTANCES)
+            .insert({
+                ...payload,
+                created_by: user?.id || null,
+            })
+            .select('*')
+            .single();
+        if (error) throw error;
+        saved = data;
+    }
+
+    await persistItemRows(TABLE_INSTANCE_ITEMS, 'instance_id', saved.id, state.items);
+    state.productPreviewInstanceId = saved.id;
+    return saved.id;
+}
+
 async function publishInstance(user) {
     const saved = await saveInstance(user);
     const publishVersion = nextQuoteVersion(saved);
@@ -1793,7 +1871,7 @@ async function runAutoTranslation(force = false) {
 
 async function handleSave() {
     if (state.saveInFlight) {
-        return;
+        return false;
     }
     flushPendingEditorChanges();
     const saveVersion = state.hasUnsavedChanges ? state.changeVersion : state.changeVersion + 1;
@@ -1822,9 +1900,11 @@ async function handleSave() {
         }
         updateSaveButtons(state.kind === 'product' ? '保存模板' : '保存草稿', false);
         renderStatus(t('saveSuccess'), 'success');
+        return true;
     } catch (error) {
         updateSaveButtons(state.kind === 'product' ? '保存模板' : '保存草稿', false);
         renderStatus(`${t('saveFailed')} ${error.message || ''}`, 'error');
+        return false;
     } finally {
         state.saveInFlight = false;
         renderEditorActions();
@@ -1924,14 +2004,41 @@ function bindGlobal() {
     };
 
     byId('btn-preview-instance')?.addEventListener('click', async () => {
-        if (state.kind !== 'instance') return;
-        if (!state.instance?.id) {
-            renderStatus('\u8bf7\u5148\u4fdd\u5b58\u8349\u7a3f\uff0c\u518d\u9884\u89c8\u5ba2\u6237\u9875\u3002', 'warning');
+        if (state.saveInFlight) return;
+        const previewWindow = openPreviewWindow();
+        if (!previewWindow) return;
+        if (state.kind === 'product') {
+            const saved = await handleSave();
+            if (!saved) {
+                previewWindow.close();
+                return;
+            }
+            try {
+                renderStatus('正在生成产品预览...');
+                const previewId = await saveProductPreviewInstance(state.user);
+                previewWindow.location.href = previewQuoteUrl(previewId);
+                renderStatus('产品预览已打开。', 'success');
+            } catch (error) {
+                previewWindow.close();
+                renderStatus(`产品预览生成失败。${error.message || ''}`, 'error');
+            }
             return;
         }
-        await handleSave();
-        if (!state.instance?.id) return;
-        window.open(previewQuoteUrl(state.instance.id), '_blank', 'noopener');
+        if (state.kind !== 'instance') {
+            previewWindow.close();
+            return;
+        }
+        if (!state.instance?.id) {
+            renderStatus('\u8bf7\u5148\u4fdd\u5b58\u8349\u7a3f\uff0c\u518d\u9884\u89c8\u5ba2\u6237\u9875\u3002', 'warning');
+            previewWindow.close();
+            return;
+        }
+        const saved = await handleSave();
+        if (!saved || !state.instance?.id) {
+            previewWindow.close();
+            return;
+        }
+        previewWindow.location.href = previewQuoteUrl(state.instance.id);
     });
 
     byId('btn-publish-instance')?.addEventListener('click', async () => {
