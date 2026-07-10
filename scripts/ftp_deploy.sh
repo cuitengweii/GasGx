@@ -18,6 +18,12 @@ FTP_SCHEME="${FTP_SCHEME:-ftp}"
 FTP_USE_EPSV="${FTP_USE_EPSV:-1}"
 FTP_VERBOSE="${FTP_VERBOSE:-0}"
 
+if { [ -z "$FTP_HOST" ] || [ -z "$FTP_USER" ] || [ -z "$FTP_PASS" ]; } &&
+  [ -f "$ROOT_DIR/.vscode/sftp.json" ] &&
+  command -v node >/dev/null 2>&1; then
+  eval "$(node "$ROOT_DIR/scripts/ftp_config_from_sftp.cjs" "$ROOT_DIR/.vscode/sftp.json")"
+fi
+
 usage() {
   cat <<EOF
 Usage:
@@ -25,7 +31,7 @@ Usage:
   sh scripts/ftp_deploy.sh upload <local_file> <remote_file>
   sh scripts/ftp_deploy.sh download <remote_file> <local_file>
 
-Config (from .env.ftp or env vars):
+Config (from .env.ftp, env vars, or .vscode/sftp.json):
   FTP_HOST, FTP_PORT, FTP_USER, FTP_PASS
 Optional:
   FTP_BASE_DIR, FTP_SCHEME, FTP_USE_EPSV, FTP_VERBOSE
@@ -34,7 +40,7 @@ EOF
 
 require_config() {
   if [ -z "$FTP_HOST" ] || [ -z "$FTP_USER" ] || [ -z "$FTP_PASS" ]; then
-    echo "Missing FTP config. Please set FTP_HOST/FTP_USER/FTP_PASS in .env.ftp" >&2
+    echo "Missing FTP config. Please set FTP_HOST/FTP_USER/FTP_PASS in .env.ftp, environment variables, or .vscode/sftp.json" >&2
     exit 1
   fi
 }
