@@ -81,6 +81,15 @@ const dict = {
         instanceMode: '当前编辑的是报价单草稿，本页修改会回写到当前报价单。',
         saveSuccess: '保存成功。',
         saveFailed: '保存失败。',
+        editorProductTitle: '真实模板页编辑',
+        editorInstanceTitle: '真实报价页编辑',
+        previewProduct: '预览产品页',
+        previewCustomer: '预览客户页',
+        addMainRow: '主配置新增行',
+        addServiceRow: '服务包新增行',
+        addOptionalRow: '选配新增行',
+        saveProductTemplate: '保存产品模板',
+        saveDraft: '保存草稿',
         needLogin: '当前未检测到管理员登录，保存可能会被数据库策略拒绝。',
         invalidRoute: '缺少 kind 或 id，无法打开真实编辑页。',
         loadFailed: '加载编辑数据失败。',
@@ -132,6 +141,15 @@ const dict = {
         instanceMode: 'Editing quote instance mode. Changes write back to the current draft.',
         saveSuccess: 'Saved.',
         saveFailed: 'Save failed.',
+        editorProductTitle: 'Product Template Editor',
+        editorInstanceTitle: 'Quote Editor',
+        previewProduct: 'Preview Product Page',
+        previewCustomer: 'Preview Customer Page',
+        addMainRow: 'Add Main Config Row',
+        addServiceRow: 'Add Service Package Row',
+        addOptionalRow: 'Add Optional Row',
+        saveProductTemplate: 'Save Product Template',
+        saveDraft: 'Save Draft',
         needLogin: 'Admin login was not detected. Save may be rejected by RLS.',
         invalidRoute: 'Missing kind or id.',
         loadFailed: 'Failed to load editor data.',
@@ -183,6 +201,15 @@ const dict = {
         instanceMode: 'Режим редактирования коммерческого предложения. Изменения будут сохранены в текущий черновик.',
         saveSuccess: 'Сохранено.',
         saveFailed: 'Не удалось сохранить.',
+        editorProductTitle: 'Редактор шаблона продукта',
+        editorInstanceTitle: 'Редактор предложения',
+        previewProduct: 'Предпросмотр страницы продукта',
+        previewCustomer: 'Предпросмотр страницы клиента',
+        addMainRow: 'Добавить строку основной конфигурации',
+        addServiceRow: 'Добавить строку сервисного пакета',
+        addOptionalRow: 'Добавить строку дополнительной конфигурации',
+        saveProductTemplate: 'Сохранить шаблон продукта',
+        saveDraft: 'Сохранить черновик',
         needLogin: 'Администратор не авторизован. Сохранение может быть отклонено RLS.',
         invalidRoute: 'Не указан kind или id.',
         loadFailed: 'Не удалось загрузить данные редактора.',
@@ -841,7 +868,7 @@ function handleSettingChange(event) {
 function renderStatus(message, tone = 'normal') {
     const title = byId('editor-status-title');
     const textNode = byId('editor-status-text');
-    if (title) title.textContent = state.kind === 'product' ? '真实模板页编辑' : '真实报价页编辑';
+    if (title) title.textContent = state.kind === 'product' ? t('editorProductTitle') : t('editorInstanceTitle');
     if (!textNode) return;
     textNode.textContent = text(message);
     textNode.dataset.tone = tone;
@@ -942,7 +969,10 @@ function renderEditorActions() {
     const previewButton = byId('btn-preview-instance');
     const publishButton = byId('btn-publish-instance');
     const saveButton = byId('btn-save-editor');
-    const saveLabel = state.kind === 'product' ? '\u4fdd\u5b58\u4ea7\u54c1\u6a21\u677f' : '\u4fdd\u5b58\u8349\u7a3f';
+    byId('btn-add-main-row').textContent = t('addMainRow');
+    byId('btn-add-service-row').textContent = t('addServiceRow');
+    byId('btn-add-optional-row').textContent = t('addOptionalRow');
+    const saveLabel = state.kind === 'product' ? t('saveProductTemplate') : t('saveDraft');
     updateSaveButtons(saveLabel, state.saveInFlight);
     if (saveButton) saveButton.textContent = saveLabel;
     if (!instanceActions || !previewButton || !publishButton) return;
@@ -952,12 +982,12 @@ function renderEditorActions() {
     publishButton.hidden = !isInstance;
     if (!isInstance) {
         previewButton.disabled = state.saveInFlight;
-        previewButton.textContent = '预览产品页';
+        previewButton.textContent = t('previewProduct');
         return;
     }
     const hasId = Boolean(state.instance?.id);
     previewButton.disabled = !hasId;
-    previewButton.textContent = '预览客户页';
+    previewButton.textContent = t('previewCustomer');
     const actionMode = publishedInstanceActionMode();
     publishButton.disabled = actionMode === 'copy'
         ? !Boolean(text(state.instance?.public_slug))
