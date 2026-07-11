@@ -1832,20 +1832,11 @@ async function handlePasscodeSubmit() {
 
 async function resolveRouteSnapshot() {
     if (state.route.type === 'preview') {
-        if (!state.isAdmin) {
-            setAccessOverlay({
-                title: t('accessDeniedTitle'),
-                message: t('accessDeniedMessage'),
-                icon: 'fa-lock',
-                showRefresh: true,
-            });
-            return false;
-        }
         setAccessOverlay({
             title: t('accessCheckingTitle'),
             message: t('accessCheckingMessage'),
             icon: 'fa-spinner fa-spin',
-            meta: t('shareMetaAdmin'),
+            meta: state.isAdmin ? t('shareMetaAdmin') : '',
             showRefresh: false,
         });
         const snapshot = await fetchPreviewQuote(state.route.previewId);
@@ -2878,4 +2869,3 @@ async function init() {
 }
 
 void init();
-
