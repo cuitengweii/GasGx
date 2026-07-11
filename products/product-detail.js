@@ -684,16 +684,19 @@
                     ctx.fillText(metric[1], x + 24, y + 74);
                 });
 
+                var qrCardX = 1360;
+                var qrCardY = 700;
+                var qrCardSize = 340;
                 ctx.fillStyle = "rgba(255, 255, 255, 0.94)";
-                ctx.fillRect(790, 414, 340, 340);
+                ctx.fillRect(qrCardX, qrCardY, qrCardSize, qrCardSize);
                 ctx.strokeStyle = "rgba(93, 214, 44, 0.65)";
                 ctx.lineWidth = 4;
-                ctx.strokeRect(790, 414, 340, 340);
-                var qrSize = drawQrCode(ctx, createQrMatrix(getShareUrl()), 850, 454, 220);
+                ctx.strokeRect(qrCardX, qrCardY, qrCardSize, qrCardSize);
+                var qrSize = drawQrCode(ctx, createQrMatrix(getShareUrl()), qrCardX + 60, qrCardY + 40, 220);
                 ctx.fillStyle = "#0f172a";
                 ctx.font = "900 26px Inter, Arial, sans-serif";
                 ctx.textAlign = "center";
-                ctx.fillText(t("Scan for details", "扫码查看详情"), 960, 454 + qrSize + 42);
+                ctx.fillText(t("Scan for details", "扫码查看详情"), qrCardX + qrCardSize / 2, qrCardY + 40 + qrSize + 42);
                 ctx.textAlign = "left";
 
                 ctx.fillStyle = "rgba(255, 255, 255, 0.07)";
