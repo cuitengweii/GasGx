@@ -14,7 +14,7 @@
     normalizeShareConfig,
     normalizeShareHistoryEntry,
     sortMediaItems,
-} from './quote-data.module.js?v=20260414lang02';
+} from './quote-data.module.js?v=20260711service01';
 
 const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';

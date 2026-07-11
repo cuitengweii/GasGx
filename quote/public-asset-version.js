@@ -1,5 +1,5 @@
 (function initQuotePublicAssetVersion() {
-    const version = '20260329public31';
+    const version = '20260329public32';
     window.AMS_QUOTE_PUBLIC_ASSET_VERSION = version;
     window.AMSLoadQuotePublicStyles = function loadQuotePublicStyles(href) {
         if (!href) return;
