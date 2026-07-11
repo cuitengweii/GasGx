@@ -108,6 +108,12 @@ const sharedUiDict = {
     unknownBrand: 'Quote System',
     mailSubjectPrefix: '[SYS_DATA]',
     noEmail: 'Set a customer email first.',
+    emailInvalid: 'Enter a valid customer email first.',
+    sendQuote: 'Send quotation',
+    sendQuoteBusy: 'Preparing email...',
+    sendQuoteSuccess: 'Customer record saved. Your email client is ready to send the quotation.',
+    sendQuoteError: 'The quotation could not be prepared. Try again later.',
+    sendQuoteHint: 'The send action opens your email client with the quotation link and sales record is saved automatically.',
     authLogin: 'Login',
     authAccount: 'Account',
     authModalTitle: 'Login required',
@@ -214,6 +220,12 @@ const dict = {
         shareMetaNever: '永不过期',
         unknownBrand: '报价系统',
         noEmail: '请先维护客户邮箱。',
+        emailInvalid: '请输入格式正确的客户邮箱。',
+        sendQuote: '发送报价邮件',
+        sendQuoteBusy: '正在准备邮件...',
+        sendQuoteSuccess: '客户档案已保存，邮件客户端已打开，请确认发送报价。',
+        sendQuoteError: '报价邮件准备失败，请稍后重试。',
+        sendQuoteHint: '点击后会调起本机邮件客户端并带入报价链接，同时自动保存销售客户档案。',
         authModalTitle: '需要登录',
         authModalMessage: '登录后才能继续使用受保护的报价操作。',
         authModalHint: '当前浏览不会中断。登录完成后会自动回到这份报价。',
@@ -319,6 +331,12 @@ const dict = {
         shareMetaNever: 'Без ограничения срока',
         unknownBrand: 'Система коммерческих предложений',
         noEmail: 'Сначала укажите email клиента.',
+        emailInvalid: 'Введите корректный email клиента.',
+        sendQuote: 'Отправить предложение',
+        sendQuoteBusy: 'Подготовка письма...',
+        sendQuoteSuccess: 'Карточка клиента сохранена. Почтовый клиент готов к отправке предложения.',
+        sendQuoteError: 'Не удалось подготовить письмо. Повторите попытку позже.',
+        sendQuoteHint: 'Откроется почтовый клиент со ссылкой на предложение, а карточка клиента сохранится автоматически.',
         authLogin: 'Войти',
         authAccount: 'Аккаунт',
         authModalTitle: 'Требуется вход',
@@ -502,6 +520,22 @@ function esc(value) {
 
 function text(value, fallback = '') {
     return String(value ?? fallback).trim();
+}
+
+function normalizeEmail(value) {
+    return text(value).toLowerCase();
+}
+
+function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
+}
+
+function setQuoteEmailStatus(message = '', isError = false) {
+    const node = byId('quote-email-status');
+    if (!node) return;
+    node.textContent = text(message);
+    node.classList.toggle('is-error', Boolean(isError));
+    node.classList.toggle('is-success', Boolean(message) && !isError);
 }
 
 function currentShareConfig() {
@@ -1147,14 +1181,21 @@ function renderStaticText() {
     const overviewTitle = pickDisplayText(snapshot.brand.overview_title, pickDisplayText(snapshot.product.public_title, snapshot.product.product_code));
     const quoteVersion = text(snapshot.quote?.quoteVersion || snapshot.quote?.version);
     const receiver = text(
+        snapshot.quote.receiverName
+        || snapshot.quote.receiver_name
+        || snapshot.quote.customerProfile?.contact_name
+        || snapshot.quote.customerProfile?.contactName
+        || snapshot.quote.shareConfig?.recipient_name
+        || snapshot.quote.customerName
+        || snapshot.quote.customer_name,
+        '',
+    );
+    const receiverEmail = normalizeEmail(
         snapshot.quote.receiverEmail
         || snapshot.quote.receiver_email
         || snapshot.quote.shareConfig?.recipient_email
         || snapshot.quote.customerProfile?.email
-        || snapshot.quote.customerProfile?.requester_email
-        || snapshot.quote.receiver_name
-        || snapshot.quote.customer_name,
-        '',
+        || snapshot.quote.customerProfile?.requester_email,
     );
     const supplier = text(snapshot.brand.supplier_name || snapshot.brand.display_name || snapshot.brand.brand_name || 'GasGx');
 
@@ -1164,11 +1205,20 @@ function renderStaticText() {
     byId('lbl-update').innerHTML = `<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>${esc(t('update'))}`;
     byId('view-meta-supplier')?.setAttribute('hidden', 'hidden');
     byId('view-meta-sender')?.setAttribute('hidden', 'hidden');
-    byId('btn-send')?.setAttribute('hidden', 'hidden');
     byId('val-receiver').textContent = receiver;
-    byId('val-receiver').setAttribute('data-placeholder', uiText('receiver_placeholder', 'receiverPlaceholder'));
+    byId('val-receiver').setAttribute('data-placeholder', state.currentLang === 'zh' ? '请填写客户名称' : 'Enter customer name');
+    const emailPanel = byId('quote-email-panel');
+    const emailInput = byId('quote-email-input');
+    if (emailPanel) emailPanel.hidden = !state.isAdmin;
+    if (emailInput) {
+        emailInput.value = receiverEmail;
+        emailInput.placeholder = uiText('receiver_placeholder', 'receiverPlaceholder');
+    }
+    const emailLabel = byId('quote-email-label');
+    if (emailLabel) emailLabel.textContent = state.currentLang === 'zh' ? '客户邮箱' : state.currentLang === 'ru' ? 'Email клиента' : 'Customer email';
+    byId('btn-text-send')?.replaceChildren(document.createTextNode(t('sendQuote')));
+    setQuoteEmailStatus(state.isAdmin ? t('sendQuoteHint') : '');
     byId('footer-note').innerHTML = pickDisplayText(snapshot.brand.footer_note, '');
-    byId('btn-text-send')?.replaceChildren(document.createTextNode(uiText('send_button', 'send')));
     byId('btn-text-share').textContent = isMobileViewport()
         ? (state.currentLang === 'zh' ? '分享' : 'Share')
         : uiText('share_button', 'share');
@@ -2396,42 +2446,93 @@ async function generateShareLink() {
     }
 }
 
-function sendEmail() {
+async function sendEmail() {
     if (!requireSignedIn('send')) return;
-    const shareMeta = shareMetadata();
-    const receiver = text(shareMeta.recipientEmail || state.snapshot?.quote?.receiverEmail || state.snapshot?.quote?.receiver_email || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name);
+    if (!state.isAdmin) return;
+
+    const input = byId('quote-email-input');
+    const receiver = normalizeEmail(input?.value);
     if (!receiver) {
-        window.alert(t('noEmail'));
+        setQuoteEmailStatus(t('noEmail'), true);
+        input?.focus();
         return;
     }
-    const sender = text(state.snapshot?.brand?.sender_email || state.snapshot?.brand?.senderEmail);
+    if (!isValidEmail(receiver)) {
+        setQuoteEmailStatus(t('emailInvalid'), true);
+        input?.focus();
+        return;
+    }
+
+    const button = byId('btn-send');
+    const previousText = button?.textContent || '';
+    if (button?.dataset.loading === '1') return;
+    if (button) {
+        button.dataset.loading = '1';
+        button.disabled = true;
+        button.textContent = t('sendQuoteBusy');
+    }
+
+    const shareMeta = shareMetadata();
+    const recipientName = text(shareMeta.recipientName || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name, 'sir/madam');
+    const recipientCompany = text(shareMeta.recipientCompany || state.snapshot?.quote?.customerName || state.snapshot?.quote?.customer_name);
     const brandName = text(state.snapshot?.brand?.subject_name || state.snapshot?.brand?.display_name || state.snapshot?.brand?.brand_name);
     const title = text(byId('f-title')?.textContent, 'Quotation');
-    const salutation = text(shareMeta.recipientName, 'sir/madam');
-    void appendShareHistoryRecord({
-        channel: 'email',
-        status: 'emailed',
-        recipientName: shareMeta.recipientName,
-        recipientEmail: receiver,
-        recipientCompany: shareMeta.recipientCompany,
-        ownerName: shareMeta.ownerName,
-        ownerEmail: shareMeta.ownerEmail,
-        followUpNotes: shareMeta.followUpNotes,
-        sentAt: new Date().toISOString(),
-        shareTarget: state.shareTarget?.type || '',
-    });
-    void logQuoteEvent('email_clicked', {
-        accessMode: state.isAdmin ? 'admin' : 'quote',
-        metadata: {
-            receiver,
-            brandName,
-            title,
-            ...shareMeta,
-        },
-    });
-    const subject = encodeURIComponent(`${t('mailSubjectPrefix')} ${title} - ${brandName}`);
-    const body = encodeURIComponent(`Dear ${salutation},\n\nPlease find the latest quotation document attached or review it from the shared quote page.\n\nBest Regards,\n${sender}`);
-    window.location.href = `mailto:${receiver}?subject=${subject}&body=${body}`;
+    const sender = text(state.snapshot?.brand?.sender_email || state.snapshot?.brand?.senderEmail || state.adminUser?.email);
+    const senderName = text(userDisplayName(state.adminUser), sender);
+    const sentAt = new Date().toISOString();
+    const publicSlug = text(state.snapshot?.quote?.publicSlug || state.snapshot?.quote?.public_slug || state.shareTarget?.quoteSlug);
+    const quoteUrl = publicSlug
+        ? `${window.location.origin}/quote/view.html?quote=${encodeURIComponent(publicSlug)}`
+        : '';
+
+    try {
+        await appendShareHistoryRecord({
+            channel: 'email',
+            status: 'emailed',
+            recipientName,
+            recipientEmail: receiver,
+            recipientCompany,
+            ownerName: shareMeta.ownerName || senderName,
+            ownerEmail: shareMeta.ownerEmail || sender,
+            followUpNotes: shareMeta.followUpNotes,
+            sentAt,
+            senderName,
+            senderEmail: sender,
+            shareTarget: state.shareTarget?.type || 'quote',
+        });
+        void logQuoteEvent('email_clicked', {
+            accessMode: 'admin',
+            metadata: {
+                receiver,
+                brandName,
+                title,
+                quoteUrl,
+                ...shareMeta,
+            },
+        });
+        void appendQuoteCustomerActivity('发送报价邮件', {
+            recipient_email: receiver,
+            recipient_company: recipientCompany,
+            quote_title: title,
+            quote_url: quoteUrl,
+        }, {
+            activityType: 'button_click',
+            pageKey: 'quote-view',
+        });
+        const subject = encodeURIComponent(`${t('mailSubjectPrefix')} ${title} - ${brandName}`);
+        const linkLine = quoteUrl ? `\n\nQuotation link:\n${quoteUrl}` : '';
+        const body = encodeURIComponent(`Dear ${recipientName},\n\nPlease review the latest quotation from GasGx.${linkLine}\n\nBest Regards,\n${senderName}${sender && sender !== senderName ? `\n${sender}` : ''}`);
+        setQuoteEmailStatus(t('sendQuoteSuccess'));
+        window.location.href = `mailto:${receiver}?subject=${subject}&body=${body}`;
+    } catch (error) {
+        setQuoteEmailStatus(text(error?.message, t('sendQuoteError')), true);
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = previousText || t('sendQuote');
+            delete button.dataset.loading;
+        }
+    }
 }
 
 function textToBytes(value) {
@@ -2550,8 +2651,142 @@ function hydrateSnapshotWithLiveMeta(snapshot, row = {}) {
     };
 }
 
-async function appendShareHistoryRecord(_options = {}) {
-    return null;
+async function ensureQuoteCustomerForSend(details = {}) {
+    const supabase = getClient();
+    const instanceId = text(state.snapshot?.quote?.id);
+    const email = normalizeEmail(details.recipientEmail);
+    if (!supabase || !instanceId || !email) return null;
+
+    const companyName = text(details.recipientCompany || state.snapshot?.quote?.customerName || state.snapshot?.quote?.customer_name);
+    const contactName = text(details.recipientName || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name);
+    let customer = null;
+    const lookup = await supabase
+        .from('quote_customers')
+        .select('*')
+        .ilike('email', email)
+        .maybeSingle();
+    if (lookup.error) throw lookup.error;
+    customer = lookup.data || null;
+
+    if (!customer) {
+        const insertResult = await supabase.from('quote_customers').insert({
+            company_name: companyName,
+            contact_name: contactName,
+            email,
+            phone: '',
+            country: '',
+            notes: '由报价预览页发送报价时自动建立客户档案。',
+            is_active: true,
+            is_deleted: false,
+            created_by: state.adminUser?.id || null,
+            updated_by: state.adminUser?.id || null,
+        }).select('*').single();
+        if (insertResult.error?.code === '23505') {
+            const retry = await supabase
+                .from('quote_customers')
+                .select('*')
+                .ilike('email', email)
+                .maybeSingle();
+            if (retry.error) throw retry.error;
+            customer = retry.data || null;
+        } else if (insertResult.error) {
+            throw insertResult.error;
+        } else {
+            customer = insertResult.data;
+        }
+    }
+
+    if (!customer?.id) throw new Error('Customer record could not be created.');
+    const customerSnapshot = {
+        company_name: text(customer.company_name || companyName),
+        contact_name: text(customer.contact_name || contactName),
+        email,
+        phone: text(customer.phone),
+        country: text(customer.country),
+        notes: text(customer.notes),
+    };
+    const shareConfig = normalizeShareConfig(state.snapshot?.quote?.shareConfig, {
+        recipient_name: contactName,
+        recipient_email: email,
+        recipient_company: companyName,
+    });
+    const { error: instanceError } = await supabase
+        .from(TABLE_INSTANCES)
+        .update({
+            customer_id: customer.id,
+            receiver_name: contactName,
+            receiver_email: email,
+            customer_name: companyName,
+            customer_snapshot: customerSnapshot,
+            share_config: shareConfig,
+            updated_by: state.adminUser?.id || null,
+        })
+        .eq('id', instanceId);
+    if (instanceError) throw instanceError;
+
+    state.snapshot = {
+        ...state.snapshot,
+        quote: {
+            ...state.snapshot.quote,
+            customerId: text(customer.id),
+            customer_id: text(customer.id),
+            customerName: companyName,
+            customer_name: companyName,
+            receiverName: contactName,
+            receiver_name: contactName,
+            receiverEmail: email,
+            receiver_email: email,
+            customerProfile: customerSnapshot,
+            shareConfig,
+        },
+    };
+    return customer;
+}
+
+async function appendShareHistoryRecord(options = {}) {
+    const supabase = getClient();
+    const instanceId = text(state.snapshot?.quote?.id);
+    if (!supabase || !instanceId || !state.isAdmin) return null;
+
+    const now = new Date().toISOString();
+    const recipientEmail = normalizeEmail(options.recipientEmail);
+    const customer = recipientEmail
+        ? await ensureQuoteCustomerForSend({ ...options, recipientEmail })
+        : null;
+    const recipientName = text(options.recipientName || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name);
+    const recipientCompany = text(options.recipientCompany || state.snapshot?.quote?.customerName || state.snapshot?.quote?.customer_name);
+    const senderEmail = normalizeEmail(options.senderEmail || state.adminUser?.email || state.snapshot?.brand?.sender_email);
+    const payload = {
+        instance_id: instanceId,
+        customer_id: text(customer?.id || state.snapshot?.quote?.customerId) || null,
+        recipient_name: recipientName,
+        recipient_email: recipientEmail,
+        recipient_company: recipientCompany,
+        owner_name: text(options.ownerName || userDisplayName(state.adminUser)),
+        owner_email: normalizeEmail(options.ownerEmail || state.adminUser?.email),
+        follow_up_notes: text(options.followUpNotes),
+        outcome_notes: text(options.outcomeNotes),
+        share_target: text(options.shareTarget || state.shareTarget?.type),
+        last_channel: text(options.channel, 'share_link'),
+        channels: [text(options.channel, 'share_link')],
+        status: text(options.status, 'recorded'),
+        attempt_count: 1,
+        first_sent_at: text(options.sentAt, now),
+        last_sent_at: text(options.sentAt, now),
+        expires_at: text(options.expiresAt) || null,
+        passcode_protected: options.passcodeProtected === true,
+        sender_name: text(options.senderName || userDisplayName(state.adminUser)),
+        sender_email: senderEmail,
+        created_by: state.adminUser?.id || null,
+        updated_by: state.adminUser?.id || null,
+    };
+    const { data, error } = await supabase
+        .from(TABLE_INSTANCE_SENDS)
+        .insert(payload)
+        .select('*')
+        .single();
+    if (error) throw error;
+    return data;
 }
 
 async function resolveAdminSession() {
@@ -2879,7 +3114,17 @@ function bindEvents() {
     byId('btn-refresh-rates')?.addEventListener('click', () => {
         void fetchRates(true);
     });
-    byId('btn-send')?.addEventListener('click', sendEmail);
+    byId('btn-send')?.addEventListener('click', () => {
+        void sendEmail();
+    });
+    byId('quote-email-input')?.addEventListener('input', () => {
+        setQuoteEmailStatus(t('sendQuoteHint'));
+    });
+    byId('quote-email-input')?.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        void sendEmail();
+    });
     byId('btn-menu-img-wrap')?.addEventListener('click', () => {
         void exportImage();
     });

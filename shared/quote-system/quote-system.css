@@ -1192,6 +1192,42 @@
             flex: 1;
         }
 
+        .quote-email-panel {
+            display: grid;
+            gap: 8px;
+            width: 100%;
+            padding-top: 10px;
+        }
+
+        .quote-email-panel[hidden] {
+            display: none;
+        }
+
+        .quote-email-panel__label {
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            letter-spacing: 0.04em;
+        }
+
+        .quote-email-panel__button {
+            min-height: 44px;
+            padding: 10px 14px;
+        }
+
+        .quote-email-panel__status {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            line-height: 1.45;
+        }
+
+        .quote-email-panel__status.is-error {
+            color: #ff8b8b;
+        }
+
+        .quote-email-panel__status.is-success {
+            color: var(--gas-green-light);
+        }
+
         #ggx-site-header-slot .gas-card {
             background-color: rgba(5, 5, 5, 0.78) !important;
         }
