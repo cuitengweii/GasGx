@@ -698,7 +698,7 @@ function openQuoteConfirmAlert(options = {}) {
     byId('quote-confirm-alert-title').textContent = text(options.title, localeCopy({
         zh: '当前账号无法提交确认',
         en: 'This account cannot submit confirmation',
-        ru: '协褌芯褌 邪泻泻邪褍薪褌 薪械 屑芯卸械褌 芯褌锌褉邪胁懈褌褜 锌芯写褌胁械褉卸写械薪懈械',
+        ru: 'Эта учетная запись не может подтвердить предложение',
     }));
     byId('quote-confirm-alert-message').textContent = text(options.message);
     byId('quote-confirm-alert-action').textContent = localeCopy({
@@ -709,7 +709,7 @@ function openQuoteConfirmAlert(options = {}) {
     byId('quote-confirm-alert-hint').textContent = text(options.hint, localeCopy({
         zh: '请使用报价中登记的客户邮箱进行确认。',
         en: 'Use the customer email registered on this quote to confirm.',
-        ru: '袠褋锌芯谢褜蟹褍泄褌械 email 泻谢懈械薪褌邪, 褍泻邪蟹邪薪薪褘泄 胁 褝褌芯屑 锌褉械写谢芯卸械薪懈懈.',
+        ru: 'Используйте email клиента, указанный в этом предложении.',
     }));
     byId('quote-confirm-alert-ack-text').textContent = localeCopy({
         zh: '我知道了',
@@ -837,19 +837,19 @@ function syncQuoteConfirmationAccessAlert() {
         title: localeCopy({
             zh: '当前账号无法提交报价确认',
             en: 'This account cannot submit quote confirmation',
-            ru: '协褌芯褌 邪泻泻邪褍薪褌 薪械 屑芯卸械褌 锌芯写褌胁械褉写懈褌褜 锌褉械写谢芯卸械薪懈械',
+            ru: 'Эта учетная запись не может подтвердить предложение',
         }),
         message: access.message,
         hint: confirmationExpectedEmail()
             ? localeCopy({
                 zh: '请切换到报价中登记的客户邮箱后再提交。',
                 en: 'Switch to the customer email registered on this quote before submitting.',
-                ru: '袩械褉械泻谢褞褔懈褌械褋褜 薪邪 email 泻谢懈械薪褌邪, 褍泻邪蟹邪薪薪褘泄 胁 锌褉械写谢芯卸械薪懈懈, 锌械褉械写 芯褌锌褉邪胁泻芯泄.',
+                ru: 'Переключитесь на email клиента, указанный в предложении, перед отправкой подтверждения.',
             })
             : localeCopy({
                 zh: '请先在客户档案或报价单里设置客户邮箱，再开放确认提交。',
                 en: 'Set the customer email on the customer archive or quote before enabling confirmation.',
-                ru: '小薪邪褔邪谢邪 褍泻邪卸懈褌械 email 泻谢懈械薪褌邪 胁 泻邪褉褌芯褔泻械 泻谢懈械薪褌邪 懈谢懈 锌褉械写谢芯卸械薪懈懈.',
+                ru: 'Сначала укажите email клиента в карточке клиента или предложении.',
             }),
     });
 }
@@ -1088,14 +1088,14 @@ function renderViewContextBanner() {
     title.textContent = localeCopy({
         zh: '当前页面正在读取后台草稿快照，只用于校对，不会直接对外展示。',
         en: 'This page is reading the current draft snapshot for internal review only.',
-        ru: '协褌邪 褋褌褉邪薪懈褑邪 锌芯泻邪蟹褘胁邪械褌 褌械泻褍褖懈泄 褔械褉薪芯胁懈泻 褌芯谢褜泻芯 写谢褟 胁薪褍褌褉械薪薪械泄 锌褉芯胁械褉泻懈.',
+        ru: 'Эта страница показывает текущий черновик только для внутренней проверки.',
     });
 
     const slug = text(state.snapshot?.quote?.publicSlug || state.snapshot?.quote?.public_slug);
     const modeText = localeCopy({
         zh: '继续在“报价单管理”里修改并重新发布，客户页才会更新。',
         en: 'Keep editing in Quote Instances and publish again to update the customer page.',
-        ru: '袩褉芯写芯谢卸邪泄褌械 褉械写邪泻褌懈褉芯胁邪褌褜 胁 Quote Instances 懈 芯锌褍斜谢懈泻褍泄褌械 褋薪芯胁邪, 褔褌芯斜褘 芯斜薪芯胁懈褌褜 泻谢懈械薪褌褋泻褍褞 褋褌褉邪薪懈褑褍.',
+        ru: 'Продолжайте редактировать в Quote Instances и опубликуйте снова, чтобы обновить страницу клиента.',
     });
     meta.textContent = slug ? `${modeText} SLUG: ${slug}` : modeText;
     banner.classList.remove('hidden');
@@ -1262,19 +1262,19 @@ function renderStaticText() {
             title: localeCopy({
                 zh: '当前账号无法提交报价确认',
                 en: 'This account cannot submit quote confirmation',
-                ru: '协褌芯褌 邪泻泻邪褍薪褌 薪械 屑芯卸械褌 锌芯写褌胁械褉写懈褌褜 锌褉械写谢芯卸械薪懈械',
+                ru: 'Эта учетная запись не может подтвердить предложение',
             }),
             message: quoteConfirmAccess.message,
             hint: confirmationExpectedEmail()
                 ? localeCopy({
                     zh: '请切换到报价中登记的客户邮箱后再提交。',
                     en: 'Switch to the customer email registered on this quote before submitting.',
-                    ru: '袩械褉械泻谢褞褔懈褌械褋褜 薪邪 email 泻谢懈械薪褌邪, 褍泻邪蟹邪薪薪褘泄 胁 锌褉械写谢芯卸械薪懈懈, 锌械褉械写 芯褌锌褉邪胁泻芯泄.',
+                    ru: 'Переключитесь на email клиента, указанный в предложении, перед отправкой подтверждения.',
                 })
                 : localeCopy({
                     zh: '请先在客户档案或报价单里设置客户邮箱，再开放确认提交。',
                     en: 'Set the customer email on the customer archive or quote before enabling confirmation.',
-                    ru: '小薪邪褔邪谢邪 褍泻邪卸懈褌械 email 泻谢懈械薪褌邪 胁 泻邪褉褌芯褔泻械 泻谢懈械薪褌邪 懈谢懈 锌褉械写谢芯卸械薪懈懈.',
+                    ru: 'Сначала укажите email клиента в карточке клиента или предложении.',
                 }),
         });
     }
