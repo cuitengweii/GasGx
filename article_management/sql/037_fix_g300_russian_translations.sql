@@ -33,11 +33,11 @@ update public.quote_instance_items item
 set name_i18n = jsonb_set(
     item.name_i18n,
     '{ru}',
-    to_jsonb(case item.line_code
+    to_jsonb((case item.line_code
         when 'B-1' then 'Комплект подогрева для холодного запуска (подогрев охлаждающей жидкости и масла, усиленная аккумуляторная батарея для сурового холода, подогреватель аккумулятора)'
         when 'B-12' then 'Сертификация CSA'
         else item.name_i18n->>'ru'
-    end::text)
+    end)::text))
 where item.line_code in ('B-1', 'B-12')
   and item.instance_id in (
       select id from public.quote_instances
