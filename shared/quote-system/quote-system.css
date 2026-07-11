@@ -942,7 +942,20 @@
             justify-content: flex-end;
             gap: 8px;
             margin-left: auto;
-            flex: 0 0 auto;
+            flex: 1 1 100%;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .quote-editor-bar__actions > button,
+        .quote-editor-bar__actions > div {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .quote-editor-bar__actions > button {
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
 
         .quote-editor-bar__settings {
