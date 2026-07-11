@@ -958,6 +958,56 @@
             overflow-wrap: anywhere;
         }
 
+        .quote-editor-primary-actions,
+        .quote-editor-secondary-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .quote-editor-primary-actions {
+            padding: 10px;
+            border: 1px solid rgba(93, 214, 44, 0.48);
+            border-radius: 12px;
+            background: linear-gradient(90deg, rgba(93, 214, 44, 0.13), rgba(93, 214, 44, 0.035));
+            box-shadow: 0 0 18px rgba(93, 214, 44, 0.1);
+        }
+
+        .quote-editor-secondary-actions {
+            padding-top: 2px;
+        }
+
+        .quote-editor-primary-actions > div,
+        .quote-editor-primary-actions > button,
+        .quote-editor-secondary-actions > button {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .quote-editor-primary-btn {
+            min-height: 46px;
+            border-radius: 9px;
+            font-weight: 700;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .quote-editor-preview-btn {
+            border: 1px solid rgba(93, 214, 44, 0.75);
+            color: var(--gas-green-light);
+            background: rgba(93, 214, 44, 0.1);
+        }
+
+        .quote-editor-save-btn,
+        .quote-editor-publish-btn {
+            color: #08110a;
+            background: var(--gas-green-primary);
+            box-shadow: 0 0 16px rgba(93, 214, 44, 0.28);
+        }
+
         .quote-editor-bar__settings {
             flex: 1 1 700px;
             min-width: min(100%, 700px);
