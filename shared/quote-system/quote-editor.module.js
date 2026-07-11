@@ -750,9 +750,11 @@ function renderToolbarBrand() {
 
 function settingsRenderKey() {
     const validityHours = state.kind === 'product' ? state.product.validity_hours : state.instance.validity_hours;
+    const defaultLang = state.kind === 'product' ? state.product.default_lang : state.instance.default_lang;
     return JSON.stringify({
         kind: state.kind,
         lang: state.currentLang,
+        defaultLang,
         enabledLangs: configuredEditorLangs(),
         validityHours,
         mediaPosition: state.product.media_config?.position || '',
@@ -767,14 +769,14 @@ function renderSettings() {
     if (state.settingsRenderKey === nextKey) return;
     state.settingsRenderKey = nextKey;
     const validityHours = state.kind === 'product' ? state.product.validity_hours : state.instance.validity_hours;
-    const enabledLangs = configuredEditorLangs();
+    const defaultLang = state.kind === 'product' ? state.product.default_lang : state.instance.default_lang;
     root.innerHTML = `
         <label class="quote-editor-setting">
             <span>${esc(t('defaultLang'))}</span>
             <div class="quote-editor-lang-group">
                 ${SUPPORTED_LANGS.map((lang) => `
-                    <label class="quote-editor-lang-chip ${enabledLangs.includes(lang) ? 'is-active' : ''}">
-                        <input type="checkbox" data-setting-lang="${esc(lang)}" ${enabledLangs.includes(lang) ? 'checked' : ''}>
+                    <label class="quote-editor-lang-chip ${defaultLang === lang ? 'is-active' : ''}">
+                        <input type="radio" name="quote-default-lang" data-setting-field="default_lang" value="${esc(lang)}" ${defaultLang === lang ? 'checked' : ''}>
                         <span>${lang.toUpperCase()}</span>
                     </label>
                 `).join('')}
@@ -804,21 +806,17 @@ function renderSettings() {
         node.addEventListener('input', handleSettingChange);
         node.addEventListener('change', handleSettingChange);
     });
-    root.querySelectorAll('[data-setting-lang]').forEach((node) => {
-        node.addEventListener('change', () => {
-            const nextLangs = [...root.querySelectorAll('[data-setting-lang]:checked')].map((input) => input.dataset.settingLang || '');
-            updateConfiguredEditorLangs(nextLangs);
-            renderAll();
-            markEditorDirty();
-        });
-    });
 }
 
 function applySettingField(field, value) {
     if (!field) return;
     if (field === 'default_lang') {
-        if (state.kind === 'product') state.product.default_lang = value;
-        else state.instance.default_lang = value;
+        const nextLang = normalizeLangCode(value, DEFAULT_LANG);
+        if (state.kind === 'product') state.product.default_lang = nextLang;
+        else state.instance.default_lang = nextLang;
+        state.currentLang = nextLang;
+        const enabledLangs = configuredEditorLangs();
+        if (!enabledLangs.includes(nextLang)) updateConfiguredEditorLangs([...enabledLangs, nextLang]);
     } else if (field === 'validity_hours') {
         if (state.kind === 'product') state.product.validity_hours = Math.max(1, safeNumber(value, 72));
         else state.instance.validity_hours = Math.max(1, safeNumber(value, 72));
