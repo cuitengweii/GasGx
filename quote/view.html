@@ -12,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="../shared/ui/main-auth.shared.js"></script>
-    <script src="./public-asset-version.js?v=20260329public42"></script>
+    <script src="./public-asset-version.js?v=20260329public43"></script>
     <script>window.AMSLoadQuotePublicStyles('../shared/quote-system/quote-system.css');</script>
 </head>
 <body class="antialiased pb-10 md:pb-20 access-resolved">
@@ -82,19 +82,19 @@
                 <button id="btn-share" type="button" class="btn-glow px-3 py-1.5 md:px-6 md:py-2 flex items-center">
                     <i class="fa-solid fa-share-nodes" id="icon-share"></i> <span id="btn-text-share" class="hidden md:inline ml-2">分享/导出</span> <i class="fa-solid fa-angle-down ml-1 md:ml-2 text-xs" id="icon-share-down"></i>
                 </button>
+                <div id="quote-email-panel" class="quote-email-panel toolbar-email-panel">
+                    <label for="quote-email-input" id="quote-email-label" class="quote-email-panel__label">客户邮箱</label>
+                    <div class="share-inline-field">
+                        <input id="quote-email-input" type="email" class="share-input" autocomplete="email" placeholder="请输入客户邮箱">
+                        <button id="btn-send" type="button" class="btn-glow quote-email-panel__button inline-flex items-center justify-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span id="btn-text-send">发送</span>
+                        </button>
+                    </div>
+                    <div id="quote-email-status" class="quote-email-panel__status" aria-live="polite"></div>
+                </div>
                 <div id="share-menu" class="toolbar-share-menu absolute right-0 top-full pt-2 w-80 hidden z-50">
                     <div class="bg-[#161B22] shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-[#2C2F33] rounded overflow-hidden">
-                        <div id="quote-email-panel" class="quote-email-panel" hidden>
-                            <label for="quote-email-input" id="quote-email-label" class="quote-email-panel__label">客户邮箱</label>
-                            <div class="share-inline-field">
-                                <input id="quote-email-input" type="email" class="share-input" autocomplete="email" placeholder="请输入客户邮箱">
-                                <button id="btn-send" type="button" class="btn-glow quote-email-panel__button inline-flex items-center justify-center gap-2 whitespace-nowrap">
-                                    <i class="fa-solid fa-paper-plane"></i>
-                                    <span id="btn-text-send">发送</span>
-                                </button>
-                            </div>
-                            <div id="quote-email-status" class="quote-email-panel__status" aria-live="polite"></div>
-                        </div>
                         <button id="btn-menu-share-link-wrap" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-link mr-3 text-lg"></i><span id="btn-menu-share-link">创建分享链接</span></button>
                         <div id="share-menu-divider" class="h-px bg-[#2C2F33]"></div>
                         <button id="btn-menu-img-wrap" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-image mr-3 text-lg"></i><span id="btn-menu-img">生成长图</span></button>

@@ -114,6 +114,8 @@ const sharedUiDict = {
     sendQuoteSuccess: 'Customer record saved. Your email client is ready to send the quotation.',
     sendQuoteError: 'The quotation could not be prepared. Try again later.',
     sendQuoteHint: 'The send action opens your email client with the quotation link and sales record is saved automatically.',
+    sendQuoteLoginHint: 'Sign in with a sales account to send the quotation and create the customer record.',
+    sendQuoteAdminOnly: 'Only sales admins can send quotations and create customer records.',
     authLogin: 'Login',
     authAccount: 'Account',
     authModalTitle: 'Login required',
@@ -226,6 +228,8 @@ const dict = {
         sendQuoteSuccess: '客户档案已保存，邮件客户端已打开，请确认发送报价。',
         sendQuoteError: '报价邮件准备失败，请稍后重试。',
         sendQuoteHint: '点击后会调起本机邮件客户端并带入报价链接，同时自动保存销售客户档案。',
+        sendQuoteLoginHint: '请先登录销售后台，登录后即可发送报价并自动建立客户档案。',
+        sendQuoteAdminOnly: '只有销售后台管理员可以发送报价并建立客户档案。',
         authModalTitle: '需要登录',
         authModalMessage: '登录后才能继续使用受保护的报价操作。',
         authModalHint: '当前浏览不会中断。登录完成后会自动回到这份报价。',
@@ -337,6 +341,8 @@ const dict = {
         sendQuoteSuccess: 'Карточка клиента сохранена. Почтовый клиент готов к отправке предложения.',
         sendQuoteError: 'Не удалось подготовить письмо. Повторите попытку позже.',
         sendQuoteHint: 'Откроется почтовый клиент со ссылкой на предложение, а карточка клиента сохранится автоматически.',
+        sendQuoteLoginHint: 'Войдите в аккаунт продаж, чтобы отправить предложение и создать карточку клиента.',
+        sendQuoteAdminOnly: 'Только администраторы продаж могут отправлять предложения и создавать карточки клиентов.',
         authLogin: 'Войти',
         authAccount: 'Аккаунт',
         authModalTitle: 'Требуется вход',
@@ -1207,9 +1213,7 @@ function renderStaticText() {
     byId('view-meta-sender')?.setAttribute('hidden', 'hidden');
     byId('val-receiver').textContent = receiver;
     byId('val-receiver').setAttribute('data-placeholder', state.currentLang === 'zh' ? '请填写客户名称' : 'Enter customer name');
-    const emailPanel = byId('quote-email-panel');
     const emailInput = byId('quote-email-input');
-    if (emailPanel) emailPanel.hidden = !state.isAdmin;
     if (emailInput) {
         emailInput.value = receiverEmail;
         emailInput.placeholder = uiText('receiver_placeholder', 'receiverPlaceholder');
@@ -1217,7 +1221,7 @@ function renderStaticText() {
     const emailLabel = byId('quote-email-label');
     if (emailLabel) emailLabel.textContent = state.currentLang === 'zh' ? '客户邮箱' : state.currentLang === 'ru' ? 'Email клиента' : 'Customer email';
     byId('btn-text-send')?.replaceChildren(document.createTextNode(t('sendQuote')));
-    setQuoteEmailStatus(state.isAdmin ? t('sendQuoteHint') : '');
+    setQuoteEmailStatus(state.isAdmin ? t('sendQuoteHint') : t('sendQuoteLoginHint'));
     byId('footer-note').innerHTML = pickDisplayText(snapshot.brand.footer_note, '');
     byId('btn-text-share').textContent = isMobileViewport()
         ? (state.currentLang === 'zh' ? '分享' : 'Share')
@@ -2448,7 +2452,10 @@ async function generateShareLink() {
 
 async function sendEmail() {
     if (!requireSignedIn('send')) return;
-    if (!state.isAdmin) return;
+    if (!state.isAdmin) {
+        setQuoteEmailStatus(t('sendQuoteAdminOnly'), true);
+        return;
+    }
 
     const input = byId('quote-email-input');
     const receiver = normalizeEmail(input?.value);
