@@ -1,0 +1,29 @@
+<template id="g1000-unveiling-template">
+  <div data-hf-id="hf-2u76" id="root-g1000-unveiling" data-composition-id="g1000-unveiling" data-start="0" data-duration="5.5" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-6ui2" class="b3-scene">
+      <img data-hf-id="hf-h2bx" class="b3-screen" src="capture/screenshots/scroll-000.png"><div data-hf-id="hf-g3ae" class="b3-dark"></div>
+      <div data-hf-id="hf-ursc" class="b3-orbit orbit-a"></div><div data-hf-id="hf-5n9z" class="b3-orbit orbit-b"></div>
+      <div data-hf-id="hf-ti3w" class="b3-card"><div data-hf-id="hf-bji2" class="b3-label">THE NEXT POWER ICON</div><h2 data-hf-id="hf-vfqy">Grand unveiling<br data-hf-id="hf-x5px"><span data-hf-id="hf-k99t">coming soon.</span></h2><p data-hf-id="hf-q4vu">Be first to receive the unveiling invitation and product release information.</p><div data-hf-id="hf-0du7" class="b3-status"><i data-hf-id="hf-wt6k"></i> RELEASE SIGNAL / STANDBY</div></div>
+      <div data-hf-id="hf-7y6v" class="b3-index">03 / UNVEILING</div>
+    </div>
+    <style>
+      @font-face { font-family: "InterCaptured"; src: url("capture/assets/fonts/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf") format("truetype"); }
+      #root-g1000-unveiling { overflow: hidden; width: 1920px; height: 1080px; background: #050505; color: #ffffff; font-family: "InterCaptured", Inter, Arial, sans-serif; }
+      .b3-scene { position: relative; width: 100%; height: 100%; overflow: hidden; background: #050505; }.b3-screen { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: 0.4; transform-origin: center; }.b3-dark { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, rgba(93,214,44,0.11), transparent 330px), rgba(5,5,5,0.72); }
+      .b3-orbit { position: absolute; left: 50%; top: 50%; border: 1px solid rgba(93,214,44,0.3); border-radius: 50%; transform: translate(-50%, -50%) rotate(-18deg); }.orbit-a { width: 950px; height: 360px; }.orbit-b { width: 1180px; height: 480px; border-color: rgba(30,90,117,0.45); transform: translate(-50%, -50%) rotate(22deg); }
+      .b3-card { position: absolute; left: 50%; top: 50%; width: 720px; padding: 48px 58px; box-sizing: border-box; transform: translate(-50%, -50%); border: 1px solid rgba(93,214,44,0.5); border-radius: 8px; background: rgba(5,5,5,0.88); box-shadow: 0 30px 90px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08); text-align: center; }.b3-label { color: #5dd62c; font-size: 17px; font-weight: 800; letter-spacing: 0.1em; }.b3-card h2 { margin: 22px 0 24px; font-size: 68px; font-weight: 900; line-height: 1.02; }.b3-card h2 span { color: #5dd62c; }.b3-card p { margin: 0 auto; max-width: 570px; color: #cbd5e1; font-size: 24px; line-height: 1.45; }.b3-status { display: inline-flex; align-items: center; gap: 12px; margin-top: 32px; color: #94a3b8; font-size: 14px; font-weight: 800; letter-spacing: 0.08em; }.b3-status i { width: 10px; height: 10px; border-radius: 50%; background: #5dd62c; box-shadow: 0 0 18px rgba(93,214,44,0.85); }.b3-index { position: absolute; right: 90px; top: 64px; color: #5dd62c; font-size: 15px; font-weight: 700; letter-spacing: 0.08em; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      tl.fromTo(".b3-screen", { scale: 1.04 }, { scale: 1.12, duration: 5.5, ease: "none" }, 0);
+      tl.fromTo(".b3-card", { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.82, ease: "expo.out" }, 0.28);
+      tl.fromTo(".b3-orbit", { scale: 0.72, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.1, stagger: 0.18, ease: "power3.out" }, 0.5);
+      tl.to(".orbit-a", { rotation: 12, duration: 5.2, ease: "none" }, 0);
+      tl.to(".orbit-b", { rotation: -12, duration: 5.2, ease: "none" }, 0);
+      tl.fromTo(".b3-index", { x: 28, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: "power2.out" }, 0.44);
+      window.__timelines["g1000-unveiling"] = tl;
+    </script>
+  </div>
+</template>

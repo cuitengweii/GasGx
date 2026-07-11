@@ -1,17 +1,17 @@
 # Reusable HyperFrames Product Promo Workflow
 
-Use this workflow to turn a product website into a 20-second promo with captions, English voiceover, and premium industrial background music.
+Use this workflow to turn a product website into an English-only promo with captions, natural English voiceover, content-based duration, and premium industrial/energy product-showcase music.
 
 ## Copyable Agent Instruction
 
 ```text
-Use HyperFrames to turn the supplied product website into a 20-second product promo.
+Use HyperFrames to turn the supplied product website into an English-only product promo. Do not force the video to 20 seconds: choose the duration from the verified page content, narration length, number of beats, and CTA. Every visible word in the video must be English; do not use Chinese UI text, screenshots, captions, metadata, or overlays.
 
-Capture the site first and reuse its product images, diagrams, logos, fonts, colors, and verified specifications. Create DESIGN.md, SCRIPT.md, and narration.txt before authoring HTML. Structure the video into four beats: hook, proof points, engineering/use cases, and price/CTA.
+Capture the site first in its English locale. If the page has a language switch, set its English localStorage/cookie state before taking screenshots and verify the visible DOM text contains no CJK characters. Reuse its product images, diagrams, logos, fonts, colors, and verified specifications. Create DESIGN.md, SCRIPT.md, and narration.txt before authoring HTML. Structure the video into as many beats as the page needs: hook, product proof, engineering/use cases, systems/operations, and CTA are typical beats.
 
-Add English captions as one root-level overlay controlled by the root GSAP timeline. Generate a natural-sounding English technical voiceover that fits within 20 seconds. Prefer Kokoro TTS; if it fails, use macOS Daniel voice at a moderate speaking rate and shorten the script instead of speaking unnaturally fast.
+Add English captions as one root-level overlay controlled by the root GSAP timeline. Generate a natural-sounding English technical voiceover that fits the selected duration. Prefer Kokoro TTS; if it fails, use macOS Daniel voice at a moderate speaking rate and shorten the script instead of speaking unnaturally fast.
 
-Generate a premium industrial product bed with low-frequency pulse, drum groove, metallic impacts, synth arpeggio, chord movement, stereo width, and a controlled ending. Keep the music clearly audible but duck it under narration with FFmpeg sidechain compression.
+Generate a premium industrial/energy product-showcase bed with low-frequency power pulse, drum groove, metallic impacts, restrained synth arpeggio, chord movement, stereo width, and a controlled ending. Keep the music clearly audible but duck it under narration with FFmpeg sidechain compression.
 
 Render the visual track without HTML audio elements if they cause HyperFrames capture frames to turn black. Mix voice and music into the rendered MP4 afterward. Validate with hyperframes lint, validate, snapshots, and ffprobe. Deliver the MP4 and the Studio preview URL. Do not deliver only index.html and do not render a silent final file.
 ```
@@ -22,6 +22,7 @@ Render the visual track without HTML audio elements if they cause HyperFrames ca
 SITE_URL="https://example.com/products/example/"
 PROJECT="product-promo"
 PORT="3017"
+DURATION_SECONDS="<set from content and narration, not a fixed default>"
 ```
 
 Run all commands from the project directory.
@@ -32,7 +33,7 @@ Run all commands from the project directory.
 npx hyperframes capture "$SITE_URL" -o "$PROJECT/capture"
 ```
 
-Inspect the generated screenshots, assets, visible text, tokens, and design styles. Reuse captured product photography, diagrams, logos, fonts, and technical specifications.
+Inspect the generated screenshots, assets, visible text, tokens, and design styles. If the default capture is not English, recapture with the page's English locale state and store those screenshots separately, for example `capture-en/screenshots/`. Reject any screenshot or visible DOM state containing Chinese or other unintended language text. Reuse captured product photography, diagrams, logos, fonts, and technical specifications.
 
 Create these files before authoring compositions:
 
@@ -40,7 +41,7 @@ Create these files before authoring compositions:
 - `SCRIPT.md`: narration, spoken text, and on-screen proof points.
 - `narration.txt`: the final spoken English script.
 
-For a 20-second video, keep the narration around 40-50 words. Split the script into four beats that match the visual scenes.
+Set the duration after the script is drafted. Use enough time for the page's actual proof points and CTA to be readable; a short product page may be 15-20 seconds, while a systems page may need 25-40 seconds. Split the script and root caption timeline into beats that match the visual scenes.
 
 ## 3. Build and Validate the Visual Composition
 
@@ -79,7 +80,7 @@ ffprobe -v error -show_entries format=duration \
   -of default=noprint_wrappers=1:nokey=1 media/narration.wav
 ```
 
-Keep the voiceover at or below 20 seconds. If it runs long, shorten the copy before increasing speech rate.
+Keep the voiceover within the selected duration. If it runs long, shorten the copy before increasing speech rate. If the page needs more proof points, extend the visual timeline instead of compressing the narration unnaturally.
 
 ## 5. Generate Premium Industrial Music
 
@@ -89,13 +90,13 @@ Use the reusable generator included in this project:
 python3 media/generate_product_music.py
 ```
 
-It creates:
+It creates a full-duration music bed:
 
 ```text
-media/product-music-premium.wav
+media/product-music-energy-showcase.wav
 ```
 
-The generator uses a deterministic 120 BPM arrangement with low-frequency pulse, kick, snare, hi-hat, metal hits, synth arpeggio, chord beds, stereo panning, room reflections, and a controlled tail fade. Replace the script or its parameters when a different musical identity is needed.
+The generator uses a deterministic industrial/energy arrangement with low-frequency pulse, kick, snare, hi-hat, metal hits, synth arpeggio, chord beds, stereo panning, room reflections, and a controlled tail fade. Match its duration to the visual timeline and replace the script or its parameters when a different musical identity is needed.
 
 ## 6. Render the Captioned Visual Track
 
@@ -106,7 +107,7 @@ npx hyperframes render \
   --output renders/${PROJECT}-captioned.mp4
 ```
 
-Run visual QA at representative beat times:
+Run visual QA at representative beat times across the selected duration:
 
 ```bash
 rm -rf snapshots
@@ -117,7 +118,7 @@ Review `snapshots/contact-sheet.jpg` and confirm every beat is nonblank, caption
 
 ## 7. Mix Voiceover and Music into the Final MP4
 
-Use sidechain compression so the music remains audible but yields to the voice. Pad the narration to the full video duration so the final audio stream lasts exactly 20 seconds.
+Use sidechain compression so the music remains audible but yields to the voice. Pad or trim the narration and music to the selected video duration so the final audio stream matches the visual track exactly.
 
 ```bash
 ffmpeg -y \
@@ -125,7 +126,7 @@ ffmpeg -y \
   -i media/narration.wav \
   -i media/product-music-premium.wav \
   -filter_complex "\
-[1:a]apad=pad_dur=20,atrim=duration=20,volume=1.0,asplit=2[narrMain][narrSide];\
+[1:a]apad=pad_dur=${DURATION_SECONDS},atrim=duration=${DURATION_SECONDS},volume=1.0,asplit=2[narrMain][narrSide];\
 [2:a]volume=0.78[music];\
 [music][narrSide]sidechaincompress=threshold=0.025:ratio=2.8:attack=15:release=360:makeup=1[ducked];\
 [narrMain][ducked]amix=inputs=2:duration=longest:normalize=0,alimiter=limit=0.95[outa]" \
@@ -133,7 +134,7 @@ ffmpeg -y \
   -map "[outa]" \
   -c:v copy \
   -c:a aac -b:a 192k -ar 48000 -ac 2 \
-  -t 20 -movflags +faststart \
+  -t ${DURATION_SECONDS} -movflags +faststart \
   renders/${PROJECT}-premium-industrial.mp4
 ```
 
@@ -152,8 +153,9 @@ Expected result:
 
 - H.264 video stream.
 - AAC stereo audio stream.
-- Both streams at 20.000 seconds.
-- Captions visible in all four beats.
+- Both streams at the selected duration.
+- Captions visible in every beat.
+- No visible Chinese or other unintended-language text.
 - Voiceover intelligible over the music.
 
 ## 9. Preview and Deliver

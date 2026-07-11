@@ -1,0 +1,308 @@
+{
+  "typography": [
+    {
+      "role": "display",
+      "fontFamily": "Inter",
+      "fontSize": "96px",
+      "fontWeight": "800",
+      "lineHeight": "96px",
+      "letterSpacing": "-2.4px",
+      "color": "#E2E8F0",
+      "sampleText": "全链路接管Full-Stack Takeover 全球分布式燃气算力Global Distributed Gas Has"
+    },
+    {
+      "role": "heading",
+      "fontFamily": "Inter",
+      "fontSize": "48px",
+      "fontWeight": "700",
+      "lineHeight": "48px",
+      "letterSpacing": "normal",
+      "color": "#E2E8F0",
+      "sampleText": "当百年机械制造，遭遇 毫秒必争的算力狂潮"
+    },
+    {
+      "role": "body",
+      "fontFamily": "Inter",
+      "fontSize": "20px",
+      "fontWeight": "400",
+      "lineHeight": "28px",
+      "letterSpacing": "normal",
+      "color": "#9CA3AF",
+      "sampleText": "打破传统机械制造与加密挖矿的运维代沟。一套系统，横跨硬件采集、中控大屏、AI诊断与移动工单。让全球十万台散落的机组，如同"
+    },
+    {
+      "role": "link",
+      "fontFamily": "Inter",
+      "fontSize": "14px",
+      "fontWeight": "500",
+      "lineHeight": "20px",
+      "letterSpacing": "normal",
+      "color": "#94A3B8",
+      "sampleText": "首页"
+    },
+    {
+      "role": "label",
+      "fontFamily": "Font Awesome 6 Brands",
+      "fontSize": "12px",
+      "fontWeight": "400",
+      "lineHeight": "16px",
+      "letterSpacing": "normal",
+      "color": "#6B7280",
+      "sampleText": ""
+    }
+  ],
+  "spacing": {
+    "observed": [
+      2,
+      4,
+      16,
+      24
+    ],
+    "baseUnit": 8
+  },
+  "radius": [],
+  "shadows": [
+    {
+      "value": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(93, 214, 44, 0.3) 0px 0px 10px 0px",
+      "count": 1
+    },
+    {
+      "value": "rgba(93, 214, 44, 0.08) 0px 0px 0px 1px inset",
+      "count": 1
+    },
+    {
+      "value": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(93, 214, 44, 0.3) 0px 0px 30px 0px",
+      "count": 1
+    }
+  ],
+  "buttons": [
+    {
+      "label": "登录",
+      "background": "#5DD62C",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#000000",
+      "padding": "6px 16px",
+      "borderRadius": "9999px",
+      "border": "0px solid rgb(229, 231, 235)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(93, 214, 44, 0.3) 0px 0px 10px 0px",
+      "fontSize": "12px",
+      "fontWeight": "700",
+      "height": "28px"
+    },
+    {
+      "label": "舰队总览Fleet Overview",
+      "background": "#5DD62C",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#5DD62C",
+      "padding": "10px 12px",
+      "borderRadius": "10px",
+      "border": "1px solid rgba(93, 214, 44, 0.18)",
+      "boxShadow": "rgba(93, 214, 44, 0.08) 0px 0px 0px 1px inset",
+      "fontSize": "14px",
+      "fontWeight": "700",
+      "height": "42px"
+    },
+    {
+      "label": "站点拓扑Site Topology",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#94A3B8",
+      "padding": "10px 12px",
+      "borderRadius": "10px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "42px"
+    },
+    {
+      "label": "接受任务并领料Accept Task & Collect",
+      "background": "#EF4444",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#FFFFFF",
+      "padding": "8px 0px",
+      "borderRadius": "8px",
+      "border": "0px solid rgb(229, 231, 235)",
+      "boxShadow": "none",
+      "fontSize": "12px",
+      "fontWeight": "700",
+      "height": "32px"
+    },
+    {
+      "label": "查看详情View Details",
+      "background": "#FFFFFF",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#FFFFFF",
+      "padding": "8px 0px",
+      "borderRadius": "8px",
+      "border": "0px solid rgb(229, 231, 235)",
+      "boxShadow": "none",
+      "fontSize": "12px",
+      "fontWeight": "700",
+      "height": "32px"
+    },
+    {
+      "label": "等待扫码核销Awaiting Scan",
+      "background": "#374151",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#9CA3AF",
+      "padding": "8px 0px",
+      "borderRadius": "8px",
+      "border": "0px solid rgb(229, 231, 235)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "700",
+      "height": "36px"
+    }
+  ],
+  "cards": [
+    {
+      "label": "card",
+      "background": "transparent",
+      "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0), rgba(18, 18, 26, 0.3))",
+      "backdropFilter": "",
+      "color": "#E2E8F0",
+      "padding": "128px 0px",
+      "borderRadius": "0px",
+      "border": "0px solid rgb(229, 231, 235)",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "824px"
+    },
+    {
+      "label": "card",
+      "background": "#12121A",
+      "backgroundImage": "",
+      "backdropFilter": "blur(20px)",
+      "color": "#E2E8F0",
+      "padding": "40px",
+      "borderRadius": "16px",
+      "border": "",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "292px"
+    },
+    {
+      "label": "card",
+      "background": "#12121A",
+      "backgroundImage": "",
+      "backdropFilter": "blur(20px)",
+      "color": "#E2E8F0",
+      "padding": "24px",
+      "borderRadius": "12px",
+      "border": "",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "122px"
+    },
+    {
+      "label": "card",
+      "background": "#12121A",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#E2E8F0",
+      "padding": "128px 0px",
+      "borderRadius": "0px",
+      "border": "0px solid rgb(229, 231, 235)",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "1224px"
+    }
+  ],
+  "nav": {
+    "label": "navigation",
+    "background": "#202020",
+    "backgroundImage": "",
+    "backdropFilter": "blur(12px)",
+    "color": "#E2E8F0",
+    "padding": "0px",
+    "borderRadius": "0px",
+    "border": "",
+    "boxShadow": "none",
+    "fontSize": "16px",
+    "fontWeight": "400",
+    "height": "64px"
+  },
+  "chips": [],
+  "statCells": [],
+  "tabs": [
+    {
+      "label": "舰队总览Fleet Overview",
+      "background": "#5DD62C",
+      "color": "#5DD62C",
+      "padding": "10px 12px",
+      "borderRadius": "10px",
+      "border": "1px solid rgba(93, 214, 44, 0.18)",
+      "boxShadow": "rgba(93, 214, 44, 0.08) 0px 0px 0px 1px inset",
+      "fontSize": "14px",
+      "fontWeight": "700",
+      "height": "42px"
+    },
+    {
+      "label": "站点拓扑Site Topology",
+      "background": "transparent",
+      "color": "#94A3B8",
+      "padding": "10px 12px",
+      "borderRadius": "10px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "42px"
+    }
+  ],
+  "backgrounds": [
+    {
+      "value": "linear-gradient(rgba(0, 0, 0, 0), rgba(18, 18, 26, 0.3))",
+      "area": 1582080
+    },
+    {
+      "value": "linear-gradient(90deg, rgba(0, 0, 0, 0), rgba(93, 214, 44, 0.1), rgba(0, 0, 0, 0))",
+      "area": 131293
+    },
+    {
+      "value": "repeating-linear-gradient(0deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0) 10px, rgb(0, 0, 0) 10px, rgb(0, 0, 0) 12px)",
+      "area": 117312
+    },
+    {
+      "value": "linear-gradient(to right, rgb(255, 255, 255), rgb(161, 161, 170))",
+      "area": 54290
+    }
+  ],
+  "glass": [
+    {
+      "backdropFilter": "blur(20px)",
+      "background": "rgba(18, 18, 26, 0.6)",
+      "border": "",
+      "borderRadius": "16px",
+      "boxShadow": "",
+      "area": 350400
+    },
+    {
+      "backdropFilter": "blur(20px)",
+      "background": "rgba(18, 18, 26, 0.6)",
+      "border": "",
+      "borderRadius": "12px",
+      "boxShadow": "",
+      "area": 213744
+    },
+    {
+      "backdropFilter": "blur(12px)",
+      "background": "rgba(32, 32, 32, 0.95)",
+      "border": "",
+      "borderRadius": "0px",
+      "boxShadow": "",
+      "area": 122880
+    }
+  ]
+}

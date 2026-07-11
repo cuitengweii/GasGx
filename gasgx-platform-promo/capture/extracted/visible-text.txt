@@ -1,0 +1,569 @@
+[span] Gas
+[span] 全球领先的搁浅天然气算力变现引擎
+[a] GasGx燃气电站系统
+[a] GasGx ECM
+[a] GasGx出入库系统
+[a] GasGx销售系统
+[a] LCOE 成本计算器
+[a] ROI 回报估算器
+[a] 燃气发电挖矿收益计算器
+[a] 蒙特卡洛模拟盈利分析
+[a] 天然气发电耗气成本分析
+[a] 天然气主要成分热值表
+[a] 燃气发动机选型与运营经济性
+[a] 天然气发电机机油消耗率
+[a] 车机 VS 工业机 10MW 对比分析
+[a] 多机型对比 3 年运营数据
+[h3] 矿工专区（托管与算力分析）
+[a] 矿机盈利能力计算器
+[a] 加拿大 AECO 天然气价格预测
+[a] 全球物流运输推荐
+[a] 综合性能 TOP 榜
+[a] 天然气内燃机发电效率排行榜
+[a] 天然气内燃机热效率排行榜
+[a] 天然气内燃机耗气量排行榜
+[a] 最佳 ROI 榜
+[a] 最低发电成本 LCOE 榜
+[a] 天然气内燃机折旧排行榜
+[a] 天然气内燃机投资回报率排行榜
+[a] 最长 MTBF 榜
+[a] 天然气内燃机保养时间排行榜
+[a] 天然气内燃机备件保障排行榜
+[a] 天然气内燃机排放排行榜
+[a] 天然气内燃机噪音排行榜
+[a] 天然气内燃机发电机排行榜
+[a] 天然气内燃机控制系统排行榜
+[a] 油气井 / 伴生气
+[a] 挖矿 / 数据中心
+[a] CHP 热电联供
+[a] 工业园区与分布式能源
+[a] 油气井/伴生气发电
+[a] 数据中心 / 挖矿电力
+[a] 热电联供 CHP
+[a] 常见问答 FAQ
+[span] 欢迎，
+[span] User
+[a] GasGx燃气电站系统
+[a] GasGx ECM
+[a] GasGx出入库系统
+[a] GasGx销售系统
+[a] LCOE 成本计算器
+[a] ROI 回报估算器
+[a] 燃气发电挖矿收益计算器
+[a] 蒙特卡洛模拟盈利分析
+[a] 天然气发电耗气成本分析
+[a] 天然气主要成分热值表
+[a] 燃气发动机选型与运营经济性
+[a] 天然气发电机机油消耗率
+[a] 车机 VS 工业机 10MW 对比分析
+[a] 多机型对比 3 年运营数据
+[h4] 矿工专区（托管与算力分析）
+[a] 矿机盈利能力计算器
+[a] 加拿大 AECO 天然气价格预测
+[a] 全球物流运输推荐
+[a] 综合性能 TOP 榜
+[a] 天然气内燃机发电效率排行榜
+[a] 天然气内燃机热效率排行榜
+[a] 天然气内燃机耗气量排行榜
+[a] 最佳 ROI 榜
+[a] 最低发电成本 LCOE 榜
+[a] 天然气内燃机折旧排行榜
+[a] 天然气内燃机投资回报率排行榜
+[a] 最长 MTBF 榜
+[a] 天然气内燃机保养时间排行榜
+[a] 天然气内燃机备件保障排行榜
+[a] 天然气内燃机排放排行榜
+[a] 天然气内燃机噪音排行榜
+[a] 天然气内燃机发电机排行榜
+[a] 天然气内燃机控制系统排行榜
+[a] 油气井 / 伴生气
+[a] 挖矿 / 数据中心
+[a] CHP 热电联供
+[a] 工业园区与分布式能源
+[a] 油气井/伴生气发电
+[a] 数据中心 / 挖矿电力
+[a] 热电联供 CHP
+[a] 常见问答 FAQ
+[div] GASGX OS · VERSION 6.1 ENTERPRISE
+[span] 全链路接管
+[span] 全球分布式燃气算力
+[span] 超级数字中枢
+[span] 打破传统机械制造与加密挖矿的运维代沟。一套系统，横跨硬件采集、中控大屏、AI诊断与移动工单。让全球十万台散落的机组，如同一台机器般运转。
+[span] 进入系统控制台
+[span] 阅读破局白皮书
+[span] GasGx 控制中心
+[span] 在线节点
+[div] 247
+[span] / 250
+[span] 98.8% 实时同步
+[span] AI 风险队列
+[span] 14 天预警窗口
+[span] 工单闭环
+[span] min
+[span] 从预警到派单
+[span] 跨洲机组态势
+[span] 德州二叠纪盆地
+[span] 48.2 MW
+[span] 西德州伴生气
+[span] 31.6 MW
+[span] 偏远井口站点
+[span] 18.4 MW
+[div] SLA
+[div] 99.8%
+[span] 待派单
+[span] 损失保护
+[div] $18.6k
+[span] AI 优先处理
+[span] 预测性维护
+[span] #10 缸火花塞衰减
+[span] 高优先
+[span] SITE_042 / 36 小时窗口
+[span] 备件与工程师已匹配
+[span] 已就绪
+[span] 预计 02:15 到场 / TX_MID_01
+[span] 今日收益保护
+[span] 预计减少 6.4 小时非计划停机，单日保护约 $18.6k。
+[span] LAYER 0: EDGE IoT GATEWAY
+[span] CAN J1939 BUS
+[span] MODBUS TCP/RTU
+[span] ENCRYPTION
+[span] AES-256
+[span] UPLINK (STARLINK)
+[span] 45ms
+[span] LAYER 1: CLOUD DATA & AI ENGINE
+[span] PROCESSING...
+[div] > INGEST: Node #042 telemetry batch received.
+[div] > PARSE: 124 metrics decoded.
+[div] > AI_MODEL: MN_Fluctuation_Adapter running...
+[div] > AI_MODEL: EGT_Deviation within tolerance.
+[div] > EVENT: Spark Plug degradation +0.02kV.
+[div] > INGEST: Node #043 telemetry batch received.
+[div] > PARSE: 124 metrics decoded.
+[div] > ALERT_CHECK: Passed.
+[span] > 同步：正在推送到控制台...
+[span] GasGx 控制中心
+[span] 在线节点
+[div] 247
+[span] / 250
+[span] 98.8% 实时同步
+[span] AI 风险队列
+[span] 14 天预警窗口
+[span] 工单闭环
+[span] min
+[span] 从预警到派单
+[span] 跨洲机组态势
+[span] 德州二叠纪盆地
+[span] 48.2 MW
+[span] 西德州伴生气
+[span] 31.6 MW
+[span] 偏远井口站点
+[span] 18.4 MW
+[div] SLA
+[div] 99.8%
+[span] 待派单
+[span] 待机损失
+[div] $18.6k
+[span] AI 优先处理
+[span] 预测性维护
+[span] #10 缸火花塞衰减
+[span] 高优先
+[span] SITE_042 / 36 小时窗口
+[span] 备件与工程师已匹配
+[span] 已就绪
+[span] 预计 02:15 到场 / TX_MID_01
+[span] 今日收益保护
+[span] 预计减少 6.4 小时非计划停机，单日保护收益约 $18.6k。
+[p] Trust By Global Crypto Miners & Energy Providers
+[div] 250
+[div] 全球部署电站节点
+[div] 480
+[div] 托管装机总容量
+[div] 99.8
+[div] 历史平均在线率
+[div] 3.2
+[div] 日均处理遥测数据点
+[span] // The Paradox
+[h2] 当百年机械制造，
+[h2] 毫秒必争的算力狂潮
+[span] Meets
+[h3] 主机厂的“失控孤岛”
+[p] 机组被卖到得州荒漠、西伯利亚冻土。物理空间的极度分散，让传统的巡检、维保体系瞬间瘫痪。机器运行状态沦为“黑盒”，售后变成了高昂且低效的“跨洋救火”。
+[div] > ERR_NO_CONNECTION: Remote site unreachable.
+[div] > STATUS: Blind.
+[h3] 挖矿客户的“生死时速”
+[p] 比特币挖矿要求 7×24 小时满负荷极限压榨。停机一分钟就是实打实的算力损失与资金蒸发。孤网环境下，极端的负载要求与滞后的维修响应构成了致命矛盾。
+[span] > 告警：在线率严重告急。
+[div] > HASH_RATE_DROP: -145 TH/s (Lost $120/hr)
+[span] // Layer 0. Edge Protocol
+[h2] 第一道防线：GasGx 边缘计算网关
+[p] 直连底层 PLC 与传感器，强力破除信息孤岛。在极端恶劣环境下，依然能将百种高频数据压缩加密，通过 4G/星链 稳定上云。
+[div] GasGx
+[span] EDGE_G900
+[span] PWR_ON
+[span] 4G_LTE / LINK
+[span] DATA_TX/RX
+[span] CAN
+[span] RS485
+[span] RJ45
+[h4] 广泛的协议兼容
+[p] 内置解析引擎，全面兼容 J1939、Modbus RTU/TCP 等工业协议。无缝对接各类主流燃气发电机组 (Jenbacher, Caterpillar, Cummins 等)。
+[h4] 边缘侧毫秒级响应
+[p] 在设备端即可执行基础的阈值判断。当发生致命过载时，无需等待云端指令，网关直接下发停机保护信号，守护百万资产。
+[h4] 断网续传机制
+[p] 针对偏远矿场恶劣网络，内置本地缓存芯片，断网期间数据不丢失，网络恢复后自动进行时序对齐与补传。
+[span] // Layer 1. Fleet Dashboard
+[h2] 智维控制台：百兆瓦级集群，一屏尽览
+[p] 告别 100 个现场的折返跑。现在，您可以坐在纽约的办公室，实时查看德州某一台机组 2 分钟前的火花塞点火电压。
+[span] (← 手机端请左右滑动查看完整控制台 →)
+[span] (← Swipe left/right on mobile to view full console →)
+[div] gasgx.app / fleet-dashboard
+[div] GASGX_
+[span] 舰队总览
+[span] 站点拓扑
+[span] 实时遥测
+[span] AI 诊断预警
+[span] 系统状态
+[span] 所有服务均正常
+[span] 总发电功率
+[div] 142.5
+[span] 较上一小时 +2.4%
+[span] 活跃节点
+[div] 104
+[span] / 106
+[span] 2 个节点离线
+[span] 平均气源压力
+[div] 2.84
+[span] Bar
+[span] 待处理工单
+[span] 3 个关键优先项
+[span] 节点遥测矩阵
+[span] 全部站点
+[div] LIVE
+[th] SITE_ID
+[th] RPM
+[span] 温度(进/出)
+[td] TX_MID_01
+[td] 1500
+[td] 42° / 88°
+[td] 1.2 MW
+[td] TX_MID_02
+[td] 1502
+[td] 43° / 89°
+[td] 1.2 MW
+[td] WY_NORTH_09
+[span] 机油跳机
+[td] 65° / 68°
+[td] 0 MW
+[td] WY_NORTH_10
+[td] 1500
+[td] 40° / 85°
+[td] 1.1 MW
+[span] 当前节点
+[div] TX_MID_01
+[span] 健康度 94%
+[div] 1.2
+[span] 输出功率 (MW)
+[span] L1-L2 电压
+[span] 480 V
+[span] 60.0 Hz
+[span] 燃气阀门
+[span] 42% 开度
+[span] 点火提前角
+[span] -14° BTDC
+[span] 接入站点
+[span] 覆盖 3 个区域集群
+[span] 边缘网关
+[div] 106
+[span] J1939 / Modbus 全接入
+[span] 健康链路
+[div] 97.6
+[span] 4G / Starlink 冗余
+[span] 现场班组
+[span] 5 组可 2 小时到场
+[span] 远程站点拓扑
+[span] 3 个区域在线
+[span] 德州二叠纪盆地
+[span] 12 站点 / 38 节点
+[span] 43 ms
+[span] 西德州伴生气
+[span] 9 站点 / 31 节点
+[span] 58 ms
+[span] 偏远井口站点
+[span] 7 站点 / 17 节点
+[span] 91 ms
+[span] 当前聚焦区域
+[span] 德州二叠纪盆地集群
+[span] 路由在线
+[span] 上行延迟
+[span] 43 ms
+[span] 离线缓存
+[span] 12.8 min
+[span] 自动派单
+[span] 5 crews
+[span] 供电稳定性
+[span] 99.2%
+[span] 边缘网关持续回传井口燃气机组数据，云端完成 AI 诊断后自动派单，班组按最近备件库路径出发。
+[span] 遥测吞吐
+[div] 3.2
+[span] 日均数据点
+[span] 单节点信号数
+[div] 124
+[span] 高频采样中
+[span] 中位链路时延
+[span] 缓存补传开启
+[span] 同步积压
+[div] 0.8
+[span] 可自动追平
+[span] 2 分钟实时遥测回放
+[div] TX_MID_01
+[div] LIVE
+[div] POWER OUTPUT
+[div] EGT BANK A
+[span] 12:00
+[span] 12:30
+[span] 13:00
+[span] 13:30
+[span] 14:00
+[span] 缸组平衡
+[div] +1.8%
+[span] 燃气阀开度
+[div] 42% OPEN
+[span] 缓存重放
+[div] 14 packets
+[span] 事件流
+[span] > 心跳同步 :: TX_MID_01 ::
+[span] > 排温偏差 :: CYL_10 ::
+[span] +12%
+[span] +12%
+[span] > 缓存补传 :: WY_NORTH_09 ::
+[span] 已恢复 14 个数据包
+[span] 14 packets restored
+[span] 实时节点检查
+[div] TX_MID_01
+[span] 12 秒前心跳
+[span] RPM
+[span] 1500
+[span] MAP
+[span] 103 kPa
+[span] 74.2
+[span] EGT_10
+[span] 623°C
+[span] SPARK_V
+[span] 36.4 kV
+[span] 链路状态
+[span] PRIMARY
+[span] STARLINK
+[span] BACKUP
+[span] 4G/LTE
+[span] 边缘缓存负责断链兜底，恢复后自动补传，确保趋势分析不断档。
+[span] 活跃 PdM 案例
+[span] 1 个高风险
+[span] 最早预警提前量
+[span] 预测窗口建立
+[span] 诊断置信度
+[span] 机理模型 + 历史样本
+[span] 自动生成工单
+[span] 2 单已派单
+[span] AI 根因诊断队列
+[span] 模型已更新
+[span] #10 缸火花塞衰减
+[span] 火花塞电压需求持续上扬，已逼近失火阈值。模型判定为火花塞老化而非瞬时燃气波动。
+[div] RISK 0.93
+[span] 36 小时窗口
+[span] EGT 偏差异常
+[span] 右侧缸组热平衡失衡，#10 与相邻缸温差扩大到 +62°C，建议联查点火与进气阀。
+[div] CONF 0.88
+[span] 计划停机处理
+[span] 滤芯寿命即将耗尽
+[span] 压降曲线斜率加速上升，剩余寿命约 11%。系统已联动 WMS 预留备件并合并到下一次保养工单。
+[div] ETA 11%
+[span] 按需保养
+[span] 处置剧本
+[span] 下一动作
+[span] 更换 #10 缸火花塞并复核点火线圈
+[span] 备件清单
+[div] SPARK_PLUG_JNT x2
+[div] IGNITION_COIL_CAT x1
+[span] 响应班组
+[span] 西德州 02 号机电班组
+[div] ETA 02:15
+[span] 收益保护
+[span] 避免停机
+[span] 6.4h
+[span] 保护收益
+[span] $18.6k
+[span] 误报率
+[span] 4.1%
+[span] 这不是故障发生后再派人，而是 AI 先于 ECU 限载和现场停机，把损失截断在事故前。
+[div] // LAYER 2: DEEP LEARNING PDM ENGINE
+[h2] AI 深度诊断引擎：
+[h2] 比经验最老的技师更
+[h2] 你的机器
+[span] Veteran Techs
+[p] 在伴生气（Flare Gas）或井口孤网发电中，气源的甲烷值（MN）波动极大。传统的固定阈值告警形同虚设。GasGx AI 结合设备机理，针对
+[strong] Jenbacher, CAT 等大型燃气机
+[p] 的核心痛点，提供提前数周的“预测性维护（PdM）”。
+[strong] Jenbacher and CAT
+[h4] 动态甲烷值与爆震预测
+[p] 持续追踪点火提前角（Timing）与爆震传感器（Knock Sensor）频谱。当气源热值突变引发轻微爆震时，AI先于ECU限载前发现趋势，避免损坏活塞环。
+[h4] 各缸排温 (EGT) 偏差分析
+[p] 建立 V16/V20 发动机的气缸热力均衡模型。精准识别单个气缸高达 60°C 的温度漂移，判断是“火花塞失效”、“点火线圈老化”还是“混合气阀堵塞”。
+[h4] 机油压降与滤芯生命周期
+[p] 根据压降曲线斜率，AI 直接推算滤芯剩余寿命百分比，结合 WMS 仓储库存，自动发起“按需保养”工单，告别盲目的定期更换。
+[span] V16 MULTI-DIMENSIONAL DIAGNOSTICS
+[span] SITE_042 (CAT)
+[span] Exhaust Gas Temp (EGT) Deviation Map
+[span] #10 CYL ANOMALY
+[span] LEFT BANK (1-8)
+[span] RIGHT BANK (9-16)
+[span] Spark Plug Voltage Demand Curve (Cyl #10)
+[div] 40kV
+[span] MISFIRE LIMIT
+[div] EST: 120 hrs left
+[div] PRESCRIPTIVE ACTION GENERATED
+[p] 检测到
+[strong] #10 气缸
+[p] 排温持续异常，且点火电压需求剧增。判断为火花塞即将彻底击穿。已自动拦截严重宕机风险，并联动 WMS 发出【火花塞 x2】的备料工单至现场终端。
+[strong] #10 CYL
+[span] // Layer 3. Dispatch & Mobile
+[h2] 全端协同：大脑与四肢的完美咬合
+[p] 当 AI 发现上述异常时，系统将自动生成标准 SOP，并直接派发到运维人员与库管员的移动终端。0 沟通误差，0 跑错路。
+[div] GasGx Dispatcher
+[div] 待办工单 (3)
+[span] PdM ACTION
+[span] Just now
+[div] 更换 #10 气缸火花塞
+[div] NODE: SITE_042
+[span] 接受任务并领料
+[span] MAINTENANCE
+[span] 2h ago
+[div] 500H 常规保养 (机油/滤芯)
+[div] NODE: TX_MID_01
+[span] 查看详情
+[div] WMS Subsystem
+[div] 智能领料出库
+[div] 当前备件清单 (对应 PdM 指令)
+[div] 工业火花塞 (JNT)
+[div] 库位: A区-03货架
+[span] 待扫 0/2
+[span] 等待扫码核销
+[span] // Layer 4. FinOps & ROI
+[h2] 财务对齐：打通【气-电-算】链路
+[p] GasGx 不仅仅看设备指标，更关心您的钱包。系统内置能源测算模块，直观呈现每一方气如何转化为每一度电，最终换算为 BTC 挖矿收益。
+[div] Input: Flare Gas
+[div] 12.5k
+[span] m³/h
+[span] 成本：约 $0.00 / MCF
+[div] Conversion: Power
+[div] 38.2
+[span] MWh
+[span] 发电 LCOE：$0.025/kWh
+[div] Output: Hashrate Value
+[div] ~0.45
+[span] BTC/天
+[div] Network Difficulty Adjusted
+[div] 避免停机挽回损失 (本月)
+[div] 基于 AI PdM 提前发现的重大故障测算
+[div] +$142,500
+[span] // 第 5 层：物理世界落地
+[h2] 从井口到算力：全链路数字化接管图景
+[p] GasGx 将荒野上孤立的天然气开采、发电与比特币挖矿物理设施，用数字神经紧密相连。运维人员只需一部移动设备，即可在现场实现对整个复杂业务链的精准掌控。
+[text] 1. 伴生气井口/脱硫站
+[text] GAS
+[tspan] [ PdM 已保护 ]
+[text] 2. 分布式燃气发电机组
+[text] 3. 加密算力数据中心
+[tspan] SOP：WMS 已就绪
+[span] 准备好将您的车队
+[span] 全面接入数字宇宙了吗？
+[p] 不要再为跨洋救火和无休止的机器宕机支付昂贵的代价。现在就预约演示，看看 GasGx 如何在 30 天内重塑您的全球运维体系。
+[span] 申请系统专属演示
+[span] 联系商务团队
+[p] 让搁浅天然气发电更简单
+[a] GasGx燃气电站系统
+[a] GasGx ECM
+[a] GasGx出入库系统
+[a] GasGx销售系统
+[a] GasGx燃气电站系统
+[a] GasGx ECM
+[a] GasGx出入库系统
+[a] GasGx销售系统
+[a] LCOE 成本计算器
+[a] ROI 回报估算器
+[a] 燃气发电挖矿收益计算器
+[a] 蒙特卡洛模拟盈利分析
+[a] 天然气发电耗气成本分析
+[span] 工程与技术工具:
+[a] 天然气主要成分热值表
+[span] 项目与选型工具:
+[a] 燃气发动机选型与运营经济性
+[a] 天然气发电机机油消耗率
+[a] 车机 VS 工业机 10MW 对比分析
+[a] 多机型对比 3 年运营数据
+[span] 矿工专区（托管与算力分析）:
+[a] 矿机盈利能力计算器
+[span] 全球支持与合规:
+[a] 加拿大 AECO 天然气价格预测
+[a] 全球物流运输推荐
+[a] LCOE 成本计算器
+[a] ROI 回报估算器
+[a] 燃气发电挖矿收益计算器
+[a] 蒙特卡洛模拟盈利分析
+[a] 天然气发电耗气成本分析
+[a] 天然气主要成分热值表
+[a] 燃气发动机选型与运营经济性
+[a] 天然气发电机机油消耗率
+[a] 车机 VS 工业机 10MW 对比分析
+[a] 多机型对比 3 年运营数据
+[a] 矿机盈利能力计算器
+[a] 加拿大 AECO 天然气价格预测
+[a] 全球物流运输推荐
+[a] 综合性能 TOP 榜
+[a] 天然气内燃机发电效率排行榜
+[a] 天然气内燃机热效率排行榜
+[a] 天然气内燃机耗气量排行榜
+[a] 最佳 ROI 榜
+[a] 最低发电成本 LCOE 榜
+[a] 天然气内燃机折旧排行榜
+[a] 天然气内燃机投资回报率排行榜
+[a] 最长 MTBF 榜
+[a] 天然气内燃机保养时间排行榜
+[a] 天然气内燃机备件保障排行榜
+[a] 天然气内燃机排放排行榜
+[a] 天然气内燃机噪音排行榜
+[a] 天然气内燃机发电机排行榜
+[a] 天然气内燃机控制系统排行榜
+[a] 综合性能 TOP 榜
+[a] 天然气内燃机发电效率排行榜
+[a] 天然气内燃机热效率排行榜
+[a] 天然气内燃机耗气量排行榜
+[a] 最佳 ROI 榜
+[a] 最低发电成本 LCOE 榜
+[a] 天然气内燃机折旧排行榜
+[a] 天然气内燃机投资回报率排行榜
+[a] 最长 MTBF 榜
+[a] 天然气内燃机保养时间排行榜
+[a] 天然气内燃机备件保障排行榜
+[a] 天然气内燃机排放排行榜
+[a] 天然气内燃机噪音排行榜
+[a] 天然气内燃机发电机排行榜
+[a] 天然气内燃机控制系统排行榜
+[a] 油气井 / 伴生气
+[a] 挖矿 / 数据中心
+[a] CHP 热电联供
+[a] 工业园区与分布式能源
+[a] 油气井/伴生气发电
+[a] 数据中心 / 挖矿电力
+[a] 热电联供 CHP
+[a] 油气井 / 伴生气
+[a] 挖矿 / 数据中心
+[a] CHP 热电联供
+[a] 工业园区与分布式能源
+[a] 油气井/伴生气发电
+[a] 数据中心 / 挖矿电力
+[a] 热电联供 CHP
+[a] 常见问答 FAQ
+[a] 常见问答 FAQ
+[p] The World's leading engine for monetizing stranded natural gas computing power
+[span] © 2026 GasGx. All rights reserved.
+[a] Privacy Policy

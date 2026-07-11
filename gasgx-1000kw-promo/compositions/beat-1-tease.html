@@ -1,0 +1,41 @@
+<template id="g1000-tease-template">
+  <div data-hf-id="hf-rxfe" id="root-g1000-tease" data-composition-id="g1000-tease" data-start="0" data-duration="4.4" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-k0f4" class="b1-scene">
+      <img data-hf-id="hf-ysbt" class="b1-product" src="capture/assets/gasgx-g1000.png">
+      <div data-hf-id="hf-09cs" class="b1-dark"></div>
+      <div data-hf-id="hf-wiak" class="b1-beam beam-a"></div><div data-hf-id="hf-566f" class="b1-beam beam-b"></div>
+      <div data-hf-id="hf-lru8" class="b1-brand"><span data-hf-id="hf-lh1q">Gas</span>Gx</div>
+      <div data-hf-id="hf-u0w6" class="b1-index">THE NEXT POWER ICON / 01</div>
+      <div data-hf-id="hf-8ckv" class="b1-copy"><div data-hf-id="hf-ltql" class="b1-label">GRAND REVEAL</div><h1 data-hf-id="hf-thef">Meet the next<br data-hf-id="hf-x5px"><span data-hf-id="hf-48o7">power icon.</span></h1><p data-hf-id="hf-gc7v">Something new is waiting behind the curtain.</p></div>
+      <div data-hf-id="hf-pqym" class="b1-line"></div>
+    </div>
+    <style>
+      @font-face { font-family: "InterCaptured"; src: url("capture/assets/fonts/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuOKfMZg.ttf") format("truetype"); }
+      #root-g1000-tease { overflow: hidden; width: 1920px; height: 1080px; background: #050505; color: #ffffff; font-family: "InterCaptured", Inter, Arial, sans-serif; }
+      .b1-scene { position: relative; width: 100%; height: 100%; overflow: hidden; background: #050505; }
+      .b1-product { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 66% 48%; }
+      .b1-dark { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,5,5,0.98) 0%, rgba(5,5,5,0.82) 42%, rgba(5,5,5,0.2) 80%), radial-gradient(circle at 70% 50%, transparent 0, rgba(5,5,5,0.6) 78%); }
+      .b1-beam { position: absolute; top: -120px; width: 190px; height: 1350px; opacity: 0.18; background: linear-gradient(90deg, transparent, rgba(255,244,216,0.35), transparent); filter: blur(22px); transform: rotate(18deg); }
+      .beam-a { right: 410px; }.beam-b { right: 140px; transform: rotate(-16deg); }
+      .b1-brand { position: absolute; left: 86px; top: 54px; color: #f8f8f8; font-size: 38px; font-weight: 900; }.b1-brand span { color: #5dd62c; }
+      .b1-index { position: absolute; right: 90px; top: 64px; color: #5dd62c; font-size: 15px; font-weight: 700; letter-spacing: 0.08em; }
+      .b1-copy { position: absolute; left: 106px; top: 290px; }.b1-label { color: #5dd62c; font-size: 17px; font-weight: 800; letter-spacing: 0.1em; }
+      h1 { margin: 22px 0 24px; font-size: 96px; font-weight: 900; line-height: 1.02; } h1 span { color: #5dd62c; }
+      .b1-copy p { margin: 0; color: #cbd5e1; font-size: 28px; }
+      .b1-line { position: absolute; left: 106px; top: 632px; width: 230px; height: 4px; background: #5dd62c; box-shadow: 0 0 22px rgba(93,214,44,0.6); }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+      tl.fromTo(".b1-product", { scale: 1.02, x: 22 }, { scale: 1.1, x: -28, duration: 4.4, ease: "none" }, 0);
+      tl.fromTo(".b1-brand", { y: -24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.48, ease: "power3.out" }, 0.12);
+      tl.fromTo(".b1-index", { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.45, ease: "power2.out" }, 0.24);
+      tl.fromTo(".b1-copy", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.72, ease: "expo.out" }, 0.38);
+      tl.fromTo(".b1-line", { width: 0, opacity: 0 }, { width: 230, opacity: 1, duration: 0.55, ease: "power3.out" }, 0.94);
+      tl.to(".beam-a", { x: -120, opacity: 0.34, duration: 2.4, ease: "sine.inOut" }, 0.55);
+      tl.to(".beam-b", { x: 100, opacity: 0.3, duration: 2.8, ease: "sine.inOut" }, 0.7);
+      window.__timelines["g1000-tease"] = tl;
+    </script>
+  </div>
+</template>

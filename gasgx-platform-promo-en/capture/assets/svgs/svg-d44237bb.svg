@@ -1,0 +1,10 @@
+<svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+                                <linearGradient id="aiGrad2" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="rgba(59, 130, 246, 0.4)"></stop>
+                                    <stop offset="100%" stop-color="rgba(59, 130, 246, 0)"></stop>
+                                </linearGradient>
+                                <path d="M0,100 L0,50 Q30,55 60,35 T90,85 L100,90 L100,100 Z" fill="url(#aiGrad2)"></path>
+                                <path d="M0,50 Q30,55 60,35" fill="none" stroke="#3b82f6" stroke-width="2"></path>
+                                <path d="M60,35 T90,10 L100,5" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="2,2"></path>
+                                <circle cx="60" cy="35" r="2.5" fill="#3b82f6" class="animate-pulse"></circle>
+                            </svg>
