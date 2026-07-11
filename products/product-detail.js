@@ -699,16 +699,20 @@
                 ctx.fillText(t("Scan for details", "扫码查看详情"), qrCardX + qrCardSize / 2, qrCardY + 40 + qrSize + 42);
                 ctx.textAlign = "left";
 
+                var messageCardX = 1260;
+                var messageCardY = 480;
+                var messageCardWidth = 520;
+                var messageCardHeight = 200;
                 ctx.fillStyle = "rgba(255, 255, 255, 0.07)";
-                ctx.fillRect(1260, 480, 520, 168);
+                ctx.fillRect(messageCardX, messageCardY, messageCardWidth, messageCardHeight);
                 ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
-                ctx.strokeRect(1260, 480, 520, 168);
+                ctx.strokeRect(messageCardX, messageCardY, messageCardWidth, messageCardHeight);
                 ctx.fillStyle = "#ffffff";
-                ctx.font = "900 36px Inter, Arial, sans-serif";
-                ctx.fillText(t("Compact gas power solution", "紧凑型燃气电力方案"), 1290, 540);
+                ctx.font = "900 32px Inter, Arial, sans-serif";
+                ctx.fillText(t("Compact gas power solution", "紧凑型燃气电力方案"), messageCardX + 30, messageCardY + 60);
                 ctx.fillStyle = "#cbd5e1";
-                ctx.font = "600 25px Inter, Arial, sans-serif";
-                drawWrappedText(ctx, t("Built for project-site prime power, distributed energy and gas-to-computing deployments.", "适用于项目现场主用电源、分布式能源与燃气算力部署。"), 1290, 594, 450, 36);
+                ctx.font = "600 22px Inter, Arial, sans-serif";
+                drawWrappedText(ctx, t("Built for project-site prime power, distributed energy and gas-to-computing deployments.", "适用于项目现场主用电源、分布式能源与燃气算力部署。"), messageCardX + 30, messageCardY + 108, messageCardWidth - 70, 30);
 
                 ctx.fillStyle = "#8cf06d";
                 ctx.font = "900 24px Inter, Arial, sans-serif";
