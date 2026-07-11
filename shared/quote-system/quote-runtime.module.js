@@ -238,6 +238,107 @@ const dict = {
     },
     ru: {
         ...sharedUiDict,
+        supplier: 'Поставщик:',
+        sender: 'Отправитель:',
+        receiver: 'Получатель:',
+        validity: 'Срок действия предложения:',
+        update: 'Синхронизация системного времени',
+        included: 'Включено',
+        mainConfig: 'Основная конфигурация',
+        servicePackage: 'Сервисный пакет',
+        optionalConfig: 'Дополнительная конфигурация',
+        systemTotal: 'Расчётная общая стоимость системы',
+        headers: ['№', 'Описание модуля', 'Спецификация / бренд', 'Кол-во', 'RMB (¥)', 'USD ($)', 'EUR (€)', 'CAD (C$)', 'RUB (₽)'],
+        ratesOnline: 'Актуальные мировые курсы валют',
+        ratesRefreshing: 'Обновление курсов...',
+        ratesFallback: 'Не удалось получить курсы, используется сохранённый снимок.',
+        refresh: 'Обновить курсы',
+        send: 'Отправить',
+        share: 'Поделиться / экспорт',
+        shareLink: 'Создать ссылку',
+        exportImage: 'Создать длинное изображение',
+        exportPdf: 'Экспортировать PDF',
+        shareTitle: 'Создание ссылки',
+        shareDesc: 'Настройте срок действия и код доступа для ссылки клиента. Авторизованные администраторы всегда могут открыть эту страницу.',
+        shareExpiryLabel: 'Срок действия ссылки',
+        shareExpiry1d: '1 день',
+        shareExpiry3d: '3 дня',
+        shareExpiry7d: '7 дней',
+        shareExpiryNever: 'Без ограничения срока',
+        shareExpiryCustom: 'Указать срок',
+        shareCustomLabel: 'Пользовательский срок',
+        shareCustomPicker: 'Выбрать время',
+        shareAdminHint: 'Сессии администраторов сайта не ограничиваются сроком ссылки.',
+        sharePasscodeLabel: 'Код доступа',
+        sharePasscodePlaceholder: 'Создаётся автоматически',
+        shareLinkLabel: 'Ссылка',
+        shareLinkPlaceholder: 'Создайте ссылку ниже',
+        shareGenerate: 'Создать и скопировать ссылку',
+        shareClose: 'Закрыть',
+        sharePreviewDefault: 'По умолчанию ссылка действует 3 дня.',
+        sharePreviewAdmin: 'Авторизованные администраторы могут открыть страницу после истечения срока ссылки.',
+        shareCopySuccess: 'Ссылка скопирована',
+        shareCopyFallback: 'Ссылка создана. Скопируйте её вручную.',
+        shareAdminOnly: 'Только авторизованные администраторы могут создавать ссылки.',
+        shareCustomRequired: 'Сначала укажите корректный срок действия.',
+        shareCustomExpired: 'Срок действия должен быть позже текущего времени.',
+        shareUnavailable: 'Для этой страницы пока нет опубликованного предложения.',
+        shareGenerateError: 'Не удалось создать ссылку. Повторите попытку позже.',
+        accessBadge: 'Защищённый доступ',
+        accessCheckingTitle: 'Проверка доступа...',
+        accessCheckingMessage: 'Проверяем ссылку и сессию администратора.',
+        accessInvalid: 'Ссылка недействительна или повреждена. Создайте новую ссылку.',
+        accessExpired: 'Срок действия ссылки истёк.',
+        accessPasscodeTitle: 'Требуется код доступа',
+        accessPasscodeMessage: 'Введите 4-значный код доступа, чтобы продолжить.',
+        accessPasscodeLabel: 'Код доступа',
+        accessPasscodeSubmit: 'Разблокировать',
+        accessPasscodeError: 'Неверный код доступа.',
+        accessDeniedTitle: 'Предпросмотр недоступен',
+        accessDeniedMessage: 'Предпросмотр черновика доступен только авторизованным администраторам.',
+        accessRefresh: 'Проверить ещё раз',
+        notFoundTitle: 'Предложение не найдено',
+        notFoundMessage: 'По этой ссылке нет опубликованного предложения.',
+        loading: 'Загрузка...',
+        exportLoading: 'Формирование документа...',
+        exportSubText: 'Подготавливаем документ высокого качества.',
+        exportLibraryMissing: 'Инструменты экспорта ещё загружаются. Обновите страницу и повторите попытку.',
+        receiverPlaceholder: 'Введите email клиента',
+        days: 'д',
+        hours: 'ч',
+        minutes: 'мин',
+        seconds: 'с',
+        galleryTitle: 'Галерея продукта',
+        galleryPrev: 'Предыдущее изображение',
+        galleryNext: 'Следующее изображение',
+        galleryModeCarousel: 'Карусель',
+        galleryModeStack: 'Галерея',
+        shareMetaMode: 'Режим: ссылка',
+        shareMetaAdmin: 'Режим: предпросмотр администратора',
+        shareMetaExpired: 'Срок действия: ',
+        shareMetaNever: 'Без ограничения срока',
+        unknownBrand: 'Система коммерческих предложений',
+        noEmail: 'Сначала укажите email клиента.',
+        authLogin: 'Войти',
+        authAccount: 'Аккаунт',
+        authModalTitle: 'Требуется вход',
+        authModalMessage: 'Войдите, чтобы продолжить защищённые действия с предложением.',
+        authModalHint: 'Просмотр останется доступным. После входа вы вернётесь к этому предложению.',
+        authModalLogin: 'Войти сейчас',
+        authModalCancel: 'Продолжить просмотр',
+        authProtectedAction: 'Защищённое действие',
+        authActionShare: 'Поделиться / экспорт',
+        authActionSend: 'Отправить email',
+        authActionImage: 'Экспорт изображения',
+        authActionPdf: 'Экспорт PDF',
+        authActionLink: 'Создать ссылку',
+        authActionConfirm: 'Подтверждение предложения',
+        quoteConfirmLoginRequired: 'Перед подтверждением войдите в систему.',
+        quoteConfirmEmailRequired: 'Сначала укажите email клиента в карточке клиента или предложении.',
+        quoteConfirmEmailMismatch: 'Текущий аккаунт: {actual}. Для подтверждения используйте зарегистрированный email: {expected}.',
+        quoteConfirmHintMatched: 'Email аккаунта совпадает с зарегистрированным email клиента.',
+        quoteConfirmHintLogin: 'Войдите с email клиента, указанным в предложении.',
+        tableSwipeHint: 'На мобильном устройстве проведите по таблице в сторону, чтобы увидеть все цены.',
     },
 };
 
@@ -284,11 +385,11 @@ const state = {
 };
 
 const PRODUCTION_PROGRESS_STEPS = Object.freeze([
-    { key: 'production_step_plan', label: { zh: '排程确认', en: 'Planning confirmed', ru: 'Planning confirmed' } },
-    { key: 'production_step_material', label: { zh: '物料齐套', en: 'Materials ready', ru: 'Materials ready' } },
-    { key: 'production_step_assembly', label: { zh: '产线组装', en: 'Assembly', ru: 'Assembly' } },
-    { key: 'production_step_test', label: { zh: '联调测试', en: 'Integrated testing', ru: 'Integrated testing' } },
-    { key: 'production_step_ready', label: { zh: '待验收', en: 'Ready for FAT', ru: 'Ready for FAT' } },
+    { key: 'production_step_plan', label: { zh: '排程确认', en: 'Planning confirmed', ru: 'Планирование подтверждено' } },
+    { key: 'production_step_material', label: { zh: '物料齐套', en: 'Materials ready', ru: 'Материалы готовы' } },
+    { key: 'production_step_assembly', label: { zh: '产线组装', en: 'Assembly', ru: 'Сборка' } },
+    { key: 'production_step_test', label: { zh: '联调测试', en: 'Integrated testing', ru: 'Комплексное тестирование' } },
+    { key: 'production_step_ready', label: { zh: '待验收', en: 'Ready for FAT', ru: 'Готово к FAT' } },
 ]);
 
 function localeCopy(options = {}) {
@@ -326,10 +427,10 @@ function productionProgressMetaValue(payload = {}, key = '', fallback = '') {
 
 function productionProgressStatusLabel(value = '') {
     const status = text(value, 'pending');
-    if (status === 'completed') return localeCopy({ zh: '已完成', en: 'Completed', ru: 'Completed' });
-    if (status === 'in_progress') return localeCopy({ zh: '进行中', en: 'In progress', ru: 'In progress' });
-    if (status === 'delayed') return localeCopy({ zh: '延误', en: 'Delayed', ru: 'Delayed' });
-    return localeCopy({ zh: '待开始', en: 'Pending', ru: 'Pending' });
+    if (status === 'completed') return localeCopy({ zh: '已完成', en: 'Completed', ru: 'Завершено' });
+    if (status === 'in_progress') return localeCopy({ zh: '进行中', en: 'In progress', ru: 'В процессе' });
+    if (status === 'delayed') return localeCopy({ zh: '延误', en: 'Delayed', ru: 'Задержка' });
+    return localeCopy({ zh: '待开始', en: 'Pending', ru: 'Ожидается' });
 }
 
 function productionProgressStatusClass(value = '') {
@@ -351,22 +452,22 @@ function productionProgressPanelMarkup(payload = {}) {
             <div class="quote-confirm-card__head">
                 <div>
                     <div class="quote-confirm-card__kicker">PRODUCTION PROGRESS</div>
-                    <h3>${esc(localeCopy({ zh: '生产进度同步', en: 'Production Progress', ru: 'Production Progress' }))}</h3>
+                    <h3>${esc(localeCopy({ zh: '生产进度同步', en: 'Production Progress', ru: 'Прогресс производства' }))}</h3>
                     <p>${esc(localeCopy({
                         zh: '该链接用于客户查看排产阶段的最新进度，销售会根据工厂反馈持续更新。',
                         en: 'This link shows the latest production progress. Sales will keep it updated based on factory feedback.',
-                        ru: 'This link shows the latest production progress. Sales will keep it updated based on factory feedback.',
+                        ru: 'Эта ссылка показывает актуальный прогресс производства. Отдел продаж обновляет данные по информации завода.',
                     }))}</p>
                 </div>
                 <div class="quote-confirm-card__badge">${esc(productionProgressStatusLabel(scheduleStatus))}</div>
             </div>
             <div class="quote-production-meta-grid">
-                <span><strong>${esc(localeCopy({ zh: '工厂/产线', en: 'Factory/Line', ru: 'Factory/Line' }))}</strong>${esc(factoryName)}</span>
-                <span><strong>${esc(localeCopy({ zh: '批次', en: 'Batch', ru: 'Batch' }))}</strong>${esc(batch)}</span>
-                <span><strong>${esc(localeCopy({ zh: '预计完工', en: 'ETA', ru: 'ETA' }))}</strong>${esc(scheduleEta)}</span>
-                <span><strong>${esc(localeCopy({ zh: '工期状态', en: 'Schedule', ru: 'Schedule' }))}</strong>${esc(productionProgressStatusLabel(scheduleStatus))}</span>
+                <span><strong>${esc(localeCopy({ zh: '工厂/产线', en: 'Factory/Line', ru: 'Завод / линия' }))}</strong>${esc(factoryName)}</span>
+                <span><strong>${esc(localeCopy({ zh: '批次', en: 'Batch', ru: 'Партия' }))}</strong>${esc(batch)}</span>
+                <span><strong>${esc(localeCopy({ zh: '预计完工', en: 'ETA', ru: 'Плановая дата' }))}</strong>${esc(scheduleEta)}</span>
+                <span><strong>${esc(localeCopy({ zh: '工期状态', en: 'Schedule', ru: 'Статус графика' }))}</strong>${esc(productionProgressStatusLabel(scheduleStatus))}</span>
             </div>
-            ${delayReason ? `<div class="quote-confirm-card__terms"><strong>${esc(localeCopy({ zh: '延误说明', en: 'Delay note', ru: 'Delay note' }))}</strong><p>${esc(delayReason)}</p></div>` : ''}
+            ${delayReason ? `<div class="quote-confirm-card__terms"><strong>${esc(localeCopy({ zh: '延误说明', en: 'Delay note', ru: 'Причина задержки' }))}</strong><p>${esc(delayReason)}</p></div>` : ''}
             <div class="quote-production-track">
                 ${PRODUCTION_PROGRESS_STEPS.map((step, index) => {
                     const status = productionProgressMetaValue(payload, `${step.key}_status`, 'pending');
@@ -558,7 +659,7 @@ function openQuoteConfirmAlert(options = {}) {
     byId('quote-confirm-alert-kicker').textContent = text(options.kicker, localeCopy({
         zh: '报价确认',
         en: 'QUOTE CONFIRM',
-        ru: 'QUOTE CONFIRM',
+        ru: 'ПОДТВЕРЖДЕНИЕ ПРЕДЛОЖЕНИЯ',
     }));
     byId('quote-confirm-alert-title').textContent = text(options.title, localeCopy({
         zh: '当前账号无法提交确认',
@@ -569,7 +670,7 @@ function openQuoteConfirmAlert(options = {}) {
     byId('quote-confirm-alert-action').textContent = localeCopy({
         zh: '提交限制',
         en: 'Submission restriction',
-        ru: '袨谐褉邪薪懈褔械薪懈械 芯褌锌褉邪胁泻懈',
+        ru: 'Ограничение подтверждения',
     });
     byId('quote-confirm-alert-hint').textContent = text(options.hint, localeCopy({
         zh: '请使用报价中登记的客户邮箱进行确认。',
@@ -579,7 +680,7 @@ function openQuoteConfirmAlert(options = {}) {
     byId('quote-confirm-alert-ack-text').textContent = localeCopy({
         zh: '我知道了',
         en: 'OK',
-        ru: '袩芯薪褟褌薪芯',
+        ru: 'Понятно',
     });
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
@@ -948,7 +1049,7 @@ function renderViewContextBanner() {
     kicker.textContent = localeCopy({
         zh: 'ADMIN PREVIEW',
         en: 'ADMIN PREVIEW',
-        ru: 'ADMIN PREVIEW',
+        ru: 'ПРЕДПРОСМОТР АДМИНИСТРАТОРА',
     });
     title.textContent = localeCopy({
         zh: '当前页面正在读取后台草稿快照，只用于校对，不会直接对外展示。',
