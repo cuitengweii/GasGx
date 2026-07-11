@@ -89,6 +89,7 @@ const sharedUiDict = {
     loading: 'Loading...',
     exportLoading: 'GENERATING DOCUMENT...',
     exportSubText: 'Rendering a high-resolution document. Please wait.',
+    exportLibraryMissing: 'Export tools are still loading. Refresh the page and try again.',
     receiverPlaceholder: 'Enter customer email',
     days: 'd',
     hours: 'h',
@@ -194,6 +195,7 @@ const dict = {
         loading: '处理中...',
         exportLoading: '正在生成高清文档...',
         exportSubText: '正在进行高清文档渲染，请稍候。',
+        exportLibraryMissing: '导出工具还未加载完成，请刷新页面后重试。',
         receiverPlaceholder: '请输入客户邮箱',
         days: '天',
         hours: '时',
@@ -2005,36 +2007,38 @@ async function createDirectCapture() {
         backgroundColor: element.style.backgroundColor,
     };
 
-    element.style.width = '1280px';
-    element.style.padding = '40px';
-    element.style.backgroundColor = '#161B22';
-
     const wrappers = [...element.querySelectorAll('.table-responsive-wrapper')];
     const wrapperOverflow = wrappers.map((node) => node.style.overflowX);
-    wrappers.forEach((node) => {
-        node.style.overflowX = 'visible';
-    });
+    try {
+        element.style.width = '1280px';
+        element.style.padding = '40px';
+        element.style.backgroundColor = '#161B22';
 
-    await new Promise((resolve) => window.setTimeout(resolve, 100));
+        wrappers.forEach((node) => {
+            node.style.overflowX = 'visible';
+        });
 
-    const exactWidth = element.offsetWidth;
-    const exactHeight = element.scrollHeight;
-    const canvas = await window.html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#161B22',
-        width: exactWidth,
-        windowWidth: exactWidth,
-    });
+        await new Promise((resolve) => window.setTimeout(resolve, 100));
 
-    element.style.width = original.width;
-    element.style.padding = original.padding;
-    element.style.backgroundColor = original.backgroundColor;
-    wrappers.forEach((node, index) => {
-        node.style.overflowX = wrapperOverflow[index];
-    });
+        const exactWidth = element.offsetWidth;
+        const exactHeight = element.scrollHeight;
+        const canvas = await window.html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#161B22',
+            width: exactWidth,
+            windowWidth: exactWidth,
+        });
 
-    return { canvas, exactWidth, exactHeight };
+        return { canvas, exactWidth, exactHeight };
+    } finally {
+        element.style.width = original.width;
+        element.style.padding = original.padding;
+        element.style.backgroundColor = original.backgroundColor;
+        wrappers.forEach((node, index) => {
+            node.style.overflowX = wrapperOverflow[index];
+        });
+    }
 }
 
 function showExportOverlay() {
@@ -2055,8 +2059,10 @@ function hideExportOverlay() {
 }
 
 async function exportImage() {
-    if (!window.html2canvas) return;
-    if (!requireSignedIn('image')) return;
+    if (!window.html2canvas) {
+        setStatusMessage(t('exportLibraryMissing'), true);
+        return;
+    }
     closeShareMenu();
     showExportOverlay();
     try {
@@ -2071,8 +2077,10 @@ async function exportImage() {
 }
 
 async function exportPdf() {
-    if (!window.html2pdf || !window.html2canvas) return;
-    if (!requireSignedIn('pdf')) return;
+    if (!window.html2pdf || !window.html2canvas) {
+        setStatusMessage(t('exportLibraryMissing'), true);
+        return;
+    }
     closeShareMenu();
     showExportOverlay();
     try {
@@ -2115,7 +2123,6 @@ function toggleShareMenu(event) {
         event.preventDefault();
         event.stopPropagation();
     }
-    if (!requireSignedIn('share')) return;
     const menu = byId('share-menu');
     const arrow = byId('icon-share-down');
     if (!menu) return;
