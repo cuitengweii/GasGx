@@ -28,3 +28,20 @@ set name_i18n = jsonb_set(item.name_i18n, '{ru}', to_jsonb(translations.ru_name:
 from translations
 where item.product_id = (select id from public.quote_products where slug = 'G300')
   and item.line_code = translations.line_code;
+
+update public.quote_instance_items item
+set name_i18n = jsonb_set(
+    item.name_i18n,
+    '{ru}',
+    to_jsonb(case item.line_code
+        when 'B-1' then 'Комплект подогрева для холодного запуска (подогрев охлаждающей жидкости и масла, усиленная аккумуляторная батарея для сурового холода, подогреватель аккумулятора)'
+        when 'B-12' then 'Сертификация CSA'
+        else item.name_i18n->>'ru'
+    end::text)
+where item.line_code in ('B-1', 'B-12')
+  and item.instance_id in (
+      select id from public.quote_instances
+      where product_id = (select id from public.quote_products where slug = 'G300')
+        and share_config->>'preview_source' = 'product_template'
+        and status = 'draft'
+  );
