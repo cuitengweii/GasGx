@@ -203,6 +203,7 @@ const state = {
     product: null,
     instance: null,
     items: [],
+    persistedItemIds: new Set(),
     media: [],
     rates: { ...DEFAULT_RATES },
     snapshot: null,
@@ -1533,8 +1534,8 @@ function flushPendingEditorChanges() {
     }
 }
 
-function renderAll() {
-    state.snapshot = buildSnapshot();
+function renderAll(options = {}) {
+    if (options.snapshot !== false) state.snapshot = buildSnapshot();
     applyTheme();
     renderStaticText();
     renderRateLine();
@@ -1583,11 +1584,11 @@ async function fetchRates(isManual = false) {
 }
 
 async function persistItemRows(tableName, ownerColumn, ownerId, items = []) {
-    const del = await client.from(tableName).delete().eq(ownerColumn, ownerId);
-    if (del.error) throw del.error;
-    const payload = sortItems(items).map((item, index) => {
+    const persistedIds = state.persistedItemIds instanceof Set ? state.persistedItemIds : new Set();
+    const orderedItems = sortItems(items);
+    const payload = orderedItems.map((item, index) => {
         const normalized = normalizeQuoteItem(item, item.section_key);
-        return {
+        const row = {
             [ownerColumn]: ownerId,
             section_key: normalized.section_key,
             sort_order: (index + 1) * 10,
@@ -1598,11 +1599,23 @@ async function persistItemRows(tableName, ownerColumn, ownerId, items = []) {
             is_included: normalized.is_included === true,
             name_i18n: expandLocalizedFromChinese(normalized.name_i18n),
         };
+        if (persistedIds.has(normalized.localId)) row.id = normalized.localId;
+        return row;
     });
-    if (!payload.length) return [];
-    const insert = await client.from(tableName).insert(payload).select('*');
-    if (insert.error) throw insert.error;
-    return insert.data || [];
+    const currentPersistedIds = new Set(payload.filter((row) => row.id).map((row) => row.id));
+    const removedIds = [...persistedIds].filter((id) => !currentPersistedIds.has(id));
+    if (removedIds.length) {
+        const del = await client.from(tableName).delete().eq(ownerColumn, ownerId).in('id', removedIds);
+        if (del.error) throw del.error;
+    }
+    if (!payload.length) {
+        state.persistedItemIds = new Set();
+        return [];
+    }
+    const saved = await client.from(tableName).upsert(payload, { onConflict: 'id' }).select('*');
+    if (saved.error) throw saved.error;
+    state.persistedItemIds = new Set((saved.data || []).map((row) => row.id));
+    return saved.data || [];
 }
 
 async function saveBrand(user) {
@@ -1657,6 +1670,7 @@ async function saveProduct(user) {
     state.product = normalizeProductEditor({ ...data, media_gallery: state.media });
     const savedItems = await persistItemRows(TABLE_PRODUCT_ITEMS, 'product_id', data.id, state.items);
     state.items = sortItems(savedItems.map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.persistedItemIds = new Set(state.items.map((item) => item.localId));
     state.id = data.id;
 }
 
@@ -1747,6 +1761,7 @@ async function saveInstance(user) {
     state.instance = normalizeInstanceEditor(saved);
     await syncInstanceCustomerEmail(state.instance.receiver_email);
     state.items = sortItems(savedItems.map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.persistedItemIds = new Set(state.items.map((item) => item.localId));
     state.id = saved.id;
     return state.instance;
 }
@@ -1848,6 +1863,9 @@ async function publishInstance(user) {
 }
 
 async function runAutoTranslation(force = false) {
+    if (!force && state.translationDirty.size === 0) {
+        return { attempted: false, translated: false, skipped: true };
+    }
     try {
         const result = await autoTranslateLocalizedFields(force);
         if (!result.attempted) {
@@ -1927,6 +1945,7 @@ async function loadProduct(id) {
     state.product = normalizeProductEditor({ ...productRow, media_gallery: mediaRows || [] });
     state.instance = null;
     state.items = sortItems((itemRows || []).map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.persistedItemIds = new Set(state.items.map((item) => item.localId));
     state.media = sortMediaItems((mediaRows || []).map((item) => normalizeQuoteMediaItem(item)));
     state.rates = normalizeRates(state.product.default_rates);
     state.currentLang = state.product.default_lang || DEFAULT_LANG;
@@ -1958,6 +1977,7 @@ async function loadInstance(id) {
     });
     state.instance = normalizeInstanceEditor(instanceRow);
     state.items = sortItems((itemRows || []).map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.persistedItemIds = new Set(state.items.map((item) => item.localId));
     state.media = sortMediaItems((mediaRows?.length ? mediaRows : state.product.media_gallery || []).map((item) => normalizeQuoteMediaItem(item)));
     state.rates = normalizeRates(state.instance.draft_rates);
     state.currentLang = state.instance.default_lang || DEFAULT_LANG;
@@ -1979,15 +1999,15 @@ function updateBackToTop() {
 function bindGlobal() {
     byId('btn-zh').onclick = () => {
         state.currentLang = 'zh';
-        renderAll();
+        renderAll({ snapshot: false });
     };
     byId('btn-en').onclick = () => {
         state.currentLang = 'en';
-        renderAll();
+        renderAll({ snapshot: false });
     };
     byId('btn-ru').onclick = () => {
         state.currentLang = 'ru';
-        renderAll();
+        renderAll({ snapshot: false });
     };
     byId('btn-add-main-row').onclick = () => {
         state.items = [...state.items, { ...createQuoteItem(SECTION_KEYS.MAIN), sort_order: (state.items.length + 1) * 10 }];
