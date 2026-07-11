@@ -33,6 +33,7 @@ const sharedUiDict = {
     update: 'SYS_TIME_SYNC',
     included: 'Included',
     mainConfig: 'Main Config',
+    servicePackage: 'Service Package',
     optionalConfig: 'Optional Config',
     systemTotal: 'EST. SYSTEM TOTAL',
     headers: ['SEQ', 'DESCRIPTION', 'BRAND', 'QTY', 'RMB (?)', 'USD ($)', 'EUR (?)', 'CAD (C$)', 'RUB (?)'],
@@ -139,6 +140,7 @@ const dict = {
         update: '系统时间同步',
         included: '包含',
         mainConfig: '主配置',
+        servicePackage: '服务包',
         optionalConfig: '选配',
         systemTotal: '系统预估总价',
         headers: ['序号', '模块描述', '规格品牌', '数量', '人民币 (¥)', '美元 ($)', '欧元 (€)', '加元 (C$)', '卢布 (₽)'],
@@ -819,6 +821,7 @@ function formatCurrency(code, amount) {
 function getSectionLabel(section) {
     const explicit = pickDisplayText(section?.title, '');
     if (explicit) return explicit;
+    if (section?.key === 'service_package') return t('servicePackage');
     return section?.key === 'optional_config' ? t('optionalConfig') : t('mainConfig');
 }
 

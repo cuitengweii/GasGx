@@ -11,6 +11,7 @@ export const DEFAULT_THEME_DARK = '#337418';
 export const DEFAULT_SHARE_SECRET = 'GasGx::Quote::ShareGate::20260321';
 export const SECTION_KEYS = Object.freeze({
     MAIN: 'main_config',
+    SERVICE: 'service_package',
     OPTIONAL: 'optional_config',
 });
 export const MEDIA_LAYOUTS = Object.freeze({
@@ -41,6 +42,11 @@ const DEFAULT_SECTION_TITLES = Object.freeze({
         zh: '主配置',
         en: 'Main Config',
         ru: 'Основная конфигурация',
+    },
+    [SECTION_KEYS.SERVICE]: {
+        zh: '服务包',
+        en: 'Service Package',
+        ru: 'Сервисный пакет',
     },
     [SECTION_KEYS.OPTIONAL]: {
         zh: '选配',
@@ -190,6 +196,12 @@ export function createSectionConfig() {
             subtotal: 0,
         },
         {
+            key: SECTION_KEYS.SERVICE,
+            title: { ...DEFAULT_SECTION_TITLES[SECTION_KEYS.SERVICE] },
+            subtotalMode: 'manual',
+            subtotal: 0,
+        },
+        {
             key: SECTION_KEYS.OPTIONAL,
             title: { ...DEFAULT_SECTION_TITLES[SECTION_KEYS.OPTIONAL] },
             subtotalMode: 'manual',
@@ -205,7 +217,9 @@ export function normalizeSectionConfig(value) {
     const byKey = new Map(
         value
             .map((entry) => ({
-                key: entry?.key === SECTION_KEYS.OPTIONAL ? SECTION_KEYS.OPTIONAL : SECTION_KEYS.MAIN,
+                key: [SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL].includes(entry?.key)
+                    ? entry.key
+                    : SECTION_KEYS.MAIN,
                 title: normalizeLocalizedText(entry?.title, pickLocalized(DEFAULT_SECTION_TITLES[entry?.key] || DEFAULT_SECTION_TITLES[SECTION_KEYS.MAIN], 'zh')),
                 subtotalMode: entry?.subtotalMode === 'sum' ? 'sum' : 'manual',
                 subtotal: safeNumber(entry?.subtotal, 0),
@@ -219,7 +233,9 @@ export function normalizeSectionConfig(value) {
 export function createQuoteItem(sectionKey = SECTION_KEYS.MAIN) {
     return {
         localId: globalThis.crypto?.randomUUID?.() || `item-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-        section_key: sectionKey === SECTION_KEYS.OPTIONAL ? SECTION_KEYS.OPTIONAL : SECTION_KEYS.MAIN,
+        section_key: [SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL].includes(sectionKey)
+            ? sectionKey
+            : SECTION_KEYS.MAIN,
         sort_order: 100,
         line_code: '',
         brand_label: '',
@@ -283,7 +299,9 @@ export function normalizeQuoteItem(value, fallbackSectionKey = SECTION_KEYS.MAIN
         ...base,
         ...value,
         localId: text(value?.localId || value?.id || base.localId),
-        section_key: value?.section_key === SECTION_KEYS.OPTIONAL ? SECTION_KEYS.OPTIONAL : fallbackSectionKey,
+        section_key: [SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL].includes(value?.section_key)
+            ? value.section_key
+            : ([SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL].includes(fallbackSectionKey) ? fallbackSectionKey : SECTION_KEYS.MAIN),
         sort_order: safeNumber(value?.sort_order, base.sort_order),
         line_code: text(value?.line_code || value?.id || ''),
         brand_label: text(value?.brand_label || value?.brand || ''),

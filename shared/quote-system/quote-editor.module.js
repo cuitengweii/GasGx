@@ -46,6 +46,7 @@ const dict = {
         validity: '报价有效期：',
         included: '包含',
         mainConfig: '主配置',
+        servicePackage: '服务包',
         optionalConfig: '选配',
         systemTotal: '系统预估总价 / EST. SYSTEM TOTAL',
         send: '发送',
@@ -96,6 +97,7 @@ const dict = {
         validity: 'Validity:',
         included: 'Included',
         mainConfig: 'Main Config',
+        servicePackage: 'Service Package',
         optionalConfig: 'Optional Config',
         systemTotal: 'EST. SYSTEM TOTAL',
         send: 'Send',
@@ -146,6 +148,7 @@ const dict = {
         validity: 'Срок действия:',
         included: 'Включено',
         mainConfig: 'Основная конфигурация',
+        servicePackage: 'Сервисный пакет',
         optionalConfig: 'Опции',
         systemTotal: 'ОЦЕНОЧНАЯ СТОИМОСТЬ СИСТЕМЫ',
         send: 'Отправить',
@@ -1095,7 +1098,7 @@ function renderContent() {
             <tr class="quote-section-row" style="background-color: var(--bg-base);">
                 <td class="text-[var(--text-muted)] opacity-50 text-center text-xs font-mono-num whitespace-nowrap">-</td>
                 <td class="text-[var(--gas-green-light)] font-semibold whitespace-nowrap">
-                    <span class="quote-editable quote-editable-inline" contenteditable="true" data-section-title="${esc(section.key)}">${esc(localizedValue(section.title) || (section.key === SECTION_KEYS.OPTIONAL ? t('optionalConfig') : t('mainConfig')))}</span>
+                    <span class="quote-editable quote-editable-inline" contenteditable="true" data-section-title="${esc(section.key)}">${esc(localizedValue(section.title) || (section.key === SECTION_KEYS.OPTIONAL ? t('optionalConfig') : section.key === SECTION_KEYS.SERVICE ? t('servicePackage') : t('mainConfig')))}</span>
                 </td>
                 <td class="text-[var(--text-muted)] opacity-50 text-xs whitespace-nowrap">-</td>
                 <td class="text-[var(--text-muted)] opacity-50 text-center font-mono-num whitespace-nowrap">-</td>
@@ -1990,6 +1993,11 @@ function bindGlobal() {
     };
     byId('btn-add-main-row').onclick = () => {
         state.items = [...state.items, { ...createQuoteItem(SECTION_KEYS.MAIN), sort_order: (state.items.length + 1) * 10 }];
+        renderAll();
+        markEditorDirty();
+    };
+    byId('btn-add-service-row').onclick = () => {
+        state.items = [...state.items, { ...createQuoteItem(SECTION_KEYS.SERVICE), sort_order: (state.items.length + 1) * 10 }];
         renderAll();
         markEditorDirty();
     };
