@@ -36,6 +36,10 @@ const sharedUiDict = {
     servicePackage: 'Service Package',
     optionalConfig: 'Optional Config',
     systemTotal: 'EST. SYSTEM TOTAL',
+    pricingBreakdown: 'PRICE BREAKDOWN',
+    mainTotal: 'Main configuration total',
+    optionalIncrease: 'Optional additions',
+    serviceTotal: 'Service package total',
     headers: ['SEQ', 'DESCRIPTION', 'BRAND', 'QTY', 'RMB (?)', 'USD ($)', 'EUR (?)', 'CAD (C$)', 'RUB (?)'],
     ratesOnline: 'GLOBAL LIVE RATES',
     ratesRefreshing: 'Refreshing...',
@@ -150,6 +154,10 @@ const dict = {
         servicePackage: '服务包',
         optionalConfig: '选配',
         systemTotal: '系统预估总价',
+        pricingBreakdown: '报价构成',
+        mainTotal: '主配总价',
+        optionalIncrease: '选配增加',
+        serviceTotal: '服务包总价',
         headers: ['序号', '模块描述', '规格品牌', '数量', '人民币 (¥)', '美元 ($)', '欧元 (€)', '加元 (C$)', '卢布 (₽)'],
         ratesOnline: '全球实时汇率在线',
         ratesRefreshing: '正在刷新...',
@@ -262,6 +270,10 @@ const dict = {
         servicePackage: 'Сервисный пакет',
         optionalConfig: 'Дополнительная конфигурация',
         systemTotal: 'Расчётная общая стоимость системы',
+        pricingBreakdown: 'Состав стоимости',
+        mainTotal: 'Стоимость основной конфигурации',
+        optionalIncrease: 'Дополнительные опции',
+        serviceTotal: 'Стоимость сервисного пакета',
         headers: ['№', 'Описание модуля', 'Спецификация / бренд', 'Кол-во', 'RMB (¥)', 'USD ($)', 'EUR (€)', 'CAD (C$)', 'RUB (₽)'],
         ratesOnline: 'Актуальные мировые курсы валют',
         ratesRefreshing: 'Обновление курсов...',
@@ -1393,6 +1405,12 @@ function renderContent() {
 
     const productTitle = pickDisplayText(snapshot.product.public_title, snapshot.product.product_code);
     const total = quoteTotal(snapshot);
+    const sectionTotals = Object.fromEntries((snapshot.product.sections || []).map((section) => [section.key, sectionSubtotal(section)]));
+    const breakdown = [
+        [t('mainTotal'), sectionTotals.main_config || 0],
+        [t('optionalIncrease'), sectionTotals.optional_config || 0],
+        [t('serviceTotal'), sectionTotals.service_package || 0],
+    ];
     const rows = [];
     const mediaState = getProductMediaState(snapshot);
     const mediaBlock = renderProductMediaBlock(snapshot);
@@ -1457,6 +1475,21 @@ function renderContent() {
                     </div>
                 </div>
 
+                <div class="quote-total-breakdown" aria-label="${esc(t('pricingBreakdown'))}">
+                    ${breakdown.map(([label, amount]) => `
+                        <div class="quote-total-breakdown__item">
+                            <span class="quote-total-breakdown__label">${esc(label)}</span>
+                            <div class="quote-total-breakdown__values">
+                                <span><b>RMB</b>${esc(formatCurrency('RMB', amount))}</span>
+                                <span><b>USD</b>${esc(formatCurrency('USD', amount * state.rates.USD))}</span>
+                                <span><b>EUR</b>${esc(formatCurrency('EUR', amount * state.rates.EUR))}</span>
+                                <span><b>CAD</b>${esc(formatCurrency('CAD', amount * state.rates.CAD))}</span>
+                                <span><b>RUB</b>${esc(formatCurrency('RUB', amount * state.rates.RUB))}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
                 <div class="table-scroll-shell" data-scroll-left="false" data-scroll-right="false">
                     <div class="table-scroll-note"><i class="fa-solid fa-arrows-left-right"></i><span>${esc(t('tableSwipeHint'))}</span></div>
                     <div class="table-responsive-wrapper w-full">
@@ -1468,6 +1501,7 @@ function renderContent() {
                         </table>
                     </div>
                 </div>
+
             </section>
             ${mediaBelow ? `<section data-quote-section="media">${mediaBelow}</section>` : ''}
         </div>

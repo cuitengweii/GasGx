@@ -49,6 +49,10 @@ const dict = {
         servicePackage: '服务包',
         optionalConfig: '选配',
         systemTotal: '系统预估总价 / EST. SYSTEM TOTAL',
+        pricingBreakdown: '报价构成',
+        mainTotal: '主配总价',
+        optionalIncrease: '选配增加',
+        serviceTotal: '服务包总价',
         send: '发送',
         refresh: '刷新汇率',
         receiverPlaceholder: '请输入客户名称',
@@ -110,6 +114,10 @@ const dict = {
         servicePackage: 'Service Package',
         optionalConfig: 'Optional Config',
         systemTotal: 'EST. SYSTEM TOTAL',
+        pricingBreakdown: 'PRICE BREAKDOWN',
+        mainTotal: 'Main configuration total',
+        optionalIncrease: 'Optional additions',
+        serviceTotal: 'Service package total',
         send: 'Send',
         refresh: 'Refresh Rates',
         receiverPlaceholder: 'Enter receiver',
@@ -171,6 +179,10 @@ const dict = {
         servicePackage: 'Сервисный пакет',
         optionalConfig: 'Опции',
         systemTotal: 'ОЦЕНОЧНАЯ СТОИМОСТЬ СИСТЕМЫ',
+        pricingBreakdown: 'Состав стоимости',
+        mainTotal: 'Стоимость основной конфигурации',
+        optionalIncrease: 'Дополнительные опции',
+        serviceTotal: 'Стоимость сервисного пакета',
         send: 'Отправить',
         refresh: 'Обновить курсы',
         receiverPlaceholder: 'Введите получателя',
@@ -1172,6 +1184,12 @@ function renderContent() {
     const container = byId('content-area');
     const sections = groupedEditableSections();
     const total = quoteTotal();
+    const sectionTotals = Object.fromEntries(sections.map((section) => [section.key, section.subtotalValue]));
+    const breakdown = [
+        [t('mainTotal'), sectionTotals[SECTION_KEYS.MAIN] || 0],
+        [t('optionalIncrease'), sectionTotals[SECTION_KEYS.OPTIONAL] || 0],
+        [t('serviceTotal'), sectionTotals[SECTION_KEYS.SERVICE] || 0],
+    ];
     const mediaBlock = renderMediaBlock();
     const mediaConfig = normalizeMediaConfig(state.product.media_config || {});
     const mediaAbove = mediaConfig.enabled && mediaConfig.position === MEDIA_POSITIONS.ABOVE ? mediaBlock : '';
@@ -1253,6 +1271,21 @@ function renderContent() {
                     <span class="flex items-center gap-2"><span class="gas-tag">CAD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('CAD', total * state.rates.CAD))}</span></span>
                     <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RUB', total * state.rates.RUB))}</span></span>
                 </div>
+            </div>
+
+            <div class="quote-total-breakdown" aria-label="${esc(t('pricingBreakdown'))}">
+                ${breakdown.map(([label, amount]) => `
+                    <div class="quote-total-breakdown__item">
+                        <span class="quote-total-breakdown__label">${esc(label)}</span>
+                        <div class="quote-total-breakdown__values">
+                            <span><b>RMB</b>${esc(formatCurrency('RMB', amount))}</span>
+                            <span><b>USD</b>${esc(formatCurrency('USD', amount * state.rates.USD))}</span>
+                            <span><b>EUR</b>${esc(formatCurrency('EUR', amount * state.rates.EUR))}</span>
+                            <span><b>CAD</b>${esc(formatCurrency('CAD', amount * state.rates.CAD))}</span>
+                            <span><b>RUB</b>${esc(formatCurrency('RUB', amount * state.rates.RUB))}</span>
+                        </div>
+                    </div>
+                `).join('')}
             </div>
 
             <div class="quote-editor-hint">${esc(t('sectionSubtotalHint'))}</div>
