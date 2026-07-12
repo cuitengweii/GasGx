@@ -47,6 +47,7 @@ const sharedUiDict = {
     optionalIncrease: 'Optional additions',
     serviceTotal: 'Service package total',
     optionalSelect: 'Include in quote',
+    sectionSelect: 'Select',
     headers: ['SEQ', 'DESCRIPTION', 'BRAND', 'QTY', 'RMB (?)', 'USD ($)'],
     ratesOnline: 'GLOBAL LIVE RATES',
     ratesRefreshing: 'Refreshing...',
@@ -183,6 +184,7 @@ const dict = {
         optionalIncrease: '选配增加',
         serviceTotal: '服务包总价',
         optionalSelect: '计入报价',
+        sectionSelect: '选中',
         headers: ['序号', '模块描述', '规格品牌', '数量', '人民币 (¥)', '美元 ($)'],
         ratesOnline: '全球实时汇率在线',
         ratesRefreshing: '正在刷新...',
@@ -317,6 +319,7 @@ const dict = {
         optionalIncrease: 'Дополнительные опции',
         serviceTotal: 'Стоимость сервисного пакета',
         optionalSelect: 'Включить в предложение',
+        sectionSelect: 'Выбрать',
         headers: ['№', 'Описание модуля', 'Спецификация / бренд', 'Кол-во', 'RMB (¥)', 'USD ($)'],
         ratesOnline: 'Актуальные мировые курсы валют',
         ratesRefreshing: 'Обновление курсов...',
@@ -1030,6 +1033,8 @@ function getSectionLabel(section) {
 }
 
 function sectionSubtotal(section) {
+    const gatedSection = section?.key === 'optional_config' || section?.key === 'service_package';
+    if (gatedSection && section?.isSelected !== true) return 0;
     if (section?.key === 'optional_config') {
         const items = Array.isArray(section?.items) ? section.items : [];
         const hasSelectionState = items.some((item) => Object.prototype.hasOwnProperty.call(item || {}, 'isSelected'));
@@ -1513,14 +1518,16 @@ function quoteReferenceSectionIcon(sectionKey = '') {
 
 function quoteReferenceSectionMarkup(section, rates = state.rates) {
     const optional = section.key === 'optional_config';
+    const gated = optional || section.key === 'service_package';
+    const sectionSelected = !gated || section.isSelected === true;
     const tone = quoteReferenceSectionTone(section.key);
     const subtotal = sectionSubtotal(section);
     const rows = (section.items || []).map((item, itemIndex) => {
         const included = item.isIncluded === true;
-        const selected = item.isSelected === true;
+        const selected = sectionSelected && item.isSelected === true;
         const price = safeNumber(item.priceRmb, 0);
         const selectCell = optional
-            ? `<td class="quote-reference-select-cell"><input class="quote-reference-checkbox" type="checkbox" data-quote-optional-toggle data-section-key="${esc(section.key)}" data-item-index="${itemIndex}" ${selected ? 'checked' : ''} aria-label="${esc(t('optionalColumn'))}"></td>`
+            ? `<td class="quote-reference-select-cell"><input class="quote-reference-checkbox" type="checkbox" data-quote-optional-toggle data-section-key="${esc(section.key)}" data-item-index="${itemIndex}" ${selected ? 'checked' : ''} ${sectionSelected ? '' : 'disabled'} aria-label="${esc(t('optionalColumn'))}"></td>`
             : '';
         const rowClass = `quote-reference-table__row ${optional && selected ? 'is-selected' : ''}`;
         return `
@@ -1540,7 +1547,7 @@ function quoteReferenceSectionMarkup(section, rates = state.rates) {
     return `
         <section class="quote-reference-section quote-reference-section--${tone}" data-quote-section="pricing-${esc(section.key)}">
             <div class="quote-reference-section__head">
-                <h3><i class="fa-solid ${quoteReferenceSectionIcon(section.key)}"></i><span>${esc(getSectionLabel(section))}</span></h3>
+                <h3><i class="fa-solid ${quoteReferenceSectionIcon(section.key)}"></i><span>${esc(getSectionLabel(section))}</span>${gated ? `<label class="quote-reference-section-toggle"><input class="quote-reference-checkbox" type="checkbox" data-quote-section-toggle data-section-key="${esc(section.key)}" ${sectionSelected ? 'checked' : ''} aria-label="${esc(t('sectionSelect'))}"><span>${esc(t('sectionSelect'))}</span></label>` : ''}</h3>
                 <div class="quote-reference-section__totals">
                     <div>RMB <strong>${esc(formatCurrency('RMB', subtotal))}</strong></div>
                     <div>USD ${esc(formatCurrency('USD', subtotal * rates.USD))}</div>
@@ -1574,6 +1581,27 @@ function bindReferenceOptionControls(root = byId('content-area')) {
             }, {
                 activityType: 'option_toggle',
                 dedupeKey: `option-toggle-${sectionKey}-${itemIndex}-${item.isSelected ? 'on' : 'off'}`,
+            });
+        });
+    });
+    root.querySelectorAll('[data-quote-section-toggle]').forEach((input) => {
+        input.addEventListener('change', (event) => {
+            const sectionKey = text(event.currentTarget.dataset.sectionKey);
+            const section = state.snapshot?.product?.sections?.find((entry) => entry.key === sectionKey);
+            if (!section) return;
+            section.isSelected = Boolean(event.currentTarget.checked);
+            if (section.key === 'optional_config') {
+                section.items?.forEach((item) => {
+                    item.isSelected = section.isSelected;
+                });
+            }
+            renderContent();
+            logQuoteBehavior(section.isSelected ? '客户选中报价分组' : '客户取消报价分组', {
+                section_key: sectionKey,
+                summary: `${section.isSelected ? '选中' : '取消'} ${getSectionLabel(section)}`,
+            }, {
+                activityType: 'section_toggle',
+                dedupeKey: `section-toggle-${sectionKey}-${section.isSelected ? 'on' : 'off'}`,
             });
         });
     });

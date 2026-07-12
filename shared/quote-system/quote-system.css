@@ -1167,6 +1167,27 @@
             font-weight: 600;
         }
 
+        .quote-reference-section-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 4px;
+            color: #94a3b8;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .quote-reference-section-toggle .quote-reference-checkbox {
+            width: 18px;
+            height: 18px;
+        }
+
+        .quote-reference-section-toggle .quote-reference-checkbox:disabled {
+            cursor: not-allowed;
+            opacity: .55;
+        }
+
         .quote-reference-section__head h3 i {
             color: #94a3b8;
         }
