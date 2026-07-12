@@ -936,6 +936,7 @@
         }
 
         .quote-editor-bar__actions {
+            order: -1;
             display: flex;
             flex: 1 1 100%;
             flex-basis: 100%;
