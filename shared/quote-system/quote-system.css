@@ -713,6 +713,10 @@
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
         }
 
+        .quote-editor-mode #editor-banner {
+            display: none;
+        }
+
         .quote-view-banner__kicker {
             margin-bottom: 8px;
             color: var(--gas-green-light);
