@@ -964,12 +964,14 @@
             flex-wrap: wrap;
             align-items: center;
             gap: 10px;
-            width: 100%;
             min-width: 0;
         }
 
         .quote-editor-primary-actions {
             justify-content: flex-end;
+            width: fit-content;
+            max-width: 100%;
+            margin-left: auto;
             padding: 10px;
             border: 1px solid rgba(93, 214, 44, 0.48);
             border-radius: 12px;
@@ -978,7 +980,12 @@
         }
 
         .quote-editor-secondary-actions {
+            width: 100%;
             padding-top: 2px;
+        }
+
+        .quote-editor-mode #doc-container {
+            margin-top: 16px !important;
         }
 
         .quote-editor-primary-actions > div,
