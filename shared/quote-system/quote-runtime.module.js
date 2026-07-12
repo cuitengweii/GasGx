@@ -2913,6 +2913,11 @@ function hydrateSnapshotWithLiveMeta(snapshot, row = {}) {
     if (!text(quote.id) && text(row.id)) quote.id = text(row.id);
     if (!text(quote.publicSlug) && text(row.public_slug)) quote.publicSlug = text(row.public_slug);
     if (!text(quote.customerId) && text(row.customer_id)) quote.customerId = text(row.customer_id);
+    const liveCustomerName = text(row.customer_name || row.customerName);
+    if (liveCustomerName) {
+        quote.customerName = liveCustomerName;
+        quote.customer_name = liveCustomerName;
+    }
     if (!text(quote.receiverEmail) && text(row.receiver_email)) quote.receiverEmail = text(row.receiver_email);
     if (!text(quote.receiver_email) && text(row.receiver_email)) quote.receiver_email = text(row.receiver_email);
     if ((!quote.shareConfig || typeof quote.shareConfig !== 'object' || !Object.keys(quote.shareConfig).length)
