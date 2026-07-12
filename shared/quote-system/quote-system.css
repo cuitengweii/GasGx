@@ -969,6 +969,7 @@
         }
 
         .quote-editor-primary-actions {
+            justify-content: flex-end;
             padding: 10px;
             border: 1px solid rgba(93, 214, 44, 0.48);
             border-radius: 12px;
