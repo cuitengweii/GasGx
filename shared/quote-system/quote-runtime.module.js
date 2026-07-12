@@ -52,6 +52,7 @@ const sharedUiDict = {
     shareLink: 'Create Share Link',
     exportImage: 'Export Image',
     quotePoster: 'Quote Poster',
+    textShare: 'Text Share',
     exportPdf: 'Export PDF',
     quotePosterBusy: 'Preparing quote poster...',
     quotePosterSuccess: 'Quote poster is ready.',
@@ -60,6 +61,8 @@ const sharedUiDict = {
     quotePosterCustomer: 'Customer',
     quotePosterValidity: 'Validity',
     quotePosterTotal: 'Estimated total',
+    textShareSuccess: 'Quotation text and link copied.',
+    textShareError: 'Could not copy quotation text. Please copy it manually.',
     shareTitle: 'Create Share Link',
     shareDesc: 'Generate a customer link with expiry and passcode. Signed-in admins can always open this page.',
     shareExpiryLabel: 'Link expiry',
@@ -180,6 +183,7 @@ const dict = {
         shareLink: '创建分享链接',
         exportImage: '生成长图',
         quotePoster: '报价海报',
+        textShare: '文字分享',
         exportPdf: '导出 PDF',
         quotePosterBusy: '正在生成报价海报...',
         quotePosterSuccess: '报价海报已生成。',
@@ -188,6 +192,8 @@ const dict = {
         quotePosterCustomer: '客户名称',
         quotePosterValidity: '报价有效期',
         quotePosterTotal: '系统预估总价',
+        textShareSuccess: '报价说明和链接已复制。',
+        textShareError: '报价文字复制失败，请手动复制。',
         shareTitle: '创建分享链接',
         shareDesc: '设置链接有效期和提取码后生成客户访问链接。管理员登录状态下始终可打开页面。',
         shareExpiryLabel: '链接有效期',
@@ -306,6 +312,7 @@ const dict = {
         shareLink: 'Создать ссылку',
         exportImage: 'Создать длинное изображение',
         quotePoster: 'Постер предложения',
+        textShare: 'Текст предложения',
         exportPdf: 'Экспортировать PDF',
         quotePosterBusy: 'Формируем постер предложения...',
         quotePosterSuccess: 'Постер предложения готов.',
@@ -314,6 +321,8 @@ const dict = {
         quotePosterCustomer: 'Клиент',
         quotePosterValidity: 'Срок действия',
         quotePosterTotal: 'Расчётная стоимость',
+        textShareSuccess: 'Текст предложения и ссылка скопированы.',
+        textShareError: 'Не удалось скопировать текст предложения.',
         shareTitle: 'Создание ссылки',
         shareDesc: 'Настройте срок действия и код доступа для ссылки клиента. Авторизованные администраторы всегда могут открыть эту страницу.',
         shareExpiryLabel: 'Срок действия ссылки',
@@ -1084,6 +1093,13 @@ function setStatusMessage(message, isError = false) {
     node.style.color = isError ? '#fca5a5' : 'var(--text-muted)';
 }
 
+function setShareMenuStatus(message = '', isError = false) {
+    const node = byId('share-menu-status');
+    if (!node) return;
+    node.textContent = text(message);
+    node.style.color = isError ? '#fca5a5' : 'var(--gas-green-light)';
+}
+
 function updateRateStatus(mode = 'online') {
     const node = byId('rate-status');
     if (!node) return;
@@ -1239,6 +1255,7 @@ function renderStaticText() {
     byId('btn-menu-share-link').textContent = t('shareLink');
     byId('btn-menu-img').textContent = t('exportImage');
     byId('btn-menu-poster').textContent = t('quotePoster');
+    byId('btn-menu-text').textContent = t('textShare');
     byId('btn-menu-pdf').textContent = t('exportPdf');
     byId('btn-text-refresh').textContent = uiText('refresh_button', 'refresh');
     byId('export-loading-text').textContent = t('exportLoading');
@@ -2268,18 +2285,26 @@ function posterCustomerName() {
     );
 }
 
-function posterQrCanvas(value) {
+function posterQrNode(value) {
     return new Promise((resolve, reject) => {
-        if (!window.QRCode?.toCanvas) {
+        if (typeof window.QRCode !== 'function') {
             reject(new Error(t('exportLibraryMissing')));
             return;
         }
-        const canvas = document.createElement('canvas');
-        window.QRCode.toCanvas(canvas, value, {
-            width: 260,
-            margin: 2,
-            color: { dark: '#0A0E14', light: '#FFFFFF' },
-        }, (error) => error ? reject(error) : resolve(canvas));
+        const holder = document.createElement('div');
+        try {
+            new window.QRCode(holder, {
+                text: value,
+                width: 260,
+                height: 260,
+                colorDark: '#0A0E14',
+                colorLight: '#FFFFFF',
+                correctLevel: window.QRCode.CorrectLevel.H,
+            });
+            window.setTimeout(() => resolve(holder), 30);
+        } catch (error) {
+            reject(error);
+        }
     });
 }
 
@@ -2290,7 +2315,7 @@ function posterBlob(canvas) {
 }
 
 async function exportPoster() {
-    if (!window.html2canvas || !window.QRCode?.toCanvas) {
+    if (!window.html2canvas || typeof window.QRCode !== 'function') {
         setStatusMessage(t('exportLibraryMissing'), true);
         return;
     }
@@ -2347,8 +2372,8 @@ async function exportPoster() {
     `;
     document.body.appendChild(poster);
     try {
-        const qrCanvas = await posterQrCanvas(quoteUrl);
-        poster.querySelector('.quote-poster-qr')?.appendChild(qrCanvas);
+        const qrNode = await posterQrNode(quoteUrl);
+        poster.querySelector('.quote-poster-qr')?.appendChild(qrNode);
         await new Promise((resolve) => window.setTimeout(resolve, 80));
         const canvas = await window.html2canvas(poster, {
             scale: 2,
@@ -2431,6 +2456,7 @@ function toggleShareMenu(event) {
     const willOpen = menu.classList.contains('hidden');
     menu.classList.toggle('hidden', !willOpen);
     state.isMobileMenuOpen = willOpen;
+    if (willOpen) setShareMenuStatus('');
     if (arrow) arrow.classList.toggle('rotate-180', willOpen);
 }
 
@@ -2530,6 +2556,30 @@ async function copyText(value) {
         document.body.removeChild(input);
         return copied;
     }
+}
+
+function quoteTextShareContent() {
+    const snapshot = state.snapshot;
+    const productTitle = pickDisplayText(
+        snapshot?.product?.public_title,
+        snapshot?.product?.product_code || 'GasGx Quotation',
+    );
+    const customerName = posterCustomerName();
+    const total = quoteTotal(snapshot);
+    const validity = text(byId('val-validity')?.textContent);
+    return [
+        '您好，以下是 GasGx 报价单，请点击链接查看详细配置、价格及有效期：',
+        `产品：${productTitle}`,
+        `客户名称：${customerName}`,
+        `系统预估总价：${formatCurrency('RMB', total)}`,
+        validity ? `报价有效期：${validity}` : '',
+        `报价链接：${posterQuoteUrl()}`,
+    ].filter(Boolean).join('\n');
+}
+
+async function shareQuoteText() {
+    const copied = await copyText(quoteTextShareContent());
+    setShareMenuStatus(copied ? t('textShareSuccess') : t('textShareError'), !copied);
 }
 
 async function generateShareLink() {
@@ -3291,6 +3341,9 @@ function bindEvents() {
     });
     byId('btn-menu-poster-wrap')?.addEventListener('click', () => {
         void exportPoster();
+    });
+    byId('btn-menu-text-wrap')?.addEventListener('click', () => {
+        void shareQuoteText();
     });
     byId('btn-menu-pdf-wrap')?.addEventListener('click', () => {
         void exportPdf();
