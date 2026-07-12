@@ -13,10 +13,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="../shared/ui/main-auth.shared.js"></script>
-    <script src="./public-asset-version.js?v=20260329public78"></script>
+    <script src="./public-asset-version.js?v=20260329public79"></script>
     <script>window.AMSLoadQuotePublicStyles('../shared/quote-system/quote-system.css');</script>
 </head>
-<body class="antialiased pb-10 md:pb-20 access-resolved">
+<body class="quote-reference-body antialiased pb-10 md:pb-20 access-resolved">
     <div id="access-gate-overlay" class="access-gate-overlay hidden">
         <div class="access-gate-card">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(93,214,44,0.35)] bg-[rgba(93,214,44,0.08)] text-[var(--gas-green-light)] text-xs font-mono-num tracking-[0.25em] uppercase mb-5">
@@ -98,48 +98,30 @@
         </div>
     </div>
 
-    <div id="doc-container" class="max-w-7xl mx-auto mt-20 md:mt-28 p-4 md:p-12 rounded-lg relative shadow-[0_20px_50px_rgba(0,0,0,0.7)]" style="background-color: var(--bg-card); border: 1px solid var(--border-color);">
+    <div id="doc-container" class="quote-reference-page max-w-7xl mx-auto mt-20 md:mt-24 px-4 md:px-8 pt-2 md:pt-8 pb-12 relative">
         <div id="view-context-banner" class="quote-view-banner hidden">
             <div class="quote-view-banner__kicker" id="view-context-kicker">ADMIN PREVIEW</div>
             <div class="quote-view-banner__title" id="view-context-title">This page is showing a draft preview.</div>
             <div class="quote-view-banner__meta" id="view-context-meta"></div>
         </div>
-        <div id="export-area" style="background-color: var(--bg-card);">
-            <div class="quote-head-shell border-b border-[var(--border-color)] pb-6 md:pb-8 mb-8 md:mb-10 flex flex-col xl:flex-row justify-between items-start gap-6">
-                <div class="quote-head-main w-full xl:flex-1 xl:pr-8 overflow-hidden">
-                    <div class="doc-title-row flex items-start md:items-center gap-4 mb-4 md:mb-8 w-full">
-                        <h1 class="text-xl md:text-3xl font-bold tracking-wide text-[var(--gas-green-light)] leading-snug break-words flex-1 m-0" id="f-title"></h1>
-                    </div>
-
-                    <div class="doc-meta-grid grid grid-cols-1 md:grid-cols-2 gap-x-8 md:gap-x-12 gap-y-4 md:gap-y-5 text-sm md:text-[15px]">
-                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-validity">报价有效期：</span>
-                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
-                                <span id="val-validity" class="font-semibold text-white font-mono-num whitespace-nowrap outline-none w-full text-left block"></span>
-                            </div>
-                        </div>
-                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-receiver">收件人：</span>
-                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
-                                <span id="val-receiver" class="text-[var(--gas-green-light)] empty-placeholder whitespace-nowrap outline-none w-full text-left block" data-placeholder="请填写客户名称"></span>
-                            </div>
-                        </div>
-                    </div>
+        <div id="export-area" class="quote-reference-export-area">
+            <div class="quote-reference-ratebar">
+                <div id="live-rates-display" class="quote-reference-ratebar__rates">1 CNY <i class="fa-solid fa-arrow-right-arrow-left mx-1 text-white"></i> 0.1473 USD <span>| 0.1290 EUR</span> <span>| 0.2084 CAD</span> <span>| 11.2108 RUB</span></div>
+                <div class="quote-reference-ratebar__actions">
+                    <div class="quote-reference-validity"><i class="fa-regular fa-clock"></i><span id="lbl-validity">报价有效期：</span><strong id="val-validity"></strong></div>
+                    <span id="rate-status" class="quote-reference-ratebar__status"><i class="fa-solid fa-wifi"></i> 全球实时汇率在线</span>
+                    <button id="btn-refresh-rates" type="button" class="quote-reference-refresh"><i class="fa-solid fa-rotate-right"></i><span id="btn-text-refresh">刷新汇率</span></button>
                 </div>
+            </div>
 
-                <div class="quote-head-side w-full xl:w-auto text-left xl:text-right flex-shrink-0 flex flex-col items-start xl:items-end">
-                    <div class="mt-4 text-xs md:text-sm font-mono-num text-[var(--gas-green-light)] bg-[var(--gas-green-bg)] px-3 py-2 rounded border border-[var(--gas-green-primary)] break-all" id="live-rates-display">
-                        MARKET RATES (BASE: CNY)
-                    </div>
-
-                    <div class="mt-3 flex flex-wrap items-center justify-start xl:justify-end gap-2 w-full">
-                        <span class="text-[10px] md:text-[11px] text-[#050805] font-mono-num flex items-center bg-[var(--gas-green-primary)] px-2 py-1.5 rounded border border-[var(--gas-green-primary)] shadow-[0_0_8px_rgba(93,214,44,0.2)]" id="rate-status">
-                            <i class="fa-solid fa-wifi text-[#050805] mr-1.5"></i> 全球实时汇率在线
-                        </span>
-                        <button id="btn-refresh-rates" type="button" class="btn-outline bg-[var(--bg-card)] px-3 py-1.5 rounded text-[10px] md:text-[11px] font-bold flex items-center">
-                            <i class="fa-solid fa-rotate-right mr-1.5"></i> <span id="btn-text-refresh">刷新汇率</span>
-                        </button>
-                    </div>
+            <div class="quote-reference-header">
+                <div class="quote-reference-header__main">
+                    <h1 id="f-title"></h1>
+                    <h2><i class="fa-solid fa-engine"></i><span id="f-product-title"></span></h2>
+                </div>
+                <div class="quote-reference-customer-card">
+                    <div class="quote-reference-customer-card__icon"><i class="fa-solid fa-user"></i></div>
+                    <div><div id="lbl-receiver">客户名称</div><strong id="val-receiver" data-placeholder="请填写客户名称"></strong></div>
                 </div>
             </div>
 

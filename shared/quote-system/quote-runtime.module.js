@@ -38,6 +38,7 @@ const sharedUiDict = {
     systemTotal: 'EST. SYSTEM TOTAL',
     pricingBreakdown: 'PRICE BREAKDOWN',
     pricingFormula: 'CALCULATION',
+    optionalColumn: 'Select',
     unitPriceTitle: 'UNIT PRICE BY POWER',
     unitPriceBasis: 'Based on {power} kW rated power',
     unitPriceMw: '1MW equivalent price',
@@ -173,6 +174,7 @@ const dict = {
         systemTotal: '系统预估总价',
         pricingBreakdown: '报价构成',
         pricingFormula: '计算过程',
+        optionalColumn: '选择',
         unitPriceTitle: '按功率折算单价',
         unitPriceBasis: '按 {power} kW 机组总价折算',
         unitPriceMw: '1MW 折算价格',
@@ -306,6 +308,7 @@ const dict = {
         systemTotal: 'Расчётная общая стоимость системы',
         pricingBreakdown: 'Состав стоимости',
         pricingFormula: 'Расчёт',
+        optionalColumn: 'Выбор',
         unitPriceTitle: 'Цена в пересчёте по мощности',
         unitPriceBasis: 'Расчёт по мощности {power} кВт',
         unitPriceMw: 'Эквивалентная цена 1 МВт',
@@ -1254,7 +1257,8 @@ function renderStaticText() {
         || snapshot.quote.customerProfile?.company_name
         || snapshot.quote.customerProfile?.companyName
         || snapshot.quote.shareConfig?.recipient_company
-        || (snapshot.quote.shareConfig?.preview_source === 'product_template' ? '模板预览' : ''),
+        || (snapshot.quote.shareConfig?.preview_source === 'product_template' ? '模板预览' : '')
+        || (state.route?.type === 'preview' ? '模板预览' : ''),
         '',
     );
     const receiverEmail = normalizeEmail(
@@ -1267,6 +1271,8 @@ function renderStaticText() {
     const supplier = text(snapshot.brand.supplier_name || snapshot.brand.display_name || snapshot.brand.brand_name || 'GasGx');
 
     byId('f-title').textContent = quoteVersion ? `${overviewTitle} · V${quoteVersion}` : overviewTitle;
+    const productTitleNode = byId('f-product-title');
+    if (productTitleNode) productTitleNode.textContent = pickDisplayText(snapshot.product.public_title, snapshot.product.product_code);
     byId('lbl-receiver').textContent = t('customerName');
     byId('lbl-validity').textContent = uiText('validity_label', 'validity');
     const updateLabel = byId('lbl-update');
@@ -1490,6 +1496,63 @@ function bindScrollableTables(root = document) {
     });
 }
 
+function quoteReferenceSectionTone(sectionKey = '') {
+    if (sectionKey === 'optional_config') return 'optional';
+    if (sectionKey === 'service_package') return 'service';
+    return 'main';
+}
+
+function quoteReferenceSectionIcon(sectionKey = '') {
+    if (sectionKey === 'optional_config') return 'fa-puzzle-piece';
+    if (sectionKey === 'service_package') return 'fa-wrench';
+    return 'fa-engine';
+}
+
+function quoteReferenceSectionMarkup(section, rates = state.rates) {
+    const optional = section.key === 'optional_config';
+    const tone = quoteReferenceSectionTone(section.key);
+    const subtotal = sectionSubtotal(section);
+    const rows = (section.items || []).map((item) => {
+        const included = item.isIncluded === true;
+        const selected = item.isSelected === true;
+        const price = safeNumber(item.priceRmb, 0);
+        const selectCell = optional
+            ? `<td class="quote-reference-select-cell"><input class="quote-reference-checkbox" type="checkbox" ${selected ? 'checked' : ''} disabled aria-label="${esc(t('optionalColumn'))}"></td>`
+            : '';
+        const rowClass = `quote-reference-table__row ${optional && selected ? 'is-selected' : ''}`;
+        return `
+            <tr class="${rowClass}">
+                ${selectCell}
+                <td class="quote-reference-code">${esc(item.lineCode || '--')}</td>
+                <td class="quote-reference-description">${esc(pickDisplayText(item.nameI18n, item.lineCode || '--'))}</td>
+                <td class="quote-reference-brand">${esc(item.brandLabel || '-')}</td>
+                <td class="quote-reference-qty">${esc(item.qtyLabel || '1')}</td>
+                <td class="quote-reference-money quote-reference-money--rmb">${included ? `<span class="quote-reference-included">${esc(t('included'))}</span>` : esc(formatCurrency('RMB', price))}</td>
+                <td class="quote-reference-money quote-reference-money--usd">${included ? '-' : esc(formatCurrency('USD', price * rates.USD))}</td>
+            </tr>
+        `;
+    }).join('');
+    const headers = optional ? [t('optionalColumn'), ...t('headers')] : t('headers');
+
+    return `
+        <section class="quote-reference-section quote-reference-section--${tone}" data-quote-section="pricing-${esc(section.key)}">
+            <div class="quote-reference-section__head">
+                <h3><i class="fa-solid ${quoteReferenceSectionIcon(section.key)}"></i><span>${esc(getSectionLabel(section))}</span></h3>
+                <div class="quote-reference-section__totals">
+                    <div>RMB <strong>${esc(formatCurrency('RMB', subtotal))}</strong></div>
+                    <div>USD ${esc(formatCurrency('USD', subtotal * rates.USD))}</div>
+                </div>
+            </div>
+            <div class="quote-reference-table-container">
+                <table class="quote-reference-table">
+                    <thead><tr>${headers.map((header, index) => `<th class="${index === 0 && !optional ? 'quote-reference-table__code-head' : ''} ${index === 0 && optional ? 'quote-reference-table__select-head' : ''}">${esc(header)}</th>`).join('')}</tr></thead>
+                    <tbody>${rows || `<tr><td colspan="${headers.length}" class="quote-reference-empty">—</td></tr>`}</tbody>
+                </table>
+            </div>
+        </section>
+    `;
+}
+
 function renderContent() {
     const snapshot = state.snapshot;
     const container = byId('content-area');
@@ -1522,86 +1585,32 @@ function renderContent() {
         [t('optionalIncrease'), sectionTotals.optional_config || 0],
         [t('serviceTotal'), sectionTotals.service_package || 0],
     ];
-    const rows = [];
     const mediaState = getProductMediaState(snapshot);
     const mediaBlock = renderProductMediaBlock(snapshot);
     const mediaAbove = mediaState.enabled && mediaState.config.position === MEDIA_POSITIONS.ABOVE ? mediaBlock : '';
     const mediaBelow = mediaState.enabled && mediaState.config.position !== MEDIA_POSITIONS.ABOVE ? mediaBlock : '';
     const confirmationPanel = quoteConfirmationPanelMarkup();
-
-    (snapshot.product.sections || []).forEach((section) => {
-        const subtotal = sectionSubtotal(section);
-        rows.push(`
-            <tr class="quote-section-row" data-section-key="${esc(section.key)}" style="background-color: var(--bg-base);">
-                <td class="text-[var(--text-muted)] opacity-50 text-center text-xs font-mono-num whitespace-nowrap">-</td>
-                <td class="text-[var(--gas-green-light)] font-semibold whitespace-nowrap">${esc(getSectionLabel(section))}</td>
-                <td class="text-[var(--text-muted)] opacity-50 text-xs whitespace-nowrap">-</td>
-                <td class="text-[var(--text-muted)] opacity-50 text-center font-mono-num whitespace-nowrap">-</td>
-                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('RMB', subtotal))}</td>
-                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('USD', subtotal * state.rates.USD))}</td>
-            </tr>
-        `);
-
-        (section.items || []).forEach((item) => {
-            const included = item.isIncluded === true;
-            const optional = section.key === 'optional_config';
-            const selected = item.isSelected === true;
-            const price = safeNumber(item.priceRmb, 0);
-            rows.push(`
-                <tr class="quote-item-row ${optional && selected ? 'quote-optional-item-selected' : ''}">
-                    <td class="text-[var(--text-body)] text-center text-xs font-mono-num whitespace-nowrap">${esc(item.lineCode || '--')}</td>
-                    <td class="text-white min-w-[200px]"><span>${esc(pickDisplayText(item.nameI18n, item.lineCode || '--'))}</span>${optional ? `<label class="quote-optional-selected" title="${esc(t('optionalSelect'))}"><input type="checkbox" ${selected ? 'checked' : ''} disabled aria-label="${esc(t('optionalSelect'))}"></label>` : ''}</td>
-                    <td class="text-[var(--text-body)] text-xs whitespace-nowrap">${esc(item.brandLabel || '-')}</td>
-                    <td class="text-[var(--text-body)] text-center font-mono-num whitespace-nowrap">${esc(item.qtyLabel || '1')}</td>
-                    <td class="font-mono-num ${included ? 'text-[var(--text-muted)]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? esc(t('included')) : esc(formatCurrency('RMB', price))}</td>
-                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('USD', price * state.rates.USD))}</td>
-                </tr>
-            `);
-        });
-    });
+    const sectionMarkup = (snapshot.product.sections || [])
+        .map((section) => quoteReferenceSectionMarkup(section, state.rates))
+        .join('');
 
     container.innerHTML = `
-        <div class="mb-10 md:mb-16">
-            <section data-quote-section="overview">
-                <h3 class="text-base md:text-lg font-semibold text-[var(--gas-green-light)] mb-4 md:mb-5 flex items-center gap-2 md:gap-3">
-                    <span class="bg-[var(--gas-green-bg)] border border-[var(--gas-green-primary)] text-[var(--gas-green-light)] w-6 h-6 md:w-7 md:h-7 rounded flex items-center justify-center text-xs md:text-sm font-mono-num flex-shrink-0">1</span>
-                    <span class="leading-tight">${esc(productTitle)}</span>
-                </h3>
-            </section>
+        <div class="quote-reference-content">
             ${mediaAbove ? `<section data-quote-section="media">${mediaAbove}</section>` : ''}
-
-            <section data-quote-section="pricing">
-                <div class="quote-total-card quote-total-card--with-breakdown bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 shadow-inner">
-                <div class="quote-total-card__headline">
-                        <span class="font-bold text-white tracking-wider text-xs md:text-sm">${esc(uiText('system_total_label', 'systemTotal'))}:</span>
-                        <div class="quote-total-grid text-sm md:text-[15px]">
-                        <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RMB', total))}</span></span>
-                        <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('USD', total * state.rates.USD))}</span></span>
-                        </div>
+            <section class="quote-reference-hero" data-quote-section="pricing">
+                <div class="quote-total-card quote-reference-total-card">
+                    <div class="quote-reference-total-label">${esc(uiText('system_total_label', 'systemTotal'))} / EST. SYSTEM TOTAL</div>
+                    <div class="quote-reference-total-values">
+                        <div><span class="quote-reference-currency quote-reference-currency--rmb">RMB</span><strong>${esc(formatCurrency('RMB', total))}</strong></div>
+                        <div><span class="quote-reference-currency">USD</span><strong>${esc(formatCurrency('USD', total * state.rates.USD))}</strong></div>
                     </div>
-
+                    <div class="quote-reference-formula" aria-label="${esc(t('pricingFormula'))}">
+                        <span><b>${esc(breakdown[0][0])}</b> ${esc(formatCurrency('RMB', breakdown[0][1]))} <em>+</em> <b>${esc(breakdown[1][0])}</b> ${esc(formatCurrency('RMB', breakdown[1][1]))} <em>+</em> <b>${esc(breakdown[2][0])}</b> ${esc(formatCurrency('RMB', breakdown[2][1]))} <em>=</em> <strong>${esc(formatCurrency('RMB', total))}</strong></span>
+                    </div>
+                </div>
                 ${unitPriceMarkup}
-
-                <div class="quote-total-formula" aria-label="${esc(t('pricingFormula'))}">
-                    <div class="quote-total-formula__values">
-                        <span><b>${esc(breakdown[0][0])}</b>${esc(formatCurrency('RMB', breakdown[0][1]))} + <b>${esc(breakdown[1][0])}</b>${esc(formatCurrency('RMB', breakdown[1][1]))} + <b>${esc(breakdown[2][0])}</b>${esc(formatCurrency('RMB', breakdown[2][1]))} = <strong>${esc(formatCurrency('RMB', total))}</strong></span>
-                    </div>
-                </div>
-                </div>
-
-                <div class="table-scroll-shell" data-scroll-left="false" data-scroll-right="false">
-                    <div class="table-scroll-note"><i class="fa-solid fa-arrows-left-right"></i><span>${esc(t('tableSwipeHint'))}</span></div>
-                    <div class="table-responsive-wrapper w-full">
-                        <table class="industrial-table text-left">
-                            <thead>
-                                <tr>${t('headers').map((header, index) => `<th class="${index === 0 ? 'w-12 text-center whitespace-nowrap' : 'whitespace-nowrap'}">${esc(header)}</th>`).join('')}</tr>
-                            </thead>
-                            <tbody>${rows.join('')}</tbody>
-                        </table>
-                    </div>
-                </div>
-
             </section>
+            <div class="quote-reference-sections">${sectionMarkup}</div>
             ${mediaBelow ? `<section data-quote-section="media">${mediaBelow}</section>` : ''}
         </div>
         ${confirmationPanel ? `<section data-quote-section="confirmation">${confirmationPanel}</section>` : ''}
