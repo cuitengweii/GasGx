@@ -25,7 +25,7 @@ import {
     normalizeSectionConfig,
     sortItems,
     sortMediaItems,
-} from './quote-data.module.js?v=20260711service02';
+} from './quote-data.module.js?v=20260711service03';
 
 const RATE_API_URL = 'https://open.er-api.com/v6/latest/CNY';
 const TABLE_BRANDS = 'quote_brands';

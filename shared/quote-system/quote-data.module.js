@@ -196,14 +196,14 @@ export function createSectionConfig() {
             subtotal: 0,
         },
         {
-            key: SECTION_KEYS.SERVICE,
-            title: { ...DEFAULT_SECTION_TITLES[SECTION_KEYS.SERVICE] },
+            key: SECTION_KEYS.OPTIONAL,
+            title: { ...DEFAULT_SECTION_TITLES[SECTION_KEYS.OPTIONAL] },
             subtotalMode: 'manual',
             subtotal: 0,
         },
         {
-            key: SECTION_KEYS.OPTIONAL,
-            title: { ...DEFAULT_SECTION_TITLES[SECTION_KEYS.OPTIONAL] },
+            key: SECTION_KEYS.SERVICE,
+            title: { ...DEFAULT_SECTION_TITLES[SECTION_KEYS.SERVICE] },
             subtotalMode: 'manual',
             subtotal: 0,
         },
