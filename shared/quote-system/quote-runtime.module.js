@@ -1173,7 +1173,8 @@ function renderStaticText() {
         || snapshot.quote.customer_name
         || snapshot.quote.customerProfile?.company_name
         || snapshot.quote.customerProfile?.companyName
-        || snapshot.quote.shareConfig?.recipient_company,
+        || snapshot.quote.shareConfig?.recipient_company
+        || (snapshot.quote.shareConfig?.preview_source === 'product_template' ? '模板预览' : ''),
         '',
     );
     const receiverEmail = normalizeEmail(
