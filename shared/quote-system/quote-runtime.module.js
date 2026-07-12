@@ -38,6 +38,10 @@ const sharedUiDict = {
     systemTotal: 'EST. SYSTEM TOTAL',
     pricingBreakdown: 'PRICE BREAKDOWN',
     pricingFormula: 'CALCULATION',
+    unitPriceTitle: 'UNIT PRICE BY POWER',
+    unitPriceBasis: 'Based on {power} kW rated power',
+    unitPriceMw: '1MW equivalent price',
+    unitPriceKw: '1kW equivalent price',
     mainTotal: 'Main configuration total',
     optionalIncrease: 'Optional additions',
     serviceTotal: 'Service package total',
@@ -169,6 +173,10 @@ const dict = {
         systemTotal: '系统预估总价',
         pricingBreakdown: '报价构成',
         pricingFormula: '计算过程',
+        unitPriceTitle: '按功率折算单价',
+        unitPriceBasis: '按 {power} kW 机组总价折算',
+        unitPriceMw: '1MW 折算价格',
+        unitPriceKw: '1kW 折算价格',
         mainTotal: '主配总价',
         optionalIncrease: '选配增加',
         serviceTotal: '服务包总价',
@@ -298,6 +306,10 @@ const dict = {
         systemTotal: 'Расчётная общая стоимость системы',
         pricingBreakdown: 'Состав стоимости',
         pricingFormula: 'Расчёт',
+        unitPriceTitle: 'Цена в пересчёте по мощности',
+        unitPriceBasis: 'Расчёт по мощности {power} кВт',
+        unitPriceMw: 'Эквивалентная цена 1 МВт',
+        unitPriceKw: 'Эквивалентная цена 1 кВт',
         mainTotal: 'Стоимость основной конфигурации',
         optionalIncrease: 'Дополнительные опции',
         serviceTotal: 'Стоимость сервисного пакета',
@@ -1032,6 +1044,34 @@ function quoteTotal(snapshot) {
     return (snapshot?.product?.sections || []).reduce((sum, section) => sum + sectionSubtotal(section), 0);
 }
 
+function quoteCapacityKw(snapshot) {
+    const product = snapshot?.product || {};
+    const explicitPower = [
+        product.capacity_kw,
+        product.capacityKw,
+        product.rated_power_kw,
+        product.ratedPowerKw,
+        product.power_kw,
+        product.powerKw,
+    ]
+        .map((value) => safeNumber(value, 0))
+        .find((value) => value > 0);
+    if (explicitPower) return explicitPower;
+
+    const source = [
+        pickDisplayText(product.public_title, ''),
+        text(product.product_code),
+    ].join(' ');
+    const mwMatch = source.match(/(\d+(?:\.\d+)?)\s*(?:MW|兆瓦)/i);
+    if (mwMatch) return Number(mwMatch[1]) * 1000;
+    const kwMatch = source.match(/(\d+(?:\.\d+)?)\s*(?:kW|千瓦)/i);
+    return kwMatch ? Number(kwMatch[1]) : 0;
+}
+
+function formatPowerKw(value) {
+    return Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+
 function hexToRgba(hex, alpha = 1) {
     const source = text(hex).replace('#', '');
     const normalized = source.length === 3
@@ -1457,6 +1497,25 @@ function renderContent() {
 
     const productTitle = pickDisplayText(snapshot.product.public_title, snapshot.product.product_code);
     const total = quoteTotal(snapshot);
+    const capacityKw = quoteCapacityKw(snapshot);
+    const unitPriceMarkup = capacityKw > 0 ? `
+                    <div class="quote-unit-pricing" aria-label="${esc(t('unitPriceTitle'))}">
+                        <div class="quote-unit-pricing__header">
+                            <strong>${esc(t('unitPriceTitle'))}</strong>
+                            <span>${esc(t('unitPriceBasis').replace('{power}', formatPowerKw(capacityKw)))}</span>
+                        </div>
+                        <div class="quote-unit-pricing__grid">
+                            <div class="quote-unit-pricing__item">
+                                <span class="quote-unit-pricing__label">${esc(t('unitPriceMw'))}</span>
+                                <span class="quote-unit-pricing__values"><b>RMB</b> ${esc(formatCurrency('RMB', total * 1000 / capacityKw))}<b>USD</b> ${esc(formatCurrency('USD', total * state.rates.USD * 1000 / capacityKw))}</span>
+                            </div>
+                            <div class="quote-unit-pricing__item">
+                                <span class="quote-unit-pricing__label">${esc(t('unitPriceKw'))}</span>
+                                <span class="quote-unit-pricing__values"><b>RMB</b> ${esc(formatCurrency('RMB', total / capacityKw))}<b>USD</b> ${esc(formatCurrency('USD', total * state.rates.USD / capacityKw))}</span>
+                            </div>
+                        </div>
+                    </div>
+                ` : '';
     const sectionTotals = Object.fromEntries((snapshot.product.sections || []).map((section) => [section.key, sectionSubtotal(section)]));
     const breakdown = [
         [t('mainTotal'), sectionTotals.main_config || 0],
@@ -1513,13 +1572,15 @@ function renderContent() {
 
             <section data-quote-section="pricing">
                 <div class="quote-total-card quote-total-card--with-breakdown bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 shadow-inner">
-                    <div class="quote-total-card__headline">
+                <div class="quote-total-card__headline">
                         <span class="font-bold text-white tracking-wider text-xs md:text-sm">${esc(uiText('system_total_label', 'systemTotal'))}:</span>
                         <div class="quote-total-grid text-sm md:text-[15px]">
                         <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RMB', total))}</span></span>
                         <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('USD', total * state.rates.USD))}</span></span>
                         </div>
                     </div>
+
+                ${unitPriceMarkup}
 
                 <div class="quote-total-formula" aria-label="${esc(t('pricingFormula'))}">
                     <div class="quote-total-formula__values">

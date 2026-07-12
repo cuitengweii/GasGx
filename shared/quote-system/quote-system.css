@@ -611,6 +611,76 @@
             flex-wrap: wrap;
         }
 
+        .quote-unit-pricing {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border: 1px solid rgba(93, 214, 44, 0.32);
+            border-radius: 12px;
+            background: linear-gradient(90deg, rgba(93, 214, 44, 0.1), rgba(93, 214, 44, 0.035));
+        }
+
+        .quote-unit-pricing__header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            color: var(--gas-green-light);
+            font-size: 12px;
+        }
+
+        .quote-unit-pricing__header strong {
+            font-size: 13px;
+            letter-spacing: 0.04em;
+        }
+
+        .quote-unit-pricing__header span {
+            color: var(--text-body);
+            font-size: 11px;
+        }
+
+        .quote-unit-pricing__grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .quote-unit-pricing__item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-width: 0;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: rgba(7, 10, 15, 0.52);
+        }
+
+        .quote-unit-pricing__label {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .quote-unit-pricing__values {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 4px 8px;
+            color: var(--gas-green-light);
+            font-family: var(--font-mono);
+            font-size: 15px;
+            font-weight: 800;
+            text-align: right;
+        }
+
+        .quote-unit-pricing__values b {
+            color: var(--text-body);
+            font-size: 10px;
+            letter-spacing: 0.04em;
+        }
+
         .quote-total-breakdown {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -699,6 +769,10 @@
 
         @media (max-width: 900px) {
             .quote-total-breakdown {
+                grid-template-columns: 1fr;
+            }
+
+            .quote-unit-pricing__grid {
                 grid-template-columns: 1fr;
             }
 
