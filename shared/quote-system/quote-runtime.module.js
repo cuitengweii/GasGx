@@ -1515,12 +1515,12 @@ function quoteReferenceSectionMarkup(section, rates = state.rates) {
     const optional = section.key === 'optional_config';
     const tone = quoteReferenceSectionTone(section.key);
     const subtotal = sectionSubtotal(section);
-    const rows = (section.items || []).map((item) => {
+    const rows = (section.items || []).map((item, itemIndex) => {
         const included = item.isIncluded === true;
         const selected = item.isSelected === true;
         const price = safeNumber(item.priceRmb, 0);
         const selectCell = optional
-            ? `<td class="quote-reference-select-cell"><input class="quote-reference-checkbox" type="checkbox" ${selected ? 'checked' : ''} disabled aria-label="${esc(t('optionalColumn'))}"></td>`
+            ? `<td class="quote-reference-select-cell"><input class="quote-reference-checkbox" type="checkbox" data-quote-optional-toggle data-section-key="${esc(section.key)}" data-item-index="${itemIndex}" ${selected ? 'checked' : ''} aria-label="${esc(t('optionalColumn'))}"></td>`
             : '';
         const rowClass = `quote-reference-table__row ${optional && selected ? 'is-selected' : ''}`;
         return `
@@ -1554,6 +1554,29 @@ function quoteReferenceSectionMarkup(section, rates = state.rates) {
             </div>
         </section>
     `;
+}
+
+function bindReferenceOptionControls(root = byId('content-area')) {
+    if (!root) return;
+    root.querySelectorAll('[data-quote-optional-toggle]').forEach((input) => {
+        input.addEventListener('change', (event) => {
+            const sectionKey = text(event.currentTarget.dataset.sectionKey);
+            const itemIndex = Number(event.currentTarget.dataset.itemIndex);
+            const section = state.snapshot?.product?.sections?.find((entry) => entry.key === sectionKey);
+            const item = section?.items?.[itemIndex];
+            if (!item) return;
+            item.isSelected = Boolean(event.currentTarget.checked);
+            renderContent();
+            logQuoteBehavior(item.isSelected ? '客户选中报价选配项' : '客户取消报价选配项', {
+                section_key: sectionKey,
+                item_index: itemIndex,
+                summary: `${item.isSelected ? '选中' : '取消'} ${pickDisplayText(item.nameI18n, item.lineCode || '--')}`,
+            }, {
+                activityType: 'option_toggle',
+                dedupeKey: `option-toggle-${sectionKey}-${itemIndex}-${item.isSelected ? 'on' : 'off'}`,
+            });
+        });
+    });
 }
 
 function renderContent() {
@@ -1620,6 +1643,7 @@ function renderContent() {
     `;
     bindScrollableTables(container);
     bindProductMediaControls();
+    bindReferenceOptionControls(container);
     observeQuoteSections(container);
     byId('quote-confirm-checkbox')?.addEventListener('change', (event) => {
         state.publicConfirmation.confirmed = Boolean(event.currentTarget.checked);
