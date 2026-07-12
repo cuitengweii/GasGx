@@ -37,6 +37,7 @@ const sharedUiDict = {
     optionalConfig: 'Optional Config',
     systemTotal: 'EST. SYSTEM TOTAL',
     pricingBreakdown: 'PRICE BREAKDOWN',
+    pricingFormula: 'CALCULATION',
     mainTotal: 'Main configuration total',
     optionalIncrease: 'Optional additions',
     serviceTotal: 'Service package total',
@@ -155,6 +156,7 @@ const dict = {
         optionalConfig: '选配',
         systemTotal: '系统预估总价',
         pricingBreakdown: '报价构成',
+        pricingFormula: '计算过程',
         mainTotal: '主配总价',
         optionalIncrease: '选配增加',
         serviceTotal: '服务包总价',
@@ -271,6 +273,7 @@ const dict = {
         optionalConfig: 'Дополнительная конфигурация',
         systemTotal: 'Расчётная общая стоимость системы',
         pricingBreakdown: 'Состав стоимости',
+        pricingFormula: 'Расчёт',
         mainTotal: 'Стоимость основной конфигурации',
         optionalIncrease: 'Дополнительные опции',
         serviceTotal: 'Стоимость сервисного пакета',
@@ -1464,16 +1467,17 @@ function renderContent() {
             ${mediaAbove ? `<section data-quote-section="media">${mediaAbove}</section>` : ''}
 
             <section data-quote-section="pricing">
-                <div class="quote-total-card bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between shadow-inner gap-4">
-                    <span class="font-bold text-white tracking-wider text-xs md:text-sm">${esc(uiText('system_total_label', 'systemTotal'))}:</span>
-                    <div class="quote-total-grid text-sm md:text-[15px]">
+                <div class="quote-total-card quote-total-card--with-breakdown bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 shadow-inner">
+                    <div class="quote-total-card__headline">
+                        <span class="font-bold text-white tracking-wider text-xs md:text-sm">${esc(uiText('system_total_label', 'systemTotal'))}:</span>
+                        <div class="quote-total-grid text-sm md:text-[15px]">
                         <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RMB', total))}</span></span>
                         <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('USD', total * state.rates.USD))}</span></span>
                         <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('EUR', total * state.rates.EUR))}</span></span>
                         <span class="flex items-center gap-2"><span class="gas-tag">CAD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('CAD', total * state.rates.CAD))}</span></span>
                         <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RUB', total * state.rates.RUB))}</span></span>
+                        </div>
                     </div>
-                </div>
 
                 <div class="quote-total-breakdown" aria-label="${esc(t('pricingBreakdown'))}">
                     ${breakdown.map(([label, amount]) => `
@@ -1488,6 +1492,14 @@ function renderContent() {
                             </div>
                         </div>
                     `).join('')}
+                </div>
+
+                <div class="quote-total-formula" aria-label="${esc(t('pricingFormula'))}">
+                    <span class="quote-total-formula__label">${esc(t('pricingFormula'))}</span>
+                    <div class="quote-total-formula__values">
+                        ${['RMB', 'USD', 'EUR', 'CAD', 'RUB'].map((code) => `<span><b>${code}</b>${esc(formatCurrency(code, breakdown[0][1]))} + ${esc(formatCurrency(code, breakdown[1][1]))} + ${esc(formatCurrency(code, breakdown[2][1]))} = <strong>${esc(formatCurrency(code, total))}</strong></span>`).join('')}
+                    </div>
+                </div>
                 </div>
 
                 <div class="table-scroll-shell" data-scroll-left="false" data-scroll-right="false">

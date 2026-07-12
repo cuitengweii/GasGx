@@ -599,11 +599,23 @@
             overflow: hidden;
         }
 
+        .quote-total-card--with-breakdown {
+            display: block;
+        }
+
+        .quote-total-card__headline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
         .quote-total-breakdown {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 8px;
-            margin-top: -8px;
+            margin-top: 12px;
         }
 
         .quote-total-breakdown__item {
@@ -642,9 +654,53 @@
             font-weight: 700;
         }
 
+        .quote-total-formula {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(93, 214, 44, 0.16);
+        }
+
+        .quote-total-formula__label {
+            flex: 0 0 auto;
+            color: var(--text-body);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .quote-total-formula__values {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px 14px;
+            color: var(--gas-green-light);
+            font-family: var(--font-mono);
+            font-size: 12px;
+        }
+
+        .quote-total-formula__values span {
+            white-space: nowrap;
+        }
+
+        .quote-total-formula__values b {
+            margin-right: 4px;
+            color: var(--text-muted);
+            font-size: 10px;
+        }
+
+        .quote-total-formula__values strong {
+            color: #fff;
+        }
+
         @media (max-width: 900px) {
             .quote-total-breakdown {
                 grid-template-columns: 1fr;
+            }
+
+            .quote-total-formula {
+                flex-direction: column;
+                gap: 6px;
             }
         }
 

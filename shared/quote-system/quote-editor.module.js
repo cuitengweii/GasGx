@@ -50,6 +50,7 @@ const dict = {
         optionalConfig: '选配',
         systemTotal: '系统预估总价 / EST. SYSTEM TOTAL',
         pricingBreakdown: '报价构成',
+        pricingFormula: '计算过程',
         mainTotal: '主配总价',
         optionalIncrease: '选配增加',
         serviceTotal: '服务包总价',
@@ -115,6 +116,7 @@ const dict = {
         optionalConfig: 'Optional Config',
         systemTotal: 'EST. SYSTEM TOTAL',
         pricingBreakdown: 'PRICE BREAKDOWN',
+        pricingFormula: 'CALCULATION',
         mainTotal: 'Main configuration total',
         optionalIncrease: 'Optional additions',
         serviceTotal: 'Service package total',
@@ -180,6 +182,7 @@ const dict = {
         optionalConfig: 'Опции',
         systemTotal: 'ОЦЕНОЧНАЯ СТОИМОСТЬ СИСТЕМЫ',
         pricingBreakdown: 'Состав стоимости',
+        pricingFormula: 'Расчёт',
         mainTotal: 'Стоимость основной конфигурации',
         optionalIncrease: 'Дополнительные опции',
         serviceTotal: 'Стоимость сервисного пакета',
@@ -1260,18 +1263,19 @@ function renderContent() {
                 </h2>
             </div>
 
-            <div class="quote-total-card rounded border border-[var(--border-color)] bg-[var(--bg-base)] px-5 py-4 md:px-6 md:py-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <span class="font-bold text-white tracking-wider text-xs md:text-sm">
-                    <span class="quote-editable quote-editable-inline" contenteditable="true" id="edit-total-label">${esc(uiText('system_total_label', t('systemTotal')))}</span>:
-                </span>
-                <div class="quote-total-grid text-sm md:text-[15px]">
+            <div class="quote-total-card quote-total-card--with-breakdown rounded border border-[var(--border-color)] bg-[var(--bg-base)] px-5 py-4 md:px-6 md:py-5">
+                <div class="quote-total-card__headline">
+                    <span class="font-bold text-white tracking-wider text-xs md:text-sm">
+                        <span class="quote-editable quote-editable-inline" contenteditable="true" id="edit-total-label">${esc(uiText('system_total_label', t('systemTotal')))}</span>:
+                    </span>
+                    <div class="quote-total-grid text-sm md:text-[15px]">
                     <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RMB', total))}</span></span>
                     <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('USD', total * state.rates.USD))}</span></span>
                     <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('EUR', total * state.rates.EUR))}</span></span>
                     <span class="flex items-center gap-2"><span class="gas-tag">CAD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('CAD', total * state.rates.CAD))}</span></span>
                     <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RUB', total * state.rates.RUB))}</span></span>
+                    </div>
                 </div>
-            </div>
 
             <div class="quote-total-breakdown" aria-label="${esc(t('pricingBreakdown'))}">
                 ${breakdown.map(([label, amount]) => `
@@ -1286,6 +1290,14 @@ function renderContent() {
                         </div>
                     </div>
                 `).join('')}
+            </div>
+
+            <div class="quote-total-formula" aria-label="${esc(t('pricingFormula'))}">
+                <span class="quote-total-formula__label">${esc(t('pricingFormula'))}</span>
+                <div class="quote-total-formula__values">
+                    ${['RMB', 'USD', 'EUR', 'CAD', 'RUB'].map((code) => `<span><b>${code}</b>${esc(formatCurrency(code, breakdown[0][1]))} + ${esc(formatCurrency(code, breakdown[1][1]))} + ${esc(formatCurrency(code, breakdown[2][1]))} = <strong>${esc(formatCurrency(code, total))}</strong></span>`).join('')}
+                </div>
+            </div>
             </div>
 
             <div class="quote-editor-hint">${esc(t('sectionSubtotalHint'))}</div>
