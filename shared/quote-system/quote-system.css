@@ -903,14 +903,14 @@
             background: rgba(10, 14, 20, 0.92);
             backdrop-filter: blur(10px);
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 16px;
         }
 
         .quote-editor-bar__meta {
-            display: flex;
+            display: none;
             flex-direction: column;
             gap: 3px;
             min-width: 0;
@@ -936,15 +936,15 @@
         }
 
         .quote-editor-bar__actions {
-            order: -1;
+            order: 2;
             display: flex;
-            flex: 1 1 100%;
-            flex-basis: 100%;
-            width: 100%;
+            flex: 0 1 auto;
+            flex-basis: auto;
+            width: auto;
             min-width: 0;
             align-items: center;
-            justify-content: space-between;
-            gap: 8px;
+            justify-content: flex-end;
+            gap: 6px;
             max-width: 100%;
         }
 
@@ -964,7 +964,7 @@
             display: flex;
             flex-wrap: nowrap;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
             min-width: 0;
         }
 
@@ -973,7 +973,7 @@
             width: fit-content;
             max-width: 100%;
             margin-left: auto;
-            padding: 10px;
+            padding: 6px;
             border: 1px solid rgba(93, 214, 44, 0.48);
             border-radius: 12px;
             background: linear-gradient(90deg, rgba(93, 214, 44, 0.13), rgba(93, 214, 44, 0.035));
@@ -996,10 +996,12 @@
             min-width: 0;
             max-width: 100%;
             white-space: nowrap;
+            font-size: 13px;
+            padding: 7px 9px !important;
         }
 
         .quote-editor-primary-btn {
-            min-height: 46px;
+            min-height: 38px;
             border-radius: 9px;
             font-weight: 700;
             white-space: normal;
@@ -1020,18 +1022,25 @@
         }
 
         .quote-editor-bar__settings {
-            flex: 1 1 auto;
+            order: 1;
+            flex: 1 1 0;
             min-width: 0;
             padding: 0;
             margin: 0;
             align-content: start;
-            grid-template-columns: repeat(3, minmax(180px, 1fr)) !important;
+            grid-template-columns: repeat(3, minmax(120px, 1fr)) !important;
             align-items: end;
         }
 
         .quote-editor-bar__settings .quote-editor-setting input,
         .quote-editor-bar__settings .quote-editor-setting select {
-            min-height: 46px;
+            min-height: 38px;
+        }
+
+        @media (min-width: 1200px) {
+            .quote-editor-bar {
+                flex-wrap: nowrap;
+            }
         }
 
         .quote-editor-settings {
