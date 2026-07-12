@@ -937,9 +937,9 @@
 
         .quote-editor-bar__actions {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: space-between;
             gap: 8px;
             margin-left: auto;
             flex: 1 1 100%;
@@ -968,6 +968,7 @@
         }
 
         .quote-editor-primary-actions {
+            order: 2;
             justify-content: flex-end;
             width: fit-content;
             max-width: 100%;
@@ -980,7 +981,9 @@
         }
 
         .quote-editor-secondary-actions {
-            width: 100%;
+            order: 1;
+            width: fit-content;
+            max-width: 100%;
             padding-top: 2px;
         }
 
@@ -1564,8 +1567,18 @@
             }
 
             .quote-editor-bar__actions {
+                flex-wrap: wrap;
                 justify-content: flex-start;
                 margin-left: 0;
+            }
+
+            .quote-editor-primary-actions {
+                order: 1;
+            }
+
+            .quote-editor-secondary-actions {
+                order: 2;
+                width: 100%;
             }
 
             .quote-editor-settings__body {
