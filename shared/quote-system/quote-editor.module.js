@@ -25,7 +25,7 @@ import {
     normalizeSectionConfig,
     sortItems,
     sortMediaItems,
-} from './quote-data.module.js?v=20260711service01';
+} from './quote-data.module.js?v=20260711service02';
 
 const RATE_API_URL = 'https://open.er-api.com/v6/latest/CNY';
 const TABLE_BRANDS = 'quote_brands';
@@ -52,7 +52,7 @@ const dict = {
         send: '发送',
         refresh: '刷新汇率',
         receiverPlaceholder: '请输入客户名称',
-        sectionSubtotalHint: '直接改区块行 RMB 单元格，可覆盖小计。',
+        sectionSubtotalHint: '主配置和服务包可直接改区块小计；选配请勾选要计入报价的行。',
         defaultLang: '默认语言',
         validityHours: '有效期（小时）',
         customerName: '客户名称',
@@ -74,6 +74,7 @@ const dict = {
         rowMoveDown: '下移',
         rowDelete: '删除',
         rowToggleInclude: '包含/价格',
+        optionalSelect: '计入报价',
         rateOnline: '全球实时汇率在线',
         rateRefreshing: '正在刷新...',
         rateFallback: '汇率获取失败，使用当前快照',
@@ -112,7 +113,7 @@ const dict = {
         send: 'Send',
         refresh: 'Refresh Rates',
         receiverPlaceholder: 'Enter receiver',
-        sectionSubtotalHint: 'Edit the RMB cell in the section row to override the subtotal.',
+        sectionSubtotalHint: 'Edit main/service subtotals directly; select optional rows to include them in the quote.',
         defaultLang: 'Default language',
         validityHours: 'Validity (hours)',
         customerName: 'Customer name',
@@ -134,6 +135,7 @@ const dict = {
         rowMoveDown: 'Down',
         rowDelete: 'Delete',
         rowToggleInclude: 'Include/Price',
+        optionalSelect: 'Include in quote',
         rateOnline: 'Live FX online',
         rateRefreshing: 'Refreshing...',
         rateFallback: 'Rate refresh failed. Using current snapshot.',
@@ -172,7 +174,7 @@ const dict = {
         send: 'Отправить',
         refresh: 'Обновить курсы',
         receiverPlaceholder: 'Введите получателя',
-        sectionSubtotalHint: 'Измените ячейку RMB в строке раздела, чтобы переопределить сумму.',
+        sectionSubtotalHint: 'Изменяйте суммы основной конфигурации и сервиса; отмечайте опции для включения в предложение.',
         defaultLang: 'Язык по умолчанию',
         validityHours: 'Срок (часы)',
         customerName: 'Клиент',
@@ -194,6 +196,7 @@ const dict = {
         rowMoveDown: 'Вниз',
         rowDelete: 'Удалить',
         rowToggleInclude: 'Вкл/Цена',
+        optionalSelect: 'Включить в предложение',
         rateOnline: 'Онлайн-курсы доступны',
         rateRefreshing: 'Обновление...',
         rateFallback: 'Не удалось обновить курс. Используется текущий снимок.',
@@ -720,6 +723,12 @@ function setLocalizedByPath(path, lang, value) {
   }
 
 function sectionSubtotal(section, items = []) {
+    if (section?.key === SECTION_KEYS.OPTIONAL) {
+        return items.reduce((sum, item) => {
+            if (!item.is_selected || item.is_included) return sum;
+            return sum + Math.max(0, safeNumber(item.price_rmb, 0));
+        }, 0);
+    }
     if (section?.subtotalMode === 'sum') {
         return items.reduce((sum, item) => {
             if (item.is_included) return sum;
@@ -1191,6 +1200,8 @@ function renderContent() {
         section.items.forEach((item) => {
             const normalized = normalizeQuoteItem(item, item.section_key);
             const included = normalized.is_included === true;
+            const optional = normalized.section_key === SECTION_KEYS.OPTIONAL;
+            const selected = normalized.is_selected === true;
             const price = safeNumber(normalized.price_rmb, 0);
             rows.push(`
                 <tr class="quote-item-row" data-item-id="${esc(normalized.localId)}">
@@ -1200,6 +1211,7 @@ function renderContent() {
                     <td class="text-white min-w-[240px] quote-editor-desc-cell">
                         <div class="quote-editor-desc-wrap">
                             <span class="quote-editable quote-editable-inline" contenteditable="true" data-item-field="name_i18n" data-item-id="${esc(normalized.localId)}">${esc(localizedValue(normalized.name_i18n) || normalized.line_code || '--')}</span>
+                            ${optional ? `<label class="quote-optional-select" title="${esc(t('optionalSelect'))}"><input type="checkbox" data-item-action="toggle-selected" data-item-id="${esc(normalized.localId)}" ${selected ? 'checked' : ''}><span>${esc(t('optionalSelect'))}</span></label>` : ''}
                             <div class="quote-editor-row-actions">
                                 <button type="button" class="quote-editor-icon-btn" data-item-action="toggle-include" data-item-id="${esc(normalized.localId)}" title="${esc(t('rowToggleInclude'))}"><i class="fa-solid ${included ? 'fa-box-open' : 'fa-box'}"></i></button>
                                 <button type="button" class="quote-editor-icon-btn" data-item-action="move-up" data-item-id="${esc(normalized.localId)}" title="${esc(t('rowMoveUp'))}"><i class="fa-solid fa-arrow-up"></i></button>
@@ -1391,7 +1403,7 @@ function bindContentArea() {
     });
 
     document.querySelectorAll('[data-item-action]').forEach((button) => {
-        button.onclick = () => {
+        button.onclick = (event) => {
             const action = button.dataset.itemAction;
             const itemId = button.dataset.itemId;
             if (!itemId) return;
@@ -1404,6 +1416,8 @@ function bindContentArea() {
             } else if (action === 'toggle-include') {
                 const item = state.items.find((entry) => entry.localId === itemId);
                 updateItem(itemId, { is_included: !(item?.is_included === true) });
+            } else if (action === 'toggle-selected') {
+                updateItem(itemId, { is_selected: event.currentTarget.checked === true });
             }
             renderAll();
             markEditorDirty();
@@ -1675,6 +1689,7 @@ async function persistItemRows(tableName, ownerColumn, ownerId, items = []) {
             qty_label: normalized.qty_label,
             price_rmb: normalized.price_rmb,
             is_included: normalized.is_included === true,
+            is_selected: normalized.is_selected === true,
             name_i18n: expandLocalizedFromChinese(normalized.name_i18n),
         };
         if (persistedIds.has(normalized.localId)) row.id = normalized.localId;

@@ -242,6 +242,7 @@ export function createQuoteItem(sectionKey = SECTION_KEYS.MAIN) {
         qty_label: '1',
         price_rmb: 0,
         is_included: false,
+        is_selected: false,
         name_i18n: createLocalizedText(''),
     };
 }
@@ -308,6 +309,7 @@ export function normalizeQuoteItem(value, fallbackSectionKey = SECTION_KEYS.MAIN
         qty_label: text(value?.qty_label || value?.qty || '1'),
         price_rmb: safeNumber(value?.price_rmb ?? value?.price, 0),
         is_included: value?.is_included === true || safeNumber(value?.price, 0) === -1,
+        is_selected: value?.is_selected === true || value?.isSelected === true,
         name_i18n: normalizeLocalizedText(value?.name_i18n || value?.n || ''),
     };
 }
@@ -329,6 +331,13 @@ export function groupItemsBySection(items = [], sectionConfig = createSectionCon
 }
 
 export function calculateSectionSubtotal(section, items = []) {
+    if (section?.key === SECTION_KEYS.OPTIONAL) {
+        return sortItems(items).reduce((sum, item) => {
+            const row = normalizeQuoteItem(item, section.key);
+            if (!row.is_selected || row.is_included) return sum;
+            return sum + Math.max(0, safeNumber(row.price_rmb, 0));
+        }, 0);
+    }
     if (section?.subtotalMode === 'manual') {
         return safeNumber(section?.subtotal, 0);
     }
@@ -395,6 +404,7 @@ export function buildQuoteSnapshot({ brand, product, instance, items = [], publi
                 qtyLabel: normalized.qty_label,
                 priceRmb: normalized.price_rmb,
                 isIncluded: normalized.is_included === true,
+                isSelected: normalized.is_selected === true,
                 nameI18n: normalizeLocalizedText(normalized.name_i18n),
                 sortOrder: normalized.sort_order,
             };

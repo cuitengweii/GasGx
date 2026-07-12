@@ -14,7 +14,7 @@
     normalizeShareConfig,
     normalizeShareHistoryEntry,
     sortMediaItems,
-} from './quote-data.module.js?v=20260711service01';
+} from './quote-data.module.js?v=20260711service02';
 
 const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
@@ -964,6 +964,16 @@ function getSectionLabel(section) {
 }
 
 function sectionSubtotal(section) {
+    if (section?.key === 'optional_config') {
+        const items = Array.isArray(section?.items) ? section.items : [];
+        const hasSelectionState = items.some((item) => Object.prototype.hasOwnProperty.call(item || {}, 'isSelected'));
+        if (hasSelectionState) {
+            return items.reduce((sum, item) => {
+                if (item?.isSelected !== true || item?.isIncluded === true) return sum;
+                return sum + Math.max(0, safeNumber(item?.priceRmb, 0));
+            }, 0);
+        }
+    }
     return safeNumber(section?.subtotal, 0);
 }
 
