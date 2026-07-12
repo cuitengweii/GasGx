@@ -1278,10 +1278,6 @@ function renderContent() {
                         <span class="quote-total-breakdown__label">${esc(label)}</span>
                         <div class="quote-total-breakdown__values">
                             <span><b>RMB</b>${esc(formatCurrency('RMB', amount))}</span>
-                            <span><b>USD</b>${esc(formatCurrency('USD', amount * state.rates.USD))}</span>
-                            <span><b>EUR</b>${esc(formatCurrency('EUR', amount * state.rates.EUR))}</span>
-                            <span><b>CAD</b>${esc(formatCurrency('CAD', amount * state.rates.CAD))}</span>
-                            <span><b>RUB</b>${esc(formatCurrency('RUB', amount * state.rates.RUB))}</span>
                         </div>
                     </div>
                 `).join('')}
@@ -1290,7 +1286,7 @@ function renderContent() {
             <div class="quote-total-formula" aria-label="${esc(t('pricingFormula'))}">
                 <span class="quote-total-formula__label">${esc(t('pricingFormula'))}</span>
                 <div class="quote-total-formula__values">
-                    ${['RMB', 'USD', 'EUR', 'CAD', 'RUB'].map((code) => `<span><b>${code}</b>${esc(formatCurrency(code, breakdown[0][1]))} + ${esc(formatCurrency(code, breakdown[1][1]))} + ${esc(formatCurrency(code, breakdown[2][1]))} = <strong>${esc(formatCurrency(code, total))}</strong></span>`).join('')}
+                    <span><b>RMB</b>${esc(formatCurrency('RMB', breakdown[0][1]))} + ${esc(formatCurrency('RMB', breakdown[1][1]))} + ${esc(formatCurrency('RMB', breakdown[2][1]))} = <strong>${esc(formatCurrency('RMB', total))}</strong></span>
                 </div>
             </div>
             </div>
