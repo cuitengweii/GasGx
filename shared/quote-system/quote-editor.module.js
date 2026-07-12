@@ -1146,6 +1146,19 @@ function groupedEditableSections() {
     }));
 }
 
+function dedupeQuoteItems(items = []) {
+    const seen = new Set();
+    return sortItems(items).filter((item) => {
+        const normalized = normalizeQuoteItem(item, item?.section_key);
+        const lineCode = text(normalized.line_code);
+        if (!lineCode) return true;
+        const key = `${normalized.section_key}:${lineCode}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
 function renderMediaBlock() {
     const config = normalizeMediaConfig(state.product.media_config || {});
     const items = sortMediaItems(state.media || []);
@@ -1722,7 +1735,7 @@ async function fetchRates(isManual = false) {
 
 async function persistItemRows(tableName, ownerColumn, ownerId, items = []) {
     const persistedIds = state.persistedItemIds instanceof Set ? state.persistedItemIds : new Set();
-    const orderedItems = sortItems(items);
+    const orderedItems = dedupeQuoteItems(items);
     const payload = orderedItems.map((item, index) => {
         const normalized = normalizeQuoteItem(item, item.section_key);
         const row = {
@@ -1841,7 +1854,7 @@ async function saveProduct(user) {
     if (error) throw error;
     state.product = normalizeProductEditor({ ...data, media_gallery: state.media });
     const savedItems = await persistItemRows(TABLE_PRODUCT_ITEMS, 'product_id', data.id, state.items);
-    state.items = sortItems(savedItems.map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.items = dedupeQuoteItems(savedItems.map((item) => normalizeQuoteItem(item, item.section_key)));
     state.persistedItemIds = new Set(state.items.map((item) => item.localId));
     state.id = data.id;
 }
@@ -1932,7 +1945,7 @@ async function saveInstance(user) {
     const savedItems = await persistItemRows(TABLE_INSTANCE_ITEMS, 'instance_id', saved.id, state.items);
     state.instance = normalizeInstanceEditor(saved);
     await syncInstanceCustomerEmail(state.instance.receiver_email);
-    state.items = sortItems(savedItems.map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.items = dedupeQuoteItems(savedItems.map((item) => normalizeQuoteItem(item, item.section_key)));
     state.persistedItemIds = new Set(state.items.map((item) => item.localId));
     state.id = saved.id;
     return state.instance;
@@ -2117,7 +2130,7 @@ async function loadProduct(id) {
     state.brand = normalizeBrandEditor(brandRow);
     state.product = normalizeProductEditor({ ...productRow, media_gallery: mediaRows || [] });
     state.instance = null;
-    state.items = sortItems((itemRows || []).map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.items = dedupeQuoteItems((itemRows || []).map((item) => normalizeQuoteItem(item, item.section_key)));
     state.persistedItemIds = new Set(state.items.map((item) => item.localId));
     state.media = sortMediaItems((mediaRows || []).map((item) => normalizeQuoteMediaItem(item)));
     state.rates = normalizeRates(state.product.default_rates);
@@ -2149,7 +2162,7 @@ async function loadInstance(id) {
         media_gallery: mediaRows?.length ? mediaRows : instanceRow.product_snapshot?.media_gallery || [],
     });
     state.instance = normalizeInstanceEditor(instanceRow);
-    state.items = sortItems((itemRows || []).map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.items = dedupeQuoteItems((itemRows || []).map((item) => normalizeQuoteItem(item, item.section_key)));
     state.persistedItemIds = new Set(state.items.map((item) => item.localId));
     state.media = sortMediaItems((mediaRows?.length ? mediaRows : state.product.media_gallery || []).map((item) => normalizeQuoteMediaItem(item)));
     state.rates = normalizeRates(state.instance.draft_rates);
