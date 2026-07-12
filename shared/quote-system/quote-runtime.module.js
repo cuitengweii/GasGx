@@ -1185,7 +1185,10 @@ function renderStaticText() {
     byId('f-title').textContent = quoteVersion ? `${overviewTitle} · V${quoteVersion}` : overviewTitle;
     byId('lbl-receiver').textContent = t('customerName');
     byId('lbl-validity').textContent = uiText('validity_label', 'validity');
-    byId('lbl-update').innerHTML = `<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>${esc(t('update'))}`;
+    const updateLabel = byId('lbl-update');
+    if (updateLabel) {
+        updateLabel.innerHTML = `<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>${esc(t('update'))}`;
+    }
     byId('view-meta-supplier')?.setAttribute('hidden', 'hidden');
     byId('view-meta-sender')?.setAttribute('hidden', 'hidden');
     byId('val-receiver').textContent = customerName;
