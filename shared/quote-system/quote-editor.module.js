@@ -1201,7 +1201,7 @@ function renderContent() {
 
     sections.forEach((section) => {
         rows.push(`
-            <tr class="quote-section-row" style="background-color: var(--bg-base);">
+            <tr class="quote-section-row" data-section-key="${esc(section.key)}" style="background-color: var(--bg-base);">
                 <td class="text-[var(--text-muted)] opacity-50 text-center text-xs font-mono-num whitespace-nowrap">-</td>
                 <td class="text-[var(--gas-green-light)] font-semibold whitespace-nowrap">
                     <span class="quote-editable quote-editable-inline" contenteditable="true" data-section-title="${esc(section.key)}">${esc(localizedValue(section.title) || (section.key === SECTION_KEYS.OPTIONAL ? t('optionalConfig') : section.key === SECTION_KEYS.SERVICE ? t('servicePackage') : t('mainConfig')))}</span>

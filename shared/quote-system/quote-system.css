@@ -1374,6 +1374,41 @@
             color: var(--gas-green-light);
         }
 
+        .quote-section-row td {
+            padding-top: 16px;
+            padding-bottom: 16px;
+            border-top: 2px solid rgba(93, 214, 44, 0.58);
+            background: linear-gradient(90deg, rgba(93, 214, 44, 0.13), rgba(93, 214, 44, 0.035)) !important;
+        }
+
+        .quote-section-row td:nth-child(2) {
+            font-size: 1.18rem;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+        }
+
+        .quote-section-row[data-section-key="main_config"] td {
+            border-top-color: rgba(93, 214, 44, 0.72);
+        }
+
+        .quote-section-row[data-section-key="optional_config"] td {
+            border-top-color: rgba(96, 165, 250, 0.8);
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.16), rgba(59, 130, 246, 0.035)) !important;
+        }
+
+        .quote-section-row[data-section-key="optional_config"] td:nth-child(2) {
+            color: #93c5fd !important;
+        }
+
+        .quote-section-row[data-section-key="service_package"] td {
+            border-top-color: rgba(250, 173, 20, 0.78);
+            background: linear-gradient(90deg, rgba(250, 173, 20, 0.15), rgba(250, 173, 20, 0.035)) !important;
+        }
+
+        .quote-section-row[data-section-key="service_package"] td:nth-child(2) {
+            color: #facc15 !important;
+        }
+
         .share-input,
         .share-select {
             width: 100%;
@@ -1843,6 +1878,10 @@
 
             .quote-section-row td:first-child {
                 background: var(--bg-base);
+            }
+
+            .quote-section-row td:nth-child(2) {
+                font-size: 1rem;
             }
 
             .table-scroll-note {

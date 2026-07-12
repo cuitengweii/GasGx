@@ -1424,7 +1424,7 @@ function renderContent() {
     (snapshot.product.sections || []).forEach((section) => {
         const subtotal = sectionSubtotal(section);
         rows.push(`
-            <tr class="quote-section-row" style="background-color: var(--bg-base);">
+            <tr class="quote-section-row" data-section-key="${esc(section.key)}" style="background-color: var(--bg-base);">
                 <td class="text-[var(--text-muted)] opacity-50 text-center text-xs font-mono-num whitespace-nowrap">-</td>
                 <td class="text-[var(--gas-green-light)] font-semibold whitespace-nowrap">${esc(getSectionLabel(section))}</td>
                 <td class="text-[var(--text-muted)] opacity-50 text-xs whitespace-nowrap">-</td>
