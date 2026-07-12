@@ -41,7 +41,7 @@ const sharedUiDict = {
     mainTotal: 'Main configuration total',
     optionalIncrease: 'Optional additions',
     serviceTotal: 'Service package total',
-    headers: ['SEQ', 'DESCRIPTION', 'BRAND', 'QTY', 'RMB (?)', 'USD ($)', 'EUR (?)', 'CAD (C$)', 'RUB (?)'],
+    headers: ['SEQ', 'DESCRIPTION', 'BRAND', 'QTY', 'RMB (?)', 'USD ($)'],
     ratesOnline: 'GLOBAL LIVE RATES',
     ratesRefreshing: 'Refreshing...',
     ratesFallback: 'Rate fetch failed, using saved snapshot.',
@@ -160,7 +160,7 @@ const dict = {
         mainTotal: '主配总价',
         optionalIncrease: '选配增加',
         serviceTotal: '服务包总价',
-        headers: ['序号', '模块描述', '规格品牌', '数量', '人民币 (¥)', '美元 ($)', '欧元 (€)', '加元 (C$)', '卢布 (₽)'],
+        headers: ['序号', '模块描述', '规格品牌', '数量', '人民币 (¥)', '美元 ($)'],
         ratesOnline: '全球实时汇率在线',
         ratesRefreshing: '正在刷新...',
         ratesFallback: '汇率获取失败，使用本地快照。',
@@ -277,7 +277,7 @@ const dict = {
         mainTotal: 'Стоимость основной конфигурации',
         optionalIncrease: 'Дополнительные опции',
         serviceTotal: 'Стоимость сервисного пакета',
-        headers: ['№', 'Описание модуля', 'Спецификация / бренд', 'Кол-во', 'RMB (¥)', 'USD ($)', 'EUR (€)', 'CAD (C$)', 'RUB (₽)'],
+        headers: ['№', 'Описание модуля', 'Спецификация / бренд', 'Кол-во', 'RMB (¥)', 'USD ($)'],
         ratesOnline: 'Актуальные мировые курсы валют',
         ratesRefreshing: 'Обновление курсов...',
         ratesFallback: 'Не удалось получить курсы, используется сохранённый снимок.',
@@ -1431,9 +1431,6 @@ function renderContent() {
                 <td class="text-[var(--text-muted)] opacity-50 text-center font-mono-num whitespace-nowrap">-</td>
                 <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('RMB', subtotal))}</td>
                 <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('USD', subtotal * state.rates.USD))}</td>
-                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('EUR', subtotal * state.rates.EUR))}</td>
-                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('CAD', subtotal * state.rates.CAD))}</td>
-                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('RUB', subtotal * state.rates.RUB))}</td>
             </tr>
         `);
 
@@ -1448,9 +1445,6 @@ function renderContent() {
                     <td class="text-[var(--text-body)] text-center font-mono-num whitespace-nowrap">${esc(item.qtyLabel || '1')}</td>
                     <td class="font-mono-num ${included ? 'text-[var(--text-muted)]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? esc(t('included')) : esc(formatCurrency('RMB', price))}</td>
                     <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('USD', price * state.rates.USD))}</td>
-                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('EUR', price * state.rates.EUR))}</td>
-                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('CAD', price * state.rates.CAD))}</td>
-                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('RUB', price * state.rates.RUB))}</td>
                 </tr>
             `);
         });
@@ -1473,9 +1467,6 @@ function renderContent() {
                         <div class="quote-total-grid text-sm md:text-[15px]">
                         <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RMB', total))}</span></span>
                         <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('USD', total * state.rates.USD))}</span></span>
-                        <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('EUR', total * state.rates.EUR))}</span></span>
-                        <span class="flex items-center gap-2"><span class="gas-tag">CAD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('CAD', total * state.rates.CAD))}</span></span>
-                        <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RUB', total * state.rates.RUB))}</span></span>
                         </div>
                     </div>
 
