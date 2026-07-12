@@ -657,6 +657,7 @@
         .quote-total-formula {
             display: flex;
             align-items: flex-start;
+            justify-content: flex-end;
             gap: 12px;
             margin-top: 12px;
             padding-top: 10px;
@@ -673,10 +674,13 @@
         .quote-total-formula__values {
             display: flex;
             flex-wrap: wrap;
+            justify-content: flex-end;
             gap: 5px 14px;
+            margin-left: auto;
             color: var(--gas-green-light);
             font-family: var(--font-mono);
             font-size: 12px;
+            text-align: right;
         }
 
         .quote-total-formula__values span {
