@@ -2295,7 +2295,7 @@ function createBrandDraft(seed = {}) {
 
 function createProductDraft(seed = {}) {
     const defaultLang = normalizeLangCode(seed.default_lang || seed.defaultLang, DEFAULT_LANG);
-    const itemsLoaded = seed.itemsLoaded === true || Array.isArray(seed.items);
+    const itemsLoaded = seed.itemsLoaded === true || (seed.itemsLoaded !== false && Array.isArray(seed.items));
     return {
         id: text(seed.id),
         brand_id: text(seed.brand_id || seed.brandId),
