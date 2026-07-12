@@ -1285,6 +1285,22 @@
             cursor: pointer;
         }
 
+        .quote-optional-selected {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 10px;
+            color: var(--gas-green-light);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .quote-optional-selected input {
+            width: 15px;
+            height: 15px;
+            accent-color: var(--gas-green-primary);
+        }
+
         .quote-editor-row-actions {
             display: flex;
             align-items: center;

@@ -41,6 +41,7 @@ const sharedUiDict = {
     mainTotal: 'Main configuration total',
     optionalIncrease: 'Optional additions',
     serviceTotal: 'Service package total',
+    optionalSelect: 'Include in quote',
     headers: ['SEQ', 'DESCRIPTION', 'BRAND', 'QTY', 'RMB (?)', 'USD ($)'],
     ratesOnline: 'GLOBAL LIVE RATES',
     ratesRefreshing: 'Refreshing...',
@@ -160,6 +161,7 @@ const dict = {
         mainTotal: '主配总价',
         optionalIncrease: '选配增加',
         serviceTotal: '服务包总价',
+        optionalSelect: '计入报价',
         headers: ['序号', '模块描述', '规格品牌', '数量', '人民币 (¥)', '美元 ($)'],
         ratesOnline: '全球实时汇率在线',
         ratesRefreshing: '正在刷新...',
@@ -277,6 +279,7 @@ const dict = {
         mainTotal: 'Стоимость основной конфигурации',
         optionalIncrease: 'Дополнительные опции',
         serviceTotal: 'Стоимость сервисного пакета',
+        optionalSelect: 'Включить в предложение',
         headers: ['№', 'Описание модуля', 'Спецификация / бренд', 'Кол-во', 'RMB (¥)', 'USD ($)'],
         ratesOnline: 'Актуальные мировые курсы валют',
         ratesRefreshing: 'Обновление курсов...',
@@ -1439,11 +1442,13 @@ function renderContent() {
 
         (section.items || []).forEach((item) => {
             const included = item.isIncluded === true;
+            const optional = section.key === 'optional_config';
+            const selected = item.isSelected === true;
             const price = safeNumber(item.priceRmb, 0);
             rows.push(`
                 <tr class="quote-item-row">
                     <td class="text-[var(--text-body)] text-center text-xs font-mono-num whitespace-nowrap">${esc(item.lineCode || '--')}</td>
-                    <td class="text-white min-w-[200px]">${esc(pickDisplayText(item.nameI18n, item.lineCode || '--'))}</td>
+                    <td class="text-white min-w-[200px]"><span>${esc(pickDisplayText(item.nameI18n, item.lineCode || '--'))}</span>${optional ? `<label class="quote-optional-selected"><input type="checkbox" ${selected ? 'checked' : ''} disabled aria-label="${esc(t('optionalSelect'))}"><span>${esc(t('optionalSelect'))}</span></label>` : ''}</td>
                     <td class="text-[var(--text-body)] text-xs whitespace-nowrap">${esc(item.brandLabel || '-')}</td>
                     <td class="text-[var(--text-body)] text-center font-mono-num whitespace-nowrap">${esc(item.qtyLabel || '1')}</td>
                     <td class="font-mono-num ${included ? 'text-[var(--text-muted)]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? esc(t('included')) : esc(formatCurrency('RMB', price))}</td>
