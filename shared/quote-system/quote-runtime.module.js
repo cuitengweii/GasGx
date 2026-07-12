@@ -1489,9 +1489,9 @@ function renderContent() {
             const selected = item.isSelected === true;
             const price = safeNumber(item.priceRmb, 0);
             rows.push(`
-                <tr class="quote-item-row">
+                <tr class="quote-item-row ${optional && selected ? 'quote-optional-item-selected' : ''}">
                     <td class="text-[var(--text-body)] text-center text-xs font-mono-num whitespace-nowrap">${esc(item.lineCode || '--')}</td>
-                    <td class="text-white min-w-[200px]"><span>${esc(pickDisplayText(item.nameI18n, item.lineCode || '--'))}</span>${optional ? `<label class="quote-optional-selected"><input type="checkbox" ${selected ? 'checked' : ''} disabled aria-label="${esc(t('optionalSelect'))}"><span>${esc(t('optionalSelect'))}</span></label>` : ''}</td>
+                    <td class="text-white min-w-[200px]"><span>${esc(pickDisplayText(item.nameI18n, item.lineCode || '--'))}</span>${optional ? `<label class="quote-optional-selected" title="${esc(t('optionalSelect'))}"><input type="checkbox" ${selected ? 'checked' : ''} disabled aria-label="${esc(t('optionalSelect'))}"></label>` : ''}</td>
                     <td class="text-[var(--text-body)] text-xs whitespace-nowrap">${esc(item.brandLabel || '-')}</td>
                     <td class="text-[var(--text-body)] text-center font-mono-num whitespace-nowrap">${esc(item.qtyLabel || '1')}</td>
                     <td class="font-mono-num ${included ? 'text-[var(--text-muted)]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? esc(t('included')) : esc(formatCurrency('RMB', price))}</td>

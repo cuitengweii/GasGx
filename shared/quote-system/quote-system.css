@@ -1288,17 +1288,49 @@
         .quote-optional-selected {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            justify-content: center;
             margin-left: 10px;
-            color: var(--gas-green-light);
-            font-size: 12px;
             white-space: nowrap;
         }
 
         .quote-optional-selected input {
-            width: 15px;
-            height: 15px;
+            appearance: none;
+            -webkit-appearance: none;
+            position: relative;
+            width: 22px;
+            height: 22px;
+            margin: 0;
+            border: 2px solid #8C98A5;
+            border-radius: 5px;
+            background: #202832;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, .2);
             accent-color: var(--gas-green-primary);
+            opacity: 1;
+        }
+
+        .quote-optional-selected input:checked {
+            border-color: var(--gas-green-light);
+            background: var(--gas-green-primary);
+            box-shadow: 0 0 0 3px rgba(93, 214, 44, .2), 0 0 12px rgba(93, 214, 44, .35);
+        }
+
+        .quote-optional-selected input:checked::after {
+            content: '✓';
+            position: absolute;
+            inset: -2px 0 0;
+            color: #071008;
+            font-size: 17px;
+            font-weight: 900;
+            line-height: 20px;
+            text-align: center;
+        }
+
+        .quote-item-row.quote-optional-item-selected td {
+            background-color: rgba(93, 214, 44, .08);
+        }
+
+        .quote-item-row.quote-optional-item-selected td:first-child {
+            box-shadow: inset 4px 0 0 var(--gas-green-primary);
         }
 
         .quote-editor-row-actions {
