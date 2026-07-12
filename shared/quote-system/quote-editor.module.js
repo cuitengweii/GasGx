@@ -403,6 +403,25 @@ function expandLocalizedFromChinese(value) {
     };
 }
 
+function containsCjk(value = '') {
+    return /[\u3400-\u9fff]/.test(text(value));
+}
+
+function mergeLocalizedForSave(currentValue, serverValue, activeLang = state.currentLang) {
+    const current = expandLocalizedFromChinese(currentValue);
+    const server = normalizeLocalizedText(serverValue);
+    SUPPORTED_LANGS.forEach((lang) => {
+        if (lang === activeLang) {
+            if (containsCjk(current[lang]) && text(server[lang]) && !containsCjk(server[lang])) {
+                current[lang] = text(server[lang]);
+            }
+            return;
+        }
+        if (text(server[lang])) current[lang] = text(server[lang]);
+    });
+    return current;
+}
+
 function normalizeBrandEditor(value = {}) {
     const snapshot = extractBrandSnapshot(value);
     return {
@@ -1649,6 +1668,11 @@ async function persistItemRows(tableName, ownerColumn, ownerId, items = []) {
 }
 
 async function saveBrand(user) {
+    let serverBrand = null;
+    if (state.brand.id) {
+        const result = await client.from(TABLE_BRANDS).select('overview_title,footer_note').eq('id', state.brand.id).maybeSingle();
+        if (!result.error) serverBrand = result.data;
+    }
     const payload = {
         slug: state.brand.slug,
         brand_name: state.brand.brand_name || state.brand.display_name,
@@ -1656,8 +1680,8 @@ async function saveBrand(user) {
         supplier_name: state.brand.supplier_name || state.brand.display_name,
         sender_email: state.brand.sender_email,
         subject_name: state.brand.subject_name || state.brand.display_name,
-        overview_title: expandLocalizedFromChinese(state.brand.overview_title),
-        footer_note: expandLocalizedFromChinese(state.brand.footer_note),
+        overview_title: mergeLocalizedForSave(state.brand.overview_title, serverBrand?.overview_title),
+        footer_note: mergeLocalizedForSave(state.brand.footer_note, serverBrand?.footer_note),
         theme_primary: state.brand.theme_primary || DEFAULT_THEME_PRIMARY,
         theme_dark: state.brand.theme_dark || DEFAULT_THEME_DARK,
         share_signing_secret: state.brand.share_signing_secret || DEFAULT_SHARE_SECRET,
@@ -1674,20 +1698,49 @@ async function saveBrand(user) {
 }
 
 async function saveProduct(user) {
+    let serverProduct = null;
+    let serverItems = [];
+    if (state.product.id) {
+        const [productResult, itemResult] = await Promise.all([
+            client.from(TABLE_PRODUCTS).select('public_title,section_config,ui_text').eq('id', state.product.id).maybeSingle(),
+            client.from(TABLE_PRODUCT_ITEMS).select('id,line_code,name_i18n').eq('product_id', state.product.id),
+        ]);
+        if (!productResult.error) serverProduct = productResult.data;
+        if (!itemResult.error) serverItems = itemResult.data || [];
+    }
     await saveBrand(user);
+    const serverSections = normalizeSectionConfig(serverProduct?.section_config);
+    const mergedSections = currentSectionConfig().map((section) => {
+        const serverSection = serverSections.find((entry) => entry.key === section.key);
+        return {
+            ...section,
+            title: mergeLocalizedForSave(section.title, serverSection?.title),
+        };
+    });
+    const serverItemsById = new Map(serverItems.map((item) => [item.id, item]));
+    const serverItemsByLine = new Map(serverItems.filter((item) => text(item.line_code)).map((item) => [item.line_code, item]));
+    state.items = state.items.map((item) => {
+        const serverItem = serverItemsById.get(item.localId) || serverItemsByLine.get(item.line_code);
+        return serverItem
+            ? { ...item, name_i18n: mergeLocalizedForSave(item.name_i18n, serverItem.name_i18n) }
+            : item;
+    });
+    const mergedUiText = normalizeProductUiText(state.product.ui_text);
+    const serverUiText = normalizeProductUiText(serverProduct?.ui_text);
+    Object.keys(mergedUiText).forEach((key) => {
+        if (key === 'enabled_langs') return;
+        mergedUiText[key] = mergeLocalizedForSave(mergedUiText[key], serverUiText[key]);
+    });
     const payload = {
         brand_id: state.brand.id,
         slug: state.product.slug,
         product_code: state.product.product_code || state.product.slug,
-        public_title: expandLocalizedFromChinese(state.product.public_title),
+        public_title: mergeLocalizedForSave(state.product.public_title, serverProduct?.public_title),
         default_lang: state.product.default_lang,
         validity_hours: state.product.validity_hours,
         default_rates: normalizeRates(state.rates),
-        section_config: normalizeSectionConfig(currentSectionConfig()).map((section) => ({
-            ...section,
-            title: expandLocalizedFromChinese(section.title),
-        })),
-        ui_text: normalizeProductUiText(state.product.ui_text),
+        section_config: normalizeSectionConfig(mergedSections),
+        ui_text: mergedUiText,
         media_config: normalizeMediaConfig(state.product.media_config),
         sort_order: state.product.sort_order,
         is_active: state.product.is_active !== false,
