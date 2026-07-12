@@ -51,7 +51,15 @@ const sharedUiDict = {
     share: 'Share/Export',
     shareLink: 'Create Share Link',
     exportImage: 'Export Image',
+    quotePoster: 'Quote Poster',
     exportPdf: 'Export PDF',
+    quotePosterBusy: 'Preparing quote poster...',
+    quotePosterSuccess: 'Quote poster is ready.',
+    quotePosterError: 'Quote poster could not be generated. Try again later.',
+    quotePosterQrHint: 'Scan to view the quotation',
+    quotePosterCustomer: 'Customer',
+    quotePosterValidity: 'Validity',
+    quotePosterTotal: 'Estimated total',
     shareTitle: 'Create Share Link',
     shareDesc: 'Generate a customer link with expiry and passcode. Signed-in admins can always open this page.',
     shareExpiryLabel: 'Link expiry',
@@ -171,7 +179,15 @@ const dict = {
         share: '分享/导出',
         shareLink: '创建分享链接',
         exportImage: '生成长图',
+        quotePoster: '报价海报',
         exportPdf: '导出 PDF',
+        quotePosterBusy: '正在生成报价海报...',
+        quotePosterSuccess: '报价海报已生成。',
+        quotePosterError: '报价海报生成失败，请稍后重试。',
+        quotePosterQrHint: '扫码查看报价单',
+        quotePosterCustomer: '客户名称',
+        quotePosterValidity: '报价有效期',
+        quotePosterTotal: '系统预估总价',
         shareTitle: '创建分享链接',
         shareDesc: '设置链接有效期和提取码后生成客户访问链接。管理员登录状态下始终可打开页面。',
         shareExpiryLabel: '链接有效期',
@@ -289,7 +305,15 @@ const dict = {
         share: 'Поделиться / экспорт',
         shareLink: 'Создать ссылку',
         exportImage: 'Создать длинное изображение',
+        quotePoster: 'Постер предложения',
         exportPdf: 'Экспортировать PDF',
+        quotePosterBusy: 'Формируем постер предложения...',
+        quotePosterSuccess: 'Постер предложения готов.',
+        quotePosterError: 'Не удалось создать постер предложения. Повторите попытку позже.',
+        quotePosterQrHint: 'Сканируйте для просмотра предложения',
+        quotePosterCustomer: 'Клиент',
+        quotePosterValidity: 'Срок действия',
+        quotePosterTotal: 'Расчётная стоимость',
         shareTitle: 'Создание ссылки',
         shareDesc: 'Настройте срок действия и код доступа для ссылки клиента. Авторизованные администраторы всегда могут открыть эту страницу.',
         shareExpiryLabel: 'Срок действия ссылки',
@@ -1214,6 +1238,7 @@ function renderStaticText() {
     byId('btn-text-share').className = isMobileViewport() ? '' : 'ml-2';
     byId('btn-menu-share-link').textContent = t('shareLink');
     byId('btn-menu-img').textContent = t('exportImage');
+    byId('btn-menu-poster').textContent = t('quotePoster');
     byId('btn-menu-pdf').textContent = t('exportPdf');
     byId('btn-text-refresh').textContent = uiText('refresh_button', 'refresh');
     byId('export-loading-text').textContent = t('exportLoading');
@@ -2227,6 +2252,132 @@ async function exportImage() {
     }
 }
 
+function posterQuoteUrl() {
+    const url = new URL(window.location.href);
+    url.hash = '';
+    return url.toString();
+}
+
+function posterCustomerName() {
+    return text(
+        state.snapshot?.quote?.customerName
+        || state.snapshot?.quote?.customer_name
+        || state.snapshot?.quote?.customerProfile?.company_name
+        || state.snapshot?.quote?.shareConfig?.recipient_company,
+        state.route?.type === 'preview' ? '模板预览' : '客户',
+    );
+}
+
+function posterQrCanvas(value) {
+    return new Promise((resolve, reject) => {
+        if (!window.QRCode?.toCanvas) {
+            reject(new Error(t('exportLibraryMissing')));
+            return;
+        }
+        const canvas = document.createElement('canvas');
+        window.QRCode.toCanvas(canvas, value, {
+            width: 260,
+            margin: 2,
+            color: { dark: '#0A0E14', light: '#FFFFFF' },
+        }, (error) => error ? reject(error) : resolve(canvas));
+    });
+}
+
+function posterBlob(canvas) {
+    return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error(t('quotePosterError'))), 'image/png');
+    });
+}
+
+async function exportPoster() {
+    if (!window.html2canvas || !window.QRCode?.toCanvas) {
+        setStatusMessage(t('exportLibraryMissing'), true);
+        return;
+    }
+    closeShareMenu();
+    showExportOverlay();
+    const loadingNode = byId('export-loading-text');
+    const previousLoadingText = loadingNode?.textContent || '';
+    if (loadingNode) loadingNode.textContent = t('quotePosterBusy');
+    const poster = document.createElement('div');
+    const snapshot = state.snapshot;
+    const productTitle = pickDisplayText(snapshot?.product?.public_title, snapshot?.product?.product_code || 'GasGx Quotation');
+    const customerName = posterCustomerName();
+    const total = quoteTotal(snapshot);
+    const sectionTotals = Object.fromEntries((snapshot?.product?.sections || []).map((section) => [section.key, sectionSubtotal(section)]));
+    const validity = text(byId('val-validity')?.textContent, '');
+    const quoteUrl = posterQuoteUrl();
+
+    poster.style.cssText = [
+        'position:fixed', 'left:-900px', 'top:0', 'width:720px', 'height:1280px',
+        'box-sizing:border-box', 'padding:54px', 'overflow:hidden', 'z-index:-1',
+        'color:#F7FAFC', 'background:linear-gradient(150deg,#0A0E14 0%,#131C27 55%,#0A0E14 100%)',
+        'font-family:Arial,"PingFang SC","Microsoft YaHei",sans-serif',
+    ].join(';');
+    poster.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #5DD62C;padding-bottom:28px;">
+            <div>
+                <div style="color:#5DD62C;font-size:28px;font-weight:800;letter-spacing:1px;">GasGx</div>
+                <div style="color:#9AA5B1;font-size:15px;letter-spacing:4px;margin-top:8px;">QUOTATION</div>
+            </div>
+            <div style="color:#5DD62C;border:1px solid #5DD62C;border-radius:999px;padding:8px 16px;font-size:14px;">${esc(state.currentLang.toUpperCase())}</div>
+        </div>
+        <div style="margin-top:52px;color:#5DD62C;font-size:35px;font-weight:800;line-height:1.25;">${esc(productTitle)}</div>
+        <div style="margin-top:42px;padding:24px;border:1px solid rgba(93,214,44,.35);border-radius:18px;background:rgba(93,214,44,.07);">
+            <div style="color:#9AA5B1;font-size:15px;letter-spacing:1px;">${esc(t('quotePosterCustomer'))}</div>
+            <div style="margin-top:10px;color:#FFFFFF;font-size:28px;font-weight:700;word-break:break-word;">${esc(customerName)}</div>
+        </div>
+        <div style="margin-top:26px;color:#9AA5B1;font-size:15px;">${esc(t('quotePosterValidity'))} <span style="color:#FFFFFF;font-size:19px;font-weight:700;">${esc(validity || '--')}</span></div>
+        <div style="margin-top:42px;padding:28px;border-radius:18px;background:#070A0F;border:1px solid #2C3742;">
+            <div style="color:#9AA5B1;font-size:15px;">${esc(t('quotePosterTotal'))}</div>
+            <div style="margin-top:12px;color:#5DD62C;font-size:42px;font-weight:800;">${esc(formatCurrency('RMB', total))}</div>
+            <div style="margin-top:22px;display:grid;gap:12px;color:#D8E0E8;font-size:16px;">
+                <div style="display:flex;justify-content:space-between;"><span>${esc(t('mainTotal'))}</span><strong>${esc(formatCurrency('RMB', sectionTotals.main_config || 0))}</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span>${esc(t('optionalIncrease'))}</span><strong>${esc(formatCurrency('RMB', sectionTotals.optional_config || 0))}</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span>${esc(t('serviceTotal'))}</span><strong>${esc(formatCurrency('RMB', sectionTotals.service_package || 0))}</strong></div>
+            </div>
+        </div>
+        <div style="margin-top:54px;display:flex;flex-direction:column;align-items:center;text-align:center;">
+            <div class="quote-poster-qr" style="padding:14px;background:#FFFFFF;border-radius:14px;"></div>
+            <div style="margin-top:18px;color:#D8E0E8;font-size:16px;">${esc(t('quotePosterQrHint'))}</div>
+        </div>
+        <div style="position:absolute;left:54px;right:54px;bottom:44px;display:flex;justify-content:space-between;color:#6E7B88;font-size:12px;">
+            <span>GasGx Quotation System</span><span>${esc(new Date().toLocaleDateString())}</span>
+        </div>
+    `;
+    document.body.appendChild(poster);
+    try {
+        const qrCanvas = await posterQrCanvas(quoteUrl);
+        poster.querySelector('.quote-poster-qr')?.appendChild(qrCanvas);
+        await new Promise((resolve) => window.setTimeout(resolve, 80));
+        const canvas = await window.html2canvas(poster, {
+            scale: 2,
+            width: 720,
+            height: 1280,
+            backgroundColor: '#0A0E14',
+            useCORS: true,
+        });
+        const blob = await posterBlob(canvas);
+        const fileName = getFileName('png').replace(/\.png$/i, '_poster.png');
+        const file = new File([blob], fileName, { type: 'image/png' });
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+            await navigator.share({ title: productTitle, text: t('quotePosterQrHint'), files: [file] });
+        } else {
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        setStatusMessage(t('quotePosterSuccess'));
+    } catch (error) {
+        if (error?.name !== 'AbortError') setStatusMessage(error?.message || t('quotePosterError'), true);
+    } finally {
+        poster.remove();
+        if (loadingNode) loadingNode.textContent = previousLoadingText;
+        hideExportOverlay();
+    }
+}
+
 async function exportPdf() {
     if (!window.html2pdf || !window.html2canvas) {
         setStatusMessage(t('exportLibraryMissing'), true);
@@ -3137,6 +3288,9 @@ function bindEvents() {
     });
     byId('btn-menu-img-wrap')?.addEventListener('click', () => {
         void exportImage();
+    });
+    byId('btn-menu-poster-wrap')?.addEventListener('click', () => {
+        void exportPoster();
     });
     byId('btn-menu-pdf-wrap')?.addEventListener('click', () => {
         void exportPdf();
