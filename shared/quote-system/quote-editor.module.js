@@ -829,17 +829,6 @@ function renderSettings() {
         </label>
         ` : ''}
         <label class="quote-editor-setting">
-            <span>${esc(t('defaultLang'))}</span>
-            <div class="quote-editor-lang-group">
-                ${SUPPORTED_LANGS.map((lang) => `
-                    <label class="quote-editor-lang-chip ${defaultLang === lang ? 'is-active' : ''}">
-                        <input type="radio" name="quote-default-lang" data-setting-field="default_lang" value="${esc(lang)}" ${defaultLang === lang ? 'checked' : ''}>
-                        <span>${lang.toUpperCase()}</span>
-                    </label>
-                `).join('')}
-            </div>
-        </label>
-        <label class="quote-editor-setting">
             <span>${esc(t('validityHours'))}</span>
             <input type="number" min="1" step="1" data-setting-field="validity_hours" value="${esc(validityHours)}">
         </label>

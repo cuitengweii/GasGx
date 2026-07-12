@@ -936,7 +936,7 @@
         }
 
         .quote-editor-bar__actions {
-            display: flex;
+            display: contents;
             flex-wrap: nowrap;
             align-items: center;
             justify-content: space-between;
@@ -1020,12 +1020,12 @@
         }
 
         .quote-editor-bar__settings {
-            flex: 1 1 700px;
-            min-width: min(100%, 700px);
+            flex: 1 1 auto;
+            min-width: 0;
             padding: 0;
             margin: 0;
             align-content: start;
-            grid-template-columns: auto repeat(3, minmax(140px, 1fr));
+            grid-template-columns: repeat(3, minmax(140px, 1fr));
             align-items: end;
         }
 
@@ -1567,6 +1567,7 @@
             }
 
             .quote-editor-bar__actions {
+                display: flex;
                 flex-wrap: wrap;
                 justify-content: flex-start;
                 margin-left: 0;
