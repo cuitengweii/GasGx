@@ -249,6 +249,26 @@ function byId(id) {
     return document.getElementById(id);
 }
 
+function editorLanguageStorageKey(kind = state.kind, id = state.id) {
+    return `gasgx.quote.editor.language.${text(kind, 'product')}.${text(id)}`;
+}
+
+function preferredEditorLanguage(fallback = DEFAULT_LANG) {
+    try {
+        return normalizeLangCode(window.localStorage.getItem(editorLanguageStorageKey()), fallback);
+    } catch (_error) {
+        return normalizeLangCode(fallback, DEFAULT_LANG);
+    }
+}
+
+function rememberEditorLanguage(lang) {
+    try {
+        window.localStorage.setItem(editorLanguageStorageKey(), normalizeLangCode(lang, DEFAULT_LANG));
+    } catch (_error) {
+        // Ignore storage restrictions; language switching still works for the current page.
+    }
+}
+
 function esc(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -2032,7 +2052,7 @@ async function loadProduct(id) {
     state.persistedItemIds = new Set(state.items.map((item) => item.localId));
     state.media = sortMediaItems((mediaRows || []).map((item) => normalizeQuoteMediaItem(item)));
     state.rates = normalizeRates(state.product.default_rates);
-    state.currentLang = state.product.default_lang || DEFAULT_LANG;
+    state.currentLang = preferredEditorLanguage(state.product.default_lang || DEFAULT_LANG);
 }
 
 async function loadInstance(id) {
@@ -2064,7 +2084,7 @@ async function loadInstance(id) {
     state.persistedItemIds = new Set(state.items.map((item) => item.localId));
     state.media = sortMediaItems((mediaRows?.length ? mediaRows : state.product.media_gallery || []).map((item) => normalizeQuoteMediaItem(item)));
     state.rates = normalizeRates(state.instance.draft_rates);
-    state.currentLang = state.instance.default_lang || DEFAULT_LANG;
+    state.currentLang = preferredEditorLanguage(state.instance.default_lang || DEFAULT_LANG);
 }
 
 function parseRoute() {
@@ -2083,14 +2103,17 @@ function updateBackToTop() {
 function bindGlobal() {
     byId('btn-zh').onclick = () => {
         state.currentLang = 'zh';
+        rememberEditorLanguage(state.currentLang);
         renderAll({ snapshot: false });
     };
     byId('btn-en').onclick = () => {
         state.currentLang = 'en';
+        rememberEditorLanguage(state.currentLang);
         renderAll({ snapshot: false });
     };
     byId('btn-ru').onclick = () => {
         state.currentLang = 'ru';
+        rememberEditorLanguage(state.currentLang);
         renderAll({ snapshot: false });
     };
     byId('btn-add-main-row').onclick = () => {
