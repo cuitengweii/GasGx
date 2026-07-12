@@ -1250,6 +1250,9 @@ function renderStaticText() {
     renderViewContextBanner();
 
     const overviewTitle = pickDisplayText(snapshot.brand.overview_title, pickDisplayText(snapshot.product.public_title, snapshot.product.product_code));
+    const displayOverviewTitle = state.currentLang === 'zh'
+        ? overviewTitle.replace(/产品总览/g, '报价')
+        : overviewTitle;
     const quoteVersion = text(snapshot.quote?.quoteVersion || snapshot.quote?.version);
     const customerName = text(
         snapshot.quote.customerName
@@ -1270,7 +1273,7 @@ function renderStaticText() {
     );
     const supplier = text(snapshot.brand.supplier_name || snapshot.brand.display_name || snapshot.brand.brand_name || 'GasGx');
 
-    byId('f-title').textContent = quoteVersion ? `${overviewTitle} · V${quoteVersion}` : overviewTitle;
+    byId('f-title').textContent = quoteVersion ? `${displayOverviewTitle} · V${quoteVersion}` : displayOverviewTitle;
     const productTitleNode = byId('f-product-title');
     if (productTitleNode) productTitleNode.textContent = pickDisplayText(snapshot.product.public_title, snapshot.product.product_code);
     byId('lbl-receiver').textContent = t('customerName');
@@ -1371,7 +1374,7 @@ function renderStaticText() {
         if (!expirySelect.value) expirySelect.value = '3d';
     }
 
-    document.title = `${overviewTitle} - ${supplier}`;
+    document.title = `${displayOverviewTitle} - ${supplier}`;
 }
 
 function getProductMediaState(snapshot = state.snapshot) {
