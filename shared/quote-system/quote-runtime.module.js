@@ -1471,7 +1471,6 @@ function renderContent() {
                     </div>
 
                 <div class="quote-total-formula" aria-label="${esc(t('pricingFormula'))}">
-                    <span class="quote-total-formula__label">${esc(t('pricingFormula'))}</span>
                     <div class="quote-total-formula__values">
                         <span><b>${esc(breakdown[0][0])}</b>${esc(formatCurrency('RMB', breakdown[0][1]))} + <b>${esc(breakdown[1][0])}</b>${esc(formatCurrency('RMB', breakdown[1][1]))} + <b>${esc(breakdown[2][0])}</b>${esc(formatCurrency('RMB', breakdown[2][1]))} = <strong>${esc(formatCurrency('RMB', total))}</strong></span>
                     </div>
