@@ -802,8 +802,10 @@ function formatValidity(remainingMs) {
 function renderClock() {
     const now = new Date();
     const validNode = byId('edit-validity-value');
-    byId('live-date').textContent = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    byId('live-clock').textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    const liveDate = byId('live-date');
+    const liveClock = byId('live-clock');
+    if (liveDate) liveDate.textContent = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    if (liveClock) liveClock.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
     if (validNode) {
         const hours = state.kind === 'product' ? state.product?.validity_hours : state.instance?.validity_hours;
         validNode.textContent = formatValidity(state.baseTime + Math.max(1, safeNumber(hours, 72)) * 60 * 60 * 1000 - Date.now());
