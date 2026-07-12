@@ -2292,7 +2292,6 @@ function syncShareAvailability() {
 }
 
 function openShareModal() {
-    if (!requireSignedIn('link')) return;
     if (!state.shareTarget) {
         setStatusMessage(t('shareUnavailable'), true);
         return;
@@ -2382,7 +2381,6 @@ async function copyText(value) {
 }
 
 async function generateShareLink() {
-    if (!requireSignedIn('link')) return;
     if (!state.shareTarget) {
         setStatusMessage(t('shareUnavailable'), true);
         return;
