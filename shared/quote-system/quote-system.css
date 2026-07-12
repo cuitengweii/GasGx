@@ -994,6 +994,7 @@
             align-items: center;
             justify-content: flex-end;
             gap: 6px;
+            margin-left: auto;
             max-width: 100%;
         }
 
@@ -1018,10 +1019,11 @@
         }
 
         .quote-editor-primary-actions {
+            order: 2;
             justify-content: flex-end;
             width: fit-content;
             max-width: 100%;
-            margin-left: auto;
+            margin-left: 0;
             padding: 6px;
             border: 1px solid rgba(93, 214, 44, 0.48);
             border-radius: 12px;
@@ -1030,6 +1032,7 @@
         }
 
         .quote-editor-secondary-actions {
+            order: 1;
             width: fit-content;
             max-width: 100%;
             padding-top: 2px;
@@ -1072,7 +1075,10 @@
 
         .quote-editor-bar__settings {
             order: 1;
-            flex: 1 1 0;
+            flex: 0 1 660px;
+            flex-basis: 660px;
+            width: 660px;
+            max-width: 660px;
             min-width: 0;
             padding: 0;
             margin: 0;
@@ -1670,6 +1676,12 @@
 
             .quote-editor-settings__body {
                 grid-template-columns: 1fr;
+            }
+
+            .quote-editor-bar__settings {
+                width: 100%;
+                max-width: 100%;
+                flex-basis: auto;
             }
 
             .quote-editor-desc-wrap {
