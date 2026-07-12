@@ -1354,7 +1354,7 @@
             align-items: stretch;
         }
 
-        .toolbar-email-panel + .toolbar-share-menu {
+        .toolbar-email-panel:not([hidden]) + .toolbar-share-menu {
             top: calc(100% + 190px);
         }
 
