@@ -1807,7 +1807,7 @@ async function saveProductPreviewInstance(user) {
         customer_name: '模板预览',
         receiver_name: localizedValue(state.product.public_title) || state.product.product_code || state.product.slug,
         receiver_email: '',
-        default_lang: state.product.default_lang,
+        default_lang: state.currentLang || state.product.default_lang,
         validity_hours: state.product.validity_hours,
         draft_rates: normalizeRates(state.rates),
         share_config: {
@@ -1850,6 +1850,7 @@ async function saveProductPreviewInstance(user) {
         saved = data;
     }
 
+    state.persistedItemIds = new Set();
     await persistItemRows(TABLE_INSTANCE_ITEMS, 'instance_id', saved.id, state.items);
     state.productPreviewInstanceId = saved.id;
     return saved.id;
@@ -2064,16 +2065,11 @@ function bindGlobal() {
         const previewWindow = openPreviewWindow();
         if (!previewWindow) return;
         if (state.kind === 'product') {
-            const saved = await handleSave();
-            if (!saved) {
-                previewWindow.close();
-                return;
-            }
             try {
-                renderStatus('正在生成产品预览...');
+                renderStatus('正在生成产品预览（使用当前语言和未保存内容）...');
                 const previewId = await saveProductPreviewInstance(state.user);
                 previewWindow.location.href = previewQuoteUrl(previewId);
-                renderStatus('产品预览已打开。', 'success');
+                renderStatus('产品预览已打开，当前修改尚未保存。', 'success');
             } catch (error) {
                 previewWindow.close();
                 renderStatus(`产品预览生成失败。${error.message || ''}`, 'error');
