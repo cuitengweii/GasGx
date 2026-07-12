@@ -445,6 +445,7 @@ const state = {
     adminUser: null,
     authResolved: false,
     route: null,
+    customerView: params.get('customer_view') === '1',
     sharePayload: null,
     shareTarget: null,
     pendingSharedAccess: null,
@@ -1196,6 +1197,9 @@ function renderToolbar() {
     const node = byId('toolbar-brand-name');
     if (!node) return;
     node.textContent = state.currentLang === 'zh' ? 'GasGx 报价系统' : 'GasGx Quotation System';
+    const toolbar = byId('toolbar');
+    if (toolbar) toolbar.hidden = state.customerView;
+    document.body.classList.toggle('customer-view', state.customerView);
 }
 
 function renderAuthButton() {
@@ -2397,6 +2401,7 @@ async function exportImage() {
 function posterQuoteUrl() {
     const url = new URL(window.location.href);
     url.hash = '';
+    url.searchParams.set('customer_view', '1');
     return url.toString();
 }
 

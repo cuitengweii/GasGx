@@ -810,6 +810,10 @@
             color: #cbd5e1;
         }
 
+        body.quote-reference-body.customer-view #doc-container {
+            margin-top: 1rem !important;
+        }
+
         .quote-reference-page {
             color: #cbd5e1;
         }
