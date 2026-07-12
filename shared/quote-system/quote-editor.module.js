@@ -300,6 +300,15 @@ function t(key) {
     return dict[state.currentLang]?.[key] || dict.en[key] || key;
 }
 
+function editorT(key) {
+    return dict.zh?.[key] || key;
+}
+
+function localizedEditorValue(value = {}) {
+    const localized = normalizeLocalizedText(value);
+    return text(localized.zh || localized.en || localized.ru);
+}
+
 function localeCopy(map) {
     return map[state.currentLang] || map.en || map.zh || '';
 }
@@ -840,30 +849,30 @@ function renderSettings() {
     root.innerHTML = `
         ${state.kind === 'instance' ? `
         <label class="quote-editor-setting">
-            <span>${esc(t('customerName'))}</span>
-            <input type="text" data-setting-field="customer_name" value="${esc(state.instance.customer_name)}" placeholder="${esc(t('customerName'))}">
+            <span>${esc(editorT('customerName'))}</span>
+            <input type="text" data-setting-field="customer_name" value="${esc(state.instance.customer_name)}" placeholder="${esc(editorT('customerName'))}">
         </label>
         <label class="quote-editor-setting">
-            <span>${esc(t('receiverEmail'))}</span>
-            <input type="email" inputmode="email" autocomplete="email" data-setting-field="receiver_email" value="${esc(state.instance.receiver_email)}" placeholder="${esc(t('receiverEmail'))}">
+            <span>${esc(editorT('receiverEmail'))}</span>
+            <input type="email" inputmode="email" autocomplete="email" data-setting-field="receiver_email" value="${esc(state.instance.receiver_email)}" placeholder="${esc(editorT('receiverEmail'))}">
         </label>
         ` : ''}
         <label class="quote-editor-setting">
-            <span>${esc(t('validityHours'))}</span>
+            <span>${esc(editorT('validityHours'))}</span>
             <input type="number" min="1" step="1" data-setting-field="validity_hours" value="${esc(validityHours)}">
         </label>
         <label class="quote-editor-setting">
-            <span>${esc(t('mediaPosition'))}</span>
+            <span>${esc(editorT('mediaPosition'))}</span>
             <select data-setting-field="media_position">
-                <option value="${MEDIA_POSITIONS.ABOVE}" ${state.product.media_config?.position === MEDIA_POSITIONS.ABOVE ? 'selected' : ''}>${esc(t('imageAbove'))}</option>
-                <option value="${MEDIA_POSITIONS.BELOW}" ${state.product.media_config?.position !== MEDIA_POSITIONS.ABOVE ? 'selected' : ''}>${esc(t('imageBelow'))}</option>
+                <option value="${MEDIA_POSITIONS.ABOVE}" ${state.product.media_config?.position === MEDIA_POSITIONS.ABOVE ? 'selected' : ''}>${esc(editorT('imageAbove'))}</option>
+                <option value="${MEDIA_POSITIONS.BELOW}" ${state.product.media_config?.position !== MEDIA_POSITIONS.ABOVE ? 'selected' : ''}>${esc(editorT('imageBelow'))}</option>
             </select>
         </label>
         <label class="quote-editor-setting">
-            <span>${esc(t('mediaLayout'))}</span>
+            <span>${esc(editorT('mediaLayout'))}</span>
             <select data-setting-field="media_layout">
-                <option value="${MEDIA_LAYOUTS.CAROUSEL}" ${state.product.media_config?.layout !== MEDIA_LAYOUTS.STACK ? 'selected' : ''}>${esc(t('imageCarousel'))}</option>
-                <option value="${MEDIA_LAYOUTS.STACK}" ${state.product.media_config?.layout === MEDIA_LAYOUTS.STACK ? 'selected' : ''}>${esc(t('imageStack'))}</option>
+                <option value="${MEDIA_LAYOUTS.CAROUSEL}" ${state.product.media_config?.layout !== MEDIA_LAYOUTS.STACK ? 'selected' : ''}>${esc(editorT('imageCarousel'))}</option>
+                <option value="${MEDIA_LAYOUTS.STACK}" ${state.product.media_config?.layout === MEDIA_LAYOUTS.STACK ? 'selected' : ''}>${esc(editorT('imageStack'))}</option>
             </select>
         </label>
     `;
@@ -906,7 +915,7 @@ function handleSettingChange(event) {
 function renderStatus(message, tone = 'normal') {
     const title = byId('editor-status-title');
     const textNode = byId('editor-status-text');
-    if (title) title.textContent = state.kind === 'product' ? t('editorProductTitle') : t('editorInstanceTitle');
+    if (title) title.textContent = state.kind === 'product' ? editorT('editorProductTitle') : editorT('editorInstanceTitle');
     if (!textNode) return;
     textNode.textContent = text(message);
     textNode.dataset.tone = tone;
@@ -924,8 +933,8 @@ function renderBanner() {
         ? '你现在编辑的就是基础模板原页面。'
         : '你现在编辑的就是当前报价单原页面。';
     byId('editor-banner-meta').textContent = state.kind === 'product'
-        ? `${state.brand.display_name} / ${localizedValue(state.product.public_title) || state.product.slug}。${t('productMode')}`
-        : `${state.brand.display_name} / ${localizedValue(state.product.public_title) || state.product.slug} / ${state.instance.public_slug}。${t('instanceMode')}`;
+        ? `${state.brand.display_name} / ${localizedEditorValue(state.product.public_title) || state.product.slug}。${editorT('productMode')}`
+        : `${state.brand.display_name} / ${localizedEditorValue(state.product.public_title) || state.product.slug} / ${state.instance.public_slug}。${editorT('instanceMode')}`;
 }
 
 function syncBackLink() {
@@ -1007,10 +1016,10 @@ function renderEditorActions() {
     const previewButton = byId('btn-preview-instance');
     const publishButton = byId('btn-publish-instance');
     const saveButton = byId('btn-save-editor');
-    byId('btn-add-main-row').textContent = t('addMainRow');
-    byId('btn-add-service-row').textContent = t('addServiceRow');
-    byId('btn-add-optional-row').textContent = t('addOptionalRow');
-    const saveLabel = state.kind === 'product' ? t('saveProductTemplate') : t('saveDraft');
+    byId('btn-add-main-row').textContent = editorT('addMainRow');
+    byId('btn-add-service-row').textContent = editorT('addServiceRow');
+    byId('btn-add-optional-row').textContent = editorT('addOptionalRow');
+    const saveLabel = state.kind === 'product' ? editorT('saveProductTemplate') : editorT('saveDraft');
     updateSaveButtons(saveLabel, state.saveInFlight);
     if (saveButton) saveButton.textContent = saveLabel;
     if (!instanceActions || !previewButton || !publishButton) return;
@@ -1020,12 +1029,12 @@ function renderEditorActions() {
     publishButton.hidden = !isInstance;
     if (!isInstance) {
         previewButton.disabled = state.saveInFlight;
-        previewButton.textContent = t('previewProduct');
+        previewButton.textContent = editorT('previewProduct');
         return;
     }
     const hasId = Boolean(state.instance?.id);
     previewButton.disabled = !hasId;
-    previewButton.textContent = t('previewCustomer');
+    previewButton.textContent = editorT('previewCustomer');
     const actionMode = publishedInstanceActionMode();
     publishButton.disabled = actionMode === 'copy'
         ? !Boolean(text(state.instance?.public_slug))
@@ -1617,7 +1626,7 @@ function renderAll(options = {}) {
 async function fetchRates(isManual = false) {
     const previousRates = normalizeRates(state.rates);
     if (isManual) updateRateStatus('loading');
-    renderStatus(t('rateRefreshing'), 'warning');
+    renderStatus(editorT('rateRefreshing'), 'warning');
     try {
         const response = await fetch(RATE_API_URL, { cache: 'no-store' });
         const data = await response.json();
@@ -2008,7 +2017,7 @@ async function handleSave() {
     try {
         const auth = await client.auth.getUser();
         state.user = auth?.data?.user || null;
-        if (!state.user) renderStatus(t('needLogin'), 'warning');
+        if (!state.user) renderStatus(editorT('needLogin'), 'warning');
         await runAutoTranslation(false);
         if (state.kind === 'product') {
             await saveProduct(state.user);
@@ -2022,11 +2031,11 @@ async function handleSave() {
             state.hasUnsavedChanges = false;
         }
         updateSaveButtons(state.kind === 'product' ? '保存模板' : '保存草稿', false);
-        renderStatus(t('saveSuccess'), 'success');
+        renderStatus(editorT('saveSuccess'), 'success');
         return true;
     } catch (error) {
         updateSaveButtons(state.kind === 'product' ? '保存模板' : '保存草稿', false);
-        renderStatus(`${t('saveFailed')} ${error.message || ''}`, 'error');
+        renderStatus(`${editorT('saveFailed')} ${error.message || ''}`, 'error');
         return false;
     } finally {
         state.saveInFlight = false;
@@ -2200,7 +2209,7 @@ function bindGlobal() {
         try {
             const auth = await client.auth.getUser();
             state.user = auth?.data?.user || null;
-            if (!state.user) renderStatus(t('needLogin'), 'warning');
+            if (!state.user) renderStatus(editorT('needLogin'), 'warning');
             await runAutoTranslation(false);
             await publishInstance(state.user);
             state.snapshot = buildSnapshot();
@@ -2244,7 +2253,7 @@ function bindGlobal() {
 async function init() {
     bindGlobal();
     if (!parseRoute()) {
-        renderStatus(t('invalidRoute'), 'error');
+        renderStatus(editorT('invalidRoute'), 'error');
         return;
     }
     try {
@@ -2260,9 +2269,9 @@ async function init() {
         renderAll();
         startClock();
         updateBackToTop();
-        renderStatus(state.kind === 'product' ? t('productMode') : t('instanceMode'));
+        renderStatus(state.kind === 'product' ? editorT('productMode') : editorT('instanceMode'));
     } catch (error) {
-        renderStatus(`${t('loadFailed')} ${error.message || ''}`, 'error');
+        renderStatus(`${editorT('loadFailed')} ${error.message || ''}`, 'error');
     }
 }
 
