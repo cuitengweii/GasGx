@@ -92,6 +92,7 @@ const sharedUiDict = {
     exportSubText: 'Rendering a high-resolution document. Please wait.',
     exportLibraryMissing: 'Export tools are still loading. Refresh the page and try again.',
     receiverPlaceholder: 'Enter customer email',
+    customerName: 'CUSTOMER:',
     days: 'd',
     hours: 'h',
     minutes: 'm',
@@ -114,8 +115,6 @@ const sharedUiDict = {
     sendQuoteSuccess: 'Customer record saved. Your email client is ready to send the quotation.',
     sendQuoteError: 'The quotation could not be prepared. Try again later.',
     sendQuoteHint: 'The send action opens your email client with the quotation link and sales record is saved automatically.',
-    sendQuoteLoginHint: 'Sign in with a sales account to send the quotation and create the customer record.',
-    sendQuoteAdminOnly: 'Only sales admins can send quotations and create customer records.',
     authLogin: 'Login',
     authAccount: 'Account',
     authModalTitle: 'Login required',
@@ -207,6 +206,7 @@ const dict = {
         exportSubText: '正在进行高清文档渲染，请稍候。',
         exportLibraryMissing: '导出工具还未加载完成，请刷新页面后重试。',
         receiverPlaceholder: '请输入客户邮箱',
+        customerName: '客户名称：',
         days: '天',
         hours: '时',
         minutes: '分',
@@ -228,8 +228,6 @@ const dict = {
         sendQuoteSuccess: '客户档案已保存，邮件客户端已打开，请确认发送报价。',
         sendQuoteError: '报价邮件准备失败，请稍后重试。',
         sendQuoteHint: '点击后会调起本机邮件客户端并带入报价链接，同时自动保存销售客户档案。',
-        sendQuoteLoginHint: '请先登录销售后台，登录后即可发送报价并自动建立客户档案。',
-        sendQuoteAdminOnly: '只有销售后台管理员可以发送报价并建立客户档案。',
         authModalTitle: '需要登录',
         authModalMessage: '登录后才能继续使用受保护的报价操作。',
         authModalHint: '当前浏览不会中断。登录完成后会自动回到这份报价。',
@@ -320,6 +318,7 @@ const dict = {
         exportSubText: 'Подготавливаем документ высокого качества.',
         exportLibraryMissing: 'Инструменты экспорта ещё загружаются. Обновите страницу и повторите попытку.',
         receiverPlaceholder: 'Введите email клиента',
+        customerName: 'Клиент:',
         days: 'д',
         hours: 'ч',
         minutes: 'мин',
@@ -341,8 +340,6 @@ const dict = {
         sendQuoteSuccess: 'Карточка клиента сохранена. Почтовый клиент готов к отправке предложения.',
         sendQuoteError: 'Не удалось подготовить письмо. Повторите попытку позже.',
         sendQuoteHint: 'Откроется почтовый клиент со ссылкой на предложение, а карточка клиента сохранится автоматически.',
-        sendQuoteLoginHint: 'Войдите в аккаунт продаж, чтобы отправить предложение и создать карточку клиента.',
-        sendQuoteAdminOnly: 'Только администраторы продаж могут отправлять предложения и создавать карточки клиентов.',
         authLogin: 'Войти',
         authAccount: 'Аккаунт',
         authModalTitle: 'Требуется вход',
@@ -1076,35 +1073,7 @@ function renderRateLine() {
 
 function renderViewContextBanner() {
     const banner = byId('view-context-banner');
-    const kicker = byId('view-context-kicker');
-    const title = byId('view-context-title');
-    const meta = byId('view-context-meta');
-    if (!banner || !kicker || !title || !meta) return;
-
-    if (state.route?.type !== 'preview') {
-        banner.classList.add('hidden');
-        return;
-    }
-
-    kicker.textContent = localeCopy({
-        zh: 'ADMIN PREVIEW',
-        en: 'ADMIN PREVIEW',
-        ru: 'ПРЕДПРОСМОТР АДМИНИСТРАТОРА',
-    });
-    title.textContent = localeCopy({
-        zh: '当前页面正在读取后台草稿快照，只用于校对，不会直接对外展示。',
-        en: 'This page is reading the current draft snapshot for internal review only.',
-        ru: 'Эта страница показывает текущий черновик только для внутренней проверки.',
-    });
-
-    const slug = text(state.snapshot?.quote?.publicSlug || state.snapshot?.quote?.public_slug);
-    const modeText = localeCopy({
-        zh: '继续在“报价单管理”里修改并重新发布，客户页才会更新。',
-        en: 'Keep editing in Quote Instances and publish again to update the customer page.',
-        ru: 'Продолжайте редактировать в Quote Instances и опубликуйте снова, чтобы обновить страницу клиента.',
-    });
-    meta.textContent = slug ? `${modeText} SLUG: ${slug}` : modeText;
-    banner.classList.remove('hidden');
+    if (banner) banner.classList.add('hidden');
 }
 
 function renderToolbar() {
@@ -1115,22 +1084,7 @@ function renderToolbar() {
 
 function renderAuthButton() {
     const button = byId('btn-auth');
-    if (!button) return;
-    const icon = byId('icon-auth');
-    const label = byId('btn-text-auth');
-    button.hidden = false;
-    if (state.isLoggedIn) {
-        if (icon) icon.className = state.isAdmin ? 'fa-solid fa-user-shield' : 'fa-solid fa-user-check';
-        const email = text(state.adminUser?.email);
-        if (label) label.textContent = text(userDisplayName(state.adminUser), email || t('authAccount'));
-        button.title = email || t('authAccount');
-        button.classList.add('is-authenticated');
-        return;
-    }
-    if (icon) icon.className = 'fa-solid fa-user-lock';
-    if (label) label.textContent = t('authLogin');
-    button.title = t('authLogin');
-    button.classList.remove('is-authenticated');
+    if (button) button.hidden = true;
 }
 
 async function refreshAuthState(options = {}) {
@@ -1186,14 +1140,12 @@ function renderStaticText() {
 
     const overviewTitle = pickDisplayText(snapshot.brand.overview_title, pickDisplayText(snapshot.product.public_title, snapshot.product.product_code));
     const quoteVersion = text(snapshot.quote?.quoteVersion || snapshot.quote?.version);
-    const receiver = text(
-        snapshot.quote.receiverName
-        || snapshot.quote.receiver_name
-        || snapshot.quote.customerProfile?.contact_name
-        || snapshot.quote.customerProfile?.contactName
-        || snapshot.quote.shareConfig?.recipient_name
-        || snapshot.quote.customerName
-        || snapshot.quote.customer_name,
+    const customerName = text(
+        snapshot.quote.customerName
+        || snapshot.quote.customer_name
+        || snapshot.quote.customerProfile?.company_name
+        || snapshot.quote.customerProfile?.companyName
+        || snapshot.quote.shareConfig?.recipient_company,
         '',
     );
     const receiverEmail = normalizeEmail(
@@ -1206,22 +1158,23 @@ function renderStaticText() {
     const supplier = text(snapshot.brand.supplier_name || snapshot.brand.display_name || snapshot.brand.brand_name || 'GasGx');
 
     byId('f-title').textContent = quoteVersion ? `${overviewTitle} · V${quoteVersion}` : overviewTitle;
-    byId('lbl-receiver').textContent = uiText('receiver_label', 'receiver');
+    byId('lbl-receiver').textContent = t('customerName');
     byId('lbl-validity').textContent = uiText('validity_label', 'validity');
     byId('lbl-update').innerHTML = `<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>${esc(t('update'))}`;
     byId('view-meta-supplier')?.setAttribute('hidden', 'hidden');
     byId('view-meta-sender')?.setAttribute('hidden', 'hidden');
-    byId('val-receiver').textContent = receiver;
+    byId('val-receiver').textContent = customerName;
     byId('val-receiver').setAttribute('data-placeholder', state.currentLang === 'zh' ? '请填写客户名称' : 'Enter customer name');
     const emailInput = byId('quote-email-input');
     if (emailInput) {
-        emailInput.value = receiverEmail;
-        emailInput.placeholder = uiText('receiver_placeholder', 'receiverPlaceholder');
+        emailInput.value = isValidEmail(receiverEmail) ? receiverEmail : '';
+        emailInput.placeholder = t('receiverPlaceholder');
+        emailInput.setAttribute('inputmode', 'email');
     }
     const emailLabel = byId('quote-email-label');
     if (emailLabel) emailLabel.textContent = state.currentLang === 'zh' ? '客户邮箱' : state.currentLang === 'ru' ? 'Email клиента' : 'Customer email';
     byId('btn-text-send')?.replaceChildren(document.createTextNode(t('sendQuote')));
-    setQuoteEmailStatus(state.isAdmin ? t('sendQuoteHint') : t('sendQuoteLoginHint'));
+    setQuoteEmailStatus(t('sendQuoteHint'));
     byId('footer-note').innerHTML = pickDisplayText(snapshot.brand.footer_note, '');
     byId('btn-text-share').textContent = isMobileViewport()
         ? (state.currentLang === 'zh' ? '分享' : 'Share')
@@ -2451,12 +2404,6 @@ async function generateShareLink() {
 }
 
 async function sendEmail() {
-    if (!requireSignedIn('send')) return;
-    if (!state.isAdmin) {
-        setQuoteEmailStatus(t('sendQuoteAdminOnly'), true);
-        return;
-    }
-
     const input = byId('quote-email-input');
     const receiver = normalizeEmail(input?.value);
     if (!receiver) {
@@ -2493,22 +2440,9 @@ async function sendEmail() {
         : '';
 
     try {
-        await appendShareHistoryRecord({
-            channel: 'email',
-            status: 'emailed',
-            recipientName,
-            recipientEmail: receiver,
-            recipientCompany,
-            ownerName: shareMeta.ownerName || senderName,
-            ownerEmail: shareMeta.ownerEmail || sender,
-            followUpNotes: shareMeta.followUpNotes,
-            sentAt,
-            senderName,
-            senderEmail: sender,
-            shareTarget: state.shareTarget?.type || 'quote',
-        });
+        await recordPublicQuoteEmailDispatch(receiver);
         void logQuoteEvent('email_clicked', {
-            accessMode: 'admin',
+            accessMode: state.route?.type || 'quote',
             metadata: {
                 receiver,
                 brandName,
@@ -2516,15 +2450,6 @@ async function sendEmail() {
                 quoteUrl,
                 ...shareMeta,
             },
-        });
-        void appendQuoteCustomerActivity('发送报价邮件', {
-            recipient_email: receiver,
-            recipient_company: recipientCompany,
-            quote_title: title,
-            quote_url: quoteUrl,
-        }, {
-            activityType: 'button_click',
-            pageKey: 'quote-view',
         });
         const subject = encodeURIComponent(`${t('mailSubjectPrefix')} ${title} - ${brandName}`);
         const linkLine = quoteUrl ? `\n\nQuotation link:\n${quoteUrl}` : '';
@@ -2540,6 +2465,46 @@ async function sendEmail() {
             delete button.dataset.loading;
         }
     }
+}
+
+async function recordPublicQuoteEmailDispatch(recipientEmail) {
+    const supabase = getClient();
+    const instanceId = text(state.snapshot?.quote?.id);
+    if (!supabase || !instanceId) throw new Error(t('sendQuoteError'));
+
+    const { data, error } = await supabase.rpc('record_public_quote_email_dispatch', {
+        target_instance_id: instanceId,
+        target_recipient_email: normalizeEmail(recipientEmail),
+    });
+    if (error) throw error;
+
+    const record = Array.isArray(data) ? data[0] : data;
+    if (!record) return null;
+    const customerId = text(record.customer_id);
+    const companyName = text(record.recipient_company || state.snapshot?.quote?.customerName || state.snapshot?.quote?.customer_name);
+    const contactName = text(record.recipient_name || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name);
+    const email = normalizeEmail(record.recipient_email || recipientEmail);
+    state.snapshot = {
+        ...state.snapshot,
+        quote: {
+            ...state.snapshot.quote,
+            customerId,
+            customer_id: customerId,
+            customerName: companyName,
+            customer_name: companyName,
+            receiverName: contactName,
+            receiver_name: contactName,
+            receiverEmail: email,
+            receiver_email: email,
+            customerProfile: {
+                ...(state.snapshot.quote?.customerProfile || {}),
+                company_name: companyName,
+                contact_name: contactName,
+                email,
+            },
+        },
+    };
+    return record;
 }
 
 function textToBytes(value) {

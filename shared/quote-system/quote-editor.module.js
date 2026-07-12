@@ -818,6 +818,16 @@ function renderSettings() {
     const validityHours = state.kind === 'product' ? state.product.validity_hours : state.instance.validity_hours;
     const defaultLang = state.kind === 'product' ? state.product.default_lang : state.instance.default_lang;
     root.innerHTML = `
+        ${state.kind === 'instance' ? `
+        <label class="quote-editor-setting">
+            <span>${esc(t('customerName'))}</span>
+            <input type="text" data-setting-field="customer_name" value="${esc(state.instance.customer_name)}" placeholder="${esc(t('customerName'))}">
+        </label>
+        <label class="quote-editor-setting">
+            <span>${esc(t('receiverEmail'))}</span>
+            <input type="email" inputmode="email" autocomplete="email" data-setting-field="receiver_email" value="${esc(state.instance.receiver_email)}" placeholder="${esc(t('receiverEmail'))}">
+        </label>
+        ` : ''}
         <label class="quote-editor-setting">
             <span>${esc(t('defaultLang'))}</span>
             <div class="quote-editor-lang-group">
@@ -1044,16 +1054,16 @@ function renderStaticText() {
     byId('edit-meta-supplier')?.setAttribute('hidden', 'hidden');
     byId('edit-meta-sender')?.setAttribute('hidden', 'hidden');
     byId('edit-validity-label').textContent = uiText('validity_label', t('validity'));
-    byId('edit-receiver-label').textContent = uiText('receiver_label', t('receiver'));
+    byId('edit-receiver-label').textContent = t('customerName');
     byId('footer-note').textContent = localizedValue(state.brand.footer_note);
     byId('btn-text-refresh').textContent = uiText('refresh_button', t('refresh'));
 
     const receiverValue = state.kind === 'instance'
-        ? text(state.instance.receiver_email || state.instance.receiver_name)
+        ? text(state.instance.customer_name)
         : uiText('receiver_placeholder', t('receiverPlaceholder'));
     const receiverNode = byId('edit-receiver-value');
     receiverNode.textContent = receiverValue;
-    receiverNode.classList.toggle('is-placeholder', !text(state.instance?.receiver_email || state.instance?.receiver_name));
+    receiverNode.classList.toggle('is-placeholder', !text(state.instance?.customer_name));
 }
 
 function renderRateLine() {
@@ -1440,6 +1450,7 @@ function bindStaticEditors() {
         markEditorDirty();
     };
     byId('edit-receiver-label').onblur = (event) => {
+        if (state.kind === 'instance') return;
         setLocalizedValue(state.product.ui_text, 'receiver_label', event.currentTarget.textContent);
         markTranslationDirty('product.ui_text.receiver_label');
         renderAll();
@@ -1447,7 +1458,7 @@ function bindStaticEditors() {
     };
     byId('edit-receiver-value').onblur = (event) => {
         if (state.kind === 'instance') {
-            state.instance.receiver_email = normalizedCustomerEmail(event.currentTarget.textContent);
+            state.instance.customer_name = text(event.currentTarget.textContent);
         } else {
             setLocalizedValue(state.product.ui_text, 'receiver_placeholder', event.currentTarget.textContent);
             markTranslationDirty('product.ui_text.receiver_placeholder');
@@ -1559,14 +1570,14 @@ function flushPendingEditorChanges() {
     }
 
     const receiverLabel = byId('edit-receiver-label');
-    if (receiverLabel) {
+    if (receiverLabel && state.kind !== 'instance') {
         setLocalizedValue(state.product.ui_text, 'receiver_label', receiverLabel.textContent);
     }
 
     const receiverValue = byId('edit-receiver-value');
     if (receiverValue) {
         if (state.kind === 'instance') {
-            state.instance.receiver_email = normalizedCustomerEmail(receiverValue.textContent);
+            state.instance.customer_name = text(receiverValue.textContent);
         } else {
             setLocalizedValue(state.product.ui_text, 'receiver_placeholder', receiverValue.textContent);
         }
