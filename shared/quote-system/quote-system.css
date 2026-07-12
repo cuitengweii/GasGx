@@ -1453,65 +1453,6 @@
             flex: 1;
         }
 
-        .quote-email-panel {
-            display: grid;
-            gap: 8px;
-            width: 100%;
-            padding: 14px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .quote-email-panel[hidden] {
-            display: none;
-        }
-
-        .quote-email-panel__label {
-            color: var(--text-muted);
-            font-size: 0.72rem;
-            letter-spacing: 0.04em;
-        }
-
-        .quote-email-panel__button {
-            min-height: 44px;
-            padding: 10px 14px;
-            width: 100%;
-        }
-
-        .quote-email-panel__status {
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            line-height: 1.45;
-        }
-
-        .quote-email-panel__status.is-error {
-            color: #ff8b8b;
-        }
-
-        .quote-email-panel__status.is-success {
-            color: var(--gas-green-light);
-        }
-
-        .toolbar-email-panel {
-            position: absolute;
-            top: calc(100% + 10px);
-            right: 0;
-            width: min(320px, calc(100vw - 24px));
-            z-index: 45;
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            background: #161B22;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .toolbar-email-panel .share-inline-field {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .toolbar-email-panel:not([hidden]) + .toolbar-share-menu {
-            top: calc(100% + 190px);
-        }
-
         #ggx-site-header-slot .gas-card {
             background-color: rgba(5, 5, 5, 0.78) !important;
         }

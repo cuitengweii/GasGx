@@ -2257,11 +2257,9 @@ function scrollToTop() {
 
 function closeShareMenu() {
     const menu = byId('share-menu');
-    const emailPanel = byId('quote-email-panel');
     const arrow = byId('icon-share-down');
     state.isMobileMenuOpen = false;
     if (menu) menu.classList.add('hidden');
-    if (emailPanel) emailPanel.hidden = true;
     if (arrow) arrow.classList.remove('rotate-180');
 }
 
@@ -2271,12 +2269,10 @@ function toggleShareMenu(event) {
         event.stopPropagation();
     }
     const menu = byId('share-menu');
-    const emailPanel = byId('quote-email-panel');
     const arrow = byId('icon-share-down');
     if (!menu) return;
     const willOpen = menu.classList.contains('hidden');
     menu.classList.toggle('hidden', !willOpen);
-    if (emailPanel) emailPanel.hidden = !willOpen;
     state.isMobileMenuOpen = willOpen;
     if (arrow) arrow.classList.toggle('rotate-180', willOpen);
 }
