@@ -1517,7 +1517,7 @@ function quoteReferenceSectionTone(sectionKey = '') {
 function quoteReferenceSectionIcon(sectionKey = '') {
     if (sectionKey === 'optional_config') return 'fa-puzzle-piece';
     if (sectionKey === 'service_package') return 'fa-wrench';
-    return 'fa-engine';
+    return 'fa-gears';
 }
 
 function quoteReferenceSectionMarkup(section, rates = state.rates) {

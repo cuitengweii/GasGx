@@ -1176,15 +1176,49 @@
             align-items: center;
             gap: 6px;
             margin-left: 4px;
-            color: #94a3b8;
-            font-size: 12px;
-            font-weight: 500;
+            padding: 5px 9px;
+            border: 2px solid #60a5fa;
+            border-radius: 8px;
+            background: rgba(59, 130, 246, .16);
+            color: #f8fafc;
+            font-size: 13px;
+            font-weight: 800;
             cursor: pointer;
         }
 
         .quote-reference-section-toggle .quote-reference-checkbox {
-            width: 18px;
-            height: 18px;
+            appearance: none;
+            position: relative;
+            width: 22px;
+            height: 22px;
+            margin: 0;
+            border: 2px solid #bfdbfe;
+            border-radius: 5px;
+            background: #0f172a;
+            cursor: pointer;
+        }
+
+        .quote-reference-section-toggle .quote-reference-checkbox:checked {
+            border-color: #4ade80;
+            background: #22c55e;
+            box-shadow: 0 0 0 3px rgba(74, 222, 128, .18), 0 0 12px rgba(74, 222, 128, .42);
+        }
+
+        .quote-reference-section-toggle .quote-reference-checkbox:checked::after {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            color: #052e16;
+            content: '✓';
+            font-size: 16px;
+            font-weight: 900;
+            line-height: 1;
+            transform: translate(-50%, -54%);
+        }
+
+        .quote-reference-section-toggle .quote-reference-checkbox:focus-visible {
+            outline: 3px solid rgba(191, 219, 254, .9);
+            outline-offset: 2px;
         }
 
         .quote-reference-section-toggle .quote-reference-checkbox:disabled {
