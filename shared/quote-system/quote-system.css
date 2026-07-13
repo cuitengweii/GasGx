@@ -1449,12 +1449,12 @@
 
         @media (max-width: 600px) {
             .quote-media-carousel-stage {
-                aspect-ratio: auto;
-                height: auto;
+                aspect-ratio: auto !important;
+                height: auto !important;
             }
 
             .quote-media-slide {
-                height: auto;
+                height: auto !important;
             }
 
             .quote-media-slide img,
