@@ -1037,7 +1037,7 @@ function getSectionLabel(section) {
 function sectionSubtotal(section) {
     const gatedSection = section?.key === 'optional_config' || section?.key === 'service_package';
     if (gatedSection && section?.isSelected !== true) return 0;
-    if (section?.key === 'optional_config') {
+    if (section?.key === 'optional_config' || section?.key === 'service_package') {
         const items = Array.isArray(section?.items) ? section.items : [];
         const hasSelectionState = items.some((item) => Object.prototype.hasOwnProperty.call(item || {}, 'isSelected'));
         if (hasSelectionState) {
@@ -1527,6 +1527,7 @@ function quoteReferenceSectionIcon(sectionKey = '') {
 
 function quoteReferenceSectionMarkup(section, rates = state.rates) {
     const optional = section.key === 'optional_config';
+    const selectable = optional || section.key === 'service_package';
     const gated = optional || section.key === 'service_package';
     const sectionSelected = !gated || section.isSelected === true;
     const tone = quoteReferenceSectionTone(section.key);
@@ -1535,10 +1536,10 @@ function quoteReferenceSectionMarkup(section, rates = state.rates) {
         const included = item.isIncluded === true;
         const selected = sectionSelected && item.isSelected === true;
         const price = safeNumber(item.priceRmb, 0);
-        const selectCell = optional
-            ? `<td class="quote-reference-select-cell"><input class="quote-reference-checkbox" type="checkbox" data-quote-optional-toggle data-section-key="${esc(section.key)}" data-item-index="${itemIndex}" ${selected ? 'checked' : ''} ${sectionSelected ? '' : 'disabled'} aria-label="${esc(t('optionalColumn'))}"></td>`
+        const selectCell = selectable
+            ? `<td class="quote-reference-select-cell"><input class="quote-reference-checkbox" type="checkbox" data-quote-item-toggle data-section-key="${esc(section.key)}" data-item-index="${itemIndex}" ${selected ? 'checked' : ''} ${sectionSelected ? '' : 'disabled'} aria-label="${esc(t('optionalColumn'))}"></td>`
             : '';
-        const rowClass = `quote-reference-table__row ${optional && selected ? 'is-selected' : ''}`;
+        const rowClass = `quote-reference-table__row ${selectable && selected ? 'is-selected' : ''}`;
         return `
             <tr class="${rowClass}">
                 ${selectCell}
@@ -1551,7 +1552,7 @@ function quoteReferenceSectionMarkup(section, rates = state.rates) {
             </tr>
         `;
     }).join('');
-    const headers = optional ? [t('optionalColumn'), ...t('headers')] : t('headers');
+    const headers = selectable ? [t('optionalColumn'), ...t('headers')] : t('headers');
 
     return `
         <section class="quote-reference-section quote-reference-section--${tone}" data-quote-section="pricing-${esc(section.key)}">
@@ -1564,7 +1565,7 @@ function quoteReferenceSectionMarkup(section, rates = state.rates) {
             </div>
             <div class="quote-reference-table-container">
                 <table class="quote-reference-table">
-                    <thead><tr>${headers.map((header, index) => `<th class="${index === 0 && !optional ? 'quote-reference-table__code-head' : ''} ${index === 0 && optional ? 'quote-reference-table__select-head' : ''}">${esc(header)}</th>`).join('')}</tr></thead>
+                    <thead><tr>${headers.map((header, index) => `<th class="${index === 0 && !selectable ? 'quote-reference-table__code-head' : ''} ${index === 0 && selectable ? 'quote-reference-table__select-head' : ''}">${esc(header)}</th>`).join('')}</tr></thead>
                     <tbody>${rows || `<tr><td colspan="${headers.length}" class="quote-reference-empty">—</td></tr>`}</tbody>
                 </table>
             </div>
@@ -1574,7 +1575,7 @@ function quoteReferenceSectionMarkup(section, rates = state.rates) {
 
 function bindReferenceOptionControls(root = byId('content-area')) {
     if (!root) return;
-    root.querySelectorAll('[data-quote-optional-toggle]').forEach((input) => {
+    root.querySelectorAll('[data-quote-item-toggle]').forEach((input) => {
         input.addEventListener('change', (event) => {
             const sectionKey = text(event.currentTarget.dataset.sectionKey);
             const itemIndex = Number(event.currentTarget.dataset.itemIndex);
@@ -1583,7 +1584,8 @@ function bindReferenceOptionControls(root = byId('content-area')) {
             if (!item) return;
             item.isSelected = Boolean(event.currentTarget.checked);
             renderContent();
-            logQuoteBehavior(item.isSelected ? '客户选中报价选配项' : '客户取消报价选配项', {
+            const itemType = sectionKey === 'service_package' ? '服务项' : '报价选配项';
+            logQuoteBehavior(item.isSelected ? `客户选中${itemType}` : `客户取消${itemType}`, {
                 section_key: sectionKey,
                 item_index: itemIndex,
                 summary: `${item.isSelected ? '选中' : '取消'} ${pickDisplayText(item.nameI18n, item.lineCode || '--')}`,
@@ -1599,7 +1601,7 @@ function bindReferenceOptionControls(root = byId('content-area')) {
             const section = state.snapshot?.product?.sections?.find((entry) => entry.key === sectionKey);
             if (!section) return;
             section.isSelected = Boolean(event.currentTarget.checked);
-            if (section.key === 'optional_config') {
+            if (section.key === 'optional_config' || section.key === 'service_package') {
                 section.items?.forEach((item) => {
                     item.isSelected = section.isSelected;
                 });
