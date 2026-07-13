@@ -1442,6 +1442,22 @@
         }
 
         @media (max-width: 600px) {
+            .quote-media-carousel-stage {
+                aspect-ratio: auto;
+                height: auto;
+            }
+
+            .quote-media-slide {
+                height: auto;
+            }
+
+            .quote-media-slide img,
+            .quote-media-figure img {
+                height: auto;
+                max-height: none;
+                object-fit: contain;
+            }
+
             .quote-reference-table-container {
                 max-height: none;
                 overflow: visible;
