@@ -1217,7 +1217,7 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            color: #052e16;
+            color: #ffffff;
             content: '✓';
             font-size: 16px;
             font-weight: 900;
@@ -1481,6 +1481,7 @@
                 padding: 8px 4px;
                 overflow-wrap: anywhere;
                 word-break: break-word;
+                min-width: 0;
             }
 
             .quote-reference-table__select-head,
@@ -1505,8 +1506,19 @@
             }
 
             .quote-reference-money {
-                width: 13%;
+                width: 16%;
                 font-size: 9px;
+                text-align: center;
+            }
+
+            .quote-reference-table th:nth-last-child(2),
+            .quote-reference-table td:nth-last-child(2),
+            .quote-reference-table th:last-child,
+            .quote-reference-table td:last-child {
+                width: 16%;
+                padding-left: 2px;
+                padding-right: 2px;
+                text-align: center;
             }
 
             .quote-reference-checkbox {
