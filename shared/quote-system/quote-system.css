@@ -1463,12 +1463,31 @@
                 margin-bottom: 16px;
             }
 
+            body.customer-view .quote-reference-header h1 {
+                margin-bottom: 10px;
+                font-size: 26px;
+                font-weight: 800;
+                line-height: 1.2;
+            }
+
+            body.customer-view .quote-reference-header h2 {
+                gap: 6px;
+                margin-top: 8px;
+                padding-left: 8px;
+                border-left: 3px solid #4ade80;
+                font-size: 15px;
+                font-weight: 700;
+                line-height: 1.45;
+            }
+
             body.customer-view .quote-reference-ratebar {
                 order: 2;
             }
 
             body.customer-view .quote-reference-customer-card {
                 order: 3;
+                margin-top: 12px;
+                margin-bottom: 20px;
             }
 
             body.customer-view #rate-status-detail {
@@ -1477,6 +1496,7 @@
 
             body.customer-view #content-area {
                 order: 5;
+                margin-top: 8px;
             }
 
             body.customer-view #footer-note {
