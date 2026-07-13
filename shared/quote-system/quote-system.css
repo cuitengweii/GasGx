@@ -810,6 +810,12 @@
             color: #cbd5e1;
         }
 
+        body.customer-view #toolbar {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+
         body.quote-reference-body.customer-view #doc-container {
             margin-top: 1rem !important;
         }

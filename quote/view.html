@@ -13,10 +13,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="../shared/ui/main-auth.shared.js"></script>
-    <script src="./public-asset-version.js?v=20260329public94"></script>
+    <script src="./public-asset-version.js?v=20260329public95"></script>
     <script>window.AMSLoadQuotePublicStyles('../shared/quote-system/quote-system.css');</script>
 </head>
 <body class="quote-reference-body antialiased pb-10 md:pb-20 access-resolved">
+    <script>
+        (() => {
+            const shareView = new URLSearchParams(window.location.search).get('share_view');
+            if (new URLSearchParams(window.location.search).get('customer_view') === '1' || ['text', 'poster'].includes(shareView)) {
+                document.body.classList.add('customer-view');
+            }
+        })();
+    </script>
     <div id="access-gate-overlay" class="access-gate-overlay hidden">
         <div class="access-gate-card">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(93,214,44,0.35)] bg-[rgba(93,214,44,0.08)] text-[var(--gas-green-light)] text-xs font-mono-num tracking-[0.25em] uppercase mb-5">
