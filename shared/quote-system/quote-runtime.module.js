@@ -1537,7 +1537,7 @@ function quoteReferenceSectionMarkup(section, rates = state.rates) {
         const selected = sectionSelected && item.isSelected === true;
         const price = safeNumber(item.priceRmb, 0);
         const selectCell = selectable
-            ? `<td class="quote-reference-select-cell"><input class="quote-reference-checkbox" type="checkbox" data-quote-item-toggle data-section-key="${esc(section.key)}" data-item-index="${itemIndex}" ${selected ? 'checked' : ''} ${sectionSelected ? '' : 'disabled'} aria-label="${esc(t('optionalColumn'))}"></td>`
+            ? `<td class="quote-reference-select-cell"><input class="quote-reference-checkbox" type="checkbox" data-quote-item-toggle data-section-key="${esc(section.key)}" data-item-index="${itemIndex}" ${selected ? 'checked' : ''} aria-label="${esc(t('optionalColumn'))}"></td>`
             : '';
         const rowClass = `quote-reference-table__row ${selectable && selected ? 'is-selected' : ''}`;
         return `
@@ -1583,6 +1583,11 @@ function bindReferenceOptionControls(root = byId('content-area')) {
             const item = section?.items?.[itemIndex];
             if (!item) return;
             item.isSelected = Boolean(event.currentTarget.checked);
+            if (item.isSelected) {
+                section.isSelected = true;
+            } else if (!section.items.some((entry) => entry?.isSelected === true)) {
+                section.isSelected = false;
+            }
             renderContent();
             const itemType = sectionKey === 'service_package' ? '服务项' : '报价选配项';
             logQuoteBehavior(item.isSelected ? `客户选中${itemType}` : `客户取消${itemType}`, {
