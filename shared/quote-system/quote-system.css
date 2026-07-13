@@ -1147,6 +1147,10 @@
             border-left: 4px solid #3b82f6;
         }
 
+        .quote-reference-section--main {
+            border-left: 4px solid #4ade80;
+        }
+
         .quote-reference-section--service {
             border-left: 4px solid #f97316;
         }
