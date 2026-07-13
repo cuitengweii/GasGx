@@ -445,7 +445,8 @@ const state = {
     adminUser: null,
     authResolved: false,
     route: null,
-    customerView: params.get('customer_view') === '1',
+    customerView: params.get('customer_view') === '1'
+        || ['text', 'poster'].includes(params.get('share_view')),
     sharePayload: null,
     shareTarget: null,
     pendingSharedAccess: null,
@@ -2402,11 +2403,20 @@ async function exportImage() {
     }
 }
 
-function posterQuoteUrl() {
+function customerQuoteUrl(view = 'customer') {
     const url = new URL(window.location.href);
     url.hash = '';
     url.searchParams.set('customer_view', '1');
+    url.searchParams.set('share_view', view);
     return url.toString();
+}
+
+function posterQuoteUrl() {
+    return customerQuoteUrl('poster');
+}
+
+function textShareQuoteUrl() {
+    return customerQuoteUrl('text');
 }
 
 function posterCustomerName() {
@@ -2707,7 +2717,7 @@ function quoteTextShareContent() {
         `客户名称：${customerName}`,
         `系统预估总价：${formatCurrency('RMB', total)}`,
         validity ? `报价有效期：${validity}` : '',
-        `报价链接：${posterQuoteUrl()}`,
+        `报价链接：${textShareQuoteUrl()}`,
     ].filter(Boolean).join('\n');
 }
 
