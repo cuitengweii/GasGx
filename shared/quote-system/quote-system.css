@@ -1441,6 +1441,58 @@
             }
         }
 
+        @media (max-width: 600px) {
+            .quote-reference-table-container {
+                max-height: none;
+                overflow: visible;
+            }
+
+            .quote-reference-table {
+                min-width: 0;
+                table-layout: fixed;
+                white-space: normal;
+                font-size: 10px;
+            }
+
+            .quote-reference-table th,
+            .quote-reference-table td {
+                padding: 8px 4px;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            .quote-reference-table__select-head,
+            .quote-reference-select-cell {
+                width: 8%;
+            }
+
+            .quote-reference-code {
+                width: 10%;
+            }
+
+            .quote-reference-description {
+                width: 27%;
+            }
+
+            .quote-reference-brand {
+                width: 18%;
+            }
+
+            .quote-reference-qty {
+                width: 12%;
+            }
+
+            .quote-reference-money {
+                width: 13%;
+                font-size: 9px;
+            }
+
+            .quote-reference-checkbox {
+                width: 16px;
+                height: 16px;
+            }
+        }
+
         .quote-view-banner__title {
             color: #ffffff;
             font-size: 15px;
