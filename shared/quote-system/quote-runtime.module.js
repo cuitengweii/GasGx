@@ -1263,9 +1263,13 @@ function renderStaticText() {
         ? overviewTitle.replace(/产品总览/g, '报价')
         : overviewTitle;
     const quoteVersion = text(snapshot.quote?.quoteVersion || snapshot.quote?.version);
+    const templateCustomerName = snapshot.quote?.shareConfig?.preview_source === 'product_template'
+        ? pickDisplayText(snapshot.product?.ui_text?.receiver_placeholder, '')
+        : '';
     const customerName = text(
-        snapshot.quote.customerName
-        || snapshot.quote.customer_name
+        (snapshot.quote.customerName && snapshot.quote.customerName !== '模板预览' ? snapshot.quote.customerName : '')
+        || (snapshot.quote.customer_name && snapshot.quote.customer_name !== '模板预览' ? snapshot.quote.customer_name : '')
+        || templateCustomerName
         || snapshot.quote.customerProfile?.company_name
         || snapshot.quote.customerProfile?.companyName
         || snapshot.quote.shareConfig?.recipient_company
