@@ -1909,14 +1909,16 @@ async function saveInstance(user) {
 }
 
 async function saveProductPreviewInstance(user) {
+    flushPendingEditorChanges();
     const token = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`).replace(/[^a-z0-9]/gi, '').slice(0, 10).toLowerCase();
+    const previewCustomerName = localizedValue(state.product.ui_text?.receiver_placeholder);
     const payload = {
         brand_id: state.brand.id,
         product_id: state.product.id,
         public_slug: createPublicSlug(state.brand.slug, `${state.product.slug}-preview-${token}`),
         status: 'draft',
         last_active_status: 'draft',
-        customer_name: '模板预览',
+        customer_name: previewCustomerName || '模板预览',
         receiver_name: localizedValue(state.product.public_title) || state.product.product_code || state.product.slug,
         receiver_email: '',
         default_lang: state.currentLang || state.product.default_lang,
