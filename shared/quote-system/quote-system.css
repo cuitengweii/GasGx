@@ -1448,6 +1448,41 @@
         }
 
         @media (max-width: 600px) {
+            body.customer-view .quote-reference-export-area {
+                display: flex;
+                flex-direction: column;
+            }
+
+            body.customer-view .quote-reference-header {
+                display: contents;
+            }
+
+            body.customer-view .quote-reference-header__main {
+                order: 1;
+                width: 100%;
+                margin-bottom: 16px;
+            }
+
+            body.customer-view .quote-reference-ratebar {
+                order: 2;
+            }
+
+            body.customer-view .quote-reference-customer-card {
+                order: 3;
+            }
+
+            body.customer-view #rate-status-detail {
+                order: 4;
+            }
+
+            body.customer-view #content-area {
+                order: 5;
+            }
+
+            body.customer-view #footer-note {
+                order: 6;
+            }
+
             .quote-media-carousel-stage {
                 aspect-ratio: auto !important;
                 height: auto !important;
