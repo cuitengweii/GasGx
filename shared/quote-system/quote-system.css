@@ -1991,15 +1991,15 @@
 
         .quote-editor-bar__settings {
             order: 1;
-            flex: 0 1 660px;
-            flex-basis: 660px;
-            width: 660px;
-            max-width: 660px;
+            flex: 0 1 560px;
+            flex-basis: 560px;
+            width: 560px;
+            max-width: 560px;
             min-width: 0;
             padding: 0;
             margin: 0;
             align-content: start;
-            grid-template-columns: repeat(3, minmax(120px, 1fr)) !important;
+            grid-template-columns: repeat(3, minmax(100px, 1fr)) !important;
             align-items: end;
         }
 
