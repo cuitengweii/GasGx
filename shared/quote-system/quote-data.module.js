@@ -13,6 +13,7 @@ export const SECTION_KEYS = Object.freeze({
     MAIN: 'main_config',
     SERVICE: 'service_package',
     OPTIONAL: 'optional_config',
+    WEAR_PARTS: 'wear_parts',
 });
 export const MEDIA_LAYOUTS = Object.freeze({
     CAROUSEL: 'carousel',
@@ -52,6 +53,11 @@ const DEFAULT_SECTION_TITLES = Object.freeze({
         zh: '选配',
         en: 'Optional Config',
         ru: 'Опции',
+    },
+    [SECTION_KEYS.WEAR_PARTS]: {
+        zh: '易损件模块',
+        en: 'Wear Parts Module',
+        ru: 'Модуль быстроизнашиваемых деталей',
     },
 });
 
@@ -207,6 +213,12 @@ export function createSectionConfig() {
             subtotalMode: 'manual',
             subtotal: 0,
         },
+        {
+            key: SECTION_KEYS.WEAR_PARTS,
+            title: { ...DEFAULT_SECTION_TITLES[SECTION_KEYS.WEAR_PARTS] },
+            subtotalMode: 'manual',
+            subtotal: 0,
+        },
     ];
 }
 
@@ -217,7 +229,7 @@ export function normalizeSectionConfig(value) {
     const byKey = new Map(
         value
             .map((entry) => ({
-                key: [SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL].includes(entry?.key)
+                key: [SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL, SECTION_KEYS.WEAR_PARTS].includes(entry?.key)
                     ? entry.key
                     : SECTION_KEYS.MAIN,
                 title: normalizeLocalizedText(entry?.title, pickLocalized(DEFAULT_SECTION_TITLES[entry?.key] || DEFAULT_SECTION_TITLES[SECTION_KEYS.MAIN], 'zh')),
@@ -233,7 +245,7 @@ export function normalizeSectionConfig(value) {
 export function createQuoteItem(sectionKey = SECTION_KEYS.MAIN) {
     return {
         localId: globalThis.crypto?.randomUUID?.() || `item-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-        section_key: [SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL].includes(sectionKey)
+        section_key: [SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL, SECTION_KEYS.WEAR_PARTS].includes(sectionKey)
             ? sectionKey
             : SECTION_KEYS.MAIN,
         sort_order: 100,
@@ -300,9 +312,9 @@ export function normalizeQuoteItem(value, fallbackSectionKey = SECTION_KEYS.MAIN
         ...base,
         ...value,
         localId: text(value?.localId || value?.id || base.localId),
-        section_key: [SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL].includes(value?.section_key)
+        section_key: [SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL, SECTION_KEYS.WEAR_PARTS].includes(value?.section_key)
             ? value.section_key
-            : ([SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL].includes(fallbackSectionKey) ? fallbackSectionKey : SECTION_KEYS.MAIN),
+            : ([SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL, SECTION_KEYS.WEAR_PARTS].includes(fallbackSectionKey) ? fallbackSectionKey : SECTION_KEYS.MAIN),
         sort_order: safeNumber(value?.sort_order, base.sort_order),
         line_code: text(value?.line_code || value?.id || ''),
         brand_label: text(value?.brand_label || value?.brand || ''),

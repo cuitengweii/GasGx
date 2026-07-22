@@ -14,7 +14,7 @@
     normalizeShareConfig,
     normalizeShareHistoryEntry,
     sortMediaItems,
-} from './quote-data.module.js?v=20260711service03';
+} from './quote-data.module.js?v=20260722wearparts01';
 
 const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
@@ -35,6 +35,7 @@ const sharedUiDict = {
     mainConfig: 'Main Config',
     servicePackage: 'Service Package',
     optionalConfig: 'Optional Config',
+    wearPartsModule: 'Wear Parts Module',
     systemTotal: 'EST. SYSTEM TOTAL',
     pricingBreakdown: 'PRICE BREAKDOWN',
     pricingFormula: 'CALCULATION',
@@ -46,6 +47,7 @@ const sharedUiDict = {
     mainTotal: 'Main configuration total',
     optionalIncrease: 'Optional additions',
     serviceTotal: 'Service package total',
+    wearPartsTotal: 'Wear parts module total',
     optionalSelect: 'Include in quote',
     sectionSelect: 'Select',
     headers: ['SEQ', 'DESCRIPTION', 'BRAND', 'QTY', 'RMB (?)', 'USD ($)'],
@@ -172,6 +174,7 @@ const dict = {
         mainConfig: '主配置',
         servicePackage: '服务包',
         optionalConfig: '选配',
+        wearPartsModule: '易损件模块',
         systemTotal: '系统预估总价',
         pricingBreakdown: '报价构成',
         pricingFormula: '计算过程',
@@ -183,6 +186,7 @@ const dict = {
         mainTotal: '主配总价',
         optionalIncrease: '选配增加',
         serviceTotal: '服务包总价',
+        wearPartsTotal: '易损件模块总价',
         optionalSelect: '计入报价',
         sectionSelect: '选中',
         headers: ['序号', '模块描述', '规格品牌', '数量', '人民币 (¥)', '美元 ($)'],
@@ -307,6 +311,7 @@ const dict = {
         mainConfig: 'Основная конфигурация',
         servicePackage: 'Сервисный пакет',
         optionalConfig: 'Дополнительная конфигурация',
+        wearPartsModule: 'Модуль быстроизнашиваемых деталей',
         systemTotal: 'Расчётная общая стоимость системы',
         pricingBreakdown: 'Состав стоимости',
         pricingFormula: 'Расчёт',
@@ -318,6 +323,7 @@ const dict = {
         mainTotal: 'Стоимость основной конфигурации',
         optionalIncrease: 'Дополнительные опции',
         serviceTotal: 'Стоимость сервисного пакета',
+        wearPartsTotal: 'Стоимость модуля быстроизнашиваемых деталей',
         optionalSelect: 'Включить в предложение',
         sectionSelect: 'Выбрать',
         headers: ['№', 'Описание модуля', 'Спецификация / бренд', 'Кол-во', 'RMB (¥)', 'USD ($)'],
@@ -1031,13 +1037,14 @@ function getSectionLabel(section) {
     const explicit = pickDisplayText(section?.title, '');
     if (explicit) return explicit;
     if (section?.key === 'service_package') return t('servicePackage');
+    if (section?.key === 'wear_parts') return t('wearPartsModule');
     return section?.key === 'optional_config' ? t('optionalConfig') : t('mainConfig');
 }
 
 function sectionSubtotal(section) {
-    const gatedSection = section?.key === 'optional_config' || section?.key === 'service_package';
+    const gatedSection = section?.key === 'optional_config' || section?.key === 'service_package' || section?.key === 'wear_parts';
     if (gatedSection && section?.isSelected !== true) return 0;
-    if (section?.key === 'optional_config' || section?.key === 'service_package') {
+    if (section?.key === 'optional_config' || section?.key === 'service_package' || section?.key === 'wear_parts') {
         const items = Array.isArray(section?.items) ? section.items : [];
         const hasSelectionState = items.some((item) => Object.prototype.hasOwnProperty.call(item || {}, 'isSelected'));
         if (hasSelectionState) {
@@ -1515,20 +1522,21 @@ function bindScrollableTables(root = document) {
 
 function quoteReferenceSectionTone(sectionKey = '') {
     if (sectionKey === 'optional_config') return 'optional';
-    if (sectionKey === 'service_package') return 'service';
+    if (sectionKey === 'service_package' || sectionKey === 'wear_parts') return 'service';
     return 'main';
 }
 
 function quoteReferenceSectionIcon(sectionKey = '') {
     if (sectionKey === 'optional_config') return 'fa-puzzle-piece';
     if (sectionKey === 'service_package') return 'fa-wrench';
+    if (sectionKey === 'wear_parts') return 'fa-screwdriver-wrench';
     return 'fa-gears';
 }
 
 function quoteReferenceSectionMarkup(section, rates = state.rates) {
     const optional = section.key === 'optional_config';
-    const selectable = optional || section.key === 'service_package';
-    const gated = optional || section.key === 'service_package';
+    const selectable = optional || section.key === 'service_package' || section.key === 'wear_parts';
+    const gated = optional || section.key === 'service_package' || section.key === 'wear_parts';
     const sectionSelected = !gated || section.isSelected === true;
     const tone = quoteReferenceSectionTone(section.key);
     const subtotal = sectionSubtotal(section);
@@ -1589,7 +1597,7 @@ function bindReferenceOptionControls(root = byId('content-area')) {
                 section.isSelected = false;
             }
             renderContent();
-            const itemType = sectionKey === 'service_package' ? '服务项' : '报价选配项';
+            const itemType = sectionKey === 'service_package' || sectionKey === 'wear_parts' ? '服务项' : '报价选配项';
             logQuoteBehavior(item.isSelected ? `客户选中${itemType}` : `客户取消${itemType}`, {
                 section_key: sectionKey,
                 item_index: itemIndex,
@@ -1606,7 +1614,7 @@ function bindReferenceOptionControls(root = byId('content-area')) {
             const section = state.snapshot?.product?.sections?.find((entry) => entry.key === sectionKey);
             if (!section) return;
             section.isSelected = Boolean(event.currentTarget.checked);
-            if (section.key === 'optional_config' || section.key === 'service_package') {
+            if (section.key === 'optional_config' || section.key === 'service_package' || section.key === 'wear_parts') {
                 section.items?.forEach((item) => {
                     item.isSelected = section.isSelected;
                 });
@@ -1654,6 +1662,7 @@ function renderContent() {
         [t('mainTotal'), sectionTotals.main_config || 0],
         [t('optionalIncrease'), sectionTotals.optional_config || 0],
         [t('serviceTotal'), sectionTotals.service_package || 0],
+        [t('wearPartsTotal'), sectionTotals.wear_parts || 0],
     ];
     const mediaState = getProductMediaState(snapshot);
     const mediaBlock = renderProductMediaBlock(snapshot);
@@ -2511,6 +2520,7 @@ async function exportPoster() {
                 <div style="display:flex;justify-content:space-between;"><span>${esc(t('mainTotal'))}</span><strong>${esc(formatCurrency('RMB', sectionTotals.main_config || 0))}</strong></div>
                 <div style="display:flex;justify-content:space-between;"><span>${esc(t('optionalIncrease'))}</span><strong>${esc(formatCurrency('RMB', sectionTotals.optional_config || 0))}</strong></div>
                 <div style="display:flex;justify-content:space-between;"><span>${esc(t('serviceTotal'))}</span><strong>${esc(formatCurrency('RMB', sectionTotals.service_package || 0))}</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span>${esc(t('wearPartsTotal'))}</span><strong>${esc(formatCurrency('RMB', sectionTotals.wear_parts || 0))}</strong></div>
             </div>
         </div>
         <div style="margin-top:54px;display:flex;flex-direction:column;align-items:center;text-align:center;">

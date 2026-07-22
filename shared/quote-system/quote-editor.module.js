@@ -25,7 +25,7 @@ import {
     normalizeSectionConfig,
     sortItems,
     sortMediaItems,
-} from './quote-data.module.js?v=20260711service03';
+} from './quote-data.module.js?v=20260722wearparts01';
 
 const RATE_API_URL = 'https://open.er-api.com/v6/latest/CNY';
 const TABLE_BRANDS = 'quote_brands';
@@ -48,16 +48,18 @@ const dict = {
         mainConfig: '主配置',
         servicePackage: '服务包',
         optionalConfig: '选配',
+        wearPartsModule: '易损件模块',
         systemTotal: '系统预估总价 / EST. SYSTEM TOTAL',
         pricingBreakdown: '报价构成',
         pricingFormula: '计算过程',
         mainTotal: '主配总价',
         optionalIncrease: '选配增加',
         serviceTotal: '服务包总价',
+        wearPartsTotal: '易损件模块总价',
         send: '发送',
         refresh: '刷新汇率',
         receiverPlaceholder: '请输入客户名称',
-        sectionSubtotalHint: '主配置和服务包可直接改区块小计；选配请勾选要计入报价的行。',
+        sectionSubtotalHint: '主配置、服务包和易损件模块可直接改区块小计；选配请勾选要计入报价的行。',
         defaultLang: '默认语言',
         validityHours: '有效期（小时）',
         customerName: '客户名称',
@@ -94,6 +96,7 @@ const dict = {
         addMainRow: '主配置新增行',
         addServiceRow: '服务包新增行',
         addOptionalRow: '选配新增行',
+        addWearPartsRow: '易损件服务包新增行',
         saveProductTemplate: '保存产品模板',
         saveDraft: '保存草稿',
         needLogin: '当前未检测到管理员登录，保存可能会被数据库策略拒绝。',
@@ -114,16 +117,18 @@ const dict = {
         mainConfig: 'Main Config',
         servicePackage: 'Service Package',
         optionalConfig: 'Optional Config',
+        wearPartsModule: 'Wear Parts Module',
         systemTotal: 'EST. SYSTEM TOTAL',
         pricingBreakdown: 'PRICE BREAKDOWN',
         pricingFormula: 'CALCULATION',
         mainTotal: 'Main configuration total',
         optionalIncrease: 'Optional additions',
         serviceTotal: 'Service package total',
+        wearPartsTotal: 'Wear parts module total',
         send: 'Send',
         refresh: 'Refresh Rates',
         receiverPlaceholder: 'Enter receiver',
-        sectionSubtotalHint: 'Edit main/service subtotals directly; select optional rows to include them in the quote.',
+        sectionSubtotalHint: 'Edit main/service/wear-parts subtotals directly; select optional rows to include them in the quote.',
         defaultLang: 'Default language',
         validityHours: 'Validity (hours)',
         customerName: 'Customer name',
@@ -160,6 +165,7 @@ const dict = {
         addMainRow: 'Add Main Config Row',
         addServiceRow: 'Add Service Package Row',
         addOptionalRow: 'Add Optional Row',
+        addWearPartsRow: 'Add Wear Parts Service Row',
         saveProductTemplate: 'Save Product Template',
         saveDraft: 'Save Draft',
         needLogin: 'Admin login was not detected. Save may be rejected by RLS.',
@@ -180,16 +186,18 @@ const dict = {
         mainConfig: 'Основная конфигурация',
         servicePackage: 'Сервисный пакет',
         optionalConfig: 'Опции',
+        wearPartsModule: 'Модуль быстроизнашиваемых деталей',
         systemTotal: 'ОЦЕНОЧНАЯ СТОИМОСТЬ СИСТЕМЫ',
         pricingBreakdown: 'Состав стоимости',
         pricingFormula: 'Расчёт',
         mainTotal: 'Стоимость основной конфигурации',
         optionalIncrease: 'Дополнительные опции',
         serviceTotal: 'Стоимость сервисного пакета',
+        wearPartsTotal: 'Стоимость модуля быстроизнашиваемых деталей',
         send: 'Отправить',
         refresh: 'Обновить курсы',
         receiverPlaceholder: 'Введите получателя',
-        sectionSubtotalHint: 'Изменяйте суммы основной конфигурации и сервиса; отмечайте опции для включения в предложение.',
+        sectionSubtotalHint: 'Изменяйте суммы основной конфигурации, сервиса и быстроизнашиваемых деталей; отмечайте опции для включения в предложение.',
         defaultLang: 'Язык по умолчанию',
         validityHours: 'Срок (часы)',
         customerName: 'Клиент',
@@ -226,6 +234,7 @@ const dict = {
         addMainRow: 'Добавить строку основной конфигурации',
         addServiceRow: 'Добавить строку сервисного пакета',
         addOptionalRow: 'Добавить строку дополнительной конфигурации',
+        addWearPartsRow: 'Добавить строку пакета быстроизнашиваемых деталей',
         saveProductTemplate: 'Сохранить шаблон продукта',
         saveDraft: 'Сохранить черновик',
         needLogin: 'Администратор не авторизован. Сохранение может быть отклонено RLS.',
@@ -1025,6 +1034,7 @@ function renderEditorActions() {
     byId('btn-add-main-row').textContent = editorT('addMainRow');
     byId('btn-add-service-row').textContent = editorT('addServiceRow');
     byId('btn-add-optional-row').textContent = editorT('addOptionalRow');
+    byId('btn-add-wear-parts-row').textContent = editorT('addWearPartsRow');
     const saveLabel = state.kind === 'product' ? editorT('saveProductTemplate') : editorT('saveDraft');
     updateSaveButtons(saveLabel, state.saveInFlight);
     if (saveButton) saveButton.textContent = saveLabel;
@@ -1187,6 +1197,7 @@ function renderContent() {
         [t('mainTotal'), sectionTotals[SECTION_KEYS.MAIN] || 0],
         [t('optionalIncrease'), sectionTotals[SECTION_KEYS.OPTIONAL] || 0],
         [t('serviceTotal'), sectionTotals[SECTION_KEYS.SERVICE] || 0],
+        [t('wearPartsTotal'), sectionTotals[SECTION_KEYS.WEAR_PARTS] || 0],
     ];
     const mediaBlock = renderMediaBlock();
     const mediaConfig = normalizeMediaConfig(state.product.media_config || {});
@@ -1199,7 +1210,7 @@ function renderContent() {
             <tr class="quote-section-row" data-section-key="${esc(section.key)}" style="background-color: var(--bg-base);">
                 <td class="text-[var(--text-muted)] opacity-50 text-center text-xs font-mono-num whitespace-nowrap">-</td>
                 <td class="text-[var(--gas-green-light)] font-semibold whitespace-nowrap">
-                    <span class="quote-editable quote-editable-inline" contenteditable="true" data-section-title="${esc(section.key)}">${esc(localizedValue(section.title) || (section.key === SECTION_KEYS.OPTIONAL ? t('optionalConfig') : section.key === SECTION_KEYS.SERVICE ? t('servicePackage') : t('mainConfig')))}</span>
+                    <span class="quote-editable quote-editable-inline" contenteditable="true" data-section-title="${esc(section.key)}">${esc(localizedValue(section.title) || (section.key === SECTION_KEYS.OPTIONAL ? t('optionalConfig') : section.key === SECTION_KEYS.SERVICE ? t('servicePackage') : section.key === SECTION_KEYS.WEAR_PARTS ? t('wearPartsModule') : t('mainConfig')))}</span>
                 </td>
                 <td class="text-[var(--text-muted)] opacity-50 text-xs whitespace-nowrap">-</td>
                 <td class="text-[var(--text-muted)] opacity-50 text-center font-mono-num whitespace-nowrap">-</td>
@@ -2166,6 +2177,11 @@ function bindGlobal() {
     };
     byId('btn-add-optional-row').onclick = () => {
         state.items = [...state.items, { ...createQuoteItem(SECTION_KEYS.OPTIONAL), sort_order: (state.items.length + 1) * 10 }];
+        renderAll();
+        markEditorDirty();
+    };
+    byId('btn-add-wear-parts-row').onclick = () => {
+        state.items = [...state.items, { ...createQuoteItem(SECTION_KEYS.WEAR_PARTS), sort_order: (state.items.length + 1) * 10 }];
         renderAll();
         markEditorDirty();
     };
