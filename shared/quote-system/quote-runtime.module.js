@@ -1316,8 +1316,6 @@ function renderStaticText() {
     byId('btn-text-refresh').textContent = uiText('refresh_button', 'refresh');
     byId('export-loading-text').textContent = t('exportLoading');
     byId('export-sub-text').textContent = t('exportSubText');
-    byId('back-to-top').setAttribute('aria-label', state.currentLang === 'zh' ? '返回顶部' : state.currentLang === 'ru' ? 'Наверх' : 'Back to top');
-    byId('back-to-top').setAttribute('title', state.currentLang === 'zh' ? '返回顶部' : state.currentLang === 'ru' ? 'Наверх' : 'Back to top');
     byId('share-modal-title').textContent = t('shareTitle');
     byId('share-modal-desc').textContent = t('shareDesc');
     byId('share-expiry-label').textContent = t('shareExpiryLabel');
@@ -2117,7 +2115,6 @@ function applySnapshot(snapshot) {
     renderAll();
     syncQuoteConfirmationAccessAlert();
     startClock();
-    updateBackToTop();
 }
 
 function openAccessOverlay() {
@@ -2701,17 +2698,6 @@ async function exportPdf() {
     } finally {
         hideExportOverlay();
     }
-}
-
-function updateBackToTop() {
-    const button = byId('back-to-top');
-    if (!button) return;
-    const visible = window.scrollY > Math.max(320, window.innerHeight * 0.6);
-    button.classList.toggle('is-visible', visible);
-}
-
-function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function closeShareMenu() {
@@ -3667,7 +3653,6 @@ function bindEvents() {
     byId('btn-generate-share')?.addEventListener('click', () => {
         void generateShareLink();
     });
-    byId('back-to-top')?.addEventListener('click', scrollToTop);
     byId('access-passcode-submit')?.addEventListener('click', () => {
         void handlePasscodeSubmit();
     });
@@ -3704,7 +3689,6 @@ function bindEvents() {
     window.addEventListener('resize', () => {
         if (!isMobileViewport()) closeShareMenu();
     });
-    window.addEventListener('scroll', updateBackToTop, { passive: true });
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
             void refreshAuthState({ rerender: true });
