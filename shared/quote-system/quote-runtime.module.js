@@ -101,6 +101,10 @@ const sharedUiDict = {
     accessCheckingMessage: 'Verifying share token and admin session. Please wait.',
     accessInvalid: 'The share link is invalid or corrupted. Generate a new one.',
     accessExpired: 'This share link has expired.',
+    quoteValidityExpiredBadge: 'Quotation expired',
+    quoteValidityExpiredTitle: 'This quotation has expired',
+    quoteValidityExpiredMessage: 'The quotation validity period has ended, so its details are no longer available.',
+    quoteValidityExpiredHelp: 'Please contact your GasGx sales representative for an updated quotation.',
     accessPasscodeTitle: 'Passcode required',
     accessPasscodeMessage: 'This share link is protected by a passcode. Enter the 4-character code to continue.',
     accessPasscodeLabel: 'Passcode',
@@ -237,6 +241,10 @@ const dict = {
         accessCheckingMessage: '正在检查分享链接和管理员会话，请稍候。',
         accessInvalid: '分享链接无效或已损坏，请重新生成。',
         accessExpired: '分享链接已过期，请联系管理员重新生成。',
+        quoteValidityExpiredBadge: '报价已失效',
+        quoteValidityExpiredTitle: '本报价已超过有效期',
+        quoteValidityExpiredMessage: '报价有效期已结束，当前报价内容已停止展示。',
+        quoteValidityExpiredHelp: '如需更新报价或继续沟通，请联系您的 GasGx 销售顾问。',
         accessPasscodeTitle: '请输入提取码',
         accessPasscodeMessage: '当前分享链接已开启提取码保护，请输入 4 位提取码继续访问。',
         accessPasscodeLabel: '请输入提取码',
@@ -371,6 +379,10 @@ const dict = {
         accessCheckingMessage: 'Проверяем ссылку и сессию администратора.',
         accessInvalid: 'Ссылка недействительна или повреждена. Создайте новую ссылку.',
         accessExpired: 'Срок действия ссылки истёк.',
+        quoteValidityExpiredBadge: 'Предложение истекло',
+        quoteValidityExpiredTitle: 'Срок действия предложения истёк',
+        quoteValidityExpiredMessage: 'Срок действия этого предложения завершён, поэтому его детали больше недоступны.',
+        quoteValidityExpiredHelp: 'Свяжитесь с вашим менеджером GasGx, чтобы получить обновлённое предложение.',
         accessPasscodeTitle: 'Требуется код доступа',
         accessPasscodeMessage: 'Введите 4-значный код доступа, чтобы продолжить.',
         accessPasscodeLabel: 'Код доступа',
@@ -450,6 +462,7 @@ const state = {
     pendingSharedAccess: null,
     isMobileMenuOpen: false,
     clockTimer: null,
+    quoteExpired: false,
     galleryIndex: 0,
     galleryLoading: false,
     galleryLoadRequest: 0,
@@ -1739,12 +1752,49 @@ function renderAll() {
     syncShareAvailability();
 }
 
-function baseQuoteTime() {
-    const published = Date.parse(state.snapshot?.quote?.publishedAt || '');
+function quoteBaseTime(snapshot = state.snapshot) {
+    const published = Date.parse(snapshot?.quote?.publishedAt || '');
     if (Number.isFinite(published)) return published;
-    const updated = Date.parse(state.snapshot?.quote?.updatedAt || '');
+    const updated = Date.parse(snapshot?.quote?.updatedAt || '');
     if (Number.isFinite(updated)) return updated;
     return Date.now();
+}
+
+function quoteValidityDeadline(snapshot = state.snapshot) {
+    if (!snapshot?.quote) return NaN;
+    return quoteBaseTime(snapshot) + safeNumber(snapshot.quote.validityHours, 72) * 60 * 60 * 1000;
+}
+
+function isQuoteValidityExpired(snapshot = state.snapshot) {
+    const deadline = quoteValidityDeadline(snapshot);
+    return Number.isFinite(deadline) && deadline <= Date.now();
+}
+
+function blockExpiredQuote(snapshot) {
+    state.snapshot = snapshot;
+    state.currentLang = resolveRuntimeLang(
+        params.get('lang') || snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG,
+        snapshot,
+    );
+    state.quoteExpired = true;
+    if (state.clockTimer) window.clearInterval(state.clockTimer);
+    state.clockTimer = null;
+    closeShareMenu();
+    document.body.classList.remove('access-resolved');
+    setAccessOverlay({
+        badge: t('quoteValidityExpiredBadge'),
+        title: t('quoteValidityExpiredTitle'),
+        message: t('quoteValidityExpiredMessage'),
+        help: t('quoteValidityExpiredHelp'),
+        icon: 'fa-hourglass-end',
+        showRefresh: false,
+    });
+}
+
+function ensureQuoteValidity(snapshot) {
+    if (state.isAdmin || !isQuoteValidityExpired(snapshot)) return true;
+    blockExpiredQuote(snapshot);
+    return false;
 }
 
 function formatValidity(remainingMs) {
@@ -1764,15 +1814,16 @@ function renderClock() {
     if (liveDate) liveDate.textContent = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     if (liveClock) liveClock.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
     if (validity && state.snapshot) {
-        const target = baseQuoteTime() + safeNumber(state.snapshot.quote.validityHours, 72) * 60 * 60 * 1000;
+        const target = quoteValidityDeadline();
         validity.textContent = formatValidity(target - Date.now());
+        if (!state.isAdmin && isQuoteValidityExpired()) blockExpiredQuote(state.snapshot);
     }
 }
 
 function startClock() {
     if (state.clockTimer) window.clearInterval(state.clockTimer);
     renderClock();
-    state.clockTimer = window.setInterval(renderClock, 1000);
+    if (!state.quoteExpired) state.clockTimer = window.setInterval(renderClock, 1000);
 }
 
 function changedRateCodes(previousRates = {}, nextRates = {}, digits = null) {
@@ -2046,6 +2097,7 @@ async function submitEmbeddedPublicConfirmation() {
 
 function applySnapshot(snapshot) {
     state.snapshot = snapshot;
+    state.quoteExpired = false;
     prepareQuoteBehaviorTracking();
     state.galleryIndex = 0;
     state.galleryLoading = false;
@@ -2070,12 +2122,14 @@ function openAccessOverlay() {
 function closeAccessOverlay() {
     const overlay = byId('access-gate-overlay');
     if (overlay) overlay.classList.add('hidden');
+    document.body.classList.add('access-resolved');
 }
 
 function setAccessOverlay({
     title,
     message,
     icon = 'fa-circle-info',
+    badge = '',
     help = '',
     meta = '',
     showRefresh = true,
@@ -2084,6 +2138,7 @@ function setAccessOverlay({
     openAccessOverlay();
     const iconNode = byId('access-gate-icon');
     if (iconNode) iconNode.className = `fa-solid ${icon}`;
+    byId('access-gate-badge').textContent = text(badge || t('accessBadge'));
     byId('access-gate-title').textContent = text(title);
     byId('access-gate-message').textContent = text(message);
     const helpNode = byId('access-gate-help');
@@ -2140,6 +2195,7 @@ async function handlePasscodeSubmit() {
     const statusNode = byId('access-passcode-status');
     const candidate = text(input?.value).toUpperCase();
     if (candidate === text(pending.payload?.passcode).toUpperCase()) {
+        if (!ensureQuoteValidity(pending.snapshot)) return;
         persistUnlockedPasscode(pending.snapshot.brand?.share_unlock_prefix, pending.signaturePart, candidate);
         state.sharePayload = pending.payload;
         state.pendingSharedAccess = null;
@@ -2195,6 +2251,7 @@ async function resolveRouteSnapshot() {
             });
             return false;
         }
+        if (!ensureQuoteValidity(snapshot)) return false;
         closeAccessOverlay();
         applySnapshot(snapshot);
         await fetchEmbeddedPublicConfirmation();
@@ -2218,6 +2275,7 @@ async function resolveRouteSnapshot() {
         });
         const result = await resolveSharedSnapshot(state.route.token);
         if (result.status === 'allowed') {
+            if (!ensureQuoteValidity(result.snapshot)) return false;
             state.sharePayload = result.payload;
             closeAccessOverlay();
             applySnapshot(result.snapshot);
@@ -2288,6 +2346,7 @@ async function resolveRouteSnapshot() {
             });
             return false;
         }
+        if (!ensureQuoteValidity(snapshot)) return false;
         closeAccessOverlay();
         applySnapshot(snapshot);
         await fetchEmbeddedPublicConfirmation();
@@ -2314,6 +2373,7 @@ async function resolveRouteSnapshot() {
         });
         return false;
     }
+    if (!ensureQuoteValidity(snapshot)) return false;
     closeAccessOverlay();
     applySnapshot(snapshot);
     await fetchEmbeddedPublicConfirmation();
@@ -3645,6 +3705,12 @@ function bindEvents() {
 async function init() {
     bindEvents();
     state.route = resolveInitialRoute();
+    setAccessOverlay({
+        title: t('accessCheckingTitle'),
+        message: t('accessCheckingMessage'),
+        icon: 'fa-spinner fa-spin',
+        showRefresh: false,
+    });
     await refreshAuthState({ force: true });
     const resolved = await resolveRouteSnapshot();
     if (resolved) {
