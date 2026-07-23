@@ -2536,6 +2536,18 @@ function posterQuoteUrl() {
 }
 
 function textShareQuoteUrl() {
+    const publicSlug = text(
+        state.snapshot?.quote?.publicSlug
+        || state.snapshot?.quote?.public_slug
+        || state.sharePayload?.quoteSlug
+        || state.shareTarget?.quoteSlug,
+    );
+    const previewNeedsSnapshot = state.route?.type === 'preview';
+    if (publicSlug && (!previewNeedsSnapshot || state.snapshot?.quote?.shareSnapshotReady)) {
+        const url = new URL('/q/', window.location.origin);
+        url.searchParams.set('q', publicSlug);
+        return url.toString();
+    }
     return customerQuoteUrl('text');
 }
 

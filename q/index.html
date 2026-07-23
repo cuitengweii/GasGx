@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Opening GasGx quotation</title>
+    <script>
+        (function openCustomerQuote() {
+            const params = new URLSearchParams(window.location.search);
+            const quoteSlug = params.get('q');
+            const target = new URL('/quote/view.html', window.location.origin);
+            if (quoteSlug) {
+                target.searchParams.set('quote', quoteSlug);
+                target.searchParams.set('customer_view', '1');
+                target.searchParams.set('share_view', 'text');
+            }
+            const language = params.get('lang');
+            if (language) target.searchParams.set('lang', language);
+            window.location.replace(target.toString());
+        }());
+    </script>
+</head>
+<body></body>
+</html>
