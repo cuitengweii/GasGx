@@ -2377,7 +2377,28 @@ async function exportImage() {
     }
 }
 
+function publishedCustomerQuoteUrl(view = 'customer') {
+    const publicSlug = text(
+        state.snapshot?.quote?.publicSlug
+        || state.snapshot?.quote?.public_slug
+        || state.sharePayload?.quoteSlug
+        || state.shareTarget?.quoteSlug,
+    );
+    const quoteStatus = text(state.snapshot?.quote?.status).toLowerCase();
+    if (!publicSlug || (quoteStatus && quoteStatus !== 'published')) return '';
+
+    const url = new URL('/quote/view.html', window.location.origin);
+    url.searchParams.set('quote', publicSlug);
+    url.searchParams.set('customer_view', '1');
+    url.searchParams.set('share_view', view);
+    if (SUPPORTED_LANGS.includes(state.currentLang)) url.searchParams.set('lang', state.currentLang);
+    return url.toString();
+}
+
 function customerQuoteUrl(view = 'customer') {
+    const publishedUrl = publishedCustomerQuoteUrl(view);
+    if (publishedUrl) return publishedUrl;
+
     const url = new URL(window.location.href);
     url.hash = '';
     url.searchParams.set('customer_view', '1');
@@ -2390,7 +2411,7 @@ function posterQuoteUrl() {
 }
 
 function textShareQuoteUrl() {
-    return customerQuoteUrl('text');
+    return publishedCustomerQuoteUrl('text');
 }
 
 function posterCustomerName() {
@@ -2677,7 +2698,7 @@ async function copyText(value) {
     }
 }
 
-function quoteTextShareContent() {
+function quoteTextShareContent(quoteUrl = textShareQuoteUrl()) {
     const snapshot = state.snapshot;
     const productTitle = pickDisplayText(
         snapshot?.product?.public_title,
@@ -2692,12 +2713,17 @@ function quoteTextShareContent() {
         `客户名称：${customerName}`,
         `系统预估总价：${formatCurrency('RMB', total)}`,
         validity ? `报价有效期：${validity}` : '',
-        `报价链接：${textShareQuoteUrl()}`,
+        `报价链接：${quoteUrl}`,
     ].filter(Boolean).join('\n');
 }
 
 async function shareQuoteText() {
-    const copied = await copyText(quoteTextShareContent());
+    const quoteUrl = textShareQuoteUrl();
+    if (!quoteUrl) {
+        setShareMenuStatus(t('shareUnavailable'), true);
+        return;
+    }
+    const copied = await copyText(quoteTextShareContent(quoteUrl));
     setShareMenuStatus(copied ? t('textShareSuccess') : t('textShareError'), !copied);
 }
 
