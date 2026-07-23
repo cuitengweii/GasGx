@@ -747,13 +747,21 @@ function sectionSubtotal(section, items = []) {
             return sum + Math.max(0, safeNumber(item.price_rmb, 0));
         }, 0);
     }
+    const manualSubtotal = safeNumber(section?.subtotal, 0);
+    const defaultToItemTotal = section?.key === SECTION_KEYS.SERVICE || section?.key === SECTION_KEYS.WEAR_PARTS;
+    if (section?.subtotalMode === 'manual' && (!defaultToItemTotal || manualSubtotal > 0)) {
+        return manualSubtotal;
+    }
     if (section?.subtotalMode === 'sum') {
         return items.reduce((sum, item) => {
             if (item.is_included) return sum;
             return sum + Math.max(0, safeNumber(item.price_rmb, 0));
         }, 0);
     }
-    return safeNumber(section?.subtotal, 0);
+    return items.reduce((sum, item) => {
+        if (item.is_included) return sum;
+        return sum + Math.max(0, safeNumber(item.price_rmb, 0));
+    }, 0);
 }
 
 function quoteTotal() {

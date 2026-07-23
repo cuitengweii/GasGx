@@ -1048,22 +1048,22 @@ function getSectionLabel(section) {
 }
 
 function sectionSubtotal(section) {
-    const gatedSection = section?.key === 'optional_config' || section?.key === 'service_package' || section?.key === 'wear_parts';
-    const hasExplicitSectionSelection = Object.prototype.hasOwnProperty.call(section || {}, 'isSelected');
-    const isManualSelectableSection = section?.subtotalMode === 'manual'
-        && (section?.key === 'service_package' || section?.key === 'wear_parts');
-    if (gatedSection && hasExplicitSectionSelection && section?.isSelected !== true) return 0;
-    if (section?.key === 'optional_config' || section?.key === 'service_package' || section?.key === 'wear_parts') {
-        const items = Array.isArray(section?.items) ? section.items : [];
-        const hasSelectionState = items.some((item) => Object.prototype.hasOwnProperty.call(item || {}, 'isSelected'));
-        if (hasSelectionState && (!isManualSelectableSection || safeNumber(section?.subtotal, 0) <= 0)) {
-            return items.reduce((sum, item) => {
-                if (item?.isSelected !== true || item?.isIncluded === true) return sum;
-                return sum + Math.max(0, safeNumber(item?.priceRmb, 0));
-            }, 0);
-        }
+    const items = Array.isArray(section?.items) ? section.items : [];
+    if (section?.key === 'optional_config') {
+        return items.reduce((sum, item) => {
+            if (item?.isSelected !== true || item?.isIncluded === true) return sum;
+            return sum + Math.max(0, safeNumber(item?.priceRmb, 0));
+        }, 0);
     }
-    return safeNumber(section?.subtotal, 0);
+    const manualSubtotal = safeNumber(section?.subtotal, 0);
+    const defaultToItemTotal = section?.key === 'service_package' || section?.key === 'wear_parts';
+    if (section?.subtotalMode === 'manual' && defaultToItemTotal && manualSubtotal <= 0) {
+        return items.reduce((sum, item) => {
+            if (item?.isIncluded === true) return sum;
+            return sum + Math.max(0, safeNumber(item?.priceRmb, 0));
+        }, 0);
+    }
+    return manualSubtotal;
 }
 
 function quoteTotal(snapshot) {

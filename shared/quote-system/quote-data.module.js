@@ -350,8 +350,10 @@ export function calculateSectionSubtotal(section, items = []) {
             return sum + Math.max(0, safeNumber(row.price_rmb, 0));
         }, 0);
     }
-    if (section?.subtotalMode === 'manual') {
-        return safeNumber(section?.subtotal, 0);
+    const manualSubtotal = safeNumber(section?.subtotal, 0);
+    const defaultToItemTotal = section?.key === SECTION_KEYS.SERVICE || section?.key === SECTION_KEYS.WEAR_PARTS;
+    if (section?.subtotalMode === 'manual' && (!defaultToItemTotal || manualSubtotal > 0)) {
+        return manualSubtotal;
     }
     return sortItems(items).reduce((sum, item) => {
         const row = normalizeQuoteItem(item, section?.key);
