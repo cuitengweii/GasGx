@@ -1056,7 +1056,7 @@ function sectionSubtotal(section) {
     if (section?.key === 'optional_config' || section?.key === 'service_package' || section?.key === 'wear_parts') {
         const items = Array.isArray(section?.items) ? section.items : [];
         const hasSelectionState = items.some((item) => Object.prototype.hasOwnProperty.call(item || {}, 'isSelected'));
-        if (hasSelectionState && !isManualSelectableSection) {
+        if (hasSelectionState && (!isManualSelectableSection || safeNumber(section?.subtotal, 0) <= 0)) {
             return items.reduce((sum, item) => {
                 if (item?.isSelected !== true || item?.isIncluded === true) return sum;
                 return sum + Math.max(0, safeNumber(item?.priceRmb, 0));
