@@ -1901,6 +1901,36 @@ async function syncInstanceCustomerEmail(nextEmail = '') {
     if (error) throw error;
 }
 
+function buildShareSnapshot(instance, items = []) {
+    return buildQuoteSnapshot({
+        brand: extractBrandSnapshot(state.brand),
+        product: extractProductSnapshot({
+            ...state.product,
+            media_gallery: state.media,
+            section_config: currentSectionConfig(),
+            ui_text: state.product.ui_text,
+        }),
+        instance,
+        items,
+        mode: text(instance?.status).toLowerCase() === 'published' ? 'published' : 'preview',
+    });
+}
+
+async function persistShareSnapshot(instance, items = [], user) {
+    const snapshot = buildShareSnapshot(instance, items);
+    const { data, error } = await client
+        .from(TABLE_INSTANCES)
+        .update({
+            published_snapshot: snapshot,
+            updated_by: user?.id || null,
+        })
+        .eq('id', instance.id)
+        .select('*')
+        .single();
+    if (error) throw error;
+    return data;
+}
+
 async function saveInstance(user) {
     const email = normalizedCustomerEmail(state.instance.receiver_email);
     if (!email) throw new Error('客户邮箱为必填项，请先填写后再保存。');
@@ -1975,7 +2005,9 @@ async function saveInstance(user) {
     await syncInstanceCustomerEmail(state.instance.receiver_email);
     state.items = dedupeQuoteItems(savedItems.map((item) => normalizeQuoteItem(item, item.section_key)));
     state.persistedItemIds = new Set(state.items.map((item) => item.localId));
-    state.id = saved.id;
+    const shared = await persistShareSnapshot(saved, state.items, user);
+    state.instance = normalizeInstanceEditor(shared);
+    state.id = shared.id;
     return state.instance;
 }
 
@@ -2036,9 +2068,14 @@ async function saveProductPreviewInstance(user) {
     }
 
     state.persistedItemIds = new Set();
-    await persistItemRows(TABLE_INSTANCE_ITEMS, 'instance_id', saved.id, state.items);
-    state.productPreviewInstanceId = saved.id;
-    return saved.id;
+    const savedItems = await persistItemRows(TABLE_INSTANCE_ITEMS, 'instance_id', saved.id, state.items);
+    const shared = await persistShareSnapshot(
+        saved,
+        savedItems.map((item) => normalizeQuoteItem(item, item.section_key)),
+        user,
+    );
+    state.productPreviewInstanceId = shared.id;
+    return shared.id;
 }
 
 async function publishInstance(user) {

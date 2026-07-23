@@ -2384,8 +2384,8 @@ function publishedCustomerQuoteUrl(view = 'customer') {
         || state.sharePayload?.quoteSlug
         || state.shareTarget?.quoteSlug,
     );
-    const quoteStatus = text(state.snapshot?.quote?.status).toLowerCase();
-    if (!publicSlug || (quoteStatus && quoteStatus !== 'published')) return '';
+    const previewNeedsSnapshot = state.route?.type === 'preview';
+    if (!publicSlug || (previewNeedsSnapshot && !state.snapshot?.quote?.shareSnapshotReady)) return '';
 
     const url = new URL('/quote/view.html', window.location.origin);
     url.searchParams.set('quote', publicSlug);
@@ -2411,7 +2411,7 @@ function posterQuoteUrl() {
 }
 
 function textShareQuoteUrl() {
-    return publishedCustomerQuoteUrl('text');
+    return customerQuoteUrl('text');
 }
 
 function posterCustomerName() {
@@ -3213,13 +3213,15 @@ async function fetchPreviewQuote(instanceId) {
                 : productResult.data?.ui_text || {},
         media_gallery: liveMedia.length ? liveMedia : sortMediaItems(data.product_snapshot?.media_gallery || []),
     };
-    return hydrateSnapshotWithLiveMeta(buildQuoteSnapshot({
+    const snapshot = hydrateSnapshotWithLiveMeta(buildQuoteSnapshot({
         brand: data.brand_snapshot,
         product: mergedProductSnapshot,
         instance: data,
         items: itemsResult.data || [],
         mode: 'preview',
     }), data);
+    if (snapshot?.quote) snapshot.quote.shareSnapshotReady = Boolean(data.published_snapshot);
+    return snapshot;
 }
 
 async function resolveSnapshotFromBrand(brandSlug, productId = '') {
