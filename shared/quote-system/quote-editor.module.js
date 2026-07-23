@@ -23,9 +23,10 @@ import {
     normalizeQuoteMediaItem,
     normalizeRates,
     normalizeSectionConfig,
+    serializeQuoteItemI18n,
     sortItems,
     sortMediaItems,
-} from './quote-data.module.js?v=20260723glossary13';
+} from './quote-data.module.js?v=20260723fields14';
 
 const RATE_API_URL = 'https://open.er-api.com/v6/latest/CNY';
 const TABLE_BRANDS = 'quote_brands';
@@ -638,6 +639,8 @@ function translationTargets(targets = AUTO_TRANSLATE_TARGETS) {
 
     state.items.forEach((item) => {
         pushEntry(`item.${item.localId}.name_i18n`, item.name_i18n);
+        pushEntry(`item.${item.localId}.brand_i18n`, item.brand_i18n);
+        pushEntry(`item.${item.localId}.qty_i18n`, item.qty_i18n);
     });
 
       return entries;
@@ -700,9 +703,11 @@ function setLocalizedByPath(path, lang, value) {
         const itemId = path.split('.')[1];
         const item = state.items.find((entry) => entry.localId === itemId);
         if (!item) return;
-        const nextName = normalizeLocalizedText(item.name_i18n);
-        nextName[lang] = nextValue;
-        updateItem(itemId, { name_i18n: nextName });
+        const field = path.split('.')[2] || 'name_i18n';
+        const itemField = ['name_i18n', 'brand_i18n', 'qty_i18n'].includes(field) ? field : 'name_i18n';
+        const nextLocalized = normalizeLocalizedText(item[itemField]);
+        nextLocalized[lang] = nextValue;
+        updateItem(itemId, { [itemField]: nextLocalized });
     }
 }
 
@@ -1274,8 +1279,8 @@ function renderContent() {
                             </div>
                         </div>
                     </td>
-                    <td class="text-[var(--text-body)] text-xs whitespace-nowrap"><span class="quote-editable quote-editable-inline" contenteditable="true" data-item-field="brand_label" data-item-id="${esc(normalized.localId)}">${esc(normalized.brand_label || '-')}</span></td>
-                    <td class="text-[var(--text-body)] text-center font-mono-num whitespace-nowrap"><span class="quote-editable quote-editable-inline" contenteditable="true" data-item-field="qty_label" data-item-id="${esc(normalized.localId)}">${esc(normalized.qty_label || '1')}</span></td>
+                    <td class="text-[var(--text-body)] text-xs whitespace-nowrap"><span class="quote-editable quote-editable-inline" contenteditable="true" data-item-field="brand_label" data-item-id="${esc(normalized.localId)}">${esc(localizedValue(normalized.brand_i18n) || normalized.brand_label || '-')}</span></td>
+                    <td class="text-[var(--text-body)] text-center font-mono-num whitespace-nowrap"><span class="quote-editable quote-editable-inline" contenteditable="true" data-item-field="qty_label" data-item-id="${esc(normalized.localId)}">${esc(localizedValue(normalized.qty_i18n) || normalized.qty_label || '1')}</span></td>
                     <td class="font-mono-num ${included ? 'text-[var(--text-muted)]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? esc(t('included')) : `<span class="quote-editable quote-editable-inline" contenteditable="true" data-item-field="price_rmb" data-item-id="${esc(normalized.localId)}">${esc(formatCurrency('RMB', price))}</span>`}</td>
                     <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('USD', price * state.rates.USD))}</td>
                 </tr>
@@ -1448,6 +1453,17 @@ function bindContentArea() {
                 nextName[state.currentLang] = text(event.currentTarget.textContent);
                 markTranslationDirty(`item.${itemId}.name_i18n`);
                 updateItem(itemId, { name_i18n: nextName });
+            } else if (field === 'brand_label' || field === 'qty_label') {
+                const item = state.items.find((entry) => entry.localId === itemId);
+                if (!item) return;
+                const localizedField = field === 'brand_label' ? 'brand_i18n' : 'qty_i18n';
+                const nextValue = normalizeLocalizedText(item[localizedField]);
+                nextValue[state.currentLang] = text(event.currentTarget.textContent);
+                markTranslationDirty(`item.${itemId}.${localizedField}`);
+                updateItem(itemId, {
+                    [field]: state.currentLang === DEFAULT_LANG ? nextValue.zh : item[field],
+                    [localizedField]: nextValue,
+                });
             } else if (field === 'price_rmb') {
                 updateItem(itemId, { price_rmb: parseMoneyInput(event.currentTarget.textContent), is_included: false });
             } else {
@@ -1615,6 +1631,18 @@ function flushPendingEditorChanges() {
             updateItem(itemId, { name_i18n: nextName });
             return;
         }
+        if (field === 'brand_label' || field === 'qty_label') {
+            const item = state.items.find((entry) => entry.localId === itemId);
+            if (!item) return;
+            const localizedField = field === 'brand_label' ? 'brand_i18n' : 'qty_i18n';
+            const nextValue = normalizeLocalizedText(item[localizedField]);
+            nextValue[state.currentLang] = text(node.textContent);
+            updateItem(itemId, {
+                [field]: state.currentLang === DEFAULT_LANG ? nextValue.zh : item[field],
+                [localizedField]: nextValue,
+            });
+            return;
+        }
         if (field === 'price_rmb') {
             updateItem(itemId, { price_rmb: parseMoneyInput(node.textContent), is_included: false });
             return;
@@ -1746,7 +1774,7 @@ async function persistItemRows(tableName, ownerColumn, ownerId, items = []) {
             price_rmb: normalized.price_rmb,
             is_included: normalized.is_included === true,
             is_selected: normalized.is_selected === true,
-            name_i18n: expandLocalizedFromChinese(normalized.name_i18n),
+            name_i18n: serializeQuoteItemI18n(normalized),
         };
         // New editor rows already carry a UUID localId. Send it explicitly so
         // Supabase upsert never turns a new row into an explicit NULL id.

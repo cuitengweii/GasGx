@@ -17,6 +17,17 @@ const WEAR_PARTS_GLOSSARY = Object.freeze({
     '压力表': { en: 'Pressure Gauge', ru: 'Манометр' },
 });
 
+const ITEM_FIELD_GLOSSARY = Object.freeze({
+    brand_label: {
+        '燃气机专用': { en: 'For Gas Engines', ru: 'Для газовых двигателей' },
+        '陶磁': { en: 'Ceramic', ru: 'Керамика' },
+        '博世Ø68': { en: 'Bosch Ø68', ru: 'Bosch Ø68' },
+        '博世Ø40': { en: 'Bosch Ø40', ru: 'Bosch Ø40' },
+        '中/低压': { en: 'Medium / Low Pressure', ru: 'Среднее / низкое давление' },
+    },
+    qty_label: {},
+});
+
 function text(value, fallback = '') {
     return String(value ?? fallback).trim();
 }
@@ -34,8 +45,30 @@ export function applyQuoteItemGlossary(value = {}) {
     return localized;
 }
 
+export function applyQuoteItemFieldGlossary(field, value = {}) {
+    const localized = value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : { zh: text(value) };
+    const zh = text(localized.zh || localized.cn || localized['zh-cn'] || localized['zh_cn']);
+    const glossary = ITEM_FIELD_GLOSSARY[field]?.[zh];
+    if (!glossary) return localized;
+    localized.zh = zh;
+    ['en', 'ru'].forEach((lang) => {
+        const current = text(localized[lang]);
+        if (!current || current === zh) localized[lang] = glossary[lang];
+    });
+    return localized;
+}
+
 export function quoteItemDisplayName(value, lang = 'zh', fallback = '') {
     const localized = applyQuoteItemGlossary(value);
+    const requested = text(localized[lang]);
+    const english = text(localized.en);
+    const chinese = text(localized.zh);
+    const russian = text(localized.ru);
+    return [requested, english, chinese, russian, text(fallback)].find(Boolean) || text(fallback);
+}
+
+export function quoteItemFieldDisplay(field, value, lang = 'zh', fallback = '') {
+    const localized = applyQuoteItemFieldGlossary(field, value);
     const requested = text(localized[lang]);
     const english = text(localized.en);
     const chinese = text(localized.zh);
