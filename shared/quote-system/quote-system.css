@@ -1188,60 +1188,6 @@
             font-weight: 600;
         }
 
-        .quote-reference-section-toggle {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-left: 4px;
-            padding: 0;
-            border: 0;
-            background: transparent;
-            color: #f8fafc;
-            font-size: 13px;
-            font-weight: 800;
-            cursor: pointer;
-        }
-
-        .quote-reference-section-toggle .quote-reference-checkbox {
-            appearance: none;
-            position: relative;
-            width: 22px;
-            height: 22px;
-            margin: 0;
-            border: 2px solid #bfdbfe;
-            border-radius: 5px;
-            background: #0f172a;
-            cursor: pointer;
-        }
-
-        .quote-reference-section-toggle .quote-reference-checkbox:checked {
-            border-color: #4ade80;
-            background: #22c55e;
-            box-shadow: 0 0 0 3px rgba(74, 222, 128, .18), 0 0 12px rgba(74, 222, 128, .42);
-        }
-
-        .quote-reference-section-toggle .quote-reference-checkbox:checked::after {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            color: #ffffff;
-            content: '✓';
-            font-size: 16px;
-            font-weight: 900;
-            line-height: 1;
-            transform: translate(-50%, -54%);
-        }
-
-        .quote-reference-section-toggle .quote-reference-checkbox:focus-visible {
-            outline: 3px solid rgba(191, 219, 254, .9);
-            outline-offset: 2px;
-        }
-
-        .quote-reference-section-toggle .quote-reference-checkbox:disabled {
-            cursor: not-allowed;
-            opacity: .55;
-        }
-
         .quote-reference-section__head h3 i {
             color: #94a3b8;
         }
@@ -1360,12 +1306,6 @@
             background: rgba(51, 65, 85, .3);
         }
 
-        .quote-reference-table__select-head,
-        .quote-reference-select-cell {
-            width: 64px;
-            text-align: left;
-        }
-
         .quote-reference-code {
             color: #64748b;
         }
@@ -1401,48 +1341,6 @@
             background: rgba(34, 197, 94, .1);
             color: #4ade80;
             font-size: 11px;
-        }
-
-        .quote-reference-checkbox {
-            appearance: none;
-            display: inline-grid;
-            width: 20px;
-            height: 20px;
-            margin: 0;
-            place-content: center;
-            border: 1px solid #475569;
-            border-radius: 4px;
-            background: #1e293b;
-            cursor: pointer;
-            transition: border-color .2s ease, background-color .2s ease, box-shadow .2s ease;
-        }
-
-        .quote-reference-checkbox:hover {
-            border-color: #60a5fa;
-        }
-
-        .quote-reference-checkbox::before {
-            width: 11px;
-            height: 11px;
-            content: '';
-            transform: scale(0);
-            background: #fff;
-            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
-            transition: transform .12s ease;
-        }
-
-        .quote-reference-checkbox:checked {
-            border-color: #22c55e;
-            background: #22c55e;
-            box-shadow: 0 0 10px rgba(34, 197, 94, .4);
-        }
-
-        .quote-reference-checkbox:checked::before {
-            transform: scale(1);
-        }
-
-        .quote-reference-table__row.is-selected td {
-            background: rgba(59, 130, 246, .08);
         }
 
         .quote-reference-empty {
@@ -1582,11 +1480,6 @@
                 min-width: 0;
             }
 
-            .quote-reference-table__select-head,
-            .quote-reference-select-cell {
-                width: 8%;
-            }
-
             .quote-reference-code {
                 width: 10%;
             }
@@ -1619,10 +1512,6 @@
                 text-align: center;
             }
 
-            .quote-reference-checkbox {
-                width: 16px;
-                height: 16px;
-            }
         }
 
         .quote-view-banner__title {

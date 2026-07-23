@@ -1543,27 +1543,13 @@ function quoteReferenceSectionIcon(sectionKey = '') {
 }
 
 function quoteReferenceSectionMarkup(section, rates = state.rates) {
-    const optional = section.key === 'optional_config';
-    const selectable = optional || section.key === 'service_package' || section.key === 'wear_parts';
-    const gated = optional || section.key === 'service_package' || section.key === 'wear_parts';
-    const hasExplicitSectionSelection = Object.prototype.hasOwnProperty.call(section || {}, 'isSelected');
-    const sectionSelected = !gated || !hasExplicitSectionSelection || section.isSelected === true;
-    const defaultManualSelection = section.subtotalMode === 'manual'
-        && (section.key === 'service_package' || section.key === 'wear_parts')
-        && !hasExplicitSectionSelection;
     const tone = quoteReferenceSectionTone(section.key);
     const subtotal = sectionSubtotal(section);
-    const rows = (section.items || []).map((item, itemIndex) => {
+    const rows = (section.items || []).map((item) => {
         const included = item.isIncluded === true;
-        const selected = sectionSelected && (defaultManualSelection || item.isSelected === true);
         const price = safeNumber(item.priceRmb, 0);
-        const selectCell = selectable
-            ? `<td class="quote-reference-select-cell"><input class="quote-reference-checkbox" type="checkbox" data-quote-item-toggle data-section-key="${esc(section.key)}" data-item-index="${itemIndex}" ${selected ? 'checked' : ''} aria-label="${esc(t('optionalColumn'))}"></td>`
-            : '';
-        const rowClass = `quote-reference-table__row ${selectable && selected ? 'is-selected' : ''}`;
         return `
-            <tr class="${rowClass}">
-                ${selectCell}
+            <tr class="quote-reference-table__row">
                 <td class="quote-reference-code">${esc(item.lineCode || '--')}</td>
                 <td class="quote-reference-description">${esc(pickDisplayText(item.nameI18n, item.lineCode || '--'))}</td>
                 <td class="quote-reference-brand">${esc(item.brandLabel || '-')}</td>
@@ -1573,14 +1559,14 @@ function quoteReferenceSectionMarkup(section, rates = state.rates) {
             </tr>
         `;
     }).join('');
-    const headers = selectable ? [t('optionalColumn'), ...t('headers')] : t('headers');
+    const headers = t('headers');
     const sectionId = `quote-section-${text(section.key).replace(/[^a-z0-9_-]/gi, '-')}`;
     const bodyId = `${sectionId}-body`;
 
     return `
         <section id="${esc(sectionId)}" class="quote-reference-section quote-reference-section--${tone}" data-quote-section="pricing-${esc(section.key)}">
             <div class="quote-reference-section__head">
-                <h3><i class="fa-solid ${quoteReferenceSectionIcon(section.key)}"></i><span>${esc(getSectionLabel(section))}</span>${gated ? `<label class="quote-reference-section-toggle"><input class="quote-reference-checkbox" type="checkbox" data-quote-section-toggle data-section-key="${esc(section.key)}" ${sectionSelected ? 'checked' : ''} aria-label="${esc(t('sectionSelect'))}"><span>${esc(t('sectionSelect'))}</span></label>` : ''}</h3>
+                <h3><i class="fa-solid ${quoteReferenceSectionIcon(section.key)}"></i><span>${esc(getSectionLabel(section))}</span></h3>
                 <div class="quote-reference-section__head-actions">
                     <div class="quote-reference-section__totals">
                         <div>RMB <strong>${esc(formatCurrency('RMB', subtotal))}</strong></div>
@@ -1595,7 +1581,7 @@ function quoteReferenceSectionMarkup(section, rates = state.rates) {
             <div id="${esc(bodyId)}" class="quote-reference-section__body" data-quote-section-body>
                 <div class="quote-reference-table-container">
                 <table class="quote-reference-table">
-                    <thead><tr>${headers.map((header, index) => `<th class="${index === 0 && !selectable ? 'quote-reference-table__code-head' : ''} ${index === 0 && selectable ? 'quote-reference-table__select-head' : ''}">${esc(header)}</th>`).join('')}</tr></thead>
+                    <thead><tr>${headers.map((header, index) => `<th class="${index === 0 ? 'quote-reference-table__code-head' : ''}">${esc(header)}</th>`).join('')}</tr></thead>
                     <tbody>${rows || `<tr><td colspan="${headers.length}" class="quote-reference-empty">—</td></tr>`}</tbody>
                 </table>
                 </div>
@@ -1629,56 +1615,6 @@ function bindReferenceSectionCollapseControls(root = byId('content-area')) {
             const section = button.closest('[data-quote-section]');
             const expanded = button.getAttribute('aria-expanded') !== 'true';
             setQuoteSectionExpanded(section, expanded);
-        });
-    });
-}
-
-function bindReferenceOptionControls(root = byId('content-area')) {
-    if (!root) return;
-    root.querySelectorAll('[data-quote-item-toggle]').forEach((input) => {
-        input.addEventListener('change', (event) => {
-            const sectionKey = text(event.currentTarget.dataset.sectionKey);
-            const itemIndex = Number(event.currentTarget.dataset.itemIndex);
-            const section = state.snapshot?.product?.sections?.find((entry) => entry.key === sectionKey);
-            const item = section?.items?.[itemIndex];
-            if (!item) return;
-            item.isSelected = Boolean(event.currentTarget.checked);
-            if (item.isSelected) {
-                section.isSelected = true;
-            } else if (!section.items.some((entry) => entry?.isSelected === true)) {
-                section.isSelected = false;
-            }
-            renderContent();
-            const itemType = sectionKey === 'service_package' || sectionKey === 'wear_parts' ? '服务项' : '报价选配项';
-            logQuoteBehavior(item.isSelected ? `客户选中${itemType}` : `客户取消${itemType}`, {
-                section_key: sectionKey,
-                item_index: itemIndex,
-                summary: `${item.isSelected ? '选中' : '取消'} ${pickDisplayText(item.nameI18n, item.lineCode || '--')}`,
-            }, {
-                activityType: 'option_toggle',
-                dedupeKey: `option-toggle-${sectionKey}-${itemIndex}-${item.isSelected ? 'on' : 'off'}`,
-            });
-        });
-    });
-    root.querySelectorAll('[data-quote-section-toggle]').forEach((input) => {
-        input.addEventListener('change', (event) => {
-            const sectionKey = text(event.currentTarget.dataset.sectionKey);
-            const section = state.snapshot?.product?.sections?.find((entry) => entry.key === sectionKey);
-            if (!section) return;
-            section.isSelected = Boolean(event.currentTarget.checked);
-            if (section.key === 'optional_config' || section.key === 'service_package' || section.key === 'wear_parts') {
-                section.items?.forEach((item) => {
-                    item.isSelected = section.isSelected;
-                });
-            }
-            renderContent();
-            logQuoteBehavior(section.isSelected ? '客户选中报价分组' : '客户取消报价分组', {
-                section_key: sectionKey,
-                summary: `${section.isSelected ? '选中' : '取消'} ${getSectionLabel(section)}`,
-            }, {
-                activityType: 'section_toggle',
-                dedupeKey: `section-toggle-${sectionKey}-${section.isSelected ? 'on' : 'off'}`,
-            });
         });
     });
 }
@@ -1749,7 +1685,6 @@ function renderContent() {
     bindScrollableTables(container);
     bindProductMediaControls();
     bindReferenceSectionCollapseControls(container);
-    bindReferenceOptionControls(container);
     observeQuoteSections(container);
     byId('quote-confirm-checkbox')?.addEventListener('change', (event) => {
         state.publicConfirmation.confirmed = Boolean(event.currentTarget.checked);
