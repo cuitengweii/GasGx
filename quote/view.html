@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en" data-ggx-shell-lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,8 +12,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../shared/ui/site-shell.shared.css?v=20260723quote-shell19">
     <script src="../shared/ui/main-auth.shared.js"></script>
-    <script src="./public-asset-version.js?v=20260723gallery18"></script>
+    <script src="./public-asset-version.js?v=20260723quote-shell19"></script>
     <script>window.AMSLoadQuotePublicStyles('../shared/quote-system/quote-system.css');</script>
 </head>
 <body class="quote-reference-body antialiased pb-10 md:pb-20 access-resolved">
@@ -67,6 +68,8 @@
         <div class="text-[var(--gas-green-light)] font-mono tracking-widest text-xl font-bold animate-pulse" id="export-loading-text">GENERATING DOCUMENT...</div>
         <div class="text-[var(--text-muted)] text-sm mt-3" id="export-sub-text">正在进行高清文档渲染，请稍候。</div>
     </div>
+
+    <div id="ggx-site-header-slot"></div>
 
     <div id="toolbar" class="fixed top-0 left-0 right-0 z-50 px-3 md:px-8 py-3 md:py-4 flex justify-between items-center border-b backdrop-blur-md" style="background-color: rgba(10, 14, 20, 0.85); border-color: var(--border-color);">
         <div class="toolbar-brand flex items-center space-x-2 md:space-x-4">
@@ -139,6 +142,8 @@
             <div id="footer-note" class="mt-12 md:mt-16 pt-6 md:pt-8 border-t border-[var(--border-color)] text-center text-xs md:text-sm text-[var(--text-muted)] leading-relaxed px-2"></div>
         </div>
     </div>
+
+    <div id="ggx-site-footer-slot"></div>
 
     <button id="back-to-top" type="button" class="back-to-top z-40" aria-label="返回顶部" title="返回顶部">
         <i class="fa-solid fa-arrow-up text-sm"></i>
@@ -272,6 +277,8 @@
         </div>
     </div>
 
+    <script src="../shared/ui/site-shell.config.js?v=20260723quote-shell19"></script>
+    <script src="../shared/ui/site-shell.shared.js?v=20260723quote-shell19"></script>
     <script>window.AMSLoadQuotePublicModule('../shared/quote-system/quote-runtime.module.js');</script>
 </body>
 </html>

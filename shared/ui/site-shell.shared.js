@@ -1480,6 +1480,9 @@
     }
 
     function getCurrentLang() {
+        const pageDefault = document.documentElement?.dataset?.ggxShellLang;
+        if (pageDefault) return normalizeLang(pageDefault);
+
         const stored = readStoredLang();
         if (stored) return normalizeLang(stored);
 
