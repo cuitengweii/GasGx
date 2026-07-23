@@ -897,8 +897,8 @@
 
         /* Reference quotation page layout */
         body.quote-reference-body {
-            background: #0f172a;
-            color: #cbd5e1;
+            background: #0a0d0c;
+            color: #c7d0c9;
         }
 
         body.customer-view #toolbar {
@@ -912,7 +912,7 @@
         }
 
         .quote-reference-page {
-            color: #cbd5e1;
+            color: #c7d0c9;
         }
 
         .quote-reference-export-area {
@@ -925,8 +925,8 @@
             justify-content: space-between;
             gap: 16px;
             padding: 8px 0;
-            border-bottom: 1px solid #334155;
-            color: #94a3b8;
+            border-bottom: 1px solid #2a342d;
+            color: #9ca69f;
             font-size: 12px;
         }
 
@@ -937,7 +937,7 @@
         }
 
         .quote-reference-ratebar__rates span {
-            color: #94a3b8;
+            color: #9ca69f;
             font-weight: 400;
         }
 
@@ -953,7 +953,7 @@
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            color: #94a3b8;
+            color: #9ca69f;
         }
 
         .quote-reference-validity i,
@@ -977,7 +977,7 @@
             align-items: center;
             gap: 5px;
             padding: 2px 0;
-            color: #94a3b8;
+            color: #9ca69f;
             transition: color 0.2s ease;
         }
 
@@ -1023,9 +1023,9 @@
             flex: 0 0 auto;
             min-width: 190px;
             padding: 10px 14px;
-            border: 1px solid #334155;
+            border: 1px solid #2e3932;
             border-radius: 8px;
-            background: #1e293b;
+            background: #161c18;
             box-shadow: 0 4px 12px rgba(0, 0, 0, .18);
         }
 
@@ -1036,12 +1036,12 @@
             width: 36px;
             height: 36px;
             border-radius: 6px;
-            background: #334155;
-            color: #cbd5e1;
+            background: #29332d;
+            color: #d8e1da;
         }
 
         .quote-reference-customer-card div:last-child > div {
-            color: #64748b;
+            color: #758078;
             font-size: 11px;
         }
 
@@ -1064,7 +1064,7 @@
             padding: 24px;
             border: 1px solid rgba(74, 222, 128, .28);
             border-radius: 16px;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            background: linear-gradient(135deg, #18211c 0%, #0c100e 100%);
             box-shadow: 0 10px 24px rgba(0, 0, 0, .22);
         }
 
@@ -1087,7 +1087,7 @@
         }
 
         .quote-reference-total-label {
-            color: #94a3b8;
+            color: #a1aba3;
             font-size: 13px;
             font-weight: 600;
             letter-spacing: .12em;
@@ -1117,13 +1117,13 @@
         }
 
         .quote-reference-total-values > div:last-child strong {
-            color: #94a3b8;
+            color: #a1aba3;
             font-size: clamp(22px, 3vw, 32px);
             font-weight: 400;
         }
 
         .quote-reference-currency {
-            color: #94a3b8;
+            color: #a1aba3;
             font-family: var(--font-mono);
             font-size: 15px;
             font-weight: 700;
@@ -1136,17 +1136,17 @@
 
         .quote-reference-formula {
             padding: 12px;
-            border: 1px solid rgba(51, 65, 85, .8);
+            border: 1px solid rgba(164, 187, 169, .16);
             border-radius: 8px;
-            background: rgba(15, 23, 42, .52);
-            color: #94a3b8;
+            background: rgba(5, 8, 6, .52);
+            color: #a1aba3;
             font-family: var(--font-mono);
             font-size: 12px;
             line-height: 1.8;
         }
 
         .quote-reference-formula b {
-            color: #cbd5e1;
+            color: #d3dbd5;
         }
 
         .quote-reference-formula em {
@@ -1162,8 +1162,8 @@
 
         .quote-reference-hero .quote-unit-pricing {
             margin: 0;
-            border-color: #334155;
-            background: #1e293b;
+            border-color: #2e3932;
+            background: #161c18;
         }
 
         .quote-reference-hero .quote-unit-pricing__header {
@@ -1174,15 +1174,15 @@
         }
 
         .quote-reference-hero .quote-unit-pricing__header strong {
-            color: #94a3b8;
+            color: #a1aba3;
             font-size: 13px;
         }
 
         .quote-reference-hero .quote-unit-pricing__header span {
             padding: 4px 7px;
             border-radius: 4px;
-            background: #334155;
-            color: #cbd5e1;
+            background: #29332d;
+            color: #d3dbd5;
             font-size: 10px;
             white-space: nowrap;
         }
@@ -1196,9 +1196,9 @@
         .quote-reference-hero .quote-unit-pricing__item {
             display: block;
             padding: 12px;
-            border: 1px solid #334155;
+            border: 1px solid #2e3932;
             border-radius: 8px;
-            background: rgba(15, 23, 42, .52);
+            background: rgba(5, 8, 6, .52);
         }
 
         .quote-reference-hero .quote-unit-pricing__label {
@@ -1217,7 +1217,7 @@
         }
 
         .quote-reference-hero .quote-unit-pricing__values b {
-            color: #94a3b8;
+            color: #a1aba3;
             font-size: 10px;
             font-weight: 500;
         }
@@ -1229,9 +1229,9 @@
 
         .quote-reference-section {
             overflow: hidden;
-            border: 1px solid #334155;
+            border: 1px solid #2e3932;
             border-radius: 12px;
-            background: #1e293b;
+            background: #161c18;
             box-shadow: 0 8px 18px rgba(0, 0, 0, .18);
         }
 
@@ -1253,8 +1253,8 @@
             justify-content: space-between;
             gap: 18px;
             padding: 16px;
-            border-bottom: 1px solid #334155;
-            background: rgba(51, 65, 85, .4);
+            border-bottom: 1px solid #2e3932;
+            background: rgba(255, 255, 255, .035);
         }
 
         .quote-reference-section__head-actions {
@@ -1275,7 +1275,7 @@
         }
 
         .quote-reference-section__head h3 i {
-            color: #94a3b8;
+            color: #a1aba3;
         }
 
         .quote-reference-section--main .quote-reference-section__head h3 i,
@@ -1295,7 +1295,7 @@
             display: flex;
             align-items: center;
             gap: 24px;
-            color: #94a3b8;
+            color: #a1aba3;
             font-family: var(--font-mono);
             font-size: 13px;
             white-space: nowrap;
@@ -1311,10 +1311,10 @@
             width: 34px;
             height: 34px;
             place-items: center;
-            border: 1px solid #475569;
+            border: 1px solid #3a463e;
             border-radius: 8px;
-            background: rgba(15, 23, 42, .72);
-            color: #cbd5e1;
+            background: rgba(5, 8, 6, .72);
+            color: #d3dbd5;
             cursor: pointer;
             transition: border-color .2s ease, background-color .2s ease, color .2s ease, transform .2s ease;
         }
@@ -1332,7 +1332,7 @@
         }
 
         .quote-reference-section.is-collapsed .quote-reference-section-collapse {
-            color: #94a3b8;
+            color: #a1aba3;
         }
 
         .quote-reference-section__body {
@@ -1357,7 +1357,7 @@
             min-width: 900px;
             border-collapse: separate;
             border-spacing: 0;
-            color: #cbd5e1;
+            color: #c7d0c9;
             font-size: 14px;
             white-space: nowrap;
         }
@@ -1365,9 +1365,9 @@
         .quote-reference-table th {
             position: static;
             padding: 12px 24px;
-            border-bottom: 1px solid #334155;
-            background: rgba(15, 23, 42, .96);
-            color: #94a3b8;
+            border-bottom: 1px solid #2e3932;
+            background: rgba(9, 13, 10, .96);
+            color: #a1aba3;
             font-weight: 500;
             text-align: left;
         }
@@ -1380,7 +1380,7 @@
 
         .quote-reference-table td {
             padding: 12px 24px;
-            border-bottom: 1px solid rgba(51, 65, 85, .62);
+            border-bottom: 1px solid rgba(93, 112, 99, .34);
             transition: background-color .2s ease;
         }
 
@@ -1389,11 +1389,11 @@
         }
 
         .quote-reference-table tbody tr:hover td {
-            background: rgba(51, 65, 85, .3);
+            background: rgba(255, 255, 255, .025);
         }
 
         .quote-reference-code {
-            color: #64748b;
+            color: #758078;
         }
 
         .quote-reference-description {
@@ -1402,7 +1402,7 @@
         }
 
         .quote-reference-brand {
-            color: #94a3b8;
+            color: #a1aba3;
         }
 
         .quote-reference-qty {
@@ -1410,12 +1410,12 @@
         }
 
         .quote-reference-money--rmb {
-            color: #cbd5e1;
+            color: #d3dbd5;
             font-family: var(--font-mono);
         }
 
         .quote-reference-money--usd {
-            color: #64748b;
+            color: #758078;
             font-family: var(--font-mono);
         }
 
@@ -1431,15 +1431,15 @@
 
         .quote-reference-empty {
             padding: 24px !important;
-            color: #64748b;
+            color: #758078;
             text-align: center;
         }
 
         .quote-reference-page #footer-note {
             margin-top: 32px;
             padding-top: 24px;
-            border-top-color: #334155;
-            color: #64748b;
+            border-top-color: #2e3932;
+            color: #758078;
         }
 
         @media (max-width: 900px) {
