@@ -1,3 +1,5 @@
+import { applyQuoteItemGlossary } from './quote-item-glossary.module.js?v=20260723glossary13';
+
 export const SUPPORTED_LANGS = ['zh', 'en', 'ru'];
 export const DEFAULT_LANG = 'zh';
 export const DEFAULT_RATES = Object.freeze({
@@ -322,7 +324,7 @@ export function normalizeQuoteItem(value, fallbackSectionKey = SECTION_KEYS.MAIN
         price_rmb: safeNumber(value?.price_rmb ?? value?.price, 0),
         is_included: value?.is_included === true || safeNumber(value?.price, 0) === -1,
         is_selected: value?.is_selected === true || value?.isSelected === true,
-        name_i18n: normalizeLocalizedText(value?.name_i18n || value?.n || ''),
+        name_i18n: applyQuoteItemGlossary(normalizeLocalizedText(value?.name_i18n || value?.n || '')),
     };
 }
 

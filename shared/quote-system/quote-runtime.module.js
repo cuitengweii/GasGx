@@ -14,7 +14,8 @@
     normalizeShareConfig,
     normalizeShareHistoryEntry,
     sortMediaItems,
-} from './quote-data.module.js?v=20260722wearparts01';
+} from './quote-data.module.js?v=20260723glossary13';
+import { quoteItemDisplayName } from './quote-item-glossary.module.js?v=20260723glossary13';
 
 const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
@@ -1523,7 +1524,7 @@ function quoteReferenceSectionMarkup(section, rates = state.rates) {
         return `
             <tr class="quote-reference-table__row">
                 <td class="quote-reference-code">${esc(item.lineCode || '--')}</td>
-                <td class="quote-reference-description">${esc(pickDisplayText(item.nameI18n, item.lineCode || '--'))}</td>
+                <td class="quote-reference-description">${esc(quoteItemDisplayName(item.nameI18n, state.currentLang, item.lineCode || '--'))}</td>
                 <td class="quote-reference-brand">${esc(item.brandLabel || '-')}</td>
                 <td class="quote-reference-qty">${esc(item.qtyLabel || '1')}</td>
                 <td class="quote-reference-money quote-reference-money--rmb">${included ? `<span class="quote-reference-included">${esc(t('included'))}</span>` : esc(formatCurrency('RMB', price))}</td>
