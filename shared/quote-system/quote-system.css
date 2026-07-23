@@ -965,14 +965,10 @@
         }
 
         .quote-reference-hero {
-            display: grid;
-            grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-            gap: 24px;
             margin-bottom: 32px;
         }
 
-        .quote-reference-total-card,
-        .quote-reference-hero .quote-unit-pricing {
+        .quote-reference-total-card {
             min-height: 100%;
             padding: 24px;
             border: 1px solid rgba(74, 222, 128, .28);
@@ -999,8 +995,7 @@
             pointer-events: none;
         }
 
-        .quote-reference-total-label,
-        .quote-unit-pricing__header strong {
+        .quote-reference-total-label {
             color: #94a3b8;
             font-size: 13px;
             font-weight: 600;
@@ -1373,10 +1368,6 @@
             .quote-reference-section__head-actions {
                 width: 100%;
                 justify-content: space-between;
-            }
-
-            .quote-reference-hero {
-                grid-template-columns: 1fr;
             }
 
             .quote-reference-customer-card {
