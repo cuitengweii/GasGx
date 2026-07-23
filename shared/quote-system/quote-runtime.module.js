@@ -125,8 +125,6 @@ const sharedUiDict = {
     galleryPrev: 'Previous',
     galleryNext: 'Next',
     galleryLoading: 'Loading image…',
-    galleryModeCarousel: 'Carousel',
-    galleryModeStack: 'Gallery',
     shareMetaMode: 'Mode: share-link',
     shareMetaAdmin: 'Mode: admin-preview',
     shareMetaExpired: 'Expires at: ',
@@ -263,8 +261,6 @@ const dict = {
         galleryPrev: '上一张',
         galleryNext: '下一张',
         galleryLoading: '图片加载中…',
-        galleryModeCarousel: '轮播图',
-        galleryModeStack: '纵向铺图',
         shareMetaMode: '访问模式：分享链接',
         shareMetaAdmin: '访问模式：管理员预览',
         shareMetaExpired: '链接到期：',
@@ -399,8 +395,6 @@ const dict = {
         galleryPrev: 'Предыдущее изображение',
         galleryNext: 'Следующее изображение',
         galleryLoading: 'Загрузка изображения…',
-        galleryModeCarousel: 'Карусель',
-        galleryModeStack: 'Галерея',
         shareMetaMode: 'Режим: ссылка',
         shareMetaAdmin: 'Режим: предпросмотр администратора',
         shareMetaExpired: 'Срок действия: ',
@@ -1387,14 +1381,11 @@ function renderProductMediaBlock(snapshot = state.snapshot) {
     const { config, items } = mediaState;
     if (state.galleryIndex >= items.length) state.galleryIndex = 0;
     const currentIndex = Math.max(0, Math.min(state.galleryIndex, items.length - 1));
-    const modeLabel = config.layout === MEDIA_LAYOUTS.STACK ? t('galleryModeStack') : t('galleryModeCarousel');
-
     if (config.layout === MEDIA_LAYOUTS.STACK) {
         return `
             <section class="quote-product-media quote-product-media-stack">
                 <div class="quote-product-media-head">
                     <strong>${esc(t('galleryTitle'))}</strong>
-                    <span>${esc(modeLabel)}</span>
                 </div>
                 <div class="quote-media-stack-list">
                     ${items
@@ -1415,7 +1406,6 @@ function renderProductMediaBlock(snapshot = state.snapshot) {
         <section class="quote-product-media quote-product-media-carousel">
             <div class="quote-product-media-head">
                 <strong>${esc(t('galleryTitle'))}</strong>
-                <span>${esc(modeLabel)}</span>
             </div>
             <div class="quote-media-carousel-stage ${state.galleryLoading ? 'is-loading' : ''}" aria-busy="${state.galleryLoading ? 'true' : 'false'}">
                 ${items
