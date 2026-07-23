@@ -276,6 +276,7 @@ const state = {
     galleryIndex: 0,
     productPreviewInstanceId: '',
     translationDirty: new Set(),
+    translationRequest: null,
     saveInFlight: false,
     hasUnsavedChanges: false,
     changeVersion: 0,
@@ -606,15 +607,21 @@ function setSectionConfig(nextSections) {
     }
 }
 
-  function collectTranslationEntries(force = false) {
+function translationTargets(targets = AUTO_TRANSLATE_TARGETS) {
+    const source = Array.isArray(targets) ? targets : AUTO_TRANSLATE_TARGETS;
+    return [...new Set(source.filter((lang) => AUTO_TRANSLATE_TARGETS.includes(lang)))];
+}
+
+  function collectTranslationEntries(force = false, targets = AUTO_TRANSLATE_TARGETS) {
       const entries = [];
+    const targetLangs = translationTargets(targets);
     const pushEntry = (path, localized) => {
         const normalized = normalizeLocalizedText(localized);
         const zh = text(normalized.zh);
         if (!zh) return;
-        const targets = AUTO_TRANSLATE_TARGETS.filter((lang) => shouldTranslateLocalized(path, normalized, lang, force));
-        if (!targets.length) return;
-        entries.push({ path, text: zh, targets });
+        const missingTargets = targetLangs.filter((lang) => shouldTranslateLocalized(path, normalized, lang, force));
+        if (!missingTargets.length) return;
+        entries.push({ path, text: zh, targets: missingTargets });
     };
 
     pushEntry('brand.overview_title', state.brand?.overview_title);
@@ -699,12 +706,13 @@ function setLocalizedByPath(path, lang, value) {
     }
 }
 
-  async function autoTranslateLocalizedFields(force = false) {
-      const entries = collectTranslationEntries(force);
+  async function autoTranslateLocalizedFields(force = false, targets = AUTO_TRANSLATE_TARGETS) {
+      const targetLangs = translationTargets(targets);
+      const entries = collectTranslationEntries(force, targetLangs);
       if (!entries.length) return { attempted: false, translated: false };
 
       const mergedTranslations = Object.fromEntries(
-          AUTO_TRANSLATE_TARGETS.map((lang) => [lang, {}]),
+          targetLangs.map((lang) => [lang, {}]),
       );
       const chunks = chunkTranslationEntries(entries);
       for (const chunk of chunks) {
@@ -712,7 +720,7 @@ function setLocalizedByPath(path, lang, value) {
               client.functions.invoke(TRANSLATE_FUNCTION_NAME, {
                   body: {
                       source: DEFAULT_LANG,
-                      targets: AUTO_TRANSLATE_TARGETS,
+                      targets: targetLangs,
                       entries: chunk.map((entry) => ({ key: entry.path, text: entry.text })),
                   },
               }),
@@ -721,13 +729,13 @@ function setLocalizedByPath(path, lang, value) {
           );
           if (error) throw error;
           const translations = data?.translations && typeof data.translations === 'object' ? data.translations : {};
-          AUTO_TRANSLATE_TARGETS.forEach((lang) => {
+          targetLangs.forEach((lang) => {
               const bucket = translations?.[lang] && typeof translations[lang] === 'object' ? translations[lang] : {};
               Object.assign(mergedTranslations[lang], bucket);
           });
       }
 
-      AUTO_TRANSLATE_TARGETS.forEach((lang) => {
+      targetLangs.forEach((lang) => {
           const bucket = mergedTranslations[lang] && typeof mergedTranslations[lang] === 'object' ? mergedTranslations[lang] : {};
           entries.forEach((entry) => {
               if (!entry.targets.includes(lang)) return;
@@ -736,7 +744,7 @@ function setLocalizedByPath(path, lang, value) {
           });
       });
 
-      clearTranslationDirty();
+      if (AUTO_TRANSLATE_TARGETS.every((lang) => targetLangs.includes(lang))) clearTranslationDirty();
       return { attempted: true, translated: true };
   }
 
@@ -2068,6 +2076,43 @@ async function runAutoTranslation(force = false) {
     }
 }
 
+async function autoFillCurrentLanguage() {
+    const target = state.currentLang;
+    if (target === DEFAULT_LANG || state.translationRequest) return;
+    if (!collectTranslationEntries(false, [target]).length) return;
+
+    const request = (async () => {
+        renderStatus(localeCopy({
+            zh: `正在补全 ${target.toUpperCase()} 翻译...`,
+            en: `Filling missing ${target.toUpperCase()} translations...`,
+            ru: `Заполняются переводы ${target.toUpperCase()}...`,
+        }));
+        try {
+            const result = await autoTranslateLocalizedFields(false, [target]);
+            if (!result.translated) return;
+            markEditorDirty({ showStatus: false });
+            renderAll({ snapshot: false });
+            renderStatus(localeCopy({
+                zh: `${target.toUpperCase()} 翻译已补全，请点击保存产品模板。`,
+                en: `${target.toUpperCase()} translations are ready. Click Save Template to keep them.`,
+                ru: `Переводы ${target.toUpperCase()} готовы. Нажмите «Сохранить шаблон».`,
+            }), 'success');
+        } catch (_error) {
+            renderStatus(localeCopy({
+                zh: '自动翻译暂不可用，当前仍显示中文回退。',
+                en: 'Auto-translation is unavailable. Chinese fallback is still shown.',
+                ru: 'Автоперевод недоступен. Пока показан китайский текст.',
+            }), 'warning');
+        }
+    })();
+    state.translationRequest = request;
+    try {
+        await request;
+    } finally {
+        if (state.translationRequest === request) state.translationRequest = null;
+    }
+}
+
 async function handleSave() {
     if (state.saveInFlight) {
         return false;
@@ -2187,10 +2232,12 @@ function bindGlobal() {
     byId('btn-en').onclick = () => {
         state.currentLang = 'en';
         renderAll({ snapshot: false });
+        void autoFillCurrentLanguage();
     };
     byId('btn-ru').onclick = () => {
         state.currentLang = 'ru';
         renderAll({ snapshot: false });
+        void autoFillCurrentLanguage();
     };
     byId('btn-add-main-row').onclick = () => {
         state.items = [...state.items, { ...createQuoteItem(SECTION_KEYS.MAIN), sort_order: (state.items.length + 1) * 10 }];
