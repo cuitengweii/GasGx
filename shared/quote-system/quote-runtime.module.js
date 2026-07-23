@@ -50,6 +50,8 @@ const sharedUiDict = {
     wearPartsTotal: 'Wear parts module total',
     optionalSelect: 'Include in quote',
     sectionSelect: 'Select',
+    collapseSection: 'Collapse section',
+    expandSection: 'Expand section',
     headers: ['SEQ', 'DESCRIPTION', 'BRAND', 'QTY', 'RMB (?)', 'USD ($)'],
     ratesOnline: 'GLOBAL LIVE RATES',
     ratesRefreshing: 'Refreshing...',
@@ -189,6 +191,8 @@ const dict = {
         wearPartsTotal: '易损件模块总价',
         optionalSelect: '计入报价',
         sectionSelect: '选中',
+        collapseSection: '收起模块',
+        expandSection: '展开模块',
         headers: ['序号', '模块描述', '规格品牌', '数量', '人民币 (¥)', '美元 ($)'],
         ratesOnline: '全球实时汇率在线',
         ratesRefreshing: '正在刷新...',
@@ -326,6 +330,8 @@ const dict = {
         wearPartsTotal: 'Стоимость модуля быстроизнашиваемых деталей',
         optionalSelect: 'Включить в предложение',
         sectionSelect: 'Выбрать',
+        collapseSection: 'Свернуть раздел',
+        expandSection: 'Развернуть раздел',
         headers: ['№', 'Описание модуля', 'Спецификация / бренд', 'Кол-во', 'RMB (¥)', 'USD ($)'],
         ratesOnline: 'Актуальные мировые курсы валют',
         ratesRefreshing: 'Обновление курсов...',
@@ -1043,11 +1049,14 @@ function getSectionLabel(section) {
 
 function sectionSubtotal(section) {
     const gatedSection = section?.key === 'optional_config' || section?.key === 'service_package' || section?.key === 'wear_parts';
-    if (gatedSection && section?.isSelected !== true) return 0;
+    const hasExplicitSectionSelection = Object.prototype.hasOwnProperty.call(section || {}, 'isSelected');
+    const isManualSelectableSection = section?.subtotalMode === 'manual'
+        && (section?.key === 'service_package' || section?.key === 'wear_parts');
+    if (gatedSection && hasExplicitSectionSelection && section?.isSelected !== true) return 0;
     if (section?.key === 'optional_config' || section?.key === 'service_package' || section?.key === 'wear_parts') {
         const items = Array.isArray(section?.items) ? section.items : [];
         const hasSelectionState = items.some((item) => Object.prototype.hasOwnProperty.call(item || {}, 'isSelected'));
-        if (hasSelectionState) {
+        if (hasSelectionState && !isManualSelectableSection) {
             return items.reduce((sum, item) => {
                 if (item?.isSelected !== true || item?.isIncluded === true) return sum;
                 return sum + Math.max(0, safeNumber(item?.priceRmb, 0));
@@ -1537,12 +1546,16 @@ function quoteReferenceSectionMarkup(section, rates = state.rates) {
     const optional = section.key === 'optional_config';
     const selectable = optional || section.key === 'service_package' || section.key === 'wear_parts';
     const gated = optional || section.key === 'service_package' || section.key === 'wear_parts';
-    const sectionSelected = !gated || section.isSelected === true;
+    const hasExplicitSectionSelection = Object.prototype.hasOwnProperty.call(section || {}, 'isSelected');
+    const sectionSelected = !gated || !hasExplicitSectionSelection || section.isSelected === true;
+    const defaultManualSelection = section.subtotalMode === 'manual'
+        && (section.key === 'service_package' || section.key === 'wear_parts')
+        && !hasExplicitSectionSelection;
     const tone = quoteReferenceSectionTone(section.key);
     const subtotal = sectionSubtotal(section);
     const rows = (section.items || []).map((item, itemIndex) => {
         const included = item.isIncluded === true;
-        const selected = sectionSelected && item.isSelected === true;
+        const selected = sectionSelected && (defaultManualSelection || item.isSelected === true);
         const price = safeNumber(item.priceRmb, 0);
         const selectCell = selectable
             ? `<td class="quote-reference-select-cell"><input class="quote-reference-checkbox" type="checkbox" data-quote-item-toggle data-section-key="${esc(section.key)}" data-item-index="${itemIndex}" ${selected ? 'checked' : ''} aria-label="${esc(t('optionalColumn'))}"></td>`
@@ -1561,24 +1574,63 @@ function quoteReferenceSectionMarkup(section, rates = state.rates) {
         `;
     }).join('');
     const headers = selectable ? [t('optionalColumn'), ...t('headers')] : t('headers');
+    const sectionId = `quote-section-${text(section.key).replace(/[^a-z0-9_-]/gi, '-')}`;
+    const bodyId = `${sectionId}-body`;
 
     return `
-        <section class="quote-reference-section quote-reference-section--${tone}" data-quote-section="pricing-${esc(section.key)}">
+        <section id="${esc(sectionId)}" class="quote-reference-section quote-reference-section--${tone}" data-quote-section="pricing-${esc(section.key)}">
             <div class="quote-reference-section__head">
                 <h3><i class="fa-solid ${quoteReferenceSectionIcon(section.key)}"></i><span>${esc(getSectionLabel(section))}</span>${gated ? `<label class="quote-reference-section-toggle"><input class="quote-reference-checkbox" type="checkbox" data-quote-section-toggle data-section-key="${esc(section.key)}" ${sectionSelected ? 'checked' : ''} aria-label="${esc(t('sectionSelect'))}"><span>${esc(t('sectionSelect'))}</span></label>` : ''}</h3>
-                <div class="quote-reference-section__totals">
-                    <div>RMB <strong>${esc(formatCurrency('RMB', subtotal))}</strong></div>
-                    <div>USD ${esc(formatCurrency('USD', subtotal * rates.USD))}</div>
+                <div class="quote-reference-section__head-actions">
+                    <div class="quote-reference-section__totals">
+                        <div>RMB <strong>${esc(formatCurrency('RMB', subtotal))}</strong></div>
+                        <div>USD ${esc(formatCurrency('USD', subtotal * rates.USD))}</div>
+                    </div>
+                    <button type="button" class="quote-reference-section-collapse" data-quote-section-collapse aria-expanded="true" aria-controls="${esc(bodyId)}" aria-label="${esc(t('collapseSection'))}" title="${esc(t('collapseSection'))}">
+                        <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+                        <span class="sr-only">${esc(t('collapseSection'))}</span>
+                    </button>
                 </div>
             </div>
-            <div class="quote-reference-table-container">
+            <div id="${esc(bodyId)}" class="quote-reference-section__body" data-quote-section-body>
+                <div class="quote-reference-table-container">
                 <table class="quote-reference-table">
                     <thead><tr>${headers.map((header, index) => `<th class="${index === 0 && !selectable ? 'quote-reference-table__code-head' : ''} ${index === 0 && selectable ? 'quote-reference-table__select-head' : ''}">${esc(header)}</th>`).join('')}</tr></thead>
                     <tbody>${rows || `<tr><td colspan="${headers.length}" class="quote-reference-empty">—</td></tr>`}</tbody>
                 </table>
+                </div>
             </div>
         </section>
     `;
+}
+
+function setQuoteSectionExpanded(section, expanded) {
+    if (!section) return;
+    const button = section.querySelector('[data-quote-section-collapse]');
+    const body = section.querySelector('[data-quote-section-body]');
+    if (!button || !body) return;
+    const isExpanded = expanded === true;
+    const labelKey = isExpanded ? 'collapseSection' : 'expandSection';
+    button.setAttribute('aria-expanded', String(isExpanded));
+    button.setAttribute('aria-label', t(labelKey));
+    button.setAttribute('title', t(labelKey));
+    const icon = button.querySelector('i');
+    icon?.classList.toggle('fa-chevron-up', isExpanded);
+    icon?.classList.toggle('fa-chevron-down', !isExpanded);
+    button.querySelector('.sr-only')?.replaceChildren(document.createTextNode(t(labelKey)));
+    section.classList.toggle('is-collapsed', !isExpanded);
+    body.hidden = !isExpanded;
+}
+
+function bindReferenceSectionCollapseControls(root = byId('content-area')) {
+    if (!root) return;
+    root.querySelectorAll('[data-quote-section-collapse]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const section = button.closest('[data-quote-section]');
+            const expanded = button.getAttribute('aria-expanded') !== 'true';
+            setQuoteSectionExpanded(section, expanded);
+        });
+    });
 }
 
 function bindReferenceOptionControls(root = byId('content-area')) {
@@ -1696,6 +1748,7 @@ function renderContent() {
     `;
     bindScrollableTables(container);
     bindProductMediaControls();
+    bindReferenceSectionCollapseControls(container);
     bindReferenceOptionControls(container);
     observeQuoteSections(container);
     byId('quote-confirm-checkbox')?.addEventListener('change', (event) => {
@@ -2340,6 +2393,20 @@ function getFileName(ext) {
     return `${title || 'quotation'}_${suffix}.${ext}`;
 }
 
+function setAllQuoteSectionsExpanded(expanded = true, root = byId('content-area')) {
+    if (!root) return [];
+    const states = [...root.querySelectorAll('[data-quote-section-collapse]')].map((button) => ({
+        section: button.closest('[data-quote-section]'),
+        expanded: button.getAttribute('aria-expanded') === 'true',
+    }));
+    states.forEach(({ section }) => setQuoteSectionExpanded(section, expanded));
+    return states;
+}
+
+function restoreQuoteSectionExpansion(states = []) {
+    states.forEach(({ section, expanded }) => setQuoteSectionExpanded(section, expanded));
+}
+
 async function createDirectCapture() {
     const element = byId('export-area');
     if (!element) throw new Error('Export area missing');
@@ -2350,6 +2417,7 @@ async function createDirectCapture() {
         backgroundColor: element.style.backgroundColor,
     };
 
+    const sectionExpansion = setAllQuoteSectionsExpanded(true);
     const wrappers = [...element.querySelectorAll('.table-responsive-wrapper')];
     const wrapperOverflow = wrappers.map((node) => node.style.overflowX);
     try {
@@ -2378,6 +2446,7 @@ async function createDirectCapture() {
         element.style.width = original.width;
         element.style.padding = original.padding;
         element.style.backgroundColor = original.backgroundColor;
+        restoreQuoteSectionExpansion(sectionExpansion);
         wrappers.forEach((node, index) => {
             node.style.overflowX = wrapperOverflow[index];
         });

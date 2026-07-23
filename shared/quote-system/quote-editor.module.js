@@ -36,7 +36,17 @@ const TABLE_INSTANCES = 'quote_instances';
 const TABLE_INSTANCE_ITEMS = 'quote_instance_items';
 const TABLE_CUSTOMERS = 'quote_customers';
 const TRANSLATE_FUNCTION_NAME = 'quote-translate';
+const TRANSLATE_TIMEOUT_MS = 8_000;
 const AUTO_TRANSLATE_TARGETS = ['en', 'ru'];
+
+function withTimeout(promise, timeoutMs, message = 'Request timed out.') {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => {
+            setTimeout(() => reject(new Error(message)), timeoutMs);
+        }),
+    ]);
+}
 
 const dict = {
     zh: {
@@ -698,13 +708,17 @@ function setLocalizedByPath(path, lang, value) {
       );
       const chunks = chunkTranslationEntries(entries);
       for (const chunk of chunks) {
-          const { data, error } = await client.functions.invoke(TRANSLATE_FUNCTION_NAME, {
-              body: {
-                  source: DEFAULT_LANG,
-                  targets: AUTO_TRANSLATE_TARGETS,
-                  entries: chunk.map((entry) => ({ key: entry.path, text: entry.text })),
-              },
-          });
+          const { data, error } = await withTimeout(
+              client.functions.invoke(TRANSLATE_FUNCTION_NAME, {
+                  body: {
+                      source: DEFAULT_LANG,
+                      targets: AUTO_TRANSLATE_TARGETS,
+                      entries: chunk.map((entry) => ({ key: entry.path, text: entry.text })),
+                  },
+              }),
+              TRANSLATE_TIMEOUT_MS,
+              'Quote translation request timed out.',
+          );
           if (error) throw error;
           const translations = data?.translations && typeof data.translations === 'object' ? data.translations : {};
           AUTO_TRANSLATE_TARGETS.forEach((lang) => {
@@ -1718,7 +1732,9 @@ async function persistItemRows(tableName, ownerColumn, ownerId, items = []) {
             is_selected: normalized.is_selected === true,
             name_i18n: expandLocalizedFromChinese(normalized.name_i18n),
         };
-        if (persistedIds.has(normalized.localId)) row.id = normalized.localId;
+        // New editor rows already carry a UUID localId. Send it explicitly so
+        // Supabase upsert never turns a new row into an explicit NULL id.
+        row.id = normalized.localId;
         return row;
     });
     const currentPersistedIds = new Set(payload.filter((row) => row.id).map((row) => row.id));
