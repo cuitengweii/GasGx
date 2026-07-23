@@ -1542,10 +1542,22 @@ function quoteReferenceSectionIcon(sectionKey = '') {
     return 'fa-gears';
 }
 
+function quoteReferenceSectionItems(section) {
+    const items = Array.isArray(section?.items) ? section.items : [];
+    return section?.key === 'optional_config'
+        ? items.filter((item) => item?.isSelected === true)
+        : items;
+}
+
+function shouldRenderQuoteReferenceSection(section) {
+    return section?.key !== 'optional_config' || quoteReferenceSectionItems(section).length > 0;
+}
+
 function quoteReferenceSectionMarkup(section, rates = state.rates) {
     const tone = quoteReferenceSectionTone(section.key);
     const subtotal = sectionSubtotal(section);
-    const rows = (section.items || []).map((item) => {
+    const items = quoteReferenceSectionItems(section);
+    const rows = items.map((item) => {
         const included = item.isIncluded === true;
         const price = safeNumber(item.priceRmb, 0);
         return `
@@ -1658,6 +1670,7 @@ function renderContent() {
     const mediaBelow = mediaState.enabled && mediaState.config.position !== MEDIA_POSITIONS.ABOVE ? mediaBlock : '';
     const confirmationPanel = quoteConfirmationPanelMarkup();
     const sectionMarkup = (snapshot.product.sections || [])
+        .filter(shouldRenderQuoteReferenceSection)
         .map((section) => quoteReferenceSectionMarkup(section, state.rates))
         .join('');
 
