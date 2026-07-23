@@ -1781,6 +1781,7 @@ function blockExpiredQuote(snapshot) {
     state.clockTimer = null;
     closeShareMenu();
     document.body.classList.remove('access-resolved');
+    document.body.classList.add('access-expired');
     setAccessOverlay({
         badge: t('quoteValidityExpiredBadge'),
         title: t('quoteValidityExpiredTitle'),
@@ -2098,6 +2099,7 @@ async function submitEmbeddedPublicConfirmation() {
 function applySnapshot(snapshot) {
     state.snapshot = snapshot;
     state.quoteExpired = false;
+    document.body.classList.remove('access-expired');
     prepareQuoteBehaviorTracking();
     state.galleryIndex = 0;
     state.galleryLoading = false;
