@@ -124,6 +124,7 @@ const sharedUiDict = {
     galleryTitle: 'Product Gallery',
     galleryPrev: 'Previous',
     galleryNext: 'Next',
+    galleryLoading: 'Loading image…',
     galleryModeCarousel: 'Carousel',
     galleryModeStack: 'Gallery',
     shareMetaMode: 'Mode: share-link',
@@ -261,6 +262,7 @@ const dict = {
         galleryTitle: '产品展示图片',
         galleryPrev: '上一张',
         galleryNext: '下一张',
+        galleryLoading: '图片加载中…',
         galleryModeCarousel: '轮播图',
         galleryModeStack: '纵向铺图',
         shareMetaMode: '访问模式：分享链接',
@@ -396,6 +398,7 @@ const dict = {
         galleryTitle: 'Галерея продукта',
         galleryPrev: 'Предыдущее изображение',
         galleryNext: 'Следующее изображение',
+        galleryLoading: 'Загрузка изображения…',
         galleryModeCarousel: 'Карусель',
         galleryModeStack: 'Галерея',
         shareMetaMode: 'Режим: ссылка',
@@ -454,6 +457,8 @@ const state = {
     isMobileMenuOpen: false,
     clockTimer: null,
     galleryIndex: 0,
+    galleryLoading: false,
+    galleryLoadRequest: 0,
     publicConfirmation: {
         loading: false,
         payload: null,
@@ -1412,7 +1417,7 @@ function renderProductMediaBlock(snapshot = state.snapshot) {
                 <strong>${esc(t('galleryTitle'))}</strong>
                 <span>${esc(modeLabel)}</span>
             </div>
-            <div class="quote-media-carousel-stage">
+            <div class="quote-media-carousel-stage ${state.galleryLoading ? 'is-loading' : ''}" aria-busy="${state.galleryLoading ? 'true' : 'false'}">
                 ${items
                     .map(
                         (item, index) => `
@@ -1422,6 +1427,10 @@ function renderProductMediaBlock(snapshot = state.snapshot) {
                         `,
                     )
                     .join('')}
+                <div class="quote-media-loading" aria-live="polite" aria-atomic="true">
+                    <span class="quote-media-loading__spinner" aria-hidden="true"></span>
+                    <span>${esc(t('galleryLoading'))}</span>
+                </div>
                 ${
                     items.length > 1
                         ? `
@@ -1454,6 +1463,66 @@ function renderProductMediaBlock(snapshot = state.snapshot) {
     `;
 }
 
+function setGalleryLoading(loading) {
+    state.galleryLoading = loading === true;
+    const stage = document.querySelector('.quote-media-carousel-stage');
+    if (stage) {
+        stage.classList.toggle('is-loading', state.galleryLoading);
+        stage.setAttribute('aria-busy', String(state.galleryLoading));
+    }
+    document.querySelectorAll('[data-gallery-nav], [data-gallery-dot]').forEach((button) => {
+        button.disabled = state.galleryLoading;
+    });
+}
+
+function applyGallerySelection(nextIndex) {
+    document.querySelectorAll('[data-gallery-slide]').forEach((slide) => {
+        slide.classList.toggle('is-active', Number(slide.dataset.gallerySlide) === nextIndex);
+    });
+    document.querySelectorAll('[data-gallery-dot]').forEach((dot) => {
+        dot.classList.toggle('is-active', Number(dot.dataset.galleryDot) === nextIndex);
+    });
+}
+
+function preloadGalleryImage(source) {
+    return new Promise((resolve) => {
+        const image = new Image();
+        let settled = false;
+        const finish = (ready) => {
+            if (settled) return;
+            settled = true;
+            resolve(ready);
+        };
+        image.onload = () => {
+            if (typeof image.decode !== 'function') {
+                finish(true);
+                return;
+            }
+            image.decode().then(() => finish(true)).catch(() => finish(true));
+        };
+        image.onerror = () => finish(false);
+        image.src = source;
+        if (image.complete) finish(image.naturalWidth > 0);
+    });
+}
+
+async function switchGalleryImage(nextIndex, mediaState = getProductMediaState()) {
+    const total = mediaState.items.length;
+    if (!total || state.galleryLoading) return;
+    const normalizedIndex = (nextIndex + total) % total;
+    if (normalizedIndex === state.galleryIndex) return;
+
+    const requestId = state.galleryLoadRequest + 1;
+    state.galleryLoadRequest = requestId;
+    setGalleryLoading(true);
+    await preloadGalleryImage(mediaState.items[normalizedIndex]?.public_url || '');
+    if (requestId !== state.galleryLoadRequest) return;
+
+    state.galleryIndex = normalizedIndex;
+    applyGallerySelection(normalizedIndex);
+    setGalleryLoading(false);
+}
+
 function bindProductMediaControls() {
     const mediaState = getProductMediaState();
     if (!mediaState.enabled || mediaState.config.layout !== MEDIA_LAYOUTS.CAROUSEL || mediaState.items.length <= 1) return;
@@ -1461,15 +1530,13 @@ function bindProductMediaControls() {
     document.querySelectorAll('[data-gallery-nav]').forEach((button) => {
         button.addEventListener('click', () => {
             const direction = button.dataset.galleryNav === 'prev' ? -1 : 1;
-            state.galleryIndex = (state.galleryIndex + direction + mediaState.items.length) % mediaState.items.length;
-            renderContent();
+            void switchGalleryImage(state.galleryIndex + direction, mediaState);
         });
     });
 
     document.querySelectorAll('[data-gallery-dot]').forEach((button) => {
         button.addEventListener('click', () => {
-            state.galleryIndex = Number(button.dataset.galleryDot || 0) || 0;
-            renderContent();
+            void switchGalleryImage(Number(button.dataset.galleryDot || 0) || 0, mediaState);
         });
     });
 }
@@ -1991,6 +2058,8 @@ function applySnapshot(snapshot) {
     state.snapshot = snapshot;
     prepareQuoteBehaviorTracking();
     state.galleryIndex = 0;
+    state.galleryLoading = false;
+    state.galleryLoadRequest += 1;
     state.currentLang = resolveRuntimeLang(params.get('lang') || snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG, snapshot);
     state.rates = normalizeRates(snapshot?.quote?.rates || snapshot?.product?.default_rates || DEFAULT_RATES);
     state.rateStatusMode = 'online';
