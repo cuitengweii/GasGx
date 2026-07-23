@@ -1186,7 +1186,11 @@ function renderViewContextBanner() {
 function renderToolbar() {
     const node = byId('toolbar-brand-name');
     if (!node) return;
-    node.textContent = state.currentLang === 'zh' ? 'GasGx 报价系统' : 'GasGx Quotation System';
+    node.textContent = state.currentLang === 'zh'
+        ? 'GasGx 报价预览'
+        : state.currentLang === 'ru'
+            ? 'GasGx Предпросмотр предложения'
+            : 'GasGx Quote Preview';
     const toolbar = byId('toolbar');
     if (toolbar) toolbar.hidden = state.customerView;
     document.body.classList.toggle('customer-view', state.customerView);
