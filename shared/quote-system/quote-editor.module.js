@@ -36,7 +36,7 @@ const TABLE_INSTANCES = 'quote_instances';
 const TABLE_INSTANCE_ITEMS = 'quote_instance_items';
 const TABLE_CUSTOMERS = 'quote_customers';
 const TRANSLATE_FUNCTION_NAME = 'quote-translate';
-const TRANSLATE_TIMEOUT_MS = 8_000;
+const TRANSLATE_TIMEOUT_MS = 3_000;
 const AUTO_TRANSLATE_TARGETS = ['en', 'ru'];
 
 function withTimeout(promise, timeoutMs, message = 'Request timed out.') {
@@ -2077,7 +2077,10 @@ async function handleSave() {
         const auth = await client.auth.getUser();
         state.user = auth?.data?.user || null;
         if (!state.user) renderStatus(editorT('needLogin'), 'warning');
-        await runAutoTranslation(true);
+        // Translation is a best-effort supplement to the primary save. Only
+        // retry fields changed in this edit so a slow translation endpoint
+        // cannot make every save look stuck.
+        await runAutoTranslation(false);
         if (state.kind === 'product') {
             await saveProduct(state.user);
         } else {
