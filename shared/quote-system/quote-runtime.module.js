@@ -1699,7 +1699,7 @@ function renderContent() {
                         <div><span class="quote-reference-currency">USD</span><strong>${esc(formatCurrency('USD', total * state.rates.USD))}</strong></div>
                     </div>
                     <div class="quote-reference-formula" aria-label="${esc(t('pricingFormula'))}">
-                        <span><b>${esc(breakdown[0][0])}</b> ${esc(formatCurrency('RMB', breakdown[0][1]))} <em>+</em> <b>${esc(breakdown[1][0])}</b> ${esc(formatCurrency('RMB', breakdown[1][1]))} <em>+</em> <b>${esc(breakdown[2][0])}</b> ${esc(formatCurrency('RMB', breakdown[2][1]))} <em>=</em> <strong>${esc(formatCurrency('RMB', total))}</strong></span>
+                        <span><b>${esc(breakdown[0][0])}</b> ${esc(formatCurrency('RMB', breakdown[0][1]))} <em>+</em> <b>${esc(breakdown[1][0])}</b> ${esc(formatCurrency('RMB', breakdown[1][1]))} <em>+</em> <b>${esc(breakdown[2][0])}</b> ${esc(formatCurrency('RMB', breakdown[2][1]))} <em>+</em> <b>${esc(breakdown[3][0])}</b> ${esc(formatCurrency('RMB', breakdown[3][1]))} <em>=</em> <strong>${esc(formatCurrency('RMB', total))}</strong></span>
                     </div>
                 </div>
             </section>
