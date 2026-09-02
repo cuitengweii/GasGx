@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en" data-ggx-shell-lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,12 +8,24 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../shared/ui/site-shell.shared.css?v=20260723quote-shell20">
     <script src="../shared/ui/main-auth.shared.js"></script>
-    <script src="./public-asset-version.js?v=20260327public25"></script>
+    <script src="./public-asset-version.js?v=20260724quote-shell28"></script>
     <script>window.AMSLoadQuotePublicStyles('../shared/quote-system/quote-system.css');</script>
 </head>
-<body class="antialiased pb-10 md:pb-20 access-resolved">
+<body class="quote-reference-body antialiased pb-10 md:pb-20">
+    <script>
+        (() => {
+            const shareView = new URLSearchParams(window.location.search).get('share_view');
+            if (new URLSearchParams(window.location.search).get('customer_view') === '1' || ['text', 'poster'].includes(shareView)) {
+                document.body.classList.add('customer-view');
+            }
+        })();
+    </script>
     <div id="access-gate-overlay" class="access-gate-overlay hidden">
         <div class="access-gate-card">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(93,214,44,0.35)] bg-[rgba(93,214,44,0.08)] text-[var(--gas-green-light)] text-xs font-mono-num tracking-[0.25em] uppercase mb-5">
@@ -57,92 +69,59 @@
         <div class="text-[var(--text-muted)] text-sm mt-3" id="export-sub-text">正在进行高清文档渲染，请稍候。</div>
     </div>
 
-    <div id="toolbar" class="fixed top-0 left-0 right-0 z-50 px-3 md:px-8 py-3 md:py-4 flex justify-between items-center border-b backdrop-blur-md" style="background-color: rgba(10, 14, 20, 0.85); border-color: var(--border-color);">
+    <div id="ggx-site-header-slot"></div>
+
+    <div id="toolbar" class="fixed top-0 left-0 right-0 z-50 px-3 md:px-8 py-3 md:py-4 flex justify-between items-center border-b backdrop-blur-md" style="background-color: rgba(5, 5, 5, 0.78); border-color: rgba(255, 255, 255, 0.05);">
         <div class="toolbar-brand flex items-center space-x-2 md:space-x-4">
             <div id="toolbar-brand-name" class="text-[var(--gas-green-light)] text-xl md:text-3xl font-black tracking-tight flex whitespace-nowrap items-center flex-shrink-0">
-                <span>GasGx 报价系统</span>
+                <span>GasGx 报价预览</span>
             </div>
         </div>
 
         <div class="toolbar-actions flex items-center space-x-2 md:space-x-4 text-xs md:text-sm">
-            <button id="btn-auth" type="button" hidden class="toolbar-auth-btn btn-outline px-3 py-1.5 md:px-4 md:py-2 flex items-center justify-center gap-2" title="登录">
-                <i id="icon-auth" class="fa-solid fa-user-lock"></i>
-                <span id="btn-text-auth" class="toolbar-auth-text">登录</span>
-            </button>
-
-            <div class="toolbar-lang flex bg-[#161B22] rounded p-1 border border-[#2C2F33]">
-                <button type="button" id="btn-zh" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">CN</button>
-                <button type="button" id="btn-en" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">EN</button>
-                <button type="button" id="btn-ru" class="px-2 md:px-4 py-1 md:py-1.5 rounded transition-all">RU</button>
-            </div>
-
             <div id="share-group" class="toolbar-share-group relative">
                 <button id="btn-share" type="button" class="btn-glow px-3 py-1.5 md:px-6 md:py-2 flex items-center">
                     <i class="fa-solid fa-share-nodes" id="icon-share"></i> <span id="btn-text-share" class="hidden md:inline ml-2">分享/导出</span> <i class="fa-solid fa-angle-down ml-1 md:ml-2 text-xs" id="icon-share-down"></i>
                 </button>
-                <div id="share-menu" class="toolbar-share-menu absolute right-0 top-full pt-2 w-48 hidden z-50">
+                <div id="share-menu" class="toolbar-share-menu absolute right-0 top-full pt-2 w-80 hidden z-50">
                     <div class="bg-[#161B22] shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-[#2C2F33] rounded overflow-hidden">
                         <button id="btn-menu-share-link-wrap" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-link mr-3 text-lg"></i><span id="btn-menu-share-link">创建分享链接</span></button>
                         <div id="share-menu-divider" class="h-px bg-[#2C2F33]"></div>
                         <button id="btn-menu-img-wrap" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-image mr-3 text-lg"></i><span id="btn-menu-img">生成长图</span></button>
+                        <button id="btn-menu-poster-wrap" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-qrcode mr-3 text-lg"></i><span id="btn-menu-poster">报价海报</span></button>
+                        <button id="btn-menu-text-wrap" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-align-left mr-3 text-lg"></i><span id="btn-menu-text">文字分享</span></button>
                         <button id="btn-menu-pdf-wrap" class="w-full text-left px-4 py-3 hover:bg-[var(--gas-green-bg)] hover:text-[var(--gas-green-light)] transition-colors flex items-center text-[var(--text-body)] hover:font-medium"><i class="fa-solid fa-file-pdf mr-3 text-lg"></i><span id="btn-menu-pdf">导出 PDF</span></button>
                     </div>
+                    <div id="share-menu-status" class="px-4 py-2 text-xs text-[var(--text-muted)] font-mono-num" aria-live="polite"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="doc-container" class="max-w-7xl mx-auto mt-20 md:mt-28 p-4 md:p-12 rounded-lg relative shadow-[0_20px_50px_rgba(0,0,0,0.7)]" style="background-color: var(--bg-card); border: 1px solid var(--border-color);">
+    <div id="doc-container" class="quote-reference-page max-w-7xl mx-auto mt-20 md:mt-24 px-4 md:px-8 pt-2 md:pt-8 pb-12 relative">
         <div id="view-context-banner" class="quote-view-banner hidden">
             <div class="quote-view-banner__kicker" id="view-context-kicker">ADMIN PREVIEW</div>
             <div class="quote-view-banner__title" id="view-context-title">This page is showing a draft preview.</div>
             <div class="quote-view-banner__meta" id="view-context-meta"></div>
         </div>
-        <div id="export-area" style="background-color: var(--bg-card);">
-            <div class="quote-head-shell border-b border-[var(--border-color)] pb-6 md:pb-8 mb-8 md:mb-10 flex flex-col xl:flex-row justify-between items-start gap-6">
-                <div class="quote-head-main w-full xl:flex-1 xl:pr-8 overflow-hidden">
-                    <div class="doc-title-row flex items-start md:items-center gap-4 mb-4 md:mb-8 w-full">
-                        <h1 class="text-xl md:text-3xl font-bold tracking-wide text-[var(--gas-green-light)] leading-snug break-words flex-1 m-0" id="f-title"></h1>
-                    </div>
-
-                    <div class="doc-meta-grid grid grid-cols-1 md:grid-cols-2 gap-x-8 md:gap-x-12 gap-y-4 md:gap-y-5 text-sm md:text-[15px]">
-                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-validity">报价有效期：</span>
-                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
-                                <span id="val-validity" class="font-semibold text-white font-mono-num whitespace-nowrap outline-none w-full text-left block"></span>
-                            </div>
-                        </div>
-                        <div class="doc-meta-item flex items-center border-b border-[var(--border-color)] pb-2 overflow-hidden">
-                            <span class="min-w-max pr-3 text-[var(--text-body)] flex-shrink-0 whitespace-nowrap" id="lbl-receiver">收件人：</span>
-                            <div class="doc-meta-value flex-1 w-0 overflow-x-auto no-scrollbar flex items-center">
-                                <span id="val-receiver" class="text-[var(--gas-green-light)] empty-placeholder whitespace-nowrap outline-none w-full text-left block" data-placeholder="请填写客户邮箱"></span>
-                            </div>
-                        </div>
-                    </div>
+        <div id="export-area" class="quote-reference-export-area">
+            <div class="quote-reference-ratebar">
+                <div id="live-rates-display" class="quote-reference-ratebar__rates">1 CNY <i class="fa-solid fa-arrow-right-arrow-left mx-1 text-white"></i> 0.1473 USD <span>| 0.1290 EUR</span> <span>| 0.2084 CAD</span> <span>| 11.2108 RUB</span></div>
+                <div class="quote-reference-ratebar__actions">
+                    <div class="quote-reference-validity"><i class="fa-regular fa-clock"></i><span id="lbl-validity">报价有效期：</span><strong id="val-validity"></strong></div>
+                    <span id="rate-status" class="quote-reference-ratebar__status"><i class="fa-solid fa-wifi"></i> 全球实时汇率在线</span>
+                    <button id="btn-refresh-rates" type="button" class="quote-reference-refresh"><i class="fa-solid fa-rotate-right"></i><span id="btn-text-refresh">刷新汇率</span></button>
                 </div>
+            </div>
 
-                <div class="quote-head-side w-full xl:w-auto text-left xl:text-right flex-shrink-0 flex flex-col items-start xl:items-end">
-                    <div class="bg-[var(--bg-base)] border border-[var(--border-color)] p-4 md:p-5 rounded shadow-inner w-full xl:min-w-[280px]">
-                        <div class="text-xs text-[var(--text-muted)] mb-2 uppercase tracking-widest flex items-center justify-start xl:justify-end gap-2" id="lbl-update">
-                            <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>
-                            SYS_TIME_SYNC
-                        </div>
-                        <div class="text-2xl md:text-3xl font-mono-num text-white tracking-widest" id="live-date">--</div>
-                        <div class="text-xs md:text-sm font-mono-num text-[var(--text-body)] mt-1" id="live-clock">--:--:--</div>
-                    </div>
-
-                    <div class="mt-4 text-xs md:text-sm font-mono-num text-[var(--gas-green-light)] bg-[var(--gas-green-bg)] px-3 py-2 rounded border border-[var(--gas-green-primary)] break-all" id="live-rates-display">
-                        MARKET RATES (BASE: CNY)
-                    </div>
-
-                    <div class="mt-3 flex flex-wrap items-center justify-start xl:justify-end gap-2 w-full">
-                        <span class="text-[10px] md:text-[11px] text-[#050805] font-mono-num flex items-center bg-[var(--gas-green-primary)] px-2 py-1.5 rounded border border-[var(--gas-green-primary)] shadow-[0_0_8px_rgba(93,214,44,0.2)]" id="rate-status">
-                            <i class="fa-solid fa-wifi text-[#050805] mr-1.5"></i> 全球实时汇率在线
-                        </span>
-                        <button id="btn-refresh-rates" type="button" class="btn-outline bg-[var(--bg-card)] px-3 py-1.5 rounded text-[10px] md:text-[11px] font-bold flex items-center">
-                            <i class="fa-solid fa-rotate-right mr-1.5"></i> <span id="btn-text-refresh">刷新汇率</span>
-                        </button>
-                    </div>
+            <div class="quote-reference-header">
+                <div class="quote-reference-header__main">
+                    <h1 id="f-title"></h1>
+                    <h2><i class="fa-solid fa-engine"></i><span id="f-product-title"></span></h2>
+                </div>
+                <div class="quote-reference-customer-card">
+                    <div class="quote-reference-customer-card__icon"><i class="fa-solid fa-user"></i></div>
+                    <div><div id="lbl-receiver">客户名称</div><strong id="val-receiver" data-placeholder="请填写客户名称"></strong></div>
                 </div>
             </div>
 
@@ -153,9 +132,7 @@
         </div>
     </div>
 
-    <button id="back-to-top" type="button" class="back-to-top z-40" aria-label="返回顶部" title="返回顶部">
-        <i class="fa-solid fa-arrow-up text-sm"></i>
-    </button>
+    <div id="ggx-site-footer-slot"></div>
 
     <div id="auth-modal" class="share-modal-backdrop" aria-hidden="true">
         <div class="share-modal-card auth-modal-card p-5 md:p-6">
@@ -285,6 +262,8 @@
         </div>
     </div>
 
+    <script src="../shared/ui/site-shell.config.js?v=20260723quote-shell20"></script>
+    <script src="../shared/ui/site-shell.shared.js?v=20260723quote-shell20"></script>
     <script>window.AMSLoadQuotePublicModule('../shared/quote-system/quote-runtime.module.js');</script>
 </body>
 </html>
