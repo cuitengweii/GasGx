@@ -14,7 +14,8 @@
     normalizeShareConfig,
     normalizeShareHistoryEntry,
     sortMediaItems,
-} from './quote-data.module.js?v=20260414lang02';
+} from './quote-data.module.js?v=20260723fields14';
+import { quoteItemDisplayName, quoteItemFieldDisplay } from './quote-item-glossary.module.js?v=20260723fields14';
 
 const SUPABASE_URL = window.AMS_SUPABASE_URL || 'https://mkpcliytqudclkwtewru.supabase.co';
 const SUPABASE_KEY = window.AMS_SUPABASE_KEY || 'sb_publishable_S2uWAddQEXhWJgGeIF_ZbQ_H_thz2hw';
@@ -33,9 +34,22 @@ const sharedUiDict = {
     update: 'SYS_TIME_SYNC',
     included: 'Included',
     mainConfig: 'Main Config',
+    servicePackage: 'Service Package',
     optionalConfig: 'Optional Config',
+    wearPartsModule: 'Wear Parts Module',
     systemTotal: 'EST. SYSTEM TOTAL',
-    headers: ['SEQ', 'DESCRIPTION', 'BRAND', 'QTY', 'RMB (?)', 'USD ($)', 'EUR (?)', 'CAD (C$)', 'RUB (?)'],
+    pricingBreakdown: 'PRICE BREAKDOWN',
+    pricingFormula: 'CALCULATION',
+    optionalColumn: 'Select',
+    mainTotal: 'Main configuration total',
+    optionalIncrease: 'Optional additions',
+    serviceTotal: 'Service package total',
+    wearPartsTotal: 'Wear parts module total',
+    optionalSelect: 'Include in quote',
+    sectionSelect: 'Select',
+    collapseSection: 'Collapse section',
+    expandSection: 'Expand section',
+    headers: ['SEQ', 'DESCRIPTION', 'BRAND', 'QTY', 'RMB (?)', 'USD ($)'],
     ratesOnline: 'GLOBAL LIVE RATES',
     ratesRefreshing: 'Refreshing...',
     ratesFallback: 'Rate fetch failed, using saved snapshot.',
@@ -44,7 +58,18 @@ const sharedUiDict = {
     share: 'Share/Export',
     shareLink: 'Create Share Link',
     exportImage: 'Export Image',
+    quotePoster: 'Quote Poster',
+    textShare: 'Text Share',
     exportPdf: 'Export PDF',
+    quotePosterBusy: 'Preparing quote poster...',
+    quotePosterSuccess: 'Quote poster is ready.',
+    quotePosterError: 'Quote poster could not be generated. Try again later.',
+    quotePosterQrHint: 'Scan to view the quotation',
+    quotePosterCustomer: 'Customer',
+    quotePosterValidity: 'Validity',
+    quotePosterTotal: 'Estimated total',
+    textShareSuccess: 'Quotation text and link copied.',
+    textShareError: 'Could not copy quotation text. Please copy it manually.',
     shareTitle: 'Create Share Link',
     shareDesc: 'Generate a customer link with expiry and passcode. Signed-in admins can always open this page.',
     shareExpiryLabel: 'Link expiry',
@@ -76,6 +101,10 @@ const sharedUiDict = {
     accessCheckingMessage: 'Verifying share token and admin session. Please wait.',
     accessInvalid: 'The share link is invalid or corrupted. Generate a new one.',
     accessExpired: 'This share link has expired.',
+    quoteValidityExpiredBadge: 'Quotation expired',
+    quoteValidityExpiredTitle: 'This quotation has expired',
+    quoteValidityExpiredMessage: 'The quotation validity period has ended, so its details are no longer available.',
+    quoteValidityExpiredHelp: 'Please contact your GasGx sales representative for an updated quotation.',
     accessPasscodeTitle: 'Passcode required',
     accessPasscodeMessage: 'This share link is protected by a passcode. Enter the 4-character code to continue.',
     accessPasscodeLabel: 'Passcode',
@@ -89,7 +118,9 @@ const sharedUiDict = {
     loading: 'Loading...',
     exportLoading: 'GENERATING DOCUMENT...',
     exportSubText: 'Rendering a high-resolution document. Please wait.',
+    exportLibraryMissing: 'Export tools are still loading. Refresh the page and try again.',
     receiverPlaceholder: 'Enter customer email',
+    customerName: 'CUSTOMER:',
     days: 'd',
     hours: 'h',
     minutes: 'm',
@@ -97,8 +128,7 @@ const sharedUiDict = {
     galleryTitle: 'Product Gallery',
     galleryPrev: 'Previous',
     galleryNext: 'Next',
-    galleryModeCarousel: 'Carousel',
-    galleryModeStack: 'Gallery',
+    galleryLoading: 'Loading image…',
     shareMetaMode: 'Mode: share-link',
     shareMetaAdmin: 'Mode: admin-preview',
     shareMetaExpired: 'Expires at: ',
@@ -106,6 +136,12 @@ const sharedUiDict = {
     unknownBrand: 'Quote System',
     mailSubjectPrefix: '[SYS_DATA]',
     noEmail: 'Set a customer email first.',
+    emailInvalid: 'Enter a valid customer email first.',
+    sendQuote: 'Send quotation',
+    sendQuoteBusy: 'Preparing email...',
+    sendQuoteSuccess: 'Customer record saved. Your email client is ready to send the quotation.',
+    sendQuoteError: 'The quotation could not be prepared. Try again later.',
+    sendQuoteHint: 'The send action opens your email client with the quotation link and sales record is saved automatically.',
     authLogin: 'Login',
     authAccount: 'Account',
     authModalTitle: 'Login required',
@@ -138,9 +174,22 @@ const dict = {
         update: '系统时间同步',
         included: '包含',
         mainConfig: '主配置',
+        servicePackage: '服务包',
         optionalConfig: '选配',
+        wearPartsModule: '易损件模块',
         systemTotal: '系统预估总价',
-        headers: ['序号', '模块描述', '规格品牌', '数量', '人民币 (¥)', '美元 ($)', '欧元 (€)', '加元 (C$)', '卢布 (₽)'],
+        pricingBreakdown: '报价构成',
+        pricingFormula: '计算过程',
+        optionalColumn: '选择',
+        mainTotal: '主配总价',
+        optionalIncrease: '选配增加',
+        serviceTotal: '服务包总价',
+        wearPartsTotal: '易损件模块总价',
+        optionalSelect: '计入报价',
+        sectionSelect: '选中',
+        collapseSection: '收起模块',
+        expandSection: '展开模块',
+        headers: ['序号', '模块描述', '规格品牌', '数量', '人民币 (¥)', '美元 ($)'],
         ratesOnline: '全球实时汇率在线',
         ratesRefreshing: '正在刷新...',
         ratesFallback: '汇率获取失败，使用本地快照。',
@@ -149,7 +198,18 @@ const dict = {
         share: '分享/导出',
         shareLink: '创建分享链接',
         exportImage: '生成长图',
+        quotePoster: '报价海报',
+        textShare: '文字分享',
         exportPdf: '导出 PDF',
+        quotePosterBusy: '正在生成报价海报...',
+        quotePosterSuccess: '报价海报已生成。',
+        quotePosterError: '报价海报生成失败，请稍后重试。',
+        quotePosterQrHint: '扫码查看报价单',
+        quotePosterCustomer: '客户名称',
+        quotePosterValidity: '报价有效期',
+        quotePosterTotal: '系统预估总价',
+        textShareSuccess: '报价说明和链接已复制。',
+        textShareError: '报价文字复制失败，请手动复制。',
         shareTitle: '创建分享链接',
         shareDesc: '设置链接有效期和提取码后生成客户访问链接。管理员登录状态下始终可打开页面。',
         shareExpiryLabel: '链接有效期',
@@ -181,6 +241,10 @@ const dict = {
         accessCheckingMessage: '正在检查分享链接和管理员会话，请稍候。',
         accessInvalid: '分享链接无效或已损坏，请重新生成。',
         accessExpired: '分享链接已过期，请联系管理员重新生成。',
+        quoteValidityExpiredBadge: '报价已失效',
+        quoteValidityExpiredTitle: '本报价已超过有效期',
+        quoteValidityExpiredMessage: '报价有效期已结束，当前报价内容已停止展示。',
+        quoteValidityExpiredHelp: '如需更新报价或继续沟通，请联系您的 GasGx 销售顾问。',
         accessPasscodeTitle: '请输入提取码',
         accessPasscodeMessage: '当前分享链接已开启提取码保护，请输入 4 位提取码继续访问。',
         accessPasscodeLabel: '请输入提取码',
@@ -194,7 +258,9 @@ const dict = {
         loading: '处理中...',
         exportLoading: '正在生成高清文档...',
         exportSubText: '正在进行高清文档渲染，请稍候。',
+        exportLibraryMissing: '导出工具还未加载完成，请刷新页面后重试。',
         receiverPlaceholder: '请输入客户邮箱',
+        customerName: '客户名称：',
         days: '天',
         hours: '时',
         minutes: '分',
@@ -202,14 +268,19 @@ const dict = {
         galleryTitle: '产品展示图片',
         galleryPrev: '上一张',
         galleryNext: '下一张',
-        galleryModeCarousel: '轮播图',
-        galleryModeStack: '纵向铺图',
+        galleryLoading: '图片加载中…',
         shareMetaMode: '访问模式：分享链接',
         shareMetaAdmin: '访问模式：管理员预览',
         shareMetaExpired: '链接到期：',
         shareMetaNever: '永不过期',
         unknownBrand: '报价系统',
         noEmail: '请先维护客户邮箱。',
+        emailInvalid: '请输入格式正确的客户邮箱。',
+        sendQuote: '发送报价邮件',
+        sendQuoteBusy: '正在准备邮件...',
+        sendQuoteSuccess: '客户档案已保存，邮件客户端已打开，请确认发送报价。',
+        sendQuoteError: '报价邮件准备失败，请稍后重试。',
+        sendQuoteHint: '点击后会调起本机邮件客户端并带入报价链接，同时自动保存销售客户档案。',
         authModalTitle: '需要登录',
         authModalMessage: '登录后才能继续使用受保护的报价操作。',
         authModalHint: '当前浏览不会中断。登录完成后会自动回到这份报价。',
@@ -234,6 +305,140 @@ const dict = {
     },
     ru: {
         ...sharedUiDict,
+        supplier: 'Поставщик:',
+        sender: 'Отправитель:',
+        receiver: 'Получатель:',
+        validity: 'Срок действия предложения:',
+        update: 'Синхронизация системного времени',
+        included: 'Включено',
+        mainConfig: 'Основная конфигурация',
+        servicePackage: 'Сервисный пакет',
+        optionalConfig: 'Дополнительная конфигурация',
+        wearPartsModule: 'Модуль быстроизнашиваемых деталей',
+        systemTotal: 'Расчётная общая стоимость системы',
+        pricingBreakdown: 'Состав стоимости',
+        pricingFormula: 'Расчёт',
+        optionalColumn: 'Выбор',
+        mainTotal: 'Стоимость основной конфигурации',
+        optionalIncrease: 'Дополнительные опции',
+        serviceTotal: 'Стоимость сервисного пакета',
+        wearPartsTotal: 'Стоимость модуля быстроизнашиваемых деталей',
+        optionalSelect: 'Включить в предложение',
+        sectionSelect: 'Выбрать',
+        collapseSection: 'Свернуть раздел',
+        expandSection: 'Развернуть раздел',
+        headers: ['№', 'Описание модуля', 'Спецификация / бренд', 'Кол-во', 'RMB (¥)', 'USD ($)'],
+        ratesOnline: 'Актуальные мировые курсы валют',
+        ratesRefreshing: 'Обновление курсов...',
+        ratesFallback: 'Не удалось получить курсы, используется сохранённый снимок.',
+        refresh: 'Обновить курсы',
+        send: 'Отправить',
+        share: 'Поделиться / экспорт',
+        shareLink: 'Создать ссылку',
+        exportImage: 'Создать длинное изображение',
+        quotePoster: 'Постер предложения',
+        textShare: 'Текст предложения',
+        exportPdf: 'Экспортировать PDF',
+        quotePosterBusy: 'Формируем постер предложения...',
+        quotePosterSuccess: 'Постер предложения готов.',
+        quotePosterError: 'Не удалось создать постер предложения. Повторите попытку позже.',
+        quotePosterQrHint: 'Сканируйте для просмотра предложения',
+        quotePosterCustomer: 'Клиент',
+        quotePosterValidity: 'Срок действия',
+        quotePosterTotal: 'Расчётная стоимость',
+        textShareSuccess: 'Текст предложения и ссылка скопированы.',
+        textShareError: 'Не удалось скопировать текст предложения.',
+        shareTitle: 'Создание ссылки',
+        shareDesc: 'Настройте срок действия и код доступа для ссылки клиента. Авторизованные администраторы всегда могут открыть эту страницу.',
+        shareExpiryLabel: 'Срок действия ссылки',
+        shareExpiry1d: '1 день',
+        shareExpiry3d: '3 дня',
+        shareExpiry7d: '7 дней',
+        shareExpiryNever: 'Без ограничения срока',
+        shareExpiryCustom: 'Указать срок',
+        shareCustomLabel: 'Пользовательский срок',
+        shareCustomPicker: 'Выбрать время',
+        shareAdminHint: 'Сессии администраторов сайта не ограничиваются сроком ссылки.',
+        sharePasscodeLabel: 'Код доступа',
+        sharePasscodePlaceholder: 'Создаётся автоматически',
+        shareLinkLabel: 'Ссылка',
+        shareLinkPlaceholder: 'Создайте ссылку ниже',
+        shareGenerate: 'Создать и скопировать ссылку',
+        shareClose: 'Закрыть',
+        sharePreviewDefault: 'По умолчанию ссылка действует 3 дня.',
+        sharePreviewAdmin: 'Авторизованные администраторы могут открыть страницу после истечения срока ссылки.',
+        shareCopySuccess: 'Ссылка скопирована',
+        shareCopyFallback: 'Ссылка создана. Скопируйте её вручную.',
+        shareAdminOnly: 'Только авторизованные администраторы могут создавать ссылки.',
+        shareCustomRequired: 'Сначала укажите корректный срок действия.',
+        shareCustomExpired: 'Срок действия должен быть позже текущего времени.',
+        shareUnavailable: 'Для этой страницы пока нет опубликованного предложения.',
+        shareGenerateError: 'Не удалось создать ссылку. Повторите попытку позже.',
+        accessBadge: 'Защищённый доступ',
+        accessCheckingTitle: 'Проверка доступа...',
+        accessCheckingMessage: 'Проверяем ссылку и сессию администратора.',
+        accessInvalid: 'Ссылка недействительна или повреждена. Создайте новую ссылку.',
+        accessExpired: 'Срок действия ссылки истёк.',
+        quoteValidityExpiredBadge: 'Предложение истекло',
+        quoteValidityExpiredTitle: 'Срок действия предложения истёк',
+        quoteValidityExpiredMessage: 'Срок действия этого предложения завершён, поэтому его детали больше недоступны.',
+        quoteValidityExpiredHelp: 'Свяжитесь с вашим менеджером GasGx, чтобы получить обновлённое предложение.',
+        accessPasscodeTitle: 'Требуется код доступа',
+        accessPasscodeMessage: 'Введите 4-значный код доступа, чтобы продолжить.',
+        accessPasscodeLabel: 'Код доступа',
+        accessPasscodeSubmit: 'Разблокировать',
+        accessPasscodeError: 'Неверный код доступа.',
+        accessDeniedTitle: 'Предпросмотр недоступен',
+        accessDeniedMessage: 'Предпросмотр черновика доступен только авторизованным администраторам.',
+        accessRefresh: 'Проверить ещё раз',
+        notFoundTitle: 'Предложение не найдено',
+        notFoundMessage: 'По этой ссылке нет опубликованного предложения.',
+        loading: 'Загрузка...',
+        exportLoading: 'Формирование документа...',
+        exportSubText: 'Подготавливаем документ высокого качества.',
+        exportLibraryMissing: 'Инструменты экспорта ещё загружаются. Обновите страницу и повторите попытку.',
+        receiverPlaceholder: 'Введите email клиента',
+        customerName: 'Клиент:',
+        days: 'д',
+        hours: 'ч',
+        minutes: 'мин',
+        seconds: 'с',
+        galleryTitle: 'Галерея продукта',
+        galleryPrev: 'Предыдущее изображение',
+        galleryNext: 'Следующее изображение',
+        galleryLoading: 'Загрузка изображения…',
+        shareMetaMode: 'Режим: ссылка',
+        shareMetaAdmin: 'Режим: предпросмотр администратора',
+        shareMetaExpired: 'Срок действия: ',
+        shareMetaNever: 'Без ограничения срока',
+        unknownBrand: 'Система коммерческих предложений',
+        noEmail: 'Сначала укажите email клиента.',
+        emailInvalid: 'Введите корректный email клиента.',
+        sendQuote: 'Отправить предложение',
+        sendQuoteBusy: 'Подготовка письма...',
+        sendQuoteSuccess: 'Карточка клиента сохранена. Почтовый клиент готов к отправке предложения.',
+        sendQuoteError: 'Не удалось подготовить письмо. Повторите попытку позже.',
+        sendQuoteHint: 'Откроется почтовый клиент со ссылкой на предложение, а карточка клиента сохранится автоматически.',
+        authLogin: 'Войти',
+        authAccount: 'Аккаунт',
+        authModalTitle: 'Требуется вход',
+        authModalMessage: 'Войдите, чтобы продолжить защищённые действия с предложением.',
+        authModalHint: 'Просмотр останется доступным. После входа вы вернётесь к этому предложению.',
+        authModalLogin: 'Войти сейчас',
+        authModalCancel: 'Продолжить просмотр',
+        authProtectedAction: 'Защищённое действие',
+        authActionShare: 'Поделиться / экспорт',
+        authActionSend: 'Отправить email',
+        authActionImage: 'Экспорт изображения',
+        authActionPdf: 'Экспорт PDF',
+        authActionLink: 'Создать ссылку',
+        authActionConfirm: 'Подтверждение предложения',
+        quoteConfirmLoginRequired: 'Перед подтверждением войдите в систему.',
+        quoteConfirmEmailRequired: 'Сначала укажите email клиента в карточке клиента или предложении.',
+        quoteConfirmEmailMismatch: 'Текущий аккаунт: {actual}. Для подтверждения используйте зарегистрированный email: {expected}.',
+        quoteConfirmHintMatched: 'Email аккаунта совпадает с зарегистрированным email клиента.',
+        quoteConfirmHintLogin: 'Войдите с email клиента, указанным в предложении.',
+        tableSwipeHint: 'На мобильном устройстве проведите по таблице в сторону, чтобы увидеть все цены.',
     },
 };
 
@@ -250,12 +455,17 @@ const state = {
     adminUser: null,
     authResolved: false,
     route: null,
+    customerView: params.get('customer_view') === '1'
+        || ['text', 'poster'].includes(params.get('share_view')),
     sharePayload: null,
     shareTarget: null,
     pendingSharedAccess: null,
     isMobileMenuOpen: false,
     clockTimer: null,
+    quoteExpired: false,
     galleryIndex: 0,
+    galleryLoading: false,
+    galleryLoadRequest: 0,
     publicConfirmation: {
         loading: false,
         payload: null,
@@ -280,11 +490,11 @@ const state = {
 };
 
 const PRODUCTION_PROGRESS_STEPS = Object.freeze([
-    { key: 'production_step_plan', label: { zh: '排程确认', en: 'Planning confirmed', ru: 'Planning confirmed' } },
-    { key: 'production_step_material', label: { zh: '物料齐套', en: 'Materials ready', ru: 'Materials ready' } },
-    { key: 'production_step_assembly', label: { zh: '产线组装', en: 'Assembly', ru: 'Assembly' } },
-    { key: 'production_step_test', label: { zh: '联调测试', en: 'Integrated testing', ru: 'Integrated testing' } },
-    { key: 'production_step_ready', label: { zh: '待验收', en: 'Ready for FAT', ru: 'Ready for FAT' } },
+    { key: 'production_step_plan', label: { zh: '排程确认', en: 'Planning confirmed', ru: 'Планирование подтверждено' } },
+    { key: 'production_step_material', label: { zh: '物料齐套', en: 'Materials ready', ru: 'Материалы готовы' } },
+    { key: 'production_step_assembly', label: { zh: '产线组装', en: 'Assembly', ru: 'Сборка' } },
+    { key: 'production_step_test', label: { zh: '联调测试', en: 'Integrated testing', ru: 'Комплексное тестирование' } },
+    { key: 'production_step_ready', label: { zh: '待验收', en: 'Ready for FAT', ru: 'Готово к FAT' } },
 ]);
 
 function localeCopy(options = {}) {
@@ -322,10 +532,10 @@ function productionProgressMetaValue(payload = {}, key = '', fallback = '') {
 
 function productionProgressStatusLabel(value = '') {
     const status = text(value, 'pending');
-    if (status === 'completed') return localeCopy({ zh: '已完成', en: 'Completed', ru: 'Completed' });
-    if (status === 'in_progress') return localeCopy({ zh: '进行中', en: 'In progress', ru: 'In progress' });
-    if (status === 'delayed') return localeCopy({ zh: '延误', en: 'Delayed', ru: 'Delayed' });
-    return localeCopy({ zh: '待开始', en: 'Pending', ru: 'Pending' });
+    if (status === 'completed') return localeCopy({ zh: '已完成', en: 'Completed', ru: 'Завершено' });
+    if (status === 'in_progress') return localeCopy({ zh: '进行中', en: 'In progress', ru: 'В процессе' });
+    if (status === 'delayed') return localeCopy({ zh: '延误', en: 'Delayed', ru: 'Задержка' });
+    return localeCopy({ zh: '待开始', en: 'Pending', ru: 'Ожидается' });
 }
 
 function productionProgressStatusClass(value = '') {
@@ -347,22 +557,22 @@ function productionProgressPanelMarkup(payload = {}) {
             <div class="quote-confirm-card__head">
                 <div>
                     <div class="quote-confirm-card__kicker">PRODUCTION PROGRESS</div>
-                    <h3>${esc(localeCopy({ zh: '生产进度同步', en: 'Production Progress', ru: 'Production Progress' }))}</h3>
+                    <h3>${esc(localeCopy({ zh: '生产进度同步', en: 'Production Progress', ru: 'Прогресс производства' }))}</h3>
                     <p>${esc(localeCopy({
                         zh: '该链接用于客户查看排产阶段的最新进度，销售会根据工厂反馈持续更新。',
                         en: 'This link shows the latest production progress. Sales will keep it updated based on factory feedback.',
-                        ru: 'This link shows the latest production progress. Sales will keep it updated based on factory feedback.',
+                        ru: 'Эта ссылка показывает актуальный прогресс производства. Отдел продаж обновляет данные по информации завода.',
                     }))}</p>
                 </div>
                 <div class="quote-confirm-card__badge">${esc(productionProgressStatusLabel(scheduleStatus))}</div>
             </div>
             <div class="quote-production-meta-grid">
-                <span><strong>${esc(localeCopy({ zh: '工厂/产线', en: 'Factory/Line', ru: 'Factory/Line' }))}</strong>${esc(factoryName)}</span>
-                <span><strong>${esc(localeCopy({ zh: '批次', en: 'Batch', ru: 'Batch' }))}</strong>${esc(batch)}</span>
-                <span><strong>${esc(localeCopy({ zh: '预计完工', en: 'ETA', ru: 'ETA' }))}</strong>${esc(scheduleEta)}</span>
-                <span><strong>${esc(localeCopy({ zh: '工期状态', en: 'Schedule', ru: 'Schedule' }))}</strong>${esc(productionProgressStatusLabel(scheduleStatus))}</span>
+                <span><strong>${esc(localeCopy({ zh: '工厂/产线', en: 'Factory/Line', ru: 'Завод / линия' }))}</strong>${esc(factoryName)}</span>
+                <span><strong>${esc(localeCopy({ zh: '批次', en: 'Batch', ru: 'Партия' }))}</strong>${esc(batch)}</span>
+                <span><strong>${esc(localeCopy({ zh: '预计完工', en: 'ETA', ru: 'Плановая дата' }))}</strong>${esc(scheduleEta)}</span>
+                <span><strong>${esc(localeCopy({ zh: '工期状态', en: 'Schedule', ru: 'Статус графика' }))}</strong>${esc(productionProgressStatusLabel(scheduleStatus))}</span>
             </div>
-            ${delayReason ? `<div class="quote-confirm-card__terms"><strong>${esc(localeCopy({ zh: '延误说明', en: 'Delay note', ru: 'Delay note' }))}</strong><p>${esc(delayReason)}</p></div>` : ''}
+            ${delayReason ? `<div class="quote-confirm-card__terms"><strong>${esc(localeCopy({ zh: '延误说明', en: 'Delay note', ru: 'Причина задержки' }))}</strong><p>${esc(delayReason)}</p></div>` : ''}
             <div class="quote-production-track">
                 ${PRODUCTION_PROGRESS_STEPS.map((step, index) => {
                     const status = productionProgressMetaValue(payload, `${step.key}_status`, 'pending');
@@ -397,6 +607,22 @@ function esc(value) {
 
 function text(value, fallback = '') {
     return String(value ?? fallback).trim();
+}
+
+function normalizeEmail(value) {
+    return text(value).toLowerCase();
+}
+
+function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
+}
+
+function setQuoteEmailStatus(message = '', isError = false) {
+    const node = byId('quote-email-status');
+    if (!node) return;
+    node.textContent = text(message);
+    node.classList.toggle('is-error', Boolean(isError));
+    node.classList.toggle('is-success', Boolean(message) && !isError);
 }
 
 function currentShareConfig() {
@@ -554,28 +780,28 @@ function openQuoteConfirmAlert(options = {}) {
     byId('quote-confirm-alert-kicker').textContent = text(options.kicker, localeCopy({
         zh: '报价确认',
         en: 'QUOTE CONFIRM',
-        ru: 'QUOTE CONFIRM',
+        ru: 'ПОДТВЕРЖДЕНИЕ ПРЕДЛОЖЕНИЯ',
     }));
     byId('quote-confirm-alert-title').textContent = text(options.title, localeCopy({
         zh: '当前账号无法提交确认',
         en: 'This account cannot submit confirmation',
-        ru: '协褌芯褌 邪泻泻邪褍薪褌 薪械 屑芯卸械褌 芯褌锌褉邪胁懈褌褜 锌芯写褌胁械褉卸写械薪懈械',
+        ru: 'Эта учетная запись не может подтвердить предложение',
     }));
     byId('quote-confirm-alert-message').textContent = text(options.message);
     byId('quote-confirm-alert-action').textContent = localeCopy({
         zh: '提交限制',
         en: 'Submission restriction',
-        ru: '袨谐褉邪薪懈褔械薪懈械 芯褌锌褉邪胁泻懈',
+        ru: 'Ограничение подтверждения',
     });
     byId('quote-confirm-alert-hint').textContent = text(options.hint, localeCopy({
         zh: '请使用报价中登记的客户邮箱进行确认。',
         en: 'Use the customer email registered on this quote to confirm.',
-        ru: '袠褋锌芯谢褜蟹褍泄褌械 email 泻谢懈械薪褌邪, 褍泻邪蟹邪薪薪褘泄 胁 褝褌芯屑 锌褉械写谢芯卸械薪懈懈.',
+        ru: 'Используйте email клиента, указанный в этом предложении.',
     }));
     byId('quote-confirm-alert-ack-text').textContent = localeCopy({
         zh: '我知道了',
         en: 'OK',
-        ru: '袩芯薪褟褌薪芯',
+        ru: 'Понятно',
     });
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
@@ -698,19 +924,19 @@ function syncQuoteConfirmationAccessAlert() {
         title: localeCopy({
             zh: '当前账号无法提交报价确认',
             en: 'This account cannot submit quote confirmation',
-            ru: '协褌芯褌 邪泻泻邪褍薪褌 薪械 屑芯卸械褌 锌芯写褌胁械褉写懈褌褜 锌褉械写谢芯卸械薪懈械',
+            ru: 'Эта учетная запись не может подтвердить предложение',
         }),
         message: access.message,
         hint: confirmationExpectedEmail()
             ? localeCopy({
                 zh: '请切换到报价中登记的客户邮箱后再提交。',
                 en: 'Switch to the customer email registered on this quote before submitting.',
-                ru: '袩械褉械泻谢褞褔懈褌械褋褜 薪邪 email 泻谢懈械薪褌邪, 褍泻邪蟹邪薪薪褘泄 胁 锌褉械写谢芯卸械薪懈懈, 锌械褉械写 芯褌锌褉邪胁泻芯泄.',
+                ru: 'Переключитесь на email клиента, указанный в предложении, перед отправкой подтверждения.',
             })
             : localeCopy({
                 zh: '请先在客户档案或报价单里设置客户邮箱，再开放确认提交。',
                 en: 'Set the customer email on the customer archive or quote before enabling confirmation.',
-                ru: '小薪邪褔邪谢邪 褍泻邪卸懈褌械 email 泻谢懈械薪褌邪 胁 泻邪褉褌芯褔泻械 泻谢懈械薪褌邪 懈谢懈 锌褉械写谢芯卸械薪懈懈.',
+                ru: 'Сначала укажите email клиента в карточке клиента или предложении.',
             }),
     });
 }
@@ -817,11 +1043,28 @@ function formatCurrency(code, amount) {
 function getSectionLabel(section) {
     const explicit = pickDisplayText(section?.title, '');
     if (explicit) return explicit;
+    if (section?.key === 'service_package') return t('servicePackage');
+    if (section?.key === 'wear_parts') return t('wearPartsModule');
     return section?.key === 'optional_config' ? t('optionalConfig') : t('mainConfig');
 }
 
 function sectionSubtotal(section) {
-    return safeNumber(section?.subtotal, 0);
+    const items = Array.isArray(section?.items) ? section.items : [];
+    if (section?.key === 'optional_config') {
+        return items.reduce((sum, item) => {
+            if (item?.isSelected !== true || item?.isIncluded === true) return sum;
+            return sum + Math.max(0, safeNumber(item?.priceRmb, 0));
+        }, 0);
+    }
+    const manualSubtotal = safeNumber(section?.subtotal, 0);
+    const defaultToItemTotal = section?.key === 'service_package' || section?.key === 'wear_parts';
+    if (section?.subtotalMode === 'manual' && defaultToItemTotal && manualSubtotal <= 0) {
+        return items.reduce((sum, item) => {
+            if (item?.isIncluded === true) return sum;
+            return sum + Math.max(0, safeNumber(item?.priceRmb, 0));
+        }, 0);
+    }
+    return manualSubtotal;
 }
 
 function quoteTotal(snapshot) {
@@ -889,6 +1132,13 @@ function setStatusMessage(message, isError = false) {
     node.style.color = isError ? '#fca5a5' : 'var(--text-muted)';
 }
 
+function setShareMenuStatus(message = '', isError = false) {
+    const node = byId('share-menu-status');
+    if (!node) return;
+    node.textContent = text(message);
+    node.style.color = isError ? '#fca5a5' : 'var(--gas-green-light)';
+}
+
 function updateRateStatus(mode = 'online') {
     const node = byId('rate-status');
     if (!node) return;
@@ -930,61 +1180,25 @@ function renderRateLine() {
 
 function renderViewContextBanner() {
     const banner = byId('view-context-banner');
-    const kicker = byId('view-context-kicker');
-    const title = byId('view-context-title');
-    const meta = byId('view-context-meta');
-    if (!banner || !kicker || !title || !meta) return;
-
-    if (state.route?.type !== 'preview') {
-        banner.classList.add('hidden');
-        return;
-    }
-
-    kicker.textContent = localeCopy({
-        zh: 'ADMIN PREVIEW',
-        en: 'ADMIN PREVIEW',
-        ru: 'ADMIN PREVIEW',
-    });
-    title.textContent = localeCopy({
-        zh: '当前页面正在读取后台草稿快照，只用于校对，不会直接对外展示。',
-        en: 'This page is reading the current draft snapshot for internal review only.',
-        ru: '协褌邪 褋褌褉邪薪懈褑邪 锌芯泻邪蟹褘胁邪械褌 褌械泻褍褖懈泄 褔械褉薪芯胁懈泻 褌芯谢褜泻芯 写谢褟 胁薪褍褌褉械薪薪械泄 锌褉芯胁械褉泻懈.',
-    });
-
-    const slug = text(state.snapshot?.quote?.publicSlug || state.snapshot?.quote?.public_slug);
-    const modeText = localeCopy({
-        zh: '继续在“报价单管理”里修改并重新发布，客户页才会更新。',
-        en: 'Keep editing in Quote Instances and publish again to update the customer page.',
-        ru: '袩褉芯写芯谢卸邪泄褌械 褉械写邪泻褌懈褉芯胁邪褌褜 胁 Quote Instances 懈 芯锌褍斜谢懈泻褍泄褌械 褋薪芯胁邪, 褔褌芯斜褘 芯斜薪芯胁懈褌褜 泻谢懈械薪褌褋泻褍褞 褋褌褉邪薪懈褑褍.',
-    });
-    meta.textContent = slug ? `${modeText} SLUG: ${slug}` : modeText;
-    banner.classList.remove('hidden');
+    if (banner) banner.classList.add('hidden');
 }
 
 function renderToolbar() {
     const node = byId('toolbar-brand-name');
     if (!node) return;
-    node.textContent = state.currentLang === 'zh' ? 'GasGx 报价系统' : 'GasGx Quotation System';
+    node.textContent = state.currentLang === 'zh'
+        ? 'GasGx 报价预览'
+        : state.currentLang === 'ru'
+            ? 'GasGx Предпросмотр предложения'
+            : 'GasGx Quote Preview';
+    const toolbar = byId('toolbar');
+    if (toolbar) toolbar.hidden = state.customerView;
+    document.body.classList.toggle('customer-view', state.customerView);
 }
 
 function renderAuthButton() {
     const button = byId('btn-auth');
-    if (!button) return;
-    const icon = byId('icon-auth');
-    const label = byId('btn-text-auth');
-    button.hidden = false;
-    if (state.isLoggedIn) {
-        if (icon) icon.className = state.isAdmin ? 'fa-solid fa-user-shield' : 'fa-solid fa-user-check';
-        const email = text(state.adminUser?.email);
-        if (label) label.textContent = text(userDisplayName(state.adminUser), email || t('authAccount'));
-        button.title = email || t('authAccount');
-        button.classList.add('is-authenticated');
-        return;
-    }
-    if (icon) icon.className = 'fa-solid fa-user-lock';
-    if (label) label.textContent = t('authLogin');
-    button.title = t('authLogin');
-    button.classList.remove('is-authenticated');
+    if (button) button.hidden = true;
 }
 
 async function refreshAuthState(options = {}) {
@@ -1039,42 +1253,69 @@ function renderStaticText() {
     renderViewContextBanner();
 
     const overviewTitle = pickDisplayText(snapshot.brand.overview_title, pickDisplayText(snapshot.product.public_title, snapshot.product.product_code));
+    const displayOverviewTitle = state.currentLang === 'zh'
+        ? overviewTitle.replace(/产品总览/g, '报价')
+        : overviewTitle;
     const quoteVersion = text(snapshot.quote?.quoteVersion || snapshot.quote?.version);
-    const receiver = text(
+    const templateCustomerName = snapshot.quote?.shareConfig?.preview_source === 'product_template'
+        ? pickDisplayText(snapshot.product?.ui_text?.receiver_placeholder, '')
+        : '';
+    const customerName = text(
+        (snapshot.quote.customerName && snapshot.quote.customerName !== '模板预览' ? snapshot.quote.customerName : '')
+        || (snapshot.quote.customer_name && snapshot.quote.customer_name !== '模板预览' ? snapshot.quote.customer_name : '')
+        || templateCustomerName
+        || snapshot.quote.customerProfile?.company_name
+        || snapshot.quote.customerProfile?.companyName
+        || snapshot.quote.shareConfig?.recipient_company
+        || (snapshot.quote.shareConfig?.preview_source === 'product_template' ? '模板预览' : '')
+        || (state.route?.type === 'preview' ? '模板预览' : ''),
+        '',
+    );
+    const receiverEmail = normalizeEmail(
         snapshot.quote.receiverEmail
         || snapshot.quote.receiver_email
         || snapshot.quote.shareConfig?.recipient_email
         || snapshot.quote.customerProfile?.email
-        || snapshot.quote.customerProfile?.requester_email
-        || snapshot.quote.receiver_name
-        || snapshot.quote.customer_name,
-        '',
+        || snapshot.quote.customerProfile?.requester_email,
     );
     const supplier = text(snapshot.brand.supplier_name || snapshot.brand.display_name || snapshot.brand.brand_name || 'GasGx');
 
-    byId('f-title').textContent = quoteVersion ? `${overviewTitle} · V${quoteVersion}` : overviewTitle;
-    byId('lbl-receiver').textContent = uiText('receiver_label', 'receiver');
+    byId('f-title').textContent = quoteVersion ? `${displayOverviewTitle} · V${quoteVersion}` : displayOverviewTitle;
+    const productTitleNode = byId('f-product-title');
+    if (productTitleNode) productTitleNode.textContent = pickDisplayText(snapshot.product.public_title, snapshot.product.product_code);
+    byId('lbl-receiver').textContent = t('customerName');
     byId('lbl-validity').textContent = uiText('validity_label', 'validity');
-    byId('lbl-update').innerHTML = `<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>${esc(t('update'))}`;
+    const updateLabel = byId('lbl-update');
+    if (updateLabel) {
+        updateLabel.innerHTML = `<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gas-green-light)] opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--gas-green-light)]"></span></span>${esc(t('update'))}`;
+    }
     byId('view-meta-supplier')?.setAttribute('hidden', 'hidden');
     byId('view-meta-sender')?.setAttribute('hidden', 'hidden');
-    byId('btn-send')?.setAttribute('hidden', 'hidden');
-    byId('val-receiver').textContent = receiver;
-    byId('val-receiver').setAttribute('data-placeholder', uiText('receiver_placeholder', 'receiverPlaceholder'));
+    byId('val-receiver').textContent = customerName;
+    byId('val-receiver').setAttribute('data-placeholder', state.currentLang === 'zh' ? '请填写客户名称' : 'Enter customer name');
+    const emailInput = byId('quote-email-input');
+    if (emailInput) {
+        emailInput.value = isValidEmail(receiverEmail) ? receiverEmail : '';
+        emailInput.placeholder = t('receiverPlaceholder');
+        emailInput.setAttribute('inputmode', 'email');
+    }
+    const emailLabel = byId('quote-email-label');
+    if (emailLabel) emailLabel.textContent = state.currentLang === 'zh' ? '客户邮箱' : state.currentLang === 'ru' ? 'Email клиента' : 'Customer email';
+    byId('btn-text-send')?.replaceChildren(document.createTextNode(t('sendQuote')));
+    setQuoteEmailStatus(t('sendQuoteHint'));
     byId('footer-note').innerHTML = pickDisplayText(snapshot.brand.footer_note, '');
-    byId('btn-text-send')?.replaceChildren(document.createTextNode(uiText('send_button', 'send')));
     byId('btn-text-share').textContent = isMobileViewport()
         ? (state.currentLang === 'zh' ? '分享' : 'Share')
         : uiText('share_button', 'share');
     byId('btn-text-share').className = isMobileViewport() ? '' : 'ml-2';
     byId('btn-menu-share-link').textContent = t('shareLink');
     byId('btn-menu-img').textContent = t('exportImage');
+    byId('btn-menu-poster').textContent = t('quotePoster');
+    byId('btn-menu-text').textContent = t('textShare');
     byId('btn-menu-pdf').textContent = t('exportPdf');
     byId('btn-text-refresh').textContent = uiText('refresh_button', 'refresh');
     byId('export-loading-text').textContent = t('exportLoading');
     byId('export-sub-text').textContent = t('exportSubText');
-    byId('back-to-top').setAttribute('aria-label', state.currentLang === 'zh' ? '返回顶部' : state.currentLang === 'ru' ? 'Наверх' : 'Back to top');
-    byId('back-to-top').setAttribute('title', state.currentLang === 'zh' ? '返回顶部' : state.currentLang === 'ru' ? 'Наверх' : 'Back to top');
     byId('share-modal-title').textContent = t('shareTitle');
     byId('share-modal-desc').textContent = t('shareDesc');
     byId('share-expiry-label').textContent = t('shareExpiryLabel');
@@ -1106,19 +1347,19 @@ function renderStaticText() {
             title: localeCopy({
                 zh: '当前账号无法提交报价确认',
                 en: 'This account cannot submit quote confirmation',
-                ru: '协褌芯褌 邪泻泻邪褍薪褌 薪械 屑芯卸械褌 锌芯写褌胁械褉写懈褌褜 锌褉械写谢芯卸械薪懈械',
+                ru: 'Эта учетная запись не может подтвердить предложение',
             }),
             message: quoteConfirmAccess.message,
             hint: confirmationExpectedEmail()
                 ? localeCopy({
                     zh: '请切换到报价中登记的客户邮箱后再提交。',
                     en: 'Switch to the customer email registered on this quote before submitting.',
-                    ru: '袩械褉械泻谢褞褔懈褌械褋褜 薪邪 email 泻谢懈械薪褌邪, 褍泻邪蟹邪薪薪褘泄 胁 锌褉械写谢芯卸械薪懈懈, 锌械褉械写 芯褌锌褉邪胁泻芯泄.',
+                    ru: 'Переключитесь на email клиента, указанный в предложении, перед отправкой подтверждения.',
                 })
                 : localeCopy({
                     zh: '请先在客户档案或报价单里设置客户邮箱，再开放确认提交。',
                     en: 'Set the customer email on the customer archive or quote before enabling confirmation.',
-                    ru: '小薪邪褔邪谢邪 褍泻邪卸懈褌械 email 泻谢懈械薪褌邪 胁 泻邪褉褌芯褔泻械 泻谢懈械薪褌邪 懈谢懈 锌褉械写谢芯卸械薪懈懈.',
+                    ru: 'Сначала укажите email клиента в карточке клиента или предложении.',
                 }),
         });
     }
@@ -1138,7 +1379,7 @@ function renderStaticText() {
         if (!expirySelect.value) expirySelect.value = '3d';
     }
 
-    document.title = `${overviewTitle} - ${supplier}`;
+    document.title = `${displayOverviewTitle} - ${supplier}`;
 }
 
 function getProductMediaState(snapshot = state.snapshot) {
@@ -1155,14 +1396,11 @@ function renderProductMediaBlock(snapshot = state.snapshot) {
     const { config, items } = mediaState;
     if (state.galleryIndex >= items.length) state.galleryIndex = 0;
     const currentIndex = Math.max(0, Math.min(state.galleryIndex, items.length - 1));
-    const modeLabel = config.layout === MEDIA_LAYOUTS.STACK ? t('galleryModeStack') : t('galleryModeCarousel');
-
     if (config.layout === MEDIA_LAYOUTS.STACK) {
         return `
             <section class="quote-product-media quote-product-media-stack">
                 <div class="quote-product-media-head">
                     <strong>${esc(t('galleryTitle'))}</strong>
-                    <span>${esc(modeLabel)}</span>
                 </div>
                 <div class="quote-media-stack-list">
                     ${items
@@ -1183,9 +1421,8 @@ function renderProductMediaBlock(snapshot = state.snapshot) {
         <section class="quote-product-media quote-product-media-carousel">
             <div class="quote-product-media-head">
                 <strong>${esc(t('galleryTitle'))}</strong>
-                <span>${esc(modeLabel)}</span>
             </div>
-            <div class="quote-media-carousel-stage">
+            <div class="quote-media-carousel-stage ${state.galleryLoading ? 'is-loading' : ''}" aria-busy="${state.galleryLoading ? 'true' : 'false'}">
                 ${items
                     .map(
                         (item, index) => `
@@ -1195,6 +1432,10 @@ function renderProductMediaBlock(snapshot = state.snapshot) {
                         `,
                     )
                     .join('')}
+                <div class="quote-media-loading" aria-live="polite" aria-atomic="true">
+                    <span class="quote-media-loading__spinner" aria-hidden="true"></span>
+                    <span>${esc(t('galleryLoading'))}</span>
+                </div>
                 ${
                     items.length > 1
                         ? `
@@ -1227,6 +1468,66 @@ function renderProductMediaBlock(snapshot = state.snapshot) {
     `;
 }
 
+function setGalleryLoading(loading) {
+    state.galleryLoading = loading === true;
+    const stage = document.querySelector('.quote-media-carousel-stage');
+    if (stage) {
+        stage.classList.toggle('is-loading', state.galleryLoading);
+        stage.setAttribute('aria-busy', String(state.galleryLoading));
+    }
+    document.querySelectorAll('[data-gallery-nav], [data-gallery-dot]').forEach((button) => {
+        button.disabled = state.galleryLoading;
+    });
+}
+
+function applyGallerySelection(nextIndex) {
+    document.querySelectorAll('[data-gallery-slide]').forEach((slide) => {
+        slide.classList.toggle('is-active', Number(slide.dataset.gallerySlide) === nextIndex);
+    });
+    document.querySelectorAll('[data-gallery-dot]').forEach((dot) => {
+        dot.classList.toggle('is-active', Number(dot.dataset.galleryDot) === nextIndex);
+    });
+}
+
+function preloadGalleryImage(source) {
+    return new Promise((resolve) => {
+        const image = new Image();
+        let settled = false;
+        const finish = (ready) => {
+            if (settled) return;
+            settled = true;
+            resolve(ready);
+        };
+        image.onload = () => {
+            if (typeof image.decode !== 'function') {
+                finish(true);
+                return;
+            }
+            image.decode().then(() => finish(true)).catch(() => finish(true));
+        };
+        image.onerror = () => finish(false);
+        image.src = source;
+        if (image.complete) finish(image.naturalWidth > 0);
+    });
+}
+
+async function switchGalleryImage(nextIndex, mediaState = getProductMediaState()) {
+    const total = mediaState.items.length;
+    if (!total || state.galleryLoading) return;
+    const normalizedIndex = (nextIndex + total) % total;
+    if (normalizedIndex === state.galleryIndex) return;
+
+    const requestId = state.galleryLoadRequest + 1;
+    state.galleryLoadRequest = requestId;
+    setGalleryLoading(true);
+    await preloadGalleryImage(mediaState.items[normalizedIndex]?.public_url || '');
+    if (requestId !== state.galleryLoadRequest) return;
+
+    state.galleryIndex = normalizedIndex;
+    applyGallerySelection(normalizedIndex);
+    setGalleryLoading(false);
+}
+
 function bindProductMediaControls() {
     const mediaState = getProductMediaState();
     if (!mediaState.enabled || mediaState.config.layout !== MEDIA_LAYOUTS.CAROUSEL || mediaState.items.length <= 1) return;
@@ -1234,15 +1535,13 @@ function bindProductMediaControls() {
     document.querySelectorAll('[data-gallery-nav]').forEach((button) => {
         button.addEventListener('click', () => {
             const direction = button.dataset.galleryNav === 'prev' ? -1 : 1;
-            state.galleryIndex = (state.galleryIndex + direction + mediaState.items.length) % mediaState.items.length;
-            renderContent();
+            void switchGalleryImage(state.galleryIndex + direction, mediaState);
         });
     });
 
     document.querySelectorAll('[data-gallery-dot]').forEach((button) => {
         button.addEventListener('click', () => {
-            state.galleryIndex = Number(button.dataset.galleryDot || 0) || 0;
-            renderContent();
+            void switchGalleryImage(Number(button.dataset.galleryDot || 0) || 0, mediaState);
         });
     });
 }
@@ -1263,6 +1562,108 @@ function bindScrollableTables(root = document) {
     });
 }
 
+function quoteReferenceSectionTone(sectionKey = '') {
+    if (sectionKey === 'optional_config') return 'optional';
+    if (sectionKey === 'service_package' || sectionKey === 'wear_parts') return 'service';
+    return 'main';
+}
+
+function quoteReferenceSectionIcon(sectionKey = '') {
+    if (sectionKey === 'optional_config') return 'fa-puzzle-piece';
+    if (sectionKey === 'service_package') return 'fa-wrench';
+    if (sectionKey === 'wear_parts') return 'fa-screwdriver-wrench';
+    return 'fa-gears';
+}
+
+function quoteReferenceSectionItems(section) {
+    const items = Array.isArray(section?.items) ? section.items : [];
+    return section?.key === 'optional_config'
+        ? items.filter((item) => item?.isSelected === true)
+        : items;
+}
+
+function shouldRenderQuoteReferenceSection(section) {
+    return section?.key !== 'optional_config' || quoteReferenceSectionItems(section).length > 0;
+}
+
+function quoteReferenceSectionMarkup(section, rates = state.rates) {
+    const tone = quoteReferenceSectionTone(section.key);
+    const subtotal = sectionSubtotal(section);
+    const items = quoteReferenceSectionItems(section);
+    const rows = items.map((item) => {
+        const included = item.isIncluded === true;
+        const price = safeNumber(item.priceRmb, 0);
+        return `
+            <tr class="quote-reference-table__row">
+                <td class="quote-reference-code">${esc(item.lineCode || '--')}</td>
+                <td class="quote-reference-description">${esc(quoteItemDisplayName(item.nameI18n, state.currentLang, item.lineCode || '--'))}</td>
+                <td class="quote-reference-brand">${esc(quoteItemFieldDisplay('brand_label', item.brandI18n || item.brandLabel, state.currentLang, item.brandLabel || '-'))}</td>
+                <td class="quote-reference-qty">${esc(quoteItemFieldDisplay('qty_label', item.qtyI18n || item.qtyLabel, state.currentLang, item.qtyLabel || '1'))}</td>
+                <td class="quote-reference-money quote-reference-money--rmb">${included ? `<span class="quote-reference-included">${esc(t('included'))}</span>` : esc(formatCurrency('RMB', price))}</td>
+                <td class="quote-reference-money quote-reference-money--usd">${included ? '-' : esc(formatCurrency('USD', price * rates.USD))}</td>
+            </tr>
+        `;
+    }).join('');
+    const headers = t('headers');
+    const sectionId = `quote-section-${text(section.key).replace(/[^a-z0-9_-]/gi, '-')}`;
+    const bodyId = `${sectionId}-body`;
+
+    return `
+        <section id="${esc(sectionId)}" class="quote-reference-section quote-reference-section--${tone}" data-quote-section="pricing-${esc(section.key)}">
+            <div class="quote-reference-section__head">
+                <h3><i class="fa-solid ${quoteReferenceSectionIcon(section.key)}"></i><span>${esc(getSectionLabel(section))}</span></h3>
+                <div class="quote-reference-section__head-actions">
+                    <div class="quote-reference-section__totals">
+                        <div>RMB <strong>${esc(formatCurrency('RMB', subtotal))}</strong></div>
+                        <div>USD ${esc(formatCurrency('USD', subtotal * rates.USD))}</div>
+                    </div>
+                    <button type="button" class="quote-reference-section-collapse" data-quote-section-collapse aria-expanded="true" aria-controls="${esc(bodyId)}" aria-label="${esc(t('collapseSection'))}" title="${esc(t('collapseSection'))}">
+                        <i class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+                        <span class="sr-only">${esc(t('collapseSection'))}</span>
+                    </button>
+                </div>
+            </div>
+            <div id="${esc(bodyId)}" class="quote-reference-section__body" data-quote-section-body>
+                <div class="quote-reference-table-container">
+                <table class="quote-reference-table">
+                    <thead><tr>${headers.map((header, index) => `<th class="${index === 0 ? 'quote-reference-table__code-head' : ''}">${esc(header)}</th>`).join('')}</tr></thead>
+                    <tbody>${rows || `<tr><td colspan="${headers.length}" class="quote-reference-empty">—</td></tr>`}</tbody>
+                </table>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function setQuoteSectionExpanded(section, expanded) {
+    if (!section) return;
+    const button = section.querySelector('[data-quote-section-collapse]');
+    const body = section.querySelector('[data-quote-section-body]');
+    if (!button || !body) return;
+    const isExpanded = expanded === true;
+    const labelKey = isExpanded ? 'collapseSection' : 'expandSection';
+    button.setAttribute('aria-expanded', String(isExpanded));
+    button.setAttribute('aria-label', t(labelKey));
+    button.setAttribute('title', t(labelKey));
+    const icon = button.querySelector('i');
+    icon?.classList.toggle('fa-chevron-up', isExpanded);
+    icon?.classList.toggle('fa-chevron-down', !isExpanded);
+    button.querySelector('.sr-only')?.replaceChildren(document.createTextNode(t(labelKey)));
+    section.classList.toggle('is-collapsed', !isExpanded);
+    body.hidden = !isExpanded;
+}
+
+function bindReferenceSectionCollapseControls(root = byId('content-area')) {
+    if (!root) return;
+    root.querySelectorAll('[data-quote-section-collapse]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const section = button.closest('[data-quote-section]');
+            const expanded = button.getAttribute('aria-expanded') !== 'true';
+            setQuoteSectionExpanded(section, expanded);
+        });
+    });
+}
+
 function renderContent() {
     const snapshot = state.snapshot;
     const container = byId('content-area');
@@ -1270,88 +1671,46 @@ function renderContent() {
 
     const productTitle = pickDisplayText(snapshot.product.public_title, snapshot.product.product_code);
     const total = quoteTotal(snapshot);
-    const rows = [];
+    const sectionTotals = Object.fromEntries((snapshot.product.sections || []).map((section) => [section.key, sectionSubtotal(section)]));
+    const breakdown = [
+        [t('mainTotal'), sectionTotals.main_config || 0],
+        [t('optionalIncrease'), sectionTotals.optional_config || 0],
+        [t('serviceTotal'), sectionTotals.service_package || 0],
+        [t('wearPartsTotal'), sectionTotals.wear_parts || 0],
+    ];
     const mediaState = getProductMediaState(snapshot);
     const mediaBlock = renderProductMediaBlock(snapshot);
     const mediaAbove = mediaState.enabled && mediaState.config.position === MEDIA_POSITIONS.ABOVE ? mediaBlock : '';
     const mediaBelow = mediaState.enabled && mediaState.config.position !== MEDIA_POSITIONS.ABOVE ? mediaBlock : '';
     const confirmationPanel = quoteConfirmationPanelMarkup();
-
-    (snapshot.product.sections || []).forEach((section) => {
-        const subtotal = sectionSubtotal(section);
-        rows.push(`
-            <tr class="quote-section-row" style="background-color: var(--bg-base);">
-                <td class="text-[var(--text-muted)] opacity-50 text-center text-xs font-mono-num whitespace-nowrap">-</td>
-                <td class="text-[var(--gas-green-light)] font-semibold whitespace-nowrap">${esc(getSectionLabel(section))}</td>
-                <td class="text-[var(--text-muted)] opacity-50 text-xs whitespace-nowrap">-</td>
-                <td class="text-[var(--text-muted)] opacity-50 text-center font-mono-num whitespace-nowrap">-</td>
-                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('RMB', subtotal))}</td>
-                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('USD', subtotal * state.rates.USD))}</td>
-                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('EUR', subtotal * state.rates.EUR))}</td>
-                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('CAD', subtotal * state.rates.CAD))}</td>
-                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('RUB', subtotal * state.rates.RUB))}</td>
-            </tr>
-        `);
-
-        (section.items || []).forEach((item) => {
-            const included = item.isIncluded === true;
-            const price = safeNumber(item.priceRmb, 0);
-            rows.push(`
-                <tr class="quote-item-row">
-                    <td class="text-[var(--text-body)] text-center text-xs font-mono-num whitespace-nowrap">${esc(item.lineCode || '--')}</td>
-                    <td class="text-white min-w-[200px]">${esc(pickDisplayText(item.nameI18n, item.lineCode || '--'))}</td>
-                    <td class="text-[var(--text-body)] text-xs whitespace-nowrap">${esc(item.brandLabel || '-')}</td>
-                    <td class="text-[var(--text-body)] text-center font-mono-num whitespace-nowrap">${esc(item.qtyLabel || '1')}</td>
-                    <td class="font-mono-num ${included ? 'text-[var(--text-muted)]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? esc(t('included')) : esc(formatCurrency('RMB', price))}</td>
-                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('USD', price * state.rates.USD))}</td>
-                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('EUR', price * state.rates.EUR))}</td>
-                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('CAD', price * state.rates.CAD))}</td>
-                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('RUB', price * state.rates.RUB))}</td>
-                </tr>
-            `);
-        });
-    });
+    const sectionMarkup = (snapshot.product.sections || [])
+        .filter(shouldRenderQuoteReferenceSection)
+        .map((section) => quoteReferenceSectionMarkup(section, state.rates))
+        .join('');
 
     container.innerHTML = `
-        <div class="mb-10 md:mb-16">
-            <section data-quote-section="overview">
-                <h3 class="text-base md:text-lg font-semibold text-[var(--gas-green-light)] mb-4 md:mb-5 flex items-center gap-2 md:gap-3">
-                    <span class="bg-[var(--gas-green-bg)] border border-[var(--gas-green-primary)] text-[var(--gas-green-light)] w-6 h-6 md:w-7 md:h-7 rounded flex items-center justify-center text-xs md:text-sm font-mono-num flex-shrink-0">1</span>
-                    <span class="leading-tight">${esc(productTitle)}</span>
-                </h3>
-            </section>
+        <div class="quote-reference-content">
             ${mediaAbove ? `<section data-quote-section="media">${mediaAbove}</section>` : ''}
-
-            <section data-quote-section="pricing">
-                <div class="quote-total-card bg-[var(--bg-base)] border border-[var(--border-color)] rounded p-4 md:p-5 mb-4 md:mb-6 flex flex-col md:flex-row md:flex-wrap items-start md:items-center justify-between shadow-inner gap-4">
-                    <span class="font-bold text-white tracking-wider text-xs md:text-sm">${esc(uiText('system_total_label', 'systemTotal'))}:</span>
-                    <div class="quote-total-grid text-sm md:text-[15px]">
-                        <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RMB', total))}</span></span>
-                        <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('USD', total * state.rates.USD))}</span></span>
-                        <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('EUR', total * state.rates.EUR))}</span></span>
-                        <span class="flex items-center gap-2"><span class="gas-tag">CAD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('CAD', total * state.rates.CAD))}</span></span>
-                        <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RUB', total * state.rates.RUB))}</span></span>
+            <section class="quote-reference-hero" data-quote-section="pricing">
+                <div class="quote-total-card quote-reference-total-card">
+                    <div class="quote-reference-total-label">${esc(uiText('system_total_label', 'systemTotal'))} / EST. SYSTEM TOTAL</div>
+                    <div class="quote-reference-total-values">
+                        <div><span class="quote-reference-currency quote-reference-currency--rmb">RMB</span><strong>${esc(formatCurrency('RMB', total))}</strong></div>
+                        <div><span class="quote-reference-currency">USD</span><strong>${esc(formatCurrency('USD', total * state.rates.USD))}</strong></div>
                     </div>
-                </div>
-
-                <div class="table-scroll-shell" data-scroll-left="false" data-scroll-right="false">
-                    <div class="table-scroll-note"><i class="fa-solid fa-arrows-left-right"></i><span>${esc(t('tableSwipeHint'))}</span></div>
-                    <div class="table-responsive-wrapper w-full">
-                        <table class="industrial-table text-left">
-                            <thead>
-                                <tr>${t('headers').map((header, index) => `<th class="${index === 0 ? 'w-12 text-center whitespace-nowrap' : 'whitespace-nowrap'}">${esc(header)}</th>`).join('')}</tr>
-                            </thead>
-                            <tbody>${rows.join('')}</tbody>
-                        </table>
+                    <div class="quote-reference-formula" aria-label="${esc(t('pricingFormula'))}">
+                        <span><b>${esc(breakdown[0][0])}</b> ${esc(formatCurrency('RMB', breakdown[0][1]))} <em>+</em> <b>${esc(breakdown[1][0])}</b> ${esc(formatCurrency('RMB', breakdown[1][1]))} <em>+</em> <b>${esc(breakdown[2][0])}</b> ${esc(formatCurrency('RMB', breakdown[2][1]))} <em>+</em> <b>${esc(breakdown[3][0])}</b> ${esc(formatCurrency('RMB', breakdown[3][1]))} <em>=</em> <strong>${esc(formatCurrency('RMB', total))}</strong></span>
                     </div>
                 </div>
             </section>
+            <div class="quote-reference-sections">${sectionMarkup}</div>
             ${mediaBelow ? `<section data-quote-section="media">${mediaBelow}</section>` : ''}
         </div>
         ${confirmationPanel ? `<section data-quote-section="confirmation">${confirmationPanel}</section>` : ''}
     `;
     bindScrollableTables(container);
     bindProductMediaControls();
+    bindReferenceSectionCollapseControls(container);
     observeQuoteSections(container);
     byId('quote-confirm-checkbox')?.addEventListener('change', (event) => {
         state.publicConfirmation.confirmed = Boolean(event.currentTarget.checked);
@@ -1395,12 +1754,50 @@ function renderAll() {
     syncShareAvailability();
 }
 
-function baseQuoteTime() {
-    const published = Date.parse(state.snapshot?.quote?.publishedAt || '');
+function quoteBaseTime(snapshot = state.snapshot) {
+    const published = Date.parse(snapshot?.quote?.publishedAt || '');
     if (Number.isFinite(published)) return published;
-    const updated = Date.parse(state.snapshot?.quote?.updatedAt || '');
+    const updated = Date.parse(snapshot?.quote?.updatedAt || '');
     if (Number.isFinite(updated)) return updated;
     return Date.now();
+}
+
+function quoteValidityDeadline(snapshot = state.snapshot) {
+    if (!snapshot?.quote) return NaN;
+    return quoteBaseTime(snapshot) + safeNumber(snapshot.quote.validityHours, 72) * 60 * 60 * 1000;
+}
+
+function isQuoteValidityExpired(snapshot = state.snapshot) {
+    const deadline = quoteValidityDeadline(snapshot);
+    return Number.isFinite(deadline) && deadline <= Date.now();
+}
+
+function blockExpiredQuote(snapshot) {
+    state.snapshot = snapshot;
+    state.currentLang = resolveRuntimeLang(
+        params.get('lang') || snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG,
+        snapshot,
+    );
+    state.quoteExpired = true;
+    if (state.clockTimer) window.clearInterval(state.clockTimer);
+    state.clockTimer = null;
+    closeShareMenu();
+    document.body.classList.remove('access-resolved');
+    document.body.classList.add('access-expired');
+    setAccessOverlay({
+        badge: t('quoteValidityExpiredBadge'),
+        title: t('quoteValidityExpiredTitle'),
+        message: t('quoteValidityExpiredMessage'),
+        help: t('quoteValidityExpiredHelp'),
+        icon: 'fa-hourglass-end',
+        showRefresh: false,
+    });
+}
+
+function ensureQuoteValidity(snapshot) {
+    if (state.isAdmin || !isQuoteValidityExpired(snapshot)) return true;
+    blockExpiredQuote(snapshot);
+    return false;
 }
 
 function formatValidity(remainingMs) {
@@ -1420,15 +1817,16 @@ function renderClock() {
     if (liveDate) liveDate.textContent = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     if (liveClock) liveClock.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
     if (validity && state.snapshot) {
-        const target = baseQuoteTime() + safeNumber(state.snapshot.quote.validityHours, 72) * 60 * 60 * 1000;
+        const target = quoteValidityDeadline();
         validity.textContent = formatValidity(target - Date.now());
+        if (!state.isAdmin && isQuoteValidityExpired()) blockExpiredQuote(state.snapshot);
     }
 }
 
 function startClock() {
     if (state.clockTimer) window.clearInterval(state.clockTimer);
     renderClock();
-    state.clockTimer = window.setInterval(renderClock, 1000);
+    if (!state.quoteExpired) state.clockTimer = window.setInterval(renderClock, 1000);
 }
 
 function changedRateCodes(previousRates = {}, nextRates = {}, digits = null) {
@@ -1702,8 +2100,12 @@ async function submitEmbeddedPublicConfirmation() {
 
 function applySnapshot(snapshot) {
     state.snapshot = snapshot;
+    state.quoteExpired = false;
+    document.body.classList.remove('access-expired');
     prepareQuoteBehaviorTracking();
     state.galleryIndex = 0;
+    state.galleryLoading = false;
+    state.galleryLoadRequest += 1;
     state.currentLang = resolveRuntimeLang(params.get('lang') || snapshot?.quote?.defaultLang || snapshot?.product?.default_lang || DEFAULT_LANG, snapshot);
     state.rates = normalizeRates(snapshot?.quote?.rates || snapshot?.product?.default_rates || DEFAULT_RATES);
     state.rateStatusMode = 'online';
@@ -1713,7 +2115,6 @@ function applySnapshot(snapshot) {
     renderAll();
     syncQuoteConfirmationAccessAlert();
     startClock();
-    updateBackToTop();
 }
 
 function openAccessOverlay() {
@@ -1724,12 +2125,14 @@ function openAccessOverlay() {
 function closeAccessOverlay() {
     const overlay = byId('access-gate-overlay');
     if (overlay) overlay.classList.add('hidden');
+    document.body.classList.add('access-resolved');
 }
 
 function setAccessOverlay({
     title,
     message,
     icon = 'fa-circle-info',
+    badge = '',
     help = '',
     meta = '',
     showRefresh = true,
@@ -1738,6 +2141,7 @@ function setAccessOverlay({
     openAccessOverlay();
     const iconNode = byId('access-gate-icon');
     if (iconNode) iconNode.className = `fa-solid ${icon}`;
+    byId('access-gate-badge').textContent = text(badge || t('accessBadge'));
     byId('access-gate-title').textContent = text(title);
     byId('access-gate-message').textContent = text(message);
     const helpNode = byId('access-gate-help');
@@ -1794,6 +2198,7 @@ async function handlePasscodeSubmit() {
     const statusNode = byId('access-passcode-status');
     const candidate = text(input?.value).toUpperCase();
     if (candidate === text(pending.payload?.passcode).toUpperCase()) {
+        if (!ensureQuoteValidity(pending.snapshot)) return;
         persistUnlockedPasscode(pending.snapshot.brand?.share_unlock_prefix, pending.signaturePart, candidate);
         state.sharePayload = pending.payload;
         state.pendingSharedAccess = null;
@@ -1832,20 +2237,11 @@ async function handlePasscodeSubmit() {
 
 async function resolveRouteSnapshot() {
     if (state.route.type === 'preview') {
-        if (!state.isAdmin) {
-            setAccessOverlay({
-                title: t('accessDeniedTitle'),
-                message: t('accessDeniedMessage'),
-                icon: 'fa-lock',
-                showRefresh: true,
-            });
-            return false;
-        }
         setAccessOverlay({
             title: t('accessCheckingTitle'),
             message: t('accessCheckingMessage'),
             icon: 'fa-spinner fa-spin',
-            meta: t('shareMetaAdmin'),
+            meta: state.isAdmin ? t('shareMetaAdmin') : '',
             showRefresh: false,
         });
         const snapshot = await fetchPreviewQuote(state.route.previewId);
@@ -1858,6 +2254,7 @@ async function resolveRouteSnapshot() {
             });
             return false;
         }
+        if (!ensureQuoteValidity(snapshot)) return false;
         closeAccessOverlay();
         applySnapshot(snapshot);
         await fetchEmbeddedPublicConfirmation();
@@ -1881,6 +2278,7 @@ async function resolveRouteSnapshot() {
         });
         const result = await resolveSharedSnapshot(state.route.token);
         if (result.status === 'allowed') {
+            if (!ensureQuoteValidity(result.snapshot)) return false;
             state.sharePayload = result.payload;
             closeAccessOverlay();
             applySnapshot(result.snapshot);
@@ -1951,6 +2349,7 @@ async function resolveRouteSnapshot() {
             });
             return false;
         }
+        if (!ensureQuoteValidity(snapshot)) return false;
         closeAccessOverlay();
         applySnapshot(snapshot);
         await fetchEmbeddedPublicConfirmation();
@@ -1977,6 +2376,7 @@ async function resolveRouteSnapshot() {
         });
         return false;
     }
+    if (!ensureQuoteValidity(snapshot)) return false;
     closeAccessOverlay();
     applySnapshot(snapshot);
     await fetchEmbeddedPublicConfirmation();
@@ -2004,6 +2404,20 @@ function getFileName(ext) {
     return `${title || 'quotation'}_${suffix}.${ext}`;
 }
 
+function setAllQuoteSectionsExpanded(expanded = true, root = byId('content-area')) {
+    if (!root) return [];
+    const states = [...root.querySelectorAll('[data-quote-section-collapse]')].map((button) => ({
+        section: button.closest('[data-quote-section]'),
+        expanded: button.getAttribute('aria-expanded') === 'true',
+    }));
+    states.forEach(({ section }) => setQuoteSectionExpanded(section, expanded));
+    return states;
+}
+
+function restoreQuoteSectionExpansion(states = []) {
+    states.forEach(({ section, expanded }) => setQuoteSectionExpanded(section, expanded));
+}
+
 async function createDirectCapture() {
     const element = byId('export-area');
     if (!element) throw new Error('Export area missing');
@@ -2014,36 +2428,40 @@ async function createDirectCapture() {
         backgroundColor: element.style.backgroundColor,
     };
 
-    element.style.width = '1280px';
-    element.style.padding = '40px';
-    element.style.backgroundColor = '#161B22';
-
+    const sectionExpansion = setAllQuoteSectionsExpanded(true);
     const wrappers = [...element.querySelectorAll('.table-responsive-wrapper')];
     const wrapperOverflow = wrappers.map((node) => node.style.overflowX);
-    wrappers.forEach((node) => {
-        node.style.overflowX = 'visible';
-    });
+    try {
+        element.style.width = '1280px';
+        element.style.padding = '40px';
+        element.style.backgroundColor = '#161B22';
 
-    await new Promise((resolve) => window.setTimeout(resolve, 100));
+        wrappers.forEach((node) => {
+            node.style.overflowX = 'visible';
+        });
 
-    const exactWidth = element.offsetWidth;
-    const exactHeight = element.scrollHeight;
-    const canvas = await window.html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#161B22',
-        width: exactWidth,
-        windowWidth: exactWidth,
-    });
+        await new Promise((resolve) => window.setTimeout(resolve, 100));
 
-    element.style.width = original.width;
-    element.style.padding = original.padding;
-    element.style.backgroundColor = original.backgroundColor;
-    wrappers.forEach((node, index) => {
-        node.style.overflowX = wrapperOverflow[index];
-    });
+        const exactWidth = element.offsetWidth;
+        const exactHeight = element.scrollHeight;
+        const canvas = await window.html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#161B22',
+            width: exactWidth,
+            windowWidth: exactWidth,
+        });
 
-    return { canvas, exactWidth, exactHeight };
+        return { canvas, exactWidth, exactHeight };
+    } finally {
+        element.style.width = original.width;
+        element.style.padding = original.padding;
+        element.style.backgroundColor = original.backgroundColor;
+        restoreQuoteSectionExpansion(sectionExpansion);
+        wrappers.forEach((node, index) => {
+            node.style.overflowX = wrapperOverflow[index];
+        });
+    }
 }
 
 function showExportOverlay() {
@@ -2064,8 +2482,10 @@ function hideExportOverlay() {
 }
 
 async function exportImage() {
-    if (!window.html2canvas) return;
-    if (!requireSignedIn('image')) return;
+    if (!window.html2canvas) {
+        setStatusMessage(t('exportLibraryMissing'), true);
+        return;
+    }
     closeShareMenu();
     showExportOverlay();
     try {
@@ -2079,9 +2499,189 @@ async function exportImage() {
     }
 }
 
+function publishedCustomerQuoteUrl(view = 'customer') {
+    const publicSlug = text(
+        state.snapshot?.quote?.publicSlug
+        || state.snapshot?.quote?.public_slug
+        || state.sharePayload?.quoteSlug
+        || state.shareTarget?.quoteSlug,
+    );
+    const previewNeedsSnapshot = state.route?.type === 'preview';
+    if (!publicSlug || (previewNeedsSnapshot && !state.snapshot?.quote?.shareSnapshotReady)) return '';
+
+    const url = new URL('/quote/view.html', window.location.origin);
+    url.searchParams.set('quote', publicSlug);
+    url.searchParams.set('customer_view', '1');
+    url.searchParams.set('share_view', view);
+    if (SUPPORTED_LANGS.includes(state.currentLang)) url.searchParams.set('lang', state.currentLang);
+    return url.toString();
+}
+
+function customerQuoteUrl(view = 'customer') {
+    const publishedUrl = publishedCustomerQuoteUrl(view);
+    if (publishedUrl) return publishedUrl;
+
+    const url = new URL(window.location.href);
+    url.hash = '';
+    url.searchParams.set('customer_view', '1');
+    url.searchParams.set('share_view', view);
+    return url.toString();
+}
+
+function posterQuoteUrl() {
+    return customerQuoteUrl('poster');
+}
+
+function textShareQuoteUrl() {
+    const publicSlug = text(
+        state.snapshot?.quote?.publicSlug
+        || state.snapshot?.quote?.public_slug
+        || state.sharePayload?.quoteSlug
+        || state.shareTarget?.quoteSlug,
+    );
+    const previewNeedsSnapshot = state.route?.type === 'preview';
+    if (publicSlug && (!previewNeedsSnapshot || state.snapshot?.quote?.shareSnapshotReady)) {
+        const url = new URL('/q/', window.location.origin);
+        url.searchParams.set('q', publicSlug);
+        return url.toString();
+    }
+    return customerQuoteUrl('text');
+}
+
+function posterCustomerName() {
+    return text(
+        state.snapshot?.quote?.customerName
+        || state.snapshot?.quote?.customer_name
+        || state.snapshot?.quote?.customerProfile?.company_name
+        || state.snapshot?.quote?.shareConfig?.recipient_company,
+        state.route?.type === 'preview' ? '模板预览' : '客户',
+    );
+}
+
+function posterQrNode(value) {
+    return new Promise((resolve, reject) => {
+        if (typeof window.QRCode !== 'function') {
+            reject(new Error(t('exportLibraryMissing')));
+            return;
+        }
+        const holder = document.createElement('div');
+        try {
+            new window.QRCode(holder, {
+                text: value,
+                width: 260,
+                height: 260,
+                colorDark: '#0A0E14',
+                colorLight: '#FFFFFF',
+                correctLevel: window.QRCode.CorrectLevel.H,
+            });
+            window.setTimeout(() => resolve(holder), 30);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+function posterBlob(canvas) {
+    return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error(t('quotePosterError'))), 'image/png');
+    });
+}
+
+async function exportPoster() {
+    if (!window.html2canvas || typeof window.QRCode !== 'function') {
+        setStatusMessage(t('exportLibraryMissing'), true);
+        return;
+    }
+    closeShareMenu();
+    showExportOverlay();
+    const loadingNode = byId('export-loading-text');
+    const previousLoadingText = loadingNode?.textContent || '';
+    if (loadingNode) loadingNode.textContent = t('quotePosterBusy');
+    const poster = document.createElement('div');
+    const snapshot = state.snapshot;
+    const productTitle = pickDisplayText(snapshot?.product?.public_title, snapshot?.product?.product_code || 'GasGx Quotation');
+    const customerName = posterCustomerName();
+    const total = quoteTotal(snapshot);
+    const sectionTotals = Object.fromEntries((snapshot?.product?.sections || []).map((section) => [section.key, sectionSubtotal(section)]));
+    const validity = text(byId('val-validity')?.textContent, '');
+    const quoteUrl = posterQuoteUrl();
+
+    poster.style.cssText = [
+        'position:fixed', 'left:-900px', 'top:0', 'width:720px', 'height:1280px',
+        'box-sizing:border-box', 'padding:54px', 'overflow:hidden', 'z-index:-1',
+        'color:#F7FAFC', 'background:linear-gradient(150deg,#0A0E14 0%,#131C27 55%,#0A0E14 100%)',
+        'font-family:Arial,"PingFang SC","Microsoft YaHei",sans-serif',
+    ].join(';');
+    poster.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #5DD62C;padding-bottom:28px;">
+            <div>
+                <div style="color:#5DD62C;font-size:28px;font-weight:800;letter-spacing:1px;">GasGx</div>
+                <div style="color:#9AA5B1;font-size:15px;letter-spacing:4px;margin-top:8px;">QUOTATION</div>
+            </div>
+            <div style="color:#5DD62C;border:1px solid #5DD62C;border-radius:999px;padding:8px 16px;font-size:14px;">${esc(state.currentLang.toUpperCase())}</div>
+        </div>
+        <div style="margin-top:52px;color:#5DD62C;font-size:35px;font-weight:800;line-height:1.25;">${esc(productTitle)}</div>
+        <div style="margin-top:42px;padding:24px;border:1px solid rgba(93,214,44,.35);border-radius:18px;background:rgba(93,214,44,.07);">
+            <div style="color:#9AA5B1;font-size:15px;letter-spacing:1px;">${esc(t('quotePosterCustomer'))}</div>
+            <div style="margin-top:10px;color:#FFFFFF;font-size:28px;font-weight:700;word-break:break-word;">${esc(customerName)}</div>
+        </div>
+        <div style="margin-top:26px;color:#9AA5B1;font-size:15px;">${esc(t('quotePosterValidity'))} <span style="color:#FFFFFF;font-size:19px;font-weight:700;">${esc(validity || '--')}</span></div>
+        <div style="margin-top:42px;padding:28px;border-radius:18px;background:#070A0F;border:1px solid #2C3742;">
+            <div style="color:#9AA5B1;font-size:15px;">${esc(t('quotePosterTotal'))}</div>
+            <div style="margin-top:12px;color:#5DD62C;font-size:42px;font-weight:800;">${esc(formatCurrency('RMB', total))}</div>
+            <div style="margin-top:22px;display:grid;gap:12px;color:#D8E0E8;font-size:16px;">
+                <div style="display:flex;justify-content:space-between;"><span>${esc(t('mainTotal'))}</span><strong>${esc(formatCurrency('RMB', sectionTotals.main_config || 0))}</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span>${esc(t('optionalIncrease'))}</span><strong>${esc(formatCurrency('RMB', sectionTotals.optional_config || 0))}</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span>${esc(t('serviceTotal'))}</span><strong>${esc(formatCurrency('RMB', sectionTotals.service_package || 0))}</strong></div>
+                <div style="display:flex;justify-content:space-between;"><span>${esc(t('wearPartsTotal'))}</span><strong>${esc(formatCurrency('RMB', sectionTotals.wear_parts || 0))}</strong></div>
+            </div>
+        </div>
+        <div style="margin-top:54px;display:flex;flex-direction:column;align-items:center;text-align:center;">
+            <div class="quote-poster-qr" style="padding:14px;background:#FFFFFF;border-radius:14px;"></div>
+            <div style="margin-top:18px;color:#D8E0E8;font-size:16px;">${esc(t('quotePosterQrHint'))}</div>
+        </div>
+        <div style="position:absolute;left:54px;right:54px;bottom:44px;display:flex;justify-content:space-between;color:#6E7B88;font-size:12px;">
+            <span>GasGx Quotation System</span><span>${esc(new Date().toLocaleDateString())}</span>
+        </div>
+    `;
+    document.body.appendChild(poster);
+    try {
+        const qrNode = await posterQrNode(quoteUrl);
+        poster.querySelector('.quote-poster-qr')?.appendChild(qrNode);
+        await new Promise((resolve) => window.setTimeout(resolve, 80));
+        const canvas = await window.html2canvas(poster, {
+            scale: 2,
+            width: 720,
+            height: 1280,
+            backgroundColor: '#0A0E14',
+            useCORS: true,
+        });
+        const blob = await posterBlob(canvas);
+        const fileName = getFileName('png').replace(/\.png$/i, '_poster.png');
+        const file = new File([blob], fileName, { type: 'image/png' });
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+            await navigator.share({ title: productTitle, text: t('quotePosterQrHint'), files: [file] });
+        } else {
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        setStatusMessage(t('quotePosterSuccess'));
+    } catch (error) {
+        if (error?.name !== 'AbortError') setStatusMessage(error?.message || t('quotePosterError'), true);
+    } finally {
+        poster.remove();
+        if (loadingNode) loadingNode.textContent = previousLoadingText;
+        hideExportOverlay();
+    }
+}
+
 async function exportPdf() {
-    if (!window.html2pdf || !window.html2canvas) return;
-    if (!requireSignedIn('pdf')) return;
+    if (!window.html2pdf || !window.html2canvas) {
+        setStatusMessage(t('exportLibraryMissing'), true);
+        return;
+    }
     closeShareMenu();
     showExportOverlay();
     try {
@@ -2100,17 +2700,6 @@ async function exportPdf() {
     }
 }
 
-function updateBackToTop() {
-    const button = byId('back-to-top');
-    if (!button) return;
-    const visible = window.scrollY > Math.max(320, window.innerHeight * 0.6);
-    button.classList.toggle('is-visible', visible);
-}
-
-function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
 function closeShareMenu() {
     const menu = byId('share-menu');
     const arrow = byId('icon-share-down');
@@ -2124,13 +2713,13 @@ function toggleShareMenu(event) {
         event.preventDefault();
         event.stopPropagation();
     }
-    if (!requireSignedIn('share')) return;
     const menu = byId('share-menu');
     const arrow = byId('icon-share-down');
     if (!menu) return;
     const willOpen = menu.classList.contains('hidden');
     menu.classList.toggle('hidden', !willOpen);
     state.isMobileMenuOpen = willOpen;
+    if (willOpen) setShareMenuStatus('');
     if (arrow) arrow.classList.toggle('rotate-180', willOpen);
 }
 
@@ -2144,7 +2733,6 @@ function syncShareAvailability() {
 }
 
 function openShareModal() {
-    if (!requireSignedIn('link')) return;
     if (!state.shareTarget) {
         setStatusMessage(t('shareUnavailable'), true);
         return;
@@ -2233,8 +2821,36 @@ async function copyText(value) {
     }
 }
 
+function quoteTextShareContent(quoteUrl = textShareQuoteUrl()) {
+    const snapshot = state.snapshot;
+    const productTitle = pickDisplayText(
+        snapshot?.product?.public_title,
+        snapshot?.product?.product_code || 'GasGx Quotation',
+    );
+    const customerName = posterCustomerName();
+    const total = quoteTotal(snapshot);
+    const validity = text(byId('val-validity')?.textContent);
+    return [
+        '您好，以下是 GasGx 报价单，请点击链接查看详细配置、价格及有效期：',
+        `产品：${productTitle}`,
+        `客户名称：${customerName}`,
+        `系统预估总价：${formatCurrency('RMB', total)}`,
+        validity ? `报价有效期：${validity}` : '',
+        `报价链接：${quoteUrl}`,
+    ].filter(Boolean).join('\n');
+}
+
+async function shareQuoteText() {
+    const quoteUrl = textShareQuoteUrl();
+    if (!quoteUrl) {
+        setShareMenuStatus(t('shareUnavailable'), true);
+        return;
+    }
+    const copied = await copyText(quoteTextShareContent(quoteUrl));
+    setShareMenuStatus(copied ? t('textShareSuccess') : t('textShareError'), !copied);
+}
+
 async function generateShareLink() {
-    if (!requireSignedIn('link')) return;
     if (!state.shareTarget) {
         setStatusMessage(t('shareUnavailable'), true);
         return;
@@ -2294,42 +2910,108 @@ async function generateShareLink() {
     }
 }
 
-function sendEmail() {
-    if (!requireSignedIn('send')) return;
-    const shareMeta = shareMetadata();
-    const receiver = text(shareMeta.recipientEmail || state.snapshot?.quote?.receiverEmail || state.snapshot?.quote?.receiver_email || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name);
+async function sendEmail() {
+    const input = byId('quote-email-input');
+    const receiver = normalizeEmail(input?.value);
     if (!receiver) {
-        window.alert(t('noEmail'));
+        setQuoteEmailStatus(t('noEmail'), true);
+        input?.focus();
         return;
     }
-    const sender = text(state.snapshot?.brand?.sender_email || state.snapshot?.brand?.senderEmail);
+    if (!isValidEmail(receiver)) {
+        setQuoteEmailStatus(t('emailInvalid'), true);
+        input?.focus();
+        return;
+    }
+
+    const button = byId('btn-send');
+    const previousText = button?.textContent || '';
+    if (button?.dataset.loading === '1') return;
+    if (button) {
+        button.dataset.loading = '1';
+        button.disabled = true;
+        button.textContent = t('sendQuoteBusy');
+    }
+
+    const shareMeta = shareMetadata();
+    const recipientName = text(shareMeta.recipientName || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name, 'sir/madam');
+    const recipientCompany = text(shareMeta.recipientCompany || state.snapshot?.quote?.customerName || state.snapshot?.quote?.customer_name);
     const brandName = text(state.snapshot?.brand?.subject_name || state.snapshot?.brand?.display_name || state.snapshot?.brand?.brand_name);
     const title = text(byId('f-title')?.textContent, 'Quotation');
-    const salutation = text(shareMeta.recipientName, 'sir/madam');
-    void appendShareHistoryRecord({
-        channel: 'email',
-        status: 'emailed',
-        recipientName: shareMeta.recipientName,
-        recipientEmail: receiver,
-        recipientCompany: shareMeta.recipientCompany,
-        ownerName: shareMeta.ownerName,
-        ownerEmail: shareMeta.ownerEmail,
-        followUpNotes: shareMeta.followUpNotes,
-        sentAt: new Date().toISOString(),
-        shareTarget: state.shareTarget?.type || '',
+    const sender = text(state.snapshot?.brand?.sender_email || state.snapshot?.brand?.senderEmail || state.adminUser?.email);
+    const senderName = text(userDisplayName(state.adminUser), sender);
+    const sentAt = new Date().toISOString();
+    const publicSlug = text(state.snapshot?.quote?.publicSlug || state.snapshot?.quote?.public_slug || state.shareTarget?.quoteSlug);
+    const quoteUrl = publicSlug
+        ? `${window.location.origin}/quote/view.html?quote=${encodeURIComponent(publicSlug)}`
+        : '';
+
+    try {
+        await recordPublicQuoteEmailDispatch(receiver);
+        void logQuoteEvent('email_clicked', {
+            accessMode: state.route?.type || 'quote',
+            metadata: {
+                receiver,
+                brandName,
+                title,
+                quoteUrl,
+                ...shareMeta,
+            },
+        });
+        const subject = encodeURIComponent(`${t('mailSubjectPrefix')} ${title} - ${brandName}`);
+        const linkLine = quoteUrl ? `\n\nQuotation link:\n${quoteUrl}` : '';
+        const body = encodeURIComponent(`Dear ${recipientName},\n\nPlease review the latest quotation from GasGx.${linkLine}\n\nBest Regards,\n${senderName}${sender && sender !== senderName ? `\n${sender}` : ''}`);
+        setQuoteEmailStatus(t('sendQuoteSuccess'));
+        window.location.href = `mailto:${receiver}?subject=${subject}&body=${body}`;
+    } catch (error) {
+        setQuoteEmailStatus(text(error?.message, t('sendQuoteError')), true);
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = previousText || t('sendQuote');
+            delete button.dataset.loading;
+        }
+    }
+}
+
+async function recordPublicQuoteEmailDispatch(recipientEmail) {
+    const supabase = getClient();
+    const instanceId = text(state.snapshot?.quote?.id);
+    if (!supabase || !instanceId) throw new Error(t('sendQuoteError'));
+
+    const { data, error } = await supabase.rpc('record_public_quote_email_dispatch', {
+        target_instance_id: instanceId,
+        target_recipient_email: normalizeEmail(recipientEmail),
     });
-    void logQuoteEvent('email_clicked', {
-        accessMode: state.isAdmin ? 'admin' : 'quote',
-        metadata: {
-            receiver,
-            brandName,
-            title,
-            ...shareMeta,
+    if (error) throw error;
+
+    const record = Array.isArray(data) ? data[0] : data;
+    if (!record) return null;
+    const customerId = text(record.customer_id);
+    const companyName = text(record.recipient_company || state.snapshot?.quote?.customerName || state.snapshot?.quote?.customer_name);
+    const contactName = text(record.recipient_name || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name);
+    const email = normalizeEmail(record.recipient_email || recipientEmail);
+    state.snapshot = {
+        ...state.snapshot,
+        quote: {
+            ...state.snapshot.quote,
+            customerId,
+            customer_id: customerId,
+            customerName: companyName,
+            customer_name: companyName,
+            receiverName: contactName,
+            receiver_name: contactName,
+            receiverEmail: email,
+            receiver_email: email,
+            customerProfile: {
+                ...(state.snapshot.quote?.customerProfile || {}),
+                company_name: companyName,
+                contact_name: contactName,
+                email,
+            },
         },
-    });
-    const subject = encodeURIComponent(`${t('mailSubjectPrefix')} ${title} - ${brandName}`);
-    const body = encodeURIComponent(`Dear ${salutation},\n\nPlease find the latest quotation document attached or review it from the shared quote page.\n\nBest Regards,\n${sender}`);
-    window.location.href = `mailto:${receiver}?subject=${subject}&body=${body}`;
+    };
+    return record;
 }
 
 function textToBytes(value) {
@@ -2426,6 +3108,11 @@ function hydrateSnapshotWithLiveMeta(snapshot, row = {}) {
     if (!text(quote.id) && text(row.id)) quote.id = text(row.id);
     if (!text(quote.publicSlug) && text(row.public_slug)) quote.publicSlug = text(row.public_slug);
     if (!text(quote.customerId) && text(row.customer_id)) quote.customerId = text(row.customer_id);
+    const liveCustomerName = text(row.customer_name || row.customerName);
+    if (liveCustomerName) {
+        quote.customerName = liveCustomerName;
+        quote.customer_name = liveCustomerName;
+    }
     if (!text(quote.receiverEmail) && text(row.receiver_email)) quote.receiverEmail = text(row.receiver_email);
     if (!text(quote.receiver_email) && text(row.receiver_email)) quote.receiver_email = text(row.receiver_email);
     if ((!quote.shareConfig || typeof quote.shareConfig !== 'object' || !Object.keys(quote.shareConfig).length)
@@ -2448,8 +3135,142 @@ function hydrateSnapshotWithLiveMeta(snapshot, row = {}) {
     };
 }
 
-async function appendShareHistoryRecord(_options = {}) {
-    return null;
+async function ensureQuoteCustomerForSend(details = {}) {
+    const supabase = getClient();
+    const instanceId = text(state.snapshot?.quote?.id);
+    const email = normalizeEmail(details.recipientEmail);
+    if (!supabase || !instanceId || !email) return null;
+
+    const companyName = text(details.recipientCompany || state.snapshot?.quote?.customerName || state.snapshot?.quote?.customer_name);
+    const contactName = text(details.recipientName || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name);
+    let customer = null;
+    const lookup = await supabase
+        .from('quote_customers')
+        .select('*')
+        .ilike('email', email)
+        .maybeSingle();
+    if (lookup.error) throw lookup.error;
+    customer = lookup.data || null;
+
+    if (!customer) {
+        const insertResult = await supabase.from('quote_customers').insert({
+            company_name: companyName,
+            contact_name: contactName,
+            email,
+            phone: '',
+            country: '',
+            notes: '由报价预览页发送报价时自动建立客户档案。',
+            is_active: true,
+            is_deleted: false,
+            created_by: state.adminUser?.id || null,
+            updated_by: state.adminUser?.id || null,
+        }).select('*').single();
+        if (insertResult.error?.code === '23505') {
+            const retry = await supabase
+                .from('quote_customers')
+                .select('*')
+                .ilike('email', email)
+                .maybeSingle();
+            if (retry.error) throw retry.error;
+            customer = retry.data || null;
+        } else if (insertResult.error) {
+            throw insertResult.error;
+        } else {
+            customer = insertResult.data;
+        }
+    }
+
+    if (!customer?.id) throw new Error('Customer record could not be created.');
+    const customerSnapshot = {
+        company_name: text(customer.company_name || companyName),
+        contact_name: text(customer.contact_name || contactName),
+        email,
+        phone: text(customer.phone),
+        country: text(customer.country),
+        notes: text(customer.notes),
+    };
+    const shareConfig = normalizeShareConfig(state.snapshot?.quote?.shareConfig, {
+        recipient_name: contactName,
+        recipient_email: email,
+        recipient_company: companyName,
+    });
+    const { error: instanceError } = await supabase
+        .from(TABLE_INSTANCES)
+        .update({
+            customer_id: customer.id,
+            receiver_name: contactName,
+            receiver_email: email,
+            customer_name: companyName,
+            customer_snapshot: customerSnapshot,
+            share_config: shareConfig,
+            updated_by: state.adminUser?.id || null,
+        })
+        .eq('id', instanceId);
+    if (instanceError) throw instanceError;
+
+    state.snapshot = {
+        ...state.snapshot,
+        quote: {
+            ...state.snapshot.quote,
+            customerId: text(customer.id),
+            customer_id: text(customer.id),
+            customerName: companyName,
+            customer_name: companyName,
+            receiverName: contactName,
+            receiver_name: contactName,
+            receiverEmail: email,
+            receiver_email: email,
+            customerProfile: customerSnapshot,
+            shareConfig,
+        },
+    };
+    return customer;
+}
+
+async function appendShareHistoryRecord(options = {}) {
+    const supabase = getClient();
+    const instanceId = text(state.snapshot?.quote?.id);
+    if (!supabase || !instanceId || !state.isAdmin) return null;
+
+    const now = new Date().toISOString();
+    const recipientEmail = normalizeEmail(options.recipientEmail);
+    const customer = recipientEmail
+        ? await ensureQuoteCustomerForSend({ ...options, recipientEmail })
+        : null;
+    const recipientName = text(options.recipientName || state.snapshot?.quote?.receiverName || state.snapshot?.quote?.receiver_name);
+    const recipientCompany = text(options.recipientCompany || state.snapshot?.quote?.customerName || state.snapshot?.quote?.customer_name);
+    const senderEmail = normalizeEmail(options.senderEmail || state.adminUser?.email || state.snapshot?.brand?.sender_email);
+    const payload = {
+        instance_id: instanceId,
+        customer_id: text(customer?.id || state.snapshot?.quote?.customerId) || null,
+        recipient_name: recipientName,
+        recipient_email: recipientEmail,
+        recipient_company: recipientCompany,
+        owner_name: text(options.ownerName || userDisplayName(state.adminUser)),
+        owner_email: normalizeEmail(options.ownerEmail || state.adminUser?.email),
+        follow_up_notes: text(options.followUpNotes),
+        outcome_notes: text(options.outcomeNotes),
+        share_target: text(options.shareTarget || state.shareTarget?.type),
+        last_channel: text(options.channel, 'share_link'),
+        channels: [text(options.channel, 'share_link')],
+        status: text(options.status, 'recorded'),
+        attempt_count: 1,
+        first_sent_at: text(options.sentAt, now),
+        last_sent_at: text(options.sentAt, now),
+        expires_at: text(options.expiresAt) || null,
+        passcode_protected: options.passcodeProtected === true,
+        sender_name: text(options.senderName || userDisplayName(state.adminUser)),
+        sender_email: senderEmail,
+        created_by: state.adminUser?.id || null,
+        updated_by: state.adminUser?.id || null,
+    };
+    const { data, error } = await supabase
+        .from(TABLE_INSTANCE_SENDS)
+        .insert(payload)
+        .select('*')
+        .single();
+    if (error) throw error;
+    return data;
 }
 
 async function resolveAdminSession() {
@@ -2515,13 +3336,15 @@ async function fetchPreviewQuote(instanceId) {
                 : productResult.data?.ui_text || {},
         media_gallery: liveMedia.length ? liveMedia : sortMediaItems(data.product_snapshot?.media_gallery || []),
     };
-    return hydrateSnapshotWithLiveMeta(buildQuoteSnapshot({
+    const snapshot = hydrateSnapshotWithLiveMeta(buildQuoteSnapshot({
         brand: data.brand_snapshot,
         product: mergedProductSnapshot,
         instance: data,
         items: itemsResult.data || [],
         mode: 'preview',
     }), data);
+    if (snapshot?.quote) snapshot.quote.shareSnapshotReady = Boolean(data.published_snapshot);
+    return snapshot;
 }
 
 async function resolveSnapshotFromBrand(brandSlug, productId = '') {
@@ -2777,9 +3600,25 @@ function bindEvents() {
     byId('btn-refresh-rates')?.addEventListener('click', () => {
         void fetchRates(true);
     });
-    byId('btn-send')?.addEventListener('click', sendEmail);
+    byId('btn-send')?.addEventListener('click', () => {
+        void sendEmail();
+    });
+    byId('quote-email-input')?.addEventListener('input', () => {
+        setQuoteEmailStatus(t('sendQuoteHint'));
+    });
+    byId('quote-email-input')?.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        void sendEmail();
+    });
     byId('btn-menu-img-wrap')?.addEventListener('click', () => {
         void exportImage();
+    });
+    byId('btn-menu-poster-wrap')?.addEventListener('click', () => {
+        void exportPoster();
+    });
+    byId('btn-menu-text-wrap')?.addEventListener('click', () => {
+        void shareQuoteText();
     });
     byId('btn-menu-pdf-wrap')?.addEventListener('click', () => {
         void exportPdf();
@@ -2814,7 +3653,6 @@ function bindEvents() {
     byId('btn-generate-share')?.addEventListener('click', () => {
         void generateShareLink();
     });
-    byId('back-to-top')?.addEventListener('click', scrollToTop);
     byId('access-passcode-submit')?.addEventListener('click', () => {
         void handlePasscodeSubmit();
     });
@@ -2851,7 +3689,6 @@ function bindEvents() {
     window.addEventListener('resize', () => {
         if (!isMobileViewport()) closeShareMenu();
     });
-    window.addEventListener('scroll', updateBackToTop, { passive: true });
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
             void refreshAuthState({ rerender: true });
@@ -2870,6 +3707,12 @@ function bindEvents() {
 async function init() {
     bindEvents();
     state.route = resolveInitialRoute();
+    setAccessOverlay({
+        title: t('accessCheckingTitle'),
+        message: t('accessCheckingMessage'),
+        icon: 'fa-spinner fa-spin',
+        showRefresh: false,
+    });
     await refreshAuthState({ force: true });
     const resolved = await resolveRouteSnapshot();
     if (resolved) {
@@ -2878,4 +3721,3 @@ async function init() {
 }
 
 void init();
-

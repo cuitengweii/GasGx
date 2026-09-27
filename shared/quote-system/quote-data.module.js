@@ -1,3 +1,5 @@
+import { applyQuoteItemFieldGlossary, applyQuoteItemGlossary } from './quote-item-glossary.module.js?v=20260723fields14';
+
 export const SUPPORTED_LANGS = ['zh', 'en', 'ru'];
 export const DEFAULT_LANG = 'zh';
 export const DEFAULT_RATES = Object.freeze({
@@ -11,7 +13,9 @@ export const DEFAULT_THEME_DARK = '#337418';
 export const DEFAULT_SHARE_SECRET = 'GasGx::Quote::ShareGate::20260321';
 export const SECTION_KEYS = Object.freeze({
     MAIN: 'main_config',
+    SERVICE: 'service_package',
     OPTIONAL: 'optional_config',
+    WEAR_PARTS: 'wear_parts',
 });
 export const MEDIA_LAYOUTS = Object.freeze({
     CAROUSEL: 'carousel',
@@ -42,12 +46,23 @@ const DEFAULT_SECTION_TITLES = Object.freeze({
         en: 'Main Config',
         ru: 'Основная конфигурация',
     },
+    [SECTION_KEYS.SERVICE]: {
+        zh: '服务包',
+        en: 'Service Package',
+        ru: 'Сервисный пакет',
+    },
     [SECTION_KEYS.OPTIONAL]: {
         zh: '选配',
         en: 'Optional Config',
         ru: 'Опции',
     },
+    [SECTION_KEYS.WEAR_PARTS]: {
+        zh: '易损件模块',
+        en: 'Wear Parts Module',
+        ru: 'Модуль быстроизнашиваемых деталей',
+    },
 });
+const QUOTE_ITEM_FIELDS_KEY = '__quote_item_fields';
 
 function safeNumber(value, fallback = 0) {
     const next = Number(value);
@@ -195,6 +210,18 @@ export function createSectionConfig() {
             subtotalMode: 'manual',
             subtotal: 0,
         },
+        {
+            key: SECTION_KEYS.SERVICE,
+            title: { ...DEFAULT_SECTION_TITLES[SECTION_KEYS.SERVICE] },
+            subtotalMode: 'manual',
+            subtotal: 0,
+        },
+        {
+            key: SECTION_KEYS.WEAR_PARTS,
+            title: { ...DEFAULT_SECTION_TITLES[SECTION_KEYS.WEAR_PARTS] },
+            subtotalMode: 'manual',
+            subtotal: 0,
+        },
     ];
 }
 
@@ -205,7 +232,9 @@ export function normalizeSectionConfig(value) {
     const byKey = new Map(
         value
             .map((entry) => ({
-                key: entry?.key === SECTION_KEYS.OPTIONAL ? SECTION_KEYS.OPTIONAL : SECTION_KEYS.MAIN,
+                key: [SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL, SECTION_KEYS.WEAR_PARTS].includes(entry?.key)
+                    ? entry.key
+                    : SECTION_KEYS.MAIN,
                 title: normalizeLocalizedText(entry?.title, pickLocalized(DEFAULT_SECTION_TITLES[entry?.key] || DEFAULT_SECTION_TITLES[SECTION_KEYS.MAIN], 'zh')),
                 subtotalMode: entry?.subtotalMode === 'sum' ? 'sum' : 'manual',
                 subtotal: safeNumber(entry?.subtotal, 0),
@@ -219,13 +248,18 @@ export function normalizeSectionConfig(value) {
 export function createQuoteItem(sectionKey = SECTION_KEYS.MAIN) {
     return {
         localId: globalThis.crypto?.randomUUID?.() || `item-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-        section_key: sectionKey === SECTION_KEYS.OPTIONAL ? SECTION_KEYS.OPTIONAL : SECTION_KEYS.MAIN,
+        section_key: [SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL, SECTION_KEYS.WEAR_PARTS].includes(sectionKey)
+            ? sectionKey
+            : SECTION_KEYS.MAIN,
         sort_order: 100,
         line_code: '',
         brand_label: '',
+        brand_i18n: createLocalizedText(''),
         qty_label: '1',
+        qty_i18n: createLocalizedText('1'),
         price_rmb: 0,
         is_included: false,
+        is_selected: false,
         name_i18n: createLocalizedText(''),
     };
 }
@@ -279,18 +313,43 @@ export function sortMediaItems(items = []) {
 
 export function normalizeQuoteItem(value, fallbackSectionKey = SECTION_KEYS.MAIN) {
     const base = createQuoteItem(fallbackSectionKey);
+    const rawName = value?.name_i18n || value?.n || '';
+    const storedFields = rawName && typeof rawName === 'object' && !Array.isArray(rawName)
+        ? rawName?.[QUOTE_ITEM_FIELDS_KEY] || {}
+        : {};
+    const brandLabel = text(value?.brand_label || value?.brand || '');
+    const qtyLabel = text(value?.qty_label || value?.qty || '1');
     return {
         ...base,
         ...value,
         localId: text(value?.localId || value?.id || base.localId),
-        section_key: value?.section_key === SECTION_KEYS.OPTIONAL ? SECTION_KEYS.OPTIONAL : fallbackSectionKey,
+        section_key: [SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL, SECTION_KEYS.WEAR_PARTS].includes(value?.section_key)
+            ? value.section_key
+            : ([SECTION_KEYS.MAIN, SECTION_KEYS.SERVICE, SECTION_KEYS.OPTIONAL, SECTION_KEYS.WEAR_PARTS].includes(fallbackSectionKey) ? fallbackSectionKey : SECTION_KEYS.MAIN),
         sort_order: safeNumber(value?.sort_order, base.sort_order),
         line_code: text(value?.line_code || value?.id || ''),
-        brand_label: text(value?.brand_label || value?.brand || ''),
-        qty_label: text(value?.qty_label || value?.qty || '1'),
+        brand_label: brandLabel,
+        brand_i18n: applyQuoteItemFieldGlossary('brand_label', normalizeLocalizedText(value?.brand_i18n || value?.brandI18n || storedFields?.brand_label || brandLabel)),
+        qty_label: qtyLabel,
+        qty_i18n: applyQuoteItemFieldGlossary('qty_label', normalizeLocalizedText(value?.qty_i18n || value?.qtyI18n || storedFields?.qty_label || qtyLabel)),
         price_rmb: safeNumber(value?.price_rmb ?? value?.price, 0),
         is_included: value?.is_included === true || safeNumber(value?.price, 0) === -1,
-        name_i18n: normalizeLocalizedText(value?.name_i18n || value?.n || ''),
+        is_selected: value?.is_selected === true || value?.isSelected === true,
+        name_i18n: applyQuoteItemGlossary(normalizeLocalizedText(rawName)),
+    };
+}
+
+export function serializeQuoteItemI18n(value = {}) {
+    const item = normalizeQuoteItem(value, value?.section_key);
+    const name = normalizeLocalizedText(item.name_i18n);
+    return {
+        zh: text(name.zh),
+        en: text(name.en) || text(name.zh),
+        ru: text(name.ru) || text(name.zh),
+        [QUOTE_ITEM_FIELDS_KEY]: {
+            brand_label: normalizeLocalizedText(item.brand_i18n),
+            qty_label: normalizeLocalizedText(item.qty_i18n),
+        },
     };
 }
 
@@ -311,8 +370,17 @@ export function groupItemsBySection(items = [], sectionConfig = createSectionCon
 }
 
 export function calculateSectionSubtotal(section, items = []) {
-    if (section?.subtotalMode === 'manual') {
-        return safeNumber(section?.subtotal, 0);
+    if (section?.key === SECTION_KEYS.OPTIONAL) {
+        return sortItems(items).reduce((sum, item) => {
+            const row = normalizeQuoteItem(item, section.key);
+            if (!row.is_selected || row.is_included) return sum;
+            return sum + Math.max(0, safeNumber(row.price_rmb, 0));
+        }, 0);
+    }
+    const manualSubtotal = safeNumber(section?.subtotal, 0);
+    const defaultToItemTotal = section?.key === SECTION_KEYS.SERVICE || section?.key === SECTION_KEYS.WEAR_PARTS;
+    if (section?.subtotalMode === 'manual' && (!defaultToItemTotal || manualSubtotal > 0)) {
+        return manualSubtotal;
     }
     return sortItems(items).reduce((sum, item) => {
         const row = normalizeQuoteItem(item, section?.key);
@@ -374,9 +442,12 @@ export function buildQuoteSnapshot({ brand, product, instance, items = [], publi
             return {
                 lineCode: normalized.line_code,
                 brandLabel: normalized.brand_label,
+                brandI18n: normalizeLocalizedText(normalized.brand_i18n),
                 qtyLabel: normalized.qty_label,
+                qtyI18n: normalizeLocalizedText(normalized.qty_i18n),
                 priceRmb: normalized.price_rmb,
                 isIncluded: normalized.is_included === true,
+                isSelected: normalized.is_selected === true,
                 nameI18n: normalizeLocalizedText(normalized.name_i18n),
                 sortOrder: normalized.sort_order,
             };
