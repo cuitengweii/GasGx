@@ -19,10 +19,34 @@ $ftpUser = $env:FTP_USER
 $ftpPass = $env:FTP_PASS
 $ftpBaseDir = $env:FTP_BASE_DIR
 
+$sftpConfigFile = Join-Path $repoRoot '.vscode/sftp.json'
+if (([string]::IsNullOrWhiteSpace($ftpHost) -or
+     [string]::IsNullOrWhiteSpace($ftpUser) -or
+     [string]::IsNullOrWhiteSpace($ftpPass)) -and
+    (Test-Path $sftpConfigFile)) {
+    $sftpConfig = Get-Content $sftpConfigFile -Raw | ConvertFrom-Json
+
+    if ([string]::IsNullOrWhiteSpace($ftpHost) -and $sftpConfig.host) {
+        $ftpHost = [string]$sftpConfig.host
+    }
+    if ([string]::IsNullOrWhiteSpace($ftpPort) -and $sftpConfig.port) {
+        $ftpPort = [string]$sftpConfig.port
+    }
+    if ([string]::IsNullOrWhiteSpace($ftpUser) -and $sftpConfig.username) {
+        $ftpUser = [string]$sftpConfig.username
+    }
+    if ([string]::IsNullOrWhiteSpace($ftpPass) -and $sftpConfig.password) {
+        $ftpPass = [string]$sftpConfig.password
+    }
+    if ([string]::IsNullOrWhiteSpace($ftpBaseDir) -and $sftpConfig.remotePath) {
+        $ftpBaseDir = ([string]$sftpConfig.remotePath).Replace('\', '/').Trim('/')
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($ftpHost) -or
     [string]::IsNullOrWhiteSpace($ftpUser) -or
     [string]::IsNullOrWhiteSpace($ftpPass)) {
-    throw "Missing FTP config. Set FTP_HOST/FTP_USER/FTP_PASS in .env.ftp.local.ps1 or environment variables."
+    throw "Missing FTP config. Set FTP_HOST/FTP_USER/FTP_PASS in .env.ftp.local.ps1, environment variables, or .vscode/sftp.json."
 }
 
 function Get-UploadFiles {
