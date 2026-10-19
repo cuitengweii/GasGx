@@ -23,9 +23,10 @@ import {
     normalizeQuoteMediaItem,
     normalizeRates,
     normalizeSectionConfig,
+    serializeQuoteItemI18n,
     sortItems,
     sortMediaItems,
-} from './quote-data.module.js?v=20260414lang02';
+} from './quote-data.module.js?v=20260723fields14';
 
 const RATE_API_URL = 'https://open.er-api.com/v6/latest/CNY';
 const TABLE_BRANDS = 'quote_brands';
@@ -36,8 +37,17 @@ const TABLE_INSTANCES = 'quote_instances';
 const TABLE_INSTANCE_ITEMS = 'quote_instance_items';
 const TABLE_CUSTOMERS = 'quote_customers';
 const TRANSLATE_FUNCTION_NAME = 'quote-translate';
+const TRANSLATE_TIMEOUT_MS = 3_000;
 const AUTO_TRANSLATE_TARGETS = ['en', 'ru'];
-const AUTO_SAVE_DELAY_MS = 1800;
+
+function withTimeout(promise, timeoutMs, message = 'Request timed out.') {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => {
+            setTimeout(() => reject(new Error(message)), timeoutMs);
+        }),
+    ]);
+}
 
 const dict = {
     zh: {
@@ -47,12 +57,20 @@ const dict = {
         validity: '报价有效期：',
         included: '包含',
         mainConfig: '主配置',
+        servicePackage: '服务包',
         optionalConfig: '选配',
+        wearPartsModule: '易损件模块',
         systemTotal: '系统预估总价 / EST. SYSTEM TOTAL',
+        pricingBreakdown: '报价构成',
+        pricingFormula: '计算过程',
+        mainTotal: '主配总价',
+        optionalIncrease: '选配增加',
+        serviceTotal: '服务包总价',
+        wearPartsTotal: '易损件模块总价',
         send: '发送',
         refresh: '刷新汇率',
         receiverPlaceholder: '请输入客户名称',
-        sectionSubtotalHint: '直接改区块行 RMB 单元格，可覆盖小计。',
+        sectionSubtotalHint: '主配置、服务包和易损件模块可直接改区块小计；选配请勾选要计入报价的行。',
         defaultLang: '默认语言',
         validityHours: '有效期（小时）',
         customerName: '客户名称',
@@ -74,6 +92,7 @@ const dict = {
         rowMoveDown: '下移',
         rowDelete: '删除',
         rowToggleInclude: '包含/价格',
+        optionalSelect: '计入报价',
         rateOnline: '全球实时汇率在线',
         rateRefreshing: '正在刷新...',
         rateFallback: '汇率获取失败，使用当前快照',
@@ -81,6 +100,16 @@ const dict = {
         instanceMode: '当前编辑的是报价单草稿，本页修改会回写到当前报价单。',
         saveSuccess: '保存成功。',
         saveFailed: '保存失败。',
+        editorProductTitle: '真实模板页编辑',
+        editorInstanceTitle: '真实报价页编辑',
+        previewProduct: '生成报价单',
+        previewCustomer: '预览客户页',
+        addMainRow: '主配置新增行',
+        addServiceRow: '服务包新增行',
+        addOptionalRow: '选配新增行',
+        addWearPartsRow: '易损件服务包新增行',
+        saveProductTemplate: '保存产品模板',
+        saveDraft: '保存草稿',
         needLogin: '当前未检测到管理员登录，保存可能会被数据库策略拒绝。',
         invalidRoute: '缺少 kind 或 id，无法打开真实编辑页。',
         loadFailed: '加载编辑数据失败。',
@@ -88,7 +117,7 @@ const dict = {
         hours: '时',
         minutes: '分',
         seconds: '秒',
-        headers: ['SEQ', '模块描述 (DESCRIPTION)', '规格 (BRAND)', 'QTY', 'RMB (¥)', 'USD ($)', 'EUR (€)', 'CAD (C$)', 'RUB (₽)'],
+        headers: ['SEQ', '模块描述 (DESCRIPTION)', '规格 (BRAND)', 'QTY', 'RMB (¥)', 'USD ($)'],
     },
     en: {
         supplier: 'Supplier:',
@@ -97,12 +126,20 @@ const dict = {
         validity: 'Validity:',
         included: 'Included',
         mainConfig: 'Main Config',
+        servicePackage: 'Service Package',
         optionalConfig: 'Optional Config',
+        wearPartsModule: 'Wear Parts Module',
         systemTotal: 'EST. SYSTEM TOTAL',
+        pricingBreakdown: 'PRICE BREAKDOWN',
+        pricingFormula: 'CALCULATION',
+        mainTotal: 'Main configuration total',
+        optionalIncrease: 'Optional additions',
+        serviceTotal: 'Service package total',
+        wearPartsTotal: 'Wear parts module total',
         send: 'Send',
         refresh: 'Refresh Rates',
         receiverPlaceholder: 'Enter receiver',
-        sectionSubtotalHint: 'Edit the RMB cell in the section row to override the subtotal.',
+        sectionSubtotalHint: 'Edit main/service/wear-parts subtotals directly; select optional rows to include them in the quote.',
         defaultLang: 'Default language',
         validityHours: 'Validity (hours)',
         customerName: 'Customer name',
@@ -124,6 +161,7 @@ const dict = {
         rowMoveDown: 'Down',
         rowDelete: 'Delete',
         rowToggleInclude: 'Include/Price',
+        optionalSelect: 'Include in quote',
         rateOnline: 'Live FX online',
         rateRefreshing: 'Refreshing...',
         rateFallback: 'Rate refresh failed. Using current snapshot.',
@@ -131,6 +169,16 @@ const dict = {
         instanceMode: 'Editing quote instance mode. Changes write back to the current draft.',
         saveSuccess: 'Saved.',
         saveFailed: 'Save failed.',
+        editorProductTitle: 'Product Template Editor',
+        editorInstanceTitle: 'Quote Editor',
+        previewProduct: 'Generate Quote',
+        previewCustomer: 'Preview Customer Page',
+        addMainRow: 'Add Main Config Row',
+        addServiceRow: 'Add Service Package Row',
+        addOptionalRow: 'Add Optional Row',
+        addWearPartsRow: 'Add Wear Parts Service Row',
+        saveProductTemplate: 'Save Product Template',
+        saveDraft: 'Save Draft',
         needLogin: 'Admin login was not detected. Save may be rejected by RLS.',
         invalidRoute: 'Missing kind or id.',
         loadFailed: 'Failed to load editor data.',
@@ -138,7 +186,7 @@ const dict = {
         hours: 'h',
         minutes: 'm',
         seconds: 's',
-        headers: ['SEQ', 'Description', 'Brand', 'QTY', 'RMB (¥)', 'USD ($)', 'EUR (€)', 'CAD (C$)', 'RUB (₽)'],
+        headers: ['SEQ', 'Description', 'Brand', 'QTY', 'RMB (¥)', 'USD ($)'],
     },
     ru: {
         supplier: 'Поставщик:',
@@ -147,12 +195,20 @@ const dict = {
         validity: 'Срок действия:',
         included: 'Включено',
         mainConfig: 'Основная конфигурация',
+        servicePackage: 'Сервисный пакет',
         optionalConfig: 'Опции',
+        wearPartsModule: 'Модуль быстроизнашиваемых деталей',
         systemTotal: 'ОЦЕНОЧНАЯ СТОИМОСТЬ СИСТЕМЫ',
+        pricingBreakdown: 'Состав стоимости',
+        pricingFormula: 'Расчёт',
+        mainTotal: 'Стоимость основной конфигурации',
+        optionalIncrease: 'Дополнительные опции',
+        serviceTotal: 'Стоимость сервисного пакета',
+        wearPartsTotal: 'Стоимость модуля быстроизнашиваемых деталей',
         send: 'Отправить',
         refresh: 'Обновить курсы',
         receiverPlaceholder: 'Введите получателя',
-        sectionSubtotalHint: 'Измените ячейку RMB в строке раздела, чтобы переопределить сумму.',
+        sectionSubtotalHint: 'Изменяйте суммы основной конфигурации, сервиса и быстроизнашиваемых деталей; отмечайте опции для включения в предложение.',
         defaultLang: 'Язык по умолчанию',
         validityHours: 'Срок (часы)',
         customerName: 'Клиент',
@@ -174,6 +230,7 @@ const dict = {
         rowMoveDown: 'Вниз',
         rowDelete: 'Удалить',
         rowToggleInclude: 'Вкл/Цена',
+        optionalSelect: 'Включить в предложение',
         rateOnline: 'Онлайн-курсы доступны',
         rateRefreshing: 'Обновление...',
         rateFallback: 'Не удалось обновить курс. Используется текущий снимок.',
@@ -181,6 +238,16 @@ const dict = {
         instanceMode: 'Режим редактирования коммерческого предложения. Изменения будут сохранены в текущий черновик.',
         saveSuccess: 'Сохранено.',
         saveFailed: 'Не удалось сохранить.',
+        editorProductTitle: 'Редактор шаблона продукта',
+        editorInstanceTitle: 'Редактор предложения',
+        previewProduct: 'Создать предложение',
+        previewCustomer: 'Предпросмотр страницы клиента',
+        addMainRow: 'Добавить строку основной конфигурации',
+        addServiceRow: 'Добавить строку сервисного пакета',
+        addOptionalRow: 'Добавить строку дополнительной конфигурации',
+        addWearPartsRow: 'Добавить строку пакета быстроизнашиваемых деталей',
+        saveProductTemplate: 'Сохранить шаблон продукта',
+        saveDraft: 'Сохранить черновик',
         needLogin: 'Администратор не авторизован. Сохранение может быть отклонено RLS.',
         invalidRoute: 'Не указан kind или id.',
         loadFailed: 'Не удалось загрузить данные редактора.',
@@ -188,7 +255,7 @@ const dict = {
         hours: 'ч',
         minutes: 'м',
         seconds: 'с',
-        headers: ['SEQ', 'Описание', 'Бренд', 'QTY', 'RMB (¥)', 'USD ($)', 'EUR (€)', 'CAD (C$)', 'RUB (₽)'],
+        headers: ['SEQ', 'Описание', 'Бренд', 'QTY', 'RMB (¥)', 'USD ($)'],
     },
 };
 
@@ -201,15 +268,16 @@ const state = {
     product: null,
     instance: null,
     items: [],
+    persistedItemIds: new Set(),
     media: [],
     rates: { ...DEFAULT_RATES },
     snapshot: null,
     baseTime: Date.now(),
     clockTimer: 0,
     galleryIndex: 0,
+    productPreviewInstanceId: '',
     translationDirty: new Set(),
-    autoSaveTimer: 0,
-    autoSavePending: false,
+    translationRequest: null,
     saveInFlight: false,
     hasUnsavedChanges: false,
     changeVersion: 0,
@@ -251,6 +319,15 @@ function t(key) {
     return dict[state.currentLang]?.[key] || dict.en[key] || key;
 }
 
+function editorT(key) {
+    return dict.zh?.[key] || key;
+}
+
+function localizedEditorValue(value = {}) {
+    const localized = normalizeLocalizedText(value);
+    return text(localized.zh || localized.en || localized.ru);
+}
+
 function localeCopy(map) {
     return map[state.currentLang] || map.en || map.zh || '';
 }
@@ -272,12 +349,6 @@ function updateSaveButtons(label = '保存', disabled = false) {
         node.disabled = disabled;
         node.textContent = label;
     });
-}
-
-function cancelAutoSave() {
-    if (!state.autoSaveTimer) return;
-    window.clearTimeout(state.autoSaveTimer);
-    state.autoSaveTimer = 0;
 }
 
 function publishedInstanceActionMode() {
@@ -339,33 +410,19 @@ function pipelineReturnUrl() {
     return new URL(adminConsolePath(entryKind), window.location.origin).toString();
 }
 
-function scheduleAutoSave(delayMs = AUTO_SAVE_DELAY_MS) {
-    cancelAutoSave();
-    if (!state.hasUnsavedChanges) return;
-    if (state.saveInFlight) {
-        state.autoSavePending = true;
-        return;
-    }
-    state.autoSaveTimer = window.setTimeout(() => {
-        state.autoSaveTimer = 0;
-        void handleSave({ source: 'auto' });
-    }, delayMs);
-}
-
 function markEditorDirty(options = {}) {
     state.hasUnsavedChanges = true;
     state.changeVersion += 1;
     if (options.showStatus !== false && !state.saveInFlight) {
         renderStatus(
             localeCopy({
-                zh: '已修改，稍后自动保存...',
-                en: 'Changed. Auto-saving shortly...',
-                ru: 'Изменено. Автосохранение скоро выполнится...',
+                zh: '已修改，请点击保存。',
+                en: 'Changed. Click Save to keep your changes.',
+                ru: 'Есть изменения. Нажмите «Сохранить».',
             }),
             'warning',
         );
     }
-    scheduleAutoSave(options.delayMs);
 }
 
 function hasMeaningfulTranslation(localized, lang) {
@@ -392,6 +449,25 @@ function expandLocalizedFromChinese(value) {
         en: text(localized.en) || zh,
         ru: text(localized.ru) || zh,
     };
+}
+
+function containsCjk(value = '') {
+    return /[\u3400-\u9fff]/.test(text(value));
+}
+
+function mergeLocalizedForSave(currentValue, serverValue, activeLang = state.currentLang) {
+    const current = expandLocalizedFromChinese(currentValue);
+    const server = normalizeLocalizedText(serverValue);
+    SUPPORTED_LANGS.forEach((lang) => {
+        if (lang === activeLang) {
+            if (containsCjk(current[lang]) && text(server[lang]) && !containsCjk(server[lang])) {
+                current[lang] = text(server[lang]);
+            }
+            return;
+        }
+        if (text(server[lang])) current[lang] = text(server[lang]);
+    });
+    return current;
 }
 
 function normalizeBrandEditor(value = {}) {
@@ -532,15 +608,21 @@ function setSectionConfig(nextSections) {
     }
 }
 
-  function collectTranslationEntries(force = false) {
+function translationTargets(targets = AUTO_TRANSLATE_TARGETS) {
+    const source = Array.isArray(targets) ? targets : AUTO_TRANSLATE_TARGETS;
+    return [...new Set(source.filter((lang) => AUTO_TRANSLATE_TARGETS.includes(lang)))];
+}
+
+  function collectTranslationEntries(force = false, targets = AUTO_TRANSLATE_TARGETS) {
       const entries = [];
+    const targetLangs = translationTargets(targets);
     const pushEntry = (path, localized) => {
         const normalized = normalizeLocalizedText(localized);
         const zh = text(normalized.zh);
         if (!zh) return;
-        const targets = AUTO_TRANSLATE_TARGETS.filter((lang) => shouldTranslateLocalized(path, normalized, lang, force));
-        if (!targets.length) return;
-        entries.push({ path, text: zh, targets });
+        const missingTargets = targetLangs.filter((lang) => shouldTranslateLocalized(path, normalized, lang, force));
+        if (!missingTargets.length) return;
+        entries.push({ path, text: zh, targets: missingTargets });
     };
 
     pushEntry('brand.overview_title', state.brand?.overview_title);
@@ -557,6 +639,8 @@ function setSectionConfig(nextSections) {
 
     state.items.forEach((item) => {
         pushEntry(`item.${item.localId}.name_i18n`, item.name_i18n);
+        pushEntry(`item.${item.localId}.brand_i18n`, item.brand_i18n);
+        pushEntry(`item.${item.localId}.qty_i18n`, item.qty_i18n);
     });
 
       return entries;
@@ -619,37 +703,44 @@ function setLocalizedByPath(path, lang, value) {
         const itemId = path.split('.')[1];
         const item = state.items.find((entry) => entry.localId === itemId);
         if (!item) return;
-        const nextName = normalizeLocalizedText(item.name_i18n);
-        nextName[lang] = nextValue;
-        updateItem(itemId, { name_i18n: nextName });
+        const field = path.split('.')[2] || 'name_i18n';
+        const itemField = ['name_i18n', 'brand_i18n', 'qty_i18n'].includes(field) ? field : 'name_i18n';
+        const nextLocalized = normalizeLocalizedText(item[itemField]);
+        nextLocalized[lang] = nextValue;
+        updateItem(itemId, { [itemField]: nextLocalized });
     }
 }
 
-  async function autoTranslateLocalizedFields(force = false) {
-      const entries = collectTranslationEntries(force);
+  async function autoTranslateLocalizedFields(force = false, targets = AUTO_TRANSLATE_TARGETS) {
+      const targetLangs = translationTargets(targets);
+      const entries = collectTranslationEntries(force, targetLangs);
       if (!entries.length) return { attempted: false, translated: false };
 
       const mergedTranslations = Object.fromEntries(
-          AUTO_TRANSLATE_TARGETS.map((lang) => [lang, {}]),
+          targetLangs.map((lang) => [lang, {}]),
       );
       const chunks = chunkTranslationEntries(entries);
       for (const chunk of chunks) {
-          const { data, error } = await client.functions.invoke(TRANSLATE_FUNCTION_NAME, {
-              body: {
-                  source: DEFAULT_LANG,
-                  targets: AUTO_TRANSLATE_TARGETS,
-                  entries: chunk.map((entry) => ({ key: entry.path, text: entry.text })),
-              },
-          });
+          const { data, error } = await withTimeout(
+              client.functions.invoke(TRANSLATE_FUNCTION_NAME, {
+                  body: {
+                      source: DEFAULT_LANG,
+                      targets: targetLangs,
+                      entries: chunk.map((entry) => ({ key: entry.path, text: entry.text })),
+                  },
+              }),
+              TRANSLATE_TIMEOUT_MS,
+              'Quote translation request timed out.',
+          );
           if (error) throw error;
           const translations = data?.translations && typeof data.translations === 'object' ? data.translations : {};
-          AUTO_TRANSLATE_TARGETS.forEach((lang) => {
+          targetLangs.forEach((lang) => {
               const bucket = translations?.[lang] && typeof translations[lang] === 'object' ? translations[lang] : {};
               Object.assign(mergedTranslations[lang], bucket);
           });
       }
 
-      AUTO_TRANSLATE_TARGETS.forEach((lang) => {
+      targetLangs.forEach((lang) => {
           const bucket = mergedTranslations[lang] && typeof mergedTranslations[lang] === 'object' ? mergedTranslations[lang] : {};
           entries.forEach((entry) => {
               if (!entry.targets.includes(lang)) return;
@@ -658,18 +749,32 @@ function setLocalizedByPath(path, lang, value) {
           });
       });
 
-      clearTranslationDirty();
+      if (AUTO_TRANSLATE_TARGETS.every((lang) => targetLangs.includes(lang))) clearTranslationDirty();
       return { attempted: true, translated: true };
   }
 
 function sectionSubtotal(section, items = []) {
+    if (section?.key === SECTION_KEYS.OPTIONAL) {
+        return items.reduce((sum, item) => {
+            if (!item.is_selected || item.is_included) return sum;
+            return sum + Math.max(0, safeNumber(item.price_rmb, 0));
+        }, 0);
+    }
+    const manualSubtotal = safeNumber(section?.subtotal, 0);
+    const defaultToItemTotal = section?.key === SECTION_KEYS.SERVICE || section?.key === SECTION_KEYS.WEAR_PARTS;
+    if (section?.subtotalMode === 'manual' && (!defaultToItemTotal || manualSubtotal > 0)) {
+        return manualSubtotal;
+    }
     if (section?.subtotalMode === 'sum') {
         return items.reduce((sum, item) => {
             if (item.is_included) return sum;
             return sum + Math.max(0, safeNumber(item.price_rmb, 0));
         }, 0);
     }
-    return safeNumber(section?.subtotal, 0);
+    return items.reduce((sum, item) => {
+        if (item.is_included) return sum;
+        return sum + Math.max(0, safeNumber(item.price_rmb, 0));
+    }, 0);
 }
 
 function quoteTotal() {
@@ -741,8 +846,10 @@ function formatValidity(remainingMs) {
 function renderClock() {
     const now = new Date();
     const validNode = byId('edit-validity-value');
-    byId('live-date').textContent = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    byId('live-clock').textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    const liveDate = byId('live-date');
+    const liveClock = byId('live-clock');
+    if (liveDate) liveDate.textContent = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    if (liveClock) liveClock.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
     if (validNode) {
         const hours = state.kind === 'product' ? state.product?.validity_hours : state.instance?.validity_hours;
         validNode.textContent = formatValidity(state.baseTime + Math.max(1, safeNumber(hours, 72)) * 60 * 60 * 1000 - Date.now());
@@ -769,9 +876,11 @@ function renderToolbarBrand() {
 
 function settingsRenderKey() {
     const validityHours = state.kind === 'product' ? state.product.validity_hours : state.instance.validity_hours;
+    const defaultLang = state.kind === 'product' ? state.product.default_lang : state.instance.default_lang;
     return JSON.stringify({
         kind: state.kind,
         lang: state.currentLang,
+        defaultLang,
         enabledLangs: configuredEditorLangs(),
         validityHours,
         mediaPosition: state.product.media_config?.position || '',
@@ -786,35 +895,34 @@ function renderSettings() {
     if (state.settingsRenderKey === nextKey) return;
     state.settingsRenderKey = nextKey;
     const validityHours = state.kind === 'product' ? state.product.validity_hours : state.instance.validity_hours;
-    const enabledLangs = configuredEditorLangs();
+    const defaultLang = state.kind === 'product' ? state.product.default_lang : state.instance.default_lang;
     root.innerHTML = `
+        ${state.kind === 'instance' ? `
         <label class="quote-editor-setting">
-            <span>${esc(t('defaultLang'))}</span>
-            <div class="quote-editor-lang-group">
-                ${SUPPORTED_LANGS.map((lang) => `
-                    <label class="quote-editor-lang-chip ${enabledLangs.includes(lang) ? 'is-active' : ''}">
-                        <input type="checkbox" data-setting-lang="${esc(lang)}" ${enabledLangs.includes(lang) ? 'checked' : ''}>
-                        <span>${lang.toUpperCase()}</span>
-                    </label>
-                `).join('')}
-            </div>
+            <span>${esc(editorT('customerName'))}</span>
+            <input type="text" data-setting-field="customer_name" value="${esc(state.instance.customer_name)}" placeholder="${esc(editorT('customerName'))}">
         </label>
         <label class="quote-editor-setting">
-            <span>${esc(t('validityHours'))}</span>
+            <span>${esc(editorT('receiverEmail'))}</span>
+            <input type="email" inputmode="email" autocomplete="email" data-setting-field="receiver_email" value="${esc(state.instance.receiver_email)}" placeholder="${esc(editorT('receiverEmail'))}">
+        </label>
+        ` : ''}
+        <label class="quote-editor-setting">
+            <span>${esc(editorT('validityHours'))}</span>
             <input type="number" min="1" step="1" data-setting-field="validity_hours" value="${esc(validityHours)}">
         </label>
         <label class="quote-editor-setting">
-            <span>${esc(t('mediaPosition'))}</span>
+            <span>${esc(editorT('mediaPosition'))}</span>
             <select data-setting-field="media_position">
-                <option value="${MEDIA_POSITIONS.ABOVE}" ${state.product.media_config?.position === MEDIA_POSITIONS.ABOVE ? 'selected' : ''}>${esc(t('imageAbove'))}</option>
-                <option value="${MEDIA_POSITIONS.BELOW}" ${state.product.media_config?.position !== MEDIA_POSITIONS.ABOVE ? 'selected' : ''}>${esc(t('imageBelow'))}</option>
+                <option value="${MEDIA_POSITIONS.ABOVE}" ${state.product.media_config?.position === MEDIA_POSITIONS.ABOVE ? 'selected' : ''}>${esc(editorT('imageAbove'))}</option>
+                <option value="${MEDIA_POSITIONS.BELOW}" ${state.product.media_config?.position !== MEDIA_POSITIONS.ABOVE ? 'selected' : ''}>${esc(editorT('imageBelow'))}</option>
             </select>
         </label>
         <label class="quote-editor-setting">
-            <span>${esc(t('mediaLayout'))}</span>
+            <span>${esc(editorT('mediaLayout'))}</span>
             <select data-setting-field="media_layout">
-                <option value="${MEDIA_LAYOUTS.CAROUSEL}" ${state.product.media_config?.layout !== MEDIA_LAYOUTS.STACK ? 'selected' : ''}>${esc(t('imageCarousel'))}</option>
-                <option value="${MEDIA_LAYOUTS.STACK}" ${state.product.media_config?.layout === MEDIA_LAYOUTS.STACK ? 'selected' : ''}>${esc(t('imageStack'))}</option>
+                <option value="${MEDIA_LAYOUTS.CAROUSEL}" ${state.product.media_config?.layout !== MEDIA_LAYOUTS.STACK ? 'selected' : ''}>${esc(editorT('imageCarousel'))}</option>
+                <option value="${MEDIA_LAYOUTS.STACK}" ${state.product.media_config?.layout === MEDIA_LAYOUTS.STACK ? 'selected' : ''}>${esc(editorT('imageStack'))}</option>
             </select>
         </label>
     `;
@@ -823,21 +931,17 @@ function renderSettings() {
         node.addEventListener('input', handleSettingChange);
         node.addEventListener('change', handleSettingChange);
     });
-    root.querySelectorAll('[data-setting-lang]').forEach((node) => {
-        node.addEventListener('change', () => {
-            const nextLangs = [...root.querySelectorAll('[data-setting-lang]:checked')].map((input) => input.dataset.settingLang || '');
-            updateConfiguredEditorLangs(nextLangs);
-            renderAll();
-            markEditorDirty();
-        });
-    });
 }
 
 function applySettingField(field, value) {
     if (!field) return;
     if (field === 'default_lang') {
-        if (state.kind === 'product') state.product.default_lang = value;
-        else state.instance.default_lang = value;
+        const nextLang = normalizeLangCode(value, DEFAULT_LANG);
+        if (state.kind === 'product') state.product.default_lang = nextLang;
+        else state.instance.default_lang = nextLang;
+        state.currentLang = nextLang;
+        const enabledLangs = configuredEditorLangs();
+        if (!enabledLangs.includes(nextLang)) updateConfiguredEditorLangs([...enabledLangs, nextLang]);
     } else if (field === 'validity_hours') {
         if (state.kind === 'product') state.product.validity_hours = Math.max(1, safeNumber(value, 72));
         else state.instance.validity_hours = Math.max(1, safeNumber(value, 72));
@@ -861,7 +965,7 @@ function handleSettingChange(event) {
 function renderStatus(message, tone = 'normal') {
     const title = byId('editor-status-title');
     const textNode = byId('editor-status-text');
-    if (title) title.textContent = state.kind === 'product' ? '真实模板页编辑' : '真实报价页编辑';
+    if (title) title.textContent = state.kind === 'product' ? editorT('editorProductTitle') : editorT('editorInstanceTitle');
     if (!textNode) return;
     textNode.textContent = text(message);
     textNode.dataset.tone = tone;
@@ -879,8 +983,8 @@ function renderBanner() {
         ? '你现在编辑的就是基础模板原页面。'
         : '你现在编辑的就是当前报价单原页面。';
     byId('editor-banner-meta').textContent = state.kind === 'product'
-        ? `${state.brand.display_name} / ${localizedValue(state.product.public_title) || state.product.slug}。${t('productMode')}`
-        : `${state.brand.display_name} / ${localizedValue(state.product.public_title) || state.product.slug} / ${state.instance.public_slug}。${t('instanceMode')}`;
+        ? `${state.brand.display_name} / ${localizedEditorValue(state.product.public_title) || state.product.slug}。${editorT('productMode')}`
+        : `${state.brand.display_name} / ${localizedEditorValue(state.product.public_title) || state.product.slug} / ${state.instance.public_slug}。${editorT('instanceMode')}`;
 }
 
 function syncBackLink() {
@@ -927,6 +1031,18 @@ function previewQuoteUrl(instanceId) {
     return new URL(`/quote/view.html?preview=${encodeURIComponent(instanceId)}`, window.location.origin).toString();
 }
 
+function openPreviewWindow() {
+    const previewWindow = window.open('about:blank', '_blank');
+    if (!previewWindow) {
+        renderStatus('浏览器拦截了预览窗口，请允许弹窗后重试。', 'warning');
+        return null;
+    }
+    previewWindow.opener = null;
+    previewWindow.document.title = 'GasGx Quote Preview';
+    previewWindow.document.body.innerHTML = '<p style="font-family:Arial,sans-serif;padding:24px;color:#111;">正在生成预览...</p>';
+    return previewWindow;
+}
+
 async function copyText(value) {
     if (!text(value)) return false;
     if (navigator.clipboard?.writeText) {
@@ -950,16 +1066,26 @@ function renderEditorActions() {
     const previewButton = byId('btn-preview-instance');
     const publishButton = byId('btn-publish-instance');
     const saveButton = byId('btn-save-editor');
-    const saveLabel = state.kind === 'product' ? '\u4fdd\u5b58\u4ea7\u54c1\u6a21\u677f' : '\u4fdd\u5b58\u8349\u7a3f';
+    byId('btn-add-main-row').textContent = editorT('addMainRow');
+    byId('btn-add-service-row').textContent = editorT('addServiceRow');
+    byId('btn-add-optional-row').textContent = editorT('addOptionalRow');
+    byId('btn-add-wear-parts-row').textContent = editorT('addWearPartsRow');
+    const saveLabel = state.kind === 'product' ? editorT('saveProductTemplate') : editorT('saveDraft');
     updateSaveButtons(saveLabel, state.saveInFlight);
     if (saveButton) saveButton.textContent = saveLabel;
     if (!instanceActions || !previewButton || !publishButton) return;
     const isInstance = state.kind === 'instance';
-    instanceActions.hidden = !isInstance;
+    instanceActions.hidden = false;
+    instanceActions.style.display = 'contents';
     publishButton.hidden = !isInstance;
-    if (!isInstance) return;
+    if (!isInstance) {
+        previewButton.disabled = state.saveInFlight;
+        previewButton.textContent = editorT('previewProduct');
+        return;
+    }
     const hasId = Boolean(state.instance?.id);
     previewButton.disabled = !hasId;
+    previewButton.textContent = editorT('previewCustomer');
     const actionMode = publishedInstanceActionMode();
     publishButton.disabled = actionMode === 'copy'
         ? !Boolean(text(state.instance?.public_slug))
@@ -997,16 +1123,16 @@ function renderStaticText() {
     byId('edit-meta-supplier')?.setAttribute('hidden', 'hidden');
     byId('edit-meta-sender')?.setAttribute('hidden', 'hidden');
     byId('edit-validity-label').textContent = uiText('validity_label', t('validity'));
-    byId('edit-receiver-label').textContent = uiText('receiver_label', t('receiver'));
+    byId('edit-receiver-label').textContent = t('customerName');
     byId('footer-note').textContent = localizedValue(state.brand.footer_note);
     byId('btn-text-refresh').textContent = uiText('refresh_button', t('refresh'));
 
     const receiverValue = state.kind === 'instance'
-        ? text(state.instance.receiver_email || state.instance.receiver_name)
+        ? text(state.instance.customer_name)
         : uiText('receiver_placeholder', t('receiverPlaceholder'));
     const receiverNode = byId('edit-receiver-value');
     receiverNode.textContent = receiverValue;
-    receiverNode.classList.toggle('is-placeholder', !text(state.instance?.receiver_email || state.instance?.receiver_name));
+    receiverNode.classList.toggle('is-placeholder', !text(state.instance?.customer_name));
 }
 
 function renderRateLine() {
@@ -1045,6 +1171,19 @@ function groupedEditableSections() {
         items: sortItems(state.items.filter((item) => item.section_key === section.key)),
         subtotalValue: sectionSubtotal(section, state.items.filter((item) => item.section_key === section.key)),
     }));
+}
+
+function dedupeQuoteItems(items = []) {
+    const seen = new Set();
+    return sortItems(items).filter((item) => {
+        const normalized = normalizeQuoteItem(item, item?.section_key);
+        const lineCode = text(normalized.line_code);
+        if (!lineCode) return true;
+        const key = `${normalized.section_key}:${lineCode}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
 }
 
 function renderMediaBlock() {
@@ -1088,6 +1227,13 @@ function renderContent() {
     const container = byId('content-area');
     const sections = groupedEditableSections();
     const total = quoteTotal();
+    const sectionTotals = Object.fromEntries(sections.map((section) => [section.key, section.subtotalValue]));
+    const breakdown = [
+        [t('mainTotal'), sectionTotals[SECTION_KEYS.MAIN] || 0],
+        [t('optionalIncrease'), sectionTotals[SECTION_KEYS.OPTIONAL] || 0],
+        [t('serviceTotal'), sectionTotals[SECTION_KEYS.SERVICE] || 0],
+        [t('wearPartsTotal'), sectionTotals[SECTION_KEYS.WEAR_PARTS] || 0],
+    ];
     const mediaBlock = renderMediaBlock();
     const mediaConfig = normalizeMediaConfig(state.product.media_config || {});
     const mediaAbove = mediaConfig.enabled && mediaConfig.position === MEDIA_POSITIONS.ABOVE ? mediaBlock : '';
@@ -1096,10 +1242,10 @@ function renderContent() {
 
     sections.forEach((section) => {
         rows.push(`
-            <tr class="quote-section-row" style="background-color: var(--bg-base);">
+            <tr class="quote-section-row" data-section-key="${esc(section.key)}" style="background-color: var(--bg-base);">
                 <td class="text-[var(--text-muted)] opacity-50 text-center text-xs font-mono-num whitespace-nowrap">-</td>
                 <td class="text-[var(--gas-green-light)] font-semibold whitespace-nowrap">
-                    <span class="quote-editable quote-editable-inline" contenteditable="true" data-section-title="${esc(section.key)}">${esc(localizedValue(section.title) || (section.key === SECTION_KEYS.OPTIONAL ? t('optionalConfig') : t('mainConfig')))}</span>
+                    <span class="quote-editable quote-editable-inline" contenteditable="true" data-section-title="${esc(section.key)}">${esc(localizedValue(section.title) || (section.key === SECTION_KEYS.OPTIONAL ? t('optionalConfig') : section.key === SECTION_KEYS.SERVICE ? t('servicePackage') : section.key === SECTION_KEYS.WEAR_PARTS ? t('wearPartsModule') : t('mainConfig')))}</span>
                 </td>
                 <td class="text-[var(--text-muted)] opacity-50 text-xs whitespace-nowrap">-</td>
                 <td class="text-[var(--text-muted)] opacity-50 text-center font-mono-num whitespace-nowrap">-</td>
@@ -1107,15 +1253,14 @@ function renderContent() {
                     <span class="quote-editable quote-editable-inline" contenteditable="true" data-section-subtotal="${esc(section.key)}">${esc(formatCurrency('RMB', section.subtotalValue))}</span>
                 </td>
                 <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('USD', section.subtotalValue * state.rates.USD))}</td>
-                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('EUR', section.subtotalValue * state.rates.EUR))}</td>
-                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('CAD', section.subtotalValue * state.rates.CAD))}</td>
-                <td class="font-mono-num text-[var(--gas-green-light)] font-medium whitespace-nowrap">${esc(formatCurrency('RUB', section.subtotalValue * state.rates.RUB))}</td>
             </tr>
         `);
 
         section.items.forEach((item) => {
             const normalized = normalizeQuoteItem(item, item.section_key);
             const included = normalized.is_included === true;
+            const optional = normalized.section_key === SECTION_KEYS.OPTIONAL;
+            const selected = normalized.is_selected === true;
             const price = safeNumber(normalized.price_rmb, 0);
             rows.push(`
                 <tr class="quote-item-row" data-item-id="${esc(normalized.localId)}">
@@ -1125,6 +1270,7 @@ function renderContent() {
                     <td class="text-white min-w-[240px] quote-editor-desc-cell">
                         <div class="quote-editor-desc-wrap">
                             <span class="quote-editable quote-editable-inline" contenteditable="true" data-item-field="name_i18n" data-item-id="${esc(normalized.localId)}">${esc(localizedValue(normalized.name_i18n) || normalized.line_code || '--')}</span>
+                            ${optional ? `<label class="quote-optional-select" title="${esc(t('optionalSelect'))}"><input type="checkbox" data-item-action="toggle-selected" data-item-id="${esc(normalized.localId)}" ${selected ? 'checked' : ''}><span>${esc(t('optionalSelect'))}</span></label>` : ''}
                             <div class="quote-editor-row-actions">
                                 <button type="button" class="quote-editor-icon-btn" data-item-action="toggle-include" data-item-id="${esc(normalized.localId)}" title="${esc(t('rowToggleInclude'))}"><i class="fa-solid ${included ? 'fa-box-open' : 'fa-box'}"></i></button>
                                 <button type="button" class="quote-editor-icon-btn" data-item-action="move-up" data-item-id="${esc(normalized.localId)}" title="${esc(t('rowMoveUp'))}"><i class="fa-solid fa-arrow-up"></i></button>
@@ -1133,13 +1279,10 @@ function renderContent() {
                             </div>
                         </div>
                     </td>
-                    <td class="text-[var(--text-body)] text-xs whitespace-nowrap"><span class="quote-editable quote-editable-inline" contenteditable="true" data-item-field="brand_label" data-item-id="${esc(normalized.localId)}">${esc(normalized.brand_label || '-')}</span></td>
-                    <td class="text-[var(--text-body)] text-center font-mono-num whitespace-nowrap"><span class="quote-editable quote-editable-inline" contenteditable="true" data-item-field="qty_label" data-item-id="${esc(normalized.localId)}">${esc(normalized.qty_label || '1')}</span></td>
+                    <td class="text-[var(--text-body)] text-xs whitespace-nowrap"><span class="quote-editable quote-editable-inline" contenteditable="true" data-item-field="brand_label" data-item-id="${esc(normalized.localId)}">${esc(localizedValue(normalized.brand_i18n) || normalized.brand_label || '-')}</span></td>
+                    <td class="text-[var(--text-body)] text-center font-mono-num whitespace-nowrap"><span class="quote-editable quote-editable-inline" contenteditable="true" data-item-field="qty_label" data-item-id="${esc(normalized.localId)}">${esc(localizedValue(normalized.qty_i18n) || normalized.qty_label || '1')}</span></td>
                     <td class="font-mono-num ${included ? 'text-[var(--text-muted)]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? esc(t('included')) : `<span class="quote-editable quote-editable-inline" contenteditable="true" data-item-field="price_rmb" data-item-id="${esc(normalized.localId)}">${esc(formatCurrency('RMB', price))}</span>`}</td>
                     <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('USD', price * state.rates.USD))}</td>
-                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('EUR', price * state.rates.EUR))}</td>
-                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('CAD', price * state.rates.CAD))}</td>
-                    <td class="font-mono-num ${included ? 'text-[#333333]' : 'text-[var(--gas-green-light)] font-medium'} whitespace-nowrap">${included ? '-' : esc(formatCurrency('RUB', price * state.rates.RUB))}</td>
                 </tr>
             `);
         });
@@ -1155,17 +1298,22 @@ function renderContent() {
                 </h2>
             </div>
 
-            <div class="quote-total-card rounded border border-[var(--border-color)] bg-[var(--bg-base)] px-5 py-4 md:px-6 md:py-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <span class="font-bold text-white tracking-wider text-xs md:text-sm">
-                    <span class="quote-editable quote-editable-inline" contenteditable="true" id="edit-total-label">${esc(uiText('system_total_label', t('systemTotal')))}</span>:
-                </span>
-                <div class="quote-total-grid text-sm md:text-[15px]">
+            <div class="quote-total-card quote-total-card--with-breakdown rounded border border-[var(--border-color)] bg-[var(--bg-base)] px-5 py-4 md:px-6 md:py-5">
+                <div class="quote-total-card__headline">
+                    <span class="font-bold text-white tracking-wider text-xs md:text-sm">
+                        <span class="quote-editable quote-editable-inline" contenteditable="true" id="edit-total-label">${esc(uiText('system_total_label', t('systemTotal')))}</span>:
+                    </span>
+                    <div class="quote-total-grid text-sm md:text-[15px]">
                     <span class="flex items-center gap-2"><span class="gas-tag">RMB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RMB', total))}</span></span>
                     <span class="flex items-center gap-2"><span class="gas-tag">USD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('USD', total * state.rates.USD))}</span></span>
-                    <span class="flex items-center gap-2"><span class="gas-tag">EUR</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('EUR', total * state.rates.EUR))}</span></span>
-                    <span class="flex items-center gap-2"><span class="gas-tag">CAD</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('CAD', total * state.rates.CAD))}</span></span>
-                    <span class="flex items-center gap-2"><span class="gas-tag">RUB</span> <span class="text-[var(--gas-green-light)] font-mono-num font-bold">${esc(formatCurrency('RUB', total * state.rates.RUB))}</span></span>
+                    </div>
                 </div>
+
+            <div class="quote-total-formula" aria-label="${esc(t('pricingFormula'))}">
+                <div class="quote-total-formula__values">
+                    <span><b>${esc(breakdown[0][0])}</b>${esc(formatCurrency('RMB', breakdown[0][1]))} + <b>${esc(breakdown[1][0])}</b>${esc(formatCurrency('RMB', breakdown[1][1]))} + <b>${esc(breakdown[2][0])}</b>${esc(formatCurrency('RMB', breakdown[2][1]))} + <b>${esc(breakdown[3][0])}</b>${esc(formatCurrency('RMB', breakdown[3][1]))} = <strong>${esc(formatCurrency('RMB', total))}</strong></span>
+                </div>
+            </div>
             </div>
 
             <div class="quote-editor-hint">${esc(t('sectionSubtotalHint'))}</div>
@@ -1305,6 +1453,17 @@ function bindContentArea() {
                 nextName[state.currentLang] = text(event.currentTarget.textContent);
                 markTranslationDirty(`item.${itemId}.name_i18n`);
                 updateItem(itemId, { name_i18n: nextName });
+            } else if (field === 'brand_label' || field === 'qty_label') {
+                const item = state.items.find((entry) => entry.localId === itemId);
+                if (!item) return;
+                const localizedField = field === 'brand_label' ? 'brand_i18n' : 'qty_i18n';
+                const nextValue = normalizeLocalizedText(item[localizedField]);
+                nextValue[state.currentLang] = text(event.currentTarget.textContent);
+                markTranslationDirty(`item.${itemId}.${localizedField}`);
+                updateItem(itemId, {
+                    [field]: state.currentLang === DEFAULT_LANG ? nextValue.zh : item[field],
+                    [localizedField]: nextValue,
+                });
             } else if (field === 'price_rmb') {
                 updateItem(itemId, { price_rmb: parseMoneyInput(event.currentTarget.textContent), is_included: false });
             } else {
@@ -1316,7 +1475,7 @@ function bindContentArea() {
     });
 
     document.querySelectorAll('[data-item-action]').forEach((button) => {
-        button.onclick = () => {
+        button.onclick = (event) => {
             const action = button.dataset.itemAction;
             const itemId = button.dataset.itemId;
             if (!itemId) return;
@@ -1329,6 +1488,8 @@ function bindContentArea() {
             } else if (action === 'toggle-include') {
                 const item = state.items.find((entry) => entry.localId === itemId);
                 updateItem(itemId, { is_included: !(item?.is_included === true) });
+            } else if (action === 'toggle-selected') {
+                updateItem(itemId, { is_selected: event.currentTarget.checked === true });
             }
             renderAll();
             markEditorDirty();
@@ -1393,6 +1554,7 @@ function bindStaticEditors() {
         markEditorDirty();
     };
     byId('edit-receiver-label').onblur = (event) => {
+        if (state.kind === 'instance') return;
         setLocalizedValue(state.product.ui_text, 'receiver_label', event.currentTarget.textContent);
         markTranslationDirty('product.ui_text.receiver_label');
         renderAll();
@@ -1400,7 +1562,7 @@ function bindStaticEditors() {
     };
     byId('edit-receiver-value').onblur = (event) => {
         if (state.kind === 'instance') {
-            state.instance.receiver_email = normalizedCustomerEmail(event.currentTarget.textContent);
+            state.instance.customer_name = text(event.currentTarget.textContent);
         } else {
             setLocalizedValue(state.product.ui_text, 'receiver_placeholder', event.currentTarget.textContent);
             markTranslationDirty('product.ui_text.receiver_placeholder');
@@ -1469,6 +1631,18 @@ function flushPendingEditorChanges() {
             updateItem(itemId, { name_i18n: nextName });
             return;
         }
+        if (field === 'brand_label' || field === 'qty_label') {
+            const item = state.items.find((entry) => entry.localId === itemId);
+            if (!item) return;
+            const localizedField = field === 'brand_label' ? 'brand_i18n' : 'qty_i18n';
+            const nextValue = normalizeLocalizedText(item[localizedField]);
+            nextValue[state.currentLang] = text(node.textContent);
+            updateItem(itemId, {
+                [field]: state.currentLang === DEFAULT_LANG ? nextValue.zh : item[field],
+                [localizedField]: nextValue,
+            });
+            return;
+        }
         if (field === 'price_rmb') {
             updateItem(itemId, { price_rmb: parseMoneyInput(node.textContent), is_included: false });
             return;
@@ -1512,14 +1686,14 @@ function flushPendingEditorChanges() {
     }
 
     const receiverLabel = byId('edit-receiver-label');
-    if (receiverLabel) {
+    if (receiverLabel && state.kind !== 'instance') {
         setLocalizedValue(state.product.ui_text, 'receiver_label', receiverLabel.textContent);
     }
 
     const receiverValue = byId('edit-receiver-value');
     if (receiverValue) {
         if (state.kind === 'instance') {
-            state.instance.receiver_email = normalizedCustomerEmail(receiverValue.textContent);
+            state.instance.customer_name = text(receiverValue.textContent);
         } else {
             setLocalizedValue(state.product.ui_text, 'receiver_placeholder', receiverValue.textContent);
         }
@@ -1536,8 +1710,8 @@ function flushPendingEditorChanges() {
     }
 }
 
-function renderAll() {
-    state.snapshot = buildSnapshot();
+function renderAll(options = {}) {
+    if (options.snapshot !== false) state.snapshot = buildSnapshot();
     applyTheme();
     renderStaticText();
     renderRateLine();
@@ -1550,7 +1724,7 @@ function renderAll() {
 async function fetchRates(isManual = false) {
     const previousRates = normalizeRates(state.rates);
     if (isManual) updateRateStatus('loading');
-    renderStatus(t('rateRefreshing'), 'warning');
+    renderStatus(editorT('rateRefreshing'), 'warning');
     try {
         const response = await fetch(RATE_API_URL, { cache: 'no-store' });
         const data = await response.json();
@@ -1586,11 +1760,11 @@ async function fetchRates(isManual = false) {
 }
 
 async function persistItemRows(tableName, ownerColumn, ownerId, items = []) {
-    const del = await client.from(tableName).delete().eq(ownerColumn, ownerId);
-    if (del.error) throw del.error;
-    const payload = sortItems(items).map((item, index) => {
+    const persistedIds = state.persistedItemIds instanceof Set ? state.persistedItemIds : new Set();
+    const orderedItems = dedupeQuoteItems(items);
+    const payload = orderedItems.map((item, index) => {
         const normalized = normalizeQuoteItem(item, item.section_key);
-        return {
+        const row = {
             [ownerColumn]: ownerId,
             section_key: normalized.section_key,
             sort_order: (index + 1) * 10,
@@ -1599,16 +1773,36 @@ async function persistItemRows(tableName, ownerColumn, ownerId, items = []) {
             qty_label: normalized.qty_label,
             price_rmb: normalized.price_rmb,
             is_included: normalized.is_included === true,
-            name_i18n: expandLocalizedFromChinese(normalized.name_i18n),
+            is_selected: normalized.is_selected === true,
+            name_i18n: serializeQuoteItemI18n(normalized),
         };
+        // New editor rows already carry a UUID localId. Send it explicitly so
+        // Supabase upsert never turns a new row into an explicit NULL id.
+        row.id = normalized.localId;
+        return row;
     });
-    if (!payload.length) return [];
-    const insert = await client.from(tableName).insert(payload).select('*');
-    if (insert.error) throw insert.error;
-    return insert.data || [];
+    const currentPersistedIds = new Set(payload.filter((row) => row.id).map((row) => row.id));
+    const removedIds = [...persistedIds].filter((id) => !currentPersistedIds.has(id));
+    if (removedIds.length) {
+        const del = await client.from(tableName).delete().eq(ownerColumn, ownerId).in('id', removedIds);
+        if (del.error) throw del.error;
+    }
+    if (!payload.length) {
+        state.persistedItemIds = new Set();
+        return [];
+    }
+    const saved = await client.from(tableName).upsert(payload, { onConflict: 'id' }).select('*');
+    if (saved.error) throw saved.error;
+    state.persistedItemIds = new Set((saved.data || []).map((row) => row.id));
+    return saved.data || [];
 }
 
 async function saveBrand(user) {
+    let serverBrand = null;
+    if (state.brand.id) {
+        const result = await client.from(TABLE_BRANDS).select('overview_title,footer_note').eq('id', state.brand.id).maybeSingle();
+        if (!result.error) serverBrand = result.data;
+    }
     const payload = {
         slug: state.brand.slug,
         brand_name: state.brand.brand_name || state.brand.display_name,
@@ -1616,8 +1810,8 @@ async function saveBrand(user) {
         supplier_name: state.brand.supplier_name || state.brand.display_name,
         sender_email: state.brand.sender_email,
         subject_name: state.brand.subject_name || state.brand.display_name,
-        overview_title: expandLocalizedFromChinese(state.brand.overview_title),
-        footer_note: expandLocalizedFromChinese(state.brand.footer_note),
+        overview_title: mergeLocalizedForSave(state.brand.overview_title, serverBrand?.overview_title),
+        footer_note: mergeLocalizedForSave(state.brand.footer_note, serverBrand?.footer_note),
         theme_primary: state.brand.theme_primary || DEFAULT_THEME_PRIMARY,
         theme_dark: state.brand.theme_dark || DEFAULT_THEME_DARK,
         share_signing_secret: state.brand.share_signing_secret || DEFAULT_SHARE_SECRET,
@@ -1634,20 +1828,49 @@ async function saveBrand(user) {
 }
 
 async function saveProduct(user) {
+    let serverProduct = null;
+    let serverItems = [];
+    if (state.product.id) {
+        const [productResult, itemResult] = await Promise.all([
+            client.from(TABLE_PRODUCTS).select('public_title,section_config,ui_text').eq('id', state.product.id).maybeSingle(),
+            client.from(TABLE_PRODUCT_ITEMS).select('id,line_code,name_i18n').eq('product_id', state.product.id),
+        ]);
+        if (!productResult.error) serverProduct = productResult.data;
+        if (!itemResult.error) serverItems = itemResult.data || [];
+    }
     await saveBrand(user);
+    const serverSections = normalizeSectionConfig(serverProduct?.section_config);
+    const mergedSections = currentSectionConfig().map((section) => {
+        const serverSection = serverSections.find((entry) => entry.key === section.key);
+        return {
+            ...section,
+            title: mergeLocalizedForSave(section.title, serverSection?.title),
+        };
+    });
+    const serverItemsById = new Map(serverItems.map((item) => [item.id, item]));
+    const serverItemsByLine = new Map(serverItems.filter((item) => text(item.line_code)).map((item) => [item.line_code, item]));
+    state.items = state.items.map((item) => {
+        const serverItem = serverItemsById.get(item.localId) || serverItemsByLine.get(item.line_code);
+        return serverItem
+            ? { ...item, name_i18n: mergeLocalizedForSave(item.name_i18n, serverItem.name_i18n) }
+            : item;
+    });
+    const mergedUiText = normalizeProductUiText(state.product.ui_text);
+    const serverUiText = normalizeProductUiText(serverProduct?.ui_text);
+    Object.keys(mergedUiText).forEach((key) => {
+        if (key === 'enabled_langs') return;
+        mergedUiText[key] = mergeLocalizedForSave(mergedUiText[key], serverUiText[key]);
+    });
     const payload = {
         brand_id: state.brand.id,
         slug: state.product.slug,
         product_code: state.product.product_code || state.product.slug,
-        public_title: expandLocalizedFromChinese(state.product.public_title),
+        public_title: mergeLocalizedForSave(state.product.public_title, serverProduct?.public_title),
         default_lang: state.product.default_lang,
         validity_hours: state.product.validity_hours,
         default_rates: normalizeRates(state.rates),
-        section_config: normalizeSectionConfig(currentSectionConfig()).map((section) => ({
-            ...section,
-            title: expandLocalizedFromChinese(section.title),
-        })),
-        ui_text: normalizeProductUiText(state.product.ui_text),
+        section_config: normalizeSectionConfig(mergedSections),
+        ui_text: mergedUiText,
         media_config: normalizeMediaConfig(state.product.media_config),
         sort_order: state.product.sort_order,
         is_active: state.product.is_active !== false,
@@ -1659,7 +1882,8 @@ async function saveProduct(user) {
     if (error) throw error;
     state.product = normalizeProductEditor({ ...data, media_gallery: state.media });
     const savedItems = await persistItemRows(TABLE_PRODUCT_ITEMS, 'product_id', data.id, state.items);
-    state.items = sortItems(savedItems.map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.items = dedupeQuoteItems(savedItems.map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.persistedItemIds = new Set(state.items.map((item) => item.localId));
     state.id = data.id;
 }
 
@@ -1675,6 +1899,36 @@ async function syncInstanceCustomerEmail(nextEmail = '') {
         .eq('id', customerId);
     if (error?.code === '23505') throw new Error('该客户邮箱已被占用，请更换唯一邮箱后再保存。');
     if (error) throw error;
+}
+
+function buildShareSnapshot(instance, items = []) {
+    return buildQuoteSnapshot({
+        brand: extractBrandSnapshot(state.brand),
+        product: extractProductSnapshot({
+            ...state.product,
+            media_gallery: state.media,
+            section_config: currentSectionConfig(),
+            ui_text: state.product.ui_text,
+        }),
+        instance,
+        items,
+        mode: text(instance?.status).toLowerCase() === 'published' ? 'published' : 'preview',
+    });
+}
+
+async function persistShareSnapshot(instance, items = [], user) {
+    const snapshot = buildShareSnapshot(instance, items);
+    const { data, error } = await client
+        .from(TABLE_INSTANCES)
+        .update({
+            published_snapshot: snapshot,
+            updated_by: user?.id || null,
+        })
+        .eq('id', instance.id)
+        .select('*')
+        .single();
+    if (error) throw error;
+    return data;
 }
 
 async function saveInstance(user) {
@@ -1749,9 +2003,79 @@ async function saveInstance(user) {
     const savedItems = await persistItemRows(TABLE_INSTANCE_ITEMS, 'instance_id', saved.id, state.items);
     state.instance = normalizeInstanceEditor(saved);
     await syncInstanceCustomerEmail(state.instance.receiver_email);
-    state.items = sortItems(savedItems.map((item) => normalizeQuoteItem(item, item.section_key)));
-    state.id = saved.id;
+    state.items = dedupeQuoteItems(savedItems.map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.persistedItemIds = new Set(state.items.map((item) => item.localId));
+    const shared = await persistShareSnapshot(saved, state.items, user);
+    state.instance = normalizeInstanceEditor(shared);
+    state.id = shared.id;
     return state.instance;
+}
+
+async function saveProductPreviewInstance(user) {
+    flushPendingEditorChanges();
+    const token = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`).replace(/[^a-z0-9]/gi, '').slice(0, 10).toLowerCase();
+    const previewCustomerName = localizedValue(state.product.ui_text?.receiver_placeholder);
+    const payload = {
+        brand_id: state.brand.id,
+        product_id: state.product.id,
+        public_slug: createPublicSlug(state.brand.slug, `${state.product.slug}-preview-${token}`),
+        status: 'draft',
+        last_active_status: 'draft',
+        customer_name: previewCustomerName || '模板预览',
+        receiver_name: localizedValue(state.product.public_title) || state.product.product_code || state.product.slug,
+        receiver_email: '',
+        default_lang: state.currentLang || state.product.default_lang,
+        validity_hours: state.product.validity_hours,
+        draft_rates: normalizeRates(state.rates),
+        share_config: {
+            preview_source: 'product_template',
+            enabled_langs: configuredEditorLangs(),
+        },
+        brand_snapshot: extractBrandSnapshot(state.brand),
+        product_snapshot: extractProductSnapshot({
+            ...state.product,
+            media_gallery: state.media,
+            section_config: currentSectionConfig(),
+            ui_text: state.product.ui_text,
+        }),
+        section_config: currentSectionConfig(),
+        updated_by: user?.id || null,
+    };
+
+    let saved = null;
+    if (state.productPreviewInstanceId) {
+        const { public_slug: _publicSlug, ...updatePayload } = payload;
+        const { data, error } = await client
+            .from(TABLE_INSTANCES)
+            .update(updatePayload)
+            .eq('id', state.productPreviewInstanceId)
+            .select('*')
+            .maybeSingle();
+        if (!error && data?.id) saved = data;
+    }
+
+    if (!saved) {
+        const { data, error } = await client
+            .from(TABLE_INSTANCES)
+            .insert({
+                ...payload,
+                created_by: user?.id || null,
+            })
+            .select('*')
+            .single();
+        if (error) throw error;
+        saved = data;
+    }
+
+    state.persistedItemIds = new Set();
+    const savedItems = await persistItemRows(TABLE_INSTANCE_ITEMS, 'instance_id', saved.id, state.items);
+    const shared = await persistShareSnapshot(
+        saved,
+        savedItems.map((item) => normalizeQuoteItem(item, item.section_key)),
+        user,
+    );
+    state.productPreviewInstanceId = shared.id;
+    return shared.id;
 }
 
 async function publishInstance(user) {
@@ -1792,6 +2116,9 @@ async function publishInstance(user) {
 }
 
 async function runAutoTranslation(force = false) {
+    if (!force && state.translationDirty.size === 0) {
+        return { attempted: false, translated: false, skipped: true };
+    }
     try {
         const result = await autoTranslateLocalizedFields(force);
         if (!result.attempted) {
@@ -1814,15 +2141,47 @@ async function runAutoTranslation(force = false) {
     }
 }
 
-async function handleSave(options = {}) {
-    const source = options.source === 'auto' ? 'auto' : 'manual';
-    let saveSucceeded = false;
-    cancelAutoSave();
-    if (state.saveInFlight) {
-        if (source === 'auto') state.autoSavePending = true;
-        return;
+async function autoFillCurrentLanguage() {
+    const target = state.currentLang;
+    if (target === DEFAULT_LANG || state.translationRequest) return;
+    if (!collectTranslationEntries(false, [target]).length) return;
+
+    const request = (async () => {
+        renderStatus(localeCopy({
+            zh: `正在补全 ${target.toUpperCase()} 翻译...`,
+            en: `Filling missing ${target.toUpperCase()} translations...`,
+            ru: `Заполняются переводы ${target.toUpperCase()}...`,
+        }));
+        try {
+            const result = await autoTranslateLocalizedFields(false, [target]);
+            if (!result.translated) return;
+            markEditorDirty({ showStatus: false });
+            renderAll({ snapshot: false });
+            renderStatus(localeCopy({
+                zh: `${target.toUpperCase()} 翻译已补全，请点击保存产品模板。`,
+                en: `${target.toUpperCase()} translations are ready. Click Save Template to keep them.`,
+                ru: `Переводы ${target.toUpperCase()} готовы. Нажмите «Сохранить шаблон».`,
+            }), 'success');
+        } catch (_error) {
+            renderStatus(localeCopy({
+                zh: '自动翻译暂不可用，当前仍显示中文回退。',
+                en: 'Auto-translation is unavailable. Chinese fallback is still shown.',
+                ru: 'Автоперевод недоступен. Пока показан китайский текст.',
+            }), 'warning');
+        }
+    })();
+    state.translationRequest = request;
+    try {
+        await request;
+    } finally {
+        if (state.translationRequest === request) state.translationRequest = null;
     }
-    if (source === 'auto' && !state.hasUnsavedChanges) return;
+}
+
+async function handleSave() {
+    if (state.saveInFlight) {
+        return false;
+    }
     flushPendingEditorChanges();
     const saveVersion = state.hasUnsavedChanges ? state.changeVersion : state.changeVersion + 1;
     if (!state.hasUnsavedChanges) {
@@ -1830,13 +2189,15 @@ async function handleSave(options = {}) {
         state.changeVersion = saveVersion;
     }
     state.saveInFlight = true;
-    state.autoSavePending = false;
-    updateSaveButtons(source === 'auto' ? '自动保存中...' : '保存中...', true);
-    renderStatus(source === 'auto' ? '自动保存中...' : '保存中...');
+    updateSaveButtons('保存中...', true);
+    renderStatus('保存中...');
     try {
         const auth = await client.auth.getUser();
         state.user = auth?.data?.user || null;
-        if (!state.user) renderStatus(t('needLogin'), 'warning');
+        if (!state.user) renderStatus(editorT('needLogin'), 'warning');
+        // Translation is a best-effort supplement to the primary save. Only
+        // retry fields changed in this edit so a slow translation endpoint
+        // cannot make every save look stuck.
         await runAutoTranslation(false);
         if (state.kind === 'product') {
             await saveProduct(state.user);
@@ -1846,31 +2207,19 @@ async function handleSave(options = {}) {
         state.snapshot = buildSnapshot();
         renderAll();
         clearTranslationDirty();
-        saveSucceeded = true;
         if (state.changeVersion === saveVersion) {
             state.hasUnsavedChanges = false;
         }
         updateSaveButtons(state.kind === 'product' ? '保存模板' : '保存草稿', false);
-        renderStatus(
-            source === 'auto'
-                ? localeCopy({
-                      zh: '已自动保存。',
-                      en: 'Auto-saved.',
-                      ru: 'Автосохранение выполнено.',
-                  })
-                : t('saveSuccess'),
-            'success',
-        );
+        renderStatus(editorT('saveSuccess'), 'success');
+        return true;
     } catch (error) {
         updateSaveButtons(state.kind === 'product' ? '保存模板' : '保存草稿', false);
-        renderStatus(`${t('saveFailed')} ${error.message || ''}`, 'error');
+        renderStatus(`${editorT('saveFailed')} ${error.message || ''}`, 'error');
+        return false;
     } finally {
         state.saveInFlight = false;
         renderEditorActions();
-        if (saveSucceeded && state.hasUnsavedChanges && (state.autoSavePending || source === 'auto')) {
-            state.autoSavePending = false;
-            scheduleAutoSave(300);
-        }
     }
 }
 
@@ -1888,10 +2237,11 @@ async function loadProduct(id) {
     state.brand = normalizeBrandEditor(brandRow);
     state.product = normalizeProductEditor({ ...productRow, media_gallery: mediaRows || [] });
     state.instance = null;
-    state.items = sortItems((itemRows || []).map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.items = dedupeQuoteItems((itemRows || []).map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.persistedItemIds = new Set(state.items.map((item) => item.localId));
     state.media = sortMediaItems((mediaRows || []).map((item) => normalizeQuoteMediaItem(item)));
     state.rates = normalizeRates(state.product.default_rates);
-    state.currentLang = state.product.default_lang || DEFAULT_LANG;
+    state.currentLang = DEFAULT_LANG;
 }
 
 async function loadInstance(id) {
@@ -1919,10 +2269,11 @@ async function loadInstance(id) {
         media_gallery: mediaRows?.length ? mediaRows : instanceRow.product_snapshot?.media_gallery || [],
     });
     state.instance = normalizeInstanceEditor(instanceRow);
-    state.items = sortItems((itemRows || []).map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.items = dedupeQuoteItems((itemRows || []).map((item) => normalizeQuoteItem(item, item.section_key)));
+    state.persistedItemIds = new Set(state.items.map((item) => item.localId));
     state.media = sortMediaItems((mediaRows?.length ? mediaRows : state.product.media_gallery || []).map((item) => normalizeQuoteMediaItem(item)));
     state.rates = normalizeRates(state.instance.draft_rates);
-    state.currentLang = state.instance.default_lang || DEFAULT_LANG;
+    state.currentLang = DEFAULT_LANG;
 }
 
 function parseRoute() {
@@ -1941,18 +2292,25 @@ function updateBackToTop() {
 function bindGlobal() {
     byId('btn-zh').onclick = () => {
         state.currentLang = 'zh';
-        renderAll();
+        renderAll({ snapshot: false });
     };
     byId('btn-en').onclick = () => {
         state.currentLang = 'en';
-        renderAll();
+        renderAll({ snapshot: false });
+        void autoFillCurrentLanguage();
     };
     byId('btn-ru').onclick = () => {
         state.currentLang = 'ru';
-        renderAll();
+        renderAll({ snapshot: false });
+        void autoFillCurrentLanguage();
     };
     byId('btn-add-main-row').onclick = () => {
         state.items = [...state.items, { ...createQuoteItem(SECTION_KEYS.MAIN), sort_order: (state.items.length + 1) * 10 }];
+        renderAll();
+        markEditorDirty();
+    };
+    byId('btn-add-service-row').onclick = () => {
+        state.items = [...state.items, { ...createQuoteItem(SECTION_KEYS.SERVICE), sort_order: (state.items.length + 1) * 10 }];
         renderAll();
         markEditorDirty();
     };
@@ -1961,20 +2319,47 @@ function bindGlobal() {
         renderAll();
         markEditorDirty();
     };
+    byId('btn-add-wear-parts-row').onclick = () => {
+        state.items = [...state.items, { ...createQuoteItem(SECTION_KEYS.WEAR_PARTS), sort_order: (state.items.length + 1) * 10 }];
+        renderAll();
+        markEditorDirty();
+    };
 
     byId('btn-save-editor').onclick = () => {
-        void handleSave({ source: 'manual' });
+        void handleSave();
     };
 
     byId('btn-preview-instance')?.addEventListener('click', async () => {
-        if (state.kind !== 'instance') return;
-        if (!state.instance?.id) {
-            renderStatus('\u8bf7\u5148\u4fdd\u5b58\u8349\u7a3f\uff0c\u518d\u9884\u89c8\u5ba2\u6237\u9875\u3002', 'warning');
+        if (state.saveInFlight) return;
+        const previewWindow = openPreviewWindow();
+        if (!previewWindow) return;
+        if (state.kind === 'product') {
+            try {
+                renderStatus('正在生成产品预览（使用当前语言和未保存内容）...');
+                const previewId = await saveProductPreviewInstance(state.user);
+                previewWindow.location.href = previewQuoteUrl(previewId);
+                renderStatus('产品预览已打开，当前修改尚未保存。', 'success');
+            } catch (error) {
+                previewWindow.close();
+                renderStatus(`产品预览生成失败。${error.message || ''}`, 'error');
+            }
             return;
         }
-        await handleSave({ source: 'manual' });
-        if (!state.instance?.id) return;
-        window.open(previewQuoteUrl(state.instance.id), '_blank', 'noopener');
+        if (state.kind !== 'instance') {
+            previewWindow.close();
+            return;
+        }
+        if (!state.instance?.id) {
+            renderStatus('\u8bf7\u5148\u4fdd\u5b58\u8349\u7a3f\uff0c\u518d\u9884\u89c8\u5ba2\u6237\u9875\u3002', 'warning');
+            previewWindow.close();
+            return;
+        }
+        const saved = await handleSave();
+        if (!saved || !state.instance?.id) {
+            previewWindow.close();
+            return;
+        }
+        previewWindow.location.href = previewQuoteUrl(state.instance.id);
     });
 
     byId('btn-publish-instance')?.addEventListener('click', async () => {
@@ -1994,7 +2379,6 @@ function bindGlobal() {
             }
             return;
         }
-        cancelAutoSave();
         if (state.saveInFlight) return;
         flushPendingEditorChanges();
         state.saveInFlight = true;
@@ -2009,8 +2393,8 @@ function bindGlobal() {
         try {
             const auth = await client.auth.getUser();
             state.user = auth?.data?.user || null;
-            if (!state.user) renderStatus(t('needLogin'), 'warning');
-            await runAutoTranslation(false);
+            if (!state.user) renderStatus(editorT('needLogin'), 'warning');
+            await runAutoTranslation(true);
             await publishInstance(state.user);
             state.snapshot = buildSnapshot();
             renderAll();
@@ -2042,10 +2426,6 @@ function bindGlobal() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     window.addEventListener('scroll', updateBackToTop, { passive: true });
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden || !state.hasUnsavedChanges || state.saveInFlight) return;
-        void handleSave({ source: 'auto' });
-    });
     window.addEventListener('beforeunload', (event) => {
         if (!state.hasUnsavedChanges && !state.saveInFlight) return;
         event.preventDefault();
@@ -2057,7 +2437,7 @@ function bindGlobal() {
 async function init() {
     bindGlobal();
     if (!parseRoute()) {
-        renderStatus(t('invalidRoute'), 'error');
+        renderStatus(editorT('invalidRoute'), 'error');
         return;
     }
     try {
@@ -2073,9 +2453,9 @@ async function init() {
         renderAll();
         startClock();
         updateBackToTop();
-        renderStatus(state.kind === 'product' ? t('productMode') : t('instanceMode'));
+        renderStatus(state.kind === 'product' ? editorT('productMode') : editorT('instanceMode'));
     } catch (error) {
-        renderStatus(`${t('loadFailed')} ${error.message || ''}`, 'error');
+        renderStatus(`${editorT('loadFailed')} ${error.message || ''}`, 'error');
     }
 }
 

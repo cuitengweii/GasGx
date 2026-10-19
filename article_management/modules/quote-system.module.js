@@ -2295,6 +2295,7 @@ function createBrandDraft(seed = {}) {
 
 function createProductDraft(seed = {}) {
     const defaultLang = normalizeLangCode(seed.default_lang || seed.defaultLang, DEFAULT_LANG);
+    const itemsLoaded = seed.itemsLoaded === true || (seed.itemsLoaded !== false && Array.isArray(seed.items));
     return {
         id: text(seed.id),
         brand_id: text(seed.brand_id || seed.brandId),
@@ -2309,6 +2310,7 @@ function createProductDraft(seed = {}) {
         media_config: normalizeMediaConfig(seed.media_config || seed.mediaConfig),
         sort_order: safeNumber(seed.sort_order, 100),
         is_active: seed.is_active !== false,
+        itemsLoaded,
         items: sortItems((seed.items || []).map((item) => normalizeQuoteItem(item, item?.section_key))),
         media_gallery: sortMediaItems((seed.media_gallery || seed.mediaGallery || []).map((item) => normalizeQuoteMediaItem(item))),
     };
@@ -3369,6 +3371,20 @@ async function saveProductDraft(user, draft) {
     }
     if (!pickLocalized(payload.public_title, payload.default_lang)) throw new Error('请至少填写一个产品标题。');
 
+    // Product list metadata edits can be made from a lightweight list row that
+    // does not carry the item collection. Never treat that missing collection
+    // as an intentional delete; load the current rows before persisting.
+    let itemsToPersist = payload.items;
+    if (payload.id && payload.itemsLoaded !== true) {
+        const existingItems = await client
+            .from(TABLE_PRODUCT_ITEMS)
+            .select('*')
+            .eq('product_id', payload.id)
+            .order('sort_order', { ascending: true });
+        if (existingItems.error) throw existingItems.error;
+        itemsToPersist = existingItems.data || [];
+    }
+
     const linkedBrandDraft = currentProductBrandDraft();
     if (linkedBrandDraft?.id && text(linkedBrandDraft.id) === text(payload.brand_id)) {
         const savedBrand = await saveBrandDraft(user, {
@@ -3433,7 +3449,7 @@ async function saveProductDraft(user, draft) {
         }));
 
     const [savedItems, savedMedia] = await Promise.all([
-        persistItemRows(TABLE_PRODUCT_ITEMS, 'product_id', data.id, payload.items),
+        persistItemRows(TABLE_PRODUCT_ITEMS, 'product_id', data.id, itemsToPersist),
         persistProductMediaRows(data.id, mediaPayload),
     ]);
     const syncedMediaConfig = await syncProductMediaState(data.id, data.media_config, savedMedia, user?.id || null);

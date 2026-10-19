@@ -942,9 +942,9 @@
         },
         footer: {
                 "contact": {
-                        "mode": "qr",
-                        "label": "www_gasgx_com",
-                        "iconClass": "fa-brands fa-weixin",
+                        "mode": "contact-promo",
+                        "label": "GasGx",
+                        "iconClass": "fa-solid fa-address-card",
                         "qrType": "wechat"
                 },
                 "privacyPolicy": {
